@@ -139,34 +139,34 @@ const Reels = () => {
               </div>
 
               {/* Right Side Actions */}
-              <div className="absolute right-4 bottom-24 flex flex-col items-center gap-6 z-10">
+              <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-10">
                 <div className="flex flex-col items-center gap-1">
-                  <button className="w-12 h-12 rounded-full glass flex items-center justify-center hover:scale-110 transition-transform">
-                    <Heart className="w-6 h-6 text-white" />
+                  <button className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform">
+                    <Heart className="w-5 h-5 text-white" />
                   </button>
-                  <span className="text-white text-xs font-semibold">{reel.like_count}</span>
+                  <span className="text-white text-xs font-semibold drop-shadow-lg">{reel.like_count}</span>
                 </div>
 
                 <div className="flex flex-col items-center gap-1">
-                  <button className="w-12 h-12 rounded-full neon-green flex items-center justify-center hover:scale-110 transition-transform">
-                    <MessageCircle className="w-6 h-6 text-black" />
+                  <button className="w-11 h-11 rounded-full neon-green border border-primary/30 flex items-center justify-center hover:scale-110 transition-transform">
+                    <MessageCircle className="w-5 h-5 text-black" />
                   </button>
-                  <span className="neon-green-text text-xs font-bold">{reel.comment_count}</span>
+                  <span className="neon-green-text text-xs font-bold drop-shadow-lg">{reel.comment_count}</span>
                 </div>
 
-                <button className="w-12 h-12 rounded-full glass flex items-center justify-center hover:scale-110 transition-transform">
-                  <Send className="w-6 h-6 text-white" />
+                <button className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform">
+                  <Send className="w-5 h-5 text-white" />
                 </button>
 
-                <button className="w-12 h-12 rounded-full glass flex items-center justify-center hover:scale-110 transition-transform">
-                  <Bookmark className="w-6 h-6 text-white" />
+                <button className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform">
+                  <Bookmark className="w-5 h-5 text-white" />
                 </button>
 
                 {currentUser && reel.user_id === currentUser.id ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="w-12 h-12 rounded-full glass flex items-center justify-center hover:scale-110 transition-transform">
-                        <MoreVertical className="w-6 h-6 text-white" />
+                      <button className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform">
+                        <MoreVertical className="w-5 h-5 text-white" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="glass">
@@ -184,17 +184,17 @@ const Reels = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  <button className="w-12 h-12 rounded-full glass flex items-center justify-center hover:scale-110 transition-transform">
-                    <MoreVertical className="w-6 h-6 text-white" />
+                  <button className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform">
+                    <MoreVertical className="w-5 h-5 text-white" />
                   </button>
                 )}
 
                 {/* Profile Avatar */}
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-full border-2 border-white overflow-hidden">
+                  <div className="w-11 h-11 rounded-full border border-white overflow-hidden">
                     <div className="w-full h-full bg-gradient-to-br from-primary to-accent" />
                   </div>
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-primary border-2 border-background flex items-center justify-center">
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-primary border border-background flex items-center justify-center">
                     <span className="text-white text-xs font-bold">+</span>
                   </div>
                 </div>

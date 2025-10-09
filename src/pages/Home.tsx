@@ -399,11 +399,11 @@ const Home = () => {
       {feed.length > 0 && (
         <div className="space-y-6 px-4">
           {feed.map((item) => (
-            <div key={item.id} className="glass rounded-2xl p-4 space-y-4">
+            <div key={item.id} className="glass rounded-xl p-2 space-y-3 border border-border/50">
               {/* Header */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 px-2 pt-2">
                 <div className="relative">
-                  <Avatar className={`w-12 h-12 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)}`}>
+                  <Avatar className={`w-10 h-10 avatar-glow ring-1 ring-offset-1 ring-offset-background bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)}`}>
                     <AvatarImage src={item.profiles.avatar_url || undefined} />
                     <AvatarFallback>{item.profiles.username[0]}</AvatarFallback>
                   </Avatar>
@@ -437,12 +437,12 @@ const Home = () => {
 
               {/* Content */}
               {'content' in item && item.content && (
-                <p className="text-sm">{item.content}</p>
+                <p className="text-sm px-2">{item.content}</p>
               )}
 
               {/* Media */}
               {item.media_urls && item.media_urls.length > 0 && (
-                <div className={`grid gap-2 ${item.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                <div className={`grid gap-1 ${item.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                   {item.media_urls.map((url, idx) => (
                     <div key={idx} className="relative rounded-xl overflow-hidden">
                       {item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
@@ -464,7 +464,7 @@ const Home = () => {
               )}
 
               {/* Actions */}
-              <div className="flex items-center gap-6 pt-2">
+              <div className="flex items-center gap-6 px-2 pb-1">
                 <button 
                   onClick={() => item.type === 'post' ? handleLikePost(item.id) : handleLikeReel(item.id)}
                   className={`flex items-center gap-2 transition-all hover:scale-110 ${

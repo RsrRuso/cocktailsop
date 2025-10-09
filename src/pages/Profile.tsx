@@ -164,10 +164,10 @@ const Profile = () => {
 
       <div className="px-4 space-y-6" style={{ marginTop: coverUrl ? '-3rem' : '1.5rem' }}>
         {/* Profile Header */}
-        <div className="glass rounded-2xl p-6 space-y-6">
+        <div className="glass rounded-xl p-4 space-y-6 border border-border/50">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <Avatar className={`w-24 h-24 avatar-glow ring-4 ring-offset-4 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)}`}>
+              <Avatar className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)}`}>
                 <AvatarImage src={profile.avatar_url || undefined} />
                 <AvatarFallback className="text-2xl">{profile.username[0]}</AvatarFallback>
               </Avatar>
@@ -227,14 +227,14 @@ const Profile = () => {
           </TabsList>
 
           <TabsContent value="posts" className="mt-4">
-            <div className="glass rounded-2xl p-6 text-center text-muted-foreground">
+            <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
               <p>No posts yet</p>
             </div>
           </TabsContent>
 
           <TabsContent value="stories" className="mt-4">
             {stories.length === 0 ? (
-              <div className="glass rounded-2xl p-6 text-center text-muted-foreground">
+              <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
                 <p>No active stories</p>
               </div>
             ) : (
@@ -271,13 +271,13 @@ const Profile = () => {
           </TabsContent>
 
           <TabsContent value="reels" className="mt-4">
-            <div className="glass rounded-2xl p-6 text-center text-muted-foreground">
+            <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
               <p>No reels yet</p>
             </div>
           </TabsContent>
 
           <TabsContent value="growth" className="mt-4 space-y-4">
-            <div className="glass rounded-2xl p-6 space-y-6">
+            <div className="glass rounded-xl p-4 space-y-6 border border-border/50">
               <div>
                 <h3 className="font-bold text-2xl mb-2">Professional Badge System</h3>
                 <p className="text-sm text-muted-foreground">
@@ -330,17 +330,17 @@ const Profile = () => {
               <div className="space-y-4">
                 <h4 className="font-semibold text-lg">Career Metrics</h4>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center glass rounded-xl p-4">
+                  <div className="flex justify-between items-center glass rounded-lg p-3 border border-border/50">
                     <span className="text-sm text-muted-foreground">Badge Level</span>
                     <Badge className={`bg-gradient-to-r ${getBadgeColor(profile.badge_level)} border-0 text-white capitalize`}>
                       {profile.badge_level}
                     </Badge>
                   </div>
-                  <div className="flex justify-between items-center glass rounded-xl p-4">
+                  <div className="flex justify-between items-center glass rounded-lg p-3 border border-border/50">
                     <span className="text-sm text-muted-foreground">Network Reach</span>
                     <span className="text-sm font-semibold">{profile.follower_count + profile.following_count}</span>
                   </div>
-                  <div className="flex justify-between items-center glass rounded-xl p-4">
+                  <div className="flex justify-between items-center glass rounded-lg p-3 border border-border/50">
                     <span className="text-sm text-muted-foreground">Professional Score</span>
                     <span className="text-sm font-semibold text-primary">{getProfessionalBadge(profile.professional_title).score}/100</span>
                   </div>
