@@ -27,9 +27,10 @@ interface CommentsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   postId: string;
+  isReel?: boolean;
 }
 
-const CommentsDialog = ({ open, onOpenChange, postId }: CommentsDialogProps) => {
+const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: CommentsDialogProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
@@ -41,7 +42,21 @@ const CommentsDialog = ({ open, onOpenChange, postId }: CommentsDialogProps) => 
       fetchComments();
 
       // Set up realtime subscription
-      const channel = supabase
+      const reelChannel = isReel ? supabase
+        .channel(`reel-comments-${postId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'reel_comments',
+            filter: `reel_id=eq.${postId}`
+          },
+          () => fetchComments()
+        )
+        .subscribe() : null;
+
+      const postChannel = !isReel ? supabase
         .channel(`comments-${postId}`)
         .on(
           'postgres_changes',
@@ -53,10 +68,11 @@ const CommentsDialog = ({ open, onOpenChange, postId }: CommentsDialogProps) => 
           },
           () => fetchComments()
         )
-        .subscribe();
+        .subscribe() : null;
 
       return () => {
-        supabase.removeChannel(channel);
+        if (reelChannel) supabase.removeChannel(reelChannel);
+        if (postChannel) supabase.removeChannel(postChannel);
       };
     }
   }, [open, postId]);
@@ -67,16 +83,19 @@ const CommentsDialog = ({ open, onOpenChange, postId }: CommentsDialogProps) => 
   };
 
   const fetchComments = async () => {
+    const tableName = isReel ? "reel_comments" : "post_comments";
+    const columnName = isReel ? "reel_id" : "post_id";
+    
     const { data: commentsData } = await supabase
-      .from("post_comments")
+      .from(tableName as any)
       .select("*")
-      .eq("post_id", postId)
+      .eq(columnName, postId)
       .order("created_at", { ascending: false });
 
     if (commentsData) {
       // Fetch profiles for each comment
       const commentsWithProfiles = await Promise.all(
-        commentsData.map(async (comment) => {
+        commentsData.map(async (comment: any) => {
           const { data: profile } = await supabase
             .from("profiles")
             .select("username, avatar_url")
@@ -97,13 +116,15 @@ const CommentsDialog = ({ open, onOpenChange, postId }: CommentsDialogProps) => 
     if (!newComment.trim() || loading) return;
 
     setLoading(true);
+    const tableName = isReel ? "reel_comments" : "post_comments";
+    
+    const insertData = isReel 
+      ? { reel_id: postId, user_id: currentUserId, content: newComment.trim() }
+      : { post_id: postId, user_id: currentUserId, content: newComment.trim() };
+    
     const { error } = await supabase
-      .from("post_comments")
-      .insert({
-        post_id: postId,
-        user_id: currentUserId,
-        content: newComment.trim()
-      });
+      .from(tableName)
+      .insert(insertData as any);
 
     if (error) {
       toast.error("Failed to add comment");
@@ -115,8 +136,10 @@ const CommentsDialog = ({ open, onOpenChange, postId }: CommentsDialogProps) => 
   };
 
   const handleDeleteComment = async (commentId: string) => {
+    const tableName = isReel ? "reel_comments" : "post_comments";
+    
     const { error } = await supabase
-      .from("post_comments")
+      .from(tableName as any)
       .delete()
       .eq("id", commentId);
 

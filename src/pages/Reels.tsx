@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Heart, MessageCircle, Share2, Bookmark, MoreVertical, Music, Trash2, Edit } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import { toast } from "sonner";
+import CommentsDialog from "@/components/CommentsDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,9 +38,12 @@ const Reels = () => {
   const [showShare, setShowShare] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState("");
   const [selectedReelCaption, setSelectedReelCaption] = useState("");
+  const [likedReels, setLikedReels] = useState<Set<string>>(new Set());
+  const [showComments, setShowComments] = useState(false);
+  const [selectedReelForComments, setSelectedReelForComments] = useState("");
 
   useEffect(() => {
-    Promise.all([fetchCurrentUser(), fetchReels()]);
+    Promise.all([fetchCurrentUser(), fetchReels(), fetchLikedReels()]);
 
     let updateTimeout: NodeJS.Timeout;
     const debouncedFetch = () => {
@@ -99,6 +103,53 @@ const Reels = () => {
     }
   };
 
+  const fetchLikedReels = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("reel_likes")
+      .select("reel_id")
+      .eq("user_id", user.id);
+
+    if (data) {
+      setLikedReels(new Set(data.map(like => like.reel_id)));
+    }
+  };
+
+  const handleLikeReel = async (reelId: string) => {
+    if (!currentUser) {
+      toast.error("Please login to like reels");
+      return;
+    }
+
+    const isLiked = likedReels.has(reelId);
+
+    if (isLiked) {
+      const { error } = await supabase
+        .from("reel_likes")
+        .delete()
+        .eq("reel_id", reelId)
+        .eq("user_id", currentUser.id);
+
+      if (!error) {
+        setLikedReels(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(reelId);
+          return newSet;
+        });
+      }
+    } else {
+      const { error } = await supabase
+        .from("reel_likes")
+        .insert({ reel_id: reelId, user_id: currentUser.id });
+
+      if (!error) {
+        setLikedReels(prev => new Set(prev).add(reelId));
+      }
+    }
+  };
+
   const handleDeleteReel = async (reelId: string) => {
     try {
       const { error } = await supabase
@@ -150,14 +201,23 @@ const Reels = () => {
               {/* Right Side Actions */}
               <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-10">
                 <div className="flex flex-col items-center gap-1">
-                  <button className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform">
-                    <Heart className="w-5 h-5 text-white" />
+                  <button 
+                    onClick={() => handleLikeReel(reel.id)}
+                    className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform"
+                  >
+                    <Heart className={`w-5 h-5 ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
                   </button>
                   <span className="text-white text-xs font-semibold drop-shadow-lg">{reel.like_count || 0}</span>
                 </div>
 
                 <div className="flex flex-col items-center gap-1">
-                  <button className="w-11 h-11 rounded-full neon-green border border-primary/30 flex items-center justify-center hover:scale-110 transition-transform">
+                  <button 
+                    onClick={() => {
+                      setSelectedReelForComments(reel.id);
+                      setShowComments(true);
+                    }}
+                    className="w-11 h-11 rounded-full neon-green border border-primary/30 flex items-center justify-center hover:scale-110 transition-transform"
+                  >
                     <MessageCircle className="w-5 h-5 text-black" />
                   </button>
                   <span className="neon-green-text text-xs font-bold drop-shadow-lg">{reel.comment_count || 0}</span>
@@ -237,6 +297,13 @@ const Reels = () => {
         onOpenChange={setShowShare}
         postId={selectedReelId}
         postContent={selectedReelCaption}
+      />
+
+      <CommentsDialog
+        open={showComments}
+        onOpenChange={setShowComments}
+        postId={selectedReelForComments}
+        isReel={true}
       />
     </div>
   );
