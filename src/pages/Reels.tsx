@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Heart, MessageCircle, Share2, Bookmark, MoreVertical, Music, Trash2, Edit } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music, Trash2, Edit } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import { toast } from "sonner";
 import CommentsDialog from "@/components/CommentsDialog";
@@ -222,92 +222,84 @@ const Reels = () => {
               key={reel.id}
               className="h-screen snap-start relative flex items-center justify-center bg-black"
             >
-              {/* Video Preview - In production this would be actual video */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <Music className="w-20 h-20 text-white/50" />
-              </div>
+              {/* Video Player */}
+              <video
+                src={reel.video_url}
+                className="absolute inset-0 w-full h-full object-cover"
+                loop
+                playsInline
+                muted
+                autoPlay
+              />
 
-              {/* Right Side Actions */}
-              <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-10">
-                <div className="flex flex-col items-center gap-1">
+              {/* Bottom Action Bar */}
+              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent backdrop-blur-sm border-t border-white/10">
+                <div className="h-full flex items-center justify-around px-4">
                   <button 
                     onClick={() => handleLikeReel(reel.id)}
-                    className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform active:scale-95"
+                    className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
                   >
-                    <Heart className={`w-5 h-5 transition-all ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500 scale-110' : 'text-white'}`} />
+                    <Heart className={`w-7 h-7 transition-all ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+                    <span className="text-white text-xs font-semibold">{reel.like_count || 0}</span>
                   </button>
-                  <span className="text-white text-xs font-semibold drop-shadow-lg">{reel.like_count || 0}</span>
-                </div>
 
-                <div className="flex flex-col items-center gap-1">
                   <button 
                     onClick={() => {
                       setSelectedReelForComments(reel.id);
                       setShowComments(true);
                     }}
-                    className="w-11 h-11 rounded-full neon-green border border-primary/30 flex items-center justify-center hover:scale-110 transition-transform"
+                    className="flex flex-col items-center gap-1 hover:scale-110 transition-transform"
                   >
-                    <MessageCircle className="w-5 h-5 text-black" />
+                    <MessageCircle className="w-7 h-7 text-white" />
+                    <span className="text-white text-xs font-semibold">{reel.comment_count || 0}</span>
                   </button>
-                  <span className="neon-green-text text-xs font-bold drop-shadow-lg">{reel.comment_count || 0}</span>
-                </div>
 
-                <button 
-                  onClick={() => {
-                    setSelectedReelId(reel.id);
-                    setSelectedReelCaption(reel.caption || '');
-                    setSelectedReelVideo(reel.video_url);
-                    setShowShare(true);
-                  }}
-                  className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform"
-                >
-                  <Share2 className="w-5 h-5 text-white" />
-                </button>
-
-                <button className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform">
-                  <Bookmark className="w-5 h-5 text-white" />
-                </button>
-
-                {currentUser && reel.user_id === currentUser.id ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform">
-                        <MoreVertical className="w-5 h-5 text-white" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="glass">
-                      <DropdownMenuItem onClick={() => navigate(`/edit-reel/${reel.id}`)}>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleDeleteReel(reel.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <button className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform">
-                    <MoreVertical className="w-5 h-5 text-white" />
+                  <button 
+                    onClick={() => {
+                      setSelectedReelId(reel.id);
+                      setSelectedReelCaption(reel.caption || '');
+                      setSelectedReelVideo(reel.video_url);
+                      setShowShare(true);
+                    }}
+                    className="flex flex-col items-center gap-1 hover:scale-110 transition-transform group"
+                  >
+                    <div className="relative">
+                      <Send className="w-7 h-7 text-white drop-shadow-[0_4px_8px_rgba(255,255,255,0.3)] group-hover:drop-shadow-[0_6px_12px_rgba(255,255,255,0.5)] transition-all" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }} />
+                    </div>
+                    <span className="text-white text-xs font-semibold">Send</span>
                   </button>
-                )}
 
-                {/* Profile Avatar */}
-                <div className="relative">
-                  <div className="w-11 h-11 rounded-full border border-white overflow-hidden">
-                    <div className="w-full h-full bg-gradient-to-br from-primary to-accent" />
-                  </div>
-                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-primary border border-background flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">+</span>
-                  </div>
+                  <button className="flex flex-col items-center gap-1 hover:scale-110 transition-transform">
+                    <Bookmark className="w-7 h-7 text-white" />
+                  </button>
+
+                  {currentUser && reel.user_id === currentUser.id && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex flex-col items-center gap-1 hover:scale-110 transition-transform">
+                          <MoreVertical className="w-7 h-7 text-white" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="glass">
+                        <DropdownMenuItem onClick={() => navigate(`/edit-reel/${reel.id}`)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteReel(reel.id)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
               </div>
 
-              {/* Bottom Info */}
-              <div className="absolute bottom-24 left-4 right-20 z-10 space-y-3">
+              {/* User Info - Left Bottom */}
+              <div className="absolute bottom-20 left-4 right-20 z-10 space-y-2">
                 <div className="flex items-center gap-2">
                   <p className="text-white font-semibold">@{reel.profiles?.username}</p>
                 </div>

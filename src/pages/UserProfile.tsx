@@ -366,18 +366,28 @@ const UserProfile = () => {
                 <p>No reels yet</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-1">
                 {reels.map((reel) => (
-                  <div key={reel.id} className="glass rounded-xl overflow-hidden border border-border/50">
-                    <div className="aspect-[9/16] bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <p className="text-xs text-center px-4 text-muted-foreground">Video Preview</p>
-                      </div>
+                  <div 
+                    key={reel.id} 
+                    className="aspect-[9/16] relative overflow-hidden cursor-pointer group"
+                    onClick={() => navigate('/reels')}
+                  >
+                    <video
+                      src={reel.video_url}
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                      loop
+                      onMouseEnter={(e) => e.currentTarget.play()}
+                      onMouseLeave={(e) => e.currentTarget.pause()}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="absolute bottom-2 left-2 right-2 space-y-1">
                         {reel.caption && (
-                          <p className="text-xs text-white line-clamp-2 drop-shadow-lg">{reel.caption}</p>
+                          <p className="text-xs text-white line-clamp-2">{reel.caption}</p>
                         )}
-                        <div className="flex items-center gap-3 text-xs text-white drop-shadow-lg">
+                        <div className="flex items-center gap-3 text-xs text-white">
                           <span className="flex items-center gap-1">
                             <Heart className="w-3 h-3" /> {reel.like_count || 0}
                           </span>
