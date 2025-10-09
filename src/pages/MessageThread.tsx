@@ -782,6 +782,17 @@ const MessageThread = () => {
     }
   };
 
+  const handleBackgroundClick = (e: React.MouseEvent) => {
+    // Close all menus when clicking on empty space
+    if (e.target === e.currentTarget) {
+      setShowEmojiPicker(null);
+      setShowAttachMenu(false);
+      setReplyingTo(null);
+      setEditingMessage(null);
+      setNewMessage("");
+    }
+  };
+
   const quickEmojis = ["❤️", "😂", "😮", "😢", "🙏", "👍", "🔥"];
 
   const allEmojis = [
@@ -803,9 +814,9 @@ const MessageThread = () => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-background flex flex-col">
+    <div className="fixed inset-0 bg-background flex flex-col" onClick={handleBackgroundClick}>
       {/* Header */}
-      <div className="glass backdrop-blur-xl border-b border-primary/20 p-4 flex items-center gap-3 glow-primary">
+      <div className="glass backdrop-blur-xl border-b border-primary/20 p-4 flex items-center gap-3 glow-primary" onClick={(e) => e.stopPropagation()}>
         <Button
           variant="ghost"
           size="icon"
@@ -848,7 +859,7 @@ const MessageThread = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" onClick={(e) => e.stopPropagation()}>
         {messages.map((message) => {
           const isOwn = message.sender_id === currentUser?.id;
           const showAvatar = !isOwn;
@@ -1059,7 +1070,7 @@ const MessageThread = () => {
       </div>
 
       {/* Message Input */}
-      <div className="p-4 border-t glass backdrop-blur-xl border-primary/20">
+      <div className="p-4 border-t glass backdrop-blur-xl border-primary/20" onClick={(e) => e.stopPropagation()}>
         {replyingTo && (
           <div className="mb-2 glass backdrop-blur-lg rounded-lg p-2 flex items-center justify-between border border-primary/20">
             <div className="flex items-center gap-2 text-sm">
