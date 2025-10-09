@@ -556,7 +556,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_notification: {
+        Args: { p_content: string; p_type: string; p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       badge_level: "bronze" | "silver" | "gold" | "platinum"
