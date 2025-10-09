@@ -22,9 +22,14 @@ const CreatePost = () => {
       return;
     }
 
-    setSelectedImages([...selectedImages, ...files]);
-    
     files.forEach(file => {
+      if (file.size > 15 * 1024 * 1024) {
+        toast.error(`${file.name} is too large. Max size is 15MB`);
+        return;
+      }
+
+      setSelectedImages(prev => [...prev, file]);
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrls(prev => [...prev, reader.result as string]);
@@ -123,11 +128,15 @@ const CreatePost = () => {
               variant="outline"
               className="glass-hover flex-1"
               onClick={() => fileInputRef.current?.click()}
+              disabled={selectedImages.length >= 5}
             >
               <Image className="w-5 h-5 mr-2" />
-              Add Photo
+              {selectedImages.length >= 5 ? "Max 5 Images" : "Add Photo"}
             </Button>
           </div>
+          <p className="text-xs text-center text-muted-foreground">
+            📸 High-quality images supported • Max 15MB per image
+          </p>
 
           <Button
             onClick={handlePost}

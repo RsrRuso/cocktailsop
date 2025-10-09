@@ -24,10 +24,16 @@ const CreateReel = () => {
       return;
     }
 
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error("Video size should be less than 100MB");
+      return;
+    }
+
     setSelectedVideo(file);
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreviewUrl(reader.result as string);
+      toast.success("High-quality video loaded!");
     };
     reader.readAsDataURL(file);
   };
@@ -143,6 +149,9 @@ const CreateReel = () => {
               {loading ? "Creating..." : "Share Reel"}
             </Button>
           </div>
+          <p className="text-xs text-center text-muted-foreground mt-2">
+            🎥 High-quality video supported • Max 100MB
+          </p>
         </div>
       </div>
     </div>

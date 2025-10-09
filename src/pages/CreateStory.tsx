@@ -17,10 +17,17 @@ const CreateStory = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const maxSize = file.type.startsWith('video') ? 50 * 1024 * 1024 : 15 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error(`File too large. Max ${file.type.startsWith('video') ? '50' : '15'}MB`);
+      return;
+    }
+
     setSelectedMedia(file);
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreviewUrl(reader.result as string);
+      toast.success("High-quality media loaded!");
     };
     reader.readAsDataURL(file);
   };
@@ -137,6 +144,9 @@ const CreateStory = () => {
               {loading ? "Creating..." : "Share Story"}
             </Button>
           </div>
+          <p className="text-xs text-center text-muted-foreground mt-2">
+            📸 Images: 15MB max • 🎥 Videos: 50MB max • High quality preserved
+          </p>
         </div>
       </div>
     </div>

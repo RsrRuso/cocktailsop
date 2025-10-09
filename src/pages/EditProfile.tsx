@@ -9,12 +9,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Save, Camera } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
+import { AvatarCropper } from "@/components/AvatarCropper";
 
 const EditProfile = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>("");
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [tempAvatarUrl, setTempAvatarUrl] = useState<string>("");
+  const [showCropper, setShowCropper] = useState(false);
+  const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState({
     username: "",
@@ -54,17 +57,26 @@ const EditProfile = () => {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image size should be less than 5MB");
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("Image size should be less than 10MB");
         return;
       }
-      setAvatarFile(file);
+      
       const reader = new FileReader();
       reader.onloadend = () => {
-        setAvatarUrl(reader.result as string);
+        setTempAvatarUrl(reader.result as string);
+        setShowCropper(true);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleCropComplete = (blob: Blob) => {
+    setCroppedBlob(blob);
+    const url = URL.createObjectURL(blob);
+    setAvatarUrl(url);
+    setShowCropper(false);
+    toast.success("Avatar cropped! Click Save to update your profile.");
   };
 
   const handleSave = async () => {
@@ -74,45 +86,79 @@ const EditProfile = () => {
 
     let finalAvatarUrl = avatarUrl;
 
-    // Upload avatar if a new file was selected
-    if (avatarFile) {
-      const fileExt = avatarFile.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+    // Upload avatar if a new cropped image exists
+    if (croppedBlob) {
+      // Convert blob to base64 for storage (in production, use Supabase Storage)
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        finalAvatarUrl = reader.result as string;
 
-      // Note: This is a placeholder URL since storage bucket doesn't exist yet
-      // In production, you would create a storage bucket and upload the file
-      toast.info("Avatar upload feature requires storage bucket setup");
-    }
+        const updateData: any = {
+          username: profile.username,
+          full_name: profile.full_name,
+          bio: profile.bio,
+          avatar_url: finalAvatarUrl,
+        };
 
-    const updateData: any = {
-      username: profile.username,
-      full_name: profile.full_name,
-      bio: profile.bio,
-      avatar_url: finalAvatarUrl,
-    };
+        if (profile.professional_title) {
+          updateData.professional_title = profile.professional_title;
+        }
 
-    if (profile.professional_title) {
-      updateData.professional_title = profile.professional_title;
-    }
+        const { error } = await supabase
+          .from("profiles")
+          .update(updateData)
+          .eq("id", user.id);
 
-    const { error } = await supabase
-      .from("profiles")
-      .update(updateData)
-      .eq("id", user.id);
-
-    if (error) {
-      toast.error("Failed to update profile");
+        if (error) {
+          toast.error("Failed to update profile");
+        } else {
+          toast.success("Profile updated successfully!");
+          navigate("/profile");
+        }
+        setLoading(false);
+      };
+      reader.readAsDataURL(croppedBlob);
     } else {
-      toast.success("Profile updated successfully!");
-      navigate("/profile");
+      const updateData: any = {
+        username: profile.username,
+        full_name: profile.full_name,
+        bio: profile.bio,
+        avatar_url: finalAvatarUrl,
+      };
+
+      if (profile.professional_title) {
+        updateData.professional_title = profile.professional_title;
+      }
+
+      const { error } = await supabase
+        .from("profiles")
+        .update(updateData)
+        .eq("id", user.id);
+
+      if (error) {
+        toast.error("Failed to update profile");
+      } else {
+        toast.success("Profile updated successfully!");
+        navigate("/profile");
+      }
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
+
+      {showCropper && tempAvatarUrl && (
+        <AvatarCropper
+          imageUrl={tempAvatarUrl}
+          onCropComplete={handleCropComplete}
+          onCancel={() => {
+            setShowCropper(false);
+            setTempAvatarUrl("");
+          }}
+        />
+      )}
 
       <div className="px-4 py-6 space-y-6">
         <div className="flex items-center gap-4 mb-6">
@@ -152,7 +198,8 @@ const EditProfile = () => {
               />
             </div>
             <p className="text-xs text-muted-foreground text-center">
-              Click the camera icon to upload a high-quality avatar (max 5MB)
+              Click camera to upload high-quality avatar (max 10MB)<br/>
+              Image will be cropped to circular format
             </p>
           </div>
 
