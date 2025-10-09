@@ -74,6 +74,8 @@ const Home = () => {
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string>("");
   const [selectedPostContent, setSelectedPostContent] = useState<string>("");
+  const [selectedPostType, setSelectedPostType] = useState<'post' | 'reel'>('post');
+  const [selectedMediaUrls, setSelectedMediaUrls] = useState<string[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [likedReels, setLikedReels] = useState<Set<string>>(new Set());
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -622,6 +624,8 @@ const Home = () => {
                   onClick={() => {
                     setSelectedPostId(item.id);
                     setSelectedPostContent(item.type === 'post' ? item.content : item.caption);
+                    setSelectedPostType(item.type);
+                    setSelectedMediaUrls(item.media_urls || []);
                     setShareDialogOpen(true);
                   }}
                   className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"
@@ -640,6 +644,8 @@ const Home = () => {
         onOpenChange={setShareDialogOpen}
         postId={selectedPostId}
         postContent={selectedPostContent}
+        postType={selectedPostType}
+        mediaUrls={selectedMediaUrls}
       />
       
       <CommentsDialog

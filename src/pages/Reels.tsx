@@ -38,6 +38,7 @@ const Reels = () => {
   const [showShare, setShowShare] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState("");
   const [selectedReelCaption, setSelectedReelCaption] = useState("");
+  const [selectedReelVideo, setSelectedReelVideo] = useState("");
   const [likedReels, setLikedReels] = useState<Set<string>>(new Set());
   const [showComments, setShowComments] = useState(false);
   const [selectedReelForComments, setSelectedReelForComments] = useState("");
@@ -175,6 +176,10 @@ const Reels = () => {
   };
 
   const handleDeleteReel = async (reelId: string) => {
+    // Optimistic update - remove instantly
+    setReels(prev => prev.filter(r => r.id !== reelId));
+    toast.success("Reel deleted");
+
     try {
       const { error } = await supabase
         .from("reels")
@@ -182,11 +187,11 @@ const Reels = () => {
         .eq("id", reelId);
 
       if (error) throw error;
-      toast.success("Reel deleted successfully");
-      fetchReels();
     } catch (error) {
       console.error('Error deleting reel:', error);
       toast.error("Failed to delete reel");
+      // Refresh to restore if failed
+      fetchReels();
     }
   };
 
@@ -251,6 +256,7 @@ const Reels = () => {
                   onClick={() => {
                     setSelectedReelId(reel.id);
                     setSelectedReelCaption(reel.caption || '');
+                    setSelectedReelVideo(reel.video_url);
                     setShowShare(true);
                   }}
                   className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform"
@@ -321,6 +327,8 @@ const Reels = () => {
         onOpenChange={setShowShare}
         postId={selectedReelId}
         postContent={selectedReelCaption}
+        postType="reel"
+        mediaUrls={[selectedReelVideo]}
       />
 
       <CommentsDialog

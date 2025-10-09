@@ -16,9 +16,11 @@ interface ShareDialogProps {
   onOpenChange: (open: boolean) => void;
   postId: string;
   postContent: string;
+  postType?: 'post' | 'reel';
+  mediaUrls?: string[];
 }
 
-const ShareDialog = ({ open, onOpenChange, postId, postContent }: ShareDialogProps) => {
+const ShareDialog = ({ open, onOpenChange, postId, postContent, postType = 'post', mediaUrls = [] }: ShareDialogProps) => {
   const [copied, setCopied] = useState(false);
   const [showUserSelection, setShowUserSelection] = useState(false);
   const shareUrl = `${window.location.origin}/post/${postId}`;
@@ -169,6 +171,8 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent }: ShareDialogPro
         onOpenChange={setShowUserSelection}
         postContent={postContent}
         postId={postId}
+        postType={postType}
+        mediaUrls={mediaUrls}
       />
     </Dialog>
   );

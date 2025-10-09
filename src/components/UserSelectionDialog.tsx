@@ -25,9 +25,11 @@ interface UserSelectionDialogProps {
   onOpenChange: (open: boolean) => void;
   postContent: string;
   postId: string;
+  postType: 'post' | 'reel';
+  mediaUrls?: string[];
 }
 
-const UserSelectionDialog = ({ open, onOpenChange, postContent, postId }: UserSelectionDialogProps) => {
+const UserSelectionDialog = ({ open, onOpenChange, postContent, postId, postType, mediaUrls }: UserSelectionDialogProps) => {
   const navigate = useNavigate();
   const [users, setUsers] = useState<Profile[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,7 +56,7 @@ const UserSelectionDialog = ({ open, onOpenChange, postContent, postId }: UserSe
     }
   };
 
-  const handleSendMessage = async (recipientId: string) => {
+  const handleSendMessage = async (recipientId: string, postType: 'post' | 'reel', mediaUrls?: string[]) => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -90,22 +92,23 @@ const UserSelectionDialog = ({ open, onOpenChange, postContent, postId }: UserSe
       conversationId = newConv.id;
     }
 
-    // Send message with post link
-    const postUrl = `${window.location.origin}/post/${postId}`;
-    const messageContent = `Check out this post: ${postUrl}\n\n${postContent.slice(0, 100)}${postContent.length > 100 ? '...' : ''}`;
-
+    // Send message with actual content and media
+    const messageContent = postContent || `Shared a ${postType}`;
+    
     const { error } = await supabase
       .from("messages")
       .insert({
         conversation_id: conversationId,
         sender_id: user.id,
         content: messageContent,
+        media_url: mediaUrls?.[0] || null,
+        media_type: postType === 'reel' ? 'video' : 'image',
       });
 
     if (error) {
       toast.error("Failed to send message");
     } else {
-      toast.success("Post shared successfully!");
+      toast.success(`${postType === 'post' ? 'Post' : 'Reel'} shared successfully!`);
       onOpenChange(false);
       navigate(`/messages/${conversationId}`);
     }
@@ -159,7 +162,7 @@ const UserSelectionDialog = ({ open, onOpenChange, postContent, postId }: UserSe
                   </div>
                   <Button
                     size="sm"
-                    onClick={() => handleSendMessage(user.id)}
+                    onClick={() => handleSendMessage(user.id, postType, mediaUrls)}
                     disabled={loading}
                     className="glow-primary"
                   >
