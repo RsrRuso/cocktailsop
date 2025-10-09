@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye } from "lucide-react";
+import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -85,6 +85,8 @@ const Notifications = () => {
         return <UserPlus className="w-5 h-5 text-green-500" />;
       case 'profile_visit':
         return <Eye className="w-5 h-5 text-purple-500" />;
+      case 'sent':
+        return <Send className="w-5 h-5 text-cyan-500" />;
       default:
         return <Bell className="w-5 h-5 text-primary" />;
     }

@@ -134,6 +134,32 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
       toast.error(`Failed to add comment: ${error.message}`);
     } else {
       console.log('Comment added successfully:', data);
+      
+      // Get post/reel owner to send notification
+      const ownerTable = isReel ? 'reels' : 'posts';
+      const { data: itemData } = await supabase
+        .from(ownerTable)
+        .select('user_id')
+        .eq('id', postId)
+        .single();
+
+      // Get current user info for notification
+      const { data: userData } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', currentUserId)
+        .single();
+
+      // Create notification if commenter is not the owner
+      if (itemData && userData && itemData.user_id !== currentUserId) {
+        await supabase.from("notifications").insert({
+          user_id: itemData.user_id,
+          type: 'comment',
+          content: `${userData.username} commented on your ${isReel ? 'reel' : 'post'}`,
+          read: false
+        });
+      }
+      
       setNewComment("");
       toast.success("Comment added!");
       fetchComments();

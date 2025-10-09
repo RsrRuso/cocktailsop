@@ -108,6 +108,31 @@ const UserSelectionDialog = ({ open, onOpenChange, postContent, postId, postType
     if (error) {
       toast.error("Failed to send message");
     } else {
+      // Get sender info for notification
+      const { data: senderData } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', user.id)
+        .single();
+
+      // Get post/reel owner for notification
+      const ownerTable = postType === 'reel' ? 'reels' : 'posts';
+      const { data: itemData } = await supabase
+        .from(ownerTable)
+        .select('user_id')
+        .eq('id', postId)
+        .single();
+
+      // Create notification for the post/reel owner if sender is not the owner
+      if (senderData && itemData && itemData.user_id !== user.id) {
+        await supabase.from("notifications").insert({
+          user_id: itemData.user_id,
+          type: 'sent',
+          content: `${senderData.username} sent your ${postType} to someone`,
+          read: false
+        });
+      }
+
       toast.success(`${postType === 'post' ? 'Post' : 'Reel'} shared successfully!`);
       onOpenChange(false);
       navigate(`/messages/${conversationId}`);

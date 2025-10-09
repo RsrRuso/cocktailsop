@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Share2, MoreVertical, Trash2, Edit } from "lucide-react";
+import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -287,6 +287,7 @@ const Home = () => {
     }
 
     const isLiked = likedPosts.has(postId);
+    const post = posts.find(p => p.id === postId);
 
     // Optimistic update - instant feedback like Instagram
     if (isLiked) {
@@ -338,6 +339,14 @@ const Home = () => {
         setPosts(prev => prev.map(p => 
           p.id === postId ? { ...p, like_count: Math.max(0, p.like_count - 1) } : p
         ));
+      } else if (post && post.user_id !== currentUser.id) {
+        // Create notification for post owner
+        await supabase.from("notifications").insert({
+          user_id: post.user_id,
+          type: 'like',
+          content: `${currentUser.username} liked your post`,
+          read: false
+        });
       }
     }
   };
@@ -349,6 +358,7 @@ const Home = () => {
     }
 
     const isLiked = likedReels.has(reelId);
+    const reel = reels.find(r => r.id === reelId);
 
     // Optimistic update - instant feedback
     if (isLiked) {
@@ -397,6 +407,14 @@ const Home = () => {
         setReels(prev => prev.map(r => 
           r.id === reelId ? { ...r, like_count: Math.max(0, r.like_count - 1) } : r
         ));
+      } else if (reel && reel.user_id !== currentUser.id) {
+        // Create notification for reel owner
+        await supabase.from("notifications").insert({
+          user_id: reel.user_id,
+          type: 'like',
+          content: `${currentUser.username} liked your reel`,
+          read: false
+        });
       }
     }
   };
@@ -630,8 +648,8 @@ const Home = () => {
                   }}
                   className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"
                 >
-                  <Share2 className="w-5 h-5" />
-                  <span className="text-xs">Share</span>
+                  <Send className="w-5 h-5" />
+                  <span className="text-xs">Send</span>
                 </button>
               </div>
             </div>
