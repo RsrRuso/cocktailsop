@@ -510,31 +510,46 @@ const Home = () => {
 
       {/* Explore by Region */}
       <div className="px-4 py-4">
-        <div className="glass rounded-2xl p-4 space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold">Explore by Region</h2>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {regions.map((region) => (
-              <button
-                key={region.name}
-                className={`glass-hover rounded-2xl p-3 text-left bg-gradient-to-br ${region.gradient} relative overflow-hidden group transition-transform hover:scale-105`}
-              >
-                <div className="relative z-10">
-                  <div className="text-2xl mb-2">{region.flag}</div>
-                  <h3 className="text-sm font-bold text-white">{region.name}</h3>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="w-full glass rounded-2xl p-4 flex items-center justify-between hover:bg-accent/50 transition-colors group">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
-              </button>
-            ))}
-          </div>
-        </div>
+                <div className="text-left">
+                  <h2 className="text-lg font-bold">Explore by Region</h2>
+                  <p className="text-xs text-muted-foreground">Discover content worldwide</p>
+                </div>
+              </div>
+              <svg className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent 
+            className="w-[calc(100vw-2rem)] max-w-md mx-4 glass border border-border/50 shadow-2xl z-50 bg-background/95 backdrop-blur-xl"
+            align="center"
+          >
+            <div className="grid grid-cols-2 gap-2 p-2">
+              {regions.map((region) => (
+                <DropdownMenuItem
+                  key={region.name}
+                  className={`cursor-pointer rounded-xl p-4 bg-gradient-to-br ${region.gradient} relative overflow-hidden group transition-all hover:scale-105 focus:scale-105`}
+                  onClick={() => toast.info(`Exploring ${region.name}...`)}
+                >
+                  <div className="relative z-10 flex items-center gap-3">
+                    <span className="text-3xl">{region.flag}</span>
+                    <span className="text-sm font-bold text-white">{region.name}</span>
+                  </div>
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                </DropdownMenuItem>
+              ))}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Feed */}
