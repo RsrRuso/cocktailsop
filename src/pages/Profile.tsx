@@ -5,7 +5,8 @@ import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Settings } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { LogOut, Settings, Wine, Briefcase, ChefHat, Warehouse, Truck, Building2, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -61,6 +62,21 @@ const Profile = () => {
     return colors[level as keyof typeof colors] || colors.bronze;
   };
 
+  const getProfessionalBadge = (title: string | null) => {
+    if (!title) return { icon: Briefcase, gradient: "from-pink-600 to-orange-500", score: 0 };
+    
+    const badges: Record<string, { icon: any; gradient: string; score: number }> = {
+      mixology: { icon: Wine, gradient: "from-pink-600 to-orange-500", score: 94 },
+      operations: { icon: Warehouse, gradient: "from-pink-500 to-orange-600", score: 88 },
+      chef: { icon: ChefHat, gradient: "from-purple-600 to-pink-500", score: 92 },
+      logistics: { icon: Truck, gradient: "from-blue-600 to-purple-500", score: 85 },
+      management: { icon: Building2, gradient: "from-green-600 to-teal-500", score: 90 },
+      sommelier: { icon: Wine, gradient: "from-orange-600 to-amber-700", score: 96 },
+    };
+    
+    return badges[title] || { icon: Briefcase, gradient: "from-pink-600 to-orange-500", score: 75 };
+  };
+
   if (!profile) return null;
 
   return (
@@ -113,7 +129,10 @@ const Profile = () => {
             </div>
           </div>
 
-          <Button className="w-full glow-primary">
+          <Button 
+            className="w-full glow-primary"
+            onClick={() => toast.info("Edit profile feature coming soon!")}
+          >
             <Settings className="w-4 h-4 mr-2" />
             Edit Profile
           </Button>
@@ -139,19 +158,74 @@ const Profile = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="growth" className="mt-4">
-            <div className="glass rounded-2xl p-6 space-y-4">
-              <h3 className="font-semibold text-lg">Professional Growth</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Badge Level</span>
-                  <span className={`text-sm font-semibold capitalize bg-gradient-to-r ${getBadgeColor(profile.badge_level)} bg-clip-text text-transparent`}>
-                    {profile.badge_level}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Network Reach</span>
-                  <span className="text-sm font-semibold">{profile.follower_count + profile.following_count}</span>
+          <TabsContent value="growth" className="mt-4 space-y-4">
+            <div className="glass rounded-2xl p-6 space-y-6">
+              <div>
+                <h3 className="font-bold text-2xl mb-2">Professional Badge System</h3>
+                <p className="text-sm text-muted-foreground">
+                  Dynamic badges that evolve with your career, verified achievements, and professional growth.
+                </p>
+              </div>
+
+              {profile.professional_title && (() => {
+                const badge = getProfessionalBadge(profile.professional_title);
+                const BadgeIcon = badge.icon;
+                return (
+                  <div className="relative">
+                    <div className={`glass-hover rounded-3xl p-8 bg-gradient-to-br ${badge.gradient} relative overflow-hidden group cursor-pointer transition-all duration-300 hover:scale-105`}>
+                      <div className="absolute top-4 right-4 flex gap-2">
+                        {badge.score >= 90 && (
+                          <>
+                            <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center">
+                              <Star className="w-4 h-4 fill-yellow-900 text-yellow-900" />
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center">
+                              <Star className="w-4 h-4 fill-yellow-900 text-yellow-900" />
+                            </div>
+                          </>
+                        )}
+                        {badge.score >= 85 && badge.score < 90 && (
+                          <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center">
+                            <Star className="w-4 h-4 fill-yellow-900 text-yellow-900" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-col items-center">
+                        <div className="w-32 h-32 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4 shadow-2xl">
+                          <BadgeIcon className="w-16 h-16 text-white" strokeWidth={1.5} />
+                        </div>
+                        
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-lg">
+                          <span className="text-2xl font-bold text-white">{badge.score}</span>
+                        </div>
+                        
+                        <h4 className="text-2xl font-bold text-white mt-4 capitalize">
+                          {profile.professional_title.replace(/_/g, " ")}
+                        </h4>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="space-y-4">
+                <h4 className="font-semibold text-lg">Career Metrics</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center glass rounded-xl p-4">
+                    <span className="text-sm text-muted-foreground">Badge Level</span>
+                    <Badge className={`bg-gradient-to-r ${getBadgeColor(profile.badge_level)} border-0 text-white capitalize`}>
+                      {profile.badge_level}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center glass rounded-xl p-4">
+                    <span className="text-sm text-muted-foreground">Network Reach</span>
+                    <span className="text-sm font-semibold">{profile.follower_count + profile.following_count}</span>
+                  </div>
+                  <div className="flex justify-between items-center glass rounded-xl p-4">
+                    <span className="text-sm text-muted-foreground">Professional Score</span>
+                    <span className="text-sm font-semibold text-primary">{getProfessionalBadge(profile.professional_title).score}/100</span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -40,9 +40,9 @@ const BottomNav = () => {
         </button>
 
         <button
-          onClick={() => navigate("/profile")}
+          onClick={() => navigate("/thunder")}
           className={`flex flex-col items-center gap-1 transition-colors ${
-            isActive("/profile") ? "text-primary glow-primary" : "text-muted-foreground"
+            isActive("/thunder") ? "text-primary glow-primary" : "text-muted-foreground"
           }`}
         >
           <Video className="w-5 h-5" />
@@ -50,13 +50,13 @@ const BottomNav = () => {
         </button>
 
         <button
-          onClick={() => navigate("/tools")}
+          onClick={() => navigate("/profile")}
           className={`flex flex-col items-center gap-1 transition-colors ${
-            isActive("/tools") ? "text-primary glow-primary" : "text-muted-foreground"
+            isActive("/profile") ? "text-primary glow-primary" : "text-muted-foreground"
           }`}
         >
-          <BarChart3 className="w-5 h-5" />
-          <span className="text-xs">Ops</span>
+          <User className="w-5 h-5" />
+          <span className="text-xs">Profile</span>
         </button>
       </div>
     </div>
