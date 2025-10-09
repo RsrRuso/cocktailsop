@@ -23,6 +23,8 @@ interface Message {
   reply_to_id: string | null;
   edited: boolean;
   edited_at: string | null;
+  media_url?: string;
+  media_type?: 'image' | 'video' | 'voice' | 'document';
 }
 
 interface Profile {
@@ -543,6 +545,8 @@ const MessageThread = () => {
         sender_id: currentUser.id,
         content: type === 'image' ? '📷 Photo' : type === 'video' ? '🎥 Video' : `📎 ${file.name}`,
         delivered: false,
+        media_url: publicUrl,
+        media_type: type,
       };
 
       await supabase.from("messages").insert(messageData);
@@ -586,12 +590,19 @@ const MessageThread = () => {
 
         if (uploadError) throw uploadError;
 
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('stories')
+          .getPublicUrl(filePath);
+
         // Send voice message
         const messageData = {
           conversation_id: conversationId,
           sender_id: currentUser.id,
           content: '🎤 Voice message',
           delivered: false,
+          media_url: publicUrl,
+          media_type: 'voice' as const,
         };
 
         await supabase.from("messages").insert(messageData);
@@ -728,6 +739,44 @@ const MessageThread = () => {
                       <p className="truncate">{repliedMessage.content}</p>
                     </div>
                   )}
+                  
+                  {/* Media Display */}
+                  {message.media_url && message.media_type === 'image' && (
+                    <img 
+                      src={message.media_url} 
+                      alt="Shared image" 
+                      className="rounded-lg max-w-full h-auto mb-2 max-h-[300px] object-cover"
+                    />
+                  )}
+                  
+                  {message.media_url && message.media_type === 'video' && (
+                    <video 
+                      src={message.media_url} 
+                      controls 
+                      className="rounded-lg max-w-full h-auto mb-2 max-h-[300px]"
+                    />
+                  )}
+                  
+                  {message.media_url && message.media_type === 'voice' && (
+                    <audio 
+                      src={message.media_url} 
+                      controls 
+                      className="mb-2 w-full max-w-[250px]"
+                    />
+                  )}
+                  
+                  {message.media_url && message.media_type === 'document' && (
+                    <a 
+                      href={message.media_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 p-2 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors mb-2"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span className="text-sm">View Document</span>
+                    </a>
+                  )}
+                  
                   <p className="text-sm break-words">{message.content}</p>
                   {message.edited && (
                     <span className="text-xs opacity-50 italic ml-2">edited</span>
