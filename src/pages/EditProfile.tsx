@@ -10,6 +10,7 @@ import { ArrowLeft, Save, Camera } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { AvatarCropper } from "@/components/AvatarCropper";
+import { CoverPhotoCropper } from "@/components/CoverPhotoCropper";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -19,6 +20,12 @@ const EditProfile = () => {
   const [showCropper, setShowCropper] = useState(false);
   const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [coverUrl, setCoverUrl] = useState<string>("");
+  const [tempCoverUrl, setTempCoverUrl] = useState<string>("");
+  const [showCoverCropper, setShowCoverCropper] = useState(false);
+  const [croppedCoverBlob, setCroppedCoverBlob] = useState<Blob | null>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState({
     username: "",
     full_name: "",
@@ -51,6 +58,7 @@ const EditProfile = () => {
         professional_title: data.professional_title || "",
       });
       setAvatarUrl(data.avatar_url || "");
+      setCoverUrl(data.cover_url || "");
     }
   };
 
@@ -79,70 +87,96 @@ const EditProfile = () => {
     toast.success("Avatar cropped! Click Save to update your profile.");
   };
 
+  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 15 * 1024 * 1024) {
+        toast.error("Image size should be less than 15MB");
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTempCoverUrl(reader.result as string);
+        setShowCoverCropper(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCoverCropComplete = (blob: Blob) => {
+    setCroppedCoverBlob(blob);
+    const url = URL.createObjectURL(blob);
+    setCoverUrl(url);
+    setShowCoverCropper(false);
+    toast.success("Cover photo cropped! Click Save to update your profile.");
+  };
+
   const handleSave = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     let finalAvatarUrl = avatarUrl;
+    let finalCoverUrl = coverUrl;
 
-    // Upload avatar if a new cropped image exists
-    if (croppedBlob) {
-      // Convert blob to base64 for storage (in production, use Supabase Storage)
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        finalAvatarUrl = reader.result as string;
-
-        const updateData: any = {
-          username: profile.username,
-          full_name: profile.full_name,
-          bio: profile.bio,
-          avatar_url: finalAvatarUrl,
-        };
-
-        if (profile.professional_title) {
-          updateData.professional_title = profile.professional_title;
-        }
-
-        const { error } = await supabase
-          .from("profiles")
-          .update(updateData)
-          .eq("id", user.id);
-
-        if (error) {
-          toast.error("Failed to update profile");
-        } else {
-          toast.success("Profile updated successfully!");
-          navigate("/profile");
-        }
-        setLoading(false);
-      };
-      reader.readAsDataURL(croppedBlob);
-    } else {
-      const updateData: any = {
+    // Upload avatar and cover if new cropped images exist
+    const processImages = async () => {
+      const updates: any = {
         username: profile.username,
         full_name: profile.full_name,
         bio: profile.bio,
-        avatar_url: finalAvatarUrl,
       };
 
       if (profile.professional_title) {
-        updateData.professional_title = profile.professional_title;
+        updates.professional_title = profile.professional_title;
       }
 
-      const { error } = await supabase
-        .from("profiles")
-        .update(updateData)
-        .eq("id", user.id);
-
-      if (error) {
-        toast.error("Failed to update profile");
+      // Process avatar
+      if (croppedBlob) {
+        const avatarReader = new FileReader();
+        await new Promise((resolve) => {
+          avatarReader.onloadend = () => {
+            updates.avatar_url = avatarReader.result as string;
+            resolve(null);
+          };
+          avatarReader.readAsDataURL(croppedBlob);
+        });
       } else {
-        toast.success("Profile updated successfully!");
-        navigate("/profile");
+        updates.avatar_url = finalAvatarUrl;
       }
-      setLoading(false);
+
+      // Process cover
+      if (croppedCoverBlob) {
+        const coverReader = new FileReader();
+        await new Promise((resolve) => {
+          coverReader.onloadend = () => {
+            updates.cover_url = coverReader.result as string;
+            resolve(null);
+          };
+          coverReader.readAsDataURL(croppedCoverBlob);
+        });
+      } else {
+        updates.cover_url = finalCoverUrl;
+      }
+
+      return updates;
+    };
+
+    const updates = await processImages();
+
+    const { error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("id", user.id);
+
+    if (error) {
+      toast.error("Failed to update profile");
+    } else {
+      toast.success("Profile updated successfully!");
+      navigate("/profile");
     }
+    setLoading(false);
   };
 
   return (
@@ -156,6 +190,17 @@ const EditProfile = () => {
           onCancel={() => {
             setShowCropper(false);
             setTempAvatarUrl("");
+          }}
+        />
+      )}
+
+      {showCoverCropper && tempCoverUrl && (
+        <CoverPhotoCropper
+          imageUrl={tempCoverUrl}
+          onCropComplete={handleCoverCropComplete}
+          onCancel={() => {
+            setShowCoverCropper(false);
+            setTempCoverUrl("");
           }}
         />
       )}
@@ -174,6 +219,37 @@ const EditProfile = () => {
         </div>
 
         <div className="glass rounded-2xl p-6 space-y-6">
+          {/* Cover Photo Upload */}
+          <div className="space-y-4">
+            <label className="text-sm font-medium">Cover Photo</label>
+            <div className="relative w-full h-48 rounded-xl overflow-hidden bg-muted">
+              {coverUrl ? (
+                <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  No cover photo
+                </div>
+              )}
+              <button
+                onClick={() => coverInputRef.current?.click()}
+                className="absolute bottom-4 right-4 w-12 h-12 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center transition-all glow-primary"
+              >
+                <Camera className="w-6 h-6 text-white" />
+              </button>
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleCoverChange}
+                className="hidden"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Click camera to upload high-quality cover photo (max 15MB)<br/>
+              Image will be cropped to 16:9 format
+            </p>
+          </div>
+
           {/* Avatar Upload */}
           <div className="flex flex-col items-center gap-4">
             <div className="relative">

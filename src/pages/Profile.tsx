@@ -25,6 +25,7 @@ interface Profile {
 const Profile = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [coverUrl, setCoverUrl] = useState<string>("");
 
   useEffect(() => {
     fetchProfile();
@@ -43,7 +44,10 @@ const Profile = () => {
       .eq("id", user.id)
       .maybeSingle();
 
-    if (data) setProfile(data);
+    if (data) {
+      setProfile(data);
+      setCoverUrl(data.cover_url || "");
+    }
   };
 
   const handleSignOut = async () => {
@@ -86,8 +90,15 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
+      
+      {/* Cover Photo */}
+      {coverUrl && (
+        <div className="w-full h-48 overflow-hidden">
+          <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
+        </div>
+      )}
 
-      <div className="px-4 py-6 space-y-6">
+      <div className="px-4 space-y-6" style={{ marginTop: coverUrl ? '-3rem' : '1.5rem' }}>
         {/* Profile Header */}
         <div className="glass rounded-2xl p-6 space-y-6">
           <div className="flex items-start justify-between">
