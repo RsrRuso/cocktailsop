@@ -112,6 +112,8 @@ export type Database = {
           edited: boolean | null
           edited_at: string | null
           id: string
+          media_type: string | null
+          media_url: string | null
           reactions: Json | null
           read: boolean | null
           reply_to_id: string | null
@@ -125,6 +127,8 @@ export type Database = {
           edited?: boolean | null
           edited_at?: string | null
           id?: string
+          media_type?: string | null
+          media_url?: string | null
           reactions?: Json | null
           read?: boolean | null
           reply_to_id?: string | null
@@ -138,6 +142,8 @@ export type Database = {
           edited?: boolean | null
           edited_at?: string | null
           id?: string
+          media_type?: string | null
+          media_url?: string | null
           reactions?: Json | null
           read?: boolean | null
           reply_to_id?: string | null
