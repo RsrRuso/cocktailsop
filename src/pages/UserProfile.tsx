@@ -7,7 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Wine, Briefcase, Warehouse, Truck, Building2, Star } from "lucide-react";
+import { ArrowLeft, Wine, Briefcase, Warehouse, Truck, Building2, Star, Heart, MessageCircle } from "lucide-react";
+import FollowersDialog from "@/components/FollowersDialog";
+import FollowingDialog from "@/components/FollowingDialog";
 
 interface Profile {
   username: string;
@@ -22,16 +24,41 @@ interface Profile {
   post_count: number;
 }
 
+interface Post {
+  id: string;
+  content: string;
+  media_urls: string[];
+  like_count: number;
+  comment_count: number;
+  created_at: string;
+}
+
+interface Reel {
+  id: string;
+  video_url: string;
+  caption: string;
+  like_count: number;
+  comment_count: number;
+  view_count: number;
+  created_at: string;
+}
+
 const UserProfile = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [reels, setReels] = useState<Reel[]>([]);
+  const [showFollowers, setShowFollowers] = useState(false);
+  const [showFollowing, setShowFollowing] = useState(false);
 
   useEffect(() => {
     if (userId) {
       fetchProfile();
       checkFollowStatus();
+      fetchPosts();
+      fetchReels();
     }
   }, [userId]);
 
@@ -57,6 +84,30 @@ const UserProfile = () => {
       .maybeSingle();
 
     setIsFollowing(!!data);
+  };
+
+  const fetchPosts = async () => {
+    if (!userId) return;
+
+    const { data } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (data) setPosts(data);
+  };
+
+  const fetchReels = async () => {
+    if (!userId) return;
+
+    const { data } = await supabase
+      .from("reels")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (data) setReels(data);
   };
 
   const handleFollow = async () => {
@@ -233,17 +284,23 @@ const UserProfile = () => {
 
           <div className="flex items-center gap-8">
             <div className="text-center">
-              <p className="text-2xl font-bold">{profile.post_count}</p>
+              <p className="text-2xl font-bold">{posts.length}</p>
               <p className="text-sm text-muted-foreground">Posts</p>
             </div>
-            <div className="text-center">
+            <button 
+              className="text-center hover:opacity-70 transition-opacity"
+              onClick={() => setShowFollowers(true)}
+            >
               <p className="text-2xl font-bold">{profile.follower_count}</p>
               <p className="text-sm text-muted-foreground">Followers</p>
-            </div>
-            <div className="text-center">
+            </button>
+            <button 
+              className="text-center hover:opacity-70 transition-opacity"
+              onClick={() => setShowFollowing(true)}
+            >
               <p className="text-2xl font-bold">{profile.following_count}</p>
               <p className="text-sm text-muted-foreground">Following</p>
-            </div>
+            </button>
           </div>
 
           <div className="flex gap-3">
@@ -273,15 +330,67 @@ const UserProfile = () => {
           </TabsList>
 
           <TabsContent value="posts" className="mt-4">
-            <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
-              <p>No posts yet</p>
-            </div>
+            {posts.length === 0 ? (
+              <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
+                <p>No posts yet</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {posts.map((post) => (
+                  <div key={post.id} className="glass rounded-xl p-4 space-y-3 border border-border/50">
+                    {post.content && <p className="text-sm">{post.content}</p>}
+                    {post.media_urls && post.media_urls.length > 0 && (
+                      <div className={`grid gap-2 ${post.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                        {post.media_urls.map((url, idx) => (
+                          <img key={idx} src={url} alt="Post" className="w-full rounded-lg object-cover" />
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Heart className="w-4 h-4" /> {post.like_count || 0}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MessageCircle className="w-4 h-4" /> {post.comment_count || 0}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="reels" className="mt-4">
-            <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
-              <p>No reels yet</p>
-            </div>
+            {reels.length === 0 ? (
+              <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
+                <p>No reels yet</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {reels.map((reel) => (
+                  <div key={reel.id} className="glass rounded-xl overflow-hidden border border-border/50">
+                    <div className="aspect-[9/16] bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center relative">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <p className="text-xs text-center px-4 text-muted-foreground">Video Preview</p>
+                      </div>
+                      <div className="absolute bottom-2 left-2 right-2 space-y-1">
+                        {reel.caption && (
+                          <p className="text-xs text-white line-clamp-2 drop-shadow-lg">{reel.caption}</p>
+                        )}
+                        <div className="flex items-center gap-3 text-xs text-white drop-shadow-lg">
+                          <span className="flex items-center gap-1">
+                            <Heart className="w-3 h-3" /> {reel.like_count || 0}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageCircle className="w-3 h-3" /> {reel.comment_count || 0}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="growth" className="mt-4 space-y-4">
@@ -360,6 +469,18 @@ const UserProfile = () => {
       </div>
 
       <BottomNav />
+
+      <FollowersDialog
+        open={showFollowers}
+        onOpenChange={setShowFollowers}
+        userId={userId || ""}
+      />
+
+      <FollowingDialog
+        open={showFollowing}
+        onOpenChange={setShowFollowing}
+        userId={userId || ""}
+      />
     </div>
   );
 };
