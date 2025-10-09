@@ -336,7 +336,7 @@ const MessageThread = () => {
       }
 
       if (editingMessage) {
-        // Update existing message
+        // Update existing message (preserve media fields)
         const { error } = await supabase
           .from("messages")
           .update({
@@ -347,6 +347,12 @@ const MessageThread = () => {
           .eq("id", editingMessage.id);
 
         if (error) throw error;
+        
+        toast({
+          title: "Success",
+          description: "Message edited successfully",
+        });
+        
         setEditingMessage(null);
       } else {
         // Create new message
@@ -420,6 +426,20 @@ const MessageThread = () => {
   };
 
   const handleUnsend = async (messageId: string) => {
+    const message = messages.find((m) => m.id === messageId);
+    
+    // Delete media from storage if it exists
+    if (message?.media_url) {
+      try {
+        const urlParts = message.media_url.split('/');
+        const filePath = urlParts.slice(-2).join('/'); // Get user_id/filename
+        await supabase.storage.from('stories').remove([filePath]);
+      } catch (error) {
+        console.error("Error deleting media file:", error);
+      }
+    }
+    
+    // Delete message from database
     const { error } = await supabase.from("messages").delete().eq("id", messageId);
     if (error) {
       console.error("Error deleting message:", error);
@@ -428,10 +448,25 @@ const MessageThread = () => {
         description: "Failed to delete message",
         variant: "destructive",
       });
+    } else {
+      toast({
+        title: "Success",
+        description: "Message deleted successfully",
+      });
     }
   };
 
   const startEdit = (message: Message) => {
+    // Only allow editing if it's your own message
+    if (message.sender_id !== currentUser?.id) {
+      toast({
+        title: "Error",
+        description: "You can only edit your own messages",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setEditingMessage(message);
     setNewMessage(message.content);
     setReplyingTo(null);
@@ -824,18 +859,24 @@ const MessageThread = () => {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-6 w-6 glass"
+                          className="h-6 w-6 glass hover:bg-primary/20"
                           onClick={() => startEdit(message)}
+                          title="Edit message"
                         >
                           <Edit2 className="h-3 w-3" />
                         </Button>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-6 w-6 glass"
-                          onClick={() => handleUnsend(message.id)}
+                          className="h-6 w-6 glass hover:bg-destructive/20"
+                          onClick={() => {
+                            if (confirm('Are you sure you want to delete this message?')) {
+                              handleUnsend(message.id);
+                            }
+                          }}
+                          title="Delete message"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
                       </>
                     )}
