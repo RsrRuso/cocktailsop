@@ -122,15 +122,21 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
       ? { reel_id: postId, user_id: currentUserId, content: newComment.trim() }
       : { post_id: postId, user_id: currentUserId, content: newComment.trim() };
     
-    const { error } = await supabase
+    console.log('Inserting comment:', { tableName, insertData });
+    
+    const { data, error } = await supabase
       .from(tableName)
-      .insert(insertData as any);
+      .insert(insertData as any)
+      .select();
 
     if (error) {
-      toast.error("Failed to add comment");
+      console.error('Failed to add comment:', error);
+      toast.error(`Failed to add comment: ${error.message}`);
     } else {
+      console.log('Comment added successfully:', data);
       setNewComment("");
       toast.success("Comment added!");
+      fetchComments();
     }
     setLoading(false);
   };
@@ -138,15 +144,20 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
   const handleDeleteComment = async (commentId: string) => {
     const tableName = isReel ? "reel_comments" : "post_comments";
     
+    console.log('Deleting comment:', { tableName, commentId });
+    
     const { error } = await supabase
       .from(tableName as any)
       .delete()
       .eq("id", commentId);
 
     if (error) {
-      toast.error("Failed to delete comment");
+      console.error('Failed to delete comment:', error);
+      toast.error(`Failed to delete comment: ${error.message}`);
     } else {
+      console.log('Comment deleted successfully');
       toast.success("Comment deleted");
+      fetchComments();
     }
   };
 

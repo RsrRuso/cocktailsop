@@ -88,7 +88,8 @@ const Home = () => {
         fetchStories(),
         fetchPosts(),
         fetchReels(),
-        fetchLikedPosts()
+        fetchLikedPosts(),
+        fetchLikedReels()
       ]);
       
       if (isMounted) {
@@ -261,6 +262,20 @@ const Home = () => {
     }
   };
 
+  const fetchLikedReels = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("reel_likes")
+      .select("reel_id")
+      .eq("user_id", user.id);
+
+    if (data) {
+      setLikedReels(new Set(data.map(like => like.reel_id)));
+    }
+  };
+
   const handleLikePost = async (postId: string) => {
     if (!currentUser) {
       toast.error("Please login to like posts");
@@ -310,18 +325,29 @@ const Home = () => {
     }
 
     const isLiked = likedReels.has(reelId);
-    // Note: Reels would need their own likes table (reel_likes) or we can adapt post_likes
-    // For now, using a simple approach with the like_count field
-    toast.info(isLiked ? "Unliked reel" : "Liked reel");
-    
+
     if (isLiked) {
-      setLikedReels(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(reelId);
-        return newSet;
-      });
+      const { error } = await supabase
+        .from("reel_likes")
+        .delete()
+        .eq("reel_id", reelId)
+        .eq("user_id", currentUser.id);
+
+      if (!error) {
+        setLikedReels(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(reelId);
+          return newSet;
+        });
+      }
     } else {
-      setLikedReels(prev => new Set(prev).add(reelId));
+      const { error } = await supabase
+        .from("reel_likes")
+        .insert({ reel_id: reelId, user_id: currentUser.id });
+
+      if (!error) {
+        setLikedReels(prev => new Set(prev).add(reelId));
+      }
     }
   };
 
