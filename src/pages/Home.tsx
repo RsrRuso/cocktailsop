@@ -12,6 +12,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ShareDialog from "@/components/ShareDialog";
+import CommentsDialog from "@/components/CommentsDialog";
 
 interface Story {
   id: string;
@@ -46,11 +48,17 @@ const Home = () => {
   const [stories, setStories] = useState<Story[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string>("");
+  const [selectedPostContent, setSelectedPostContent] = useState<string>("");
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchCurrentUser();
     fetchStories();
     fetchPosts();
+    fetchLikedPosts();
 
     // Set up realtime subscriptions
     const storiesChannel = supabase
@@ -79,9 +87,26 @@ const Home = () => {
       )
       .subscribe();
 
+    const likesChannel = supabase
+      .channel('home-likes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'post_likes'
+        },
+        () => {
+          fetchPosts();
+          fetchLikedPosts();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(storiesChannel);
       supabase.removeChannel(postsChannel);
+      supabase.removeChannel(likesChannel);
     };
   }, []);
 
@@ -117,6 +142,62 @@ const Home = () => {
       .limit(20);
 
     if (data) setPosts(data);
+  };
+
+  const fetchLikedPosts = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("post_likes")
+      .select("post_id")
+      .eq("user_id", user.id);
+
+    if (data) {
+      setLikedPosts(new Set(data.map(like => like.post_id)));
+    }
+  };
+
+  const handleLikePost = async (postId: string) => {
+    if (!currentUser) {
+      toast.error("Please login to like posts");
+      return;
+    }
+
+    const isLiked = likedPosts.has(postId);
+
+    if (isLiked) {
+      // Unlike
+      const { error } = await supabase
+        .from("post_likes")
+        .delete()
+        .eq("post_id", postId)
+        .eq("user_id", currentUser.id);
+
+      if (error) {
+        toast.error("Failed to unlike post");
+      } else {
+        setLikedPosts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(postId);
+          return newSet;
+        });
+      }
+    } else {
+      // Like
+      const { error } = await supabase
+        .from("post_likes")
+        .insert({
+          post_id: postId,
+          user_id: currentUser.id
+        });
+
+      if (error) {
+        toast.error("Failed to like post");
+      } else {
+        setLikedPosts(prev => new Set(prev).add(postId));
+      }
+    }
   };
 
   const getBadgeColor = (level: string) => {
@@ -283,15 +364,33 @@ const Home = () => {
 
               {/* Post Actions */}
               <div className="flex items-center gap-6 pt-2">
-                <button className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-                  <Heart className="w-5 h-5" />
+                <button 
+                  onClick={() => handleLikePost(post.id)}
+                  className={`flex items-center gap-2 transition-all hover:scale-110 ${
+                    likedPosts.has(post.id) ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'
+                  }`}
+                >
+                  <Heart className={`w-5 h-5 ${likedPosts.has(post.id) ? 'fill-current' : ''}`} />
                   <span className="text-sm">{post.like_count}</span>
                 </button>
-                <button className="flex items-center gap-2 neon-green-text hover:scale-110 transition-all">
+                <button 
+                  onClick={() => {
+                    setSelectedPostId(post.id);
+                    setCommentsDialogOpen(true);
+                  }}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"
+                >
                   <MessageCircle className="w-5 h-5" />
                   <span className="text-sm font-bold">{post.comment_count}</span>
                 </button>
-                <button className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                <button 
+                  onClick={() => {
+                    setSelectedPostId(post.id);
+                    setSelectedPostContent(post.content);
+                    setShareDialogOpen(true);
+                  }}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"
+                >
                   <Send className="w-5 h-5" />
                 </button>
               </div>
@@ -299,6 +398,19 @@ const Home = () => {
           ))}
         </div>
       )}
+
+      <ShareDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        postId={selectedPostId}
+        postContent={selectedPostContent}
+      />
+      
+      <CommentsDialog
+        open={commentsDialogOpen}
+        onOpenChange={setCommentsDialogOpen}
+        postId={selectedPostId}
+      />
 
       <BottomNav />
     </div>

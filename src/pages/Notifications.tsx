@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Bell, CheckCheck } from "lucide-react";
+import { toast } from "sonner";
 
 interface Notification {
   id: string;
@@ -33,12 +35,43 @@ const Notifications = () => {
     if (data) setNotifications(data);
   };
 
+  const handleMarkAllAsRead = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", user.id)
+      .eq("read", false);
+
+    if (error) {
+      toast.error("Failed to mark all as read");
+    } else {
+      toast.success("All notifications marked as read");
+      fetchNotifications();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
 
       <div className="px-4 py-6 space-y-4">
-        <h2 className="text-2xl font-bold">Notifications</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Notifications</h2>
+          {notifications.some(n => !n.read) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleMarkAllAsRead}
+              className="glass-hover"
+            >
+              <CheckCheck className="w-4 h-4 mr-2" />
+              Mark all read
+            </Button>
+          )}
+        </div>
 
         {notifications.length === 0 ? (
           <div className="glass rounded-2xl p-8 text-center space-y-4">

@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageCircle, Send, Search } from "lucide-react";
+import { MessageCircle, Send, Search, CheckCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 interface Profile {
   id: string;
@@ -77,6 +79,24 @@ const Messages = () => {
     }
   };
 
+  const handleMarkAllAsRead = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("messages")
+      .update({ read: true })
+      .eq("read", false)
+      .neq("sender_id", user.id);
+
+    if (error) {
+      toast.error("Failed to mark all as read");
+    } else {
+      toast.success("All messages marked as read");
+      fetchConversations();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
@@ -85,6 +105,17 @@ const Messages = () => {
         {/* Header */}
         <div className="flex items-center justify-between py-4">
           <h1 className="text-2xl font-bold">Messages</h1>
+          {conversations.some(c => c.unreadCount && c.unreadCount > 0) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleMarkAllAsRead}
+              className="glass-hover"
+            >
+              <CheckCheck className="w-4 h-4 mr-2" />
+              Mark all read
+            </Button>
+          )}
         </div>
 
         {/* Search */}
