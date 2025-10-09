@@ -213,24 +213,37 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          parent_comment_id: string | null
           post_id: string
+          reactions: Json | null
           user_id: string
         }
         Insert: {
           content: string
           created_at?: string | null
           id?: string
+          parent_comment_id?: string | null
           post_id: string
+          reactions?: Json | null
           user_id: string
         }
         Update: {
           content?: string
           created_at?: string | null
           id?: string
+          parent_comment_id?: string | null
           post_id?: string
+          reactions?: Json | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "post_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "post_comments_post_id_fkey"
             columns: ["post_id"]
@@ -404,6 +417,8 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          parent_comment_id: string | null
+          reactions: Json | null
           reel_id: string
           user_id: string
         }
@@ -411,6 +426,8 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
+          parent_comment_id?: string | null
+          reactions?: Json | null
           reel_id: string
           user_id: string
         }
@@ -418,10 +435,19 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
+          parent_comment_id?: string | null
+          reactions?: Json | null
           reel_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "reel_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "reel_comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reel_comments_reel_id_fkey"
             columns: ["reel_id"]
