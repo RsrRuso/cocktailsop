@@ -54,6 +54,8 @@ const MessageThread = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [customEmojiInput, setCustomEmojiInput] = useState("");
   const [longPressMessageId, setLongPressMessageId] = useState<string | null>(null);
+  const [showSwipeMenu, setShowSwipeMenu] = useState<string | null>(null);
+  const [showExpandedEmojis, setShowExpandedEmojis] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const channelRef = useRef<any>(null);
@@ -62,7 +64,14 @@ const MessageThread = () => {
 
   useEffect(() => {
     initializeChat();
+    requestNotificationPermission();
   }, [conversationId]);
+
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+  };
 
   useEffect(() => {
     if (!conversationId || !currentUser) return;
@@ -144,10 +153,21 @@ const MessageThread = () => {
               .eq('id', newMsg.id)
               .then(() => {});
 
-            // Play notification sound
+            // Play loud notification sound
             const receivedSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZUA0PVKzn7K5fGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBQ==');
-            receivedSound.volume = 0.5;
+            receivedSound.volume = 1.0; // Maximum volume
             receivedSound.play().catch(() => {});
+
+            // Send push notification
+            if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+              new Notification('New message from ' + otherUser?.full_name, {
+                body: newMsg.content,
+                icon: otherUser?.avatar_url || '/favicon.ico',
+                badge: '/favicon.ico',
+                tag: 'message-' + newMsg.id,
+                requireInteraction: false,
+              });
+            }
 
             markAsRead(newMsg.id);
           }
@@ -471,9 +491,9 @@ const MessageThread = () => {
       clearTimeout(longPressTimerRef.current);
     }
 
-    // Swipe left to reply (right to left swipe)
+    // Swipe left to show menu (right to left swipe)
     if (deltaX < -50 && Math.abs(deltaY) < 30 && deltaTime < 300) {
-      setReplyingTo(message);
+      setShowSwipeMenu(message.id);
       if (navigator.vibrate) {
         navigator.vibrate(30);
       }
@@ -643,28 +663,88 @@ const MessageThread = () => {
 
                   {/* Emoji Picker */}
                   {showEmojiPicker === message.id && (
-                    <div className="absolute bottom-full mb-2 glass backdrop-blur-xl rounded-2xl p-3 z-10 border border-primary/20 glow-primary shadow-2xl">
-                      <div className="flex gap-2 items-center mb-2">
-                        {["🔥", "❤️", "👍", "😂", "😮", "😢"].map((emoji) => (
-                          <button
-                            key={emoji}
-                            onClick={() => handleReaction(message.id, emoji)}
-                            className="hover:scale-125 transition-transform text-2xl w-10 h-10 flex items-center justify-center rounded-lg hover:bg-primary/10"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                        <div className="w-px h-8 bg-border mx-1"></div>
+                    <div className="absolute bottom-full mb-2 glass backdrop-blur-xl rounded-2xl p-4 z-20 border border-primary/20 glow-primary shadow-2xl max-w-xs">
+                      <div className="flex flex-col gap-3">
+                        {/* Quick reactions */}
+                        <div className="flex gap-2 items-center flex-wrap">
+                          {["🔥", "❤️", "👍", "😂", "😮", "😢", "🎉", "👏"].map((emoji) => (
+                            <button
+                              key={emoji}
+                              onClick={() => handleReaction(message.id, emoji)}
+                              className="hover:scale-125 transition-transform text-2xl w-10 h-10 flex items-center justify-center rounded-lg hover:bg-primary/10"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        {/* Expandable emoji grid */}
+                        {showExpandedEmojis && (
+                          <div className="grid grid-cols-6 gap-2 pt-2 border-t border-border/30 max-h-48 overflow-y-auto">
+                            {["😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🤭", "🤫", "🤥", "😶", "😐", "😑", "😬", "🙄", "😯", "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "💀", "☠️", "👻", "💩", "🤡", "👽", "🤖", "🎃", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "💋", "👋", "🤚", "🖐", "✋", "🖖", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "👇", "☝️", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "💪", "🦾", "🦿", "🦵", "🦶", "👂", "🦻", "👃", "🧠", "🫀", "🫁", "🦷", "🦴", "👀", "👁", "👅", "👄"].map((emoji) => (
+                              <button
+                                key={emoji}
+                                onClick={() => handleReaction(message.id, emoji)}
+                                className="hover:scale-125 transition-transform text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary/10"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Toggle button */}
                         <button
-                          onClick={() => {
-                            const input = prompt("Enter any emoji:");
-                            if (input) handleReaction(message.id, input);
-                          }}
-                          className="w-10 h-10 flex items-center justify-center rounded-lg glass hover:bg-primary/10 transition-all hover:scale-110"
-                          title="Add custom emoji"
+                          onClick={() => setShowExpandedEmojis(!showExpandedEmojis)}
+                          className="w-full py-2 glass rounded-lg hover:bg-primary/10 transition-all text-sm font-medium flex items-center justify-center gap-2"
                         >
-                          <Plus className="w-5 h-5" />
+                          <Plus className="w-4 h-4" />
+                          <span>{showExpandedEmojis ? 'Show Less' : 'More Emojis'}</span>
                         </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Swipe Menu */}
+                  {showSwipeMenu === message.id && (
+                    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center" onClick={() => setShowSwipeMenu(null)}>
+                      <div className="glass backdrop-blur-xl rounded-2xl p-6 border border-primary/20 glow-primary shadow-2xl m-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex flex-col gap-3 min-w-[200px]">
+                          <button
+                            onClick={() => {
+                              setReplyingTo(message);
+                              setShowSwipeMenu(null);
+                            }}
+                            className="flex items-center gap-3 p-3 rounded-lg glass hover:bg-primary/10 transition-all text-left"
+                          >
+                            <Reply className="w-5 h-5" />
+                            <span>Reply</span>
+                          </button>
+                          {isOwn && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  startEdit(message);
+                                  setShowSwipeMenu(null);
+                                }}
+                                className="flex items-center gap-3 p-3 rounded-lg glass hover:bg-primary/10 transition-all text-left"
+                              >
+                                <Edit2 className="w-5 h-5" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleUnsend(message.id);
+                                  setShowSwipeMenu(null);
+                                }}
+                                className="flex items-center gap-3 p-3 rounded-lg glass hover:bg-destructive/10 text-destructive transition-all text-left"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                                <span>Delete</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
