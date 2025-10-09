@@ -76,16 +76,41 @@ const Profile = () => {
   };
 
   const handleDeleteStory = async (storyId: string) => {
-    const { error } = await supabase
-      .from("stories")
-      .delete()
-      .eq("id", storyId);
+    try {
+      // Get the story first to delete media from storage
+      const { data: story } = await supabase
+        .from("stories")
+        .select("media_urls")
+        .eq("id", storyId)
+        .single();
 
-    if (error) {
-      toast.error("Failed to delete story");
-    } else {
+      // Delete from database
+      const { error } = await supabase
+        .from("stories")
+        .delete()
+        .eq("id", storyId);
+
+      if (error) throw error;
+
+      // Delete media files from storage
+      if (story?.media_urls) {
+        const filePaths = story.media_urls.map((url: string) => {
+          const urlParts = url.split('/stories/');
+          return urlParts[1];
+        }).filter(Boolean);
+
+        if (filePaths.length > 0) {
+          await supabase.storage
+            .from('stories')
+            .remove(filePaths);
+        }
+      }
+
       toast.success("Story deleted");
       fetchStories();
+    } catch (error) {
+      console.error('Error deleting story:', error);
+      toast.error("Failed to delete story");
     }
   };
 

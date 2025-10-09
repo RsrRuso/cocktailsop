@@ -19,6 +19,7 @@ const CreateStory = () => {
 
     const validFiles: File[] = [];
     const newPreviewUrls: string[] = [];
+    let processedCount = 0;
 
     files.forEach((file) => {
       const maxSize = file.type.startsWith('video') ? 50 * 1024 * 1024 : 15 * 1024 * 1024;
@@ -31,15 +32,19 @@ const CreateStory = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         newPreviewUrls.push(reader.result as string);
-        if (newPreviewUrls.length === validFiles.length) {
-          setPreviewUrls([...previewUrls, ...newPreviewUrls]);
+        processedCount++;
+        
+        if (processedCount === validFiles.length) {
+          setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+          setSelectedMedia(prev => [...prev, ...validFiles]);
         }
       };
       reader.readAsDataURL(file);
     });
 
-    setSelectedMedia([...selectedMedia, ...validFiles]);
-    toast.success(`${validFiles.length} media file(s) added!`);
+    if (validFiles.length > 0) {
+      toast.success(`${validFiles.length} media file(s) added!`);
+    }
   };
 
   const removeMedia = (index: number) => {
@@ -48,7 +53,7 @@ const CreateStory = () => {
   };
 
   const handleCreateStory = async () => {
-    if (previewUrls.length === 0) {
+    if (selectedMedia.length === 0) {
       toast.error("Please select media for your story");
       return;
     }
@@ -60,25 +65,53 @@ const CreateStory = () => {
       return;
     }
 
-    const mediaTypes = selectedMedia.map(file => 
-      file.type.startsWith('video') ? 'video' : 'image'
-    );
+    try {
+      // Upload files to storage
+      const uploadedUrls: string[] = [];
+      const mediaTypes: string[] = [];
 
-    const { error } = await supabase
-      .from("stories")
-      .insert({
-        user_id: user.id,
-        media_urls: previewUrls,
-        media_types: mediaTypes,
-      });
+      for (const file of selectedMedia) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('stories')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
-    if (error) {
-      toast.error("Failed to create story");
-    } else {
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('stories')
+          .getPublicUrl(fileName);
+
+        uploadedUrls.push(publicUrl);
+        mediaTypes.push(file.type.startsWith('video') ? 'video' : 'image');
+      }
+
+      // Create story with uploaded URLs
+      const { error } = await supabase
+        .from("stories")
+        .insert({
+          user_id: user.id,
+          media_urls: uploadedUrls,
+          media_types: mediaTypes,
+        });
+
+      if (error) throw error;
+
       toast.success("Story added successfully!");
       navigate("/home");
+    } catch (error) {
+      console.error('Error creating story:', error);
+      toast.error("Failed to create story");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

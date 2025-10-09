@@ -25,10 +25,52 @@ const StoryViewer = () => {
   const [loading, setLoading] = useState(true);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchStories();
   }, [userId]);
+
+  useEffect(() => {
+    // Auto-advance for images after 5 seconds
+    const currentStory = stories[currentStoryIndex];
+    if (!currentStory) return;
+
+    const currentMediaType = currentStory.media_types?.[currentMediaIndex] || 'image';
+    
+    if (currentMediaType.startsWith('image')) {
+      imageTimerRef.current = setTimeout(() => {
+        goToNextMedia();
+      }, 5000);
+    }
+
+    return () => {
+      if (imageTimerRef.current) {
+        clearTimeout(imageTimerRef.current);
+      }
+    };
+  }, [currentStoryIndex, currentMediaIndex, stories]);
+
+  useEffect(() => {
+    // Preload next media
+    const currentStory = stories[currentStoryIndex];
+    if (!currentStory) return;
+
+    const nextMediaIndex = currentMediaIndex + 1;
+    if (nextMediaIndex < currentStory.media_urls.length) {
+      const nextUrl = currentStory.media_urls[nextMediaIndex];
+      const nextType = currentStory.media_types?.[nextMediaIndex];
+      
+      if (nextType?.startsWith('image')) {
+        const img = new Image();
+        img.src = nextUrl;
+      } else if (nextType?.startsWith('video')) {
+        const video = document.createElement('video');
+        video.src = nextUrl;
+        video.preload = 'auto';
+      }
+    }
+  }, [currentStoryIndex, currentMediaIndex, stories]);
 
   const fetchStories = async () => {
     const { data, error } = await supabase
@@ -71,6 +113,10 @@ const StoryViewer = () => {
   };
 
   const goToNextMedia = () => {
+    if (imageTimerRef.current) {
+      clearTimeout(imageTimerRef.current);
+    }
+
     const currentStory = stories[currentStoryIndex];
     if (currentMediaIndex < currentStory.media_urls.length - 1) {
       setCurrentMediaIndex(currentMediaIndex + 1);
@@ -83,6 +129,10 @@ const StoryViewer = () => {
   };
 
   const goToPreviousMedia = () => {
+    if (imageTimerRef.current) {
+      clearTimeout(imageTimerRef.current);
+    }
+
     if (currentMediaIndex > 0) {
       setCurrentMediaIndex(currentMediaIndex - 1);
     } else if (currentStoryIndex > 0) {
@@ -158,13 +208,21 @@ const StoryViewer = () => {
       <div className="w-full h-full flex items-center justify-center">
         {currentMediaType.startsWith("video") ? (
           <video
+            key={currentMediaUrl}
             src={currentMediaUrl}
             className="max-w-full max-h-full object-contain"
             autoPlay
+            playsInline
             onEnded={goToNextMedia}
           />
         ) : (
-          <img src={currentMediaUrl} alt="Story" className="max-w-full max-h-full object-contain" />
+          <img 
+            key={currentMediaUrl}
+            src={currentMediaUrl} 
+            alt="Story" 
+            className="max-w-full max-h-full object-contain" 
+            loading="eager"
+          />
         )}
       </div>
 
