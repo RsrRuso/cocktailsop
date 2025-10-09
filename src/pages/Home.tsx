@@ -43,21 +43,45 @@ interface Post {
   };
 }
 
+interface Reel {
+  id: string;
+  user_id: string;
+  video_url: string;
+  caption: string;
+  like_count: number;
+  comment_count: number;
+  view_count: number;
+  created_at: string;
+  profiles: {
+    username: string;
+    full_name: string;
+    avatar_url: string | null;
+    professional_title: string | null;
+    badge_level: string;
+  };
+}
+
+type FeedItem = (Post & { type: 'post' }) | (Reel & { type: 'reel'; content: string; media_urls: string[] });
+
 const Home = () => {
   const navigate = useNavigate();
   const [stories, setStories] = useState<Story[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [reels, setReels] = useState<Reel[]>([]);
+  const [feed, setFeed] = useState<FeedItem[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string>("");
   const [selectedPostContent, setSelectedPostContent] = useState<string>("");
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [likedReels, setLikedReels] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchCurrentUser();
     fetchStories();
     fetchPosts();
+    fetchReels();
     fetchLikedPosts();
 
     // Set up realtime subscriptions
@@ -87,6 +111,19 @@ const Home = () => {
       )
       .subscribe();
 
+    const reelsChannel = supabase
+      .channel('home-reels')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reels'
+        },
+        () => fetchReels()
+      )
+      .subscribe();
+
     const likesChannel = supabase
       .channel('home-likes')
       .on(
@@ -106,9 +143,20 @@ const Home = () => {
     return () => {
       supabase.removeChannel(storiesChannel);
       supabase.removeChannel(postsChannel);
+      supabase.removeChannel(reelsChannel);
       supabase.removeChannel(likesChannel);
     };
   }, []);
+
+  // Merge posts and reels into unified feed
+  useEffect(() => {
+    const mergedFeed: FeedItem[] = [
+      ...posts.map(post => ({ ...post, type: 'post' as const })),
+      ...reels.map(reel => ({ ...reel, type: 'reel' as const, content: reel.caption, media_urls: [reel.video_url] }))
+    ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    
+    setFeed(mergedFeed);
+  }, [posts, reels]);
 
   const fetchCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -142,6 +190,16 @@ const Home = () => {
       .limit(20);
 
     if (data) setPosts(data);
+  };
+
+  const fetchReels = async () => {
+    const { data } = await supabase
+      .from("reels")
+      .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level)")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (data) setReels(data);
   };
 
   const fetchLikedPosts = async () => {
@@ -200,6 +258,28 @@ const Home = () => {
     }
   };
 
+  const handleLikeReel = async (reelId: string) => {
+    if (!currentUser) {
+      toast.error("Please login to like reels");
+      return;
+    }
+
+    const isLiked = likedReels.has(reelId);
+    // Note: Reels would need their own likes table (reel_likes) or we can adapt post_likes
+    // For now, using a simple approach with the like_count field
+    toast.info(isLiked ? "Unliked reel" : "Liked reel");
+    
+    if (isLiked) {
+      setLikedReels(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(reelId);
+        return newSet;
+      });
+    } else {
+      setLikedReels(prev => new Set(prev).add(reelId));
+    }
+  };
+
   const getBadgeColor = (level: string) => {
     const colors = {
       bronze: "from-amber-700 to-amber-500",
@@ -245,7 +325,7 @@ const Home = () => {
           {/* Your Story */}
           <div className="flex flex-col items-center gap-2 min-w-[80px]">
             <button
-              onClick={() => navigate("/create")}
+              onClick={() => navigate("/story-options")}
               className="relative group"
             >
               <div className="w-16 h-16 rounded-full glass border-2 border-border flex items-center justify-center">
@@ -315,27 +395,27 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Posts Feed */}
-      {posts.length > 0 && (
+      {/* Feed */}
+      {feed.length > 0 && (
         <div className="space-y-6 px-4">
-          {posts.map((post) => (
-            <div key={post.id} className="glass rounded-2xl p-4 space-y-4">
-              {/* Post Header */}
+          {feed.map((item) => (
+            <div key={item.id} className="glass rounded-2xl p-4 space-y-4">
+              {/* Header */}
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <Avatar className={`w-12 h-12 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(post.profiles.badge_level)}`}>
-                    <AvatarImage src={post.profiles.avatar_url || undefined} />
-                    <AvatarFallback>{post.profiles.username[0]}</AvatarFallback>
+                  <Avatar className={`w-12 h-12 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)}`}>
+                    <AvatarImage src={item.profiles.avatar_url || undefined} />
+                    <AvatarFallback>{item.profiles.username[0]}</AvatarFallback>
                   </Avatar>
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold">{post.profiles.full_name}</p>
+                  <p className="font-semibold">{item.profiles.full_name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {post.profiles.professional_title?.replace(/_/g, " ")}
+                    {item.profiles.professional_title?.replace(/_/g, " ")}
                   </p>
                 </div>
                 
-                {currentUser && post.user_id === currentUser.id && (
+                {currentUser && item.user_id === currentUser.id && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="glass-hover p-2 rounded-xl">
@@ -343,12 +423,8 @@ const Home = () => {
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="glass">
-                      <DropdownMenuItem onClick={() => navigate(`/edit-post/${post.id}`)}>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handleDeletePost(post.id)}
+                        onClick={() => item.type === 'post' ? handleDeletePost(item.id) : toast.info("Reel deletion coming soon")}
                         className="text-destructive"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
@@ -359,34 +435,61 @@ const Home = () => {
                 )}
               </div>
 
-              {/* Post Content */}
-              <p className="text-sm">{post.content}</p>
+              {/* Content */}
+              {'content' in item && item.content && (
+                <p className="text-sm">{item.content}</p>
+              )}
 
-              {/* Post Actions */}
+              {/* Media */}
+              {item.media_urls && item.media_urls.length > 0 && (
+                <div className={`grid gap-2 ${item.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                  {item.media_urls.map((url, idx) => (
+                    <div key={idx} className="relative rounded-xl overflow-hidden">
+                      {item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
+                        <video 
+                          src={url} 
+                          controls 
+                          className="w-full h-auto max-h-96 object-cover"
+                        />
+                      ) : (
+                        <img 
+                          src={url} 
+                          alt="Post media"
+                          className="w-full h-auto object-cover"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Actions */}
               <div className="flex items-center gap-6 pt-2">
                 <button 
-                  onClick={() => handleLikePost(post.id)}
+                  onClick={() => item.type === 'post' ? handleLikePost(item.id) : handleLikeReel(item.id)}
                   className={`flex items-center gap-2 transition-all hover:scale-110 ${
-                    likedPosts.has(post.id) ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'
+                    (item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)) 
+                      ? 'text-red-500' 
+                      : 'text-muted-foreground hover:text-red-500'
                   }`}
                 >
-                  <Heart className={`w-5 h-5 ${likedPosts.has(post.id) ? 'fill-current' : ''}`} />
-                  <span className="text-sm">{post.like_count}</span>
+                  <Heart className={`w-5 h-5 ${(item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)) ? 'fill-current' : ''}`} />
+                  <span className="text-sm">{item.like_count}</span>
                 </button>
                 <button 
                   onClick={() => {
-                    setSelectedPostId(post.id);
+                    setSelectedPostId(item.id);
                     setCommentsDialogOpen(true);
                   }}
                   className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"
                 >
                   <MessageCircle className="w-5 h-5" />
-                  <span className="text-sm font-bold">{post.comment_count}</span>
+                  <span className="text-sm font-bold">{item.comment_count}</span>
                 </button>
                 <button 
                   onClick={() => {
-                    setSelectedPostId(post.id);
-                    setSelectedPostContent(post.content);
+                    setSelectedPostId(item.id);
+                    setSelectedPostContent('content' in item ? item.content : '');
                     setShareDialogOpen(true);
                   }}
                   className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"

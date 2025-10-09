@@ -21,6 +21,7 @@ import Create from "./pages/Create";
 import CreatePost from "./pages/CreatePost";
 import CreateStory from "./pages/CreateStory";
 import CreateReel from "./pages/CreateReel";
+import StoryOptions from "./pages/StoryOptions";
 import Reels from "./pages/Reels";
 import Reposted from "./pages/Reposted";
 import StoryViewer from "./pages/StoryViewer";
@@ -53,6 +54,7 @@ const App = () => (
           <Route path="/create/post" element={<CreatePost />} />
           <Route path="/create/story" element={<CreateStory />} />
           <Route path="/create/reel" element={<CreateReel />} />
+          <Route path="/story-options" element={<StoryOptions />} />
           <Route path="/story/:userId" element={<StoryViewer />} />
           <Route path="/reels" element={<Reels />} />
           <Route path="/reposted" element={<Reposted />} />

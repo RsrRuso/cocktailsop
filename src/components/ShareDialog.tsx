@@ -55,10 +55,36 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent }: ShareDialogPro
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Copy Link */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Post Link</label>
+        <div className="space-y-6">
+          {/* Send via DM Section */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-primary">Share in Direct Message</label>
+            <Button
+              onClick={() => {
+                onOpenChange(false);
+                toast.info("Opening messages...");
+              }}
+              className="w-full glow-primary h-12"
+            >
+              <Send className="w-5 h-5 mr-2" />
+              Send via Direct Message
+            </Button>
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or share externally</span>
+            </div>
+          </div>
+
+          {/* External Share Section */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium">Share Externally</label>
+            
+            {/* Copy Link */}
             <div className="flex gap-2">
               <Input value={shareUrl} readOnly className="flex-1" />
               <Button onClick={handleCopyLink} variant="outline">
@@ -66,11 +92,8 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent }: ShareDialogPro
                 {copied ? "Copied!" : "Copy"}
               </Button>
             </div>
-          </div>
 
-          {/* Share to Social Media */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Share to</label>
+            {/* Social Media */}
             <div className="grid grid-cols-2 gap-2">
               <Button
                 onClick={() => handleShareExternal("whatsapp")}
@@ -106,19 +129,6 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent }: ShareDialogPro
               </Button>
             </div>
           </div>
-
-          {/* Send via DM */}
-          <Button
-            onClick={() => {
-              onOpenChange(false);
-              toast.info("Opening messages...");
-              // Navigate to messages would be handled in parent
-            }}
-            className="w-full glow-primary"
-          >
-            <Send className="w-4 h-4 mr-2" />
-            Send via Direct Message
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
