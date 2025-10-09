@@ -8,6 +8,71 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* Light theme */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 220 90% 56%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 200 70% 50%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 320 80% 55%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 220 90% 56%;
+    --radius: 1rem;
+    --neon-green: 120 100% 50%;
+    
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 220 90% 56%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 220 90% 56%;
+  }
+
+  .grey {
+    --background: 0 0% 25%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 30%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 30%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 220 90% 56%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 200 70% 50%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 35%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 320 80% 55%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 40%;
+    --input: 0 0% 40%;
+    --ring: 220 90% 56%;
+    
+    --sidebar-background: 0 0% 25%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 220 90% 56%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 35%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 40%;
+    --sidebar-ring: 220 90% 56%;
+  }
+  
+  .dark {
     --background: 0 0% 15%;
     --foreground: 0 0% 98%;
     --card: 0 0% 20%;
@@ -27,8 +92,6 @@ All colors MUST be HSL.
     --border: 0 0% 30%;
     --input: 0 0% 30%;
     --ring: 220 90% 56%;
-    --radius: 1rem;
-    --neon-green: 120 100% 50%;
     
     --sidebar-background: 0 0% 15%;
     --sidebar-foreground: 0 0% 98%;
@@ -41,7 +104,8 @@ All colors MUST be HSL.
   }
   
   body {
-    background: hsl(0 0% 15%);
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
     min-height: 100vh;
   }
 }

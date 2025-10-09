@@ -4,7 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Send } from "lucide-react";
+import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit } from "lucide-react";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Story {
   id: string;
@@ -19,6 +26,7 @@ interface Story {
 
 interface Post {
   id: string;
+  user_id: string;
   content: string;
   media_urls: string[];
   like_count: number;
@@ -43,6 +51,38 @@ const Home = () => {
     fetchCurrentUser();
     fetchStories();
     fetchPosts();
+
+    // Set up realtime subscriptions
+    const storiesChannel = supabase
+      .channel('home-stories')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'stories'
+        },
+        () => fetchStories()
+      )
+      .subscribe();
+
+    const postsChannel = supabase
+      .channel('home-posts')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'posts'
+        },
+        () => fetchPosts()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(storiesChannel);
+      supabase.removeChannel(postsChannel);
+    };
   }, []);
 
   const fetchCurrentUser = async () => {
@@ -87,6 +127,22 @@ const Home = () => {
       platinum: "from-blue-400 to-purple-500",
     };
     return colors[level as keyof typeof colors] || colors.bronze;
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", postId);
+
+      if (error) throw error;
+      toast.success("Post deleted successfully");
+      fetchPosts();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast.error("Failed to delete post");
+    }
   };
 
   const regions = [
@@ -197,6 +253,29 @@ const Home = () => {
                     {post.profiles.professional_title?.replace(/_/g, " ")}
                   </p>
                 </div>
+                
+                {currentUser && post.user_id === currentUser.id && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="glass-hover p-2 rounded-xl">
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="glass">
+                      <DropdownMenuItem onClick={() => navigate(`/edit-post/${post.id}`)}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDeletePost(post.id)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
 
               {/* Post Content */}

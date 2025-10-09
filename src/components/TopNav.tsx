@@ -1,15 +1,24 @@
-import { Bell, MessageCircle, Send, Sun, Moon, Menu } from "lucide-react";
+import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const TopNav = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isDark, setIsDark] = useState(() => {
-    return document.documentElement.classList.contains('dark');
+  const [theme, setTheme] = useState<'light' | 'grey' | 'dark'>(() => {
+    const html = document.documentElement;
+    if (html.classList.contains('dark')) return 'dark';
+    if (html.classList.contains('grey')) return 'grey';
+    return 'light';
   });
 
   useEffect(() => {
@@ -43,15 +52,12 @@ const TopNav = () => {
     if (count) setUnreadCount(count);
   };
 
-  const toggleTheme = () => {
+  const changeTheme = (newTheme: 'light' | 'grey' | 'dark') => {
     const html = document.documentElement;
-    if (html.classList.contains('dark')) {
-      html.classList.remove('dark');
-      setIsDark(false);
-    } else {
-      html.classList.add('dark');
-      setIsDark(true);
-    }
+    html.classList.remove('light', 'grey', 'dark');
+    html.classList.add(newTheme);
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
   };
 
   return (
@@ -81,9 +87,27 @@ const TopNav = () => {
             <Send className="w-5 h-5" />
           </button>
 
-          <button onClick={toggleTheme} className="glass-hover p-2.5 rounded-2xl">
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="glass-hover p-2.5 rounded-2xl">
+                <Palette className="w-5 h-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="glass">
+              <DropdownMenuItem onClick={() => changeTheme('light')}>
+                <Sun className="w-4 h-4 mr-2" />
+                Light
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => changeTheme('grey')}>
+                <Palette className="w-4 h-4 mr-2" />
+                Grey
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => changeTheme('dark')}>
+                <Moon className="w-4 h-4 mr-2" />
+                Dark
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <button onClick={() => navigate("/profile")}>
             <Avatar className="w-10 h-10 ring-2 ring-primary/30">
