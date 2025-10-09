@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Camera, Video, Image } from "lucide-react";
+import { Camera, Radio } from "lucide-react";
 
 const Create = () => {
   const navigate = useNavigate();
@@ -11,45 +11,33 @@ const Create = () => {
       <TopNav />
 
       <div className="px-4 py-6 space-y-6">
-        <h2 className="text-2xl font-bold">Create Content</h2>
+        <h2 className="text-2xl font-bold">Share Your Story</h2>
+        <p className="text-muted-foreground">Choose how you want to connect with your audience</p>
 
         <div className="space-y-4">
           <button 
-            onClick={() => navigate("/create/post")}
-            className="w-full glass-hover rounded-2xl p-6 flex items-center gap-4"
-          >
-            <div className="w-14 h-14 rounded-xl glass flex items-center justify-center glow-primary">
-              <Camera className="w-7 h-7 text-primary" />
-            </div>
-            <div className="text-left">
-              <h3 className="font-semibold">Create Post</h3>
-              <p className="text-sm text-muted-foreground">Share a photo or update</p>
-            </div>
-          </button>
-
-          <button 
-            onClick={() => navigate("/create/reel")}
-            className="w-full glass-hover rounded-2xl p-6 flex items-center gap-4"
-          >
-            <div className="w-14 h-14 rounded-xl glass flex items-center justify-center glow-accent">
-              <Video className="w-7 h-7 text-accent" />
-            </div>
-            <div className="text-left">
-              <h3 className="font-semibold">Create Reel</h3>
-              <p className="text-sm text-muted-foreground">Record or upload a video</p>
-            </div>
-          </button>
-
-          <button 
             onClick={() => navigate("/create/story")}
-            className="w-full glass-hover rounded-2xl p-6 flex items-center gap-4"
+            className="w-full glass-hover rounded-2xl p-8 flex items-center gap-4 group hover:scale-[1.02] transition-all"
           >
-            <div className="w-14 h-14 rounded-xl glass flex items-center justify-center">
-              <Image className="w-7 h-7 text-secondary" />
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center shadow-xl shadow-orange-500/50 group-hover:shadow-orange-500/70 transition-all">
+              <Camera className="w-8 h-8 text-white" />
             </div>
-            <div className="text-left">
-              <h3 className="font-semibold">Add Story</h3>
-              <p className="text-sm text-muted-foreground">Share a moment (24h)</p>
+            <div className="text-left flex-1">
+              <h3 className="font-bold text-lg">Add Story</h3>
+              <p className="text-sm text-muted-foreground">Share photos or videos that disappear in 24 hours</p>
+            </div>
+          </button>
+
+          <button 
+            onClick={() => navigate("/thunder")}
+            className="w-full glass-hover rounded-2xl p-8 flex items-center gap-4 group hover:scale-[1.02] transition-all"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 via-pink-500 to-purple-500 flex items-center justify-center shadow-xl shadow-red-500/50 group-hover:shadow-red-500/70 transition-all animate-pulse">
+              <Radio className="w-8 h-8 text-white" />
+            </div>
+            <div className="text-left flex-1">
+              <h3 className="font-bold text-lg">Go Live</h3>
+              <p className="text-sm text-muted-foreground">Stream live video to your followers in real-time</p>
             </div>
           </button>
         </div>

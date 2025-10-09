@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, TrendingUp, MapPin } from "lucide-react";
+import { Search, TrendingUp, Globe2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -98,7 +98,7 @@ const Explore = () => {
                 : "glass-hover text-muted-foreground"
             }`}
           >
-            <MapPin className="w-4 h-4 inline mr-2" />
+            <Globe2 className="w-4 h-4 inline mr-2" />
             Regions
           </button>
         </div>
@@ -156,19 +156,53 @@ const Explore = () => {
         )}
 
         {activeTab === "regions" && (
-          <div className="grid grid-cols-2 gap-4">
-            {["🇺🇸 USA", "🇬🇧 UK", "🇪🇺 Europe", "🌏 Asia", "🌍 Middle East", "🌍 Africa"].map((region) => (
-              <div
-                key={region}
-                className="glass-hover rounded-2xl p-6 text-center cursor-pointer hover:scale-105 transition-all"
-              >
-                <div className="text-4xl mb-2">{region.split(" ")[0]}</div>
-                <p className="font-semibold">{region.split(" ")[1]}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {Math.floor(Math.random() * 5000) + 1000} professionals
-                </p>
+          <div className="space-y-6">
+            <div className="glass rounded-3xl p-6 border border-primary/20">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                  <Globe2 className="w-6 h-6 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold">Explore by Region</h2>
               </div>
-            ))}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-3xl p-8 bg-gradient-to-br from-pink-600 to-rose-500 cursor-pointer hover:scale-105 transition-all shadow-xl">
+                  <div className="text-5xl mb-3">🇺🇸</div>
+                  <h3 className="text-2xl font-bold text-white mb-1">USA</h3>
+                  <p className="text-sm text-white/80">{Math.floor(Math.random() * 3000) + 2000} professionals</p>
+                </div>
+
+                <div className="rounded-3xl p-8 bg-gradient-to-br from-blue-600 to-indigo-500 cursor-pointer hover:scale-105 transition-all shadow-xl">
+                  <div className="text-5xl mb-3">🇬🇧</div>
+                  <h3 className="text-2xl font-bold text-white mb-1">UK</h3>
+                  <p className="text-sm text-white/80">{Math.floor(Math.random() * 2000) + 1500} professionals</p>
+                </div>
+
+                <div className="rounded-3xl p-8 bg-gradient-to-br from-emerald-600 to-teal-500 cursor-pointer hover:scale-105 transition-all shadow-xl">
+                  <div className="text-5xl mb-3">🇪🇺</div>
+                  <h3 className="text-2xl font-bold text-white mb-1">Europe</h3>
+                  <p className="text-sm text-white/80">{Math.floor(Math.random() * 4000) + 3000} professionals</p>
+                </div>
+
+                <div className="rounded-3xl p-8 bg-gradient-to-br from-orange-600 to-amber-500 cursor-pointer hover:scale-105 transition-all shadow-xl">
+                  <div className="text-5xl mb-3">🌏</div>
+                  <h3 className="text-2xl font-bold text-white mb-1">Asia</h3>
+                  <p className="text-sm text-white/80">{Math.floor(Math.random() * 5000) + 4000} professionals</p>
+                </div>
+
+                <div className="rounded-3xl p-8 bg-gradient-to-br from-purple-600 to-violet-500 cursor-pointer hover:scale-105 transition-all shadow-xl">
+                  <div className="text-5xl mb-3">🌍</div>
+                  <h3 className="text-2xl font-bold text-white mb-1">Middle East</h3>
+                  <p className="text-sm text-white/80">{Math.floor(Math.random() * 2000) + 1000} professionals</p>
+                </div>
+
+                <div className="rounded-3xl p-8 bg-gradient-to-br from-yellow-600 to-orange-500 cursor-pointer hover:scale-105 transition-all shadow-xl">
+                  <div className="text-5xl mb-3">🌍</div>
+                  <h3 className="text-2xl font-bold text-white mb-1">Africa</h3>
+                  <p className="text-sm text-white/80">{Math.floor(Math.random() * 1500) + 800} professionals</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
