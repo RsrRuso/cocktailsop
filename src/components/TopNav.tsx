@@ -1,4 +1,4 @@
-import { Bell, MessageCircle, Sun, Menu } from "lucide-react";
+import { Bell, MessageCircle, Sun, Moon, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -8,6 +8,9 @@ const TopNav = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isDark, setIsDark] = useState(() => {
+    return document.documentElement.classList.contains('dark');
+  });
 
   useEffect(() => {
     fetchCurrentUser();
@@ -40,6 +43,17 @@ const TopNav = () => {
     if (count) setUnreadCount(count);
   };
 
+  const toggleTheme = () => {
+    const html = document.documentElement;
+    if (html.classList.contains('dark')) {
+      html.classList.remove('dark');
+      setIsDark(false);
+    } else {
+      html.classList.add('dark');
+      setIsDark(true);
+    }
+  };
+
   return (
     <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20">
       <div className="flex items-center justify-between px-4 py-3">
@@ -67,8 +81,8 @@ const TopNav = () => {
             <MessageCircle className="w-5 h-5" />
           </button>
 
-          <button className="glass-hover p-2.5 rounded-2xl">
-            <Sun className="w-5 h-5" />
+          <button onClick={toggleTheme} className="glass-hover p-2.5 rounded-2xl">
+            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
 
           <button onClick={() => navigate("/profile")}>

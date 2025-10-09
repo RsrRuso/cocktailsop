@@ -126,8 +126,9 @@ const Home = () => {
           {/* Other Stories */}
           {stories.map((story) => (
             <div key={story.id} className="flex flex-col items-center gap-2 min-w-[80px]">
-              <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-yellow-500 via-orange-500 to-yellow-500 p-0.5 glow-gold">
+              <div className="relative group cursor-pointer">
+                <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+                <div className="relative rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-0.5 shadow-xl shadow-orange-500/50">
                   <div className="bg-background rounded-full p-0.5">
                     <Avatar className="w-16 h-16">
                       <AvatarImage src={story.profiles.avatar_url || undefined} />
@@ -136,7 +137,7 @@ const Home = () => {
                   </div>
                 </div>
               </div>
-              <span className="text-xs text-muted-foreground truncate w-full text-center">
+              <span className="text-xs text-foreground font-medium truncate w-full text-center">
                 {story.profiles.username}
               </span>
             </div>

@@ -1,16 +1,36 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Upload, Camera } from "lucide-react";
+import { ArrowLeft, Upload, Camera, X } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 
 const CreateStory = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSelectedMedia(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleCreateStory = async () => {
+    if (!previewUrl) {
+      toast.error("Please select media for your story");
+      return;
+    }
+
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -18,13 +38,12 @@ const CreateStory = () => {
       return;
     }
 
-    // For demo purposes, create a story with placeholder data
     const { error } = await supabase
       .from("stories")
       .insert({
         user_id: user.id,
-        media_url: "https://via.placeholder.com/400x700",
-        media_type: "image",
+        media_url: previewUrl,
+        media_type: selectedMedia?.type.startsWith('video') ? 'video' : 'image',
       });
 
     if (error) {
@@ -55,18 +74,43 @@ const CreateStory = () => {
         </div>
 
         <div className="glass rounded-2xl p-8 space-y-6 text-center">
-          <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-pink-600 to-orange-500 flex items-center justify-center">
-            <Camera className="w-16 h-16 text-white" />
-          </div>
+          {previewUrl ? (
+            <div className="relative">
+              <img src={previewUrl} alt="Story preview" className="w-full h-96 object-cover rounded-2xl" />
+              <button
+                onClick={() => {
+                  setPreviewUrl("");
+                  setSelectedMedia(null);
+                }}
+                className="absolute top-4 right-4 w-10 h-10 bg-red-500 rounded-full flex items-center justify-center"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center shadow-xl shadow-orange-500/50">
+                <Camera className="w-16 h-16 text-white" />
+              </div>
 
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Create Your Story</h2>
-            <p className="text-muted-foreground">
-              Share a moment that disappears after 24 hours
-            </p>
-          </div>
+              <div>
+                <h2 className="text-2xl font-bold mb-2">Create Your Story</h2>
+                <p className="text-muted-foreground">
+                  Share a moment that disappears after 24 hours
+                </p>
+              </div>
+            </>
+          )}
 
           <div className="space-y-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              onChange={handleMediaSelect}
+              className="hidden"
+            />
+            
             <Button
               onClick={() => toast.info("Camera feature coming soon!")}
               className="w-full glass-hover h-14"
@@ -77,7 +121,7 @@ const CreateStory = () => {
             </Button>
 
             <Button
-              onClick={() => toast.info("Upload feature coming soon!")}
+              onClick={() => fileInputRef.current?.click()}
               className="w-full glass-hover h-14"
               variant="outline"
             >
@@ -87,10 +131,10 @@ const CreateStory = () => {
 
             <Button
               onClick={handleCreateStory}
-              disabled={loading}
+              disabled={loading || !previewUrl}
               className="w-full glow-primary h-14"
             >
-              {loading ? "Creating..." : "Create Demo Story"}
+              {loading ? "Creating..." : "Share Story"}
             </Button>
           </div>
         </div>

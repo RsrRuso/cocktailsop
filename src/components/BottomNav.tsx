@@ -1,4 +1,4 @@
-import { Home, PlusSquare, User, Briefcase, Video, Wrench } from "lucide-react";
+import { Home, PlusSquare, Briefcase, Repeat2, Wrench } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const BottomNav = () => {
@@ -40,13 +40,13 @@ const BottomNav = () => {
         </button>
 
         <button
-          onClick={() => navigate("/thunder")}
+          onClick={() => navigate("/reposted")}
           className={`flex flex-col items-center gap-1 transition-colors ${
-            isActive("/thunder") ? "text-primary glow-primary" : "text-muted-foreground"
+            isActive("/reposted") ? "text-primary glow-primary" : "text-muted-foreground"
           }`}
         >
-          <Video className="w-5 h-5" />
-          <span className="text-xs">Reels</span>
+          <Repeat2 className="w-5 h-5" />
+          <span className="text-xs">Reposted</span>
         </button>
 
         <button

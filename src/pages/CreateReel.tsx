@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Upload, Video } from "lucide-react";
+import { ArrowLeft, Upload, Video, X } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 
@@ -11,8 +11,33 @@ const CreateReel = () => {
   const navigate = useNavigate();
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      toast.error("Please select a video file");
+      return;
+    }
+
+    setSelectedVideo(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleCreateReel = async () => {
+    if (!previewUrl) {
+      toast.error("Please select a video");
+      return;
+    }
+
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -20,14 +45,13 @@ const CreateReel = () => {
       return;
     }
 
-    // For demo purposes, create a reel with placeholder data
     const { error } = await supabase
       .from("reels")
       .insert({
         user_id: user.id,
-        video_url: "https://via.placeholder.com/400x700",
-        caption: caption || "New Reel",
-        thumbnail_url: "https://via.placeholder.com/400x700",
+        video_url: previewUrl,
+        caption: caption || "Check out my new reel!",
+        thumbnail_url: previewUrl,
       });
 
     if (error) {
@@ -58,9 +82,24 @@ const CreateReel = () => {
         </div>
 
         <div className="glass rounded-2xl p-6 space-y-6">
-          <div className="aspect-[9/16] rounded-2xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
-            <Video className="w-20 h-20 text-white" strokeWidth={1.5} />
-          </div>
+          {previewUrl ? (
+            <div className="relative aspect-[9/16] rounded-2xl overflow-hidden">
+              <video src={previewUrl} controls className="w-full h-full object-cover" />
+              <button
+                onClick={() => {
+                  setPreviewUrl("");
+                  setSelectedVideo(null);
+                }}
+                className="absolute top-4 right-4 w-10 h-10 bg-red-500 rounded-full flex items-center justify-center z-10"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          ) : (
+            <div className="aspect-[9/16] rounded-2xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
+              <Video className="w-20 h-20 text-white" strokeWidth={1.5} />
+            </div>
+          )}
 
           <Textarea
             placeholder="Write a caption..."
@@ -70,6 +109,14 @@ const CreateReel = () => {
           />
 
           <div className="space-y-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/*"
+              onChange={handleVideoSelect}
+              className="hidden"
+            />
+            
             <Button
               onClick={() => toast.info("Record feature coming soon!")}
               className="w-full glass-hover h-12"
@@ -80,7 +127,7 @@ const CreateReel = () => {
             </Button>
 
             <Button
-              onClick={() => toast.info("Upload feature coming soon!")}
+              onClick={() => fileInputRef.current?.click()}
               className="w-full glass-hover h-12"
               variant="outline"
             >
@@ -90,10 +137,10 @@ const CreateReel = () => {
 
             <Button
               onClick={handleCreateReel}
-              disabled={loading}
+              disabled={loading || !previewUrl}
               className="w-full glow-primary h-12"
             >
-              {loading ? "Creating..." : "Create Demo Reel"}
+              {loading ? "Creating..." : "Share Reel"}
             </Button>
           </div>
         </div>

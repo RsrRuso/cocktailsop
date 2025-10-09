@@ -18,6 +18,7 @@ import Create from "./pages/Create";
 import CreatePost from "./pages/CreatePost";
 import CreateStory from "./pages/CreateStory";
 import CreateReel from "./pages/CreateReel";
+import Reposted from "./pages/Reposted";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/create/post" element={<CreatePost />} />
           <Route path="/create/story" element={<CreateStory />} />
           <Route path="/create/reel" element={<CreateReel />} />
+          <Route path="/reposted" element={<Reposted />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
