@@ -13,7 +13,8 @@ import {
 const TopNav = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [theme, setTheme] = useState<'light' | 'grey' | 'dark'>(() => {
     const saved = localStorage.getItem('theme');
     return (saved as 'light' | 'grey' | 'dark') || 'dark';
@@ -22,6 +23,40 @@ const TopNav = () => {
   useEffect(() => {
     fetchCurrentUser();
     fetchUnreadNotifications();
+    fetchUnreadMessages();
+
+    // Set up realtime subscriptions for notifications
+    const notificationsChannel = supabase
+      .channel('topnav-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications'
+        },
+        () => fetchUnreadNotifications()
+      )
+      .subscribe();
+
+    // Set up realtime subscriptions for messages
+    const messagesChannel = supabase
+      .channel('topnav-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => fetchUnreadMessages()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(notificationsChannel);
+      supabase.removeChannel(messagesChannel);
+    };
   }, []);
 
   const fetchCurrentUser = async () => {
@@ -47,7 +82,20 @@ const TopNav = () => {
       .eq("user_id", user.id)
       .eq("read", false);
 
-    if (count) setUnreadCount(count);
+    setUnreadNotificationsCount(count || 0);
+  };
+
+  const fetchUnreadMessages = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { count } = await supabase
+      .from("messages")
+      .select("*", { count: 'exact', head: true })
+      .eq("read", false)
+      .neq("sender_id", user.id);
+
+    setUnreadMessagesCount(count || 0);
   };
 
   const changeTheme = (newTheme: 'light' | 'grey' | 'dark') => {
@@ -71,18 +119,23 @@ const TopNav = () => {
             className="glass-hover p-2.5 rounded-2xl relative"
           >
             <Bell className="w-5 h-5" />
-            {unreadCount > 0 && (
+            {unreadNotificationsCount > 0 && (
               <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                {unreadCount}
+                {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
               </div>
             )}
           </button>
 
           <button
             onClick={() => navigate("/messages")}
-            className="glass-hover p-2.5 rounded-2xl"
+            className="glass-hover p-2.5 rounded-2xl relative"
           >
             <Send className="w-5 h-5" />
+            {unreadMessagesCount > 0 && (
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+              </div>
+            )}
           </button>
 
           <DropdownMenu>
