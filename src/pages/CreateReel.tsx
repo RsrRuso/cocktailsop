@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Upload, Video, X, Play } from "lucide-react";
+import { ArrowLeft, Upload, Video, X, Play, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 
@@ -14,6 +14,7 @@ const CreateReel = () => {
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState("");
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [thumbnailUrl, setThumbnailUrl] = useState<string>("");
@@ -28,8 +29,8 @@ const CreateReel = () => {
       return;
     }
 
-    if (file.size > 100 * 1024 * 1024) {
-      toast.error("Video size should be less than 100MB");
+    if (file.size > 200 * 1024 * 1024) {
+      toast.error("Video size should be less than 200MB");
       return;
     }
 
@@ -85,6 +86,7 @@ const CreateReel = () => {
 
     setLoading(true);
     setUploadProgress(0);
+    setUploadStage("Preparing...");
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -93,17 +95,22 @@ const CreateReel = () => {
         return;
       }
 
-      // Generate thumbnail
+      // Stage 1: Generate thumbnail
+      setUploadStage("Generating thumbnail");
+      setUploadProgress(10);
       const thumbnail = await generateThumbnail();
-
-      // Upload video to storage
+      
+      // Stage 2: Prepare video
+      setUploadStage("Preparing video");
+      setUploadProgress(20);
       const fileExt = selectedVideo.name.split(".").pop();
       const videoFileName = `${user.id}/${Date.now()}.${fileExt}`;
-      
       const videoBlob = await fetch(previewUrl).then((res) => res.blob());
-      
-      setUploadProgress(20);
 
+      // Stage 3: Upload video to storage
+      setUploadStage("Uploading video");
+      setUploadProgress(30);
+      
       const { data: videoData, error: videoError } = await supabase.storage
         .from("reels")
         .upload(videoFileName, videoBlob, {
@@ -114,12 +121,16 @@ const CreateReel = () => {
       if (videoError) throw videoError;
 
       setUploadProgress(60);
+      setUploadStage("Processing video");
 
       const { data: { publicUrl: videoUrl } } = supabase.storage
         .from("reels")
         .getPublicUrl(videoFileName);
 
-      // Upload thumbnail if generated
+      // Stage 4: Upload thumbnail if generated
+      setUploadStage("Uploading thumbnail");
+      setUploadProgress(70);
+      
       let thumbnailPublicUrl = videoUrl;
       if (thumbnail) {
         const thumbnailBlob = await fetch(thumbnail).then((res) => res.blob());
@@ -140,9 +151,10 @@ const CreateReel = () => {
         }
       }
 
-      setUploadProgress(80);
+      // Stage 5: Save to database
+      setUploadStage("Saving reel");
+      setUploadProgress(85);
 
-      // Create reel entry in database
       const { error: dbError } = await supabase.from("reels").insert({
         user_id: user.id,
         video_url: videoUrl,
@@ -152,15 +164,23 @@ const CreateReel = () => {
 
       if (dbError) throw dbError;
 
+      // Stage 6: Complete
+      setUploadStage("Complete!");
       setUploadProgress(100);
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
       toast.success("Reel created successfully!");
       navigate("/thunder");
     } catch (error: any) {
       console.error("Error creating reel:", error);
       toast.error(error.message || "Failed to create reel");
+      setUploadStage("Upload failed");
     } finally {
-      setLoading(false);
-      setUploadProgress(0);
+      setTimeout(() => {
+        setLoading(false);
+        setUploadProgress(0);
+        setUploadStage("");
+      }, 1000);
     }
   };
 
@@ -220,12 +240,58 @@ const CreateReel = () => {
               />
 
               {loading && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Uploading reel...</span>
-                    <span>{Math.round(uploadProgress)}%</span>
+                <div className="glass rounded-xl p-6 space-y-4 border border-primary/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {uploadProgress === 100 ? (
+                        <CheckCircle2 className="w-6 h-6 text-green-500 animate-in zoom-in" />
+                      ) : (
+                        <div className="relative w-6 h-6">
+                          <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                          <div 
+                            className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold text-sm">{uploadStage}</p>
+                        <p className="text-xs text-muted-foreground">Please wait...</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                        {Math.round(uploadProgress)}%
+                      </p>
+                    </div>
                   </div>
-                  <Progress value={uploadProgress} className="h-2" />
+                  
+                  <div className="relative">
+                    <Progress value={uploadProgress} className="h-3" />
+                    <div className="absolute inset-0 overflow-hidden rounded-full">
+                      <div className="h-full w-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-6 gap-2 text-xs">
+                    {['Prepare', 'Thumbnail', 'Upload', 'Process', 'Save', 'Done'].map((stage, idx) => {
+                      const stageProgress = (idx + 1) * 16.67;
+                      const isActive = uploadProgress >= stageProgress - 8;
+                      const isComplete = uploadProgress >= stageProgress;
+                      
+                      return (
+                        <div key={stage} className="text-center space-y-1">
+                          <div className={`w-2 h-2 rounded-full mx-auto transition-all ${
+                            isComplete ? 'bg-green-500 scale-125' : 
+                            isActive ? 'bg-primary animate-pulse' : 
+                            'bg-muted'
+                          }`} />
+                          <p className={`transition-colors ${
+                            isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
+                          }`}>{stage}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -252,7 +318,7 @@ const CreateReel = () => {
                     : "Drag and drop a video, or click to select"}
                 </p>
                 <p className="text-xs text-muted-foreground px-4 text-center">
-                  MP4, MOV, AVI, WebM • Max 100MB
+                  MP4, MOV, AVI, WebM • Max 200MB
                 </p>
               </div>
 
