@@ -93,18 +93,45 @@ const CreateStory = () => {
         mediaTypes.push(file.type.startsWith('video') ? 'video' : 'image');
       }
 
-      // Create story with uploaded URLs
-      const { error } = await supabase
+      // Check if user has an active story
+      const { data: existingStory } = await supabase
         .from("stories")
-        .insert({
-          user_id: user.id,
-          media_urls: uploadedUrls,
-          media_types: mediaTypes,
-        });
+        .select("*")
+        .eq("user_id", user.id)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existingStory) {
+        // Add to existing story
+        const updatedMediaUrls = [...existingStory.media_urls, ...uploadedUrls];
+        const updatedMediaTypes = [...existingStory.media_types, ...mediaTypes];
 
-      toast.success("Story added successfully!");
+        const { error } = await supabase
+          .from("stories")
+          .update({
+            media_urls: updatedMediaUrls,
+            media_types: updatedMediaTypes,
+          })
+          .eq("id", existingStory.id);
+
+        if (error) throw error;
+        toast.success("Added to your story!");
+      } else {
+        // Create new story
+        const { error } = await supabase
+          .from("stories")
+          .insert({
+            user_id: user.id,
+            media_urls: uploadedUrls,
+            media_types: mediaTypes,
+          });
+
+        if (error) throw error;
+        toast.success("Story created successfully!");
+      }
+
       navigate("/home");
     } catch (error) {
       console.error('Error creating story:', error);
