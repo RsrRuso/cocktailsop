@@ -830,7 +830,7 @@ const MessageThread = () => {
           <>
             <div 
               className="relative cursor-pointer hover:scale-105 transition-transform"
-              onClick={() => navigate(`/profile/${otherUser.id}`)}
+              onClick={() => navigate(`/user/${otherUser.id}`)}
             >
               <div className={`relative w-12 h-12 rounded-full p-[2px] transition-all duration-300 ${
                 isOnline ? 'neon-green animate-pulse' : 'bg-border'
@@ -878,7 +878,7 @@ const MessageThread = () => {
               {showAvatar && otherUser && (
                 <Avatar 
                   className="w-8 h-8 shrink-0 avatar-glow cursor-pointer hover:scale-110 transition-transform"
-                  onClick={() => navigate(`/profile/${otherUser.id}`)}
+                  onClick={() => navigate(`/user/${otherUser.id}`)}
                 >
                   <AvatarImage src={otherUser.avatar_url || ""} />
                   <AvatarFallback>
