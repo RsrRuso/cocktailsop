@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Send, Check, CheckCheck, Smile, Reply, Edit2, Trash2, X, Plus } from "lucide-react";
+import { ArrowLeft, Send, Check, CheckCheck, Smile, Reply, Edit2, Trash2, X, Plus, Paperclip, Image as ImageIcon, Mic, Video, FileText, StopCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -54,11 +54,16 @@ const MessageThread = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [longPressMessageId, setLongPressMessageId] = useState<string | null>(null);
   const [showEmojiDropdown, setShowEmojiDropdown] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const channelRef = useRef<any>(null);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     initializeChat();
@@ -500,6 +505,121 @@ const MessageThread = () => {
     touchStartRef.current = null;
   };
 
+  const handleFileUpload = async (files: FileList | null, type: 'image' | 'document' | 'video') => {
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Please select a file smaller than 50MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${currentUser.id}/${fileName}`;
+
+      // Upload to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('stories')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('stories')
+        .getPublicUrl(filePath);
+
+      // Send message with file
+      const messageData = {
+        conversation_id: conversationId,
+        sender_id: currentUser.id,
+        content: type === 'image' ? '📷 Photo' : type === 'video' ? '🎥 Video' : `📎 ${file.name}`,
+        delivered: false,
+      };
+
+      await supabase.from("messages").insert(messageData);
+      setShowAttachMenu(false);
+
+      toast({
+        title: "Success",
+        description: "File uploaded successfully",
+      });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upload file",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const startVoiceRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      
+      audioChunksRef.current = [];
+      
+      recorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        
+        // Upload audio
+        const fileName = `voice_${Date.now()}.webm`;
+        const filePath = `${currentUser.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('stories')
+          .upload(filePath, audioBlob);
+
+        if (uploadError) throw uploadError;
+
+        // Send voice message
+        const messageData = {
+          conversation_id: conversationId,
+          sender_id: currentUser.id,
+          content: '🎤 Voice message',
+          delivered: false,
+        };
+
+        await supabase.from("messages").insert(messageData);
+        
+        stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+        setMediaRecorder(null);
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start recording",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+    }
+  };
+
   const quickEmojis = ["❤️", "😂", "😮", "😢", "🙏", "👍", "🔥"];
 
   const allEmojis = [
@@ -674,9 +794,9 @@ const MessageThread = () => {
 
                   {/* Long Press Emoji Reactions */}
                   {longPressMessageId === message.id && (
-                    <div className="absolute bottom-full left-0 mb-2 bg-background/95 backdrop-blur-xl border border-primary/20 rounded-2xl shadow-2xl p-3 z-50">
+                    <div className="absolute bottom-full left-0 mb-2 bg-background/95 backdrop-blur-xl border border-primary/20 rounded-2xl shadow-2xl p-3 z-50 min-w-[280px]">
                       <div className="flex items-center gap-2">
-                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-transparent hover:scrollbar-thumb-primary/50 flex-1">
                           {quickEmojis.map(emoji => (
                             <button
                               key={emoji}
@@ -699,7 +819,7 @@ const MessageThread = () => {
                       </div>
                       
                       {showEmojiDropdown && (
-                        <div className="mt-2 grid grid-cols-8 gap-1 max-h-[200px] overflow-y-auto border-t border-primary/20 pt-2">
+                        <div className="mt-2 grid grid-cols-8 gap-1 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-transparent hover:scrollbar-thumb-primary/50 border-t border-primary/20 pt-2">
                           {allEmojis.map(emoji => (
                             <button
                               key={emoji}
@@ -800,7 +920,91 @@ const MessageThread = () => {
             </Button>
           </div>
         )}
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-end relative">
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={(e) => {
+              const files = e.target.files;
+              if (files && files[0]) {
+                const fileType = files[0].type;
+                if (fileType.startsWith('image/')) {
+                  handleFileUpload(files, 'image');
+                } else if (fileType.startsWith('video/')) {
+                  handleFileUpload(files, 'video');
+                } else {
+                  handleFileUpload(files, 'document');
+                }
+              }
+              e.target.value = '';
+            }}
+          />
+          
+          <div className="relative">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setShowAttachMenu(!showAttachMenu)}
+              className="shrink-0 glass"
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+            
+            {showAttachMenu && (
+              <div className="absolute bottom-full left-0 mb-2 bg-background/95 backdrop-blur-xl border border-primary/20 rounded-2xl shadow-2xl p-2 z-50 min-w-[200px]">
+                <button
+                  onClick={() => {
+                    fileInputRef.current?.setAttribute('accept', 'image/*');
+                    fileInputRef.current?.click();
+                    setShowAttachMenu(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-primary/10 rounded-lg transition-colors"
+                >
+                  <ImageIcon className="w-5 h-5 text-primary" />
+                  <span>Photo</span>
+                </button>
+                <button
+                  onClick={() => {
+                    fileInputRef.current?.setAttribute('accept', 'video/*');
+                    fileInputRef.current?.click();
+                    setShowAttachMenu(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-primary/10 rounded-lg transition-colors"
+                >
+                  <Video className="w-5 h-5 text-primary" />
+                  <span>Video</span>
+                </button>
+                <button
+                  onClick={() => {
+                    fileInputRef.current?.setAttribute('accept', '.pdf,.doc,.docx,.txt,.zip,.rar');
+                    fileInputRef.current?.click();
+                    setShowAttachMenu(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-primary/10 rounded-lg transition-colors"
+                >
+                  <FileText className="w-5 h-5 text-primary" />
+                  <span>Document</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => {
+              if (isRecording) {
+                stopVoiceRecording();
+              } else {
+                startVoiceRecording();
+              }
+            }}
+            className={`shrink-0 glass ${isRecording ? 'neon-red animate-pulse' : ''}`}
+          >
+            {isRecording ? <StopCircle className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
+
           <Input
             type="text"
             placeholder="Type a message..."
