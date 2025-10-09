@@ -204,9 +204,9 @@ const Home = () => {
                   <Heart className="w-5 h-5" />
                   <span className="text-sm">{post.like_count}</span>
                 </button>
-                <button className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                <button className="flex items-center gap-2 neon-green-text hover:scale-110 transition-all">
                   <MessageCircle className="w-5 h-5" />
-                  <span className="text-sm">{post.comment_count}</span>
+                  <span className="text-sm font-bold">{post.comment_count}</span>
                 </button>
                 <button className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
                   <Send className="w-5 h-5" />

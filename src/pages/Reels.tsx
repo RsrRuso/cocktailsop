@@ -92,10 +92,10 @@ const Reels = () => {
                 </div>
 
                 <div className="flex flex-col items-center gap-1">
-                  <button className="w-12 h-12 rounded-full glass flex items-center justify-center hover:scale-110 transition-transform">
-                    <MessageCircle className="w-6 h-6 text-white" />
+                  <button className="w-12 h-12 rounded-full neon-green flex items-center justify-center hover:scale-110 transition-transform">
+                    <MessageCircle className="w-6 h-6 text-black" />
                   </button>
-                  <span className="text-white text-xs font-semibold">{reel.comment_count}</span>
+                  <span className="neon-green-text text-xs font-bold">{reel.comment_count}</span>
                 </div>
 
                 <button className="w-12 h-12 rounded-full glass flex items-center justify-center hover:scale-110 transition-transform">

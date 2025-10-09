@@ -8,39 +8,40 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 220 50% 3%;
-    --foreground: 210 20% 98%;
-    --card: 220 40% 8%;
-    --card-foreground: 210 20% 98%;
-    --popover: 220 40% 8%;
-    --popover-foreground: 210 20% 98%;
+    --background: 0 0% 15%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 20%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 20%;
+    --popover-foreground: 0 0% 98%;
     --primary: 220 90% 56%;
-    --primary-foreground: 210 20% 98%;
+    --primary-foreground: 0 0% 98%;
     --secondary: 200 70% 50%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 220 30% 15%;
-    --muted-foreground: 210 20% 60%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 25%;
+    --muted-foreground: 0 0% 60%;
     --accent: 320 80% 55%;
-    --accent-foreground: 210 20% 98%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 30% 20%;
-    --input: 220 30% 20%;
+    --border: 0 0% 30%;
+    --input: 0 0% 30%;
     --ring: 220 90% 56%;
     --radius: 1rem;
+    --neon-green: 120 100% 50%;
     
-    --sidebar-background: 220 50% 4%;
-    --sidebar-foreground: 210 20% 98%;
+    --sidebar-background: 0 0% 15%;
+    --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 220 90% 56%;
-    --sidebar-primary-foreground: 210 20% 98%;
-    --sidebar-accent: 220 30% 15%;
-    --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-border: 220 30% 20%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 25%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 30%;
     --sidebar-ring: 220 90% 56%;
   }
   
   body {
-    background: linear-gradient(135deg, hsl(220 50% 3%) 0%, hsl(230 60% 8%) 50%, hsl(220 50% 3%) 100%);
+    background: hsl(0 0% 15%);
     min-height: 100vh;
   }
 }
@@ -105,6 +106,29 @@ All colors MUST be HSL.
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+  
+  .neon-green {
+    background: hsl(var(--neon-green));
+    box-shadow: 
+      0 0 10px hsl(var(--neon-green) / 0.8),
+      0 0 20px hsl(var(--neon-green) / 0.6),
+      0 0 30px hsl(var(--neon-green) / 0.4);
+  }
+  
+  .neon-green-text {
+    color: hsl(var(--neon-green));
+    text-shadow: 
+      0 0 10px hsl(var(--neon-green) / 0.8),
+      0 0 20px hsl(var(--neon-green) / 0.6);
+  }
+  
+  .message-3d {
+    transform-style: preserve-3d;
+    box-shadow: 
+      0 0 20px hsl(var(--neon-green) / 0.5),
+      0 4px 8px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 }
 

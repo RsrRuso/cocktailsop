@@ -89,19 +89,19 @@ const Messages = () => {
             conversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className="glass-hover rounded-xl p-4 flex items-center gap-3 cursor-pointer"
+                className="glass-hover rounded-xl p-4 flex items-center gap-3 cursor-pointer message-3d neon-green border border-[hsl(var(--neon-green))]"
                 onClick={() => navigate(`/messages/${conversation.id}`)}
               >
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
                   <MessageCircle className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground">Conversation</p>
+                  <p className="font-semibold neon-green-text">Conversation</p>
                   <p className="text-sm text-muted-foreground truncate">
                     Tap to view messages
                   </p>
                 </div>
-                <Send className="w-5 h-5 text-muted-foreground" />
+                <Send className="w-5 h-5 neon-green-text" />
               </div>
             ))
           )}
