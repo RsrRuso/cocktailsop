@@ -31,12 +31,11 @@ const TopNav = () => {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'notifications'
         },
         () => {
-          console.log('Notifications updated, refetching...');
           fetchUnreadNotifications();
         }
       )
@@ -48,12 +47,11 @@ const TopNav = () => {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'messages'
         },
         () => {
-          console.log('Messages updated, refetching...');
           fetchUnreadMessages();
         }
       )

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Check, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,6 +13,7 @@ interface Message {
   sender_id: string;
   created_at: string;
   read: boolean;
+  delivered: boolean;
 }
 
 interface Profile {
@@ -20,6 +21,13 @@ interface Profile {
   username: string;
   full_name: string;
   avatar_url: string | null;
+}
+
+interface PresenceState {
+  presence_ref: string;
+  user_id: string;
+  online_at: string;
+  typing?: boolean;
 }
 
 const MessageThread = () => {
@@ -30,7 +38,11 @@ const MessageThread = () => {
   const [newMessage, setNewMessage] = useState("");
   const [otherUser, setOtherUser] = useState<Profile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [isOnline, setIsOnline] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     initializeChat();
@@ -144,6 +156,32 @@ const MessageThread = () => {
     }, 100);
   };
 
+  const handleTyping = (value: string) => {
+    setNewMessage(value);
+    
+    if (channelRef.current) {
+      channelRef.current.track({
+        user_id: currentUserId,
+        online_at: new Date().toISOString(),
+        typing: value.length > 0
+      });
+
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      typingTimeoutRef.current = setTimeout(() => {
+        if (channelRef.current) {
+          channelRef.current.track({
+            user_id: currentUserId,
+            online_at: new Date().toISOString(),
+            typing: false
+          });
+        }
+      }, 1000);
+    }
+  };
+
   const handleSend = async () => {
     if (!newMessage.trim() || !currentUserId) return;
 
@@ -152,7 +190,8 @@ const MessageThread = () => {
       .insert({
         conversation_id: conversationId,
         sender_id: currentUserId,
-        content: newMessage.trim()
+        content: newMessage.trim(),
+        delivered: false
       });
 
     if (error) {
@@ -171,6 +210,14 @@ const MessageThread = () => {
       .eq("id", conversationId);
 
     setNewMessage("");
+    
+    if (channelRef.current) {
+      channelRef.current.track({
+        user_id: currentUserId,
+        online_at: new Date().toISOString(),
+        typing: false
+      });
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -194,13 +241,30 @@ const MessageThread = () => {
         
         {otherUser && (
           <>
-            <Avatar className="w-10 h-10">
-              <AvatarImage src={otherUser.avatar_url || undefined} />
-              <AvatarFallback>{otherUser.username[0]}</AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <div className={`relative w-12 h-12 rounded-full p-[2px] transition-all duration-300 ${
+                isOnline ? 'neon-green' : 'bg-border'
+              }`}>
+                <Avatar className={`w-full h-full border-2 border-background ${
+                  isOnline ? 'animate-pulse' : ''
+                }`}>
+                  <AvatarImage src={otherUser.avatar_url || undefined} />
+                  <AvatarFallback className="text-sm">{otherUser.username[0].toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </div>
+              {isOnline && (
+                <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full neon-green border-2 border-background"></div>
+              )}
+            </div>
             <div className="flex-1">
               <p className="font-semibold">{otherUser.full_name}</p>
-              <p className="text-sm text-muted-foreground">@{otherUser.username}</p>
+              {isTyping ? (
+                <p className="text-sm neon-green-text animate-pulse">typing...</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {isOnline ? 'Online' : '@' + otherUser.username}
+                </p>
+              )}
             </div>
           </>
         )}
@@ -214,23 +278,36 @@ const MessageThread = () => {
             className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+              className={`max-w-[75%] rounded-2xl px-4 py-2 message-3d transition-all duration-300 ${
                 message.sender_id === currentUserId
                   ? 'bg-primary text-primary-foreground'
                   : 'glass'
               }`}
             >
               <p className="text-sm break-words">{message.content}</p>
-              <p className={`text-xs mt-1 ${
+              <div className={`flex items-center gap-1 mt-1 text-xs ${
                 message.sender_id === currentUserId 
-                  ? 'text-primary-foreground/70' 
+                  ? 'text-primary-foreground/70 justify-end' 
                   : 'text-muted-foreground'
               }`}>
-                {new Date(message.created_at).toLocaleTimeString([], { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </p>
+                <span>
+                  {new Date(message.created_at).toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </span>
+                {message.sender_id === currentUserId && (
+                  <>
+                    {message.read ? (
+                      <CheckCheck className="w-3 h-3 neon-green-text" />
+                    ) : message.delivered ? (
+                      <CheckCheck className="w-3 h-3" />
+                    ) : (
+                      <Check className="w-3 h-3" />
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -242,16 +319,16 @@ const MessageThread = () => {
         <div className="flex gap-2">
           <Input
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => handleTyping(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type a message..."
-            className="flex-1"
+            className="flex-1 glass"
           />
           <Button
             size="icon"
             onClick={handleSend}
             disabled={!newMessage.trim()}
-            className="glow-primary"
+            className="neon-green"
           >
             <Send className="w-5 h-5" />
           </Button>

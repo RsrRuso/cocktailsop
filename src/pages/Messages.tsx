@@ -38,7 +38,7 @@ const Messages = () => {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'messages'
         },
@@ -168,18 +168,20 @@ const Messages = () => {
             conversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className="glass-hover rounded-xl p-4 flex items-center gap-3 cursor-pointer"
+                className="glass-hover rounded-xl p-4 flex items-center gap-3 cursor-pointer message-3d transition-all duration-300"
                 onClick={() => navigate(`/messages/${conversation.id}`)}
               >
                 <div className="relative">
-                  <Avatar className="w-14 h-14">
-                    <AvatarImage src={conversation.otherUser?.avatar_url || undefined} />
-                    <AvatarFallback>
-                      {conversation.otherUser?.username?.[0] || '?'}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative w-14 h-14 rounded-full p-[2px] neon-green">
+                    <Avatar className="w-full h-full border-2 border-background">
+                      <AvatarImage src={conversation.otherUser?.avatar_url || undefined} />
+                      <AvatarFallback className="text-sm">
+                        {conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
                   {conversation.unreadCount && conversation.unreadCount > 0 && (
-                    <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                    <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center neon-green animate-pulse">
                       <span className="text-xs font-bold text-primary-foreground">
                         {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
                       </span>
