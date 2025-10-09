@@ -52,10 +52,8 @@ const MessageThread = () => {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
-  const [customEmojiInput, setCustomEmojiInput] = useState("");
   const [longPressMessageId, setLongPressMessageId] = useState<string | null>(null);
-  const [showSwipeMenu, setShowSwipeMenu] = useState<string | null>(null);
-  const [showExpandedEmojis, setShowExpandedEmojis] = useState(false);
+  const [showEmojiDropdown, setShowEmojiDropdown] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const channelRef = useRef<any>(null);
@@ -491,9 +489,9 @@ const MessageThread = () => {
       clearTimeout(longPressTimerRef.current);
     }
 
-    // Swipe left to show menu (right to left swipe)
+    // Swipe left to reply (right to left swipe)
     if (deltaX < -50 && Math.abs(deltaY) < 30 && deltaTime < 300) {
-      setShowSwipeMenu(message.id);
+      setReplyingTo(message);
       if (navigator.vibrate) {
         navigator.vibrate(30);
       }
@@ -502,12 +500,25 @@ const MessageThread = () => {
     touchStartRef.current = null;
   };
 
-  const handleCustomEmoji = (messageId: string) => {
-    if (customEmojiInput.trim()) {
-      handleReaction(messageId, customEmojiInput.trim());
-      setCustomEmojiInput("");
-    }
-  };
+  const quickEmojis = ["❤️", "😂", "😮", "😢", "🙏", "👍", "🔥"];
+
+  const allEmojis = [
+    "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊",
+    "😇", "🥰", "😍", "🤩", "😘", "😗", "😚", "😙", "😋", "😛", "😜", "🤪",
+    "😝", "🤑", "🤗", "🤭", "🤫", "🤔", "🤐", "🤨", "😐", "😑", "😶", "😏",
+    "😒", "🙄", "😬", "🤥", "😌", "😔", "😪", "🤤", "😴", "😷", "🤒", "🤕",
+    "🤢", "🤮", "🤧", "🥵", "🥶", "😶‍🌫️", "🥴", "😵", "🤯", "🤠", "🥳", "😎",
+    "🤓", "🧐", "😕", "😟", "🙁", "☹️", "😮", "😯", "😲", "😳", "🥺", "😦",
+    "😧", "😨", "😰", "😥", "😢", "😭", "😱", "😖", "😣", "😞", "😓", "😩",
+    "😫", "🥱", "😤", "😡", "😠", "🤬", "😈", "👿", "💀", "☠️", "💩", "🤡",
+    "👹", "👺", "👻", "👽", "👾", "🤖", "😺", "😸", "😹", "😻", "😼", "😽",
+    "🙀", "😿", "😾", "🙈", "🙉", "🙊", "💋", "💌", "💘", "💝", "💖", "💗",
+    "💓", "💞", "💕", "💟", "❣️", "💔", "❤️", "🧡", "💛", "💚", "💙", "💜",
+    "🤎", "🖤", "🤍", "💯", "💢", "💥", "💫", "💦", "💨", "🕳️", "💬", "👁️‍🗨️",
+    "🗨️", "🗯️", "💭", "💤", "👋", "🤚", "🖐️", "✋", "🖖", "👌", "🤏", "✌️",
+    "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "🖕", "👇", "☝️", "👍", "👎",
+    "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🤝", "🙏"
+  ];
 
   return (
     <div className="fixed inset-0 bg-background flex flex-col">
@@ -661,93 +672,69 @@ const MessageThread = () => {
                     )}
                   </div>
 
-                  {/* Emoji Picker */}
-                  {showEmojiPicker === message.id && (
-                    <div className="absolute bottom-full mb-2 glass backdrop-blur-xl rounded-2xl p-4 z-20 border border-primary/20 glow-primary shadow-2xl max-w-xs">
-                      <div className="flex flex-col gap-3">
-                        {/* Quick reactions */}
-                        <div className="flex gap-2 items-center flex-wrap">
-                          {["🔥", "❤️", "👍", "😂", "😮", "😢", "🎉", "👏"].map((emoji) => (
+                  {/* Long Press Emoji Reactions */}
+                  {longPressMessageId === message.id && (
+                    <div className="absolute bottom-full left-0 mb-2 bg-background/95 backdrop-blur-xl border border-primary/20 rounded-2xl shadow-2xl p-3 z-50">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                          {quickEmojis.map(emoji => (
                             <button
                               key={emoji}
-                              onClick={() => handleReaction(message.id, emoji)}
-                              className="hover:scale-125 transition-transform text-2xl w-10 h-10 flex items-center justify-center rounded-lg hover:bg-primary/10"
+                              onClick={() => {
+                                handleReaction(message.id, emoji);
+                                setLongPressMessageId(null);
+                              }}
+                              className="text-2xl hover:scale-125 transition-transform p-2 hover:bg-primary/10 rounded-lg flex-shrink-0"
                             >
                               {emoji}
                             </button>
                           ))}
                         </div>
-                        
-                        {/* Expandable emoji grid */}
-                        {showExpandedEmojis && (
-                          <div className="grid grid-cols-6 gap-2 pt-2 border-t border-border/30 max-h-48 overflow-y-auto">
-                            {["😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🤭", "🤫", "🤥", "😶", "😐", "😑", "😬", "🙄", "😯", "😦", "😧", "😮", "😲", "🥱", "😴", "🤤", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "💀", "☠️", "👻", "💩", "🤡", "👽", "🤖", "🎃", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "💋", "👋", "🤚", "🖐", "✋", "🖖", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "👇", "☝️", "👍", "👎", "✊", "👊", "🤛", "🤜", "👏", "🙌", "👐", "🤲", "🤝", "🙏", "💪", "🦾", "🦿", "🦵", "🦶", "👂", "🦻", "👃", "🧠", "🫀", "🫁", "🦷", "🦴", "👀", "👁", "👅", "👄"].map((emoji) => (
-                              <button
-                                key={emoji}
-                                onClick={() => handleReaction(message.id, emoji)}
-                                className="hover:scale-125 transition-transform text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary/10"
-                              >
-                                {emoji}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {/* Toggle button */}
                         <button
-                          onClick={() => setShowExpandedEmojis(!showExpandedEmojis)}
-                          className="w-full py-2 glass rounded-lg hover:bg-primary/10 transition-all text-sm font-medium flex items-center justify-center gap-2"
+                          onClick={() => setShowEmojiDropdown(!showEmojiDropdown)}
+                          className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-primary/20 hover:bg-primary/30 rounded-lg transition-colors"
                         >
-                          <Plus className="w-4 h-4" />
-                          <span>{showExpandedEmojis ? 'Show Less' : 'More Emojis'}</span>
+                          <Plus className="w-5 h-5" />
                         </button>
+                      </div>
+                      
+                      {showEmojiDropdown && (
+                        <div className="mt-2 grid grid-cols-8 gap-1 max-h-[200px] overflow-y-auto border-t border-primary/20 pt-2">
+                          {allEmojis.map(emoji => (
+                            <button
+                              key={emoji}
+                              onClick={() => {
+                                handleReaction(message.id, emoji);
+                                setShowEmojiDropdown(false);
+                                setLongPressMessageId(null);
+                              }}
+                              className="text-xl hover:scale-110 transition-transform p-1 hover:bg-primary/10 rounded"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Emoji Picker */}
+                  {showEmojiPicker === message.id && (
+                    <div className="absolute bottom-full mb-2 glass backdrop-blur-xl rounded-2xl p-4 z-20 border border-primary/20 glow-primary shadow-2xl max-w-xs">
+                      <div className="flex flex-wrap gap-2">
+                        {["🔥", "❤️", "👍", "😂", "😮", "😢", "🎉", "👏"].map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => handleReaction(message.id, emoji)}
+                            className="hover:scale-125 transition-transform text-2xl w-10 h-10 flex items-center justify-center rounded-lg hover:bg-primary/10"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Swipe Menu */}
-                  {showSwipeMenu === message.id && (
-                    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center" onClick={() => setShowSwipeMenu(null)}>
-                      <div className="glass backdrop-blur-xl rounded-2xl p-6 border border-primary/20 glow-primary shadow-2xl m-4" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex flex-col gap-3 min-w-[200px]">
-                          <button
-                            onClick={() => {
-                              setReplyingTo(message);
-                              setShowSwipeMenu(null);
-                            }}
-                            className="flex items-center gap-3 p-3 rounded-lg glass hover:bg-primary/10 transition-all text-left"
-                          >
-                            <Reply className="w-5 h-5" />
-                            <span>Reply</span>
-                          </button>
-                          {isOwn && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  startEdit(message);
-                                  setShowSwipeMenu(null);
-                                }}
-                                className="flex items-center gap-3 p-3 rounded-lg glass hover:bg-primary/10 transition-all text-left"
-                              >
-                                <Edit2 className="w-5 h-5" />
-                                <span>Edit</span>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  handleUnsend(message.id);
-                                  setShowSwipeMenu(null);
-                                }}
-                                className="flex items-center gap-3 p-3 rounded-lg glass hover:bg-destructive/10 text-destructive transition-all text-left"
-                              >
-                                <Trash2 className="w-5 h-5" />
-                                <span>Delete</span>
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
                 
                 {/* Reactions Display */}
