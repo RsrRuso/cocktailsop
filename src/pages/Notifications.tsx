@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface Notification {
   id: string;
@@ -16,9 +17,30 @@ interface Notification {
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchNotifications();
+    
+    // Set up realtime subscription for new notifications
+    const channel = supabase
+      .channel('notifications-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications'
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchNotifications = async () => {
@@ -49,6 +71,32 @@ const Notifications = () => {
       toast.error("Failed to mark all as read");
     } else {
       toast.success("All notifications marked as read");
+      fetchNotifications();
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'like':
+        return <Heart className="w-5 h-5 text-red-500" fill="currentColor" />;
+      case 'comment':
+        return <MessageCircle className="w-5 h-5 text-blue-500" />;
+      case 'follow':
+        return <UserPlus className="w-5 h-5 text-green-500" />;
+      case 'profile_visit':
+        return <Eye className="w-5 h-5 text-purple-500" />;
+      default:
+        return <Bell className="w-5 h-5 text-primary" />;
+    }
+  };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    // Mark as read if not already
+    if (!notification.read) {
+      await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("id", notification.id);
       fetchNotifications();
     }
   };
@@ -85,14 +133,25 @@ const Notifications = () => {
             {notifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`glass rounded-xl p-4 ${
-                  !notification.read ? "border-l-4 border-primary" : ""
+                onClick={() => handleNotificationClick(notification)}
+                className={`glass rounded-xl p-4 cursor-pointer hover:glass-hover transition-all ${
+                  !notification.read ? "border-l-4 border-primary bg-primary/5" : ""
                 }`}
               >
-                <p className="text-sm">{notification.content}</p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {new Date(notification.created_at).toLocaleDateString()}
-                </p>
+                <div className="flex items-start gap-3">
+                  <div className="shrink-0 mt-0.5">
+                    {getNotificationIcon(notification.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">{notification.content}</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {new Date(notification.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  {!notification.read && (
+                    <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2" />
+                  )}
+                </div>
               </div>
             ))}
           </div>
