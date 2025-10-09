@@ -309,6 +309,7 @@ const EditProfile = () => {
                 <SelectValue placeholder="Select your profession" />
               </SelectTrigger>
               <SelectContent className="glass">
+                <SelectItem value="founder_of_specverse">Founder of SpecVerse</SelectItem>
                 <SelectItem value="mixologist">Mixologist</SelectItem>
                 <SelectItem value="bartender">Bartender</SelectItem>
                 <SelectItem value="sommelier">Sommelier</SelectItem>

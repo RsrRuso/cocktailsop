@@ -649,6 +649,7 @@ export type Database = {
         | "investor"
         | "manufacturer"
         | "consultant"
+        | "founder_of_specverse"
       subscription_status: "trial" | "active" | "expired" | "cancelled"
     }
     CompositeTypes: {
@@ -789,6 +790,7 @@ export const Constants = {
         "investor",
         "manufacturer",
         "consultant",
+        "founder_of_specverse",
       ],
       subscription_status: ["trial", "active", "expired", "cancelled"],
     },
