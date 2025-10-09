@@ -76,15 +76,35 @@ const Home = () => {
   const [selectedPostContent, setSelectedPostContent] = useState<string>("");
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [likedReels, setLikedReels] = useState<Set<string>>(new Set());
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
-    fetchCurrentUser();
-    fetchStories();
-    fetchPosts();
-    fetchReels();
-    fetchLikedPosts();
+    let isMounted = true;
+    
+    const initializeData = async () => {
+      // Fetch all data in parallel for faster loading
+      await Promise.all([
+        fetchCurrentUser(),
+        fetchStories(),
+        fetchPosts(),
+        fetchReels(),
+        fetchLikedPosts()
+      ]);
+      
+      if (isMounted) {
+        setIsInitialLoad(false);
+      }
+    };
 
-    // Set up realtime subscriptions
+    initializeData();
+
+    // Set up realtime subscriptions with debouncing
+    let updateTimeout: NodeJS.Timeout;
+    const debouncedUpdate = (callback: () => void) => {
+      clearTimeout(updateTimeout);
+      updateTimeout = setTimeout(callback, 500);
+    };
+
     const storiesChannel = supabase
       .channel('home-stories')
       .on(
@@ -94,7 +114,7 @@ const Home = () => {
           schema: 'public',
           table: 'stories'
         },
-        () => fetchStories()
+        () => debouncedUpdate(fetchStories)
       )
       .subscribe();
 
@@ -107,7 +127,7 @@ const Home = () => {
           schema: 'public',
           table: 'posts'
         },
-        () => fetchPosts()
+        () => debouncedUpdate(fetchPosts)
       )
       .subscribe();
 
@@ -120,7 +140,7 @@ const Home = () => {
           schema: 'public',
           table: 'reels'
         },
-        () => fetchReels()
+        () => debouncedUpdate(fetchReels)
       )
       .subscribe();
 
@@ -134,13 +154,17 @@ const Home = () => {
           table: 'post_likes'
         },
         () => {
-          fetchPosts();
-          fetchLikedPosts();
+          debouncedUpdate(() => {
+            fetchPosts();
+            fetchLikedPosts();
+          });
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
+      clearTimeout(updateTimeout);
       supabase.removeChannel(storiesChannel);
       supabase.removeChannel(postsChannel);
       supabase.removeChannel(reelsChannel);
@@ -172,43 +196,55 @@ const Home = () => {
   };
 
   const fetchStories = async () => {
-    const { data } = await supabase
-      .from("stories")
-      .select("*, profiles(username, avatar_url)")
-      .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false })
-      .limit(20);
+    try {
+      const { data } = await supabase
+        .from("stories")
+        .select("*, profiles(username, avatar_url)")
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(20);
 
-    if (data) {
-      // Preload all story images immediately for instant display
-      data.forEach((story: any) => {
-        story.media_urls?.forEach((url: string) => {
-          const img = new Image();
-          img.src = url;
+      if (data) {
+        // Preload first few story images only for performance
+        data.slice(0, 5).forEach((story: any) => {
+          if (story.media_urls?.[0]) {
+            const img = new Image();
+            img.src = story.media_urls[0];
+          }
         });
-      });
-      setStories(data);
+        setStories(data);
+      }
+    } catch (error) {
+      console.error('Error fetching stories:', error);
     }
   };
 
   const fetchPosts = async () => {
-    const { data } = await supabase
-      .from("posts")
-      .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level)")
-      .order("created_at", { ascending: false })
-      .limit(20);
+    try {
+      const { data } = await supabase
+        .from("posts")
+        .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level)")
+        .order("created_at", { ascending: false })
+        .limit(20);
 
-    if (data) setPosts(data);
+      if (data) setPosts(data);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    }
   };
 
   const fetchReels = async () => {
-    const { data } = await supabase
-      .from("reels")
-      .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level)")
-      .order("created_at", { ascending: false })
-      .limit(20);
+    try {
+      const { data } = await supabase
+        .from("reels")
+        .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level)")
+        .order("created_at", { ascending: false })
+        .limit(20);
 
-    if (data) setReels(data);
+      if (data) setReels(data);
+    } catch (error) {
+      console.error('Error fetching reels:', error);
+    }
   };
 
   const fetchLikedPosts = async () => {
@@ -469,12 +505,14 @@ const Home = () => {
                         <video 
                           src={url} 
                           controls 
+                          preload="metadata"
                           className="w-full h-auto max-h-96 object-cover"
                         />
                       ) : (
                         <img 
                           src={url} 
                           alt="Post media"
+                          loading="lazy"
                           className="w-full h-auto object-cover"
                         />
                       )}

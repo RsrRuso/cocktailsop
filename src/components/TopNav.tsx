@@ -21,11 +21,25 @@ const TopNav = () => {
   });
 
   useEffect(() => {
-    fetchCurrentUser();
-    fetchUnreadNotifications();
-    fetchUnreadMessages();
+    let isMounted = true;
+    
+    const initializeNav = async () => {
+      await Promise.all([
+        fetchCurrentUser(),
+        fetchUnreadNotifications(),
+        fetchUnreadMessages()
+      ]);
+    };
 
-    // Set up realtime subscriptions for notifications
+    initializeNav();
+
+    // Set up realtime subscriptions with debouncing
+    let updateTimeout: NodeJS.Timeout;
+    const debouncedUpdate = (callback: () => void) => {
+      clearTimeout(updateTimeout);
+      updateTimeout = setTimeout(callback, 1000);
+    };
+
     const notificationsChannel = supabase
       .channel('topnav-notifications')
       .on(
@@ -36,12 +50,11 @@ const TopNav = () => {
           table: 'notifications'
         },
         () => {
-          fetchUnreadNotifications();
+          if (isMounted) debouncedUpdate(fetchUnreadNotifications);
         }
       )
       .subscribe();
 
-    // Set up realtime subscriptions for messages
     const messagesChannel = supabase
       .channel('topnav-messages')
       .on(
@@ -52,12 +65,14 @@ const TopNav = () => {
           table: 'messages'
         },
         () => {
-          fetchUnreadMessages();
+          if (isMounted) debouncedUpdate(fetchUnreadMessages);
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
+      clearTimeout(updateTimeout);
       supabase.removeChannel(notificationsChannel);
       supabase.removeChannel(messagesChannel);
     };
