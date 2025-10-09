@@ -69,14 +69,91 @@ const UserProfile = () => {
         .delete()
         .eq("follower_id", user.id)
         .eq("following_id", userId);
+      
+      // Decrement follower count for the followed user
+      if (profile) {
+        await supabase
+          .from("profiles")
+          .update({ follower_count: Math.max(0, profile.follower_count - 1) })
+          .eq("id", userId);
+      }
+      
+      // Decrement following count for current user
+      const { data: currentProfile } = await supabase
+        .from("profiles")
+        .select("following_count")
+        .eq("id", user.id)
+        .single();
+      
+      if (currentProfile) {
+        await supabase
+          .from("profiles")
+          .update({ following_count: Math.max(0, currentProfile.following_count - 1) })
+          .eq("id", user.id);
+      }
+      
       setIsFollowing(false);
     } else {
       await supabase
         .from("follows")
         .insert({ follower_id: user.id, following_id: userId });
+      
+      // Increment follower count for the followed user
+      if (profile) {
+        await supabase
+          .from("profiles")
+          .update({ follower_count: profile.follower_count + 1 })
+          .eq("id", userId);
+      }
+      
+      // Increment following count for current user
+      const { data: currentProfile } = await supabase
+        .from("profiles")
+        .select("following_count")
+        .eq("id", user.id)
+        .single();
+      
+      if (currentProfile) {
+        await supabase
+          .from("profiles")
+          .update({ following_count: currentProfile.following_count + 1 })
+          .eq("id", user.id);
+      }
+      
       setIsFollowing(true);
     }
     fetchProfile();
+  };
+
+  const handleMessage = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !userId) return;
+
+    // Check if conversation already exists
+    const { data: existingConversations } = await supabase
+      .from("conversations")
+      .select("*")
+      .contains("participant_ids", [user.id])
+      .contains("participant_ids", [userId]);
+
+    let conversationId;
+
+    if (existingConversations && existingConversations.length > 0) {
+      conversationId = existingConversations[0].id;
+    } else {
+      // Create new conversation
+      const { data: newConversation } = await supabase
+        .from("conversations")
+        .insert({ participant_ids: [user.id, userId] })
+        .select()
+        .single();
+      
+      conversationId = newConversation?.id;
+    }
+
+    if (conversationId) {
+      navigate(`/messages/${conversationId}`);
+    }
   };
 
   const getBadgeColor = (level: string) => {
@@ -169,13 +246,22 @@ const UserProfile = () => {
             </div>
           </div>
 
-          <Button 
-            className={`w-full ${isFollowing ? 'glass-hover' : 'glow-primary'}`}
-            variant={isFollowing ? 'outline' : 'default'}
-            onClick={handleFollow}
-          >
-            {isFollowing ? 'Following' : 'Follow'}
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              className={`flex-1 ${isFollowing ? 'glass-hover' : 'glow-primary'}`}
+              variant={isFollowing ? 'outline' : 'default'}
+              onClick={handleFollow}
+            >
+              {isFollowing ? 'Following' : 'Follow'}
+            </Button>
+            <Button 
+              className="flex-1 glass-hover"
+              variant="outline"
+              onClick={handleMessage}
+            >
+              Message
+            </Button>
+          </div>
         </div>
 
         {/* Content Tabs */}

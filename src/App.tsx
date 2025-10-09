@@ -12,6 +12,7 @@ import UserProfile from "./pages/UserProfile";
 import EditProfile from "./pages/EditProfile";
 import Thunder from "./pages/Thunder";
 import Messages from "./pages/Messages";
+import MessageThread from "./pages/MessageThread";
 import Notifications from "./pages/Notifications";
 import Tools from "./pages/Tools";
 import OpsTools from "./pages/OpsTools";
@@ -43,6 +44,7 @@ const App = () => (
           <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/thunder" element={<Thunder />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/messages/:conversationId" element={<MessageThread />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/ops-tools" element={<OpsTools />} />

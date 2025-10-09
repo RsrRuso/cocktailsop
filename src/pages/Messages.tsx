@@ -5,17 +5,21 @@ import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageCircle, Send, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+interface Profile {
+  id: string;
+  username: string;
+  full_name: string;
+  avatar_url: string | null;
+}
 
 interface Conversation {
   id: string;
   participant_ids: string[];
   last_message_at: string;
-  profiles?: {
-    id: string;
-    username: string;
-    full_name: string;
-    avatar_url: string;
-  };
+  otherUser?: Profile;
+  unreadCount?: number;
 }
 
 const Messages = () => {
@@ -36,16 +40,40 @@ const Messages = () => {
 
     const { data } = await supabase
       .from("conversations")
-      .select(`
-        id,
-        participant_ids,
-        last_message_at
-      `)
+      .select("*")
       .contains("participant_ids", [user.id])
       .order("last_message_at", { ascending: false });
 
     if (data) {
-      setConversations(data);
+      // Fetch profiles and unread counts for each conversation
+      const conversationsWithData = await Promise.all(
+        data.map(async (conv) => {
+          const otherUserId = conv.participant_ids.find((id: string) => id !== user.id);
+          
+          // Get other user's profile
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", otherUserId)
+            .single();
+
+          // Get unread message count
+          const { count } = await supabase
+            .from("messages")
+            .select("*", { count: 'exact', head: true })
+            .eq("conversation_id", conv.id)
+            .eq("read", false)
+            .neq("sender_id", user.id);
+
+          return {
+            ...conv,
+            otherUser: profile,
+            unreadCount: count || 0
+          };
+        })
+      );
+
+      setConversations(conversationsWithData);
     }
   };
 
@@ -89,19 +117,33 @@ const Messages = () => {
             conversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className="glass-hover rounded-xl p-4 flex items-center gap-3 cursor-pointer message-3d neon-green border border-[hsl(var(--neon-green))]"
+                className="glass-hover rounded-xl p-4 flex items-center gap-3 cursor-pointer"
                 onClick={() => navigate(`/messages/${conversation.id}`)}
               >
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <MessageCircle className="w-6 h-6 text-white" />
+                <div className="relative">
+                  <Avatar className="w-14 h-14">
+                    <AvatarImage src={conversation.otherUser?.avatar_url || undefined} />
+                    <AvatarFallback>
+                      {conversation.otherUser?.username?.[0] || '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  {conversation.unreadCount && conversation.unreadCount > 0 && (
+                    <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                      <span className="text-xs font-bold text-primary-foreground">
+                        {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold neon-green-text">Conversation</p>
+                  <p className="font-semibold">
+                    {conversation.otherUser?.full_name || 'Unknown User'}
+                  </p>
                   <p className="text-sm text-muted-foreground truncate">
-                    Tap to view messages
+                    @{conversation.otherUser?.username || 'unknown'}
                   </p>
                 </div>
-                <Send className="w-5 h-5 neon-green-text" />
+                <Send className="w-5 h-5 text-muted-foreground" />
               </div>
             ))
           )}
