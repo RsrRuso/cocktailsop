@@ -66,12 +66,16 @@ const Profile = () => {
     if (!title) return { icon: Briefcase, gradient: "from-pink-600 to-orange-500", score: 0 };
     
     const badges: Record<string, { icon: any; gradient: string; score: number }> = {
-      mixology: { icon: Wine, gradient: "from-pink-600 to-orange-500", score: 94 },
-      operations: { icon: Warehouse, gradient: "from-pink-500 to-orange-600", score: 88 },
-      chef: { icon: ChefHat, gradient: "from-purple-600 to-pink-500", score: 92 },
-      logistics: { icon: Truck, gradient: "from-blue-600 to-purple-500", score: 85 },
-      management: { icon: Building2, gradient: "from-green-600 to-teal-500", score: 90 },
+      mixologist: { icon: Wine, gradient: "from-pink-600 to-orange-500", score: 94 },
+      bartender: { icon: Wine, gradient: "from-blue-600 to-purple-500", score: 88 },
       sommelier: { icon: Wine, gradient: "from-orange-600 to-amber-700", score: 96 },
+      bar_manager: { icon: Warehouse, gradient: "from-pink-500 to-orange-600", score: 92 },
+      beverage_director: { icon: Building2, gradient: "from-purple-600 to-pink-500", score: 95 },
+      consultant: { icon: Briefcase, gradient: "from-green-600 to-teal-500", score: 90 },
+      brand_ambassador: { icon: Building2, gradient: "from-yellow-600 to-orange-500", score: 87 },
+      manufacturer: { icon: Warehouse, gradient: "from-blue-600 to-cyan-500", score: 85 },
+      distributor: { icon: Truck, gradient: "from-purple-600 to-indigo-500", score: 83 },
+      investor: { icon: Building2, gradient: "from-green-600 to-emerald-600", score: 91 },
     };
     
     return badges[title] || { icon: Briefcase, gradient: "from-pink-600 to-orange-500", score: 75 };
@@ -131,7 +135,7 @@ const Profile = () => {
 
           <Button 
             className="w-full glow-primary"
-            onClick={() => toast.info("Edit profile feature coming soon!")}
+            onClick={() => navigate("/profile/edit")}
           >
             <Settings className="w-4 h-4 mr-2" />
             Edit Profile

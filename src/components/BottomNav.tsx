@@ -1,4 +1,4 @@
-import { Home, PlusSquare, User, Briefcase, Video, BarChart3 } from "lucide-react";
+import { Home, PlusSquare, User, Briefcase, Video, Wrench } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const BottomNav = () => {
@@ -21,9 +21,9 @@ const BottomNav = () => {
         </button>
 
         <button
-          onClick={() => navigate("/tools")}
+          onClick={() => navigate("/explore")}
           className={`flex flex-col items-center gap-1 transition-colors ${
-            isActive("/tools") ? "text-primary glow-primary" : "text-muted-foreground"
+            isActive("/explore") ? "text-primary glow-primary" : "text-muted-foreground"
           }`}
         >
           <Briefcase className="w-5 h-5" />
@@ -50,13 +50,13 @@ const BottomNav = () => {
         </button>
 
         <button
-          onClick={() => navigate("/profile")}
+          onClick={() => navigate("/ops-tools")}
           className={`flex flex-col items-center gap-1 transition-colors ${
-            isActive("/profile") ? "text-primary glow-primary" : "text-muted-foreground"
+            isActive("/ops-tools") ? "text-primary glow-primary" : "text-muted-foreground"
           }`}
         >
-          <User className="w-5 h-5" />
-          <span className="text-xs">Profile</span>
+          <Wrench className="w-5 h-5" />
+          <span className="text-xs">Ops</span>
         </button>
       </div>
     </div>

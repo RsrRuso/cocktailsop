@@ -8,10 +8,16 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
 import Thunder from "./pages/Thunder";
 import Notifications from "./pages/Notifications";
 import Tools from "./pages/Tools";
+import OpsTools from "./pages/OpsTools";
+import Explore from "./pages/Explore";
 import Create from "./pages/Create";
+import CreatePost from "./pages/CreatePost";
+import CreateStory from "./pages/CreateStory";
+import CreateReel from "./pages/CreateReel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,10 +34,16 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/home" element={<Home />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/thunder" element={<Thunder />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/tools" element={<Tools />} />
+          <Route path="/ops-tools" element={<OpsTools />} />
+          <Route path="/explore" element={<Explore />} />
           <Route path="/create" element={<Create />} />
+          <Route path="/create/post" element={<CreatePost />} />
+          <Route path="/create/story" element={<CreateStory />} />
+          <Route path="/create/reel" element={<CreateReel />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

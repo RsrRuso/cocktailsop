@@ -1,9 +1,11 @@
+import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Camera, Video, Image } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const Create = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
@@ -12,7 +14,10 @@ const Create = () => {
         <h2 className="text-2xl font-bold">Create Content</h2>
 
         <div className="space-y-4">
-          <button className="w-full glass-hover rounded-2xl p-6 flex items-center gap-4">
+          <button 
+            onClick={() => navigate("/create/post")}
+            className="w-full glass-hover rounded-2xl p-6 flex items-center gap-4"
+          >
             <div className="w-14 h-14 rounded-xl glass flex items-center justify-center glow-primary">
               <Camera className="w-7 h-7 text-primary" />
             </div>
@@ -22,7 +27,10 @@ const Create = () => {
             </div>
           </button>
 
-          <button className="w-full glass-hover rounded-2xl p-6 flex items-center gap-4">
+          <button 
+            onClick={() => navigate("/create/reel")}
+            className="w-full glass-hover rounded-2xl p-6 flex items-center gap-4"
+          >
             <div className="w-14 h-14 rounded-xl glass flex items-center justify-center glow-accent">
               <Video className="w-7 h-7 text-accent" />
             </div>
@@ -32,7 +40,10 @@ const Create = () => {
             </div>
           </button>
 
-          <button className="w-full glass-hover rounded-2xl p-6 flex items-center gap-4">
+          <button 
+            onClick={() => navigate("/create/story")}
+            className="w-full glass-hover rounded-2xl p-6 flex items-center gap-4"
+          >
             <div className="w-14 h-14 rounded-xl glass flex items-center justify-center">
               <Image className="w-7 h-7 text-secondary" />
             </div>
