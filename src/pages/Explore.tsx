@@ -14,8 +14,7 @@ const Explore = () => {
   const [activeTab, setActiveTab] = useState<"top" | "accounts" | "regions">("top");
 
   useEffect(() => {
-    fetchExplorePosts();
-    fetchProfiles();
+    Promise.all([fetchExplorePosts(), fetchProfiles()]);
   }, []);
 
   const fetchExplorePosts = async () => {
@@ -117,6 +116,7 @@ const Explore = () => {
                     src={post.media_urls[0]}
                     alt=""
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-pink-600 to-orange-500 flex items-center justify-center p-4">

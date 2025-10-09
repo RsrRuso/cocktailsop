@@ -39,10 +39,14 @@ const Reels = () => {
   const [selectedReelCaption, setSelectedReelCaption] = useState("");
 
   useEffect(() => {
-    fetchCurrentUser();
-    fetchReels();
+    Promise.all([fetchCurrentUser(), fetchReels()]);
 
-    // Set up realtime subscription
+    let updateTimeout: NodeJS.Timeout;
+    const debouncedFetch = () => {
+      clearTimeout(updateTimeout);
+      updateTimeout = setTimeout(() => fetchReels(), 1000);
+    };
+
     const reelsChannel = supabase
       .channel('reels-page')
       .on(
@@ -52,11 +56,12 @@ const Reels = () => {
           schema: 'public',
           table: 'reels'
         },
-        () => fetchReels()
+        debouncedFetch
       )
       .subscribe();
 
     return () => {
+      clearTimeout(updateTimeout);
       supabase.removeChannel(reelsChannel);
     };
   }, []);

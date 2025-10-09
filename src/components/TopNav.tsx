@@ -181,7 +181,10 @@ const TopNav = () => {
 
           <button onClick={() => navigate("/profile")}>
             <Avatar className="w-10 h-10 ring-2 ring-primary/30">
-              <AvatarImage src={currentUser?.avatar_url || undefined} />
+              <AvatarImage 
+                src={currentUser?.avatar_url || undefined}
+                loading="eager"
+              />
               <AvatarFallback>{currentUser?.username?.[0] || "U"}</AvatarFallback>
             </Avatar>
           </button>

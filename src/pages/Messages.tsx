@@ -32,7 +32,12 @@ const Messages = () => {
   useEffect(() => {
     fetchConversations();
 
-    // Set up realtime subscription for messages
+    let updateTimeout: NodeJS.Timeout;
+    const debouncedFetch = () => {
+      clearTimeout(updateTimeout);
+      updateTimeout = setTimeout(() => fetchConversations(), 1000);
+    };
+
     const messagesChannel = supabase
       .channel('messages-list')
       .on(
@@ -42,13 +47,12 @@ const Messages = () => {
           schema: 'public',
           table: 'messages'
         },
-        () => {
-          fetchConversations();
-        }
+        debouncedFetch
       )
       .subscribe();
 
     return () => {
+      clearTimeout(updateTimeout);
       supabase.removeChannel(messagesChannel);
     };
   }, []);
@@ -66,34 +70,41 @@ const Messages = () => {
       .contains("participant_ids", [user.id])
       .order("last_message_at", { ascending: false });
 
-    if (data) {
-      // Fetch profiles and unread counts for each conversation
-      const conversationsWithData = await Promise.all(
-        data.map(async (conv) => {
-          const otherUserId = conv.participant_ids.find((id: string) => id !== user.id);
-          
-          // Get other user's profile
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", otherUserId)
-            .single();
+    if (data && data.length > 0) {
+      const otherUserIds = data.map(conv => 
+        conv.participant_ids.find((id: string) => id !== user.id)
+      ).filter(Boolean);
 
-          // Get unread message count
-          const { count } = await supabase
-            .from("messages")
-            .select("*", { count: 'exact', head: true })
-            .eq("conversation_id", conv.id)
-            .eq("read", false)
-            .neq("sender_id", user.id);
+      // Fetch all profiles and unread counts in parallel
+      const [profilesData, unreadCountsData] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("*")
+          .in("id", otherUserIds),
+        Promise.all(
+          data.map(conv =>
+            supabase
+              .from("messages")
+              .select("*", { count: 'exact', head: true })
+              .eq("conversation_id", conv.id)
+              .eq("read", false)
+              .neq("sender_id", user.id)
+          )
+        )
+      ]);
 
-          return {
-            ...conv,
-            otherUser: profile,
-            unreadCount: count || 0
-          };
-        })
+      const profilesMap = new Map(
+        profilesData.data?.map(p => [p.id, p]) || []
       );
+
+      const conversationsWithData = data.map((conv, index) => {
+        const otherUserId = conv.participant_ids.find((id: string) => id !== user.id);
+        return {
+          ...conv,
+          otherUser: profilesMap.get(otherUserId),
+          unreadCount: unreadCountsData[index].count || 0
+        };
+      });
 
       setConversations(conversationsWithData);
     }
@@ -174,7 +185,10 @@ const Messages = () => {
                 <div className="relative">
                   <div className="relative w-14 h-14 rounded-full p-[2px] neon-green">
                     <Avatar className="w-full h-full border-2 border-background">
-                      <AvatarImage src={conversation.otherUser?.avatar_url || undefined} />
+                      <AvatarImage 
+                        src={conversation.otherUser?.avatar_url || undefined}
+                        loading="eager"
+                      />
                       <AvatarFallback className="text-sm">
                         {conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
                       </AvatarFallback>
