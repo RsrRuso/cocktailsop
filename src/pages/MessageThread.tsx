@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Send, Check, CheckCheck, Smile, Reply, Edit2, Trash2, X, Plus, Paperclip, Image as ImageIcon, Mic, Video, FileText, StopCircle } from "lucide-react";
+import { ArrowLeft, Send, Check, CheckCheck, Smile, Reply, Edit2, Trash2, X, Plus, Paperclip, Image as ImageIcon, Mic, Video, FileText, StopCircle, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -54,18 +54,19 @@ const MessageThread = () => {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
-  const [longPressMessageId, setLongPressMessageId] = useState<string | null>(null);
-  const [showEmojiDropdown, setShowEmojiDropdown] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const channelRef = useRef<any>(null);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
-  const longPressTimerRef = useRef<NodeJS.Timeout>();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const videoChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     initializeChat();
@@ -491,31 +492,10 @@ const MessageThread = () => {
       y: touch.clientY,
       time: Date.now(),
     };
-
-    // Start long press timer
-    longPressTimerRef.current = setTimeout(() => {
-      setLongPressMessageId(messageId);
-      setShowEmojiPicker(messageId);
-      // Haptic feedback if available
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-    }, 500);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - touchStartRef.current.x;
-    const deltaY = touch.clientY - touchStartRef.current.y;
-
-    // If moved too much, cancel long press
-    if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-      if (longPressTimerRef.current) {
-        clearTimeout(longPressTimerRef.current);
-      }
-    }
+    // Allow normal scrolling
   };
 
   const handleTouchEnd = (e: React.TouchEvent, message: Message) => {
@@ -525,11 +505,6 @@ const MessageThread = () => {
     const deltaX = touch.clientX - touchStartRef.current.x;
     const deltaY = touch.clientY - touchStartRef.current.y;
     const deltaTime = Date.now() - touchStartRef.current.time;
-
-    // Clear long press timer
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-    }
 
     // Swipe left to reply (right to left swipe)
     if (deltaX < -50 && Math.abs(deltaY) < 30 && deltaTime < 300) {
@@ -604,16 +579,28 @@ const MessageThread = () => {
   const startVoiceRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       
       audioChunksRef.current = [];
       
       recorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       };
 
       recorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        
+        if (audioBlob.size === 0) {
+          toast({
+            title: "Error",
+            description: "No audio recorded",
+            variant: "destructive",
+          });
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
         
         // Upload audio
         const fileName = `voice_${Date.now()}.webm`;
@@ -623,7 +610,16 @@ const MessageThread = () => {
           .from('stories')
           .upload(filePath, audioBlob);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          toast({
+            title: "Error",
+            description: "Failed to upload voice message",
+            variant: "destructive",
+          });
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
 
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
@@ -642,6 +638,11 @@ const MessageThread = () => {
 
         await supabase.from("messages").insert(messageData);
         
+        toast({
+          title: "Success",
+          description: "Voice message sent",
+        });
+        
         stream.getTracks().forEach(track => track.stop());
         setIsRecording(false);
         setMediaRecorder(null);
@@ -650,11 +651,16 @@ const MessageThread = () => {
       recorder.start();
       setMediaRecorder(recorder);
       setIsRecording(true);
+      
+      toast({
+        title: "Recording",
+        description: "Recording voice message...",
+      });
     } catch (error) {
       console.error("Error starting recording:", error);
       toast({
         title: "Error",
-        description: "Failed to start recording",
+        description: "Failed to start recording. Please check microphone permissions.",
         variant: "destructive",
       });
     }
@@ -663,6 +669,116 @@ const MessageThread = () => {
   const stopVoiceRecording = () => {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
       mediaRecorder.stop();
+    }
+  };
+
+  const startVideoRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user' }, 
+        audio: true 
+      });
+      
+      setVideoStream(stream);
+      if (videoPreviewRef.current) {
+        videoPreviewRef.current.srcObject = stream;
+        videoPreviewRef.current.play();
+      }
+      
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      videoChunksRef.current = [];
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          videoChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+        
+        if (videoBlob.size === 0) {
+          toast({
+            title: "Error",
+            description: "No video recorded",
+            variant: "destructive",
+          });
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+        
+        // Upload video
+        const fileName = `video_${Date.now()}.webm`;
+        const filePath = `${currentUser.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('stories')
+          .upload(filePath, videoBlob);
+
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          toast({
+            title: "Error",
+            description: "Failed to upload video message",
+            variant: "destructive",
+          });
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('stories')
+          .getPublicUrl(filePath);
+
+        // Send video message
+        const messageData = {
+          conversation_id: conversationId,
+          sender_id: currentUser.id,
+          content: '🎥 Video message',
+          delivered: false,
+          media_url: publicUrl,
+          media_type: 'video' as const,
+        };
+
+        await supabase.from("messages").insert(messageData);
+        
+        toast({
+          title: "Success",
+          description: "Video message sent",
+        });
+        
+        stream.getTracks().forEach(track => track.stop());
+        setVideoStream(null);
+        setIsRecordingVideo(false);
+        setMediaRecorder(null);
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecordingVideo(true);
+      
+      toast({
+        title: "Recording",
+        description: "Recording video message...",
+      });
+    } catch (error) {
+      console.error("Error starting video recording:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start video recording. Please check camera permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopVideoRecording = () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+    }
+    if (videoStream) {
+      videoStream.getTracks().forEach(track => track.stop());
+      setVideoStream(null);
     }
   };
 
@@ -894,51 +1010,6 @@ const MessageThread = () => {
                     )}
                   </div>
 
-                  {/* Long Press Emoji Reactions */}
-                  {longPressMessageId === message.id && (
-                    <div className="absolute bottom-full left-0 mb-2 bg-background/95 backdrop-blur-xl border border-primary/20 rounded-2xl shadow-2xl p-3 z-50 min-w-[280px]">
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-transparent hover:scrollbar-thumb-primary/50 flex-1">
-                          {quickEmojis.map(emoji => (
-                            <button
-                              key={emoji}
-                              onClick={() => {
-                                handleReaction(message.id, emoji);
-                                setLongPressMessageId(null);
-                              }}
-                              className="text-2xl hover:scale-125 transition-transform p-2 hover:bg-primary/10 rounded-lg flex-shrink-0"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                        <button
-                          onClick={() => setShowEmojiDropdown(!showEmojiDropdown)}
-                          className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-primary/20 hover:bg-primary/30 rounded-lg transition-colors"
-                        >
-                          <Plus className="w-5 h-5" />
-                        </button>
-                      </div>
-                      
-                      {showEmojiDropdown && (
-                        <div className="mt-2 grid grid-cols-8 gap-1 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-transparent hover:scrollbar-thumb-primary/50 border-t border-primary/20 pt-2">
-                          {allEmojis.map(emoji => (
-                            <button
-                              key={emoji}
-                              onClick={() => {
-                                handleReaction(message.id, emoji);
-                                setShowEmojiDropdown(false);
-                                setLongPressMessageId(null);
-                              }}
-                              className="text-xl hover:scale-110 transition-transform p-1 hover:bg-primary/10 rounded"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
                   
                   {/* Emoji Picker */}
                   {showEmojiPicker === message.id && (
@@ -1022,6 +1093,45 @@ const MessageThread = () => {
             </Button>
           </div>
         )}
+        
+        {/* Video Recording Preview */}
+        {isRecordingVideo && (
+          <div className="fixed inset-0 bg-black z-50 flex flex-col">
+            <div className="flex-1 relative">
+              <video
+                ref={videoPreviewRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="p-4 bg-background/95 backdrop-blur-xl flex justify-center gap-4">
+              <Button
+                size="lg"
+                variant="destructive"
+                onClick={stopVideoRecording}
+                className="flex items-center gap-2"
+              >
+                <StopCircle className="w-5 h-5" />
+                Stop & Send
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => {
+                  stopVideoRecording();
+                  setIsRecordingVideo(false);
+                }}
+                className="flex items-center gap-2"
+              >
+                <X className="w-5 h-5" />
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+        
         <div className="flex gap-2 items-end relative">
           <input
             ref={fileInputRef}
@@ -1088,6 +1198,16 @@ const MessageThread = () => {
                   <FileText className="w-5 h-5 text-primary" />
                   <span>Document</span>
                 </button>
+                <button
+                  onClick={() => {
+                    startVideoRecording();
+                    setShowAttachMenu(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-primary/10 rounded-lg transition-colors"
+                >
+                  <Camera className="w-5 h-5 text-primary" />
+                  <span>Record Video</span>
+                </button>
               </div>
             )}
           </div>
@@ -1103,6 +1223,7 @@ const MessageThread = () => {
               }
             }}
             className={`shrink-0 glass ${isRecording ? 'neon-red animate-pulse' : ''}`}
+            title={isRecording ? "Stop recording" : "Record voice message"}
           >
             {isRecording ? <StopCircle className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           </Button>
