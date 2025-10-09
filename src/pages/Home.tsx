@@ -77,6 +77,8 @@ const Home = () => {
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [likedReels, setLikedReels] = useState<Set<string>>(new Set());
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isReelDialogOpen, setIsReelDialogOpen] = useState(false);
+  const [selectedReelId, setSelectedReelId] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -284,8 +286,25 @@ const Home = () => {
 
     const isLiked = likedPosts.has(postId);
 
+    // Optimistic update - instant feedback like Instagram
     if (isLiked) {
-      // Unlike
+      setLikedPosts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
+      setPosts(prev => prev.map(p => 
+        p.id === postId ? { ...p, like_count: Math.max(0, p.like_count - 1) } : p
+      ));
+    } else {
+      setLikedPosts(prev => new Set(prev).add(postId));
+      setPosts(prev => prev.map(p => 
+        p.id === postId ? { ...p, like_count: p.like_count + 1 } : p
+      ));
+    }
+
+    // Background API call
+    if (isLiked) {
       const { error } = await supabase
         .from("post_likes")
         .delete()
@@ -293,16 +312,13 @@ const Home = () => {
         .eq("user_id", currentUser.id);
 
       if (error) {
-        toast.error("Failed to unlike post");
-      } else {
-        setLikedPosts(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(postId);
-          return newSet;
-        });
+        // Revert on error
+        setLikedPosts(prev => new Set(prev).add(postId));
+        setPosts(prev => prev.map(p => 
+          p.id === postId ? { ...p, like_count: p.like_count + 1 } : p
+        ));
       }
     } else {
-      // Like
       const { error } = await supabase
         .from("post_likes")
         .insert({
@@ -311,9 +327,15 @@ const Home = () => {
         });
 
       if (error) {
-        toast.error("Failed to like post");
-      } else {
-        setLikedPosts(prev => new Set(prev).add(postId));
+        // Revert on error
+        setLikedPosts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(postId);
+          return newSet;
+        });
+        setPosts(prev => prev.map(p => 
+          p.id === postId ? { ...p, like_count: Math.max(0, p.like_count - 1) } : p
+        ));
       }
     }
   };
@@ -326,6 +348,24 @@ const Home = () => {
 
     const isLiked = likedReels.has(reelId);
 
+    // Optimistic update - instant feedback
+    if (isLiked) {
+      setLikedReels(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(reelId);
+        return newSet;
+      });
+      setReels(prev => prev.map(r => 
+        r.id === reelId ? { ...r, like_count: Math.max(0, r.like_count - 1) } : r
+      ));
+    } else {
+      setLikedReels(prev => new Set(prev).add(reelId));
+      setReels(prev => prev.map(r => 
+        r.id === reelId ? { ...r, like_count: r.like_count + 1 } : r
+      ));
+    }
+
+    // Background API call
     if (isLiked) {
       const { error } = await supabase
         .from("reel_likes")
@@ -333,20 +373,28 @@ const Home = () => {
         .eq("reel_id", reelId)
         .eq("user_id", currentUser.id);
 
-      if (!error) {
-        setLikedReels(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(reelId);
-          return newSet;
-        });
+      if (error) {
+        // Revert on error
+        setLikedReels(prev => new Set(prev).add(reelId));
+        setReels(prev => prev.map(r => 
+          r.id === reelId ? { ...r, like_count: r.like_count + 1 } : r
+        ));
       }
     } else {
       const { error } = await supabase
         .from("reel_likes")
         .insert({ reel_id: reelId, user_id: currentUser.id });
 
-      if (!error) {
-        setLikedReels(prev => new Set(prev).add(reelId));
+      if (error) {
+        // Revert on error
+        setLikedReels(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(reelId);
+          return newSet;
+        });
+        setReels(prev => prev.map(r => 
+          r.id === reelId ? { ...r, like_count: Math.max(0, r.like_count - 1) } : r
+        ));
       }
     }
   };
@@ -598,6 +646,7 @@ const Home = () => {
         open={commentsDialogOpen}
         onOpenChange={setCommentsDialogOpen}
         postId={selectedPostId}
+        isReel={feed.find(f => f.id === selectedPostId)?.type === 'reel'}
       />
 
       <BottomNav />

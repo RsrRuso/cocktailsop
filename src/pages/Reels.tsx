@@ -125,6 +125,24 @@ const Reels = () => {
 
     const isLiked = likedReels.has(reelId);
 
+    // Optimistic update
+    if (isLiked) {
+      setLikedReels(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(reelId);
+        return newSet;
+      });
+      setReels(prev => prev.map(r => 
+        r.id === reelId ? { ...r, like_count: Math.max(0, r.like_count - 1) } : r
+      ));
+    } else {
+      setLikedReels(prev => new Set(prev).add(reelId));
+      setReels(prev => prev.map(r => 
+        r.id === reelId ? { ...r, like_count: r.like_count + 1 } : r
+      ));
+    }
+
+    // Background API call
     if (isLiked) {
       const { error } = await supabase
         .from("reel_likes")
@@ -132,20 +150,26 @@ const Reels = () => {
         .eq("reel_id", reelId)
         .eq("user_id", currentUser.id);
 
-      if (!error) {
-        setLikedReels(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(reelId);
-          return newSet;
-        });
+      if (error) {
+        setLikedReels(prev => new Set(prev).add(reelId));
+        setReels(prev => prev.map(r => 
+          r.id === reelId ? { ...r, like_count: r.like_count + 1 } : r
+        ));
       }
     } else {
       const { error } = await supabase
         .from("reel_likes")
         .insert({ reel_id: reelId, user_id: currentUser.id });
 
-      if (!error) {
-        setLikedReels(prev => new Set(prev).add(reelId));
+      if (error) {
+        setLikedReels(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(reelId);
+          return newSet;
+        });
+        setReels(prev => prev.map(r => 
+          r.id === reelId ? { ...r, like_count: Math.max(0, r.like_count - 1) } : r
+        ));
       }
     }
   };
@@ -203,9 +227,9 @@ const Reels = () => {
                 <div className="flex flex-col items-center gap-1">
                   <button 
                     onClick={() => handleLikeReel(reel.id)}
-                    className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform"
+                    className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform active:scale-95"
                   >
-                    <Heart className={`w-5 h-5 ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+                    <Heart className={`w-5 h-5 transition-all ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500 scale-110' : 'text-white'}`} />
                   </button>
                   <span className="text-white text-xs font-semibold drop-shadow-lg">{reel.like_count || 0}</span>
                 </div>
