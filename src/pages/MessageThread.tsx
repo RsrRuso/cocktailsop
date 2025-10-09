@@ -762,11 +762,19 @@ const MessageThread = () => {
               <div className="flex flex-col max-w-[70%]">
                 <div
                   className={`${
-                    isOwn ? "bg-primary/20 backdrop-blur-lg border border-primary/30 glow-primary" : "glass glow-accent"
-                  } rounded-2xl px-4 py-2 message-3d relative group`}
+                    message.media_url && (message.media_type === 'image' || message.media_type === 'video')
+                      ? '' // No background for media messages
+                      : isOwn 
+                        ? "bg-primary/20 backdrop-blur-lg border border-primary/30 glow-primary" 
+                        : "glass glow-accent"
+                  } ${
+                    message.media_url && (message.media_type === 'image' || message.media_type === 'video')
+                      ? 'p-0' // No padding for media
+                      : 'px-4 py-2'
+                  } rounded-2xl message-3d relative group`}
                 >
                   {repliedMessage && (
-                    <div className="mb-2 pb-2 border-b border-border/30 text-xs opacity-70">
+                    <div className={`${message.media_url && (message.media_type === 'image' || message.media_type === 'video') ? 'px-4 pt-2' : ''} mb-2 pb-2 border-b border-border/30 text-xs opacity-70`}>
                       <div className="flex items-center gap-1">
                         <Reply className="w-3 h-3" />
                         <span>Replying to:</span>
@@ -777,19 +785,23 @@ const MessageThread = () => {
                   
                   {/* Media Display */}
                   {message.media_url && message.media_type === 'image' && (
-                    <img 
-                      src={message.media_url} 
-                      alt="Shared image" 
-                      className="rounded-lg max-w-full h-auto mb-2 max-h-[300px] object-cover"
-                    />
+                    <div className="mb-2 overflow-hidden rounded-lg">
+                      <img 
+                        src={message.media_url} 
+                        alt="Shared image" 
+                        className="max-w-full h-auto max-h-[300px] w-full object-cover"
+                      />
+                    </div>
                   )}
                   
                   {message.media_url && message.media_type === 'video' && (
-                    <video 
-                      src={message.media_url} 
-                      controls 
-                      className="rounded-lg max-w-full h-auto mb-2 max-h-[300px]"
-                    />
+                    <div className="mb-2 overflow-hidden rounded-lg">
+                      <video 
+                        src={message.media_url} 
+                        controls 
+                        className="max-w-full h-auto max-h-[300px] w-full"
+                      />
+                    </div>
                   )}
                   
                   {message.media_url && message.media_type === 'voice' && (
@@ -812,11 +824,11 @@ const MessageThread = () => {
                     </a>
                   )}
                   
-                  <p className="text-sm break-words">{message.content}</p>
+                  <p className={`${message.media_url && (message.media_type === 'image' || message.media_type === 'video') ? 'px-4 pb-2' : ''} text-sm break-words`}>{message.content}</p>
                   {message.edited && (
-                    <span className="text-xs opacity-50 italic ml-2">edited</span>
+                    <span className={`${message.media_url && (message.media_type === 'image' || message.media_type === 'video') ? 'px-4' : ''} text-xs opacity-50 italic ml-2`}>edited</span>
                   )}
-                  <div className="flex items-center justify-between gap-2 mt-1">
+                  <div className={`${message.media_url && (message.media_type === 'image' || message.media_type === 'video') ? 'px-4 pb-2' : ''} flex items-center justify-between gap-2 mt-1`}>
                     <span className="text-xs opacity-70">
                       {new Date(message.created_at).toLocaleTimeString([], {
                         hour: "2-digit",
