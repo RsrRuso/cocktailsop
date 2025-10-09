@@ -101,8 +101,17 @@ const StoryViewer = () => {
   }
 
   const currentStory = stories[currentStoryIndex];
-  const currentMediaUrl = currentStory.media_urls[currentMediaIndex];
-  const currentMediaType = currentStory.media_types[currentMediaIndex];
+  
+  // Safety checks for arrays
+  if (!currentStory || !currentStory.media_urls || currentStory.media_urls.length === 0) {
+    navigate(-1);
+    return null;
+  }
+
+  const currentMediaUrl = currentStory.media_urls[currentMediaIndex] || currentStory.media_urls[0];
+  const currentMediaType = (currentStory.media_types && currentStory.media_types[currentMediaIndex]) 
+    || currentStory.media_types?.[0] 
+    || 'image';
   const totalMedia = currentStory.media_urls.length;
 
   return (
