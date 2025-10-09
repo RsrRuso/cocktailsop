@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Share2, Copy, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+import UserSelectionDialog from "./UserSelectionDialog";
 
 interface ShareDialogProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface ShareDialogProps {
 
 const ShareDialog = ({ open, onOpenChange, postId, postContent }: ShareDialogProps) => {
   const [copied, setCopied] = useState(false);
+  const [showUserSelection, setShowUserSelection] = useState(false);
   const shareUrl = `${window.location.origin}/post/${postId}`;
 
   const handleCopyLink = () => {
@@ -28,20 +30,53 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent }: ShareDialogPro
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleShareExternal = (platform: string) => {
-    const text = encodeURIComponent(postContent);
-    const url = encodeURIComponent(shareUrl);
+  const handleShareExternal = async (platform: string) => {
+    const text = postContent.slice(0, 100) + (postContent.length > 100 ? '...' : '');
+    
+    // Try native share first on mobile
+    if (navigator.share && platform === 'native') {
+      try {
+        await navigator.share({
+          title: 'Check out this post',
+          text: text,
+          url: shareUrl,
+        });
+        toast.success('Shared successfully!');
+        return;
+      } catch (err) {
+        // User cancelled or error occurred
+        return;
+      }
+    }
+
+    const encodedText = encodeURIComponent(text);
+    const encodedUrl = encodeURIComponent(shareUrl);
     
     const shareUrls: Record<string, string> = {
-      twitter: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
-      whatsapp: `https://wa.me/?text=${text}%20${url}`,
-      telegram: `https://t.me/share/url?url=${url}&text=${text}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      whatsapp: `https://wa.me/?text=${encodedText}%20${encodedUrl}`,
+      telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
     };
 
     if (shareUrls[platform]) {
-      window.open(shareUrls[platform], '_blank', 'width=600,height=400');
-      toast.success(`Sharing to ${platform}!`);
+      const width = 600;
+      const height = 600;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+      
+      const popup = window.open(
+        shareUrls[platform], 
+        '_blank', 
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`
+      );
+      
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        // Popup blocked, fallback to direct link
+        window.location.href = shareUrls[platform];
+      } else {
+        toast.success(`Opening ${platform}...`);
+      }
     }
   };
 
@@ -60,10 +95,7 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent }: ShareDialogPro
           <div className="space-y-3">
             <label className="text-sm font-medium text-primary">Share in Direct Message</label>
             <Button
-              onClick={() => {
-                onOpenChange(false);
-                toast.info("Opening messages...");
-              }}
+              onClick={() => setShowUserSelection(true)}
               className="w-full glow-primary h-12"
             >
               <Send className="w-5 h-5 mr-2" />
@@ -131,6 +163,13 @@ const ShareDialog = ({ open, onOpenChange, postId, postContent }: ShareDialogPro
           </div>
         </div>
       </DialogContent>
+
+      <UserSelectionDialog
+        open={showUserSelection}
+        onOpenChange={setShowUserSelection}
+        postContent={postContent}
+        postId={postId}
+      />
     </Dialog>
   );
 };

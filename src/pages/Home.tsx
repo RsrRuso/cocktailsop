@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreVertical, Trash2, Edit } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -423,6 +423,14 @@ const Home = () => {
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="glass">
+                      {item.type === 'post' && (
+                        <DropdownMenuItem 
+                          onClick={() => navigate(`/edit-post/${item.id}`)}
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Post
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem 
                         onClick={() => item.type === 'post' ? handleDeletePost(item.id) : toast.info("Reel deletion coming soon")}
                         className="text-destructive"
@@ -474,7 +482,7 @@ const Home = () => {
                   }`}
                 >
                   <Heart className={`w-5 h-5 ${(item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)) ? 'fill-current' : ''}`} />
-                  <span className="text-sm">{item.like_count}</span>
+                  <span className="text-sm font-bold min-w-[20px]">{item.like_count || 0}</span>
                 </button>
                 <button 
                   onClick={() => {
@@ -484,17 +492,18 @@ const Home = () => {
                   className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"
                 >
                   <MessageCircle className="w-5 h-5" />
-                  <span className="text-sm font-bold">{item.comment_count}</span>
+                  <span className="text-sm font-bold min-w-[20px]">{item.comment_count || 0}</span>
                 </button>
                 <button 
                   onClick={() => {
                     setSelectedPostId(item.id);
-                    setSelectedPostContent('content' in item ? item.content : '');
+                    setSelectedPostContent(item.type === 'post' ? item.content : item.caption);
                     setShareDialogOpen(true);
                   }}
                   className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"
                 >
-                  <Send className="w-5 h-5" />
+                  <Share2 className="w-5 h-5" />
+                  <span className="text-xs">Share</span>
                 </button>
               </div>
             </div>

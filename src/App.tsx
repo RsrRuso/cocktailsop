@@ -10,6 +10,8 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import UserProfile from "./pages/UserProfile";
 import EditProfile from "./pages/EditProfile";
+import EditPost from "./pages/EditPost";
+import EditReel from "./pages/EditReel";
 import Thunder from "./pages/Thunder";
 import Messages from "./pages/Messages";
 import MessageThread from "./pages/MessageThread";
@@ -43,6 +45,8 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/user/:userId" element={<UserProfile />} />
           <Route path="/profile/edit" element={<EditProfile />} />
+          <Route path="/edit-post/:id" element={<EditPost />} />
+          <Route path="/edit-reel/:id" element={<EditReel />} />
           <Route path="/thunder" element={<Thunder />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/messages/:conversationId" element={<MessageThread />} />

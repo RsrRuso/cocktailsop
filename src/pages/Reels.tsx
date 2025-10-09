@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music, Trash2, Edit } from "lucide-react";
+import { Heart, MessageCircle, Share2, Bookmark, MoreVertical, Music, Trash2, Edit } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import { toast } from "sonner";
 import {
@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ShareDialog from "@/components/ShareDialog";
 
 interface Reel {
   id: string;
@@ -33,6 +34,9 @@ const Reels = () => {
   const [reels, setReels] = useState<Reel[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showShare, setShowShare] = useState(false);
+  const [selectedReelId, setSelectedReelId] = useState("");
+  const [selectedReelCaption, setSelectedReelCaption] = useState("");
 
   useEffect(() => {
     fetchCurrentUser();
@@ -144,18 +148,25 @@ const Reels = () => {
                   <button className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform">
                     <Heart className="w-5 h-5 text-white" />
                   </button>
-                  <span className="text-white text-xs font-semibold drop-shadow-lg">{reel.like_count}</span>
+                  <span className="text-white text-xs font-semibold drop-shadow-lg">{reel.like_count || 0}</span>
                 </div>
 
                 <div className="flex flex-col items-center gap-1">
                   <button className="w-11 h-11 rounded-full neon-green border border-primary/30 flex items-center justify-center hover:scale-110 transition-transform">
                     <MessageCircle className="w-5 h-5 text-black" />
                   </button>
-                  <span className="neon-green-text text-xs font-bold drop-shadow-lg">{reel.comment_count}</span>
+                  <span className="neon-green-text text-xs font-bold drop-shadow-lg">{reel.comment_count || 0}</span>
                 </div>
 
-                <button className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform">
-                  <Send className="w-5 h-5 text-white" />
+                <button 
+                  onClick={() => {
+                    setSelectedReelId(reel.id);
+                    setSelectedReelCaption(reel.caption || '');
+                    setShowShare(true);
+                  }}
+                  className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform"
+                >
+                  <Share2 className="w-5 h-5 text-white" />
                 </button>
 
                 <button className="w-11 h-11 rounded-full glass border border-white/20 flex items-center justify-center hover:scale-110 transition-transform">
@@ -215,6 +226,13 @@ const Reels = () => {
           ))}
         </div>
       )}
+
+      <ShareDialog
+        open={showShare}
+        onOpenChange={setShowShare}
+        postId={selectedReelId}
+        postContent={selectedReelCaption}
+      />
     </div>
   );
 };
