@@ -134,7 +134,7 @@ const Explore = () => {
               <div
                 key={profile.id}
                 className="glass-hover rounded-2xl p-4 flex items-center gap-4 cursor-pointer"
-                onClick={() => navigate("/profile")}
+                onClick={() => navigate(`/user/${profile.id}`)}
               >
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-600 to-orange-500 flex items-center justify-center text-white font-bold text-xl">
                   {profile.username?.[0]?.toUpperCase()}

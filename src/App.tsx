@@ -8,6 +8,7 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
+import UserProfile from "./pages/UserProfile";
 import EditProfile from "./pages/EditProfile";
 import Thunder from "./pages/Thunder";
 import Messages from "./pages/Messages";
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/home" element={<Home />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/user/:userId" element={<UserProfile />} />
           <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/thunder" element={<Thunder />} />
           <Route path="/messages" element={<Messages />} />
