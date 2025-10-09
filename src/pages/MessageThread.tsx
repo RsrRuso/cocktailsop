@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Send, Check, CheckCheck, Smile, Reply, Edit2, Trash2, X } from "lucide-react";
+import { ArrowLeft, Send, Check, CheckCheck, Smile, Reply, Edit2, Trash2, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -52,9 +52,13 @@ const MessageThread = () => {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+  const [customEmojiInput, setCustomEmojiInput] = useState("");
+  const [longPressMessageId, setLongPressMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const channelRef = useRef<any>(null);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     initializeChat();
@@ -420,6 +424,71 @@ const MessageThread = () => {
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent, messageId: string) => {
+    const touch = e.touches[0];
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now(),
+    };
+
+    // Start long press timer
+    longPressTimerRef.current = setTimeout(() => {
+      setLongPressMessageId(messageId);
+      setShowEmojiPicker(messageId);
+      // Haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 500);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+
+    // If moved too much, cancel long press
+    if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent, message: Message) => {
+    if (!touchStartRef.current) return;
+
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    const deltaTime = Date.now() - touchStartRef.current.time;
+
+    // Clear long press timer
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
+
+    // Swipe left to reply (right to left swipe)
+    if (deltaX < -50 && Math.abs(deltaY) < 30 && deltaTime < 300) {
+      setReplyingTo(message);
+      if (navigator.vibrate) {
+        navigator.vibrate(30);
+      }
+    }
+
+    touchStartRef.current = null;
+  };
+
+  const handleCustomEmoji = (messageId: string) => {
+    if (customEmojiInput.trim()) {
+      handleReaction(messageId, customEmojiInput.trim());
+      setCustomEmojiInput("");
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-background flex flex-col">
       {/* Header */}
@@ -478,6 +547,9 @@ const MessageThread = () => {
             <div
               key={message.id}
               className={`flex ${isOwn ? "justify-end" : "justify-start"} gap-2 group`}
+              onTouchStart={(e) => handleTouchStart(e, message.id)}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={(e) => handleTouchEnd(e, message)}
             >
               {showAvatar && otherUser && (
                 <Avatar 
@@ -571,16 +643,29 @@ const MessageThread = () => {
 
                   {/* Emoji Picker */}
                   {showEmojiPicker === message.id && (
-                    <div className="absolute bottom-full mb-2 glass backdrop-blur-xl rounded-lg p-2 flex gap-1 z-10 border border-primary/20 glow-primary">
-                      {["❤️", "👍", "😂", "😮", "😢", "🔥"].map((emoji) => (
+                    <div className="absolute bottom-full mb-2 glass backdrop-blur-xl rounded-2xl p-3 z-10 border border-primary/20 glow-primary shadow-2xl">
+                      <div className="flex gap-2 items-center mb-2">
+                        {["🔥", "❤️", "👍", "😂", "😮", "😢"].map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => handleReaction(message.id, emoji)}
+                            className="hover:scale-125 transition-transform text-2xl w-10 h-10 flex items-center justify-center rounded-lg hover:bg-primary/10"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                        <div className="w-px h-8 bg-border mx-1"></div>
                         <button
-                          key={emoji}
-                          onClick={() => handleReaction(message.id, emoji)}
-                          className="hover:scale-125 transition-transform text-lg"
+                          onClick={() => {
+                            const input = prompt("Enter any emoji:");
+                            if (input) handleReaction(message.id, input);
+                          }}
+                          className="w-10 h-10 flex items-center justify-center rounded-lg glass hover:bg-primary/10 transition-all hover:scale-110"
+                          title="Add custom emoji"
                         >
-                          {emoji}
+                          <Plus className="w-5 h-5" />
                         </button>
-                      ))}
+                      </div>
                     </div>
                   )}
                 </div>
