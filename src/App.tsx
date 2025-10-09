@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import EditProfile from "./pages/EditProfile";
 import Thunder from "./pages/Thunder";
+import Messages from "./pages/Messages";
 import Notifications from "./pages/Notifications";
 import Tools from "./pages/Tools";
 import OpsTools from "./pages/OpsTools";
@@ -18,6 +19,7 @@ import Create from "./pages/Create";
 import CreatePost from "./pages/CreatePost";
 import CreateStory from "./pages/CreateStory";
 import CreateReel from "./pages/CreateReel";
+import Reels from "./pages/Reels";
 import Reposted from "./pages/Reposted";
 import NotFound from "./pages/NotFound";
 
@@ -37,6 +39,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/thunder" element={<Thunder />} />
+          <Route path="/messages" element={<Messages />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/ops-tools" element={<OpsTools />} />
@@ -45,6 +48,7 @@ const App = () => (
           <Route path="/create/post" element={<CreatePost />} />
           <Route path="/create/story" element={<CreateStory />} />
           <Route path="/create/reel" element={<CreateReel />} />
+          <Route path="/reels" element={<Reels />} />
           <Route path="/reposted" element={<Reposted />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

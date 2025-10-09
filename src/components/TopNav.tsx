@@ -1,4 +1,4 @@
-import { Bell, MessageCircle, Sun, Moon, Menu } from "lucide-react";
+import { Bell, MessageCircle, Send, Sun, Moon, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -75,10 +75,10 @@ const TopNav = () => {
           </button>
 
           <button
-            onClick={() => navigate("/thunder")}
+            onClick={() => navigate("/messages")}
             className="glass-hover p-2.5 rounded-2xl"
           >
-            <MessageCircle className="w-5 h-5" />
+            <Send className="w-5 h-5" />
           </button>
 
           <button onClick={toggleTheme} className="glass-hover p-2.5 rounded-2xl">
