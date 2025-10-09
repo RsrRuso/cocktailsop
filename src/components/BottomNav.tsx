@@ -1,4 +1,4 @@
-import { Home, PlusSquare, User, Briefcase } from "lucide-react";
+import { Home, PlusSquare, User, Briefcase, Video, BarChart3 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const BottomNav = () => {
@@ -16,8 +16,8 @@ const BottomNav = () => {
             isActive("/home") ? "text-primary glow-primary" : "text-muted-foreground"
           }`}
         >
-          <Home className="w-6 h-6" />
-          <span className="text-xs">Home</span>
+          <Home className="w-5 h-5" />
+          <span className="text-xs">Feed</span>
         </button>
 
         <button
@@ -26,15 +26,17 @@ const BottomNav = () => {
             isActive("/tools") ? "text-primary glow-primary" : "text-muted-foreground"
           }`}
         >
-          <Briefcase className="w-6 h-6" />
-          <span className="text-xs">Tools</span>
+          <Briefcase className="w-5 h-5" />
+          <span className="text-xs">Explore</span>
         </button>
 
         <button
           onClick={() => navigate("/create")}
-          className="flex flex-col items-center gap-1 -mt-8 glass-hover p-4 rounded-full glow-accent"
+          className="flex flex-col items-center gap-1 -mt-6"
         >
-          <PlusSquare className="w-8 h-8 text-accent" />
+          <div className="w-14 h-14 rounded-2xl glass border border-white/20 flex items-center justify-center">
+            <PlusSquare className="w-7 h-7 text-foreground" />
+          </div>
         </button>
 
         <button
@@ -43,8 +45,18 @@ const BottomNav = () => {
             isActive("/profile") ? "text-primary glow-primary" : "text-muted-foreground"
           }`}
         >
-          <User className="w-6 h-6" />
-          <span className="text-xs">Profile</span>
+          <Video className="w-5 h-5" />
+          <span className="text-xs">Reels</span>
+        </button>
+
+        <button
+          onClick={() => navigate("/tools")}
+          className={`flex flex-col items-center gap-1 transition-colors ${
+            isActive("/tools") ? "text-primary glow-primary" : "text-muted-foreground"
+          }`}
+        >
+          <BarChart3 className="w-5 h-5" />
+          <span className="text-xs">Ops</span>
         </button>
       </div>
     </div>
