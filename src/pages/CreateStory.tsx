@@ -66,15 +66,20 @@ const CreateStory = () => {
     }
 
     try {
+      console.log('Starting story upload...');
+      
       // Upload files to storage
       const uploadedUrls: string[] = [];
       const mediaTypes: string[] = [];
 
-      for (const file of selectedMedia) {
+      for (let i = 0; i < selectedMedia.length; i++) {
+        const file = selectedMedia[i];
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        console.log(`Uploading file ${i + 1}/${selectedMedia.length}:`, fileName);
+        
+        const { error: uploadError } = await supabase.storage
           .from('stories')
           .upload(fileName, file, {
             cacheControl: '3600',
@@ -82,6 +87,7 @@ const CreateStory = () => {
           });
 
         if (uploadError) {
+          console.error('Upload error:', uploadError);
           throw uploadError;
         }
 
@@ -91,24 +97,38 @@ const CreateStory = () => {
 
         uploadedUrls.push(publicUrl);
         mediaTypes.push(file.type.startsWith('video') ? 'video' : 'image');
+        
+        toast.info(`Uploaded ${i + 1}/${selectedMedia.length}`);
       }
 
-      // Check if user has an active story
-      const { data: existingStory } = await supabase
+      console.log('All files uploaded, checking for existing story...');
+
+      // Check if user has an active story (within last 24 hours)
+      const { data: existingStories, error: fetchError } = await supabase
         .from("stories")
         .select("*")
         .eq("user_id", user.id)
         .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: false });
 
-      if (existingStory) {
-        // Add to existing story
-        const updatedMediaUrls = [...existingStory.media_urls, ...uploadedUrls];
-        const updatedMediaTypes = [...existingStory.media_types, ...mediaTypes];
+      if (fetchError) {
+        console.error('Error fetching existing stories:', fetchError);
+        throw fetchError;
+      }
 
-        const { error } = await supabase
+      console.log('Existing stories found:', existingStories?.length || 0);
+
+      if (existingStories && existingStories.length > 0) {
+        // Add to the most recent story
+        const existingStory = existingStories[0];
+        console.log('Adding to existing story:', existingStory.id);
+        
+        const updatedMediaUrls = [...(existingStory.media_urls || []), ...uploadedUrls];
+        const updatedMediaTypes = [...(existingStory.media_types || []), ...mediaTypes];
+
+        console.log('Updated media count:', updatedMediaUrls.length);
+
+        const { error: updateError } = await supabase
           .from("stories")
           .update({
             media_urls: updatedMediaUrls,
@@ -116,11 +136,17 @@ const CreateStory = () => {
           })
           .eq("id", existingStory.id);
 
-        if (error) throw error;
-        toast.success("Added to your story!");
+        if (updateError) {
+          console.error('Update error:', updateError);
+          throw updateError;
+        }
+        
+        toast.success(`Added ${uploadedUrls.length} to your story! (${updatedMediaUrls.length} total)`);
       } else {
         // Create new story
-        const { error } = await supabase
+        console.log('Creating new story');
+        
+        const { error: insertError } = await supabase
           .from("stories")
           .insert({
             user_id: user.id,
@@ -128,14 +154,18 @@ const CreateStory = () => {
             media_types: mediaTypes,
           });
 
-        if (error) throw error;
-        toast.success("Story created successfully!");
+        if (insertError) {
+          console.error('Insert error:', insertError);
+          throw insertError;
+        }
+        
+        toast.success(`Story created with ${uploadedUrls.length} media!`);
       }
 
       navigate("/home");
     } catch (error) {
-      console.error('Error creating story:', error);
-      toast.error("Failed to create story");
+      console.error('Error creating/updating story:', error);
+      toast.error(`Failed: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
