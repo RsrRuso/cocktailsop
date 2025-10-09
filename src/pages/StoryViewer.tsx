@@ -22,7 +22,6 @@ const StoryViewer = () => {
   const [stories, setStories] = useState<Story[]>([]);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const touchStartY = useRef(0);
@@ -116,8 +115,20 @@ const StoryViewer = () => {
       return;
     }
 
-    setStories(data as Story[]);
-    setLoading(false);
+    const storiesData = data as Story[];
+    
+    // Preload all images immediately for instant display
+    storiesData.forEach(story => {
+      story.media_urls.forEach((url, index) => {
+        const mediaType = story.media_types?.[index];
+        if (!mediaType || mediaType.startsWith('image')) {
+          const img = new Image();
+          img.src = url;
+        }
+      });
+    });
+
+    setStories(storiesData);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -180,12 +191,8 @@ const StoryViewer = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="text-white">Loading...</div>
-      </div>
-    );
+  if (stories.length === 0) {
+    return null;
   }
 
   const currentStory = stories[currentStoryIndex];

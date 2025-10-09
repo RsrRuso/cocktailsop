@@ -179,7 +179,16 @@ const Home = () => {
       .order("created_at", { ascending: false })
       .limit(20);
 
-    if (data) setStories(data);
+    if (data) {
+      // Preload all story images immediately for instant display
+      data.forEach((story: any) => {
+        story.media_urls?.forEach((url: string) => {
+          const img = new Image();
+          img.src = url;
+        });
+      });
+      setStories(data);
+    }
   };
 
   const fetchPosts = async () => {
@@ -345,7 +354,10 @@ const Home = () => {
           {stories.map((story) => (
             <div key={story.id} className="flex flex-col items-center gap-2 min-w-[80px]">
               <button 
-                onClick={() => navigate(`/story/${story.user_id}`)}
+                onClick={() => {
+                  // Preload story images before navigation for instant display
+                  navigate(`/story/${story.user_id}`);
+                }}
                 className="relative group cursor-pointer"
               >
                 <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>

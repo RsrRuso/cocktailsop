@@ -87,6 +87,9 @@ const Profile = () => {
       setProfile(data);
       setCoverUrl(data.cover_url || "");
       setCurrentUserId(user.id);
+      
+      // Preload story images for instant display
+      fetchStories();
     }
   };
 
@@ -127,7 +130,16 @@ const Profile = () => {
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
 
-    if (data) setStories(data);
+    if (data) {
+      // Preload all story images immediately for instant display
+      data.forEach(story => {
+        story.media_urls?.forEach((url: string) => {
+          const img = new Image();
+          img.src = url;
+        });
+      });
+      setStories(data);
+    }
   };
 
   const handleDeleteStory = async (storyId: string) => {
@@ -331,7 +343,7 @@ const Profile = () => {
                       src={story.media_urls[0]} 
                       alt="Story" 
                       className="w-full h-48 object-cover cursor-pointer"
-                      onClick={() => navigate(`/story/${profile?.username}`)}
+                      onClick={() => navigate(`/story/${currentUserId}`)}
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <Button
