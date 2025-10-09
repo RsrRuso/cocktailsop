@@ -31,6 +31,26 @@ const Messages = () => {
 
   useEffect(() => {
     fetchConversations();
+
+    // Set up realtime subscription for messages
+    const messagesChannel = supabase
+      .channel('messages-list')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => {
+          fetchConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messagesChannel);
+    };
   }, []);
 
   const fetchConversations = async () => {
