@@ -23,33 +23,54 @@ const StoryViewer = () => {
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     fetchStories();
   }, [userId]);
 
   useEffect(() => {
-    // Auto-advance for images after 5 seconds
+    // Reset progress when media changes
+    setProgress(0);
+    
     const currentStory = stories[currentStoryIndex];
-    if (!currentStory) return;
+    if (!currentStory || isPaused) return;
 
     const currentMediaType = currentStory.media_types?.[currentMediaIndex] || 'image';
     
     if (currentMediaType.startsWith('image')) {
-      imageTimerRef.current = setTimeout(() => {
-        goToNextMedia();
-      }, 5000);
+      // For images: progress animation over 5 seconds
+      const duration = 5000;
+      const interval = 50; // Update every 50ms for smooth animation
+      const increment = (interval / duration) * 100;
+      
+      progressIntervalRef.current = setInterval(() => {
+        setProgress(prev => {
+          const newProgress = prev + increment;
+          if (newProgress >= 100) {
+            goToNextMedia();
+            return 100;
+          }
+          return newProgress;
+        });
+      }, interval);
     }
 
     return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
       if (imageTimerRef.current) {
         clearTimeout(imageTimerRef.current);
       }
     };
-  }, [currentStoryIndex, currentMediaIndex, stories]);
+  }, [currentStoryIndex, currentMediaIndex, stories, isPaused]);
 
   useEffect(() => {
     // Preload next media
@@ -116,6 +137,10 @@ const StoryViewer = () => {
     if (imageTimerRef.current) {
       clearTimeout(imageTimerRef.current);
     }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+    setProgress(0);
 
     const currentStory = stories[currentStoryIndex];
     if (currentMediaIndex < currentStory.media_urls.length - 1) {
@@ -132,6 +157,10 @@ const StoryViewer = () => {
     if (imageTimerRef.current) {
       clearTimeout(imageTimerRef.current);
     }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+    setProgress(0);
 
     if (currentMediaIndex > 0) {
       setCurrentMediaIndex(currentMediaIndex - 1);
@@ -139,6 +168,15 @@ const StoryViewer = () => {
       setCurrentStoryIndex(currentStoryIndex - 1);
       const prevStory = stories[currentStoryIndex - 1];
       setCurrentMediaIndex(prevStory.media_urls.length - 1);
+    }
+  };
+
+  const handleVideoProgress = () => {
+    if (videoRef.current) {
+      const { currentTime, duration } = videoRef.current;
+      if (duration > 0) {
+        setProgress((currentTime / duration) * 100);
+      }
     }
   };
 
@@ -176,9 +214,14 @@ const StoryViewer = () => {
         {currentStory.media_urls.map((_, index) => (
           <div key={index} className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden">
             <div
-              className={`h-full bg-white transition-all ${
-                index === currentMediaIndex ? "w-full" : index < currentMediaIndex ? "w-full" : "w-0"
-              }`}
+              className="h-full bg-white transition-all duration-100"
+              style={{
+                width: index === currentMediaIndex 
+                  ? `${progress}%` 
+                  : index < currentMediaIndex 
+                    ? '100%' 
+                    : '0%'
+              }}
             />
           </div>
         ))}
@@ -208,12 +251,16 @@ const StoryViewer = () => {
       <div className="w-full h-full flex items-center justify-center">
         {currentMediaType.startsWith("video") ? (
           <video
+            ref={videoRef}
             key={currentMediaUrl}
             src={currentMediaUrl}
             className="max-w-full max-h-full object-contain"
             autoPlay
             playsInline
             onEnded={goToNextMedia}
+            onTimeUpdate={handleVideoProgress}
+            onPlay={() => setIsPaused(false)}
+            onPause={() => setIsPaused(true)}
           />
         ) : (
           <img 
