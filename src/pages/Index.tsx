@@ -14,14 +14,14 @@ const Index = () => {
     if (session) {
       navigate("/home");
     } else {
-      navigate("/auth");
+      navigate("/landing");
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="flex min-h-screen items-center justify-center">
       <div className="glass glow-primary rounded-2xl p-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold text-gradient-primary">
           SpecVerse
         </h1>
         <p className="text-muted-foreground mt-2">Loading...</p>

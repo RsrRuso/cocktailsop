@@ -5,11 +5,11 @@ const TopNav = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/30">
+    <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20">
       <div className="flex items-center justify-between px-4 py-3">
         <h1
           onClick={() => navigate("/home")}
-          className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer"
+          className="text-2xl font-bold text-gradient-primary cursor-pointer"
         >
           SpecVerse
         </h1>
