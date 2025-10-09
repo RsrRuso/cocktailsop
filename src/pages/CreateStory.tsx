@@ -9,31 +9,46 @@ import TopNav from "@/components/TopNav";
 const CreateStory = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [selectedMedia, setSelectedMedia] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [selectedMedia, setSelectedMedia] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    const maxSize = file.type.startsWith('video') ? 50 * 1024 * 1024 : 15 * 1024 * 1024;
-    if (file.size > maxSize) {
-      toast.error(`File too large. Max ${file.type.startsWith('video') ? '50' : '15'}MB`);
-      return;
-    }
+    const validFiles: File[] = [];
+    const newPreviewUrls: string[] = [];
 
-    setSelectedMedia(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewUrl(reader.result as string);
-      toast.success("High-quality media loaded!");
-    };
-    reader.readAsDataURL(file);
+    files.forEach((file) => {
+      const maxSize = file.type.startsWith('video') ? 50 * 1024 * 1024 : 15 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast.error(`${file.name} is too large. Max ${file.type.startsWith('video') ? '50' : '15'}MB`);
+        return;
+      }
+
+      validFiles.push(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        newPreviewUrls.push(reader.result as string);
+        if (newPreviewUrls.length === validFiles.length) {
+          setPreviewUrls([...previewUrls, ...newPreviewUrls]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    setSelectedMedia([...selectedMedia, ...validFiles]);
+    toast.success(`${validFiles.length} media file(s) added!`);
+  };
+
+  const removeMedia = (index: number) => {
+    setSelectedMedia(selectedMedia.filter((_, i) => i !== index));
+    setPreviewUrls(previewUrls.filter((_, i) => i !== index));
   };
 
   const handleCreateStory = async () => {
-    if (!previewUrl) {
+    if (previewUrls.length === 0) {
       toast.error("Please select media for your story");
       return;
     }
@@ -45,12 +60,16 @@ const CreateStory = () => {
       return;
     }
 
+    const mediaTypes = selectedMedia.map(file => 
+      file.type.startsWith('video') ? 'video' : 'image'
+    );
+
     const { error } = await supabase
       .from("stories")
       .insert({
         user_id: user.id,
-        media_url: previewUrl,
-        media_type: selectedMedia?.type.startsWith('video') ? 'video' : 'image',
+        media_urls: previewUrls,
+        media_types: mediaTypes,
       });
 
     if (error) {
@@ -81,18 +100,26 @@ const CreateStory = () => {
         </div>
 
         <div className="glass rounded-2xl p-8 space-y-6 text-center">
-          {previewUrl ? (
-            <div className="relative">
-              <img src={previewUrl} alt="Story preview" className="w-full h-96 object-cover rounded-2xl" />
-              <button
-                onClick={() => {
-                  setPreviewUrl("");
-                  setSelectedMedia(null);
-                }}
-                className="absolute top-4 right-4 w-10 h-10 bg-red-500 rounded-full flex items-center justify-center"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
+          {previewUrls.length > 0 ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                {previewUrls.map((url, index) => (
+                  <div key={index} className="relative">
+                    {selectedMedia[index]?.type.startsWith('video') ? (
+                      <video src={url} className="w-full h-48 object-cover rounded-xl" />
+                    ) : (
+                      <img src={url} alt={`Preview ${index + 1}`} className="w-full h-48 object-cover rounded-xl" />
+                    )}
+                    <button
+                      onClick={() => removeMedia(index)}
+                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center"
+                    >
+                      <X className="w-4 h-4 text-white" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground">{previewUrls.length} media file(s) added</p>
             </div>
           ) : (
             <>
@@ -114,6 +141,7 @@ const CreateStory = () => {
               ref={fileInputRef}
               type="file"
               accept="image/*,video/*"
+              multiple
               onChange={handleMediaSelect}
               className="hidden"
             />
@@ -138,10 +166,10 @@ const CreateStory = () => {
 
             <Button
               onClick={handleCreateStory}
-              disabled={loading || !previewUrl}
+              disabled={loading || previewUrls.length === 0}
               className="w-full glow-primary h-14"
             >
-              {loading ? "Creating..." : "Share Story"}
+              {loading ? "Creating..." : `Share Story (${previewUrls.length})`}
             </Button>
           </div>
           <p className="text-xs text-center text-muted-foreground mt-2">

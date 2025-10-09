@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Settings, Wine, Briefcase, ChefHat, Warehouse, Truck, Building2, Star } from "lucide-react";
+import { LogOut, Settings, Wine, Briefcase, ChefHat, Warehouse, Truck, Building2, Star, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -15,6 +15,7 @@ interface Profile {
   full_name: string;
   bio: string | null;
   avatar_url: string | null;
+  cover_url: string | null;
   professional_title: string | null;
   badge_level: string;
   follower_count: number;
@@ -22,13 +23,23 @@ interface Profile {
   post_count: number;
 }
 
+interface Story {
+  id: string;
+  media_urls: string[];
+  media_types: string[];
+  created_at: string;
+  expires_at: string;
+}
+
 const Profile = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [coverUrl, setCoverUrl] = useState<string>("");
+  const [stories, setStories] = useState<Story[]>([]);
 
   useEffect(() => {
     fetchProfile();
+    fetchStories();
   }, []);
 
   const fetchProfile = async () => {
@@ -47,6 +58,34 @@ const Profile = () => {
     if (data) {
       setProfile(data);
       setCoverUrl(data.cover_url || "");
+    }
+  };
+
+  const fetchStories = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("stories")
+      .select("*")
+      .eq("user_id", user.id)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false });
+
+    if (data) setStories(data);
+  };
+
+  const handleDeleteStory = async (storyId: string) => {
+    const { error } = await supabase
+      .from("stories")
+      .delete()
+      .eq("id", storyId);
+
+    if (error) {
+      toast.error("Failed to delete story");
+    } else {
+      toast.success("Story deleted");
+      fetchStories();
     }
   };
 
@@ -155,8 +194,9 @@ const Profile = () => {
 
         {/* Content Tabs */}
         <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 glass">
+          <TabsList className="grid w-full grid-cols-4 glass">
             <TabsTrigger value="posts">Posts</TabsTrigger>
+            <TabsTrigger value="stories">Stories</TabsTrigger>
             <TabsTrigger value="reels">Reels</TabsTrigger>
             <TabsTrigger value="growth">Growth</TabsTrigger>
           </TabsList>
@@ -165,6 +205,44 @@ const Profile = () => {
             <div className="glass rounded-2xl p-6 text-center text-muted-foreground">
               <p>No posts yet</p>
             </div>
+          </TabsContent>
+
+          <TabsContent value="stories" className="mt-4">
+            {stories.length === 0 ? (
+              <div className="glass rounded-2xl p-6 text-center text-muted-foreground">
+                <p>No active stories</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {stories.map((story) => (
+                  <div key={story.id} className="relative glass rounded-xl overflow-hidden group">
+                    <img 
+                      src={story.media_urls[0]} 
+                      alt="Story" 
+                      className="w-full h-48 object-cover cursor-pointer"
+                      onClick={() => navigate(`/story/${profile?.username}`)}
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteStory(story.id);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {story.media_urls.length > 1 && (
+                      <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                        {story.media_urls.length} items
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="reels" className="mt-4">

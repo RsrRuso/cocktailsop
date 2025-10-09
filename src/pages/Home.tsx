@@ -9,7 +9,8 @@ import { Heart, MessageCircle, Send } from "lucide-react";
 interface Story {
   id: string;
   user_id: string;
-  media_url: string;
+  media_urls: string[];
+  media_types: string[];
   profiles: {
     username: string;
     avatar_url: string | null;
@@ -126,7 +127,10 @@ const Home = () => {
           {/* Other Stories */}
           {stories.map((story) => (
             <div key={story.id} className="flex flex-col items-center gap-2 min-w-[80px]">
-              <div className="relative group cursor-pointer">
+              <button 
+                onClick={() => navigate(`/story/${story.user_id}`)}
+                className="relative group cursor-pointer"
+              >
                 <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
                 <div className="relative rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-0.5 shadow-xl shadow-orange-500/50">
                   <div className="bg-background rounded-full p-0.5">
@@ -136,7 +140,7 @@ const Home = () => {
                     </Avatar>
                   </div>
                 </div>
-              </div>
+              </button>
               <span className="text-xs text-foreground font-medium truncate w-full text-center">
                 {story.profiles.username}
               </span>

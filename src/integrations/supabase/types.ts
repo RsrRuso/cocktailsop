@@ -391,8 +391,8 @@ export type Database = {
           created_at: string | null
           expires_at: string | null
           id: string
-          media_type: string
-          media_url: string
+          media_types: string[]
+          media_urls: string[]
           user_id: string
           view_count: number | null
         }
@@ -400,8 +400,8 @@ export type Database = {
           created_at?: string | null
           expires_at?: string | null
           id?: string
-          media_type: string
-          media_url: string
+          media_types?: string[]
+          media_urls?: string[]
           user_id: string
           view_count?: number | null
         }
@@ -409,8 +409,8 @@ export type Database = {
           created_at?: string | null
           expires_at?: string | null
           id?: string
-          media_type?: string
-          media_url?: string
+          media_types?: string[]
+          media_urls?: string[]
           user_id?: string
           view_count?: number | null
         }

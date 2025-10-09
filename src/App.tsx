@@ -22,6 +22,7 @@ import CreateStory from "./pages/CreateStory";
 import CreateReel from "./pages/CreateReel";
 import Reels from "./pages/Reels";
 import Reposted from "./pages/Reposted";
+import StoryViewer from "./pages/StoryViewer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
           <Route path="/create/post" element={<CreatePost />} />
           <Route path="/create/story" element={<CreateStory />} />
           <Route path="/create/reel" element={<CreateReel />} />
+          <Route path="/story/:userId" element={<StoryViewer />} />
           <Route path="/reels" element={<Reels />} />
           <Route path="/reposted" element={<Reposted />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
