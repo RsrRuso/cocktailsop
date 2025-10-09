@@ -1,8 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music, Trash2, Edit } from "lucide-react";
 import TopNav from "@/components/TopNav";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Reel {
   id: string;
@@ -25,10 +32,43 @@ const Reels = () => {
   const navigate = useNavigate();
   const [reels, setReels] = useState<Reel[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchReels();
+
+    // Set up realtime subscription
+    const reelsChannel = supabase
+      .channel('reels-page')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reels'
+        },
+        () => fetchReels()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(reelsChannel);
+    };
   }, []);
+
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+    
+    if (data) setCurrentUser(data);
+  };
 
   const fetchReels = async () => {
     const { data } = await supabase
@@ -47,6 +87,22 @@ const Reels = () => {
 
     if (data) {
       setReels(data);
+    }
+  };
+
+  const handleDeleteReel = async (reelId: string) => {
+    try {
+      const { error } = await supabase
+        .from("reels")
+        .delete()
+        .eq("id", reelId);
+
+      if (error) throw error;
+      toast.success("Reel deleted successfully");
+      fetchReels();
+    } catch (error) {
+      console.error('Error deleting reel:', error);
+      toast.error("Failed to delete reel");
     }
   };
 
@@ -106,9 +162,32 @@ const Reels = () => {
                   <Bookmark className="w-6 h-6 text-white" />
                 </button>
 
-                <button className="w-12 h-12 rounded-full glass flex items-center justify-center hover:scale-110 transition-transform">
-                  <MoreVertical className="w-6 h-6 text-white" />
-                </button>
+                {currentUser && reel.user_id === currentUser.id ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="w-12 h-12 rounded-full glass flex items-center justify-center hover:scale-110 transition-transform">
+                        <MoreVertical className="w-6 h-6 text-white" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="glass">
+                      <DropdownMenuItem onClick={() => navigate(`/edit-reel/${reel.id}`)}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDeleteReel(reel.id)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <button className="w-12 h-12 rounded-full glass flex items-center justify-center hover:scale-110 transition-transform">
+                    <MoreVertical className="w-6 h-6 text-white" />
+                  </button>
+                )}
 
                 {/* Profile Avatar */}
                 <div className="relative">

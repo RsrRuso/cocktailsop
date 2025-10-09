@@ -15,10 +15,8 @@ const TopNav = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [theme, setTheme] = useState<'light' | 'grey' | 'dark'>(() => {
-    const html = document.documentElement;
-    if (html.classList.contains('dark')) return 'dark';
-    if (html.classList.contains('grey')) return 'grey';
-    return 'light';
+    const saved = localStorage.getItem('theme');
+    return (saved as 'light' | 'grey' | 'dark') || 'dark';
   });
 
   useEffect(() => {
