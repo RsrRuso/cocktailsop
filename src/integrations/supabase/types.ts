@@ -94,6 +94,42 @@ export type Database = {
         }
         Relationships: []
       }
+      equipment: {
+        Row: {
+          area: string
+          created_at: string | null
+          doors: number | null
+          id: string
+          name: string
+          target_temperature: number
+          type: Database["public"]["Enums"]["equipment_type"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          area: string
+          created_at?: string | null
+          doors?: number | null
+          id?: string
+          name: string
+          target_temperature: number
+          type: Database["public"]["Enums"]["equipment_type"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          area?: string
+          created_at?: string | null
+          doors?: number | null
+          id?: string
+          name?: string
+          target_temperature?: number
+          type?: Database["public"]["Enums"]["equipment_type"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string | null
@@ -790,6 +826,44 @@ export type Database = {
           },
         ]
       }
+      temperature_logs: {
+        Row: {
+          created_at: string | null
+          equipment_id: string
+          id: string
+          notes: string | null
+          recorded_at: string | null
+          temperature: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          equipment_id: string
+          id?: string
+          notes?: string | null
+          recorded_at?: string | null
+          temperature: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          equipment_id?: string
+          id?: string
+          notes?: string | null
+          recorded_at?: string | null
+          temperature?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temperature_logs_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transfers: {
         Row: {
           created_at: string
@@ -868,6 +942,16 @@ export type Database = {
     }
     Enums: {
       badge_level: "bronze" | "silver" | "gold" | "platinum"
+      equipment_type:
+        | "fridge"
+        | "freezer"
+        | "walk_in_fridge"
+        | "walk_in_freezer"
+        | "chest_freezer"
+        | "under_counter"
+        | "tall_fridge"
+        | "chiller"
+        | "super_freezer"
       professional_title:
         | "bartender"
         | "mixologist"
@@ -1009,6 +1093,17 @@ export const Constants = {
   public: {
     Enums: {
       badge_level: ["bronze", "silver", "gold", "platinum"],
+      equipment_type: [
+        "fridge",
+        "freezer",
+        "walk_in_fridge",
+        "walk_in_freezer",
+        "chest_freezer",
+        "under_counter",
+        "tall_fridge",
+        "chiller",
+        "super_freezer",
+      ],
       professional_title: [
         "bartender",
         "mixologist",

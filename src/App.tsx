@@ -19,6 +19,7 @@ import Notifications from "./pages/Notifications";
 import Tools from "./pages/Tools";
 import OpsTools from "./pages/OpsTools";
 import InventoryManager from "./pages/InventoryManager";
+import TemperatureLog from "./pages/TemperatureLog";
 import Explore from "./pages/Explore";
 import Create from "./pages/Create";
 import CreatePost from "./pages/CreatePost";
@@ -52,6 +53,7 @@ const App = () => (
           <Route path="/tools" element={<Tools />} />
           <Route path="/ops-tools" element={<OpsTools />} />
           <Route path="/inventory-manager" element={<InventoryManager />} />
+          <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/create" element={<Create />} />
           <Route path="/create/post" element={<CreatePost />} />

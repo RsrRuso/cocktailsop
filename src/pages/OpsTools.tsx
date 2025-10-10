@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText } from "lucide-react";
@@ -6,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 const OpsTools = () => {
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState("mixing");
 
   const tools = {
@@ -45,7 +47,8 @@ const OpsTools = () => {
         description: "Track stock levels and costs",
         icon: Package,
         gradient: "from-orange-600 to-amber-700",
-        premium: true,
+        premium: false,
+        path: "/inventory-manager",
       },
       {
         name: "Cost Calculator",
@@ -67,6 +70,7 @@ const OpsTools = () => {
         icon: ThermometerSnowflake,
         gradient: "from-cyan-600 to-blue-500",
         premium: false,
+        path: "/temperature-log",
       },
     ],
     management: [
@@ -101,8 +105,10 @@ const OpsTools = () => {
     ],
   };
 
-  const handleToolClick = (toolName: string, isPremium: boolean) => {
-    if (isPremium) {
+  const handleToolClick = (toolName: string, isPremium: boolean, path?: string) => {
+    if (path) {
+      navigate(path);
+    } else if (isPremium) {
       toast.info("Upgrade to Premium to access this tool");
     } else {
       toast.info(`${toolName} coming soon!`);
@@ -184,7 +190,7 @@ const OpsTools = () => {
                 return (
                   <button
                     key={tool.name}
-                    onClick={() => handleToolClick(tool.name, tool.premium)}
+                    onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
                     className="glass-hover rounded-2xl p-6 text-left space-y-4 relative overflow-hidden group transition-all duration-300 hover:scale-105"
                   >
                     {tool.premium && (
