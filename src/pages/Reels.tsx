@@ -45,14 +45,22 @@ const Reels = () => {
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    Promise.all([fetchCurrentUser(), fetchReels(), fetchLikedReels()]);
-
-    let updateTimeout: NodeJS.Timeout;
-    const debouncedFetch = () => {
-      clearTimeout(updateTimeout);
-      updateTimeout = setTimeout(() => fetchReels(), 1000);
+    const initialize = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUser(user);
+        
+        // Fetch reels first for instant display
+        await fetchReels();
+        
+        // Load liked reels in background
+        setTimeout(() => fetchLikedReels(), 100);
+      }
     };
+    
+    initialize();
 
+    // Only subscribe to main reels changes
     const reelsChannel = supabase
       .channel('reels-page')
       .on(
@@ -62,49 +70,12 @@ const Reels = () => {
           schema: 'public',
           table: 'reels'
         },
-        debouncedFetch
-      )
-      .subscribe();
-
-    // Real-time for reel likes
-    const reelLikesChannel = supabase
-      .channel('reels-page-likes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'reel_likes'
-        },
-        () => {
-          clearTimeout(updateTimeout);
-          updateTimeout = setTimeout(() => {
-            fetchReels();
-            fetchLikedReels();
-          }, 1000);
-        }
-      )
-      .subscribe();
-
-    // Real-time for reel comments
-    const reelCommentsChannel = supabase
-      .channel('reels-page-comments')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'reel_comments'
-        },
-        debouncedFetch
+        () => fetchReels()
       )
       .subscribe();
 
     return () => {
-      clearTimeout(updateTimeout);
       supabase.removeChannel(reelsChannel);
-      supabase.removeChannel(reelLikesChannel);
-      supabase.removeChannel(reelCommentsChannel);
     };
   }, []);
 

@@ -33,12 +33,7 @@ const Messages = () => {
   useEffect(() => {
     fetchConversations().finally(() => setIsLoading(false));
 
-    let updateTimeout: NodeJS.Timeout;
-    const debouncedFetch = () => {
-      clearTimeout(updateTimeout);
-      updateTimeout = setTimeout(() => fetchConversations(), 1000);
-    };
-
+    // Only subscribe to messages changes
     const messagesChannel = supabase
       .channel('messages-list')
       .on(
@@ -48,12 +43,11 @@ const Messages = () => {
           schema: 'public',
           table: 'messages'
         },
-        debouncedFetch
+        () => fetchConversations()
       )
       .subscribe();
 
     return () => {
-      clearTimeout(updateTimeout);
       supabase.removeChannel(messagesChannel);
     };
   }, []);
@@ -69,7 +63,8 @@ const Messages = () => {
       .from("conversations")
       .select("*")
       .contains("participant_ids", [user.id])
-      .order("last_message_at", { ascending: false });
+      .order("last_message_at", { ascending: false })
+      .limit(20);
 
     if (data && data.length > 0) {
       const otherUserIds = data.map(conv => 
@@ -80,7 +75,7 @@ const Messages = () => {
       const [profilesData, unreadCountsData] = await Promise.all([
         supabase
           .from("profiles")
-          .select("*")
+          .select("id, username, avatar_url, full_name")
           .in("id", otherUserIds),
         Promise.all(
           data.map(conv =>

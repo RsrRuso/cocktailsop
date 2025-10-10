@@ -92,26 +92,41 @@ const Home = () => {
     let isMounted = true;
     
     const initializeData = async () => {
-      // Fetch user first, then fetch liked items using the cached user
-      await fetchCurrentUser();
+      // Fetch user first and set as ready immediately
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       
-      // Fetch all other data in parallel
-      await Promise.all([
-        fetchStories(),
-        fetchPosts(),
-        fetchReels(),
-        fetchLikedPosts(),
-        fetchLikedReels()
-      ]);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .eq("id", user.id)
+        .maybeSingle();
+      
+      if (profile) {
+        setCurrentUser(profile);
+      }
+      
+      // Fetch only stories first for instant display
+      await fetchStories();
       
       if (isMounted) {
         setIsInitialLoad(false);
       }
+      
+      // Load posts and reels in background after page is interactive
+      setTimeout(() => {
+        Promise.all([
+          fetchPosts(),
+          fetchReels(),
+          fetchLikedPosts(),
+          fetchLikedReels()
+        ]);
+      }, 100);
     };
 
     initializeData();
 
-    // Only subscribe to main data tables - triggers handle count updates automatically
+    // Only subscribe to main data tables after initial load
     const storiesChannel = supabase
       .channel('home-stories')
       .on(
@@ -151,40 +166,11 @@ const Home = () => {
       )
       .subscribe();
 
-    // Subscribe to like changes to update UI state
-    const likesChannel = supabase
-      .channel('home-likes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'post_likes'
-        },
-        () => fetchLikedPosts()
-      )
-      .subscribe();
-
-    const reelLikesChannel = supabase
-      .channel('home-reel-likes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'reel_likes'
-        },
-        () => fetchLikedReels()
-      )
-      .subscribe();
-
     return () => {
       isMounted = false;
       supabase.removeChannel(storiesChannel);
       supabase.removeChannel(postsChannel);
       supabase.removeChannel(reelsChannel);
-      supabase.removeChannel(likesChannel);
-      supabase.removeChannel(reelLikesChannel);
     };
   }, []);
 
@@ -218,16 +204,9 @@ const Home = () => {
         .select("id, user_id, media_urls, media_types, created_at, expires_at, profiles(username, avatar_url)")
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
-        .limit(8);
+        .limit(5);
 
-      if (data) {
-        // Preload only first story image for instant display
-        if (data[0]?.media_urls?.[0]) {
-          const img = new Image();
-          img.src = data[0].media_urls[0];
-        }
-        setStories(data);
-      }
+      if (data) setStories(data);
     } catch (error) {
       console.error('Error fetching stories:', error);
     }
@@ -239,7 +218,7 @@ const Home = () => {
         .from("posts")
         .select("id, user_id, content, media_urls, like_count, comment_count, created_at, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
         .order("created_at", { ascending: false })
-        .limit(8);
+        .limit(5);
 
       if (data) setPosts(data);
     } catch (error) {
@@ -253,7 +232,7 @@ const Home = () => {
         .from("reels")
         .select("id, user_id, video_url, caption, like_count, comment_count, view_count, created_at, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
         .order("created_at", { ascending: false })
-        .limit(8);
+        .limit(5);
 
       if (data) setReels(data);
     } catch (error) {
