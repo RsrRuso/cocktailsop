@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, memo } from "react";
+import { useEffect, useState, useMemo, memo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
@@ -15,8 +15,9 @@ import {
 import ShareDialog from "@/components/ShareDialog";
 import CommentsDialog from "@/components/CommentsDialog";
 import { ReelFullscreen } from "@/components/ReelFullscreen";
-import { deduplicateRequest } from "@/lib/requestDeduplication";
 import { LazyImage } from "@/components/LazyImage";
+import { useFeedData } from "@/hooks/useFeedData";
+import { useOptimisticLike } from "@/hooks/useOptimisticLike";
 
 interface Story {
   id: string;
@@ -71,9 +72,6 @@ type FeedItem = (Post & { type: 'post' }) | (Reel & { type: 'reel'; content: str
 const Home = () => {
   const navigate = useNavigate();
   const [stories, setStories] = useState<Story[]>([]);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [reels, setReels] = useState<Reel[]>([]);
-  const [feed, setFeed] = useState<FeedItem[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
@@ -81,14 +79,26 @@ const Home = () => {
   const [selectedPostContent, setSelectedPostContent] = useState<string>("");
   const [selectedPostType, setSelectedPostType] = useState<'post' | 'reel'>('post');
   const [selectedMediaUrls, setSelectedMediaUrls] = useState<string[]>([]);
-  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
-  const [likedReels, setLikedReels] = useState<Set<string>>(new Set());
   const [isInitialLoad, setIsInitialLoad] = useState(false);
   const [isReelDialogOpen, setIsReelDialogOpen] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState("");
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [fullscreenReel, setFullscreenReel] = useState<FeedItem | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  
+  // Use custom hooks for data fetching and likes
+  const { posts, reels, isLoading, refreshFeed, setPosts, setReels } = useFeedData(selectedRegion);
+  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', currentUser?.id);
+  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', currentUser?.id);
+  
+  // Memoize merged feed to avoid recalculation
+  const feed = useMemo(() => {
+    const mergedFeed: FeedItem[] = [
+      ...posts.map(post => ({ ...post, type: 'post' as const })),
+      ...reels.map(reel => ({ ...reel, type: 'reel' as const, content: reel.caption, media_urls: [reel.video_url] }))
+    ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return mergedFeed;
+  }, [posts, reels]);
 
   useEffect(() => {
     let isMounted = true;
@@ -197,29 +207,8 @@ const Home = () => {
   }, []);
 
   // Merge posts and reels into unified feed
-  useEffect(() => {
-    const mergedFeed: FeedItem[] = [
-      ...posts.map(post => ({ ...post, type: 'post' as const })),
-      ...reels.map(reel => ({ ...reel, type: 'reel' as const, content: reel.caption, media_urls: [reel.video_url] }))
-    ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    
-    setFeed(mergedFeed);
-  }, [posts, reels]);
-
-  const fetchCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, username, avatar_url")
-      .eq("id", user.id)
-      .maybeSingle();
-    
-    if (data) setCurrentUser(data);
-  };
-
-  const fetchStories = async () => {
+  // Fetch stories
+  const fetchStories = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("stories")
@@ -237,77 +226,29 @@ const Home = () => {
         });
       }
     } catch (error) {
-      console.error('Error fetching stories:', error);
+      console.error('Fetch stories failed');
     }
-  };
-
-  const fetchPosts = async () => {
+  }, []);
     try {
       const { data, error } = await supabase
-        .from("posts")
-        .select("id, user_id, content, media_urls, like_count, comment_count, created_at, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
+        .from("stories")
+        .select("id, user_id, media_urls, media_types, created_at, expires_at, profiles(username, avatar_url)")
+        .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(5);
 
       if (error) throw error;
       if (data) {
-        setPosts(data);
-        // Cache in IndexedDB
+        setStories(data);
+        // Cache in IndexedDB for instant load
         import('@/lib/indexedDBCache').then(({ setCache }) => {
-          setCache('posts', 'home', data);
+          setCache('stories', 'home', data);
         });
       }
     } catch (error) {
-      console.error('Error fetching posts:', error);
+      console.error('Fetch stories failed');
     }
-  };
-
-  const fetchReels = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("reels")
-        .select("id, user_id, video_url, caption, like_count, comment_count, view_count, created_at, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      if (data) {
-        setReels(data);
-        // Cache in IndexedDB
-        import('@/lib/indexedDBCache').then(({ setCache }) => {
-          setCache('reels', 'home', data);
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching reels:', error);
-    }
-  };
-
-  const fetchLikedPosts = async () => {
-    if (!currentUser) return;
-
-    const { data } = await supabase
-      .from("post_likes")
-      .select("post_id")
-      .eq("user_id", currentUser.id);
-
-    if (data) {
-      setLikedPosts(new Set(data.map(like => like.post_id)));
-    }
-  };
-
-  const fetchLikedReels = async () => {
-    if (!currentUser) return;
-
-    const { data } = await supabase
-      .from("reel_likes")
-      .select("reel_id")
-      .eq("user_id", currentUser.id);
-
-    if (data) {
-      setLikedReels(new Set(data.map(like => like.reel_id)));
-    }
-  };
+  }, []);
 
   const handleLikePost = async (postId: string) => {
     if (!currentUser) {
@@ -444,7 +385,7 @@ const Home = () => {
     return colors[level as keyof typeof colors] || colors.bronze;
   };
 
-  const handleDeletePost = async (postId: string) => {
+  const handleDeletePost = useCallback(async (postId: string) => {
     try {
       const { error } = await supabase
         .from("posts")
