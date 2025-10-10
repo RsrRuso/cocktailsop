@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Send, Paperclip, Mic, Reply, Edit2, X } from 'lucide-react';
+import { Progress } from './ui/progress';
+import { Send, Paperclip, Mic, Reply, Edit2, X, Loader2 } from 'lucide-react';
 import { Message } from '@/hooks/useMessageThread';
 import { AttachmentMenu } from './AttachmentMenu';
 
@@ -15,6 +16,8 @@ interface MessageInputProps {
   onCancelReply: () => void;
   onCancelEdit: () => void;
   isRecording: boolean;
+  isUploading: boolean;
+  uploadProgress: number;
   onStartVoiceRecording: () => void;
   onStopVoiceRecording: () => void;
   onFileUpload: (files: FileList, type: 'image' | 'video' | 'document') => void;
@@ -31,6 +34,8 @@ export const MessageInput = ({
   onCancelReply,
   onCancelEdit,
   isRecording,
+  isUploading,
+  uploadProgress,
   onStartVoiceRecording,
   onStopVoiceRecording,
   onFileUpload,
@@ -64,6 +69,15 @@ export const MessageInput = ({
 
   return (
     <div className="p-4 border-t glass backdrop-blur-xl border-primary/20">
+      {isUploading && (
+        <div className="mb-3 glass backdrop-blur-lg rounded-lg p-3 border border-primary/20">
+          <div className="flex items-center gap-3 mb-2">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span className="text-sm">Uploading... {uploadProgress}%</span>
+          </div>
+          <Progress value={uploadProgress} className="h-2" />
+        </div>
+      )}
       {replyingTo && (
         <div className="mb-2 glass backdrop-blur-lg rounded-lg p-2 flex items-center justify-between border border-primary/20">
           <div className="flex items-center gap-2 text-sm">

@@ -8,6 +8,8 @@ export const useMediaUpload = (
 ) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -20,16 +22,23 @@ export const useMediaUpload = (
   ) => {
     if (!files[0] || !currentUserId || !conversationId) return;
 
+    setIsUploading(true);
+    setUploadProgress(0);
+
     try {
       const file = files[0];
       const fileName = `${type}_${Date.now()}_${file.name}`;
       const filePath = `${currentUserId}/${fileName}`;
+
+      setUploadProgress(30);
 
       const { error: uploadError } = await supabase.storage
         .from('stories')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
+
+      setUploadProgress(70);
 
       const {
         data: { publicUrl },
@@ -47,6 +56,8 @@ export const useMediaUpload = (
 
       await supabase.from('messages').insert(messageData);
 
+      setUploadProgress(100);
+      
       toast({
         title: 'Success',
         description: 'File uploaded successfully',
@@ -58,6 +69,9 @@ export const useMediaUpload = (
         description: 'Failed to upload file',
         variant: 'destructive',
       });
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -75,6 +89,7 @@ export const useMediaUpload = (
       };
 
       recorder.onstop = async () => {
+        setIsUploading(true);
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
 
         if (audioBlob.size === 0) {
@@ -84,6 +99,7 @@ export const useMediaUpload = (
             variant: 'destructive',
           });
           stream.getTracks().forEach((track) => track.stop());
+          setIsUploading(false);
           return;
         }
 
@@ -102,6 +118,7 @@ export const useMediaUpload = (
             variant: 'destructive',
           });
           stream.getTracks().forEach((track) => track.stop());
+          setIsUploading(false);
           return;
         }
 
@@ -128,6 +145,7 @@ export const useMediaUpload = (
         stream.getTracks().forEach((track) => track.stop());
         setIsRecording(false);
         setMediaRecorder(null);
+        setIsUploading(false);
       };
 
       recorder.start();
@@ -173,6 +191,7 @@ export const useMediaUpload = (
       };
 
       recorder.onstop = async () => {
+        setIsUploading(true);
         const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
 
         if (videoBlob.size === 0) {
@@ -182,6 +201,7 @@ export const useMediaUpload = (
             variant: 'destructive',
           });
           stream.getTracks().forEach((track) => track.stop());
+          setIsUploading(false);
           return;
         }
 
@@ -200,6 +220,7 @@ export const useMediaUpload = (
             variant: 'destructive',
           });
           stream.getTracks().forEach((track) => track.stop());
+          setIsUploading(false);
           return;
         }
 
@@ -227,6 +248,7 @@ export const useMediaUpload = (
         setVideoStream(null);
         setIsRecordingVideo(false);
         setMediaRecorder(null);
+        setIsUploading(false);
       };
 
       recorder.start();
@@ -260,6 +282,8 @@ export const useMediaUpload = (
   return {
     isRecording,
     isRecordingVideo,
+    isUploading,
+    uploadProgress,
     videoStream,
     handleFileUpload,
     startVoiceRecording,

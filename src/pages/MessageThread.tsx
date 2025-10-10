@@ -35,6 +35,8 @@ const MessageThread = () => {
   const {
     isRecording,
     isRecordingVideo,
+    isUploading,
+    uploadProgress,
     videoStream,
     handleFileUpload,
     startVoiceRecording,
@@ -211,6 +213,8 @@ const MessageThread = () => {
         onCancelReply={() => setReplyingTo(null)}
         onCancelEdit={() => { setEditingMessage(null); setNewMessage(""); }}
         isRecording={isRecording}
+        isUploading={isUploading}
+        uploadProgress={uploadProgress}
         onStartVoiceRecording={startVoiceRecording}
         onStopVoiceRecording={stopVoiceRecording}
         onFileUpload={handleFileUpload}
@@ -219,6 +223,7 @@ const MessageThread = () => {
 
       <MediaRecorder
         isRecordingVideo={isRecordingVideo}
+        isUploading={isUploading}
         videoStream={videoStream}
         onStop={stopVideoRecording}
         onCancel={() => { stopVideoRecording(); }}
