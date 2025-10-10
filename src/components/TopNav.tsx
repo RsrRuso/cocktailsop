@@ -1,4 +1,4 @@
-import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText } from "lucide-react";
+import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -195,7 +195,10 @@ const TopNav = () => {
                 <Menu className="w-5 h-5" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="glass w-56">
+            <DropdownMenuContent align="end" className="glass w-64 max-h-96 overflow-y-auto">
+              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                Professional Tools
+              </div>
               <DropdownMenuItem onClick={() => navigate("/tools")}>
                 <Calculator className="w-4 h-4 mr-2" />
                 Batch Calculator
@@ -207,6 +210,66 @@ const TopNav = () => {
               <DropdownMenuItem onClick={() => navigate("/tools")}>
                 <FileText className="w-4 h-4 mr-2" />
                 Reports & Analytics
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <Package className="w-4 h-4 mr-2" />
+                Inventory Management
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <DollarSign className="w-4 h-4 mr-2" />
+                Cost Calculator
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <ClipboardCheck className="w-4 h-4 mr-2" />
+                Quality Control
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <Shield className="w-4 h-4 mr-2" />
+                Compliance Tracker
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <Users className="w-4 h-4 mr-2" />
+                Staff Scheduler
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                Order Manager
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <Megaphone className="w-4 h-4 mr-2" />
+                Marketing Planner
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <Wrench className="w-4 h-4 mr-2" />
+                Equipment Log
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <Phone className="w-4 h-4 mr-2" />
+                Supplier Manager
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <Calendar className="w-4 h-4 mr-2" />
+                Seasonal Planner
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <Apple className="w-4 h-4 mr-2" />
+                Nutrition Calculator
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Waste Tracker
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <GraduationCap className="w-4 h-4 mr-2" />
+                Training Resources
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <Receipt className="w-4 h-4 mr-2" />
+                Invoice Generator
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <PartyPopper className="w-4 h-4 mr-2" />
+                Event Booking
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
