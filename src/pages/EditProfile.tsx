@@ -411,6 +411,9 @@ const EditProfile = () => {
                 placeholder="+1234567890"
                 className="glass border-primary/20"
               />
+              <p className="text-xs text-muted-foreground">
+                Include country code (e.g., +1 for US, +44 for UK, +971 for UAE)
+              </p>
               <div className="flex items-center space-x-2 mt-2">
                 <Switch
                   id="show-whatsapp"
