@@ -353,12 +353,15 @@ const Reels = () => {
         mediaUrls={[selectedReelVideo]}
       />
 
-      <CommentsDialog
-        open={showComments}
-        onOpenChange={setShowComments}
-        postId={selectedReelForComments}
-        isReel={true}
-      />
+        <CommentsDialog
+          open={showComments}
+          onOpenChange={setShowComments}
+          postId={selectedReelForComments}
+          isReel={true}
+          onCommentAdded={() => {
+            setReels(reels.map(r => r.id === selectedReelForComments ? { ...r, comment_count: r.comment_count + 1 } : r));
+          }}
+        />
     </div>
   );
 };

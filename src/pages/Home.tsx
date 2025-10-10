@@ -782,6 +782,14 @@ const Home = () => {
         onOpenChange={setCommentsDialogOpen}
         postId={selectedPostId}
         isReel={feed.find(f => f.id === selectedPostId)?.type === 'reel'}
+        onCommentAdded={() => {
+          const item = feed.find(f => f.id === selectedPostId);
+          if (item?.type === 'post') {
+            setPosts(posts.map(p => p.id === selectedPostId ? { ...p, comment_count: p.comment_count + 1 } : p));
+          } else if (item?.type === 'reel') {
+            setReels(reels.map(r => r.id === selectedPostId ? { ...r, comment_count: r.comment_count + 1 } : r));
+          }
+        }}
       />
 
       {fullscreenReel && (

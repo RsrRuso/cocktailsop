@@ -47,9 +47,10 @@ interface CommentsDialogProps {
   onOpenChange: (open: boolean) => void;
   postId: string;
   isReel?: boolean;
+  onCommentAdded?: () => void;
 }
 
-const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: CommentsDialogProps) => {
+const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentAdded }: CommentsDialogProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -212,6 +213,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
     const replyId = replyingTo;
     setNewComment("");
     setReplyingTo(null);
+    onCommentAdded?.(); // Increment count instantly
 
     // Background API call - no await, instant UI
     const insertData = isReel 

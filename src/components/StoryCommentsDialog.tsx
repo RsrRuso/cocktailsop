@@ -19,6 +19,7 @@ interface StoryCommentsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   storyId: string;
+  onCommentAdded?: () => void;
 }
 
 interface Comment {
@@ -39,7 +40,7 @@ interface CurrentUserProfile {
   full_name: string;
 }
 
-const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialogProps) => {
+const StoryCommentsDialog = ({ open, onOpenChange, storyId, onCommentAdded }: StoryCommentsDialogProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
@@ -111,6 +112,7 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
     setComments(prev => [tempComment, ...prev]);
     const commentText = newComment.trim();
     setNewComment("");
+    onCommentAdded?.(); // Increment count instantly
 
     // Background API call - no await, instant UI
     supabase
