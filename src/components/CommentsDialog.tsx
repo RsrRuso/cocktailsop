@@ -320,9 +320,24 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
 
   const handleDeleteComment = async (commentId: string) => {
     const tableName = isReel ? "reel_comments" : "post_comments";
+    const parentTable = isReel ? "reels" : "posts";
     
     console.log('Deleting comment:', { tableName, commentId });
     
+    // Optimistically remove from UI
+    setComments(prev => {
+      const removeComment = (comments: Comment[]): Comment[] => {
+        return comments
+          .filter(c => c.id !== commentId)
+          .map(c => ({
+            ...c,
+            replies: c.replies ? removeComment(c.replies) : []
+          }));
+      };
+      return removeComment(prev);
+    });
+    
+    // Delete from database
     const { error } = await supabase
       .from(tableName as any)
       .delete()
@@ -331,10 +346,24 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
     if (error) {
       console.error('Failed to delete comment:', error);
       toast.error(`Failed to delete comment: ${error.message}`);
+      fetchComments(); // Revert UI on error
     } else {
       console.log('Comment deleted successfully');
       toast.success("Comment deleted");
-      fetchComments();
+      
+      // Decrement comment count on parent post/reel
+      const { data: parent } = await supabase
+        .from(parentTable as any)
+        .select("comment_count")
+        .eq("id", postId)
+        .single();
+      
+      if (parent && (parent as any).comment_count > 0) {
+        await supabase
+          .from(parentTable as any)
+          .update({ comment_count: (parent as any).comment_count - 1 } as any)
+          .eq("id", postId);
+      }
     }
   };
 
