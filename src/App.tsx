@@ -18,6 +18,7 @@ import MessageThread from "./pages/MessageThread";
 import Notifications from "./pages/Notifications";
 import Tools from "./pages/Tools";
 import OpsTools from "./pages/OpsTools";
+import InventoryManager from "./pages/InventoryManager";
 import Explore from "./pages/Explore";
 import Create from "./pages/Create";
 import CreatePost from "./pages/CreatePost";
@@ -50,6 +51,7 @@ const App = () => (
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/ops-tools" element={<OpsTools />} />
+          <Route path="/inventory-manager" element={<InventoryManager />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/create" element={<Create />} />
           <Route path="/create/post" element={<CreatePost />} />

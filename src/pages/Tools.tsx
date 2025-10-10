@@ -53,7 +53,7 @@ const Tools = () => {
       name: "Inventory Management",
       description: "Track ingredients and supplies",
       icon: Package,
-      path: "/tools/inventory",
+      path: "/inventory-manager",
     },
     {
       name: "Cost Calculator",
@@ -146,7 +146,11 @@ const Tools = () => {
       toast.error("Subscribe to access professional tools");
       return;
     }
-    toast.info("Tool coming soon!");
+    if (path === "/inventory-manager") {
+      window.location.href = path;
+    } else {
+      toast.info("Tool coming soon!");
+    }
   };
 
   return (
