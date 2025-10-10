@@ -87,29 +87,24 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let userId: string;
-    
     const initializeProfile = async () => {
-      // Fetch user once and cache it
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         navigate("/auth");
         return;
       }
       
-      userId = user.id;
-      setCurrentUserId(userId);
-      
-      // Fetch all data in parallel using cached userId
+      setCurrentUserId(user.id);
       await Promise.all([
-        fetchProfile(userId),
-        fetchStories(userId),
-        fetchPosts(userId),
-        fetchReels(userId)
+        fetchProfile(user.id),
+        fetchStories(user.id),
+        fetchPosts(user.id),
+        fetchReels(user.id)
       ]);
+      setIsLoading(false);
     };
     
-    initializeProfile().finally(() => setIsLoading(false));
+    initializeProfile();
   }, []);
 
   const fetchProfile = async (userId: string) => {
@@ -141,10 +136,10 @@ const Profile = () => {
   const fetchPosts = async (userId: string) => {
     const { data } = await supabase
       .from("posts")
-      .select("*")
+      .select("id, content, media_urls, like_count, comment_count, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(12);
 
     if (data) setPosts(data);
   };
@@ -152,10 +147,10 @@ const Profile = () => {
   const fetchReels = async (userId: string) => {
     const { data } = await supabase
       .from("reels")
-      .select("*")
+      .select("id, video_url, caption, like_count, comment_count, view_count, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(12);
 
     if (data) setReels(data);
   };
@@ -166,10 +161,11 @@ const Profile = () => {
 
     const { data } = await supabase
       .from("stories")
-      .select("*")
+      .select("id, media_urls, media_types, created_at, expires_at")
       .eq("user_id", userIdToUse)
       .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(6);
 
     if (data) setStories(data);
   };

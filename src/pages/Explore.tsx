@@ -22,12 +22,9 @@ const Explore = () => {
   const fetchExplorePosts = async () => {
     const { data } = await supabase
       .from("posts")
-      .select(`
-        *,
-        profiles (username, avatar_url, professional_title)
-      `)
+      .select("id, content, media_urls, like_count, profiles(username, avatar_url)")
       .order("like_count", { ascending: false })
-      .limit(12);
+      .limit(18);
 
     if (data) setPosts(data);
   };
@@ -35,9 +32,9 @@ const Explore = () => {
   const fetchProfiles = async () => {
     const { data } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, username, full_name, avatar_url, professional_title, follower_count")
       .order("follower_count", { ascending: false })
-      .limit(8);
+      .limit(10);
 
     if (data) setProfiles(data);
   };

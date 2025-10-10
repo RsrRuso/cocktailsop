@@ -1,26 +1,24 @@
-import { useEffect, useState, useMemo, memo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
+import ShareDialog from "@/components/ShareDialog";
+import CommentsDialog from "@/components/CommentsDialog";
+import LikesDialog from "@/components/LikesDialog";
+import { ReelFullscreen } from "@/components/ReelFullscreen";
+import { FeedItem } from "@/components/FeedItem";
+import { useFeedData } from "@/hooks/useFeedData";
+import { useOptimisticLike } from "@/hooks/useOptimisticLike";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import ShareDialog from "@/components/ShareDialog";
-import CommentsDialog from "@/components/CommentsDialog";
-import LikesDialog from "@/components/LikesDialog";
-import { ReelFullscreen } from "@/components/ReelFullscreen";
-import { LazyImage } from "@/components/LazyImage";
-import { FeedItem } from "@/components/FeedItem";
-import { useFeedData } from "@/hooks/useFeedData";
-import { useOptimisticLike } from "@/hooks/useOptimisticLike";
 
 interface Story {
   id: string;
@@ -83,7 +81,6 @@ const Home = () => {
   const [selectedPostContent, setSelectedPostContent] = useState<string>("");
   const [selectedPostType, setSelectedPostType] = useState<'post' | 'reel'>('post');
   const [selectedMediaUrls, setSelectedMediaUrls] = useState<string[]>([]);
-  const [isInitialLoad, setIsInitialLoad] = useState(false);
   const [isReelDialogOpen, setIsReelDialogOpen] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState("");
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
@@ -103,13 +100,6 @@ const Home = () => {
   const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', user?.id);
   const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', user?.id);
 
-  // Fetch liked items on mount
-  useEffect(() => {
-    if (user?.id) {
-      fetchLikedPosts();
-      fetchLikedReels();
-    }
-  }, [user?.id, fetchLikedPosts, fetchLikedReels]);
   
   // Memoize merged feed to avoid recalculation
   const feed = useMemo(() => {
@@ -129,95 +119,24 @@ const Home = () => {
   }, [feed, selectedRegion]);
 
   useEffect(() => {
-    let isMounted = true;
-    
-    const initializeData = async () => {
-      // Show cached data immediately (non-blocking)
-      const { getCache } = await import('@/lib/indexedDBCache');
-      
-      try {
-        const [cachedStories, cachedPosts, cachedReels] = await Promise.all([
-          getCache('stories', 'home'),
-          getCache('posts', 'home'),
-          getCache('reels', 'home')
-        ]);
-        
-        if (cachedStories && isMounted) setStories(cachedStories);
-        if (cachedPosts && isMounted) setPosts(cachedPosts);
-        if (cachedReels && isMounted) setReels(cachedReels);
-      } catch (e) {
-        // Silent fail
-      }
-      
-      // Fetch fresh data in background (non-blocking)
-      Promise.all([
-        fetchStories(),
-        refreshFeed(),
-        fetchLikedPosts(),
-        fetchLikedReels()
-      ]).then(() => {
-        if (isMounted) setIsInitialLoad(false);
-      });
-    };
-
-    initializeData();
-
-    // Defer realtime subscriptions (non-blocking)
-    const setupRealtimeTimer = setTimeout(() => {
-      if (!isMounted) return;
-      
-      let updateTimeout: NodeJS.Timeout;
-      const debouncedUpdate = (callback: () => void) => {
-        clearTimeout(updateTimeout);
-        updateTimeout = setTimeout(() => {
-          if (isMounted) callback();
-        }, 2000);
-      };
-
-      const storiesChannel = supabase
-        .channel('home-stories')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, () => debouncedUpdate(fetchStories))
-        .subscribe();
-
-      const feedChannel = supabase
-        .channel('home-feed')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => debouncedUpdate(refreshFeed))
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'reels' }, () => debouncedUpdate(refreshFeed))
-        .subscribe();
-
-      // Store cleanup functions
-      return () => {
-        clearTimeout(updateTimeout);
-        supabase.removeChannel(storiesChannel);
-        supabase.removeChannel(feedChannel);
-      };
-    }, 2000); // Wait 2s before subscribing
-
-    return () => {
-      isMounted = false;
-      clearTimeout(setupRealtimeTimer);
-    };
-  }, []);
+    fetchStories();
+    if (user?.id) {
+      fetchLikedPosts();
+      fetchLikedReels();
+    }
+  }, [user?.id, fetchLikedPosts, fetchLikedReels]);
 
   // Merge posts and reels into unified feed
-  // Fetch stories
   const fetchStories = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("stories")
-        .select("id, user_id, media_urls, media_types, created_at, expires_at, profiles(username, avatar_url)")
+        .select("id, user_id, media_urls, media_types, profiles(username, avatar_url)")
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(10);
 
-      if (error) throw error;
-      if (data) {
-        setStories(data);
-        // Cache in IndexedDB for instant load
-        import('@/lib/indexedDBCache').then(({ setCache }) => {
-          setCache('stories', 'home', data);
-        });
-      }
+      if (data) setStories(data);
     } catch (error) {
       console.error('Fetch stories failed');
     }

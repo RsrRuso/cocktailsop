@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { MessageCircle, Send, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { supabase } from "@/integrations/supabase/client";
-import { MessageCircle, Send, Search, CheckCheck } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "sonner";
 
 interface Profile {
   id: string;
@@ -32,24 +30,6 @@ const Messages = () => {
 
   useEffect(() => {
     fetchConversations().finally(() => setIsLoading(false));
-
-    // Only subscribe to messages changes
-    const messagesChannel = supabase
-      .channel('messages-list')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages'
-        },
-        () => fetchConversations()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(messagesChannel);
-    };
   }, []);
 
   const fetchConversations = async () => {
@@ -71,34 +51,21 @@ const Messages = () => {
         conv.participant_ids.find((id: string) => id !== user.id)
       ).filter(Boolean);
 
-      // Fetch all profiles and unread counts in parallel
-      const [profilesData, unreadCountsData] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("id, username, avatar_url, full_name")
-          .in("id", otherUserIds),
-        Promise.all(
-          data.map(conv =>
-            supabase
-              .from("messages")
-              .select("*", { count: 'exact', head: true })
-              .eq("conversation_id", conv.id)
-              .eq("read", false)
-              .neq("sender_id", user.id)
-          )
-        )
-      ]);
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url, full_name")
+        .in("id", otherUserIds);
 
       const profilesMap = new Map(
-        profilesData.data?.map(p => [p.id, p]) || []
+        profilesData?.map(p => [p.id, p]) || []
       );
 
-      const conversationsWithData = data.map((conv, index) => {
+      const conversationsWithData = data.map((conv) => {
         const otherUserId = conv.participant_ids.find((id: string) => id !== user.id);
         return {
           ...conv,
           otherUser: profilesMap.get(otherUserId),
-          unreadCount: unreadCountsData[index].count || 0
+          unreadCount: 0
         };
       });
 
@@ -110,18 +77,13 @@ const Messages = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase
+    await supabase
       .from("messages")
       .update({ read: true })
       .eq("read", false)
       .neq("sender_id", user.id);
-
-    if (error) {
-      toast.error("Failed to mark all as read");
-    } else {
-      toast.success("All messages marked as read");
-      fetchConversations();
-    }
+    
+    fetchConversations();
   };
 
   return (
@@ -129,20 +91,8 @@ const Messages = () => {
       <TopNav />
       
       <div className="pt-16 px-4">
-        {/* Header */}
         <div className="flex items-center justify-between py-4">
           <h1 className="text-2xl font-bold">Messages</h1>
-          {conversations.some(c => c.unreadCount && c.unreadCount > 0) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              className="glass-hover"
-            >
-              <CheckCheck className="w-4 h-4 mr-2" />
-              Mark all read
-            </Button>
-          )}
         </div>
 
         {/* Search */}
@@ -190,24 +140,12 @@ const Messages = () => {
                 onClick={() => navigate(`/messages/${conversation.id}`)}
               >
                 <div className="relative">
-                  <div className="relative w-14 h-14 rounded-full p-[2px] neon-green">
-                    <Avatar className="w-full h-full border-2 border-background">
-                      <AvatarImage 
-                        src={conversation.otherUser?.avatar_url || undefined}
-                        loading="eager"
-                      />
-                      <AvatarFallback className="text-sm">
-                        {conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  {conversation.unreadCount && conversation.unreadCount > 0 && (
-                    <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center neon-green animate-pulse">
-                      <span className="text-xs font-bold text-primary-foreground">
-                        {conversation.unreadCount > 9 ? '9+' : conversation.unreadCount}
-                      </span>
-                    </div>
-                  )}
+                  <Avatar className="w-14 h-14">
+                    <AvatarImage src={conversation.otherUser?.avatar_url || undefined} />
+                    <AvatarFallback className="text-sm">
+                      {conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
+                    </AvatarFallback>
+                  </Avatar>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold">
