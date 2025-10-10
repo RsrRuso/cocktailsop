@@ -3,40 +3,57 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Eager load critical routes
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
-import Profile from "./pages/Profile";
-import UserProfile from "./pages/UserProfile";
-import EditProfile from "./pages/EditProfile";
-import EditPost from "./pages/EditPost";
-import EditReel from "./pages/EditReel";
-import Thunder from "./pages/Thunder";
-import Messages from "./pages/Messages";
-import MessageThread from "./pages/MessageThread";
-import Notifications from "./pages/Notifications";
-import Tools from "./pages/Tools";
-import OpsTools from "./pages/OpsTools";
-import InventoryManager from "./pages/InventoryManager";
-import TemperatureLog from "./pages/TemperatureLog";
-import Explore from "./pages/Explore";
-import Create from "./pages/Create";
-import CreatePost from "./pages/CreatePost";
-import CreateStory from "./pages/CreateStory";
-import CreateReel from "./pages/CreateReel";
-import StoryOptions from "./pages/StoryOptions";
-import Reels from "./pages/Reels";
-import Reposted from "./pages/Reposted";
-import StoryViewer from "./pages/StoryViewer";
-import NotFound from "./pages/NotFound";
+
+// Lazy load all other routes for code splitting
+const Profile = lazy(() => import("./pages/Profile"));
+const UserProfile = lazy(() => import("./pages/UserProfile"));
+const EditProfile = lazy(() => import("./pages/EditProfile"));
+const EditPost = lazy(() => import("./pages/EditPost"));
+const EditReel = lazy(() => import("./pages/EditReel"));
+const Thunder = lazy(() => import("./pages/Thunder"));
+const Messages = lazy(() => import("./pages/Messages"));
+const MessageThread = lazy(() => import("./pages/MessageThread"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const Tools = lazy(() => import("./pages/Tools"));
+const OpsTools = lazy(() => import("./pages/OpsTools"));
+const InventoryManager = lazy(() => import("./pages/InventoryManager"));
+const TemperatureLog = lazy(() => import("./pages/TemperatureLog"));
+const Explore = lazy(() => import("./pages/Explore"));
+const Create = lazy(() => import("./pages/Create"));
+const CreatePost = lazy(() => import("./pages/CreatePost"));
+const CreateStory = lazy(() => import("./pages/CreateStory"));
+const CreateReel = lazy(() => import("./pages/CreateReel"));
+const StoryOptions = lazy(() => import("./pages/StoryOptions"));
+const Reels = lazy(() => import("./pages/Reels"));
+const Reposted = lazy(() => import("./pages/Reposted"));
+const StoryViewer = lazy(() => import("./pages/StoryViewer"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const PageLoader = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="space-y-4 w-full max-w-md px-4">
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-64 w-full" />
+      <Skeleton className="h-12 w-full" />
+    </div>
+  </div>
+);
 
 const App = () => (
   <TooltipProvider>
     <BrowserRouter>
       <Toaster />
       <Sonner />
-      <Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/landing" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
@@ -66,8 +83,9 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+      </Suspense>
+    </BrowserRouter>
+  </TooltipProvider>
 );
 
 export default App;
