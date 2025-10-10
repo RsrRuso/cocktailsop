@@ -37,6 +37,11 @@ interface Comment {
   replies?: Comment[];
 }
 
+interface CurrentUserProfile {
+  username: string;
+  avatar_url: string | null;
+}
+
 interface CommentsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -49,7 +54,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
-  const [loading, setLoading] = useState(false);
+  const [currentUserProfile, setCurrentUserProfile] = useState<CurrentUserProfile | null>(null);
 
   const emojis = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
@@ -96,7 +101,20 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
 
   const fetchCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) setCurrentUserId(user.id);
+    if (user) {
+      setCurrentUserId(user.id);
+      
+      // Fetch user profile for optimistic updates
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username, avatar_url")
+        .eq("id", user.id)
+        .single();
+      
+      if (profile) {
+        setCurrentUserProfile(profile);
+      }
+    }
   };
 
   const fetchComments = async () => {
@@ -152,29 +170,80 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || loading) return;
+    if (!newComment.trim() || !currentUserId || !currentUserProfile) return;
 
-    setLoading(true);
     const tableName = isReel ? "reel_comments" : "post_comments";
     
-    const insertData = isReel 
-      ? { reel_id: postId, user_id: currentUserId, content: newComment.trim(), parent_comment_id: replyingTo }
-      : { post_id: postId, user_id: currentUserId, content: newComment.trim(), parent_comment_id: replyingTo };
+    // Instant optimistic update with real user data
+    const tempComment: Comment = {
+      id: 'temp-' + Date.now(),
+      user_id: currentUserId,
+      content: newComment.trim(),
+      created_at: new Date().toISOString(),
+      parent_comment_id: replyingTo,
+      reactions: [],
+      profiles: currentUserProfile,
+      replies: []
+    };
     
-    const { data, error } = await supabase
+    // Add to appropriate location (reply or root)
+    if (replyingTo) {
+      // Add as reply
+      setComments(prev => {
+        const updateReplies = (comments: Comment[]): Comment[] => {
+          return comments.map(c => {
+            if (c.id === replyingTo) {
+              return { ...c, replies: [...(c.replies || []), tempComment] };
+            }
+            if (c.replies && c.replies.length > 0) {
+              return { ...c, replies: updateReplies(c.replies) };
+            }
+            return c;
+          });
+        };
+        return updateReplies(prev);
+      });
+    } else {
+      // Add as root comment
+      setComments(prev => [...prev, tempComment]);
+    }
+    
+    const commentText = newComment.trim();
+    const replyId = replyingTo;
+    setNewComment("");
+    setReplyingTo(null);
+
+    // Background API call - no await, instant UI
+    const insertData = isReel 
+      ? { reel_id: postId, user_id: currentUserId, content: commentText, parent_comment_id: replyId }
+      : { post_id: postId, user_id: currentUserId, content: commentText, parent_comment_id: replyId };
+    
+    supabase
       .from(tableName)
       .insert(insertData as any)
-      .select();
-
-    if (error) {
-      toast.error(`Failed to add comment: ${error.message}`);
-    } else {
-      setNewComment("");
-      setReplyingTo(null);
-      toast.success(replyingTo ? "Reply added!" : "Comment added!");
-      fetchComments();
-    }
-    setLoading(false);
+      .select()
+      .then(({ error }) => {
+        if (error) {
+          toast.error("Failed to post comment");
+          // Remove temp comment on error
+          setComments(prev => {
+            const removeTempComment = (comments: Comment[]): Comment[] => {
+              return comments
+                .filter(c => c.id !== tempComment.id)
+                .map(c => ({
+                  ...c,
+                  replies: c.replies ? removeTempComment(c.replies) : []
+                }));
+            };
+            return removeTempComment(prev);
+          });
+          setNewComment(commentText);
+          if (replyId) setReplyingTo(replyId);
+        } else {
+          // Replace temp with real comment from DB
+          fetchComments();
+        }
+      });
   };
 
   const handleReaction = async (commentId: string, emoji: string) => {
@@ -373,7 +442,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
             />
             <Button
               onClick={handleAddComment}
-              disabled={!newComment.trim() || loading}
+              disabled={!newComment.trim()}
               className="glow-primary self-end"
               size="icon"
             >
