@@ -24,13 +24,15 @@ const CreateReel = () => {
     const file = acceptedFiles[0];
     if (!file) return;
 
-    if (!file.type.startsWith("video/")) {
-      toast.error("Please select a video file");
+    // Validate video file type
+    const allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Invalid video format. Please upload MP4, WebM, or QuickTime");
       return;
     }
 
-    if (file.size > 200 * 1024 * 1024) {
-      toast.error("Video size should be less than 200MB");
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error("Video size should be less than 100MB");
       return;
     }
 

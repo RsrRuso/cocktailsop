@@ -31,12 +31,21 @@ const CreatePost = () => {
       return;
     }
 
-    acceptedFiles.forEach((file) => {
-      if (file.size > 15 * 1024 * 1024) {
-        toast.error(`${file.name} is too large. Max size is 15MB`);
+    // Validate MIME types
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    
+    for (const file of acceptedFiles) {
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`Invalid file type: ${file.name}. Please upload JPEG, PNG, WebP, or GIF`);
         return;
       }
+      if (file.size > 15 * 1024 * 1024) {
+        toast.error(`File too large: ${file.name}. Maximum size is 15MB`);
+        return;
+      }
+    }
 
+    acceptedFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImages((prev) => [

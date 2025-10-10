@@ -4,6 +4,19 @@ import { toast } from "sonner";
 export const useImageUpload = () => {
   const uploadAvatar = async (file: File, userId: string): Promise<string | null> => {
     try {
+      // Validate file type and size
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error("Invalid file type. Please upload JPEG, PNG, WebP, or GIF");
+        return null;
+      }
+      
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        toast.error("File too large. Maximum size is 5MB");
+        return null;
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}/${Date.now()}.${fileExt}`;
 
@@ -32,6 +45,19 @@ export const useImageUpload = () => {
 
   const uploadCover = async (file: File, userId: string): Promise<string | null> => {
     try {
+      // Validate file type and size
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error("Invalid file type. Please upload JPEG, PNG, or WebP");
+        return null;
+      }
+      
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        toast.error("File too large. Maximum size is 10MB");
+        return null;
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}/${Date.now()}.${fileExt}`;
 

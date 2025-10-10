@@ -329,6 +329,25 @@ const MessageThread = () => {
 
     const trimmedMessage = newMessage.trim();
     
+    // Validate message content
+    if (trimmedMessage.length > 2000) {
+      toast({
+        title: "Error",
+        description: "Message too long (max 2000 characters)",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (/<|>/.test(trimmedMessage)) {
+      toast({
+        title: "Error",
+        description: "Invalid characters detected in message",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Clear input immediately for better UX
     setNewMessage("");
     setReplyingTo(null);

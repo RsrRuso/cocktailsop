@@ -22,9 +22,30 @@ const CreateStory = () => {
     let processedCount = 0;
 
     files.forEach((file) => {
-      const maxSize = file.type.startsWith('video') ? 50 * 1024 * 1024 : 15 * 1024 * 1024;
+      // Validate MIME types
+      const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      const allowedVideoTypes = ['video/mp4', 'video/webm'];
+      const isVideo = file.type.startsWith('video/');
+      const isImage = file.type.startsWith('image/');
+      
+      if (isVideo && !allowedVideoTypes.includes(file.type)) {
+        toast.error(`${file.name}: Invalid video format. Please upload MP4 or WebM`);
+        return;
+      }
+      
+      if (isImage && !allowedImageTypes.includes(file.type)) {
+        toast.error(`${file.name}: Invalid image format. Please upload JPEG, PNG, or WebP`);
+        return;
+      }
+      
+      if (!isVideo && !isImage) {
+        toast.error(`${file.name}: Invalid file type. Please upload images or videos only`);
+        return;
+      }
+      
+      const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
       if (file.size > maxSize) {
-        toast.error(`${file.name} is too large. Max ${file.type.startsWith('video') ? '50' : '15'}MB`);
+        toast.error(`${file.name} is too large. Max ${isVideo ? '50' : '10'}MB`);
         return;
       }
 
