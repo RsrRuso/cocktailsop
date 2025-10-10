@@ -224,60 +224,30 @@ const InventoryManager = () => {
     const item = items.find(i => i.id === itemId);
     const employee = employees.find(e => e.id === transferredBy);
 
-    // Get ALL inventory from source store for this item (FIFO order)
-    const { data: sourceInventories } = await supabase
+    // Get current inventory from source store
+    const { data: sourceInventory } = await supabase
       .from("inventory")
       .select("*")
       .eq("store_id", fromStoreId)
       .eq("item_id", itemId)
-      .order("expiration_date");
+      .order("expiration_date")
+      .limit(1)
+      .single();
 
-    if (!sourceInventories || sourceInventories.length === 0) {
-      toast.error("No inventory found in source store");
+    if (!sourceInventory || sourceInventory.quantity < quantity) {
+      toast.error("Insufficient inventory in source store");
       return;
     }
 
-    // Calculate total available quantity
-    const totalAvailable = sourceInventories.reduce((sum, inv) => sum + inv.quantity, 0);
-    
-    if (totalAvailable < quantity) {
-      toast.error(`Insufficient inventory in source store. Available: ${totalAvailable}, Requested: ${quantity}`);
+    // Update source inventory
+    const { error: updateError } = await supabase
+      .from("inventory")
+      .update({ quantity: sourceInventory.quantity - quantity })
+      .eq("id", sourceInventory.id);
+
+    if (updateError) {
+      toast.error("Failed to update source inventory");
       return;
-    }
-
-    // Deduct quantity using FIFO (oldest expiration first)
-    let remainingToDeduct = quantity;
-    for (const inv of sourceInventories) {
-      if (remainingToDeduct <= 0) break;
-
-      const deductFromThis = Math.min(inv.quantity, remainingToDeduct);
-      const newQuantity = inv.quantity - deductFromThis;
-
-      if (newQuantity > 0) {
-        // Update the quantity
-        const { error: updateError } = await supabase
-          .from("inventory")
-          .update({ quantity: newQuantity })
-          .eq("id", inv.id);
-
-        if (updateError) {
-          toast.error("Failed to update source inventory");
-          return;
-        }
-      } else {
-        // Delete the entry if quantity reaches 0
-        const { error: deleteError } = await supabase
-          .from("inventory")
-          .delete()
-          .eq("id", inv.id);
-
-        if (deleteError) {
-          toast.error("Failed to update source inventory");
-          return;
-        }
-      }
-
-      remainingToDeduct -= deductFromThis;
     }
 
     // Add to destination store
@@ -289,10 +259,7 @@ const InventoryManager = () => {
       user_id: user.id,
     });
 
-    // Record transfer with auto-detected dates
-    const transferDate = new Date().toISOString();
-    const receivedDate = new Date().toISOString();
-    
+    // Record transfer
     const { error: transferError } = await supabase.from("transfers").insert({
       from_store_id: fromStoreId,
       to_store_id: toStoreId,
@@ -300,37 +267,30 @@ const InventoryManager = () => {
       quantity,
       transferred_by: transferredBy,
       user_id: user.id,
-      transfer_date: transferDate,
-      received_at: receivedDate,
     });
 
     if (addError || transferError) {
       toast.error("Failed to complete transfer");
-      return;
-    }
-
-    toast.success("Inventory transferred successfully");
-    
-    // Fetch current inventory for the destination store
-    const { data: currentInventory } = await supabase
-      .from("inventory")
-      .select(`
-        *,
-        items(name),
-        stores(name, area)
-      `)
-      .eq("store_id", toStoreId)
-      .order("expiration_date");
+    } else {
+      toast.success("Inventory transferred successfully");
+      
+      // Fetch current inventory for the destination store
+      const { data: currentInventory } = await supabase
+        .from("inventory")
+        .select(`
+          *,
+          items(name),
+          stores(name, area)
+        `)
+        .eq("store_id", toStoreId)
+        .order("expiration_date");
 
       let message = `🔄 *Inventory Transfer Complete*\n\n`;
       message += `Item: ${item?.name}\n`;
       message += `From: ${fromStore?.name} - ${fromStore?.area}\n`;
       message += `To: ${toStore?.name} - ${toStore?.area}\n`;
       message += `Quantity Transferred: ${quantity}\n`;
-      message += `Transferred By: ${employee?.name}\n`;
-      message += `Transfer Date: ${new Date(transferDate).toLocaleDateString()} ${new Date(transferDate).toLocaleTimeString()}\n`;
-      message += `Received Date: ${new Date(receivedDate).toLocaleDateString()} ${new Date(receivedDate).toLocaleTimeString()}\n`;
-      message += `Expiration Date: ${new Date(expirationDate).toLocaleDateString()}\n\n`;
+      message += `Transferred By: ${employee?.name}\n\n`;
       message += `📦 *Current Inventory at ${toStore?.name}*\n\n`;
       
       if (currentInventory && currentInventory.length > 0) {
@@ -346,6 +306,7 @@ const InventoryManager = () => {
       shareToWhatsApp(message);
       e.currentTarget.reset();
       fetchData();
+    }
   };
 
   const shareExpirationSuggestions = () => {
