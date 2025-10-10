@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ShareDialog from "@/components/ShareDialog";
 import CommentsDialog from "@/components/CommentsDialog";
+import { ReelFullscreen } from "@/components/ReelFullscreen";
 
 interface Story {
   id: string;
@@ -82,6 +83,7 @@ const Home = () => {
   const [isReelDialogOpen, setIsReelDialogOpen] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState("");
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
+  const [fullscreenReel, setFullscreenReel] = useState<FeedItem | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -628,7 +630,7 @@ const Home = () => {
                   {item.media_urls.map((url, idx) => (
                     <div key={idx} className="relative rounded-xl overflow-hidden">
                       {item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
-                        <div className="relative reel-container">
+                        <div className="relative">
                           <video 
                             src={url} 
                             loop
@@ -637,32 +639,7 @@ const Home = () => {
                             autoPlay
                             preload="metadata"
                             className="w-full h-auto max-h-96 object-cover cursor-pointer"
-                            onClick={(e) => {
-                              const video = e.currentTarget as any;
-                              const videoId = item.id + url;
-                              const container = video.closest('.reel-container');
-                              
-                              // Cross-browser fullscreen
-                              if (!document.fullscreenElement) {
-                                if (container.requestFullscreen) {
-                                  container.requestFullscreen();
-                                } else if (container.webkitRequestFullscreen) {
-                                  container.webkitRequestFullscreen();
-                                }
-                                // Unmute when entering fullscreen
-                                setMutedVideos(prev => {
-                                  const newSet = new Set(prev);
-                                  newSet.add(videoId);
-                                  return newSet;
-                                });
-                              } else {
-                                if (document.exitFullscreen) {
-                                  document.exitFullscreen();
-                                } else if ((document as any).webkitExitFullscreen) {
-                                  (document as any).webkitExitFullscreen();
-                                }
-                              }
-                            }}
+                            onClick={() => setFullscreenReel(item)}
                           />
                           
                           {/* Mute button */}
@@ -688,99 +665,6 @@ const Home = () => {
                               <VolumeX className="w-4 h-4 text-white" />
                             )}
                           </button>
-
-                          {/* Fullscreen Action Buttons - Only visible in fullscreen */}
-                          <div className="fullscreen-actions hidden absolute right-4 top-1/2 -translate-y-1/2 flex-col gap-6 z-20">
-                            {/* Like Button */}
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                item.type === 'post' ? handleLikePost(item.id) : handleLikeReel(item.id);
-                              }}
-                              className="flex flex-col items-center gap-1 transition-all hover:scale-110"
-                            >
-                              <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70">
-                                <Heart className={`w-6 h-6 ${(item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
-                              </div>
-                              <span className="text-white text-xs font-bold">{item.like_count || 0}</span>
-                            </button>
-                            
-                            {/* Comment Button */}
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedPostId(item.id);
-                                setCommentsDialogOpen(true);
-                              }}
-                              className="flex flex-col items-center gap-1 transition-all hover:scale-110"
-                            >
-                              <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70">
-                                <MessageCircle className="w-6 h-6 text-white" />
-                              </div>
-                              <span className="text-white text-xs font-bold">{item.comment_count || 0}</span>
-                            </button>
-                            
-                            {/* Share/Send Button */}
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedPostId(item.id);
-                                setSelectedPostContent(item.type === 'post' ? item.content : item.caption);
-                                setSelectedPostType(item.type);
-                                setSelectedMediaUrls(item.media_urls || []);
-                                setShareDialogOpen(true);
-                              }}
-                              className="flex flex-col items-center gap-1 transition-all hover:scale-110"
-                            >
-                              <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70">
-                                <Send className="w-6 h-6 text-white" />
-                              </div>
-                            </button>
-
-                            {/* Bookmark Button */}
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toast.success("Saved to bookmarks");
-                              }}
-                              className="flex flex-col items-center gap-1 transition-all hover:scale-110"
-                            >
-                              <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70">
-                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                </svg>
-                              </div>
-                            </button>
-
-                            {/* Three Dot Menu - Only for own posts */}
-                            {currentUser && item.user_id === currentUser.id && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <button 
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="flex flex-col items-center gap-1 transition-all hover:scale-110"
-                                  >
-                                    <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70">
-                                      <MoreVertical className="w-6 h-6 text-white" />
-                                    </div>
-                                  </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="glass">
-                                  <DropdownMenuItem onClick={() => navigate(item.type === 'post' ? `/edit-post/${item.id}` : `/edit-reel/${item.id}`)}>
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </div>
                         </div>
                       ) : (
                         <img
@@ -852,6 +736,43 @@ const Home = () => {
         postId={selectedPostId}
         isReel={feed.find(f => f.id === selectedPostId)?.type === 'reel'}
       />
+
+      {fullscreenReel && (
+        <ReelFullscreen
+          isOpen={!!fullscreenReel}
+          onClose={() => setFullscreenReel(null)}
+          videoUrl={fullscreenReel.media_urls[0]}
+          postId={fullscreenReel.id}
+          postType={fullscreenReel.type}
+          content={fullscreenReel.type === 'post' ? fullscreenReel.content : fullscreenReel.caption}
+          likeCount={fullscreenReel.like_count}
+          commentCount={fullscreenReel.comment_count}
+          isLiked={fullscreenReel.type === 'post' ? likedPosts.has(fullscreenReel.id) : likedReels.has(fullscreenReel.id)}
+          isOwnPost={currentUser?.id === fullscreenReel.user_id}
+          userId={fullscreenReel.user_id}
+          onLike={() => {
+            fullscreenReel.type === 'post' ? handleLikePost(fullscreenReel.id) : handleLikeReel(fullscreenReel.id);
+          }}
+          onComment={() => {
+            setSelectedPostId(fullscreenReel.id);
+            setCommentsDialogOpen(true);
+          }}
+          onShare={() => {
+            setSelectedPostId(fullscreenReel.id);
+            setSelectedPostContent(fullscreenReel.type === 'post' ? fullscreenReel.content : fullscreenReel.caption);
+            setSelectedPostType(fullscreenReel.type);
+            setSelectedMediaUrls(fullscreenReel.media_urls || []);
+            setShareDialogOpen(true);
+          }}
+          onEdit={() => {
+            navigate(fullscreenReel.type === 'post' ? `/edit-post/${fullscreenReel.id}` : `/edit-reel/${fullscreenReel.id}`);
+          }}
+          onDelete={() => {
+            fullscreenReel.type === 'post' ? handleDeletePost(fullscreenReel.id) : handleDeleteReel(fullscreenReel.id);
+            setFullscreenReel(null);
+          }}
+        />
+      )}
 
       <BottomNav />
     </div>
