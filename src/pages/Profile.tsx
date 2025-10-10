@@ -283,7 +283,6 @@ const Profile = () => {
                 <a
                   href={`https://wa.me/${profile.whatsapp.replace(/[^0-9]/g, '')}`}
                   target="_blank"
-                  rel="noopener noreferrer"
                   className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
                 >
                   <MessageSquare className="w-4 h-4 text-green-500" />
