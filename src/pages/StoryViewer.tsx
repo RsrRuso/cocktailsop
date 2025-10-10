@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { X, ChevronLeft, ChevronRight, Heart, Eye, Trash2, MoreVertical } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Heart, Eye, Trash2, MoreVertical, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import StoryViewersDialog from "@/components/StoryViewersDialog";
 import StoryLikesDialog from "@/components/StoryLikesDialog";
+import StoryCommentsDialog from "@/components/StoryCommentsDialog";
 
 interface Story {
   id: string;
@@ -21,6 +22,7 @@ interface Story {
   created_at: string;
   view_count: number;
   like_count: number;
+  comment_count: number;
   profiles: {
     username: string;
     avatar_url: string | null;
@@ -45,6 +47,7 @@ const StoryViewer = () => {
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
   const [showViewersDialog, setShowViewersDialog] = useState(false);
   const [showLikesDialog, setShowLikesDialog] = useState(false);
+  const [showCommentsDialog, setShowCommentsDialog] = useState(false);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -412,6 +415,10 @@ const StoryViewer = () => {
                   <Heart className="w-4 h-4 mr-2" />
                   Likes ({currentStory.like_count})
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowCommentsDialog(true)}>
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Comments ({currentStory.comment_count})
+                </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={handleDeleteStory}
                   className="text-red-500 focus:text-red-500"
@@ -478,7 +485,7 @@ const StoryViewer = () => {
 
       {/* Bottom actions */}
       {!isOwnStory && (
-        <div className="absolute bottom-8 left-4 right-4 flex items-center justify-between z-10">
+        <div className="absolute bottom-8 left-4 right-4 flex items-center gap-4 z-10">
           <Button
             variant="ghost"
             size="icon"
@@ -490,6 +497,14 @@ const StoryViewer = () => {
                 isLiked ? 'fill-red-500 text-red-500 scale-110' : 'text-white'
               }`}
             />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowCommentsDialog(true)}
+            className="w-14 h-14 rounded-full bg-black/50 hover:bg-black/70"
+          >
+            <MessageCircle className="w-7 h-7 text-white" />
           </Button>
         </div>
       )}
@@ -530,7 +545,21 @@ const StoryViewer = () => {
             onOpenChange={setShowLikesDialog}
             storyId={currentStory.id}
           />
+          <StoryCommentsDialog
+            open={showCommentsDialog}
+            onOpenChange={setShowCommentsDialog}
+            storyId={currentStory.id}
+          />
         </>
+      )}
+      
+      {/* Comments dialog for non-owners */}
+      {!isOwnStory && (
+        <StoryCommentsDialog
+          open={showCommentsDialog}
+          onOpenChange={setShowCommentsDialog}
+          storyId={currentStory.id}
+        />
       )}
     </div>
   );
