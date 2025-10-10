@@ -168,8 +168,11 @@ const CreateReel = () => {
       setUploadStage("Complete!");
       setUploadProgress(100);
       
-      await new Promise(resolve => setTimeout(resolve, 500));
-      toast.success("Reel created successfully!");
+      await new Promise(resolve => setTimeout(resolve, 800));
+      toast.success("🎉 Reel uploaded successfully!", {
+        description: "Your reel is now live and ready to be viewed!",
+        duration: 4000,
+      });
       navigate("/thunder");
     } catch (error: any) {
       console.error("Error creating reel:", error);

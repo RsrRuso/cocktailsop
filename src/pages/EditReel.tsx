@@ -93,7 +93,19 @@ const EditReel = () => {
 
         <div className="glass rounded-2xl p-6 space-y-6">
           <div className="aspect-[9/16] rounded-xl overflow-hidden">
-            <video src={videoUrl} controls className="w-full h-full object-cover" />
+            <video 
+              src={videoUrl} 
+              controls 
+              className="w-full h-full object-cover cursor-pointer"
+              onClick={(e) => {
+                const video = e.currentTarget;
+                if (!document.fullscreenElement) {
+                  video.requestFullscreen();
+                } else {
+                  document.exitFullscreen();
+                }
+              }}
+            />
           </div>
 
           <Textarea

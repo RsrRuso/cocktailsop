@@ -225,11 +225,21 @@ const Reels = () => {
               {/* Video Player */}
               <video
                 src={reel.video_url}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover cursor-pointer"
                 loop
                 playsInline
                 muted
                 autoPlay
+                onClick={(e) => {
+                  const video = e.currentTarget;
+                  if (!document.fullscreenElement) {
+                    video.requestFullscreen();
+                    video.muted = false;
+                  } else {
+                    document.exitFullscreen();
+                    video.muted = true;
+                  }
+                }}
               />
 
               {/* Bottom Action Bar */}
