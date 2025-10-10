@@ -48,6 +48,7 @@ const StoryViewer = () => {
   const [showViewersDialog, setShowViewersDialog] = useState(false);
   const [showLikesDialog, setShowLikesDialog] = useState(false);
   const [showCommentsDialog, setShowCommentsDialog] = useState(false);
+  const [lastTap, setLastTap] = useState(0);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -125,6 +126,31 @@ const StoryViewer = () => {
       setIsLiked(true);
       addFloatingHeart();
     }
+
+    // Update local story count
+    const updatedStories = [...stories];
+    const currentStory = updatedStories[currentStoryIndex];
+    if (currentStory) {
+      currentStory.like_count = isLiked 
+        ? Math.max(0, currentStory.like_count - 1)
+        : currentStory.like_count + 1;
+      setStories(updatedStories);
+    }
+  };
+
+  const handleDoubleTap = () => {
+    if (isOwnStory) return;
+    
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+    
+    if (now - lastTap < DOUBLE_TAP_DELAY) {
+      if (!isLiked) {
+        handleLike();
+      }
+      addFloatingHeart();
+    }
+    setLastTap(now);
   };
 
   const addFloatingHeart = () => {
@@ -439,7 +465,10 @@ const StoryViewer = () => {
       </div>
 
       {/* Media content */}
-      <div className="w-full h-full flex items-center justify-center">
+      <div 
+        className="w-full h-full flex items-center justify-center"
+        onClick={handleDoubleTap}
+      >
         {currentMediaType.startsWith("video") ? (
           <video
             ref={videoRef}
@@ -483,29 +512,51 @@ const StoryViewer = () => {
         </button>
       )}
 
-      {/* Bottom actions */}
+      {/* Bottom actions - Instagram style */}
       {!isOwnStory && (
-        <div className="absolute bottom-8 left-4 right-4 flex items-center gap-4 z-10">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleLike}
-            className="w-14 h-14 rounded-full bg-black/50 hover:bg-black/70"
-          >
-            <Heart
-              className={`w-7 h-7 transition-all ${
-                isLiked ? 'fill-red-500 text-red-500 scale-110' : 'text-white'
-              }`}
-            />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowCommentsDialog(true)}
-            className="w-14 h-14 rounded-full bg-black/50 hover:bg-black/70"
-          >
-            <MessageCircle className="w-7 h-7 text-white" />
-          </Button>
+        <div className="absolute bottom-6 left-0 right-0 px-4 z-10">
+          <div className="flex items-center gap-2">
+            {/* Like Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLike}
+              className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10"
+            >
+              <Heart
+                className={`w-7 h-7 transition-all ${
+                  isLiked ? 'fill-red-500 text-red-500 scale-110' : 'text-white'
+                }`}
+              />
+            </Button>
+            
+            {/* Comment Button with count */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowCommentsDialog(true)}
+              className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 relative"
+            >
+              <MessageCircle className="w-7 h-7 text-white" />
+              {currentStory.comment_count > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {currentStory.comment_count}
+                </span>
+              )}
+            </Button>
+          </div>
+          
+          {/* Like count display */}
+          {currentStory.like_count > 0 && (
+            <div className="mt-2 ml-1">
+              <button
+                onClick={() => isOwnStory && setShowLikesDialog(true)}
+                className="text-white font-semibold text-sm hover:opacity-70 transition-opacity"
+              >
+                {currentStory.like_count} {currentStory.like_count === 1 ? 'like' : 'likes'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
