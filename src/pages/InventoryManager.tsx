@@ -19,6 +19,7 @@ const InventoryManager = () => {
   const [inventory, setInventory] = useState<any[]>([]);
   const [selectedStore, setSelectedStore] = useState("");
   const [expirationSuggestions, setExpirationSuggestions] = useState<any[]>([]);
+  const [whatsappNumber, setWhatsappNumber] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -67,8 +68,13 @@ const InventoryManager = () => {
   };
 
   const shareToWhatsApp = (message: string) => {
+    if (!whatsappNumber) {
+      toast.error("Please set WhatsApp group number first");
+      return;
+    }
     const encodedMessage = encodeURIComponent(message);
-    window.location.href = `https://wa.me/?text=${encodedMessage}`;
+    const cleanNumber = whatsappNumber.replace(/[^0-9]/g, '');
+    window.location.href = `https://wa.me/${cleanNumber}?text=${encodedMessage}`;
   };
 
   const handleAddStore = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -288,6 +294,24 @@ const InventoryManager = () => {
             <p className="text-xs text-center mt-2 text-muted-foreground">Scan to access</p>
           </div>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>WhatsApp Group Settings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="whatsappNumber">WhatsApp Group Number (with country code)</Label>
+              <Input 
+                id="whatsappNumber"
+                placeholder="e.g., 1234567890"
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Enter the group phone number with country code (no + or spaces)</p>
+            </div>
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="inventory" className="space-y-6">
           <TabsList className="grid grid-cols-5 w-full">
