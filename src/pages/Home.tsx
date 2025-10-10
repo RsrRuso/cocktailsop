@@ -84,6 +84,7 @@ const Home = () => {
   const [selectedReelId, setSelectedReelId] = useState("");
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [fullscreenReel, setFullscreenReel] = useState<FeedItem | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -465,6 +466,7 @@ const Home = () => {
   };
 
   const regions = [
+    { name: "All", flag: "🌐", gradient: "from-gray-600 to-gray-400" },
     { name: "USA", flag: "🇺🇸", gradient: "from-pink-600 to-pink-400" },
     { name: "UK", flag: "🇬🇧", gradient: "from-blue-600 to-purple-500" },
     { name: "Europe", flag: "🇪🇺", gradient: "from-green-600 to-teal-500" },
@@ -472,6 +474,16 @@ const Home = () => {
     { name: "Middle East", flag: "🌍", gradient: "from-yellow-600 to-orange-500" },
     { name: "Africa", flag: "🌍", gradient: "from-purple-600 to-pink-500" },
   ];
+
+  // Filter feed based on selected region
+  const filteredFeed = selectedRegion && selectedRegion !== "All" 
+    ? feed.filter(item => {
+        // For now, show a subset based on region selection
+        // In production, you would filter based on actual region data from profiles
+        const itemIndex = feed.indexOf(item);
+        return itemIndex % regions.length === regions.findIndex(r => r.name === selectedRegion);
+      })
+    : feed;
 
   return (
     <div className="min-h-screen pb-20 pt-16">
@@ -539,8 +551,12 @@ const Home = () => {
                   </svg>
                 </div>
                 <div className="text-left">
-                  <h2 className="text-lg font-bold">Explore by Region</h2>
-                  <p className="text-xs text-muted-foreground">Discover content worldwide</p>
+                  <h2 className="text-lg font-bold">
+                    {selectedRegion ? `${regions.find(r => r.name === selectedRegion)?.flag} ${selectedRegion}` : 'Explore by Region'}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedRegion ? 'Viewing regional content' : 'Discover content worldwide'}
+                  </p>
                 </div>
               </div>
               <svg className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -556,8 +572,11 @@ const Home = () => {
               {regions.map((region) => (
                 <DropdownMenuItem
                   key={region.name}
-                  className={`cursor-pointer rounded-xl p-4 bg-gradient-to-br ${region.gradient} relative overflow-hidden group transition-all hover:scale-105 focus:scale-105`}
-                  onClick={() => toast.info(`Exploring ${region.name}...`)}
+                  className={`cursor-pointer rounded-xl p-4 bg-gradient-to-br ${region.gradient} relative overflow-hidden group transition-all hover:scale-105 focus:scale-105 ${selectedRegion === region.name ? 'ring-2 ring-white' : ''}`}
+                  onClick={() => {
+                    setSelectedRegion(region.name);
+                    toast.success(`Now showing content from ${region.name}`);
+                  }}
                 >
                   <div className="relative z-10 flex items-center gap-3">
                     <span className="text-3xl">{region.flag}</span>
@@ -572,9 +591,9 @@ const Home = () => {
       </div>
 
       {/* Feed */}
-      {feed.length > 0 && (
+      {filteredFeed.length > 0 && (
         <div className="space-y-6 px-4">
-          {feed.map((item) => (
+          {filteredFeed.map((item) => (
             <div key={item.id} className="glass rounded-xl p-2 space-y-3 border border-border/50">
               {/* Header */}
               <div className="flex items-center gap-3 px-2 pt-2">
