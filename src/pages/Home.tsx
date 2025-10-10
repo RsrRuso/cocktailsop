@@ -395,15 +395,8 @@ const Home = () => {
         setPosts(prev => prev.map(p => 
           p.id === postId ? { ...p, like_count: Math.max(0, p.like_count - 1) } : p
         ));
-      } else if (post && post.user_id !== currentUser.id) {
-        // Create notification for post owner
-        await supabase.from("notifications").insert({
-          user_id: post.user_id,
-          type: 'like',
-          content: `${currentUser.username} liked your post`,
-          read: false
-        });
       }
+      // Notification is automatically created by database trigger
     }
   };
 
@@ -463,15 +456,8 @@ const Home = () => {
         setReels(prev => prev.map(r => 
           r.id === reelId ? { ...r, like_count: Math.max(0, r.like_count - 1) } : r
         ));
-      } else if (reel && reel.user_id !== currentUser.id) {
-        // Create notification for reel owner
-        await supabase.from("notifications").insert({
-          user_id: reel.user_id,
-          type: 'like',
-          content: `${currentUser.username} liked your reel`,
-          read: false
-        });
       }
+      // Notification is automatically created by database trigger
     }
   };
 
