@@ -109,11 +109,11 @@ const Home = () => {
 
     initializeData();
 
-    // Set up realtime subscriptions with debouncing
+    // Set up realtime subscriptions with minimal debouncing for instant updates
     let updateTimeout: NodeJS.Timeout;
     const debouncedUpdate = (callback: () => void) => {
       clearTimeout(updateTimeout);
-      updateTimeout = setTimeout(callback, 500);
+      updateTimeout = setTimeout(callback, 100);
     };
 
     const storiesChannel = supabase

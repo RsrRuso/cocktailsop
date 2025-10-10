@@ -161,44 +161,14 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
       ? { reel_id: postId, user_id: currentUserId, content: newComment.trim(), parent_comment_id: replyingTo }
       : { post_id: postId, user_id: currentUserId, content: newComment.trim(), parent_comment_id: replyingTo };
     
-    console.log('Inserting comment:', { tableName, insertData });
-    
     const { data, error } = await supabase
       .from(tableName)
       .insert(insertData as any)
       .select();
 
     if (error) {
-      console.error('Failed to add comment:', error);
       toast.error(`Failed to add comment: ${error.message}`);
     } else {
-      console.log('Comment added successfully:', data);
-      
-      // Get post/reel owner to send notification
-      const ownerTable = isReel ? 'reels' : 'posts';
-      const { data: itemData } = await supabase
-        .from(ownerTable)
-        .select('user_id')
-        .eq('id', postId)
-        .single();
-
-      // Get current user info for notification
-      const { data: userData } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', currentUserId)
-        .single();
-
-      // Create notification if commenter is not the owner
-      if (itemData && userData && itemData.user_id !== currentUserId) {
-        await supabase.from("notifications").insert({
-          user_id: itemData.user_id,
-          type: 'comment',
-          content: `${userData.username} commented on your ${isReel ? 'reel' : 'post'}`,
-          read: false
-        });
-      }
-      
       setNewComment("");
       setReplyingTo(null);
       toast.success(replyingTo ? "Reply added!" : "Comment added!");
