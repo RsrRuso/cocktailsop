@@ -80,13 +80,6 @@ const InventoryManager = () => {
     setShareDialogOpen(true);
   };
 
-  const shareToSingleNumber = (number: string) => {
-    const encodedMessage = encodeURIComponent(messageToShare);
-    const cleanNumber = number.replace(/[^0-9]/g, '');
-    window.open(`https://wa.me/${cleanNumber}?text=${encodedMessage}`, '_blank');
-    toast.success(`Opening WhatsApp for +${cleanNumber}`);
-  };
-
   const handleAddWhatsappNumber = () => {
     if (!newWhatsappNumber.trim()) {
       toast.error("Please enter a WhatsApp number");
@@ -707,17 +700,24 @@ const InventoryManager = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {whatsappNumbers.map((number) => (
-              <Button
-                key={number}
-                variant="outline"
-                className="w-full justify-between"
-                onClick={() => shareToSingleNumber(number)}
-              >
-                <span className="font-mono">+{number}</span>
-                <Share2 className="h-4 w-4" />
-              </Button>
-            ))}
+            {whatsappNumbers.map((number) => {
+              const cleanNumber = number.replace(/[^0-9]/g, '');
+              const encodedMessage = encodeURIComponent(messageToShare);
+              const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodedMessage}`;
+              
+              return (
+                <a
+                  key={number}
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between w-full p-3 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  <span className="font-mono">+{number}</span>
+                  <Share2 className="h-4 w-4" />
+                </a>
+              );
+            })}
           </div>
         </DialogContent>
       </Dialog>
