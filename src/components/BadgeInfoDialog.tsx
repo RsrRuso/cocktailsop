@@ -1,6 +1,7 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { BadgeCheck, Diamond, Award, Star, TrendingUp } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface BadgeInfoDialogProps {
   open: boolean;
@@ -69,14 +70,18 @@ const BadgeInfoDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass border-primary/20 max-w-md">
-        <DialogHeader>
+      <DialogContent className="glass border-primary/20 max-w-md max-h-[85vh] p-0">
+        <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="text-2xl font-bold">
             {isOwnProfile ? 'Your Badge Status' : `${username}'s Badge Status`}
           </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            View badge levels, perks, and progression
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <ScrollArea className="h-full max-h-[calc(85vh-80px)] px-6 pb-6">
+          <div className="space-y-6 pr-4">
           {/* Founder Badge Section */}
           {isFounder && (
             <div className="relative p-6 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10 border-2 border-cyan-400/30">
@@ -205,7 +210,8 @@ const BadgeInfoDialog = ({
               </div>
             </div>
           )}
-        </div>
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
