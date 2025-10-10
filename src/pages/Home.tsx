@@ -612,7 +612,7 @@ const Home = () => {
                   {item.media_urls.map((url, idx) => (
                     <div key={idx} className="relative rounded-xl overflow-hidden">
                       {item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
-                        <div className="relative">
+                        <div className="relative reel-container">
                           <video 
                             src={url} 
                             loop
@@ -624,15 +624,14 @@ const Home = () => {
                             onClick={(e) => {
                               const video = e.currentTarget as any;
                               const videoId = item.id + url;
+                              const container = video.closest('.reel-container');
                               
                               // Cross-browser fullscreen
                               if (!document.fullscreenElement) {
-                                if (video.requestFullscreen) {
-                                  video.requestFullscreen();
-                                } else if (video.webkitRequestFullscreen) {
-                                  video.webkitRequestFullscreen();
-                                } else if (video.webkitEnterFullscreen) {
-                                  video.webkitEnterFullscreen();
+                                if (container.requestFullscreen) {
+                                  container.requestFullscreen();
+                                } else if (container.webkitRequestFullscreen) {
+                                  container.webkitRequestFullscreen();
                                 }
                                 // Unmute when entering fullscreen
                                 setMutedVideos(prev => {
@@ -649,6 +648,8 @@ const Home = () => {
                               }
                             }}
                           />
+                          
+                          {/* Mute button */}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -671,6 +672,52 @@ const Home = () => {
                               <VolumeX className="w-4 h-4 text-white" />
                             )}
                           </button>
+
+                          {/* Fullscreen Action Buttons - Only visible in fullscreen */}
+                          <div className="fullscreen-actions hidden absolute right-4 top-1/2 -translate-y-1/2 flex-col gap-6 z-20">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                item.type === 'post' ? handleLikePost(item.id) : handleLikeReel(item.id);
+                              }}
+                              className="flex flex-col items-center gap-1 transition-all hover:scale-110"
+                            >
+                              <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70">
+                                <Heart className={`w-6 h-6 ${(item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+                              </div>
+                              <span className="text-white text-xs font-bold">{item.like_count || 0}</span>
+                            </button>
+                            
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPostId(item.id);
+                                setCommentsDialogOpen(true);
+                              }}
+                              className="flex flex-col items-center gap-1 transition-all hover:scale-110"
+                            >
+                              <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70">
+                                <MessageCircle className="w-6 h-6 text-white" />
+                              </div>
+                              <span className="text-white text-xs font-bold">{item.comment_count || 0}</span>
+                            </button>
+                            
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPostId(item.id);
+                                setSelectedPostContent(item.type === 'post' ? item.content : item.caption);
+                                setSelectedPostType(item.type);
+                                setSelectedMediaUrls(item.media_urls || []);
+                                setShareDialogOpen(true);
+                              }}
+                              className="flex flex-col items-center gap-1 transition-all hover:scale-110"
+                            >
+                              <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70">
+                                <Send className="w-6 h-6 text-white" />
+                              </div>
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <img

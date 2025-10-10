@@ -194,6 +194,25 @@ All colors MUST be HSL.
       0 4px 8px rgba(0, 0, 0, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
+  
+  /* Fullscreen video controls */
+  .reel-container:fullscreen .fullscreen-actions,
+  .reel-container:-webkit-full-screen .fullscreen-actions {
+    display: flex !important;
+  }
+
+  .reel-container:fullscreen video,
+  .reel-container:-webkit-full-screen video {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    object-fit: contain;
+  }
+
+  .reel-container:fullscreen,
+  .reel-container:-webkit-full-screen {
+    background: black;
+  }
 }
 
 @layer base {
