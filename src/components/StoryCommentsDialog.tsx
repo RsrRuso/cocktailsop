@@ -82,18 +82,39 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
     if (!newComment.trim() || !currentUserId) return;
 
     setSubmitting(true);
+    
+    // Optimistic update - add comment immediately
+    const tempComment: Comment = {
+      id: 'temp-' + Date.now(),
+      user_id: currentUserId,
+      content: newComment.trim(),
+      created_at: new Date().toISOString(),
+      profiles: {
+        username: 'You',
+        avatar_url: null,
+        full_name: 'You'
+      }
+    };
+    setComments(prev => [tempComment, ...prev]);
+    const commentText = newComment.trim();
+    setNewComment("");
+
+    // Background API call
     const { error } = await supabase
       .from("story_comments")
       .insert({
         story_id: storyId,
         user_id: currentUserId,
-        content: newComment.trim(),
+        content: commentText,
       });
 
     if (error) {
       toast.error("Failed to post comment");
+      // Remove temp comment on error
+      setComments(prev => prev.filter(c => c.id !== tempComment.id));
+      setNewComment(commentText);
     } else {
-      setNewComment("");
+      // Refresh to get real data with correct profile
       fetchComments();
     }
     setSubmitting(false);

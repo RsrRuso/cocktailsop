@@ -66,6 +66,39 @@ const StoryViewer = () => {
       trackView();
       checkIfLiked();
     }
+
+    // Subscribe to story updates for realtime counts
+    if (stories[currentStoryIndex]?.id) {
+      const channel = supabase
+        .channel(`story-${stories[currentStoryIndex].id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'stories',
+            filter: `id=eq.${stories[currentStoryIndex].id}`
+          },
+          (payload) => {
+            if (payload.new && payload.eventType === 'UPDATE') {
+              const updatedStories = [...stories];
+              const newStory = payload.new as Story;
+              updatedStories[currentStoryIndex] = {
+                ...updatedStories[currentStoryIndex],
+                like_count: newStory.like_count,
+                comment_count: newStory.comment_count,
+                view_count: newStory.view_count
+              };
+              setStories(updatedStories);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [currentStoryIndex, stories, currentUserId]);
 
   const fetchCurrentUser = async () => {
