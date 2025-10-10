@@ -274,13 +274,34 @@ const InventoryManager = () => {
     } else {
       toast.success("Inventory transferred successfully");
       
-      const message = `🔄 *Inventory Transfer*\n\n` +
-        `Item: ${item?.name}\n` +
-        `From: ${fromStore?.name} - ${fromStore?.area}\n` +
-        `To: ${toStore?.name} - ${toStore?.area}\n` +
-        `Quantity: ${quantity}\n` +
-        `Transferred By: ${employee?.name}\n` +
-        `Expiration Date: ${new Date(expirationDate).toLocaleDateString()}`;
+      // Fetch current inventory for the destination store
+      const { data: currentInventory } = await supabase
+        .from("inventory")
+        .select(`
+          *,
+          items(name),
+          stores(name, area)
+        `)
+        .eq("store_id", toStoreId)
+        .order("expiration_date");
+
+      let message = `🔄 *Inventory Transfer Complete*\n\n`;
+      message += `Item: ${item?.name}\n`;
+      message += `From: ${fromStore?.name} - ${fromStore?.area}\n`;
+      message += `To: ${toStore?.name} - ${toStore?.area}\n`;
+      message += `Quantity Transferred: ${quantity}\n`;
+      message += `Transferred By: ${employee?.name}\n\n`;
+      message += `📦 *Current Inventory at ${toStore?.name}*\n\n`;
+      
+      if (currentInventory && currentInventory.length > 0) {
+        currentInventory.forEach((inv, index) => {
+          message += `${index + 1}. ${inv.items?.name}\n`;
+          message += `   Qty: ${inv.quantity}\n`;
+          message += `   Expires: ${new Date(inv.expiration_date).toLocaleDateString()}\n\n`;
+        });
+      } else {
+        message += `No inventory found`;
+      }
       
       shareToWhatsApp(message);
       e.currentTarget.reset();
