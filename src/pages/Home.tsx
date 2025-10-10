@@ -204,9 +204,9 @@ const Home = () => {
     
     const { data } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, username, avatar_url")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
     
     if (data) setCurrentUser(data);
   };
@@ -215,19 +215,17 @@ const Home = () => {
     try {
       const { data } = await supabase
         .from("stories")
-        .select("*, profiles(username, avatar_url)")
+        .select("id, user_id, media_urls, media_types, created_at, expires_at, profiles(username, avatar_url)")
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(8);
 
       if (data) {
-        // Preload first 3 story images only
-        data.slice(0, 3).forEach((story: any) => {
-          if (story.media_urls?.[0]) {
-            const img = new Image();
-            img.src = story.media_urls[0];
-          }
-        });
+        // Preload only first story image for instant display
+        if (data[0]?.media_urls?.[0]) {
+          const img = new Image();
+          img.src = data[0].media_urls[0];
+        }
         setStories(data);
       }
     } catch (error) {
@@ -239,9 +237,9 @@ const Home = () => {
     try {
       const { data } = await supabase
         .from("posts")
-        .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
+        .select("id, user_id, content, media_urls, like_count, comment_count, created_at, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(8);
 
       if (data) setPosts(data);
     } catch (error) {
@@ -253,9 +251,9 @@ const Home = () => {
     try {
       const { data } = await supabase
         .from("reels")
-        .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
+        .select("id, user_id, video_url, caption, like_count, comment_count, view_count, created_at, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(8);
 
       if (data) setReels(data);
     } catch (error) {
