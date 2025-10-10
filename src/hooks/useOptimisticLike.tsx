@@ -64,19 +64,17 @@ export const useOptimisticLike = (
               .eq('post_id', itemId)
               .eq('user_id', currentUserId);
             if (error) {
-              console.error('Failed to unlike post:', error);
+              console.error('Unlike error:', error.code);
               throw error;
             }
-            console.log('Post unliked successfully');
           } else {
             const { error } = await supabase
               .from('post_likes')
               .insert({ post_id: itemId, user_id: currentUserId });
             if (error) {
-              console.error('Failed to like post:', error);
+              console.error('Like error:', error.code);
               throw error;
             }
-            console.log('Post liked successfully');
           }
         } else {
           if (isLiked) {
@@ -86,23 +84,21 @@ export const useOptimisticLike = (
               .eq('reel_id', itemId)
               .eq('user_id', currentUserId);
             if (error) {
-              console.error('Failed to unlike reel:', error);
+              console.error('Unlike error:', error.code);
               throw error;
             }
-            console.log('Reel unliked successfully');
           } else {
             const { error } = await supabase
               .from('reel_likes')
               .insert({ reel_id: itemId, user_id: currentUserId });
             if (error) {
-              console.error('Failed to like reel:', error);
+              console.error('Like error:', error.code);
               throw error;
             }
-            console.log('Reel liked successfully');
           }
         }
       } catch (error) {
-        console.error('Like API call failed:', error);
+        console.error('Like operation failed');
         toast.error(`Failed to ${isLiked ? 'unlike' : 'like'} ${itemType}`);
         // Revert on error
         setLikedItems((prev) => {

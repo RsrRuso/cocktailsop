@@ -531,8 +531,6 @@ export type Database = {
           following_count: number | null
           full_name: string
           id: string
-          is_founder: boolean | null
-          is_verified: boolean | null
           phone: string | null
           post_count: number | null
           professional_title:
@@ -557,8 +555,6 @@ export type Database = {
           following_count?: number | null
           full_name: string
           id: string
-          is_founder?: boolean | null
-          is_verified?: boolean | null
           phone?: string | null
           post_count?: number | null
           professional_title?:
@@ -583,8 +579,6 @@ export type Database = {
           following_count?: number | null
           full_name?: string
           id?: string
-          is_founder?: boolean | null
-          is_verified?: boolean | null
           phone?: string | null
           post_count?: number | null
           professional_title?:
@@ -1206,6 +1200,14 @@ export type Database = {
       }
       is_conversation_participant: {
         Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_founder: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
+      is_verified: {
+        Args: { user_id: string }
         Returns: boolean
       }
       recalculate_follow_counts: {

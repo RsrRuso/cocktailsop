@@ -228,7 +228,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
           .select();
         
         if (error) {
-          console.error('Failed to post comment:', error);
+          console.error('Comment error:', error.code);
           toast.error("Failed to post comment");
           // Remove temp comment on error
           setComments(prev => {
@@ -245,11 +245,10 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
           setNewComment(commentText);
           if (replyId) setReplyingTo(replyId);
         } else if (data && data.length > 0) {
-          console.log('Comment posted successfully:', data[0]);
-          // Just keep the optimistic update - no need to refetch
+          console.log('Comment posted');
         }
       } catch (err) {
-        console.error('Comment API call failed:', err);
+        console.error('Comment failed');
         toast.error("Failed to post comment");
         // Remove temp comment on error
         setComments(prev => {

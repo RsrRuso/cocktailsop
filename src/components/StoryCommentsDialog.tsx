@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MessageCircle, Send, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { commentSchema } from "@/lib/validation";
 
 interface StoryCommentsDialogProps {
   open: boolean;
@@ -98,7 +99,14 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId, onCommentAdded }: St
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !currentUserId) return;
+    if (!currentUserId) return;
+
+    // Validate input
+    const validation = commentSchema.safeParse({ content: newComment });
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message);
+      return;
+    }
 
     // Instant optimistic update with real user data or fallback
     const tempComment: Comment = {
@@ -127,16 +135,15 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId, onCommentAdded }: St
           .select();
         
         if (error) {
-          console.error('Failed to post story comment:', error);
+          console.error('Story comment error:', error.code);
           toast.error("Failed to post comment");
           setComments(prev => prev.filter(c => c.id !== tempComment.id));
           setNewComment(commentText);
         } else if (data && data.length > 0) {
-          console.log('Story comment posted successfully:', data[0]);
-          // Just keep the optimistic update - no need to refetch
+          console.log('Story comment posted');
         }
       } catch (err) {
-        console.error('Story comment API call failed:', err);
+        console.error('Comment failed');
         toast.error("Failed to post comment");
         setComments(prev => prev.filter(c => c.id !== tempComment.id));
         setNewComment(commentText);

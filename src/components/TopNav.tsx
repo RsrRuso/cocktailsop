@@ -14,6 +14,7 @@ import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 const TopNav = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userRoles, setUserRoles] = useState({ isFounder: false, isVerified: false });
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [theme, setTheme] = useState<'light' | 'grey' | 'dark' | 'black'>(() => {
@@ -83,14 +84,29 @@ const TopNav = () => {
   const fetchCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    
+
     const { data } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
     
-    if (data) setCurrentUser(data);
+    if (data) {
+      setCurrentUser(data);
+      
+      // Fetch user roles
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+      
+      if (rolesData) {
+        setUserRoles({
+          isFounder: rolesData.some(r => r.role === 'founder'),
+          isVerified: rolesData.some(r => r.role === 'verified')
+        });
+      }
+    }
   };
 
   const fetchUnreadNotifications = async () => {
@@ -130,7 +146,7 @@ const TopNav = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20">
       <div className="flex items-center justify-between px-4 py-3">
-        {currentUser?.is_founder ? (
+        {userRoles.isFounder ? (
           <div 
             className="relative group cursor-pointer"
             onClick={() => setBadgeDialogOpen(true)}
@@ -277,7 +293,7 @@ const TopNav = () => {
               <div className="absolute -top-1 left-2 w-1 h-1 bg-yellow-200 rounded-full animate-ping" style={{ animationDuration: '1.1s', animationDelay: '1s', boxShadow: '0 0 5px #fef08a' }} />
             </div>
           </div>
-        ) : currentUser?.is_verified && (
+        ) : userRoles.isVerified && (
           <div 
             className="relative group cursor-pointer"
             onClick={() => setBadgeDialogOpen(true)}
@@ -292,8 +308,8 @@ const TopNav = () => {
         <BadgeInfoDialog
           open={badgeDialogOpen}
           onOpenChange={setBadgeDialogOpen}
-          isFounder={currentUser?.is_founder}
-          isVerified={currentUser?.is_verified}
+          isFounder={userRoles.isFounder}
+          isVerified={userRoles.isVerified}
           badgeLevel={currentUser?.badge_level}
           username={currentUser?.username}
           isOwnProfile={true}

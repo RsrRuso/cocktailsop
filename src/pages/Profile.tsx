@@ -33,8 +33,11 @@ interface Profile {
   show_phone: boolean;
   show_whatsapp: boolean;
   show_website: boolean;
-  is_founder: boolean;
-  is_verified: boolean;
+}
+
+interface UserRoles {
+  isFounder: boolean;
+  isVerified: boolean;
 }
 
 interface Story {
@@ -67,6 +70,7 @@ interface Reel {
 const Profile = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [userRoles, setUserRoles] = useState<UserRoles>({ isFounder: false, isVerified: false });
   const [coverUrl, setCoverUrl] = useState<string>("");
   const [stories, setStories] = useState<Story[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -117,6 +121,19 @@ const Profile = () => {
     if (data) {
       setProfile(data);
       setCoverUrl(data.cover_url || "");
+      
+      // Fetch user roles
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.id);
+      
+      if (rolesData) {
+        setUserRoles({
+          isFounder: rolesData.some(r => r.role === 'founder'),
+          isVerified: rolesData.some(r => r.role === 'verified')
+        });
+      }
     }
   };
 
@@ -266,8 +283,8 @@ const Profile = () => {
     
     // Status bonuses
     let statusBonus = 0;
-    if (profile.is_founder) statusBonus += 10;
-    if (profile.is_verified) statusBonus += 8;
+    if (userRoles.isFounder) statusBonus += 10;
+    if (userRoles.isVerified) statusBonus += 8;
     
     // Badge level bonus
     const badgeBonus = {
@@ -693,12 +710,12 @@ const Profile = () => {
                   >
                     <span className="text-sm text-muted-foreground">Badge Status</span>
                     <div className="flex items-center gap-2">
-                      {profile.is_founder && (
+                      {userRoles.isFounder && (
                         <span className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
                           Founder
                         </span>
                       )}
-                      {profile.is_verified && !profile.is_founder && (
+                      {userRoles.isVerified && !userRoles.isFounder && (
                         <span className="text-xs font-semibold text-primary">
                           Verified
                         </span>
@@ -757,8 +774,8 @@ const Profile = () => {
       <BadgeInfoDialog
         open={badgeDialogOpen}
         onOpenChange={setBadgeDialogOpen}
-        isFounder={profile?.is_founder}
-        isVerified={profile?.is_verified}
+        isFounder={userRoles.isFounder}
+        isVerified={userRoles.isVerified}
         badgeLevel={profile?.badge_level as any}
         username={profile?.username}
         isOwnProfile={true}
