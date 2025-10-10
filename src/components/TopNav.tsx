@@ -15,9 +15,9 @@ const TopNav = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-  const [theme, setTheme] = useState<'light' | 'grey' | 'dark'>(() => {
+  const [theme, setTheme] = useState<'light' | 'grey' | 'dark' | 'black'>(() => {
     const saved = localStorage.getItem('theme');
-    return (saved as 'light' | 'grey' | 'dark') || 'dark';
+    return (saved as 'light' | 'grey' | 'dark' | 'black') || 'dark';
   });
 
   useEffect(() => {
@@ -117,9 +117,9 @@ const TopNav = () => {
     setUnreadMessagesCount(count || 0);
   };
 
-  const changeTheme = (newTheme: 'light' | 'grey' | 'dark') => {
+  const changeTheme = (newTheme: 'light' | 'grey' | 'dark' | 'black') => {
     const html = document.documentElement;
-    html.classList.remove('light', 'grey', 'dark');
+    html.classList.remove('light', 'grey', 'dark', 'black');
     html.classList.add(newTheme);
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
@@ -175,6 +175,10 @@ const TopNav = () => {
               <DropdownMenuItem onClick={() => changeTheme('dark')}>
                 <Moon className="w-4 h-4 mr-2" />
                 Dark
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => changeTheme('black')}>
+                <Moon className="w-4 h-4 mr-2 fill-current" />
+                Black
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
