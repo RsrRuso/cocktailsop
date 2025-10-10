@@ -242,6 +242,61 @@ const UserProfile = () => {
     return badges[title] || { icon: Briefcase, gradient: "from-pink-600 to-orange-500", score: 75 };
   };
 
+  const calculateNetworkReach = () => {
+    if (!profile) return 0;
+    
+    // Base reach from followers (most important - direct audience)
+    const followerReach = profile.follower_count * 1.5;
+    
+    // Secondary reach from following (networking)
+    const followingReach = profile.following_count * 0.5;
+    
+    // Engagement multiplier from posts
+    const totalPostEngagement = posts.reduce((sum, post) => sum + (post.like_count || 0) + (post.comment_count || 0), 0);
+    const postEngagementBonus = Math.min(totalPostEngagement * 0.3, 500); // Cap at 500
+    
+    // View count from reels
+    const totalReelViews = reels.reduce((sum, reel) => sum + (reel.view_count || 0), 0);
+    const reelViewBonus = Math.min(totalReelViews * 0.1, 300); // Cap at 300
+    
+    const totalReach = Math.round(followerReach + followingReach + postEngagementBonus + reelViewBonus);
+    return totalReach;
+  };
+
+  const calculateProfessionalScore = () => {
+    if (!profile) return 0;
+    
+    // Base score from professional title (60% of total)
+    const baseScore = getProfessionalBadge(profile.professional_title).score * 0.6;
+    
+    // Status bonuses
+    let statusBonus = 0;
+    if (profile.is_founder) statusBonus += 10;
+    if (profile.is_verified) statusBonus += 8;
+    
+    // Badge level bonus
+    const badgeBonus = {
+      bronze: 0,
+      silver: 5,
+      gold: 10,
+      platinum: 15
+    }[profile.badge_level as string] || 0;
+    
+    // Content quality score (based on engagement rate)
+    const avgPostEngagement = posts.length > 0 
+      ? posts.reduce((sum, post) => sum + (post.like_count || 0) + (post.comment_count || 0), 0) / posts.length 
+      : 0;
+    const engagementScore = Math.min(avgPostEngagement * 0.5, 10); // Cap at 10 points
+    
+    // Activity score (having diverse content)
+    let activityBonus = 0;
+    if (posts.length > 0) activityBonus += 3;
+    if (reels.length > 0) activityBonus += 3;
+    
+    const totalScore = Math.min(Math.round(baseScore + statusBonus + badgeBonus + engagementScore + activityBonus), 100);
+    return totalScore;
+  };
+
   if (!profile) return null;
 
   return (
@@ -568,11 +623,11 @@ const UserProfile = () => {
                   </div>
                   <div className="flex justify-between items-center glass rounded-lg p-3 border border-border/50">
                     <span className="text-sm text-muted-foreground">Network Reach</span>
-                    <span className="text-sm font-semibold">{profile.follower_count + profile.following_count}</span>
+                    <span className="text-sm font-semibold">{calculateNetworkReach().toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center glass rounded-lg p-3 border border-border/50">
                     <span className="text-sm text-muted-foreground">Professional Score</span>
-                    <span className="text-sm font-semibold text-primary">{getProfessionalBadge(profile.professional_title).score}/100</span>
+                    <span className="text-sm font-semibold text-primary">{calculateProfessionalScore()}/100</span>
                   </div>
                 </div>
               </div>
