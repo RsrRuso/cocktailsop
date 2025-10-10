@@ -108,33 +108,51 @@ const StoryViewer = () => {
     if (!currentUserId || !stories[currentStoryIndex]) return;
 
     const storyId = stories[currentStoryIndex].id;
+    const wasLiked = isLiked;
 
-    if (isLiked) {
-      await supabase
-        .from("story_likes")
-        .delete()
-        .eq("story_id", storyId)
-        .eq("user_id", currentUserId);
-      setIsLiked(false);
-    } else {
-      await supabase
-        .from("story_likes")
-        .insert({
-          story_id: storyId,
-          user_id: currentUserId,
-        });
-      setIsLiked(true);
-      addFloatingHeart();
-    }
-
-    // Update local story count
+    // Optimistic update
+    setIsLiked(!wasLiked);
     const updatedStories = [...stories];
     const currentStory = updatedStories[currentStoryIndex];
     if (currentStory) {
-      currentStory.like_count = isLiked 
+      currentStory.like_count = wasLiked 
         ? Math.max(0, currentStory.like_count - 1)
         : currentStory.like_count + 1;
       setStories(updatedStories);
+    }
+
+    if (!wasLiked) {
+      addFloatingHeart();
+    }
+
+    // Background API call
+    try {
+      if (wasLiked) {
+        const { error } = await supabase
+          .from("story_likes")
+          .delete()
+          .eq("story_id", storyId)
+          .eq("user_id", currentUserId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("story_likes")
+          .insert({
+            story_id: storyId,
+            user_id: currentUserId,
+          });
+        if (error) throw error;
+      }
+    } catch (error) {
+      // Revert on error
+      console.error("Like error:", error);
+      setIsLiked(wasLiked);
+      if (currentStory) {
+        currentStory.like_count = wasLiked 
+          ? currentStory.like_count + 1
+          : Math.max(0, currentStory.like_count - 1);
+        setStories([...updatedStories]);
+      }
     }
   };
 
