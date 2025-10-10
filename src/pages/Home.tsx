@@ -613,9 +613,22 @@ const Home = () => {
                       {item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
                         <video 
                           src={url} 
-                          controls 
+                          loop
+                          playsInline
+                          muted
+                          autoPlay
                           preload="metadata"
-                          className="w-full h-auto max-h-96 object-cover"
+                          className="w-full h-auto max-h-96 object-cover cursor-pointer"
+                          onClick={(e) => {
+                            const video = e.currentTarget;
+                            if (!document.fullscreenElement) {
+                              video.requestFullscreen();
+                              video.muted = false;
+                            } else {
+                              document.exitFullscreen();
+                              video.muted = true;
+                            }
+                          }}
                         />
                       ) : (
                         <img 
