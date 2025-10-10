@@ -661,6 +661,10 @@ export type Database = {
         Args: { p_content: string; p_type: string; p_user_id: string }
         Returns: undefined
       }
+      recalculate_follow_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       badge_level: "bronze" | "silver" | "gold" | "platinum"
