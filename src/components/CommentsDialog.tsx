@@ -170,11 +170,11 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !currentUserId || !currentUserProfile) return;
+    if (!newComment.trim() || !currentUserId) return;
 
     const tableName = isReel ? "reel_comments" : "post_comments";
     
-    // Instant optimistic update with real user data
+    // Instant optimistic update with real user data or fallback
     const tempComment: Comment = {
       id: 'temp-' + Date.now(),
       user_id: currentUserId,
@@ -182,7 +182,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
       created_at: new Date().toISOString(),
       parent_comment_id: replyingTo,
       reactions: [],
-      profiles: currentUserProfile,
+      profiles: currentUserProfile || { username: 'You', avatar_url: null },
       replies: []
     };
     

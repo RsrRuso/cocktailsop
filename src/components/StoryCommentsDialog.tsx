@@ -97,15 +97,15 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !currentUserId || !currentUserProfile) return;
+    if (!newComment.trim() || !currentUserId) return;
 
-    // Instant optimistic update with real user data
+    // Instant optimistic update with real user data or fallback
     const tempComment: Comment = {
       id: 'temp-' + Date.now(),
       user_id: currentUserId,
       content: newComment.trim(),
       created_at: new Date().toISOString(),
-      profiles: currentUserProfile
+      profiles: currentUserProfile || { username: 'You', avatar_url: null, full_name: 'You' }
     };
     
     setComments(prev => [tempComment, ...prev]);
