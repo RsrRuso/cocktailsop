@@ -72,9 +72,11 @@ const UserProfile = () => {
         checkFollowStatus(),
         fetchPosts(),
         fetchReels(),
-        checkForStory(),
-        trackProfileView()
-      ]);
+        checkForStory()
+      ]).then(() => {
+        // Track view after data loads to avoid blocking
+        trackProfileView();
+      });
     }
   }, [userId]);
 
@@ -135,7 +137,8 @@ const UserProfile = () => {
       .from("posts")
       .select("*")
       .eq("user_id", userId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(20);
 
     if (data) setPosts(data);
   };
@@ -147,7 +150,8 @@ const UserProfile = () => {
       .from("reels")
       .select("*")
       .eq("user_id", userId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(20);
 
     if (data) setReels(data);
   };

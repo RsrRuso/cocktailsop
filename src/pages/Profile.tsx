@@ -82,82 +82,84 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch all data in parallel for faster loading
-    Promise.all([
-      fetchProfile(),
-      fetchStories(),
-      fetchPosts(),
-      fetchReels()
-    ]).finally(() => setIsLoading(false));
+    let userId: string;
+    
+    const initializeProfile = async () => {
+      // Fetch user once and cache it
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+      
+      userId = user.id;
+      setCurrentUserId(userId);
+      
+      // Fetch all data in parallel using cached userId
+      await Promise.all([
+        fetchProfile(userId),
+        fetchStories(userId),
+        fetchPosts(userId),
+        fetchReels(userId)
+      ]);
+    };
+    
+    initializeProfile().finally(() => setIsLoading(false));
   }, []);
 
-  const fetchProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-
+  const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
       .select("*")
-      .eq("id", user.id)
+      .eq("id", userId)
       .maybeSingle();
 
     if (data) {
       setProfile(data);
       setCoverUrl(data.cover_url || "");
-      setCurrentUserId(user.id);
-      
-      // Preload story images for instant display
-      fetchStories();
     }
   };
 
-  const fetchPosts = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
+  const fetchPosts = async (userId: string) => {
     const { data } = await supabase
       .from("posts")
       .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20);
 
     if (data) setPosts(data);
   };
 
-  const fetchReels = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
+  const fetchReels = async (userId: string) => {
     const { data } = await supabase
       .from("reels")
       .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20);
 
     if (data) setReels(data);
   };
 
-  const fetchStories = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+  const fetchStories = async (uid?: string) => {
+    const userIdToUse = uid || currentUserId;
+    if (!userIdToUse) return;
 
     const { data } = await supabase
       .from("stories")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userIdToUse)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
 
     if (data) {
-      // Preload all story images immediately for instant display
-      data.forEach(story => {
-        story.media_urls?.forEach((url: string) => {
+      // Only preload first 2 story images for faster initial load
+      data.slice(0, 2).forEach(story => {
+        if (story.media_urls?.[0]) {
           const img = new Image();
-          img.src = url;
-        });
+          img.src = story.media_urls[0];
+        }
       });
       setStories(data);
     }
