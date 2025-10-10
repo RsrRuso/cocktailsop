@@ -81,7 +81,7 @@ const Home = () => {
   const [selectedMediaUrls, setSelectedMediaUrls] = useState<string[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [likedReels, setLikedReels] = useState<Set<string>>(new Set());
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(false);
   const [isReelDialogOpen, setIsReelDialogOpen] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState("");
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());

@@ -79,6 +79,7 @@ const Profile = () => {
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [metricsDialogOpen, setMetricsDialogOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<"network" | "professional" | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Fetch all data in parallel for faster loading
@@ -87,7 +88,7 @@ const Profile = () => {
       fetchStories(),
       fetchPosts(),
       fetchReels()
-    ]);
+    ]).finally(() => setIsLoading(false));
   }, []);
 
   const fetchProfile = async () => {
@@ -289,8 +290,6 @@ const Profile = () => {
     const totalScore = Math.min(Math.round(baseScore + statusBonus + badgeBonus + engagementScore + activityBonus), 100);
     return totalScore;
   };
-
-  if (!profile) return null;
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
