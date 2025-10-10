@@ -805,6 +805,7 @@ export type Database = {
       }
       stories: {
         Row: {
+          comment_count: number | null
           created_at: string | null
           expires_at: string | null
           id: string
@@ -815,6 +816,7 @@ export type Database = {
           view_count: number | null
         }
         Insert: {
+          comment_count?: number | null
           created_at?: string | null
           expires_at?: string | null
           id?: string
@@ -825,6 +827,7 @@ export type Database = {
           view_count?: number | null
         }
         Update: {
+          comment_count?: number | null
           created_at?: string | null
           expires_at?: string | null
           id?: string
@@ -840,6 +843,41 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          reactions: Json | null
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          reactions?: Json | null
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          reactions?: Json | null
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_comments_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
             referencedColumns: ["id"]
           },
         ]
