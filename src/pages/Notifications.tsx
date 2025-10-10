@@ -83,10 +83,12 @@ const Notifications = () => {
         return <MessageCircle className="w-5 h-5 text-blue-500" />;
       case 'follow':
         return <UserPlus className="w-5 h-5 text-green-500" />;
-      case 'profile_visit':
+      case 'profile_view':
         return <Eye className="w-5 h-5 text-purple-500" />;
-      case 'sent':
+      case 'message':
         return <Send className="w-5 h-5 text-cyan-500" />;
+      case 'verification_pending':
+        return <Bell className="w-5 h-5 text-orange-500" />;
       default:
         return <Bell className="w-5 h-5 text-primary" />;
     }

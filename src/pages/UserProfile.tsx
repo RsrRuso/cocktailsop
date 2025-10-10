@@ -71,8 +71,22 @@ const UserProfile = () => {
       fetchPosts();
       fetchReels();
       checkForStory();
+      trackProfileView();
     }
   }, [userId]);
+
+  const trackProfileView = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || user.id === userId) return; // Don't track own profile views
+
+    // Insert profile view (will trigger notification via database trigger)
+    await supabase
+      .from("profile_views")
+      .insert({
+        viewer_id: user.id,
+        viewed_profile_id: userId
+      });
+  };
 
   const checkForStory = async () => {
     if (!userId) return;
