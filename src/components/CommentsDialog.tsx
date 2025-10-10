@@ -17,6 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Reaction {
   user_id: string;
@@ -51,17 +52,15 @@ interface CommentsDialogProps {
 }
 
 const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentAdded }: CommentsDialogProps) => {
+  const { user, profile } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string>("");
-  const [currentUserProfile, setCurrentUserProfile] = useState<CurrentUserProfile | null>(null);
 
   const emojis = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
 
   useEffect(() => {
     if (open) {
-      fetchCurrentUser();
       fetchComments();
 
       // Set up realtime subscription
@@ -100,51 +99,36 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
     }
   }, [open, postId]);
 
-  const fetchCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setCurrentUserId(user.id);
-      
-      // Fetch user profile for optimistic updates
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("username, avatar_url")
-        .eq("id", user.id)
-        .single();
-      
-      if (profile) {
-        setCurrentUserProfile(profile);
-      }
-    }
-  };
-
   const fetchComments = async () => {
-    const tableName = isReel ? "reel_comments" : "post_comments";
-    const columnName = isReel ? "reel_id" : "post_id";
-    
-    const { data: commentsData } = await supabase
-      .from(tableName as any)
-      .select("*")
-      .eq(columnName, postId)
-      .order("created_at", { ascending: true });
+    try {
+      const tableName = isReel ? "reel_comments" : "post_comments";
+      const columnName = isReel ? "reel_id" : "post_id";
+      
+      const { data: commentsData, error } = await supabase
+        .from(tableName as any)
+        .select("*")
+        .eq(columnName, postId)
+        .order("created_at", { ascending: true });
 
-    if (commentsData) {
-      // Fetch profiles for each comment
-      const commentsWithProfiles = await Promise.all(
-        commentsData.map(async (comment: any) => {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("username, avatar_url")
-            .eq("id", comment.user_id)
-            .single();
+      if (error) throw error;
 
-          return {
-            ...comment,
-            reactions: comment.reactions || [],
-            profiles: profile || { username: "Unknown", avatar_url: null }
-          };
-        })
-      );
+      if (commentsData && commentsData.length > 0) {
+        // Batch fetch all profiles at once
+        const uniqueUserIds = [...new Set(commentsData.map((c: any) => c.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, username, avatar_url")
+          .in("id", uniqueUserIds);
+
+        // Create profile lookup map
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+        // Attach profiles to comments
+        const commentsWithProfiles = commentsData.map((comment: any) => ({
+          ...comment,
+          reactions: comment.reactions || [],
+          profiles: profileMap.get(comment.user_id) || { username: "Unknown", avatar_url: null }
+        }));
       
       // Build comment tree
       const commentMap = new Map<string, Comment>();
@@ -166,24 +150,33 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
         }
       });
       
-      setComments(rootComments);
+        setComments(rootComments);
+      } else {
+        setComments([]);
+      }
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      toast.error("Failed to load comments");
     }
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !currentUserId) return;
+    if (!newComment.trim() || !user?.id) {
+      toast.error("Please login to comment");
+      return;
+    }
 
     const tableName = isReel ? "reel_comments" : "post_comments";
     
-    // Instant optimistic update with real user data or fallback
+    // Instant optimistic update
     const tempComment: Comment = {
       id: 'temp-' + Date.now(),
-      user_id: currentUserId,
+      user_id: user.id,
       content: newComment.trim(),
       created_at: new Date().toISOString(),
       parent_comment_id: replyingTo,
       reactions: [],
-      profiles: currentUserProfile || { username: 'You', avatar_url: null },
+      profiles: profile ? { username: profile.username, avatar_url: profile.avatar_url } : { username: 'You', avatar_url: null },
       replies: []
     };
     
@@ -217,8 +210,8 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
 
     // Background API call - no await, instant UI
     const insertData = isReel 
-      ? { reel_id: postId, user_id: currentUserId, content: commentText, parent_comment_id: replyId }
-      : { post_id: postId, user_id: currentUserId, content: commentText, parent_comment_id: replyId };
+      ? { reel_id: postId, user_id: user.id, content: commentText, parent_comment_id: replyId }
+      : { post_id: postId, user_id: user.id, content: commentText, parent_comment_id: replyId };
     
     (async () => {
       try {
@@ -269,6 +262,11 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
   };
 
   const handleReaction = async (commentId: string, emoji: string) => {
+    if (!user?.id) {
+      toast.error("Please login to react");
+      return;
+    }
+    
     const tableName = isReel ? "reel_comments" : "post_comments";
     
     // Get current comment
@@ -282,7 +280,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
 
     const reactions = (comment as any).reactions || [];
     const existingReactionIndex = reactions.findIndex(
-      (r: Reaction) => r.user_id === currentUserId && r.emoji === emoji
+      (r: Reaction) => r.user_id === user.id && r.emoji === emoji
     );
 
     let updatedReactions;
@@ -291,7 +289,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
       updatedReactions = reactions.filter((_: any, i: number) => i !== existingReactionIndex);
     } else {
       // Add reaction
-      updatedReactions = [...reactions, { user_id: currentUserId, emoji }];
+      updatedReactions = [...reactions, { user_id: user.id, emoji }];
     }
 
     const { error } = await supabase
@@ -398,7 +396,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
             Reply
           </Button>
 
-          {comment.user_id === currentUserId && (
+          {comment.user_id === user?.id && (
             <Button
               variant="ghost"
               size="sm"

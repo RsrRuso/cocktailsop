@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ShareDialog from "@/components/ShareDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Reel {
   id: string;
@@ -32,9 +33,9 @@ interface Reel {
 
 const Reels = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [reels, setReels] = useState<Reel[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [showShare, setShowShare] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState("");
   const [selectedReelCaption, setSelectedReelCaption] = useState("");
@@ -45,20 +46,13 @@ const Reels = () => {
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const initialize = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setCurrentUser(user);
-        
-        // Fetch reels first for instant display
-        await fetchReels();
-        
-        // Load liked reels in background
-        setTimeout(() => fetchLikedReels(), 100);
-      }
-    };
-    
-    initialize();
+    if (user) {
+      // Fetch reels first for instant display
+      fetchReels();
+      
+      // Load liked reels in background
+      setTimeout(() => fetchLikedReels(), 100);
+    }
 
     // Only subscribe to main reels changes
     const reelsChannel = supabase
@@ -77,20 +71,7 @@ const Reels = () => {
     return () => {
       supabase.removeChannel(reelsChannel);
     };
-  }, []);
-
-  const fetchCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-    
-    if (data) setCurrentUser(data);
-  };
+  }, [user]);
 
   const fetchReels = async () => {
     const { data } = await supabase
@@ -113,8 +94,7 @@ const Reels = () => {
   };
 
   const fetchLikedReels = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user?.id) return;
 
     const { data } = await supabase
       .from("reel_likes")
@@ -127,7 +107,7 @@ const Reels = () => {
   };
 
   const handleLikeReel = async (reelId: string) => {
-    if (!currentUser) {
+    if (!user?.id) {
       toast.error("Please login to like reels");
       return;
     }
@@ -157,7 +137,7 @@ const Reels = () => {
         .from("reel_likes")
         .delete()
         .eq("reel_id", reelId)
-        .eq("user_id", currentUser.id);
+        .eq("user_id", user.id);
 
       if (error) {
         setLikedReels(prev => new Set(prev).add(reelId));
@@ -168,7 +148,7 @@ const Reels = () => {
     } else {
       const { error } = await supabase
         .from("reel_likes")
-        .insert({ reel_id: reelId, user_id: currentUser.id });
+        .insert({ reel_id: reelId, user_id: user.id });
 
       if (error) {
         setLikedReels(prev => {
@@ -312,7 +292,7 @@ const Reels = () => {
                     <Bookmark className="w-7 h-7 text-white" />
                   </button>
 
-                  {currentUser && reel.user_id === currentUser.id && (
+                  {user && reel.user_id === user.id && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button className="flex flex-col items-center gap-1 hover:scale-110 transition-transform">
