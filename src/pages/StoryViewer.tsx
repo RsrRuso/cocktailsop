@@ -520,7 +520,10 @@ const StoryViewer = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleLike}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleLike();
+              }}
               className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10"
             >
               <Heart
@@ -534,7 +537,10 @@ const StoryViewer = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setShowCommentsDialog(true)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowCommentsDialog(true);
+              }}
               className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 relative"
             >
               <MessageCircle className="w-7 h-7 text-white" />
@@ -550,7 +556,10 @@ const StoryViewer = () => {
           {currentStory.like_count > 0 && (
             <div className="mt-2 ml-1">
               <button
-                onClick={() => isOwnStory && setShowLikesDialog(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  isOwnStory && setShowLikesDialog(true);
+                }}
                 className="text-white font-semibold text-sm hover:opacity-70 transition-opacity"
               >
                 {currentStory.like_count} {currentStory.like_count === 1 ? 'like' : 'likes'}
