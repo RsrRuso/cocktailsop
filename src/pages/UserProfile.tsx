@@ -66,12 +66,15 @@ const UserProfile = () => {
 
   useEffect(() => {
     if (userId) {
-      fetchProfile();
-      checkFollowStatus();
-      fetchPosts();
-      fetchReels();
-      checkForStory();
-      trackProfileView();
+      // Fetch all data in parallel for faster loading
+      Promise.all([
+        fetchProfile(),
+        checkFollowStatus(),
+        fetchPosts(),
+        fetchReels(),
+        checkForStory(),
+        trackProfileView()
+      ]);
     }
   }, [userId]);
 

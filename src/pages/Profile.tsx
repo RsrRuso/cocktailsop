@@ -81,10 +81,13 @@ const Profile = () => {
   const [selectedMetric, setSelectedMetric] = useState<"network" | "professional" | null>(null);
 
   useEffect(() => {
-    fetchProfile();
-    fetchStories();
-    fetchPosts();
-    fetchReels();
+    // Fetch all data in parallel for faster loading
+    Promise.all([
+      fetchProfile(),
+      fetchStories(),
+      fetchPosts(),
+      fetchReels()
+    ]);
   }, []);
 
   const fetchProfile = async () => {
