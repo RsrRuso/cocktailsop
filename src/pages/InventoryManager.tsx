@@ -19,7 +19,8 @@ const InventoryManager = () => {
   const [inventory, setInventory] = useState<any[]>([]);
   const [selectedStore, setSelectedStore] = useState("");
   const [expirationSuggestions, setExpirationSuggestions] = useState<any[]>([]);
-  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [whatsappNumbers, setWhatsappNumbers] = useState<string[]>([]);
+  const [newWhatsappNumber, setNewWhatsappNumber] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -68,13 +69,45 @@ const InventoryManager = () => {
   };
 
   const shareToWhatsApp = (message: string) => {
-    if (!whatsappNumber) {
-      toast.error("Please set WhatsApp group number first");
+    if (whatsappNumbers.length === 0) {
+      toast.error("Please add WhatsApp numbers first");
       return;
     }
     const encodedMessage = encodeURIComponent(message);
-    const cleanNumber = whatsappNumber.replace(/[^0-9]/g, '');
-    window.location.href = `https://wa.me/${cleanNumber}?text=${encodedMessage}`;
+    
+    // Share to all numbers sequentially with small delay
+    whatsappNumbers.forEach((number, index) => {
+      setTimeout(() => {
+        const cleanNumber = number.replace(/[^0-9]/g, '');
+        window.open(`https://wa.me/${cleanNumber}?text=${encodedMessage}`, '_blank');
+      }, index * 1000); // 1 second delay between each
+    });
+    
+    toast.success(`Sharing to ${whatsappNumbers.length} WhatsApp number(s)`);
+  };
+
+  const handleAddWhatsappNumber = () => {
+    if (!newWhatsappNumber.trim()) {
+      toast.error("Please enter a WhatsApp number");
+      return;
+    }
+    const cleanNumber = newWhatsappNumber.replace(/[^0-9]/g, '');
+    if (cleanNumber.length < 10) {
+      toast.error("Please enter a valid WhatsApp number");
+      return;
+    }
+    if (whatsappNumbers.includes(cleanNumber)) {
+      toast.error("This number is already added");
+      return;
+    }
+    setWhatsappNumbers([...whatsappNumbers, cleanNumber]);
+    setNewWhatsappNumber("");
+    toast.success("WhatsApp number added");
+  };
+
+  const handleRemoveWhatsappNumber = (number: string) => {
+    setWhatsappNumbers(whatsappNumbers.filter(n => n !== number));
+    toast.success("WhatsApp number removed");
   };
 
   const handleAddStore = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -297,18 +330,44 @@ const InventoryManager = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>WhatsApp Group Settings</CardTitle>
+            <CardTitle>WhatsApp Numbers</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="whatsappNumber">WhatsApp Group Number (with country code)</Label>
-              <Input 
-                id="whatsappNumber"
-                placeholder="e.g., 1234567890"
-                value={whatsappNumber}
-                onChange={(e) => setWhatsappNumber(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">Enter the group phone number with country code (no + or spaces)</p>
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Enter WhatsApp number (with country code)"
+                  value={newWhatsappNumber}
+                  onChange={(e) => setNewWhatsappNumber(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddWhatsappNumber())}
+                />
+                <Button type="button" onClick={handleAddWhatsappNumber}>
+                  Add
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Enter phone numbers with country code (e.g., 1234567890)
+              </p>
+              
+              {whatsappNumbers.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Added Numbers ({whatsappNumbers.length})</Label>
+                  <div className="space-y-2">
+                    {whatsappNumbers.map((number) => (
+                      <div key={number} className="glass rounded-lg p-3 flex justify-between items-center">
+                        <span className="font-mono">+{number}</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleRemoveWhatsappNumber(number)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
