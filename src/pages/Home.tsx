@@ -622,17 +622,30 @@ const Home = () => {
                             preload="metadata"
                             className="w-full h-auto max-h-96 object-cover cursor-pointer"
                             onClick={(e) => {
-                              const video = e.currentTarget;
+                              const video = e.currentTarget as any;
+                              const videoId = item.id + url;
+                              
+                              // Cross-browser fullscreen
                               if (!document.fullscreenElement) {
-                                video.requestFullscreen();
-                                const videoId = item.id + url;
+                                if (video.requestFullscreen) {
+                                  video.requestFullscreen();
+                                } else if (video.webkitRequestFullscreen) {
+                                  video.webkitRequestFullscreen();
+                                } else if (video.webkitEnterFullscreen) {
+                                  video.webkitEnterFullscreen();
+                                }
+                                // Unmute when entering fullscreen
                                 setMutedVideos(prev => {
                                   const newSet = new Set(prev);
                                   newSet.add(videoId);
                                   return newSet;
                                 });
                               } else {
-                                document.exitFullscreen();
+                                if (document.exitFullscreen) {
+                                  document.exitFullscreen();
+                                } else if ((document as any).webkitExitFullscreen) {
+                                  (document as any).webkitExitFullscreen();
+                                }
                               }
                             }}
                           />
