@@ -98,7 +98,7 @@ const Reels = () => {
         )
       `)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(10);
 
     if (data) {
       setReels(data);

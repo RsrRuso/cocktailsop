@@ -25,7 +25,7 @@ const Explore = () => {
         profiles (username, avatar_url, professional_title)
       `)
       .order("like_count", { ascending: false })
-      .limit(20);
+      .limit(12);
 
     if (data) setPosts(data);
   };
@@ -35,7 +35,7 @@ const Explore = () => {
       .from("profiles")
       .select("*")
       .order("follower_count", { ascending: false })
-      .limit(10);
+      .limit(8);
 
     if (data) setProfiles(data);
   };

@@ -213,11 +213,11 @@ const Home = () => {
         .select("*, profiles(username, avatar_url)")
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(10);
 
       if (data) {
-        // Preload first few story images only for performance
-        data.slice(0, 5).forEach((story: any) => {
+        // Preload first 3 story images only
+        data.slice(0, 3).forEach((story: any) => {
           if (story.media_urls?.[0]) {
             const img = new Image();
             img.src = story.media_urls[0];
@@ -236,7 +236,7 @@ const Home = () => {
         .from("posts")
         .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(10);
 
       if (data) setPosts(data);
     } catch (error) {
@@ -250,7 +250,7 @@ const Home = () => {
         .from("reels")
         .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(10);
 
       if (data) setReels(data);
     } catch (error) {
