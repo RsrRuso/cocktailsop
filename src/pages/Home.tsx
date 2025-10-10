@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
@@ -15,6 +15,8 @@ import {
 import ShareDialog from "@/components/ShareDialog";
 import CommentsDialog from "@/components/CommentsDialog";
 import { ReelFullscreen } from "@/components/ReelFullscreen";
+import { deduplicateRequest } from "@/lib/requestDeduplication";
+import { LazyImage } from "@/components/LazyImage";
 
 interface Story {
   id: string;
@@ -110,15 +112,23 @@ const Home = () => {
         console.log('Cache load skipped');
       }
       
-      // Fetch user
-      const { data: { user } } = await supabase.auth.getUser();
+      // Deduplicate user fetch - prevents multiple identical API calls
+      const user = await deduplicateRequest('auth-user', async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        return user;
+      });
+      
       if (!user) return;
       
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id, username, avatar_url")
-        .eq("id", user.id)
-        .maybeSingle();
+      // Deduplicate profile fetch
+      const profile = await deduplicateRequest(`profile-${user.id}`, async () => {
+        const { data } = await supabase
+          .from("profiles")
+          .select("id, username, avatar_url")
+          .eq("id", user.id)
+          .maybeSingle();
+        return data;
+      });
       
       if (profile && isMounted) {
         setCurrentUser(profile);
