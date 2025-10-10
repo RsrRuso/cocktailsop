@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { LogOut, Settings, Wine, Briefcase, ChefHat, Warehouse, Truck, Building2, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX, Play, Phone, MessageSquare, Globe, Award, TrendingUp, Target, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -70,6 +71,7 @@ const Profile = () => {
   const [showFollowing, setShowFollowing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
+  const [showAvatarDialog, setShowAvatarDialog] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -242,7 +244,16 @@ const Profile = () => {
         <div className="glass rounded-xl p-4 space-y-6 border border-border/50">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <Avatar className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)}`}>
+              <Avatar 
+                className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)} cursor-pointer transition-transform hover:scale-105 ${stories.length > 0 ? 'ring-4 ring-primary' : ''}`}
+                onClick={() => {
+                  if (stories.length > 0) {
+                    navigate(`/story/${currentUserId}`);
+                  } else {
+                    setShowAvatarDialog(true);
+                  }
+                }}
+              >
                 <AvatarImage src={profile.avatar_url || undefined} />
                 <AvatarFallback className="text-2xl">{profile.username[0]}</AvatarFallback>
               </Avatar>
@@ -630,6 +641,25 @@ const Profile = () => {
         onOpenChange={setShowFollowing}
         userId={currentUserId}
       />
+
+      {/* Avatar Photo Dialog */}
+      <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-black/95 border-none">
+          <div className="relative w-full aspect-square flex items-center justify-center">
+            {profile.avatar_url ? (
+              <img 
+                src={profile.avatar_url} 
+                alt={profile.full_name}
+                className="max-w-full max-h-full object-contain"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
+                <span className="text-9xl font-bold text-white/80">{profile.username[0]}</span>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
