@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield } from "lucide-react";
+import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield, DollarSign, Trash2, Target, ClipboardCheck, Percent } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
@@ -68,6 +68,42 @@ const OpsTools = () => {
         path: "/cost-calculator",
       },
       {
+        name: "Pour Cost Analysis",
+        description: "Monitor drink profitability",
+        details: "Track and analyze pour cost percentages for all drinks. Identify high-cost items and optimize pricing for better margins.",
+        icon: DollarSign,
+        gradient: "from-emerald-600 to-green-500",
+        premium: false,
+        path: "/pour-cost-analysis",
+      },
+      {
+        name: "Wastage Tracker",
+        description: "Monitor and reduce operational waste",
+        details: "Log and analyze waste by category and reason. Identify patterns to reduce costs and improve operational efficiency.",
+        icon: Trash2,
+        gradient: "from-red-600 to-orange-500",
+        premium: false,
+        path: "/wastage-tracker",
+      },
+      {
+        name: "Stock Audit",
+        description: "Physical inventory count & variance analysis",
+        details: "Compare expected vs actual stock levels. Identify discrepancies, calculate shrinkage, and maintain accurate inventory records.",
+        icon: ClipboardCheck,
+        gradient: "from-purple-600 to-blue-500",
+        premium: false,
+        path: "/stock-audit",
+      },
+      {
+        name: "Yield Calculator",
+        description: "Calculate usable yield & true costs",
+        details: "Determine actual usable product after prep and waste. Calculate true ingredient costs accounting for wastage and yield percentages.",
+        icon: Percent,
+        gradient: "from-cyan-600 to-teal-500",
+        premium: false,
+        path: "/yield-calculator",
+      },
+      {
         name: "Order Optimizer",
         description: "Optimize ordering and reduce waste",
         details: "Analyze usage patterns to predict optimal order quantities. Reduce waste and stockouts with data-driven ordering recommendations.",
@@ -94,6 +130,15 @@ const OpsTools = () => {
         gradient: "from-purple-600 to-pink-500",
         premium: false,
         path: "/recipe-vault",
+      },
+      {
+        name: "Menu Engineering",
+        description: "Optimize menu profitability",
+        details: "Analyze menu items using the menu matrix. Identify Stars, Plowhorses, Puzzles, and Dogs to make data-driven menu decisions.",
+        icon: Target,
+        gradient: "from-indigo-600 to-purple-500",
+        premium: false,
+        path: "/menu-engineering",
       },
       {
         name: "Sales Analytics",
