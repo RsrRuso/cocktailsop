@@ -26,6 +26,12 @@ const Tools = lazy(() => import("./pages/Tools"));
 const OpsTools = lazy(() => import("./pages/OpsTools"));
 const InventoryManager = lazy(() => import("./pages/InventoryManager"));
 const TemperatureLog = lazy(() => import("./pages/TemperatureLog"));
+const BatchCalculator = lazy(() => import("./pages/BatchCalculator"));
+const ABVCalculator = lazy(() => import("./pages/ABVCalculator"));
+const ScalingTool = lazy(() => import("./pages/ScalingTool"));
+const CostCalculator = lazy(() => import("./pages/CostCalculator"));
+const RecipeVault = lazy(() => import("./pages/RecipeVault"));
+const CocktailSpecs = lazy(() => import("./pages/CocktailSpecs"));
 const Explore = lazy(() => import("./pages/Explore"));
 const Create = lazy(() => import("./pages/Create"));
 const CreatePost = lazy(() => import("./pages/CreatePost"));
@@ -71,6 +77,12 @@ const App = () => (
           <Route path="/ops-tools" element={<OpsTools />} />
           <Route path="/inventory-manager" element={<InventoryManager />} />
           <Route path="/temperature-log" element={<TemperatureLog />} />
+          <Route path="/batch-calculator" element={<BatchCalculator />} />
+          <Route path="/abv-calculator" element={<ABVCalculator />} />
+          <Route path="/scaling-tool" element={<ScalingTool />} />
+          <Route path="/cost-calculator" element={<CostCalculator />} />
+          <Route path="/recipe-vault" element={<RecipeVault />} />
+          <Route path="/cocktail-specs" element={<CocktailSpecs />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/create" element={<Create />} />
           <Route path="/create/post" element={<CreatePost />} />

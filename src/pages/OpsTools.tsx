@@ -19,6 +19,7 @@ const OpsTools = () => {
         icon: Calculator,
         gradient: "from-pink-600 to-orange-500",
         premium: false,
+        path: "/batch-calculator",
       },
       {
         name: "Dilution Calculator",
@@ -35,6 +36,7 @@ const OpsTools = () => {
         icon: Beaker,
         gradient: "from-purple-600 to-pink-500",
         premium: false,
+        path: "/abv-calculator",
       },
       {
         name: "Scaling Tool",
@@ -43,6 +45,7 @@ const OpsTools = () => {
         icon: Scale,
         gradient: "from-green-600 to-teal-500",
         premium: false,
+        path: "/scaling-tool",
       },
     ],
     inventory: [
@@ -62,6 +65,7 @@ const OpsTools = () => {
         icon: Calculator,
         gradient: "from-pink-500 to-orange-600",
         premium: false,
+        path: "/cost-calculator",
       },
       {
         name: "Order Optimizer",
@@ -89,6 +93,7 @@ const OpsTools = () => {
         icon: BookOpen,
         gradient: "from-purple-600 to-pink-500",
         premium: false,
+        path: "/recipe-vault",
       },
       {
         name: "Sales Analytics",
@@ -113,6 +118,7 @@ const OpsTools = () => {
         icon: Wine,
         gradient: "from-pink-600 to-purple-500",
         premium: false,
+        path: "/cocktail-specs",
       },
     ],
   };
