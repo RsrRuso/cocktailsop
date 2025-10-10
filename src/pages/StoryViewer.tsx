@@ -573,9 +573,10 @@ const StoryViewer = () => {
               size="icon"
               onClick={(e) => {
                 e.stopPropagation();
+                console.log('Like button clicked');
                 handleLike();
               }}
-              className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10"
+              className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 z-20"
             >
               <Heart
                 className={`w-7 h-7 transition-all ${
@@ -590,9 +591,10 @@ const StoryViewer = () => {
               size="icon"
               onClick={(e) => {
                 e.stopPropagation();
+                console.log('Comment button clicked');
                 setShowCommentsDialog(true);
               }}
-              className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 relative"
+              className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 relative z-20"
             >
               <MessageCircle className="w-7 h-7 text-white" />
               {currentStory.comment_count > 0 && (

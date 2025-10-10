@@ -79,7 +79,11 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !currentUserId) return;
+    console.log('Comment form submitted');
+    if (!newComment.trim() || !currentUserId) {
+      console.log('Validation failed:', { newComment: newComment.trim(), currentUserId });
+      return;
+    }
 
     setSubmitting(true);
     
@@ -100,6 +104,7 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
     setNewComment("");
 
     // Background API call
+    console.log('Inserting comment:', { story_id: storyId, user_id: currentUserId, content: commentText });
     const { error } = await supabase
       .from("story_comments")
       .insert({
@@ -109,11 +114,13 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
       });
 
     if (error) {
+      console.error('Comment error:', error);
       toast.error("Failed to post comment");
       // Remove temp comment on error
       setComments(prev => prev.filter(c => c.id !== tempComment.id));
       setNewComment(commentText);
     } else {
+      console.log('Comment posted successfully');
       // Refresh to get real data with correct profile
       fetchComments();
     }
