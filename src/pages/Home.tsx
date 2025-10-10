@@ -122,23 +122,16 @@ const Home = () => {
         console.log('Cache load skipped');
       }
       
-      // Deduplicate user fetch - prevents multiple identical API calls
-      const user = await deduplicateRequest('auth-user', async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        return user;
-      });
-      
+      // Fetch user
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       
-      // Deduplicate profile fetch
-      const profile = await deduplicateRequest(`profile-${user.id}`, async () => {
-        const { data } = await supabase
-          .from("profiles")
-          .select("id, username, avatar_url")
-          .eq("id", user.id)
-          .maybeSingle();
-        return data;
-      });
+      // Fetch profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .eq("id", user.id)
+        .maybeSingle();
       
       if (profile && isMounted) {
         setCurrentUser(profile);
@@ -147,8 +140,7 @@ const Home = () => {
       // Fetch all data in parallel with background updates
       Promise.all([
         fetchStories(),
-        fetchPosts(),
-        fetchReels(),
+        refreshFeed(),
         fetchLikedPosts(),
         fetchLikedReels()
       ]).then(() => {
@@ -172,8 +164,8 @@ const Home = () => {
       )
       .subscribe();
 
-    const postsChannel = supabase
-      .channel('home-posts')
+    const feedChannel = supabase
+      .channel('home-feed')
       .on(
         'postgres_changes',
         {
@@ -181,12 +173,8 @@ const Home = () => {
           schema: 'public',
           table: 'posts'
         },
-        () => fetchPosts()
+        () => refreshFeed()
       )
-      .subscribe();
-
-    const reelsChannel = supabase
-      .channel('home-reels')
       .on(
         'postgres_changes',
         {
@@ -194,15 +182,14 @@ const Home = () => {
           schema: 'public',
           table: 'reels'
         },
-        () => fetchReels()
+        () => refreshFeed()
       )
       .subscribe();
 
     return () => {
       isMounted = false;
       supabase.removeChannel(storiesChannel);
-      supabase.removeChannel(postsChannel);
-      supabase.removeChannel(reelsChannel);
+      supabase.removeChannel(feedChannel);
     };
   }, []);
 
@@ -229,150 +216,26 @@ const Home = () => {
       console.error('Fetch stories failed');
     }
   }, []);
-    try {
-      const { data, error } = await supabase
-        .from("stories")
-        .select("id, user_id, media_urls, media_types, created_at, expires_at, profiles(username, avatar_url)")
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-      if (data) {
-        setStories(data);
-        // Cache in IndexedDB for instant load
-        import('@/lib/indexedDBCache').then(({ setCache }) => {
-          setCache('stories', 'home', data);
-        });
-      }
-    } catch (error) {
-      console.error('Fetch stories failed');
-    }
-  }, []);
 
   const handleLikePost = async (postId: string) => {
-    if (!currentUser) {
-      toast.error("Please login to like posts");
-      return;
-    }
-
     const isLiked = likedPosts.has(postId);
-    const post = posts.find(p => p.id === postId);
-
-    // Optimistic update - instant feedback like Instagram
-    if (isLiked) {
-      setLikedPosts(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(postId);
-        return newSet;
-      });
+    await togglePostLike(postId, (newIsLiked) => {
       setPosts(prev => prev.map(p => 
-        p.id === postId ? { ...p, like_count: Math.max(0, p.like_count - 1) } : p
+        p.id === postId 
+          ? { ...p, like_count: newIsLiked ? p.like_count + 1 : Math.max(0, p.like_count - 1) } 
+          : p
       ));
-    } else {
-      setLikedPosts(prev => new Set(prev).add(postId));
-      setPosts(prev => prev.map(p => 
-        p.id === postId ? { ...p, like_count: p.like_count + 1 } : p
-      ));
-    }
-
-    // Background API call
-    if (isLiked) {
-      const { error } = await supabase
-        .from("post_likes")
-        .delete()
-        .eq("post_id", postId)
-        .eq("user_id", currentUser.id);
-
-      if (error) {
-        // Revert on error
-        setLikedPosts(prev => new Set(prev).add(postId));
-        setPosts(prev => prev.map(p => 
-          p.id === postId ? { ...p, like_count: p.like_count + 1 } : p
-        ));
-      }
-    } else {
-      const { error } = await supabase
-        .from("post_likes")
-        .insert({
-          post_id: postId,
-          user_id: currentUser.id
-        });
-
-      if (error) {
-        // Revert on error
-        setLikedPosts(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(postId);
-          return newSet;
-        });
-        setPosts(prev => prev.map(p => 
-          p.id === postId ? { ...p, like_count: Math.max(0, p.like_count - 1) } : p
-        ));
-      }
-      // Notification is automatically created by database trigger
-    }
+    });
   };
 
   const handleLikeReel = async (reelId: string) => {
-    if (!currentUser) {
-      toast.error("Please login to like reels");
-      return;
-    }
-
-    const isLiked = likedReels.has(reelId);
-    const reel = reels.find(r => r.id === reelId);
-
-    // Optimistic update - instant feedback
-    if (isLiked) {
-      setLikedReels(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(reelId);
-        return newSet;
-      });
+    await toggleReelLike(reelId, (newIsLiked) => {
       setReels(prev => prev.map(r => 
-        r.id === reelId ? { ...r, like_count: Math.max(0, r.like_count - 1) } : r
+        r.id === reelId 
+          ? { ...r, like_count: newIsLiked ? r.like_count + 1 : Math.max(0, r.like_count - 1) } 
+          : r
       ));
-    } else {
-      setLikedReels(prev => new Set(prev).add(reelId));
-      setReels(prev => prev.map(r => 
-        r.id === reelId ? { ...r, like_count: r.like_count + 1 } : r
-      ));
-    }
-
-    // Background API call
-    if (isLiked) {
-      const { error } = await supabase
-        .from("reel_likes")
-        .delete()
-        .eq("reel_id", reelId)
-        .eq("user_id", currentUser.id);
-
-      if (error) {
-        // Revert on error
-        setLikedReels(prev => new Set(prev).add(reelId));
-        setReels(prev => prev.map(r => 
-          r.id === reelId ? { ...r, like_count: r.like_count + 1 } : r
-        ));
-      }
-    } else {
-      const { error } = await supabase
-        .from("reel_likes")
-        .insert({ reel_id: reelId, user_id: currentUser.id });
-
-      if (error) {
-        // Revert on error
-        setLikedReels(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(reelId);
-          return newSet;
-        });
-        setReels(prev => prev.map(r => 
-          r.id === reelId ? { ...r, like_count: Math.max(0, r.like_count - 1) } : r
-        ));
-      }
-      // Notification is automatically created by database trigger
-    }
+    });
   };
 
   const getBadgeColor = (level: string) => {
@@ -394,12 +257,12 @@ const Home = () => {
 
       if (error) throw error;
       toast.success("Post deleted successfully");
-      fetchPosts();
+      refreshFeed();
     } catch (error) {
       console.error('Error deleting post:', error);
       toast.error("Failed to delete post");
     }
-  };
+  }, [refreshFeed]);
 
   const handleDeleteReel = async (reelId: string) => {
     try {
@@ -410,7 +273,7 @@ const Home = () => {
 
       if (error) throw error;
       toast.success("Reel deleted successfully");
-      fetchReels();
+      refreshFeed();
     } catch (error) {
       console.error('Error deleting reel:', error);
       toast.error("Failed to delete reel");
