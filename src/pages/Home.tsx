@@ -92,14 +92,23 @@ const Home = () => {
     let isMounted = true;
     
     const initializeData = async () => {
-      // Load cached data from localStorage INSTANTLY
-      const cachedStories = localStorage.getItem('home_stories');
-      const cachedPosts = localStorage.getItem('home_posts');
-      const cachedReels = localStorage.getItem('home_reels');
+      // Dynamic import for IndexedDB cache - faster than localStorage
+      const { getCache } = await import('@/lib/indexedDBCache');
       
-      if (cachedStories) setStories(JSON.parse(cachedStories));
-      if (cachedPosts) setPosts(JSON.parse(cachedPosts));
-      if (cachedReels) setReels(JSON.parse(cachedReels));
+      // Load from IndexedDB cache INSTANTLY (much faster than localStorage)
+      try {
+        const [cachedStories, cachedPosts, cachedReels] = await Promise.all([
+          getCache('stories', 'home'),
+          getCache('posts', 'home'),
+          getCache('reels', 'home')
+        ]);
+        
+        if (cachedStories && isMounted) setStories(cachedStories);
+        if (cachedPosts && isMounted) setPosts(cachedPosts);
+        if (cachedReels && isMounted) setReels(cachedReels);
+      } catch (e) {
+        console.log('Cache load skipped');
+      }
       
       // Fetch user
       const { data: { user } } = await supabase.auth.getUser();
@@ -111,11 +120,11 @@ const Home = () => {
         .eq("id", user.id)
         .maybeSingle();
       
-      if (profile) {
+      if (profile && isMounted) {
         setCurrentUser(profile);
       }
       
-      // Fetch all data in parallel - no delays
+      // Fetch all data in parallel with background updates
       Promise.all([
         fetchStories(),
         fetchPosts(),
@@ -207,12 +216,15 @@ const Home = () => {
         .select("id, user_id, media_urls, media_types, created_at, expires_at, profiles(username, avatar_url)")
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
-        .limit(3);
+        .limit(5);
 
       if (error) throw error;
       if (data) {
         setStories(data);
-        localStorage.setItem('home_stories', JSON.stringify(data));
+        // Cache in IndexedDB for instant load
+        import('@/lib/indexedDBCache').then(({ setCache }) => {
+          setCache('stories', 'home', data);
+        });
       }
     } catch (error) {
       console.error('Error fetching stories:', error);
@@ -225,12 +237,15 @@ const Home = () => {
         .from("posts")
         .select("id, user_id, content, media_urls, like_count, comment_count, created_at, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
         .order("created_at", { ascending: false })
-        .limit(3);
+        .limit(10);
 
       if (error) throw error;
       if (data) {
         setPosts(data);
-        localStorage.setItem('home_posts', JSON.stringify(data));
+        // Cache in IndexedDB
+        import('@/lib/indexedDBCache').then(({ setCache }) => {
+          setCache('posts', 'home', data);
+        });
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -243,12 +258,15 @@ const Home = () => {
         .from("reels")
         .select("id, user_id, video_url, caption, like_count, comment_count, view_count, created_at, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
         .order("created_at", { ascending: false })
-        .limit(3);
+        .limit(10);
 
       if (error) throw error;
       if (data) {
         setReels(data);
-        localStorage.setItem('home_reels', JSON.stringify(data));
+        // Cache in IndexedDB
+        import('@/lib/indexedDBCache').then(({ setCache }) => {
+          setCache('reels', 'home', data);
+        });
       }
     } catch (error) {
       console.error('Error fetching reels:', error);
