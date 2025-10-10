@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, memo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -72,8 +73,9 @@ type FeedItem = (Post & { type: 'post' }) | (Reel & { type: 'reel'; content: str
 
 const Home = () => {
   const navigate = useNavigate();
+  const { user, profile } = useAuth(); // Use cached auth
   const [stories, setStories] = useState<Story[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(profile); // Initialize with cached profile
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string>("");
@@ -87,10 +89,15 @@ const Home = () => {
   const [fullscreenReel, setFullscreenReel] = useState<FeedItem | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   
-  // Use custom hooks for data fetching and likes
+  // Update currentUser when profile changes
+  useEffect(() => {
+    if (profile) setCurrentUser(profile);
+  }, [profile]);
+
+  // Use cached user ID for hooks
   const { posts, reels, isLoading, refreshFeed, setPosts, setReels } = useFeedData(selectedRegion);
-  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', currentUser?.id);
-  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', currentUser?.id);
+  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', user?.id);
+  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', user?.id);
   
   // Memoize merged feed to avoid recalculation
   const feed = useMemo(() => {
@@ -113,10 +120,9 @@ const Home = () => {
     let isMounted = true;
     
     const initializeData = async () => {
-      // Dynamic import for IndexedDB cache - faster than localStorage
+      // Show cached data immediately (non-blocking)
       const { getCache } = await import('@/lib/indexedDBCache');
       
-      // Load from IndexedDB cache INSTANTLY (much faster than localStorage)
       try {
         const [cachedStories, cachedPosts, cachedReels] = await Promise.all([
           getCache('stories', 'home'),
@@ -128,25 +134,10 @@ const Home = () => {
         if (cachedPosts && isMounted) setPosts(cachedPosts);
         if (cachedReels && isMounted) setReels(cachedReels);
       } catch (e) {
-        console.log('Cache load skipped');
+        // Silent fail
       }
       
-      // Fetch user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      // Fetch profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id, username, avatar_url")
-        .eq("id", user.id)
-        .maybeSingle();
-      
-      if (profile && isMounted) {
-        setCurrentUser(profile);
-      }
-      
-      // Fetch all data in parallel with background updates
+      // Fetch fresh data in background (non-blocking)
       Promise.all([
         fetchStories(),
         refreshFeed(),
@@ -159,31 +150,40 @@ const Home = () => {
 
     initializeData();
 
-    // Debounced realtime subscriptions
-    let updateTimeout: NodeJS.Timeout;
-    const debouncedUpdate = (callback: () => void) => {
-      clearTimeout(updateTimeout);
-      updateTimeout = setTimeout(() => {
-        if (isMounted) callback();
-      }, 2000); // 2 second debounce
-    };
+    // Defer realtime subscriptions (non-blocking)
+    const setupRealtimeTimer = setTimeout(() => {
+      if (!isMounted) return;
+      
+      let updateTimeout: NodeJS.Timeout;
+      const debouncedUpdate = (callback: () => void) => {
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+          if (isMounted) callback();
+        }, 2000);
+      };
 
-    const storiesChannel = supabase
-      .channel('home-stories')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, () => debouncedUpdate(fetchStories))
-      .subscribe();
+      const storiesChannel = supabase
+        .channel('home-stories')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, () => debouncedUpdate(fetchStories))
+        .subscribe();
 
-    const feedChannel = supabase
-      .channel('home-feed')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => debouncedUpdate(refreshFeed))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reels' }, () => debouncedUpdate(refreshFeed))
-      .subscribe();
+      const feedChannel = supabase
+        .channel('home-feed')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => debouncedUpdate(refreshFeed))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reels' }, () => debouncedUpdate(refreshFeed))
+        .subscribe();
+
+      // Store cleanup functions
+      return () => {
+        clearTimeout(updateTimeout);
+        supabase.removeChannel(storiesChannel);
+        supabase.removeChannel(feedChannel);
+      };
+    }, 2000); // Wait 2s before subscribing
 
     return () => {
       isMounted = false;
-      clearTimeout(updateTimeout);
-      supabase.removeChannel(storiesChannel);
-      supabase.removeChannel(feedChannel);
+      clearTimeout(setupRealtimeTimer);
     };
   }, []);
 

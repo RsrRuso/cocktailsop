@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +14,8 @@ import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 
 const TopNav = () => {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { user, profile } = useAuth(); // Use cached auth
+  const [currentUser, setCurrentUser] = useState<any>(profile);
   const [userRoles, setUserRoles] = useState({ isFounder: false, isVerified: false });
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
@@ -27,8 +29,28 @@ const TopNav = () => {
     let isMounted = true;
     
     const initializeNav = async () => {
+      // Use cached profile
+      if (profile && isMounted) {
+        setCurrentUser(profile);
+        
+        // Fetch user roles in background (non-blocking)
+        if (user) {
+          const { data: rolesData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id);
+          
+          if (rolesData && isMounted) {
+            setUserRoles({
+              isFounder: rolesData.some(r => r.role === 'founder'),
+              isVerified: rolesData.some(r => r.role === 'verified')
+            });
+          }
+        }
+      }
+      
+      // Fetch counts in background
       await Promise.all([
-        fetchCurrentUser(),
         fetchUnreadNotifications(),
         fetchUnreadMessages()
       ]);
@@ -79,38 +101,9 @@ const TopNav = () => {
       supabase.removeChannel(notificationsChannel);
       supabase.removeChannel(messagesChannel);
     };
-  }, []);
-
-  const fetchCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-    
-    if (data) {
-      setCurrentUser(data);
-      
-      // Fetch user roles
-      const { data: rolesData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id);
-      
-      if (rolesData) {
-        setUserRoles({
-          isFounder: rolesData.some(r => r.role === 'founder'),
-          isVerified: rolesData.some(r => r.role === 'verified')
-        });
-      }
-    }
-  };
+  }, [user, profile]);
 
   const fetchUnreadNotifications = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { count } = await supabase
@@ -123,7 +116,6 @@ const TopNav = () => {
   };
 
   const fetchUnreadMessages = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { count } = await supabase

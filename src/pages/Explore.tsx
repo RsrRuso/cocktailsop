@@ -15,8 +15,8 @@ const Explore = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([fetchExplorePosts(), fetchProfiles()])
-      .finally(() => setIsLoading(false));
+    // Fetch posts only when they're needed (in background)
+    Promise.all([fetchExplorePosts(), fetchProfiles()]).finally(() => setIsLoading(false));
   }, []);
 
   const fetchExplorePosts = async () => {
