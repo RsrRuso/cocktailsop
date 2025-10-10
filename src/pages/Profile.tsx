@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Settings, Wine, Briefcase, ChefHat, Warehouse, Truck, Building2, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX } from "lucide-react";
+import { LogOut, Settings, Wine, Briefcase, ChefHat, Warehouse, Truck, Building2, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import FollowersDialog from "@/components/FollowersDialog";
@@ -390,6 +390,13 @@ const Profile = () => {
                       autoPlay
                       onClick={() => navigate('/reels')}
                     />
+                    
+                    {/* View Count - Always Visible */}
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-sm font-semibold drop-shadow-lg z-10">
+                      <Play className="w-4 h-4 fill-white" />
+                      <span>{reel.view_count || 0}</span>
+                    </div>
+                    
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

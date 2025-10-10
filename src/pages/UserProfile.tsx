@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Wine, Briefcase, Warehouse, Truck, Building2, Star, Heart, MessageCircle, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Wine, Briefcase, Warehouse, Truck, Building2, Star, Heart, MessageCircle, Volume2, VolumeX, Play } from "lucide-react";
 import FollowersDialog from "@/components/FollowersDialog";
 import FollowingDialog from "@/components/FollowingDialog";
 
@@ -382,6 +382,13 @@ const UserProfile = () => {
                       autoPlay
                       onClick={() => navigate('/reels')}
                     />
+                    
+                    {/* View Count - Always Visible */}
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-sm font-semibold drop-shadow-lg z-10">
+                      <Play className="w-4 h-4 fill-white" />
+                      <span>{reel.view_count || 0}</span>
+                    </div>
+                    
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
