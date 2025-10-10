@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit } from "lucide-react";
+import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -81,6 +81,7 @@ const Home = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isReelDialogOpen, setIsReelDialogOpen] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState("");
+  const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let isMounted = true;
@@ -611,27 +612,40 @@ const Home = () => {
                   {item.media_urls.map((url, idx) => (
                     <div key={idx} className="relative rounded-xl overflow-hidden">
                       {item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
-                        <video 
-                          src={url} 
-                          loop
-                          playsInline
-                          muted
-                          autoPlay
-                          preload="metadata"
-                          className="w-full h-auto max-h-96 object-cover cursor-pointer"
-                          onClick={(e) => {
-                            const video = e.currentTarget;
-                            if (!document.fullscreenElement) {
-                              video.requestFullscreen();
-                              video.muted = false;
-                            } else {
-                              document.exitFullscreen();
-                              video.muted = true;
-                            }
-                          }}
-                        />
+                        <div className="relative">
+                          <video 
+                            src={url} 
+                            loop
+                            playsInline
+                            muted={!mutedVideos.has(item.id + url)}
+                            autoPlay
+                            preload="metadata"
+                            className="w-full h-auto max-h-96 object-cover"
+                          />
+                          <button
+                            onClick={() => {
+                              setMutedVideos(prev => {
+                                const newSet = new Set(prev);
+                                const videoId = item.id + url;
+                                if (newSet.has(videoId)) {
+                                  newSet.delete(videoId);
+                                } else {
+                                  newSet.add(videoId);
+                                }
+                                return newSet;
+                              });
+                            }}
+                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all"
+                          >
+                            {mutedVideos.has(item.id + url) ? (
+                              <Volume2 className="w-4 h-4 text-white" />
+                            ) : (
+                              <VolumeX className="w-4 h-4 text-white" />
+                            )}
+                          </button>
+                        </div>
                       ) : (
-                        <img 
+                        <img
                           src={url} 
                           alt="Post media"
                           loading="lazy"

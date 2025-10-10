@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music, Trash2, Edit } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import { toast } from "sonner";
 import CommentsDialog from "@/components/CommentsDialog";
@@ -42,6 +42,7 @@ const Reels = () => {
   const [likedReels, setLikedReels] = useState<Set<string>>(new Set());
   const [showComments, setShowComments] = useState(false);
   const [selectedReelForComments, setSelectedReelForComments] = useState("");
+  const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     Promise.all([fetchCurrentUser(), fetchReels(), fetchLikedReels()]);
@@ -225,22 +226,34 @@ const Reels = () => {
               {/* Video Player */}
               <video
                 src={reel.video_url}
-                className="absolute inset-0 w-full h-full object-cover cursor-pointer"
+                className="absolute inset-0 w-full h-full object-cover"
                 loop
                 playsInline
-                muted
+                muted={!mutedVideos.has(reel.id)}
                 autoPlay
-                onClick={(e) => {
-                  const video = e.currentTarget;
-                  if (!document.fullscreenElement) {
-                    video.requestFullscreen();
-                    video.muted = false;
-                  } else {
-                    document.exitFullscreen();
-                    video.muted = true;
-                  }
-                }}
               />
+
+              {/* Mute/Unmute Button */}
+              <button
+                onClick={() => {
+                  setMutedVideos(prev => {
+                    const newSet = new Set(prev);
+                    if (newSet.has(reel.id)) {
+                      newSet.delete(reel.id);
+                    } else {
+                      newSet.add(reel.id);
+                    }
+                    return newSet;
+                  });
+                }}
+                className="absolute top-20 right-4 z-20 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all"
+              >
+                {mutedVideos.has(reel.id) ? (
+                  <Volume2 className="w-5 h-5 text-white" />
+                ) : (
+                  <VolumeX className="w-5 h-5 text-white" />
+                )}
+              </button>
 
               {/* Bottom Action Bar */}
               <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent backdrop-blur-sm border-t border-white/10">

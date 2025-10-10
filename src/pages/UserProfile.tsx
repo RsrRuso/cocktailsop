@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Wine, Briefcase, Warehouse, Truck, Building2, Star, Heart, MessageCircle } from "lucide-react";
+import { ArrowLeft, Wine, Briefcase, Warehouse, Truck, Building2, Star, Heart, MessageCircle, Volume2, VolumeX } from "lucide-react";
 import FollowersDialog from "@/components/FollowersDialog";
 import FollowingDialog from "@/components/FollowingDialog";
 
@@ -52,6 +52,7 @@ const UserProfile = () => {
   const [reels, setReels] = useState<Reel[]>([]);
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
+  const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (userId) {
@@ -371,17 +372,37 @@ const UserProfile = () => {
                   <div 
                     key={reel.id} 
                     className="aspect-[9/16] relative overflow-hidden cursor-pointer group"
-                    onClick={() => navigate('/reels')}
                   >
                     <video
                       src={reel.video_url}
                       className="w-full h-full object-cover"
-                      muted
+                      muted={!mutedVideos.has(reel.id)}
                       playsInline
                       loop
-                      onMouseEnter={(e) => e.currentTarget.play()}
-                      onMouseLeave={(e) => e.currentTarget.pause()}
+                      autoPlay
+                      onClick={() => navigate('/reels')}
                     />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMutedVideos(prev => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(reel.id)) {
+                            newSet.delete(reel.id);
+                          } else {
+                            newSet.add(reel.id);
+                          }
+                          return newSet;
+                        });
+                      }}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100 z-10"
+                    >
+                      {mutedVideos.has(reel.id) ? (
+                        <Volume2 className="w-3 h-3 text-white" />
+                      ) : (
+                        <VolumeX className="w-3 h-3 text-white" />
+                      )}
+                    </button>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="absolute bottom-2 left-2 right-2 space-y-1">
                         {reel.caption && (
