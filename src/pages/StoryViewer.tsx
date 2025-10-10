@@ -1,8 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Heart, Eye, Trash2, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import StoryViewersDialog from "@/components/StoryViewersDialog";
+import StoryLikesDialog from "@/components/StoryLikesDialog";
 
 interface Story {
   id: string;
@@ -10,10 +19,17 @@ interface Story {
   media_urls: string[];
   media_types: string[];
   created_at: string;
+  view_count: number;
+  like_count: number;
   profiles: {
     username: string;
     avatar_url: string | null;
   };
+}
+
+interface FloatingHeart {
+  id: number;
+  x: number;
 }
 
 const StoryViewer = () => {
@@ -24,15 +40,143 @@ const StoryViewer = () => {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [isLiked, setIsLiked] = useState(false);
+  const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
+  const [showViewersDialog, setShowViewersDialog] = useState(false);
+  const [showLikesDialog, setShowLikesDialog] = useState(false);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const heartIdCounter = useRef(0);
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchStories();
   }, [userId]);
+
+  useEffect(() => {
+    if (stories.length > 0 && currentUserId) {
+      trackView();
+      checkIfLiked();
+    }
+  }, [currentStoryIndex, stories, currentUserId]);
+
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setCurrentUserId(user.id);
+    }
+  };
+
+  const trackView = async () => {
+    if (!currentUserId || !stories[currentStoryIndex]) return;
+    
+    const { error } = await supabase
+      .from("story_views")
+      .upsert({
+        story_id: stories[currentStoryIndex].id,
+        user_id: currentUserId,
+      }, {
+        onConflict: 'story_id,user_id',
+        ignoreDuplicates: true
+      });
+    
+    if (error) console.error("Error tracking view:", error);
+  };
+
+  const checkIfLiked = async () => {
+    if (!currentUserId || !stories[currentStoryIndex]) return;
+
+    const { data } = await supabase
+      .from("story_likes")
+      .select("id")
+      .eq("story_id", stories[currentStoryIndex].id)
+      .eq("user_id", currentUserId)
+      .maybeSingle();
+
+    setIsLiked(!!data);
+  };
+
+  const handleLike = async () => {
+    if (!currentUserId || !stories[currentStoryIndex]) return;
+
+    const storyId = stories[currentStoryIndex].id;
+
+    if (isLiked) {
+      await supabase
+        .from("story_likes")
+        .delete()
+        .eq("story_id", storyId)
+        .eq("user_id", currentUserId);
+      setIsLiked(false);
+    } else {
+      await supabase
+        .from("story_likes")
+        .insert({
+          story_id: storyId,
+          user_id: currentUserId,
+        });
+      setIsLiked(true);
+      addFloatingHeart();
+    }
+  };
+
+  const addFloatingHeart = () => {
+    const id = heartIdCounter.current++;
+    const x = Math.random() * 80 + 10; // Random position between 10% and 90%
+    setFloatingHearts(prev => [...prev, { id, x }]);
+    
+    // Remove heart after animation
+    setTimeout(() => {
+      setFloatingHearts(prev => prev.filter(heart => heart.id !== id));
+    }, 3000);
+  };
+
+  const handleDeleteStory = async () => {
+    if (!stories[currentStoryIndex]) return;
+    
+    const story = stories[currentStoryIndex];
+    
+    const { error } = await supabase
+      .from("stories")
+      .delete()
+      .eq("id", story.id);
+
+    if (error) {
+      toast.error("Failed to delete story");
+      return;
+    }
+
+    // Delete media files from storage
+    if (story.media_urls) {
+      const filePaths = story.media_urls.map((url: string) => {
+        const urlParts = url.split('/stories/');
+        return urlParts[1];
+      }).filter(Boolean);
+
+      if (filePaths.length > 0) {
+        await supabase.storage
+          .from('stories')
+          .remove(filePaths);
+      }
+    }
+
+    toast.success("Story deleted");
+    
+    // Navigate to next story or go back
+    if (stories.length > 1) {
+      const updatedStories = stories.filter((_, index) => index !== currentStoryIndex);
+      setStories(updatedStories);
+      if (currentStoryIndex >= updatedStories.length) {
+        setCurrentStoryIndex(Math.max(0, updatedStories.length - 1));
+      }
+    } else {
+      navigate(-1);
+    }
+  };
 
   useEffect(() => {
     // Reset progress when media changes
@@ -208,6 +352,7 @@ const StoryViewer = () => {
     || currentStory.media_types?.[0] 
     || 'image';
   const totalMedia = currentStory.media_urls.length;
+  const isOwnStory = currentStory.user_id === currentUserId;
 
   return (
     <div
@@ -246,12 +391,44 @@ const StoryViewer = () => {
           )}
           <span className="text-white font-semibold">{currentStory.profiles.username}</span>
         </div>
-        <button
-          onClick={() => navigate(-1)}
-          className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center"
-        >
-          <X className="w-6 h-6 text-white" />
-        </button>
+        <div className="flex items-center gap-2">
+          {isOwnStory && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-10 h-10 rounded-full bg-black/50 hover:bg-black/70"
+                >
+                  <MoreVertical className="w-5 h-5 text-white" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setShowViewersDialog(true)}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  Views ({currentStory.view_count})
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowLikesDialog(true)}>
+                  <Heart className="w-4 h-4 mr-2" />
+                  Likes ({currentStory.like_count})
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={handleDeleteStory}
+                  className="text-red-500 focus:text-red-500"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Story
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <button
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+        </div>
       </div>
 
       {/* Media content */}
@@ -299,12 +476,62 @@ const StoryViewer = () => {
         </button>
       )}
 
+      {/* Bottom actions */}
+      {!isOwnStory && (
+        <div className="absolute bottom-8 left-4 right-4 flex items-center justify-between z-10">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLike}
+            className="w-14 h-14 rounded-full bg-black/50 hover:bg-black/70"
+          >
+            <Heart
+              className={`w-7 h-7 transition-all ${
+                isLiked ? 'fill-red-500 text-red-500 scale-110' : 'text-white'
+              }`}
+            />
+          </Button>
+        </div>
+      )}
+
+      {/* Floating hearts animation */}
+      <div className="absolute bottom-24 left-0 right-0 pointer-events-none z-20">
+        {floatingHearts.map((heart) => (
+          <div
+            key={heart.id}
+            className="absolute animate-float-up"
+            style={{
+              left: `${heart.x}%`,
+              animationDuration: '3s',
+            }}
+          >
+            <Heart className="w-8 h-8 fill-red-500 text-red-500 opacity-90" />
+          </div>
+        ))}
+      </div>
+
       {/* Tap zones for navigation */}
       <div className="absolute inset-0 flex">
         <div className="w-1/3 h-full" onClick={goToPreviousMedia} />
         <div className="w-1/3 h-full" />
         <div className="w-1/3 h-full" onClick={goToNextMedia} />
       </div>
+
+      {/* Dialogs */}
+      {isOwnStory && (
+        <>
+          <StoryViewersDialog
+            open={showViewersDialog}
+            onOpenChange={setShowViewersDialog}
+            storyId={currentStory.id}
+          />
+          <StoryLikesDialog
+            open={showLikesDialog}
+            onOpenChange={setShowLikesDialog}
+            storyId={currentStory.id}
+          />
+        </>
+      )}
     </div>
   );
 };
