@@ -291,6 +291,26 @@ const Profile = () => {
     return totalScore;
   };
 
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-background pb-20 pt-16">
+        <TopNav />
+        <div className="px-4 py-6 space-y-6">
+          <div className="glass rounded-xl p-6 space-y-4 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="w-24 h-24 rounded-full bg-muted" />
+              <div className="space-y-2">
+                <div className="h-6 w-32 bg-muted rounded" />
+                <div className="h-4 w-24 bg-muted rounded" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
