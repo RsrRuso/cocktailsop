@@ -51,6 +51,7 @@ const Notifications = () => {
       .from("notifications")
       .select("*")
       .eq("user_id", user.id)
+      .neq("type", "message")
       .order("created_at", { ascending: false })
       .limit(50);
 
