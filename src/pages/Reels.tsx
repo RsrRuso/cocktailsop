@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ShareDialog from "@/components/ShareDialog";
+import LikesDialog from "@/components/LikesDialog";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface Reel {
@@ -44,6 +45,8 @@ const Reels = () => {
   const [showComments, setShowComments] = useState(false);
   const [selectedReelForComments, setSelectedReelForComments] = useState("");
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
+  const [showLikes, setShowLikes] = useState(false);
+  const [selectedReelForLikes, setSelectedReelForLikes] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -259,7 +262,16 @@ const Reels = () => {
                     className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
                   >
                     <Heart className={`w-7 h-7 transition-all ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
-                    <span className="text-white text-xs font-semibold">{reel.like_count || 0}</span>
+                    <span 
+                      className="text-white text-xs font-semibold cursor-pointer hover:underline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedReelForLikes(reel.id);
+                        setShowLikes(true);
+                      }}
+                    >
+                      {reel.like_count || 0}
+                    </span>
                   </button>
 
                   <button 
@@ -342,15 +354,25 @@ const Reels = () => {
         mediaUrls={[selectedReelVideo]}
       />
 
-        <CommentsDialog
-          open={showComments}
-          onOpenChange={setShowComments}
-          postId={selectedReelForComments}
-          isReel={true}
-          onCommentAdded={() => {
-            setReels(reels.map(r => r.id === selectedReelForComments ? { ...r, comment_count: r.comment_count + 1 } : r));
-          }}
-        />
+      <CommentsDialog
+        open={showComments}
+        onOpenChange={setShowComments}
+        postId={selectedReelForComments}
+        isReel={true}
+        onCommentAdded={() => {
+          setReels(reels.map(r => r.id === selectedReelForComments ? { ...r, comment_count: r.comment_count + 1 } : r));
+        }}
+        onCommentDeleted={() => {
+          setReels(reels.map(r => r.id === selectedReelForComments ? { ...r, comment_count: Math.max(0, r.comment_count - 1) } : r));
+        }}
+      />
+
+      <LikesDialog
+        open={showLikes}
+        onOpenChange={setShowLikes}
+        postId={selectedReelForLikes}
+        isReel={true}
+      />
     </div>
   );
 };

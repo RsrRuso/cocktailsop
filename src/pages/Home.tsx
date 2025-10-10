@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ShareDialog from "@/components/ShareDialog";
 import CommentsDialog from "@/components/CommentsDialog";
+import LikesDialog from "@/components/LikesDialog";
 import { ReelFullscreen } from "@/components/ReelFullscreen";
 import { LazyImage } from "@/components/LazyImage";
 import { FeedItem } from "@/components/FeedItem";
@@ -88,6 +89,9 @@ const Home = () => {
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [fullscreenReel, setFullscreenReel] = useState<FeedItem | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [showLikes, setShowLikes] = useState(false);
+  const [selectedLikesPostId, setSelectedLikesPostId] = useState("");
+  const [isReelLikes, setIsReelLikes] = useState(false);
   
   // Update currentUser when profile changes
   useEffect(() => {
@@ -434,6 +438,11 @@ const Home = () => {
               }}
               onToggleMute={handleToggleMute}
               onFullscreen={() => setFullscreenReel(item)}
+              onViewLikes={() => {
+                setSelectedLikesPostId(item.id);
+                setIsReelLikes(item.type === 'reel');
+                setShowLikes(true);
+              }}
               getBadgeColor={getBadgeColor}
             />
           ))
@@ -492,6 +501,13 @@ const Home = () => {
             setReels(reels.map(r => r.id === selectedPostId ? { ...r, comment_count: Math.max(0, r.comment_count - 1) } : r));
           }
         }}
+      />
+
+      <LikesDialog
+        open={showLikes}
+        onOpenChange={setShowLikes}
+        postId={selectedLikesPostId}
+        isReel={isReelLikes}
       />
 
       {fullscreenReel && (

@@ -24,6 +24,7 @@ interface FeedItemProps {
   onShare: () => void;
   onToggleMute: (videoId: string) => void;
   onFullscreen: () => void;
+  onViewLikes: () => void;
   getBadgeColor: (level: string) => string;
 }
 
@@ -39,6 +40,7 @@ export const FeedItem = memo(({
   onShare,
   onToggleMute,
   onFullscreen,
+  onViewLikes,
   getBadgeColor
 }: FeedItemProps) => {
   const navigate = useNavigate();
@@ -146,7 +148,15 @@ export const FeedItem = memo(({
           }`}
         >
           <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-          <span className="text-sm font-bold min-w-[20px]">{item.like_count || 0}</span>
+          <span 
+            className="text-sm font-bold min-w-[20px] cursor-pointer hover:underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewLikes();
+            }}
+          >
+            {item.like_count || 0}
+          </span>
         </button>
         <button 
           onClick={onComment}
