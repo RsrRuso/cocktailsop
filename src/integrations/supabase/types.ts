@@ -1167,6 +1167,10 @@ export type Database = {
         Args: { p_content: string; p_type: string; p_user_id: string }
         Returns: undefined
       }
+      is_conversation_participant: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
       recalculate_follow_counts: {
         Args: Record<PropertyKey, never>
         Returns: undefined
