@@ -281,16 +281,9 @@ const Profile = () => {
               )}
               {profile.show_whatsapp && profile.whatsapp && (
                 <a
-                  href={`https://api.whatsapp.com/send?phone=${profile.whatsapp.replace(/\D/g, '')}`}
+                  href={`https://wa.me/${profile.whatsapp.replace(/[^0-9]/g, '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={(e) => {
-                    const phone = profile.whatsapp.replace(/\D/g, '');
-                    if (!phone.startsWith('1') && !phone.startsWith('44') && !phone.startsWith('971')) {
-                      e.preventDefault();
-                      alert('Please add country code to WhatsApp number in Edit Profile (e.g., +1234567890)');
-                    }
-                  }}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
                 >
                   <MessageSquare className="w-4 h-4 text-green-500" />
