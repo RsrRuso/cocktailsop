@@ -130,40 +130,83 @@ const TopNav = () => {
       <div className="flex items-center justify-between px-4 py-3">
         {currentUser?.is_founder ? (
           <div className="relative group cursor-pointer">
-            {/* Outer glow layers */}
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 blur-xl opacity-60 group-hover:opacity-90 transition-all duration-500 animate-pulse" />
-            <div className="absolute inset-0 bg-gradient-to-tl from-blue-300 via-cyan-400 to-purple-500 blur-lg opacity-40 group-hover:opacity-70 transition-all duration-500" />
+            {/* Radiant glow */}
+            <div className="absolute -inset-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 blur-2xl opacity-50 group-hover:opacity-80 transition-all duration-700 animate-pulse" />
             
-            {/* Diamond container */}
-            <div className="relative w-14 h-14 transform rotate-45 group-hover:rotate-[50deg] transition-all duration-500">
-              {/* Diamond background with gradient */}
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-cyan-300 via-blue-400 to-purple-500 shadow-2xl">
-                {/* Inner shine effect */}
-                <div className="absolute inset-[2px] rounded-xl bg-gradient-to-br from-blue-50 via-cyan-100 to-blue-200 opacity-30" />
-                {/* Top facet highlight */}
-                <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/50 to-transparent rounded-t-xl" />
-                {/* Center sparkle */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-2 h-2 bg-white rounded-full shadow-lg group-hover:scale-150 transition-transform duration-300" />
-                </div>
-              </div>
-              
-              {/* Badge icon */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <BadgeCheck 
-                  className="w-8 h-8 text-white drop-shadow-2xl -rotate-45 group-hover:-rotate-[50deg] transition-all duration-500" 
-                  strokeWidth={2.5} 
-                  fill="rgba(255,255,255,0.3)"
+            {/* Diamond shape using clip-path */}
+            <div className="relative w-12 h-14">
+              {/* Main diamond body */}
+              <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-2xl">
+                {/* Top facet (table) */}
+                <polygon 
+                  points="50,10 70,35 50,30 30,35" 
+                  fill="url(#diamond-gradient-1)"
+                  className="transition-all duration-500"
                 />
-              </div>
+                
+                {/* Upper girdle facets */}
+                <polygon points="30,35 10,50 50,30" fill="url(#diamond-gradient-2)" />
+                <polygon points="70,35 90,50 50,30" fill="url(#diamond-gradient-3)" />
+                <polygon points="50,30 30,35 50,60" fill="url(#diamond-gradient-4)" />
+                <polygon points="50,30 70,35 50,60" fill="url(#diamond-gradient-5)" />
+                
+                {/* Lower facets (pavilion) */}
+                <polygon points="10,50 50,60 50,110" fill="url(#diamond-gradient-6)" className="group-hover:opacity-90" />
+                <polygon points="90,50 50,60 50,110" fill="url(#diamond-gradient-7)" className="group-hover:opacity-90" />
+                <polygon points="30,35 10,50 50,60" fill="url(#diamond-gradient-8)" />
+                <polygon points="70,35 90,50 50,60" fill="url(#diamond-gradient-9)" />
+                
+                {/* Highlight streaks */}
+                <polygon points="45,15 48,30 52,30 55,15" fill="rgba(255,255,255,0.9)" className="animate-pulse" />
+                <circle cx="35" cy="40" r="2" fill="white" className="animate-ping" style={{ animationDuration: '2s' }} />
+                <circle cx="65" cy="42" r="1.5" fill="white" className="animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.3s' }} />
+                
+                <defs>
+                  {/* Gradient definitions for realistic facets */}
+                  <linearGradient id="diamond-gradient-1" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#e0f7ff" />
+                    <stop offset="100%" stopColor="#7dd3fc" />
+                  </linearGradient>
+                  <linearGradient id="diamond-gradient-2" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#60a5fa" />
+                    <stop offset="100%" stopColor="#3b82f6" />
+                  </linearGradient>
+                  <linearGradient id="diamond-gradient-3" x1="100%" y1="0%" x2="0%" y2="0%">
+                    <stop offset="0%" stopColor="#a78bfa" />
+                    <stop offset="100%" stopColor="#8b5cf6" />
+                  </linearGradient>
+                  <linearGradient id="diamond-gradient-4" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#bae6fd" />
+                    <stop offset="100%" stopColor="#0ea5e9" />
+                  </linearGradient>
+                  <linearGradient id="diamond-gradient-5" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#ddd6fe" />
+                    <stop offset="100%" stopColor="#a78bfa" />
+                  </linearGradient>
+                  <linearGradient id="diamond-gradient-6" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#0ea5e9" />
+                    <stop offset="100%" stopColor="#0369a1" />
+                  </linearGradient>
+                  <linearGradient id="diamond-gradient-7" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="100%" stopColor="#6d28d9" />
+                  </linearGradient>
+                  <linearGradient id="diamond-gradient-8" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#38bdf8" />
+                    <stop offset="100%" stopColor="#0284c7" />
+                  </linearGradient>
+                  <linearGradient id="diamond-gradient-9" x1="100%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#c084fc" />
+                    <stop offset="100%" stopColor="#9333ea" />
+                  </linearGradient>
+                </defs>
+              </svg>
               
-              {/* Edge highlights */}
-              <div className="absolute inset-0 rounded-xl border-[3px] border-white/40 group-hover:border-white/60 transition-colors" />
+              {/* Additional sparkles */}
+              <div className="absolute top-0 right-0 w-2 h-2 bg-white rounded-full opacity-0 group-hover:opacity-100 animate-ping" />
+              <div className="absolute bottom-4 left-1 w-1.5 h-1.5 bg-cyan-200 rounded-full opacity-0 group-hover:opacity-100 animate-ping" style={{ animationDelay: '0.2s' }} />
+              <div className="absolute top-2 left-2 w-1 h-1 bg-blue-200 rounded-full opacity-0 group-hover:opacity-100 animate-ping" style={{ animationDelay: '0.4s' }} />
             </div>
-            
-            {/* Sparkle effects */}
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity animate-ping" />
-            <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-blue-300 rounded-full opacity-0 group-hover:opacity-100 transition-opacity animate-ping delay-75" />
           </div>
         ) : currentUser?.is_verified && (
           <div className="relative group">
