@@ -92,7 +92,16 @@ const Home = () => {
     let isMounted = true;
     
     const initializeData = async () => {
-      // Fetch user first and set as ready immediately
+      // Load cached data from localStorage INSTANTLY
+      const cachedStories = localStorage.getItem('home_stories');
+      const cachedPosts = localStorage.getItem('home_posts');
+      const cachedReels = localStorage.getItem('home_reels');
+      
+      if (cachedStories) setStories(JSON.parse(cachedStories));
+      if (cachedPosts) setPosts(JSON.parse(cachedPosts));
+      if (cachedReels) setReels(JSON.parse(cachedReels));
+      
+      // Fetch user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       
@@ -106,22 +115,16 @@ const Home = () => {
         setCurrentUser(profile);
       }
       
-      // Fetch only stories first for instant display
-      await fetchStories();
-      
-      if (isMounted) {
-        setIsInitialLoad(false);
-      }
-      
-      // Load posts and reels in background after page is interactive
-      setTimeout(() => {
-        Promise.all([
-          fetchPosts(),
-          fetchReels(),
-          fetchLikedPosts(),
-          fetchLikedReels()
-        ]);
-      }, 100);
+      // Fetch all data in parallel - no delays
+      Promise.all([
+        fetchStories(),
+        fetchPosts(),
+        fetchReels(),
+        fetchLikedPosts(),
+        fetchLikedReels()
+      ]).then(() => {
+        if (isMounted) setIsInitialLoad(false);
+      });
     };
 
     initializeData();
@@ -199,14 +202,18 @@ const Home = () => {
 
   const fetchStories = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("stories")
         .select("id, user_id, media_urls, media_types, created_at, expires_at, profiles(username, avatar_url)")
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(3);
 
-      if (data) setStories(data);
+      if (error) throw error;
+      if (data) {
+        setStories(data);
+        localStorage.setItem('home_stories', JSON.stringify(data));
+      }
     } catch (error) {
       console.error('Error fetching stories:', error);
     }
@@ -214,13 +221,17 @@ const Home = () => {
 
   const fetchPosts = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("posts")
         .select("id, user_id, content, media_urls, like_count, comment_count, created_at, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(3);
 
-      if (data) setPosts(data);
+      if (error) throw error;
+      if (data) {
+        setPosts(data);
+        localStorage.setItem('home_posts', JSON.stringify(data));
+      }
     } catch (error) {
       console.error('Error fetching posts:', error);
     }
@@ -228,13 +239,17 @@ const Home = () => {
 
   const fetchReels = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("reels")
         .select("id, user_id, video_url, caption, like_count, comment_count, view_count, created_at, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(3);
 
-      if (data) setReels(data);
+      if (error) throw error;
+      if (data) {
+        setReels(data);
+        localStorage.setItem('home_reels', JSON.stringify(data));
+      }
     } catch (error) {
       console.error('Error fetching reels:', error);
     }
