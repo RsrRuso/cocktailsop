@@ -427,6 +427,7 @@ const Home = () => {
               onEdit={() => navigate(`/edit-post/${item.id}`)}
               onComment={() => {
                 setSelectedPostId(item.id);
+                setSelectedPostType(item.type);
                 setCommentsDialogOpen(true);
               }}
               onShare={() => {
@@ -484,20 +485,18 @@ const Home = () => {
         open={commentsDialogOpen}
         onOpenChange={setCommentsDialogOpen}
         postId={selectedPostId}
-        isReel={feed.find(f => f.id === selectedPostId)?.type === 'reel'}
+        isReel={selectedPostType === 'reel'}
         onCommentAdded={() => {
-          const item = feed.find(f => f.id === selectedPostId);
-          if (item?.type === 'post') {
+          if (selectedPostType === 'post') {
             setPosts(posts.map(p => p.id === selectedPostId ? { ...p, comment_count: p.comment_count + 1 } : p));
-          } else if (item?.type === 'reel') {
+          } else {
             setReels(reels.map(r => r.id === selectedPostId ? { ...r, comment_count: r.comment_count + 1 } : r));
           }
         }}
         onCommentDeleted={() => {
-          const item = feed.find(f => f.id === selectedPostId);
-          if (item?.type === 'post') {
+          if (selectedPostType === 'post') {
             setPosts(posts.map(p => p.id === selectedPostId ? { ...p, comment_count: Math.max(0, p.comment_count - 1) } : p));
-          } else if (item?.type === 'reel') {
+          } else {
             setReels(reels.map(r => r.id === selectedPostId ? { ...r, comment_count: Math.max(0, r.comment_count - 1) } : r));
           }
         }}
