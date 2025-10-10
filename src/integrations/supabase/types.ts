@@ -1152,6 +1152,7 @@ export type Database = {
           name: string
           owner_id: string | null
           region: string
+          show_contact_email: boolean | null
           type: string
           verified: boolean | null
         }
@@ -1166,6 +1167,7 @@ export type Database = {
           name: string
           owner_id?: string | null
           region: string
+          show_contact_email?: boolean | null
           type: string
           verified?: boolean | null
         }
@@ -1180,6 +1182,7 @@ export type Database = {
           name?: string
           owner_id?: string | null
           region?: string
+          show_contact_email?: boolean | null
           type?: string
           verified?: boolean | null
         }

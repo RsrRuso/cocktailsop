@@ -62,7 +62,7 @@ export const VenueVerification = ({ userId }: { userId: string }) => {
   const fetchVenues = async () => {
     const { data, error } = await supabase
       .from("venues")
-      .select("*")
+      .select("id, name, type, region, city, address")
       .order("name");
 
     if (error) {
@@ -82,7 +82,7 @@ export const VenueVerification = ({ userId }: { userId: string }) => {
       .from("employment_verifications")
       .select(`
         *,
-        venues (*)
+        venues (id, name, type, region, city, address)
       `)
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
