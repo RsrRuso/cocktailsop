@@ -334,13 +334,19 @@ export type Database = {
           following_count: number | null
           full_name: string
           id: string
+          phone: string | null
           post_count: number | null
           professional_title:
             | Database["public"]["Enums"]["professional_title"]
             | null
           region: string | null
+          show_phone: boolean | null
+          show_website: boolean | null
+          show_whatsapp: boolean | null
           updated_at: string | null
           username: string
+          website: string | null
+          whatsapp: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -352,13 +358,19 @@ export type Database = {
           following_count?: number | null
           full_name: string
           id: string
+          phone?: string | null
           post_count?: number | null
           professional_title?:
             | Database["public"]["Enums"]["professional_title"]
             | null
           region?: string | null
+          show_phone?: boolean | null
+          show_website?: boolean | null
+          show_whatsapp?: boolean | null
           updated_at?: string | null
           username: string
+          website?: string | null
+          whatsapp?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -370,13 +382,19 @@ export type Database = {
           following_count?: number | null
           full_name?: string
           id?: string
+          phone?: string | null
           post_count?: number | null
           professional_title?:
             | Database["public"]["Enums"]["professional_title"]
             | null
           region?: string | null
+          show_phone?: boolean | null
+          show_website?: boolean | null
+          show_whatsapp?: boolean | null
           updated_at?: string | null
           username?: string
+          website?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }

@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ArrowLeft, Save, Camera } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
@@ -32,6 +34,12 @@ const EditProfile = () => {
     bio: "",
     professional_title: "",
     region: "All",
+    phone: "",
+    whatsapp: "",
+    website: "",
+    show_phone: true,
+    show_whatsapp: true,
+    show_website: true,
   });
 
   useEffect(() => {
@@ -58,6 +66,12 @@ const EditProfile = () => {
         bio: data.bio || "",
         professional_title: data.professional_title || "",
         region: data.region || "All",
+        phone: data.phone || "",
+        whatsapp: data.whatsapp || "",
+        website: data.website || "",
+        show_phone: data.show_phone ?? true,
+        show_whatsapp: data.show_whatsapp ?? true,
+        show_website: data.show_website ?? true,
       });
       setAvatarUrl(data.avatar_url || "");
       setCoverUrl(data.cover_url || "");
@@ -129,6 +143,12 @@ const EditProfile = () => {
         full_name: profile.full_name,
         bio: profile.bio,
         region: profile.region,
+        phone: profile.phone,
+        whatsapp: profile.whatsapp,
+        website: profile.website,
+        show_phone: profile.show_phone,
+        show_whatsapp: profile.show_whatsapp,
+        show_website: profile.show_website,
       };
 
       if (profile.professional_title) {
@@ -356,6 +376,73 @@ const EditProfile = () => {
               placeholder="Tell us about yourself..."
               className="glass border-primary/20 min-h-[100px]"
             />
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-border/50">
+            <h3 className="text-lg font-semibold">Contact Information</h3>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Phone Number</label>
+              <Input
+                type="tel"
+                value={profile.phone}
+                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                placeholder="+1234567890"
+                className="glass border-primary/20"
+              />
+              <div className="flex items-center space-x-2 mt-2">
+                <Switch
+                  id="show-phone"
+                  checked={profile.show_phone}
+                  onCheckedChange={(checked) => setProfile({ ...profile, show_phone: checked })}
+                />
+                <Label htmlFor="show-phone" className="text-sm text-muted-foreground">
+                  Show phone number on profile
+                </Label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">WhatsApp Number</label>
+              <Input
+                type="tel"
+                value={profile.whatsapp}
+                onChange={(e) => setProfile({ ...profile, whatsapp: e.target.value })}
+                placeholder="+1234567890"
+                className="glass border-primary/20"
+              />
+              <div className="flex items-center space-x-2 mt-2">
+                <Switch
+                  id="show-whatsapp"
+                  checked={profile.show_whatsapp}
+                  onCheckedChange={(checked) => setProfile({ ...profile, show_whatsapp: checked })}
+                />
+                <Label htmlFor="show-whatsapp" className="text-sm text-muted-foreground">
+                  Show WhatsApp on profile
+                </Label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Website</label>
+              <Input
+                type="url"
+                value={profile.website}
+                onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                placeholder="https://yourwebsite.com"
+                className="glass border-primary/20"
+              />
+              <div className="flex items-center space-x-2 mt-2">
+                <Switch
+                  id="show-website"
+                  checked={profile.show_website}
+                  onCheckedChange={(checked) => setProfile({ ...profile, show_website: checked })}
+                />
+                <Label htmlFor="show-website" className="text-sm text-muted-foreground">
+                  Show website on profile
+                </Label>
+              </div>
+            </div>
           </div>
 
           <Button

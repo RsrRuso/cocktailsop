@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Settings, Wine, Briefcase, ChefHat, Warehouse, Truck, Building2, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX, Play } from "lucide-react";
+import { LogOut, Settings, Wine, Briefcase, ChefHat, Warehouse, Truck, Building2, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX, Play, Phone, MessageSquare, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import FollowersDialog from "@/components/FollowersDialog";
@@ -23,6 +23,12 @@ interface Profile {
   follower_count: number;
   following_count: number;
   post_count: number;
+  phone: string | null;
+  whatsapp: string | null;
+  website: string | null;
+  show_phone: boolean;
+  show_whatsapp: boolean;
+  show_website: boolean;
 }
 
 interface Story {
@@ -260,6 +266,43 @@ const Profile = () => {
           {profile.bio && (
             <p className="text-sm text-muted-foreground">{profile.bio}</p>
           )}
+
+          {/* Contact Links */}
+          {(profile.show_phone && profile.phone) || (profile.show_whatsapp && profile.whatsapp) || (profile.show_website && profile.website) ? (
+            <div className="flex flex-wrap gap-2">
+              {profile.show_phone && profile.phone && (
+                <a
+                  href={`tel:${profile.phone}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
+                >
+                  <Phone className="w-4 h-4 text-primary" />
+                  <span>{profile.phone}</span>
+                </a>
+              )}
+              {profile.show_whatsapp && profile.whatsapp && (
+                <a
+                  href={`https://wa.me/${profile.whatsapp.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
+                >
+                  <MessageSquare className="w-4 h-4 text-green-500" />
+                  <span>WhatsApp</span>
+                </a>
+              )}
+              {profile.show_website && profile.website && (
+                <a
+                  href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
+                >
+                  <Globe className="w-4 h-4 text-blue-500" />
+                  <span>Website</span>
+                </a>
+              )}
+            </div>
+          ) : null}
 
           <div className="flex items-center gap-8">
             <div className="text-center">
