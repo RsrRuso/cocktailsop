@@ -224,30 +224,60 @@ const InventoryManager = () => {
     const item = items.find(i => i.id === itemId);
     const employee = employees.find(e => e.id === transferredBy);
 
-    // Get current inventory from source store
-    const { data: sourceInventory } = await supabase
+    // Get ALL inventory from source store for this item (FIFO order)
+    const { data: sourceInventories } = await supabase
       .from("inventory")
       .select("*")
       .eq("store_id", fromStoreId)
       .eq("item_id", itemId)
-      .order("expiration_date")
-      .limit(1)
-      .single();
+      .order("expiration_date");
 
-    if (!sourceInventory || sourceInventory.quantity < quantity) {
-      toast.error("Insufficient inventory in source store");
+    if (!sourceInventories || sourceInventories.length === 0) {
+      toast.error("No inventory found in source store");
       return;
     }
 
-    // Update source inventory
-    const { error: updateError } = await supabase
-      .from("inventory")
-      .update({ quantity: sourceInventory.quantity - quantity })
-      .eq("id", sourceInventory.id);
-
-    if (updateError) {
-      toast.error("Failed to update source inventory");
+    // Calculate total available quantity
+    const totalAvailable = sourceInventories.reduce((sum, inv) => sum + inv.quantity, 0);
+    
+    if (totalAvailable < quantity) {
+      toast.error(`Insufficient inventory in source store. Available: ${totalAvailable}, Requested: ${quantity}`);
       return;
+    }
+
+    // Deduct quantity using FIFO (oldest expiration first)
+    let remainingToDeduct = quantity;
+    for (const inv of sourceInventories) {
+      if (remainingToDeduct <= 0) break;
+
+      const deductFromThis = Math.min(inv.quantity, remainingToDeduct);
+      const newQuantity = inv.quantity - deductFromThis;
+
+      if (newQuantity > 0) {
+        // Update the quantity
+        const { error: updateError } = await supabase
+          .from("inventory")
+          .update({ quantity: newQuantity })
+          .eq("id", inv.id);
+
+        if (updateError) {
+          toast.error("Failed to update source inventory");
+          return;
+        }
+      } else {
+        // Delete the entry if quantity reaches 0
+        const { error: deleteError } = await supabase
+          .from("inventory")
+          .delete()
+          .eq("id", inv.id);
+
+        if (deleteError) {
+          toast.error("Failed to update source inventory");
+          return;
+        }
+      }
+
+      remainingToDeduct -= deductFromThis;
     }
 
     // Add to destination store
