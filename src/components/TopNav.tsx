@@ -130,82 +130,130 @@ const TopNav = () => {
       <div className="flex items-center justify-between px-4 py-3">
         {currentUser?.is_founder ? (
           <div className="relative group cursor-pointer">
-            {/* Radiant glow */}
+            {/* Radiant glow with rotation */}
             <div className="absolute -inset-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 blur-2xl opacity-50 group-hover:opacity-80 transition-all duration-700 animate-pulse" />
+            <div className="absolute -inset-3 bg-gradient-conic from-transparent via-white to-transparent opacity-20 animate-spin" style={{ animationDuration: '3s' }} />
             
-            {/* Diamond shape using clip-path */}
-            <div className="relative w-12 h-14">
+            {/* Diamond container with rotation */}
+            <div className="relative w-12 h-14 animate-[spin_8s_linear_infinite] group-hover:animate-[spin_4s_linear_infinite]">
               {/* Main diamond body */}
               <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-2xl">
-                {/* Top facet (table) */}
+                {/* Top facet (table) with shimmer */}
                 <polygon 
                   points="50,10 70,35 50,30 30,35" 
                   fill="url(#diamond-gradient-1)"
                   className="transition-all duration-500"
-                />
+                >
+                  <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" />
+                </polygon>
                 
-                {/* Upper girdle facets */}
-                <polygon points="30,35 10,50 50,30" fill="url(#diamond-gradient-2)" />
-                <polygon points="70,35 90,50 50,30" fill="url(#diamond-gradient-3)" />
-                <polygon points="50,30 30,35 50,60" fill="url(#diamond-gradient-4)" />
-                <polygon points="50,30 70,35 50,60" fill="url(#diamond-gradient-5)" />
+                {/* Upper girdle facets with light sweep */}
+                <polygon points="30,35 10,50 50,30" fill="url(#diamond-gradient-2)">
+                  <animate attributeName="opacity" values="0.7;1;0.7" dur="1.5s" repeatCount="indefinite" begin="0s" />
+                </polygon>
+                <polygon points="70,35 90,50 50,30" fill="url(#diamond-gradient-3)">
+                  <animate attributeName="opacity" values="0.7;1;0.7" dur="1.5s" repeatCount="indefinite" begin="0.5s" />
+                </polygon>
+                <polygon points="50,30 30,35 50,60" fill="url(#diamond-gradient-4)">
+                  <animate attributeName="opacity" values="0.8;1;0.8" dur="1.8s" repeatCount="indefinite" begin="0.3s" />
+                </polygon>
+                <polygon points="50,30 70,35 50,60" fill="url(#diamond-gradient-5)">
+                  <animate attributeName="opacity" values="0.8;1;0.8" dur="1.8s" repeatCount="indefinite" begin="0.8s" />
+                </polygon>
                 
-                {/* Lower facets (pavilion) */}
-                <polygon points="10,50 50,60 50,110" fill="url(#diamond-gradient-6)" className="group-hover:opacity-90" />
-                <polygon points="90,50 50,60 50,110" fill="url(#diamond-gradient-7)" className="group-hover:opacity-90" />
-                <polygon points="30,35 10,50 50,60" fill="url(#diamond-gradient-8)" />
-                <polygon points="70,35 90,50 50,60" fill="url(#diamond-gradient-9)" />
+                {/* Lower facets (pavilion) with depth */}
+                <polygon points="10,50 50,60 50,110" fill="url(#diamond-gradient-6)" className="group-hover:opacity-90">
+                  <animate attributeName="opacity" values="0.6;0.9;0.6" dur="2.2s" repeatCount="indefinite" />
+                </polygon>
+                <polygon points="90,50 50,60 50,110" fill="url(#diamond-gradient-7)" className="group-hover:opacity-90">
+                  <animate attributeName="opacity" values="0.6;0.9;0.6" dur="2.2s" repeatCount="indefinite" begin="1s" />
+                </polygon>
+                <polygon points="30,35 10,50 50,60" fill="url(#diamond-gradient-8)">
+                  <animate attributeName="opacity" values="0.75;1;0.75" dur="1.6s" repeatCount="indefinite" begin="0.4s" />
+                </polygon>
+                <polygon points="70,35 90,50 50,60" fill="url(#diamond-gradient-9)">
+                  <animate attributeName="opacity" values="0.75;1;0.75" dur="1.6s" repeatCount="indefinite" begin="1.2s" />
+                </polygon>
                 
-                {/* Highlight streaks */}
-                <polygon points="45,15 48,30 52,30 55,15" fill="rgba(255,255,255,0.9)" className="animate-pulse" />
-                <circle cx="35" cy="40" r="2" fill="white" className="animate-ping" style={{ animationDuration: '2s' }} />
-                <circle cx="65" cy="42" r="1.5" fill="white" className="animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.3s' }} />
+                {/* Dynamic light streaks */}
+                <polygon points="45,15 48,30 52,30 55,15" fill="rgba(255,255,255,0.95)">
+                  <animate attributeName="opacity" values="0.5;1;0.5" dur="1s" repeatCount="indefinite" />
+                </polygon>
+                <line x1="50" y1="30" x2="50" y2="60" stroke="rgba(255,255,255,0.6)" strokeWidth="1">
+                  <animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite" />
+                </line>
+                
+                {/* Sparkle points */}
+                <circle cx="35" cy="40" r="2.5" fill="white">
+                  <animate attributeName="opacity" values="0;1;0" dur="1.2s" repeatCount="indefinite" />
+                  <animate attributeName="r" values="1.5;2.5;1.5" dur="1.2s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="65" cy="42" r="2" fill="white">
+                  <animate attributeName="opacity" values="0;1;0" dur="1.5s" repeatCount="indefinite" begin="0.6s" />
+                  <animate attributeName="r" values="1;2;1" dur="1.5s" repeatCount="indefinite" begin="0.6s" />
+                </circle>
+                <circle cx="50" cy="25" r="1.5" fill="rgba(255,255,255,0.9)">
+                  <animate attributeName="opacity" values="0;1;0" dur="1s" repeatCount="indefinite" begin="0.3s" />
+                </circle>
                 
                 <defs>
-                  {/* Gradient definitions for realistic facets */}
+                  {/* Enhanced gradients with light refraction */}
                   <linearGradient id="diamond-gradient-1" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#e0f7ff" />
+                    <stop offset="0%" stopColor="#ffffff" />
+                    <stop offset="30%" stopColor="#e0f7ff" />
                     <stop offset="100%" stopColor="#7dd3fc" />
                   </linearGradient>
                   <linearGradient id="diamond-gradient-2" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#60a5fa" />
+                    <stop offset="50%" stopColor="#93c5fd" />
                     <stop offset="100%" stopColor="#3b82f6" />
                   </linearGradient>
                   <linearGradient id="diamond-gradient-3" x1="100%" y1="0%" x2="0%" y2="0%">
                     <stop offset="0%" stopColor="#a78bfa" />
+                    <stop offset="50%" stopColor="#c4b5fd" />
                     <stop offset="100%" stopColor="#8b5cf6" />
                   </linearGradient>
                   <linearGradient id="diamond-gradient-4" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#bae6fd" />
+                    <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
+                    <stop offset="20%" stopColor="#bae6fd" />
                     <stop offset="100%" stopColor="#0ea5e9" />
                   </linearGradient>
                   <linearGradient id="diamond-gradient-5" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#ddd6fe" />
+                    <stop offset="0%" stopColor="#faf5ff" stopOpacity="0.8" />
+                    <stop offset="20%" stopColor="#ddd6fe" />
                     <stop offset="100%" stopColor="#a78bfa" />
                   </linearGradient>
                   <linearGradient id="diamond-gradient-6" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#0ea5e9" />
+                    <stop offset="0%" stopColor="#38bdf8" />
+                    <stop offset="50%" stopColor="#0ea5e9" />
                     <stop offset="100%" stopColor="#0369a1" />
                   </linearGradient>
                   <linearGradient id="diamond-gradient-7" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="0%" stopColor="#a78bfa" />
+                    <stop offset="50%" stopColor="#8b5cf6" />
                     <stop offset="100%" stopColor="#6d28d9" />
                   </linearGradient>
                   <linearGradient id="diamond-gradient-8" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#38bdf8" />
+                    <stop offset="0%" stopColor="#7dd3fc" />
+                    <stop offset="50%" stopColor="#38bdf8" />
                     <stop offset="100%" stopColor="#0284c7" />
                   </linearGradient>
                   <linearGradient id="diamond-gradient-9" x1="100%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#c084fc" />
+                    <stop offset="0%" stopColor="#e9d5ff" />
+                    <stop offset="50%" stopColor="#c084fc" />
                     <stop offset="100%" stopColor="#9333ea" />
                   </linearGradient>
                 </defs>
               </svg>
               
-              {/* Additional sparkles */}
-              <div className="absolute top-0 right-0 w-2 h-2 bg-white rounded-full opacity-0 group-hover:opacity-100 animate-ping" />
-              <div className="absolute bottom-4 left-1 w-1.5 h-1.5 bg-cyan-200 rounded-full opacity-0 group-hover:opacity-100 animate-ping" style={{ animationDelay: '0.2s' }} />
-              <div className="absolute top-2 left-2 w-1 h-1 bg-blue-200 rounded-full opacity-0 group-hover:opacity-100 animate-ping" style={{ animationDelay: '0.4s' }} />
+              {/* Rotating light reflections */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-40 animate-[spin_2s_linear_infinite]" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
+              
+              {/* Additional sparkles around diamond */}
+              <div className="absolute top-0 right-0 w-2 h-2 bg-white rounded-full animate-ping" style={{ animationDuration: '1.5s' }} />
+              <div className="absolute bottom-2 left-0 w-1.5 h-1.5 bg-cyan-300 rounded-full animate-ping" style={{ animationDuration: '2s', animationDelay: '0.3s' }} />
+              <div className="absolute top-2 left-1 w-1 h-1 bg-blue-200 rounded-full animate-ping" style={{ animationDuration: '1.8s', animationDelay: '0.6s' }} />
+              <div className="absolute top-3 right-1 w-1 h-1 bg-purple-300 rounded-full animate-ping" style={{ animationDuration: '1.6s', animationDelay: '0.9s' }} />
             </div>
           </div>
         ) : currentUser?.is_verified && (
