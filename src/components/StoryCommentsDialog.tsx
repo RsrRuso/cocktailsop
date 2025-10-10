@@ -33,11 +33,18 @@ interface Comment {
   };
 }
 
+interface CurrentUserProfile {
+  username: string;
+  avatar_url: string | null;
+  full_name: string;
+}
+
 const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialogProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [currentUserProfile, setCurrentUserProfile] = useState<CurrentUserProfile | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -54,6 +61,17 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       setCurrentUserId(user.id);
+      
+      // Fetch user profile for optimistic updates
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username, avatar_url, full_name")
+        .eq("id", user.id)
+        .single();
+      
+      if (profile) {
+        setCurrentUserProfile(profile);
+      }
     }
   };
 
@@ -79,52 +97,39 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Comment form submitted');
-    if (!newComment.trim() || !currentUserId) {
-      console.log('Validation failed:', { newComment: newComment.trim(), currentUserId });
-      return;
-    }
+    if (!newComment.trim() || !currentUserId || !currentUserProfile) return;
 
-    setSubmitting(true);
-    
-    // Optimistic update - add comment immediately
+    // Instant optimistic update with real user data
     const tempComment: Comment = {
       id: 'temp-' + Date.now(),
       user_id: currentUserId,
       content: newComment.trim(),
       created_at: new Date().toISOString(),
-      profiles: {
-        username: 'You',
-        avatar_url: null,
-        full_name: 'You'
-      }
+      profiles: currentUserProfile
     };
+    
     setComments(prev => [tempComment, ...prev]);
     const commentText = newComment.trim();
     setNewComment("");
 
-    // Background API call
-    console.log('Inserting comment:', { story_id: storyId, user_id: currentUserId, content: commentText });
-    const { error } = await supabase
+    // Background API call - no await, instant UI
+    supabase
       .from("story_comments")
       .insert({
         story_id: storyId,
         user_id: currentUserId,
         content: commentText,
+      })
+      .then(({ error }) => {
+        if (error) {
+          toast.error("Failed to post comment");
+          setComments(prev => prev.filter(c => c.id !== tempComment.id));
+          setNewComment(commentText);
+        } else {
+          // Replace temp with real comment from DB
+          fetchComments();
+        }
       });
-
-    if (error) {
-      console.error('Comment error:', error);
-      toast.error("Failed to post comment");
-      // Remove temp comment on error
-      setComments(prev => prev.filter(c => c.id !== tempComment.id));
-      setNewComment(commentText);
-    } else {
-      console.log('Comment posted successfully');
-      // Refresh to get real data with correct profile
-      fetchComments();
-    }
-    setSubmitting(false);
   };
 
   const handleDeleteComment = async (commentId: string) => {
