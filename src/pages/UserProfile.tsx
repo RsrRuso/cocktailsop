@@ -7,13 +7,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Wine, Briefcase, Warehouse, Truck, Building2, Star, Heart, MessageCircle, Volume2, VolumeX, Play, Award, TrendingUp, Target, CheckCircle } from "lucide-react";
+import { ArrowLeft, Star, Heart, MessageCircle, Volume2, VolumeX, Play, Award, TrendingUp, Target, CheckCircle } from "lucide-react";
 import FollowersDialog from "@/components/FollowersDialog";
 import FollowingDialog from "@/components/FollowingDialog";
 import { VenueVerification } from "@/components/VenueVerification";
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CareerMetricsDialog from "@/components/CareerMetricsDialog";
 import AvatarClickMenu from "@/components/AvatarClickMenu";
+import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore } from "@/lib/profileUtils";
 
 interface Profile {
   username: string;
@@ -186,55 +187,11 @@ const UserProfile = () => {
         .eq("follower_id", user.id)
         .eq("following_id", userId);
       
-      // Decrement follower count for the followed user
-      if (profile) {
-        await supabase
-          .from("profiles")
-          .update({ follower_count: Math.max(0, profile.follower_count - 1) })
-          .eq("id", userId);
-      }
-      
-      // Decrement following count for current user
-      const { data: currentProfile } = await supabase
-        .from("profiles")
-        .select("following_count")
-        .eq("id", user.id)
-        .single();
-      
-      if (currentProfile) {
-        await supabase
-          .from("profiles")
-          .update({ following_count: Math.max(0, currentProfile.following_count - 1) })
-          .eq("id", user.id);
-      }
-      
       setIsFollowing(false);
     } else {
       await supabase
         .from("follows")
         .insert({ follower_id: user.id, following_id: userId });
-      
-      // Increment follower count for the followed user
-      if (profile) {
-        await supabase
-          .from("profiles")
-          .update({ follower_count: profile.follower_count + 1 })
-          .eq("id", userId);
-      }
-      
-      // Increment following count for current user
-      const { data: currentProfile } = await supabase
-        .from("profiles")
-        .select("following_count")
-        .eq("id", user.id)
-        .single();
-      
-      if (currentProfile) {
-        await supabase
-          .from("profiles")
-          .update({ following_count: currentProfile.following_count + 1 })
-          .eq("id", user.id);
-      }
       
       setIsFollowing(true);
     }
@@ -272,89 +229,6 @@ const UserProfile = () => {
     }
   };
 
-  const getBadgeColor = (level: string) => {
-    const colors = {
-      bronze: "from-amber-700 to-amber-500",
-      silver: "from-gray-400 to-gray-200",
-      gold: "from-yellow-500 to-yellow-300",
-      platinum: "from-blue-400 to-purple-500",
-    };
-    return colors[level as keyof typeof colors] || colors.bronze;
-  };
-
-  const getProfessionalBadge = (title: string | null) => {
-    if (!title) return { icon: Briefcase, gradient: "from-pink-600 to-orange-500", score: 0 };
-    
-    const badges: Record<string, { icon: any; gradient: string; score: number }> = {
-      mixologist: { icon: Wine, gradient: "from-pink-600 to-orange-500", score: 94 },
-      bartender: { icon: Wine, gradient: "from-blue-600 to-purple-500", score: 88 },
-      sommelier: { icon: Wine, gradient: "from-orange-600 to-amber-700", score: 96 },
-      bar_manager: { icon: Warehouse, gradient: "from-pink-500 to-orange-600", score: 92 },
-      beverage_director: { icon: Building2, gradient: "from-purple-600 to-pink-500", score: 95 },
-      consultant: { icon: Briefcase, gradient: "from-green-600 to-teal-500", score: 90 },
-      brand_ambassador: { icon: Building2, gradient: "from-yellow-600 to-orange-500", score: 87 },
-      manufacturer: { icon: Warehouse, gradient: "from-blue-600 to-cyan-500", score: 85 },
-      distributor: { icon: Truck, gradient: "from-purple-600 to-indigo-500", score: 83 },
-      investor: { icon: Building2, gradient: "from-green-600 to-emerald-600", score: 91 },
-    };
-    
-    return badges[title] || { icon: Briefcase, gradient: "from-pink-600 to-orange-500", score: 75 };
-  };
-
-  const calculateNetworkReach = () => {
-    if (!profile) return 0;
-    
-    // Base reach from followers (most important - direct audience)
-    const followerReach = profile.follower_count * 1.5;
-    
-    // Secondary reach from following (networking)
-    const followingReach = profile.following_count * 0.5;
-    
-    // Engagement multiplier from posts
-    const totalPostEngagement = posts.reduce((sum, post) => sum + (post.like_count || 0) + (post.comment_count || 0), 0);
-    const postEngagementBonus = Math.min(totalPostEngagement * 0.3, 500); // Cap at 500
-    
-    // View count from reels
-    const totalReelViews = reels.reduce((sum, reel) => sum + (reel.view_count || 0), 0);
-    const reelViewBonus = Math.min(totalReelViews * 0.1, 300); // Cap at 300
-    
-    const totalReach = Math.round(followerReach + followingReach + postEngagementBonus + reelViewBonus);
-    return totalReach;
-  };
-
-  const calculateProfessionalScore = () => {
-    if (!profile) return 0;
-    
-    // Base score from professional title (60% of total)
-    const baseScore = getProfessionalBadge(profile.professional_title).score * 0.6;
-    
-    // Status bonuses
-    let statusBonus = 0;
-    if (userRoles.isFounder) statusBonus += 10;
-    if (userRoles.isVerified) statusBonus += 8;
-    
-    // Badge level bonus
-    const badgeBonus = {
-      bronze: 0,
-      silver: 5,
-      gold: 10,
-      platinum: 15
-    }[profile.badge_level as string] || 0;
-    
-    // Content quality score (based on engagement rate)
-    const avgPostEngagement = posts.length > 0 
-      ? posts.reduce((sum, post) => sum + (post.like_count || 0) + (post.comment_count || 0), 0) / posts.length 
-      : 0;
-    const engagementScore = Math.min(avgPostEngagement * 0.5, 10); // Cap at 10 points
-    
-    // Activity score (having diverse content)
-    let activityBonus = 0;
-    if (posts.length > 0) activityBonus += 3;
-    if (reels.length > 0) activityBonus += 3;
-    
-    const totalScore = Math.min(Math.round(baseScore + statusBonus + badgeBonus + engagementScore + activityBonus), 100);
-    return totalScore;
-  };
 
   if (!profile) return null;
 
@@ -695,7 +569,7 @@ const UserProfile = () => {
                     }}
                   >
                     <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Network Reach</span>
-                    <span className="text-sm font-semibold group-hover:scale-105 transition-transform">{calculateNetworkReach().toLocaleString()}</span>
+                    <span className="text-sm font-semibold group-hover:scale-105 transition-transform">{profile ? calculateNetworkReach(profile, posts, reels).toLocaleString() : 0}</span>
                   </div>
                   <div 
                     className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
@@ -705,7 +579,7 @@ const UserProfile = () => {
                     }}
                   >
                     <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Professional Score</span>
-                    <span className="text-sm font-semibold text-primary group-hover:scale-105 transition-transform">{calculateProfessionalScore()}/100</span>
+                    <span className="text-sm font-semibold text-primary group-hover:scale-105 transition-transform">{profile ? calculateProfessionalScore(profile, userRoles, posts, reels, []) : 0}/100</span>
                   </div>
                 </div>
               </div>
@@ -747,7 +621,7 @@ const UserProfile = () => {
         open={metricsDialogOpen}
         onOpenChange={setMetricsDialogOpen}
         metricType={selectedMetric}
-        currentValue={selectedMetric === "network" ? calculateNetworkReach() : calculateProfessionalScore()}
+        currentValue={selectedMetric === "network" ? (profile ? calculateNetworkReach(profile, posts, reels) : 0) : (profile ? calculateProfessionalScore(profile, userRoles, posts, reels, []) : 0)}
       />
     </div>
   );
