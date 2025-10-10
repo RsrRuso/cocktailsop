@@ -14,28 +14,4 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     persistSession: true,
     autoRefreshToken: true,
   },
-  global: {
-    headers: {
-      'x-client-info': 'supabase-js-web',
-    },
-    fetch: (url: RequestInfo | URL, options?: RequestInit) => {
-      // Add request compression and connection reuse
-      return fetch(url, {
-        ...options,
-        keepalive: true, // Reuse connections
-        headers: {
-          ...(options?.headers || {}),
-          'Accept-Encoding': 'gzip, deflate, br',
-        },
-      });
-    },
-  },
-  db: {
-    schema: 'public',
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
-    },
-  },
 });
