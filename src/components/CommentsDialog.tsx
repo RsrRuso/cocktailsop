@@ -49,9 +49,10 @@ interface CommentsDialogProps {
   postId: string;
   isReel?: boolean;
   onCommentAdded?: () => void;
+  onCommentDeleted?: () => void;
 }
 
-const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentAdded }: CommentsDialogProps) => {
+const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentAdded, onCommentDeleted }: CommentsDialogProps) => {
   const { user, profile } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -350,6 +351,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
     } else {
       console.log('Comment deleted successfully');
       toast.success("Comment deleted");
+      onCommentDeleted?.(); // Notify parent to decrement count
       
       // Decrement comment count on parent post/reel
       const { data: parent } = await supabase

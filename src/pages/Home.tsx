@@ -484,6 +484,14 @@ const Home = () => {
             setReels(reels.map(r => r.id === selectedPostId ? { ...r, comment_count: r.comment_count + 1 } : r));
           }
         }}
+        onCommentDeleted={() => {
+          const item = feed.find(f => f.id === selectedPostId);
+          if (item?.type === 'post') {
+            setPosts(posts.map(p => p.id === selectedPostId ? { ...p, comment_count: Math.max(0, p.comment_count - 1) } : p));
+          } else if (item?.type === 'reel') {
+            setReels(reels.map(r => r.id === selectedPostId ? { ...r, comment_count: Math.max(0, r.comment_count - 1) } : r));
+          }
+        }}
       />
 
       {fullscreenReel && (
