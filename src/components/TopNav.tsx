@@ -1,4 +1,4 @@
-import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette } from "lucide-react";
+import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -189,9 +189,27 @@ const TopNav = () => {
             </Avatar>
           </button>
 
-          <button className="glass-hover p-2.5 rounded-2xl">
-            <Menu className="w-5 h-5" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="glass-hover p-2.5 rounded-2xl">
+                <Menu className="w-5 h-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="glass w-56">
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <Calculator className="w-4 h-4 mr-2" />
+                Batch Calculator
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <BookOpen className="w-4 h-4 mr-2" />
+                Recipe Manager
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/tools")}>
+                <FileText className="w-4 h-4 mr-2" />
+                Reports & Analytics
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>
