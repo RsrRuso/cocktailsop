@@ -583,35 +583,22 @@ const StoryViewer = () => {
         <div className="w-1/3 h-full" onClick={goToNextMedia} />
       </div>
 
-      {/* Dialogs */}
-      {isOwnStory && (
-        <>
-          <StoryViewersDialog
-            open={showViewersDialog}
-            onOpenChange={setShowViewersDialog}
-            storyId={currentStory.id}
-          />
-          <StoryLikesDialog
-            open={showLikesDialog}
-            onOpenChange={setShowLikesDialog}
-            storyId={currentStory.id}
-          />
-          <StoryCommentsDialog
-            open={showCommentsDialog}
-            onOpenChange={setShowCommentsDialog}
-            storyId={currentStory.id}
-          />
-        </>
-      )}
-      
-      {/* Comments dialog for non-owners */}
-      {!isOwnStory && (
-        <StoryCommentsDialog
-          open={showCommentsDialog}
-          onOpenChange={setShowCommentsDialog}
-          storyId={currentStory.id}
-        />
-      )}
+      {/* Dialogs - Always render but control with open state */}
+      <StoryViewersDialog
+        open={showViewersDialog}
+        onOpenChange={setShowViewersDialog}
+        storyId={currentStory.id}
+      />
+      <StoryLikesDialog
+        open={showLikesDialog}
+        onOpenChange={setShowLikesDialog}
+        storyId={currentStory.id}
+      />
+      <StoryCommentsDialog
+        open={showCommentsDialog}
+        onOpenChange={setShowCommentsDialog}
+        storyId={currentStory.id}
+      />
     </div>
   );
 };

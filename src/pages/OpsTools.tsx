@@ -83,15 +83,6 @@ const OpsTools = () => {
     ],
     management: [
       {
-        name: "Admin Panel",
-        description: "Manage user verification and permissions",
-        details: "Control venue and employment verifications. Review verification requests, approve/reject submissions, and manage user roles.",
-        icon: Shield,
-        gradient: "from-yellow-400 to-orange-500",
-        premium: false,
-        path: "/admin-panel",
-      },
-      {
         name: "Recipe Vault",
         description: "Secure recipe storage and organization",
         details: "Your digital recipe book. Store specs, batch recipes, and production notes. Tag and categorize for quick access.",
