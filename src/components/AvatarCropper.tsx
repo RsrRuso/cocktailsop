@@ -85,12 +85,14 @@ export const AvatarCropper = ({ imageUrl, onCropComplete, onCancel }: AvatarCrop
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
+    e.preventDefault();
     setPosition({
       x: e.clientX - dragStart.x,
       y: e.clientY - dragStart.y,
@@ -98,6 +100,27 @@ export const AvatarCropper = ({ imageUrl, onCropComplete, onCancel }: AvatarCrop
   };
 
   const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    setIsDragging(true);
+    setDragStart({ x: touch.clientX - position.x, y: touch.clientY - position.y });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    setPosition({
+      x: touch.clientX - dragStart.x,
+      y: touch.clientY - dragStart.y,
+    });
+  };
+
+  const handleTouchEnd = () => {
     setIsDragging(false);
   };
 
@@ -160,16 +183,21 @@ export const AvatarCropper = ({ imageUrl, onCropComplete, onCancel }: AvatarCrop
         </div>
 
         <div
-          className="relative mx-auto"
-          style={{ width: 400, height: 400 }}
+          className="relative mx-auto select-none"
+          style={{ width: 400, height: 400, touchAction: 'none' }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <canvas
             ref={canvasRef}
-            className="rounded-full cursor-move border-4 border-primary/30 shadow-2xl"
+            className={`rounded-full border-4 border-primary/30 shadow-2xl transition-all ${
+              isDragging ? 'cursor-grabbing scale-[0.98]' : 'cursor-grab'
+            }`}
             style={{ width: 400, height: 400 }}
           />
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
