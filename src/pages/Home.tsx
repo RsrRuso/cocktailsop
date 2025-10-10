@@ -638,9 +638,9 @@ const Home = () => {
       </div>
 
       {/* Feed */}
-      {filteredFeed.length > 0 && (
-        <div className="space-y-6 px-4">
-          {filteredFeed.map((item) => (
+      <div className="space-y-6 px-4">
+        {filteredFeed.length > 0 ? (
+          filteredFeed.map((item) => (
             <div key={item.id} className="glass rounded-xl p-2 space-y-3 border border-border/50">
               {/* Header */}
               <div className="flex items-center gap-3 px-2 pt-2">
@@ -783,9 +783,31 @@ const Home = () => {
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        ) : (
+          // Loading skeletons
+          <>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="glass rounded-xl p-4 space-y-3 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-24 bg-muted rounded" />
+                    <div className="h-3 w-32 bg-muted rounded" />
+                  </div>
+                </div>
+                <div className="h-4 w-full bg-muted rounded" />
+                <div className="h-64 w-full bg-muted rounded-xl" />
+                <div className="flex gap-4">
+                  <div className="h-8 w-16 bg-muted rounded" />
+                  <div className="h-8 w-16 bg-muted rounded" />
+                  <div className="h-8 w-16 bg-muted rounded" />
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
 
       <ShareDialog
         open={shareDialogOpen}

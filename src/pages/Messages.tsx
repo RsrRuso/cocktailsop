@@ -28,9 +28,10 @@ const Messages = () => {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchConversations();
+    fetchConversations().finally(() => setIsLoading(false));
 
     let updateTimeout: NodeJS.Timeout;
     const debouncedFetch = () => {
@@ -163,7 +164,18 @@ const Messages = () => {
 
         {/* Conversations List */}
         <div className="space-y-2">
-          {conversations.length === 0 ? (
+          {isLoading ? (
+            // Loading skeletons
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="glass rounded-xl p-4 flex items-center gap-3 animate-pulse">
+                <div className="w-14 h-14 rounded-full bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-32 bg-muted rounded" />
+                  <div className="h-3 w-24 bg-muted rounded" />
+                </div>
+              </div>
+            ))
+          ) : conversations.length === 0 ? (
             <div className="glass rounded-2xl p-12 text-center space-y-4 mt-8">
               <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
                 <MessageCircle className="w-10 h-10 text-primary" />

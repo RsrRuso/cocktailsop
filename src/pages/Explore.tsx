@@ -12,9 +12,11 @@ const Explore = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"top" | "accounts" | "regions">("top");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([fetchExplorePosts(), fetchProfiles()]);
+    Promise.all([fetchExplorePosts(), fetchProfiles()])
+      .finally(() => setIsLoading(false));
   }, []);
 
   const fetchExplorePosts = async () => {
@@ -105,7 +107,13 @@ const Explore = () => {
         {/* Content Grid */}
         {activeTab === "top" && (
           <div className="grid grid-cols-3 gap-1">
-            {filteredPosts.map((post) => (
+            {isLoading ? (
+              // Loading skeletons
+              Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="aspect-square bg-muted rounded-lg animate-pulse" />
+              ))
+            ) : (
+              filteredPosts.map((post) => (
               <div
                 key={post.id}
                 className="aspect-square glass-hover cursor-pointer rounded-lg overflow-hidden"
@@ -124,13 +132,26 @@ const Explore = () => {
                   </div>
                 )}
               </div>
-            ))}
+            ))
+            )}
           </div>
         )}
 
         {activeTab === "accounts" && (
           <div className="space-y-3">
-            {filteredProfiles.map((profile) => (
+            {isLoading ? (
+              // Loading skeletons
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="glass rounded-2xl p-4 flex items-center gap-4 animate-pulse">
+                  <div className="w-14 h-14 rounded-full bg-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-muted rounded" />
+                    <div className="h-3 w-24 bg-muted rounded" />
+                  </div>
+                </div>
+              ))
+            ) : (
+              filteredProfiles.map((profile) => (
               <div
                 key={profile.id}
                 className="glass-hover rounded-2xl p-4 flex items-center gap-4 cursor-pointer"
@@ -151,7 +172,8 @@ const Explore = () => {
                   <p className="text-xs text-muted-foreground">followers</p>
                 </div>
               </div>
-            ))}
+            ))
+            )}
           </div>
         )}
 
