@@ -66,40 +66,38 @@ const StoryViewer = () => {
       trackView();
       checkIfLiked();
     }
+  }, [currentStoryIndex, stories.length, currentUserId]);
 
-    // Subscribe to story updates for realtime counts
-    if (stories[currentStoryIndex]?.id) {
-      const channel = supabase
-        .channel(`story-${stories[currentStoryIndex].id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'stories',
-            filter: `id=eq.${stories[currentStoryIndex].id}`
-          },
-          (payload) => {
-            if (payload.new && payload.eventType === 'UPDATE') {
-              const updatedStories = [...stories];
-              const newStory = payload.new as Story;
-              updatedStories[currentStoryIndex] = {
-                ...updatedStories[currentStoryIndex],
-                like_count: newStory.like_count,
-                comment_count: newStory.comment_count,
-                view_count: newStory.view_count
-              };
-              setStories(updatedStories);
-            }
-          }
-        )
-        .subscribe();
+  // Separate subscription effect - only depends on story ID
+  useEffect(() => {
+    const storyId = stories[currentStoryIndex]?.id;
+    if (!storyId) return;
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [currentStoryIndex, stories, currentUserId]);
+    const channel = supabase
+      .channel(`story-${storyId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'stories',
+          filter: `id=eq.${storyId}`
+        },
+        (payload) => {
+          const newStory = payload.new as Story;
+          setStories(prev => prev.map((s, i) => 
+            i === currentStoryIndex 
+              ? { ...s, like_count: newStory.like_count, comment_count: newStory.comment_count, view_count: newStory.view_count }
+              : s
+          ));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [stories[currentStoryIndex]?.id]);
 
   const fetchCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -341,16 +339,16 @@ const StoryViewer = () => {
 
     const storiesData = data as Story[];
     
-    // Preload all images immediately for instant display
-    storiesData.forEach(story => {
-      story.media_urls.forEach((url, index) => {
-        const mediaType = story.media_types?.[index];
+    // Only preload first story's media for instant display
+    if (storiesData[0]) {
+      storiesData[0].media_urls.forEach((url, index) => {
+        const mediaType = storiesData[0].media_types?.[index];
         if (!mediaType || mediaType.startsWith('image')) {
           const img = new Image();
           img.src = url;
         }
       });
-    });
+    }
 
     setStories(storiesData);
   };

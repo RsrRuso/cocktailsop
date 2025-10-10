@@ -150,44 +150,29 @@ const Home = () => {
 
     initializeData();
 
-    // Only subscribe to main data tables after initial load
+    // Debounced realtime subscriptions
+    let updateTimeout: NodeJS.Timeout;
+    const debouncedUpdate = (callback: () => void) => {
+      clearTimeout(updateTimeout);
+      updateTimeout = setTimeout(() => {
+        if (isMounted) callback();
+      }, 2000); // 2 second debounce
+    };
+
     const storiesChannel = supabase
       .channel('home-stories')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'stories'
-        },
-        () => fetchStories()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, () => debouncedUpdate(fetchStories))
       .subscribe();
 
     const feedChannel = supabase
       .channel('home-feed')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'posts'
-        },
-        () => refreshFeed()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'reels'
-        },
-        () => refreshFeed()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => debouncedUpdate(refreshFeed))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reels' }, () => debouncedUpdate(refreshFeed))
       .subscribe();
 
     return () => {
       isMounted = false;
+      clearTimeout(updateTimeout);
       supabase.removeChannel(storiesChannel);
       supabase.removeChannel(feedChannel);
     };

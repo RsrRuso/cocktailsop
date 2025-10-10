@@ -224,20 +224,29 @@ const Reels = () => {
           </div>
         </div>
       ) : (
-        <div className="h-full snap-y snap-mandatory overflow-y-scroll scrollbar-hide pt-16">
+        <div 
+          className="h-full snap-y snap-mandatory overflow-y-scroll scrollbar-hide pt-16"
+          onScroll={(e) => {
+            const scrollTop = e.currentTarget.scrollTop;
+            const windowHeight = window.innerHeight;
+            const newIndex = Math.round(scrollTop / windowHeight);
+            if (newIndex !== currentIndex) setCurrentIndex(newIndex);
+          }}
+        >
           {reels.map((reel, index) => (
             <div
               key={reel.id}
               className="h-screen snap-start relative flex items-center justify-center bg-black"
             >
-              {/* Video Player */}
+              {/* Video Player - Only autoplay visible reel */}
               <video
                 src={reel.video_url}
                 className="absolute inset-0 w-full h-full object-cover"
                 loop
                 playsInline
                 muted={!mutedVideos.has(reel.id)}
-                autoPlay
+                autoPlay={index === currentIndex}
+                preload={Math.abs(index - currentIndex) <= 1 ? "auto" : "none"}
               />
 
               {/* Mute/Unmute Button */}
