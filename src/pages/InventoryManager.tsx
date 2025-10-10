@@ -68,7 +68,7 @@ const InventoryManager = () => {
 
   const shareToWhatsApp = (message: string) => {
     const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+    window.location.href = `https://wa.me/?text=${encodedMessage}`;
   };
 
   const handleAddStore = async (e: React.FormEvent<HTMLFormElement>) => {
