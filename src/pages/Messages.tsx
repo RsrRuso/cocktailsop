@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MessageCircle, Send, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -30,6 +31,26 @@ const Messages = () => {
 
   useEffect(() => {
     fetchConversations().finally(() => setIsLoading(false));
+
+    // Set up realtime subscription for new messages
+    const channel = supabase
+      .channel('messages-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => {
+          fetchConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchConversations = async () => {
@@ -60,12 +81,25 @@ const Messages = () => {
         profilesData?.map(p => [p.id, p]) || []
       );
 
+      // Get unread counts for each conversation
+      const unreadCountsMap = new Map<string, number>();
+      for (const conv of data) {
+        const { count } = await supabase
+          .from("messages")
+          .select("*", { count: 'exact', head: true })
+          .eq("conversation_id", conv.id)
+          .eq("read", false)
+          .neq("sender_id", user.id);
+        
+        unreadCountsMap.set(conv.id, count || 0);
+      }
+
       const conversationsWithData = data.map((conv) => {
         const otherUserId = conv.participant_ids.find((id: string) => id !== user.id);
         return {
           ...conv,
           otherUser: profilesMap.get(otherUserId),
-          unreadCount: 0
+          unreadCount: unreadCountsMap.get(conv.id) || 0
         };
       });
 
@@ -155,7 +189,14 @@ const Messages = () => {
                     @{conversation.otherUser?.username || 'unknown'}
                   </p>
                 </div>
-                <Send className="w-5 h-5 text-muted-foreground" />
+                <div className="flex items-center gap-2">
+                  {conversation.unreadCount! > 0 && (
+                    <Badge variant="default" className="bg-primary">
+                      {conversation.unreadCount}
+                    </Badge>
+                  )}
+                  <Send className="w-5 h-5 text-muted-foreground" />
+                </div>
               </div>
             ))
           )}
