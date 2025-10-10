@@ -31,6 +31,7 @@ const EditProfile = () => {
     full_name: "",
     bio: "",
     professional_title: "",
+    region: "All",
   });
 
   useEffect(() => {
@@ -56,6 +57,7 @@ const EditProfile = () => {
         full_name: data.full_name || "",
         bio: data.bio || "",
         professional_title: data.professional_title || "",
+        region: data.region || "All",
       });
       setAvatarUrl(data.avatar_url || "");
       setCoverUrl(data.cover_url || "");
@@ -126,6 +128,7 @@ const EditProfile = () => {
         username: profile.username,
         full_name: profile.full_name,
         bio: profile.bio,
+        region: profile.region,
       };
 
       if (profile.professional_title) {
@@ -320,6 +323,27 @@ const EditProfile = () => {
                 <SelectItem value="manufacturer">Manufacturer</SelectItem>
                 <SelectItem value="distributor">Distributor</SelectItem>
                 <SelectItem value="investor">Investor</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Region</label>
+            <Select
+              value={profile.region}
+              onValueChange={(value) => setProfile({ ...profile, region: value })}
+            >
+              <SelectTrigger className="glass border-primary/20">
+                <SelectValue placeholder="Select your region" />
+              </SelectTrigger>
+              <SelectContent className="glass">
+                <SelectItem value="All">All Regions 🌐</SelectItem>
+                <SelectItem value="USA">USA 🇺🇸</SelectItem>
+                <SelectItem value="UK">UK 🇬🇧</SelectItem>
+                <SelectItem value="Europe">Europe 🇪🇺</SelectItem>
+                <SelectItem value="Asia">Asia 🌏</SelectItem>
+                <SelectItem value="Middle East">Middle East 🌍</SelectItem>
+                <SelectItem value="Africa">Africa 🌍</SelectItem>
               </SelectContent>
             </Select>
           </div>

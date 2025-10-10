@@ -338,6 +338,7 @@ export type Database = {
           professional_title:
             | Database["public"]["Enums"]["professional_title"]
             | null
+          region: string | null
           updated_at: string | null
           username: string
         }
@@ -355,6 +356,7 @@ export type Database = {
           professional_title?:
             | Database["public"]["Enums"]["professional_title"]
             | null
+          region?: string | null
           updated_at?: string | null
           username: string
         }
@@ -372,6 +374,7 @@ export type Database = {
           professional_title?:
             | Database["public"]["Enums"]["professional_title"]
             | null
+          region?: string | null
           updated_at?: string | null
           username?: string
         }

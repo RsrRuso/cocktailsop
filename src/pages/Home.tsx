@@ -41,6 +41,7 @@ interface Post {
     avatar_url: string | null;
     professional_title: string | null;
     badge_level: string;
+    region: string | null;
   };
 }
 
@@ -59,6 +60,7 @@ interface Reel {
     avatar_url: string | null;
     professional_title: string | null;
     badge_level: string;
+    region: string | null;
   };
 }
 
@@ -232,7 +234,7 @@ const Home = () => {
     try {
       const { data } = await supabase
         .from("posts")
-        .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level)")
+        .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
         .order("created_at", { ascending: false })
         .limit(20);
 
@@ -246,7 +248,7 @@ const Home = () => {
     try {
       const { data } = await supabase
         .from("reels")
-        .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level)")
+        .select("*, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
         .order("created_at", { ascending: false })
         .limit(20);
 
@@ -475,14 +477,9 @@ const Home = () => {
     { name: "Africa", flag: "🌍", gradient: "from-purple-600 to-pink-500" },
   ];
 
-  // Filter feed based on selected region
+  // Filter feed based on selected region using actual profile region data
   const filteredFeed = selectedRegion && selectedRegion !== "All" 
-    ? feed.filter(item => {
-        // For now, show a subset based on region selection
-        // In production, you would filter based on actual region data from profiles
-        const itemIndex = feed.indexOf(item);
-        return itemIndex % regions.length === regions.findIndex(r => r.name === selectedRegion);
-      })
+    ? feed.filter(item => item.profiles?.region === selectedRegion || item.profiles?.region === "All")
     : feed;
 
   return (
