@@ -94,6 +94,53 @@ export type Database = {
         }
         Relationships: []
       }
+      employment_verifications: {
+        Row: {
+          created_at: string | null
+          end_date: string | null
+          id: string
+          position: string
+          start_date: string
+          status: string
+          user_id: string
+          venue_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          position: string
+          start_date: string
+          status?: string
+          user_id: string
+          venue_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          position?: string
+          start_date?: string
+          status?: string
+          user_id?: string
+          venue_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employment_verifications_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipment: {
         Row: {
           area: string
@@ -871,7 +918,9 @@ export type Database = {
           id: string
           item_id: string
           quantity: number
+          received_at: string | null
           to_store_id: string
+          transfer_date: string | null
           transferred_by: string
           user_id: string
         }
@@ -881,7 +930,9 @@ export type Database = {
           id?: string
           item_id: string
           quantity: number
+          received_at?: string | null
           to_store_id: string
+          transfer_date?: string | null
           transferred_by: string
           user_id: string
         }
@@ -891,7 +942,9 @@ export type Database = {
           id?: string
           item_id?: string
           quantity?: number
+          received_at?: string | null
           to_store_id?: string
+          transfer_date?: string | null
           transferred_by?: string
           user_id?: string
         }
@@ -925,6 +978,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      venues: {
+        Row: {
+          address: string | null
+          city: string
+          contact_email: string | null
+          country: string
+          created_at: string | null
+          id: string
+          name: string
+          region: string
+          type: string
+          verified: boolean | null
+        }
+        Insert: {
+          address?: string | null
+          city: string
+          contact_email?: string | null
+          country?: string
+          created_at?: string | null
+          id?: string
+          name: string
+          region: string
+          type: string
+          verified?: boolean | null
+        }
+        Update: {
+          address?: string | null
+          city?: string
+          contact_email?: string | null
+          country?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          region?: string
+          type?: string
+          verified?: boolean | null
+        }
+        Relationships: []
       }
     }
     Views: {

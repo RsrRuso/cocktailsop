@@ -7,9 +7,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Wine, Briefcase, Warehouse, Truck, Building2, Star, Heart, MessageCircle, Volume2, VolumeX, Play } from "lucide-react";
+import { ArrowLeft, Wine, Briefcase, Warehouse, Truck, Building2, Star, Heart, MessageCircle, Volume2, VolumeX, Play, Award, TrendingUp, Target, CheckCircle } from "lucide-react";
 import FollowersDialog from "@/components/FollowersDialog";
 import FollowingDialog from "@/components/FollowingDialog";
+import { VenueVerification } from "@/components/VenueVerification";
 
 interface Profile {
   username: string;
@@ -432,11 +433,43 @@ const UserProfile = () => {
           </TabsContent>
 
           <TabsContent value="growth" className="mt-4 space-y-4">
+            {/* Professional Growth Guidelines */}
+            <div className="glass rounded-xl p-4 space-y-4 border border-border/50 bg-gradient-to-br from-green-500/10 to-emerald-500/10">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-500" />
+                <h3 className="font-bold text-lg">Professional Growth Guidelines</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-medium text-sm">Verify Your Work Experience</p>
+                    <p className="text-xs text-muted-foreground">Add venues where you've worked to build credibility</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Target className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-medium text-sm">Build Your Network</p>
+                    <p className="text-xs text-muted-foreground">Connect with industry professionals to increase your reach</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Award className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-medium text-sm">Showcase Your Skills</p>
+                    <p className="text-xs text-muted-foreground">Share posts and reels demonstrating your expertise</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Professional Badge with 3D Green Effect */}
             <div className="glass rounded-xl p-4 space-y-6 border border-border/50">
               <div>
-                <h3 className="font-bold text-2xl mb-2">Professional Badge System</h3>
+                <h3 className="font-bold text-2xl mb-2">Professional Badge</h3>
                 <p className="text-sm text-muted-foreground">
-                  Dynamic badges that evolve with career achievements and professional growth.
+                  Your badge evolves with verified experience and achievements
                 </p>
               </div>
 
@@ -445,35 +478,58 @@ const UserProfile = () => {
                 const BadgeIcon = badge.icon;
                 return (
                   <div className="relative">
-                    <div className={`glass-hover rounded-3xl p-8 bg-gradient-to-br ${badge.gradient} relative overflow-hidden group cursor-pointer transition-all duration-300 hover:scale-105`}>
+                    <div className="relative rounded-3xl p-8 bg-gradient-to-br from-green-600 via-emerald-500 to-green-400 overflow-hidden group cursor-pointer transition-all duration-500 hover:scale-105 hover:shadow-2xl"
+                         style={{
+                           boxShadow: '0 20px 60px rgba(34, 197, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+                           transform: 'perspective(1000px) rotateX(2deg)',
+                         }}>
+                      {/* 3D Effect Layers */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-50" />
+                      <div className="absolute -inset-4 bg-gradient-to-r from-green-400/30 via-emerald-400/30 to-green-500/30 blur-xl group-hover:blur-2xl transition-all duration-500" 
+                           style={{ zIndex: -1 }} />
+                      
+                      {/* Stars */}
                       <div className="absolute top-4 right-4 flex gap-2">
                         {badge.score >= 90 && (
                           <>
-                            <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg"
+                                 style={{ boxShadow: '0 4px 12px rgba(250, 204, 21, 0.6)' }}>
                               <Star className="w-4 h-4 fill-yellow-900 text-yellow-900" />
                             </div>
-                            <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg"
+                                 style={{ boxShadow: '0 4px 12px rgba(250, 204, 21, 0.6)' }}>
                               <Star className="w-4 h-4 fill-yellow-900 text-yellow-900" />
                             </div>
                           </>
                         )}
                         {badge.score >= 85 && badge.score < 90 && (
-                          <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg"
+                               style={{ boxShadow: '0 4px 12px rgba(250, 204, 21, 0.6)' }}>
                             <Star className="w-4 h-4 fill-yellow-900 text-yellow-900" />
                           </div>
                         )}
                       </div>
                       
-                      <div className="flex flex-col items-center">
-                        <div className="w-32 h-32 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4 shadow-2xl">
-                          <BadgeIcon className="w-16 h-16 text-white" strokeWidth={1.5} />
+                      <div className="flex flex-col items-center relative">
+                        {/* Icon Container with 3D Effect */}
+                        <div className="w-32 h-32 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center mb-4 relative"
+                             style={{
+                               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.5)',
+                               transform: 'translateZ(20px)',
+                             }}>
+                          <BadgeIcon className="w-16 h-16 text-white drop-shadow-lg" strokeWidth={1.5} />
                         </div>
                         
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-lg">
-                          <span className="text-2xl font-bold text-white">{badge.score}</span>
+                        {/* Score Badge with 3D Green Effect */}
+                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center relative group-hover:scale-110 transition-transform duration-300"
+                             style={{
+                               boxShadow: '0 10px 25px rgba(34, 197, 94, 0.5), inset 0 -2px 4px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.3)',
+                               transform: 'translateZ(30px)',
+                             }}>
+                          <span className="text-3xl font-bold text-white drop-shadow-lg">{badge.score}</span>
                         </div>
                         
-                        <h4 className="text-2xl font-bold text-white mt-4 capitalize">
+                        <h4 className="text-2xl font-bold text-white mt-4 capitalize drop-shadow-lg">
                           {profile.professional_title.replace(/_/g, " ")}
                         </h4>
                       </div>
@@ -501,6 +557,11 @@ const UserProfile = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Venue Verification */}
+            <div className="glass rounded-xl p-4 space-y-4 border border-border/50">
+              <VenueVerification userId={userId || ""} />
             </div>
           </TabsContent>
         </Tabs>
