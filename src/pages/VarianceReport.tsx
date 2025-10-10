@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft, Download, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import "jspdf-autotable";
 
 interface VarianceData {
   item: string;
@@ -83,7 +83,7 @@ const VarianceReport = () => {
     doc.text(`Items Over: ${overages}`, 14, 51);
     doc.text(`Items Under: ${shortages}`, 14, 57);
     
-    autoTable(doc, {
+    (doc as any).autoTable({
       startY: 65,
       head: [['Item', 'Expected', 'Actual', 'Variance', 'Variance %', 'Cost Impact']],
       body: variances.map(item => [

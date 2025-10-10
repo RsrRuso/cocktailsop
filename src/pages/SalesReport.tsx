@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft, Download, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import "jspdf-autotable";
 
 interface SalesData {
   item: string;
@@ -88,7 +88,7 @@ const SalesReport = () => {
     doc.text(`Profit Margin: ${((totalProfit / totalRevenue) * 100).toFixed(1)}%`, 14, 69);
     
     // Table
-    autoTable(doc, {
+    (doc as any).autoTable({
       startY: 78,
       head: [['Item', 'Category', 'Units', 'Revenue', 'Cost', 'Profit']],
       body: reportData.map(item => [

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Download } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import "jspdf-autotable";
 
 interface InventoryItem {
   name: string;
@@ -90,7 +90,7 @@ const InventoryValuationReport = () => {
       yPos += 5;
     });
     
-    autoTable(doc, {
+    (doc as any).autoTable({
       startY: yPos + 5,
       head: [['Item', 'Category', 'Quantity', 'Cost/Unit', 'Total Value']],
       body: inventory.map(item => [
