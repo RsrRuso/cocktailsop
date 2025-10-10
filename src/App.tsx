@@ -35,6 +35,9 @@ const WastageTracker = lazy(() => import("./pages/WastageTracker"));
 const MenuEngineering = lazy(() => import("./pages/MenuEngineering"));
 const StockAudit = lazy(() => import("./pages/StockAudit"));
 const YieldCalculator = lazy(() => import("./pages/YieldCalculator"));
+const SalesReport = lazy(() => import("./pages/SalesReport"));
+const InventoryValuationReport = lazy(() => import("./pages/InventoryValuationReport"));
+const VarianceReport = lazy(() => import("./pages/VarianceReport"));
 const RecipeVault = lazy(() => import("./pages/RecipeVault"));
 const CocktailSpecs = lazy(() => import("./pages/CocktailSpecs"));
 const Explore = lazy(() => import("./pages/Explore"));
@@ -91,6 +94,9 @@ const App = () => (
           <Route path="/menu-engineering" element={<MenuEngineering />} />
           <Route path="/stock-audit" element={<StockAudit />} />
           <Route path="/yield-calculator" element={<YieldCalculator />} />
+          <Route path="/sales-report" element={<SalesReport />} />
+          <Route path="/inventory-valuation-report" element={<InventoryValuationReport />} />
+          <Route path="/variance-report" element={<VarianceReport />} />
           <Route path="/recipe-vault" element={<RecipeVault />} />
           <Route path="/cocktail-specs" element={<CocktailSpecs />} />
           <Route path="/explore" element={<Explore />} />

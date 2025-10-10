@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield, DollarSign, Trash2, Target, ClipboardCheck, Percent } from "lucide-react";
+import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield, DollarSign, Trash2, Target, ClipboardCheck, Percent, FileBarChart, Download } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
@@ -11,6 +11,59 @@ const OpsTools = () => {
   const [activeCategory, setActiveCategory] = useState("mixing");
 
   const tools = {
+    reports: [
+      {
+        name: "Sales Report",
+        description: "Comprehensive sales performance analysis",
+        details: "Generate detailed sales reports with revenue, profit margins, and category breakdowns. Export as PDF for stakeholder review.",
+        icon: FileBarChart,
+        gradient: "from-green-600 to-emerald-500",
+        premium: false,
+        path: "/sales-report",
+      },
+      {
+        name: "Inventory Valuation",
+        description: "Complete inventory value assessment",
+        details: "Calculate total inventory value by category. Track stock levels and their monetary worth for financial reporting.",
+        icon: Package,
+        gradient: "from-blue-600 to-cyan-500",
+        premium: false,
+        path: "/inventory-valuation-report",
+      },
+      {
+        name: "Variance Report",
+        description: "Expected vs actual usage analysis",
+        details: "Identify discrepancies between expected and actual inventory usage. Track waste, theft, and efficiency issues.",
+        icon: TrendingUp,
+        gradient: "from-orange-600 to-red-500",
+        premium: false,
+        path: "/variance-report",
+      },
+      {
+        name: "Pour Cost Report",
+        description: "Drink profitability analysis",
+        details: "Monitor pour cost percentages across all drinks. Identify opportunities to improve margins and pricing strategies.",
+        icon: DollarSign,
+        gradient: "from-purple-600 to-pink-500",
+        premium: true,
+      },
+      {
+        name: "Waste Analysis Report",
+        description: "Waste tracking and cost analysis",
+        details: "Comprehensive wastage reporting by category, reason, and cost impact. Identify patterns to reduce operational losses.",
+        icon: Trash2,
+        gradient: "from-red-600 to-orange-500",
+        premium: true,
+      },
+      {
+        name: "Temperature Compliance",
+        description: "HACCP compliance report",
+        details: "Export temperature logs for health inspections. Prove compliance with food safety regulations.",
+        icon: ThermometerSnowflake,
+        gradient: "from-cyan-600 to-blue-500",
+        premium: true,
+      },
+    ],
     mixing: [
       {
         name: "Batch Calculator Pro",
@@ -193,8 +246,15 @@ const OpsTools = () => {
         </div>
 
         {/* Category Tabs */}
-        <Tabs defaultValue="mixing" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 glass h-auto p-1">
+        <Tabs defaultValue="reports" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 glass h-auto p-1">
+            <TabsTrigger 
+              value="reports"
+              className="data-[state=active]:glow-primary data-[state=active]:text-primary rounded-xl py-3"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Reports
+            </TabsTrigger>
             <TabsTrigger 
               value="mixing"
               className="data-[state=active]:glow-primary data-[state=active]:text-primary rounded-xl py-3"
@@ -217,6 +277,35 @@ const OpsTools = () => {
               Management
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="reports" className="mt-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {tools.reports.map((tool) => {
+                const Icon = tool.icon;
+                return (
+                  <button
+                    key={tool.name}
+                    onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
+                    className="glass-hover rounded-2xl p-6 text-left space-y-3 relative overflow-hidden group transition-all duration-300 hover:scale-[1.02]"
+                  >
+                    {tool.premium && (
+                      <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-xs font-bold text-white shadow-lg">
+                        PRO
+                      </div>
+                    )}
+                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow-lg`}>
+                      <Icon className="w-7 h-7 text-white" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg mb-1">{tool.name}</h3>
+                      <p className="text-sm text-muted-foreground leading-snug mb-2">{tool.description}</p>
+                      <p className="text-xs text-muted-foreground/70 leading-relaxed">{(tool as any).details}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </TabsContent>
 
           <TabsContent value="mixing" className="mt-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
