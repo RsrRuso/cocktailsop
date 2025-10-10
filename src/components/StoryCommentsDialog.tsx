@@ -115,62 +115,59 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-md h-[85vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-3 border-b">
           <DialogTitle className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5" />
-            Story Comments
+            Comments
           </DialogTitle>
           <DialogDescription>
             {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1 px-6">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No comments yet. Be the first to comment!
+            <div className="text-center py-12 text-muted-foreground">
+              <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p>No comments yet</p>
+              <p className="text-sm">Be the first to comment!</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 py-4">
               {comments.map((comment) => (
                 <div
                   key={comment.id}
-                  className="flex gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                  className="flex gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors"
                 >
-                  <Avatar className="w-10 h-10">
+                  <Avatar className="w-9 h-9 flex-shrink-0">
                     <AvatarImage src={comment.profiles.avatar_url || undefined} />
                     <AvatarFallback>{comment.profiles.username[0]}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="font-medium text-sm">{comment.profiles.full_name}</p>
+                        <p className="font-semibold text-sm">{comment.profiles.full_name}</p>
                         <p className="text-xs text-muted-foreground">
-                          @{comment.profiles.username}
+                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                        </span>
-                        {comment.user_id === currentUserId && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => handleDeleteComment(comment.id)}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
+                      {comment.user_id === currentUserId && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => handleDeleteComment(comment.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                     </div>
-                    <p className="text-sm mt-1 break-words">{comment.content}</p>
+                    <p className="text-sm mt-1.5 break-words leading-relaxed">{comment.content}</p>
                   </div>
                 </div>
               ))}
@@ -178,15 +175,22 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
           )}
         </ScrollArea>
 
-        <form onSubmit={handleSubmitComment} className="flex gap-2 pt-4 border-t">
+        <form onSubmit={handleSubmitComment} className="flex gap-2 p-4 border-t bg-background/95 backdrop-blur">
           <Input
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Add a comment..."
+            placeholder="Write a comment..."
             disabled={submitting}
-            className="flex-1"
+            className="flex-1 h-11 bg-muted/50 border-0 focus-visible:ring-1"
+            autoComplete="off"
+            autoFocus
           />
-          <Button type="submit" size="icon" disabled={submitting || !newComment.trim()}>
+          <Button 
+            type="submit" 
+            size="icon" 
+            disabled={submitting || !newComment.trim()}
+            className="h-11 w-11 glow-primary"
+          >
             <Send className="w-4 h-4" />
           </Button>
         </form>
