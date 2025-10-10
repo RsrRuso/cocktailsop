@@ -66,9 +66,45 @@ const Reels = () => {
       )
       .subscribe();
 
+    // Real-time for reel likes
+    const reelLikesChannel = supabase
+      .channel('reels-page-likes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reel_likes'
+        },
+        () => {
+          clearTimeout(updateTimeout);
+          updateTimeout = setTimeout(() => {
+            fetchReels();
+            fetchLikedReels();
+          }, 1000);
+        }
+      )
+      .subscribe();
+
+    // Real-time for reel comments
+    const reelCommentsChannel = supabase
+      .channel('reels-page-comments')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reel_comments'
+        },
+        debouncedFetch
+      )
+      .subscribe();
+
     return () => {
       clearTimeout(updateTimeout);
       supabase.removeChannel(reelsChannel);
+      supabase.removeChannel(reelLikesChannel);
+      supabase.removeChannel(reelCommentsChannel);
     };
   }, []);
 

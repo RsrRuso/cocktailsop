@@ -173,6 +173,53 @@ const Home = () => {
       )
       .subscribe();
 
+    // Real-time for post comments
+    const postCommentsChannel = supabase
+      .channel('home-post-comments')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'post_comments'
+        },
+        () => debouncedUpdate(fetchPosts)
+      )
+      .subscribe();
+
+    // Real-time for reel likes
+    const reelLikesChannel = supabase
+      .channel('home-reel-likes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reel_likes'
+        },
+        () => {
+          debouncedUpdate(() => {
+            fetchReels();
+            fetchLikedReels();
+          });
+        }
+      )
+      .subscribe();
+
+    // Real-time for reel comments
+    const reelCommentsChannel = supabase
+      .channel('home-reel-comments')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reel_comments'
+        },
+        () => debouncedUpdate(fetchReels)
+      )
+      .subscribe();
+
     return () => {
       isMounted = false;
       clearTimeout(updateTimeout);
@@ -180,6 +227,9 @@ const Home = () => {
       supabase.removeChannel(postsChannel);
       supabase.removeChannel(reelsChannel);
       supabase.removeChannel(likesChannel);
+      supabase.removeChannel(postCommentsChannel);
+      supabase.removeChannel(reelLikesChannel);
+      supabase.removeChannel(reelCommentsChannel);
     };
   }, []);
 
