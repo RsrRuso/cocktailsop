@@ -5,6 +5,40 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { z } from "zod";
+
+// Validation schemas
+const signUpSchema = z.object({
+  email: z.string()
+    .email('Invalid email format')
+    .max(255, 'Email too long')
+    .toLowerCase(),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password too long')
+    .regex(/[A-Z]/, 'Must contain uppercase letter')
+    .regex(/[a-z]/, 'Must contain lowercase letter')
+    .regex(/[0-9]/, 'Must contain number')
+    .regex(/[^A-Za-z0-9]/, 'Must contain special character'),
+  username: z.string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username too long')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers, and underscore allowed'),
+  fullName: z.string()
+    .trim()
+    .min(1, 'Name is required')
+    .max(100, 'Name too long')
+    .regex(/^[a-zA-Z\s'-]+$/, 'Invalid characters in name')
+});
+
+const signInSchema = z.object({
+  email: z.string()
+    .email('Invalid email format')
+    .max(255, 'Email too long'),
+  password: z.string()
+    .min(1, 'Password is required')
+    .max(128, 'Password too long')
+});
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -21,13 +55,21 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        // Validate signup inputs
+        const validated = signUpSchema.parse({
           email,
           password,
+          username,
+          fullName
+        });
+
+        const { error } = await supabase.auth.signUp({
+          email: validated.email,
+          password: validated.password,
           options: {
             data: {
-              full_name: fullName,
-              username: username,
+              full_name: validated.fullName,
+              username: validated.username,
             },
           },
         });
@@ -35,16 +77,26 @@ const Auth = () => {
         toast.success("Account created! Welcome to SpecVerse");
         navigate("/home");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        // Validate signin inputs
+        const validated = signInSchema.parse({
           email,
-          password,
+          password
+        });
+
+        const { error } = await supabase.auth.signInWithPassword({
+          email: validated.email,
+          password: validated.password,
         });
         if (error) throw error;
         toast.success("Welcome back!");
         navigate("/home");
       }
     } catch (error: any) {
-      toast.error(error.message);
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error(error.message || 'Authentication failed');
+      }
     } finally {
       setLoading(false);
     }

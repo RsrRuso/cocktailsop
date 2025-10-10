@@ -47,6 +47,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "batch_calculations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       conversations: {
@@ -202,10 +209,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "follows_following_id_fkey"
             columns: ["following_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -347,6 +368,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       notifications: {
@@ -380,6 +408,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -495,6 +530,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -634,6 +676,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "recipes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       reel_comments: {
@@ -686,6 +735,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reel_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       reel_likes: {
@@ -720,6 +776,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reel_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -766,6 +829,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reels_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       reports: {
@@ -796,6 +866,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -864,6 +941,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stories_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -937,6 +1021,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "story_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       story_views: {
@@ -971,6 +1062,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1009,6 +1107,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1147,8 +1252,10 @@ export type Database = {
           contact_email: string | null
           country: string
           created_at: string | null
+          created_by: string | null
           id: string
           name: string
+          owner_id: string | null
           region: string
           type: string
           verified: boolean | null
@@ -1159,8 +1266,10 @@ export type Database = {
           contact_email?: string | null
           country?: string
           created_at?: string | null
+          created_by?: string | null
           id?: string
           name: string
+          owner_id?: string | null
           region: string
           type: string
           verified?: boolean | null
@@ -1171,8 +1280,10 @@ export type Database = {
           contact_email?: string | null
           country?: string
           created_at?: string | null
+          created_by?: string | null
           id?: string
           name?: string
+          owner_id?: string | null
           region?: string
           type?: string
           verified?: boolean | null
@@ -1181,7 +1292,87 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          avatar_url: string | null
+          badge_level: Database["public"]["Enums"]["badge_level"] | null
+          bio: string | null
+          cover_url: string | null
+          created_at: string | null
+          follower_count: number | null
+          following_count: number | null
+          full_name: string | null
+          id: string | null
+          is_founder: boolean | null
+          is_verified: boolean | null
+          phone: string | null
+          post_count: number | null
+          professional_title:
+            | Database["public"]["Enums"]["professional_title"]
+            | null
+          region: string | null
+          show_phone: boolean | null
+          show_website: boolean | null
+          show_whatsapp: boolean | null
+          updated_at: string | null
+          username: string | null
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          badge_level?: Database["public"]["Enums"]["badge_level"] | null
+          bio?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          follower_count?: number | null
+          following_count?: number | null
+          full_name?: string | null
+          id?: string | null
+          is_founder?: boolean | null
+          is_verified?: boolean | null
+          phone?: never
+          post_count?: number | null
+          professional_title?:
+            | Database["public"]["Enums"]["professional_title"]
+            | null
+          region?: string | null
+          show_phone?: boolean | null
+          show_website?: boolean | null
+          show_whatsapp?: boolean | null
+          updated_at?: string | null
+          username?: string | null
+          website?: never
+          whatsapp?: never
+        }
+        Update: {
+          avatar_url?: string | null
+          badge_level?: Database["public"]["Enums"]["badge_level"] | null
+          bio?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          follower_count?: number | null
+          following_count?: number | null
+          full_name?: string | null
+          id?: string | null
+          is_founder?: boolean | null
+          is_verified?: boolean | null
+          phone?: never
+          post_count?: number | null
+          professional_title?:
+            | Database["public"]["Enums"]["professional_title"]
+            | null
+          region?: string | null
+          show_phone?: boolean | null
+          show_website?: boolean | null
+          show_whatsapp?: boolean | null
+          updated_at?: string | null
+          username?: string | null
+          website?: never
+          whatsapp?: never
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_notification: {
