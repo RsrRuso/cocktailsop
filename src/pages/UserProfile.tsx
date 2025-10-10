@@ -13,6 +13,7 @@ import FollowingDialog from "@/components/FollowingDialog";
 import { VenueVerification } from "@/components/VenueVerification";
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CareerMetricsDialog from "@/components/CareerMetricsDialog";
+import AvatarClickMenu from "@/components/AvatarClickMenu";
 
 interface Profile {
   username: string;
@@ -61,6 +62,7 @@ const UserProfile = () => {
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [metricsDialogOpen, setMetricsDialogOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<"network" | "professional" | null>(null);
+  const [hasStory, setHasStory] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -68,8 +70,22 @@ const UserProfile = () => {
       checkFollowStatus();
       fetchPosts();
       fetchReels();
+      checkForStory();
     }
   }, [userId]);
+
+  const checkForStory = async () => {
+    if (!userId) return;
+
+    const { data } = await supabase
+      .from("stories")
+      .select("id")
+      .eq("user_id", userId)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+
+    setHasStory(!!data);
+  };
 
   const fetchProfile = async () => {
     const { data } = await supabase
@@ -328,10 +344,17 @@ const UserProfile = () => {
         <div className="glass rounded-xl p-4 space-y-6 border border-border/50">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <Avatar className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)}`}>
-                <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl">{profile.username[0]}</AvatarFallback>
-              </Avatar>
+              <AvatarClickMenu
+                userId={userId!}
+                avatarUrl={profile.avatar_url}
+                username={profile.username}
+                hasStory={hasStory}
+              >
+                <Avatar className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)} cursor-pointer hover:scale-105 transition-transform`}>
+                  <AvatarImage src={profile.avatar_url || undefined} />
+                  <AvatarFallback className="text-2xl">{profile.username[0]}</AvatarFallback>
+                </Avatar>
+              </AvatarClickMenu>
               <div>
                 <h2 className="text-2xl font-bold">{profile.full_name}</h2>
                 <p className="text-muted-foreground">@{profile.username}</p>
