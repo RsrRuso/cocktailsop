@@ -75,7 +75,12 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
               table: isReel ? 'reel_comments' : 'post_comments',
               filter: isReel ? `reel_id=eq.${postId}` : `post_id=eq.${postId}`
             },
-            () => fetchComments()
+            (payload) => {
+              // Only refetch if the new comment is from another user
+              if (payload.new && (payload.new as any).user_id !== user?.id) {
+                fetchComments();
+              }
+            }
           )
           .subscribe();
 
@@ -227,6 +232,27 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
           if (replyId) setReplyingTo(replyId);
         } else if (data && data.length > 0) {
           console.log('Comment posted');
+          // Replace temp comment with real one from database
+          setComments(prev => {
+            const replaceTemp = (comments: Comment[]): Comment[] => {
+              return comments.map(c => {
+                if (c.id === tempComment.id) {
+                  const dbComment = data[0] as any;
+                  return { 
+                    ...dbComment, 
+                    reactions: (dbComment.reactions || []) as Reaction[],
+                    profiles: tempComment.profiles, 
+                    replies: [] 
+                  };
+                }
+                if (c.replies && c.replies.length > 0) {
+                  return { ...c, replies: replaceTemp(c.replies) };
+                }
+                return c;
+              });
+            };
+            return replaceTemp(prev);
+          });
         }
       } catch (err) {
         console.error('Comment failed');
