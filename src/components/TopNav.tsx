@@ -189,90 +189,12 @@ const TopNav = () => {
             </Avatar>
           </button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="glass-hover p-2.5 rounded-2xl">
-                <Menu className="w-5 h-5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="glass w-64 max-h-96 overflow-y-auto">
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                Professional Tools
-              </div>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <Calculator className="w-4 h-4 mr-2" />
-                Batch Calculator
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <BookOpen className="w-4 h-4 mr-2" />
-                Recipe Manager
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <FileText className="w-4 h-4 mr-2" />
-                Reports & Analytics
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <Package className="w-4 h-4 mr-2" />
-                Inventory Management
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <DollarSign className="w-4 h-4 mr-2" />
-                Cost Calculator
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <ClipboardCheck className="w-4 h-4 mr-2" />
-                Quality Control
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <Shield className="w-4 h-4 mr-2" />
-                Compliance Tracker
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <Users className="w-4 h-4 mr-2" />
-                Staff Scheduler
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                Order Manager
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <Megaphone className="w-4 h-4 mr-2" />
-                Marketing Planner
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <Wrench className="w-4 h-4 mr-2" />
-                Equipment Log
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <Phone className="w-4 h-4 mr-2" />
-                Supplier Manager
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <Calendar className="w-4 h-4 mr-2" />
-                Seasonal Planner
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <Apple className="w-4 h-4 mr-2" />
-                Nutrition Calculator
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <Trash2 className="w-4 h-4 mr-2" />
-                Waste Tracker
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <GraduationCap className="w-4 h-4 mr-2" />
-                Training Resources
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <Receipt className="w-4 h-4 mr-2" />
-                Invoice Generator
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/tools")}>
-                <PartyPopper className="w-4 h-4 mr-2" />
-                Event Booking
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <button 
+            onClick={() => navigate("/ops-tools")}
+            className="glass-hover px-3 py-2 rounded-2xl font-semibold text-sm"
+          >
+            OPS
+          </button>
         </div>
       </div>
     </div>
