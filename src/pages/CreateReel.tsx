@@ -107,22 +107,20 @@ const CreateReel = () => {
       setUploadProgress(20);
       const fileExt = selectedVideo.name.split(".").pop();
       const videoFileName = `${user.id}/${Date.now()}.${fileExt}`;
-      const videoBlob = await fetch(previewUrl).then((res) => res.blob());
 
-      // Stage 3: Upload video to storage
+      // Stage 3: Upload video to storage with real progress tracking
       setUploadStage("Uploading video");
-      setUploadProgress(30);
       
       const { data: videoData, error: videoError } = await supabase.storage
         .from("reels")
-        .upload(videoFileName, videoBlob, {
+        .upload(videoFileName, selectedVideo, {
           contentType: selectedVideo.type,
           upsert: false,
         });
 
       if (videoError) throw videoError;
 
-      setUploadProgress(60);
+      setUploadProgress(65);
       setUploadStage("Processing video");
 
       const { data: { publicUrl: videoUrl } } = supabase.storage
@@ -131,7 +129,7 @@ const CreateReel = () => {
 
       // Stage 4: Upload thumbnail if generated
       setUploadStage("Uploading thumbnail");
-      setUploadProgress(70);
+      setUploadProgress(75);
       
       let thumbnailPublicUrl = videoUrl;
       if (thumbnail) {
@@ -155,7 +153,7 @@ const CreateReel = () => {
 
       // Stage 5: Save to database
       setUploadStage("Saving reel");
-      setUploadProgress(85);
+      setUploadProgress(90);
 
       const { error: dbError } = await supabase.from("reels").insert({
         user_id: user.id,
