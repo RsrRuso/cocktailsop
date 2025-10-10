@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText } from "lucide-react";
+import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
@@ -74,6 +74,14 @@ const OpsTools = () => {
       },
     ],
     management: [
+      {
+        name: "Admin Panel",
+        description: "Manage verification status",
+        icon: Shield,
+        gradient: "from-yellow-400 to-orange-500",
+        premium: false,
+        path: "/admin-panel",
+      },
       {
         name: "Recipe Vault",
         description: "Store and organize recipes",
@@ -218,7 +226,7 @@ const OpsTools = () => {
                 return (
                   <button
                     key={tool.name}
-                    onClick={() => handleToolClick(tool.name, tool.premium)}
+                    onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
                     className="glass-hover rounded-2xl p-6 text-left space-y-4 relative overflow-hidden group transition-all duration-300 hover:scale-105"
                   >
                     {tool.premium && (
