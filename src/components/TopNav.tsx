@@ -129,11 +129,41 @@ const TopNav = () => {
     <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20">
       <div className="flex items-center justify-between px-4 py-3">
         {currentUser?.is_founder ? (
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 blur-lg opacity-80 group-hover:opacity-100 transition-opacity animate-pulse" />
-            <div className="relative w-12 h-12 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 flex items-center justify-center rounded-full shadow-2xl group-hover:scale-110 transition-transform border-2 border-yellow-200">
-              <BadgeCheck className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={3} fill="currentColor" />
+          <div className="relative group cursor-pointer">
+            {/* Outer glow layers */}
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 blur-xl opacity-60 group-hover:opacity-90 transition-all duration-500 animate-pulse" />
+            <div className="absolute inset-0 bg-gradient-to-tl from-blue-300 via-cyan-400 to-purple-500 blur-lg opacity-40 group-hover:opacity-70 transition-all duration-500" />
+            
+            {/* Diamond container */}
+            <div className="relative w-14 h-14 transform rotate-45 group-hover:rotate-[50deg] transition-all duration-500">
+              {/* Diamond background with gradient */}
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-cyan-300 via-blue-400 to-purple-500 shadow-2xl">
+                {/* Inner shine effect */}
+                <div className="absolute inset-[2px] rounded-xl bg-gradient-to-br from-blue-50 via-cyan-100 to-blue-200 opacity-30" />
+                {/* Top facet highlight */}
+                <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/50 to-transparent rounded-t-xl" />
+                {/* Center sparkle */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full shadow-lg group-hover:scale-150 transition-transform duration-300" />
+                </div>
+              </div>
+              
+              {/* Badge icon */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <BadgeCheck 
+                  className="w-8 h-8 text-white drop-shadow-2xl -rotate-45 group-hover:-rotate-[50deg] transition-all duration-500" 
+                  strokeWidth={2.5} 
+                  fill="rgba(255,255,255,0.3)"
+                />
+              </div>
+              
+              {/* Edge highlights */}
+              <div className="absolute inset-0 rounded-xl border-[3px] border-white/40 group-hover:border-white/60 transition-colors" />
             </div>
+            
+            {/* Sparkle effects */}
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity animate-ping" />
+            <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-blue-300 rounded-full opacity-0 group-hover:opacity-100 transition-opacity animate-ping delay-75" />
           </div>
         ) : currentUser?.is_verified && (
           <div className="relative group">
