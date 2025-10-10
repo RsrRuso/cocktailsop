@@ -510,6 +510,8 @@ export type Database = {
           following_count: number | null
           full_name: string
           id: string
+          is_founder: boolean | null
+          is_verified: boolean | null
           phone: string | null
           post_count: number | null
           professional_title:
@@ -534,6 +536,8 @@ export type Database = {
           following_count?: number | null
           full_name: string
           id: string
+          is_founder?: boolean | null
+          is_verified?: boolean | null
           phone?: string | null
           post_count?: number | null
           professional_title?:
@@ -558,6 +562,8 @@ export type Database = {
           following_count?: number | null
           full_name?: string
           id?: string
+          is_founder?: boolean | null
+          is_verified?: boolean | null
           phone?: string | null
           post_count?: number | null
           professional_title?:

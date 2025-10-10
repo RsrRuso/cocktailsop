@@ -128,7 +128,14 @@ const TopNav = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20">
       <div className="flex items-center justify-between px-4 py-3">
-        {currentUser?.is_verified && (
+        {currentUser?.is_founder ? (
+          <div className="relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 blur-lg opacity-80 group-hover:opacity-100 transition-opacity animate-pulse" />
+            <div className="relative w-12 h-12 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 flex items-center justify-center rounded-full shadow-2xl group-hover:scale-110 transition-transform border-2 border-yellow-200">
+              <BadgeCheck className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={3} fill="currentColor" />
+            </div>
+          </div>
+        ) : currentUser?.is_verified && (
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-br from-primary via-accent to-primary blur-md opacity-75 group-hover:opacity-100 transition-opacity rounded-xl" />
             <div className="relative w-12 h-12 bg-gradient-to-br from-primary to-accent flex items-center justify-center transform rotate-45 rounded-lg shadow-lg group-hover:scale-110 transition-transform">
