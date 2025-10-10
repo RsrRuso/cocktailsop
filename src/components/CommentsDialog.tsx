@@ -63,41 +63,29 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
     if (open) {
       fetchComments();
 
-      // Set up realtime subscription
-      const reelChannel = isReel ? supabase
-        .channel(`reel-comments-${postId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'reel_comments',
-            filter: `reel_id=eq.${postId}`
-          },
-          () => fetchComments()
-        )
-        .subscribe() : null;
+      // Defer realtime subscriptions
+      const timer = setTimeout(() => {
+        const channel = supabase
+          .channel(`comments-${postId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: isReel ? 'reel_comments' : 'post_comments',
+              filter: isReel ? `reel_id=eq.${postId}` : `post_id=eq.${postId}`
+            },
+            () => fetchComments()
+          )
+          .subscribe();
 
-      const postChannel = !isReel ? supabase
-        .channel(`comments-${postId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'post_comments',
-            filter: `post_id=eq.${postId}`
-          },
-          () => fetchComments()
-        )
-        .subscribe() : null;
-
-      return () => {
-        if (reelChannel) supabase.removeChannel(reelChannel);
-        if (postChannel) supabase.removeChannel(postChannel);
-      };
+        return () => {
+          clearTimeout(timer);
+          supabase.removeChannel(channel);
+        };
+      }, 1000);
     }
-  }, [open, postId]);
+  }, [open, postId, isReel]);
 
   const fetchComments = async () => {
     try {

@@ -33,15 +33,16 @@ export const useOptimisticLike = (
   }, [currentUserId, itemType]);
 
   const toggleLike = useCallback(
-    async (itemId: string, onSuccess?: (isLiked: boolean) => void) => {
+    async (itemId: string, updateCount?: (increment: number) => void) => {
       if (!currentUserId) {
         toast.error(`Please login to like ${itemType}s`);
         return;
       }
 
       const isLiked = likedItems.has(itemId);
+      const increment = isLiked ? -1 : 1;
 
-      // Optimistic update - instant feedback
+      // Optimistic updates - instant feedback
       setLikedItems((prev) => {
         const newSet = new Set(prev);
         if (isLiked) {
@@ -52,7 +53,8 @@ export const useOptimisticLike = (
         return newSet;
       });
 
-      onSuccess?.(!isLiked);
+      // Update count immediately
+      updateCount?.(increment);
 
       // Background API call
       try {
@@ -63,18 +65,12 @@ export const useOptimisticLike = (
               .delete()
               .eq('post_id', itemId)
               .eq('user_id', currentUserId);
-            if (error) {
-              console.error('Unlike error:', error.code);
-              throw error;
-            }
+            if (error) throw error;
           } else {
             const { error } = await supabase
               .from('post_likes')
               .insert({ post_id: itemId, user_id: currentUserId });
-            if (error) {
-              console.error('Like error:', error.code);
-              throw error;
-            }
+            if (error) throw error;
           }
         } else {
           if (isLiked) {
@@ -83,23 +79,18 @@ export const useOptimisticLike = (
               .delete()
               .eq('reel_id', itemId)
               .eq('user_id', currentUserId);
-            if (error) {
-              console.error('Unlike error:', error.code);
-              throw error;
-            }
+            if (error) throw error;
           } else {
             const { error } = await supabase
               .from('reel_likes')
               .insert({ reel_id: itemId, user_id: currentUserId });
-            if (error) {
-              console.error('Like error:', error.code);
-              throw error;
-            }
+            if (error) throw error;
           }
         }
-      } catch (error) {
-        console.error('Like operation failed');
-        toast.error(`Failed to ${isLiked ? 'unlike' : 'like'} ${itemType}`);
+      } catch (error: any) {
+        console.error('Like error:', error);
+        toast.error(`Failed to ${isLiked ? 'unlike' : 'like'}`);
+        
         // Revert on error
         setLikedItems((prev) => {
           const newSet = new Set(prev);
@@ -110,7 +101,7 @@ export const useOptimisticLike = (
           }
           return newSet;
         });
-        onSuccess?.(isLiked);
+        updateCount?.(-increment);
       }
     },
     [currentUserId, itemType, likedItems]
