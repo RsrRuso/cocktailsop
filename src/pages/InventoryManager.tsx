@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Package, Store, Users, ArrowRightLeft, AlertCircle } from "lucide-react";
+import { Package, Store, Users, ArrowRightLeft, AlertCircle, Share2 } from "lucide-react";
 
 const InventoryManager = () => {
   const [stores, setStores] = useState<any[]>([]);
@@ -64,6 +64,11 @@ const InventoryManager = () => {
       .limit(5);
 
     if (data) setExpirationSuggestions(data);
+  };
+
+  const shareToWhatsApp = (message: string) => {
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
   };
 
   const handleAddStore = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -135,11 +140,19 @@ const InventoryManager = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    const storeId = formData.get("storeId") as string;
+    const itemId = formData.get("itemId") as string;
+    const quantity = Number(formData.get("quantity"));
+    const expirationDate = formData.get("expirationDate") as string;
+
+    const store = stores.find(s => s.id === storeId);
+    const item = items.find(i => i.id === itemId);
+
     const { error } = await supabase.from("inventory").insert({
-      store_id: formData.get("storeId") as string,
-      item_id: formData.get("itemId") as string,
-      quantity: Number(formData.get("quantity")),
-      expiration_date: formData.get("expirationDate") as string,
+      store_id: storeId,
+      item_id: itemId,
+      quantity,
+      expiration_date: expirationDate,
       user_id: user.id,
     });
 
@@ -147,6 +160,14 @@ const InventoryManager = () => {
       toast.error("Failed to add inventory");
     } else {
       toast.success("Inventory added successfully");
+      
+      const message = `📦 *Inventory Added*\n\n` +
+        `Item: ${item?.name}\n` +
+        `Store: ${store?.name} - ${store?.area}\n` +
+        `Quantity: ${quantity}\n` +
+        `Expiration Date: ${new Date(expirationDate).toLocaleDateString()}`;
+      
+      shareToWhatsApp(message);
       e.currentTarget.reset();
       fetchData();
     }
@@ -164,6 +185,11 @@ const InventoryManager = () => {
     const quantity = Number(formData.get("transferQuantity"));
     const transferredBy = formData.get("employeeId") as string;
     const expirationDate = formData.get("expirationDate") as string;
+
+    const fromStore = stores.find(s => s.id === fromStoreId);
+    const toStore = stores.find(s => s.id === toStoreId);
+    const item = items.find(i => i.id === itemId);
+    const employee = employees.find(e => e.id === transferredBy);
 
     // Get current inventory from source store
     const { data: sourceInventory } = await supabase
@@ -214,9 +240,35 @@ const InventoryManager = () => {
       toast.error("Failed to complete transfer");
     } else {
       toast.success("Inventory transferred successfully");
+      
+      const message = `🔄 *Inventory Transfer*\n\n` +
+        `Item: ${item?.name}\n` +
+        `From: ${fromStore?.name} - ${fromStore?.area}\n` +
+        `To: ${toStore?.name} - ${toStore?.area}\n` +
+        `Quantity: ${quantity}\n` +
+        `Transferred By: ${employee?.name}\n` +
+        `Expiration Date: ${new Date(expirationDate).toLocaleDateString()}`;
+      
+      shareToWhatsApp(message);
       e.currentTarget.reset();
       fetchData();
     }
+  };
+
+  const shareExpirationSuggestions = () => {
+    if (expirationSuggestions.length === 0) return;
+    
+    const store = stores.find(s => s.id === selectedStore);
+    let message = `⚠️ *FIFO Alert - Expiring Soon*\n\n`;
+    message += `Store: ${store?.name}\n\n`;
+    
+    expirationSuggestions.forEach((item, index) => {
+      message += `${index + 1}. ${item.items?.name}\n`;
+      message += `   Qty: ${item.quantity}\n`;
+      message += `   Expires: ${new Date(item.expiration_date).toLocaleDateString()}\n\n`;
+    });
+    
+    shareToWhatsApp(message);
   };
 
   const appUrl = window.location.origin + "/tools/inventory";
@@ -514,9 +566,15 @@ const InventoryManager = () => {
             {selectedStore && expirationSuggestions.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5 text-orange-500" />
-                    FIFO Suggestions - Expiring Soon
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5 text-orange-500" />
+                      FIFO Suggestions - Expiring Soon
+                    </div>
+                    <Button variant="outline" size="sm" onClick={shareExpirationSuggestions}>
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share to WhatsApp
+                    </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
