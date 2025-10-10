@@ -30,7 +30,6 @@ import Reels from "./pages/Reels";
 import Reposted from "./pages/Reposted";
 import StoryViewer from "./pages/StoryViewer";
 import NotFound from "./pages/NotFound";
-import AdminPanel from "./pages/AdminPanel";
 
 const App = () => (
   <TooltipProvider>
@@ -53,7 +52,6 @@ const App = () => (
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/ops-tools" element={<OpsTools />} />
-          <Route path="/admin-panel" element={<AdminPanel />} />
           <Route path="/inventory-manager" element={<InventoryManager />} />
           <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/explore" element={<Explore />} />
