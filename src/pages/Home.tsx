@@ -92,9 +92,11 @@ const Home = () => {
     let isMounted = true;
     
     const initializeData = async () => {
-      // Fetch all data in parallel for faster loading
+      // Fetch user first, then fetch liked items using the cached user
+      await fetchCurrentUser();
+      
+      // Fetch all other data in parallel
       await Promise.all([
-        fetchCurrentUser(),
         fetchStories(),
         fetchPosts(),
         fetchReels(),
@@ -109,13 +111,7 @@ const Home = () => {
 
     initializeData();
 
-    // Set up realtime subscriptions with minimal debouncing for instant updates
-    let updateTimeout: NodeJS.Timeout;
-    const debouncedUpdate = (callback: () => void) => {
-      clearTimeout(updateTimeout);
-      updateTimeout = setTimeout(callback, 100);
-    };
-
+    // Only subscribe to main data tables - triggers handle count updates automatically
     const storiesChannel = supabase
       .channel('home-stories')
       .on(
@@ -125,7 +121,7 @@ const Home = () => {
           schema: 'public',
           table: 'stories'
         },
-        () => debouncedUpdate(fetchStories)
+        () => fetchStories()
       )
       .subscribe();
 
@@ -138,7 +134,7 @@ const Home = () => {
           schema: 'public',
           table: 'posts'
         },
-        () => debouncedUpdate(fetchPosts)
+        () => fetchPosts()
       )
       .subscribe();
 
@@ -151,10 +147,11 @@ const Home = () => {
           schema: 'public',
           table: 'reels'
         },
-        () => debouncedUpdate(fetchReels)
+        () => fetchReels()
       )
       .subscribe();
 
+    // Subscribe to like changes to update UI state
     const likesChannel = supabase
       .channel('home-likes')
       .on(
@@ -164,30 +161,10 @@ const Home = () => {
           schema: 'public',
           table: 'post_likes'
         },
-        () => {
-          debouncedUpdate(() => {
-            fetchPosts();
-            fetchLikedPosts();
-          });
-        }
+        () => fetchLikedPosts()
       )
       .subscribe();
 
-    // Real-time for post comments
-    const postCommentsChannel = supabase
-      .channel('home-post-comments')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'post_comments'
-        },
-        () => debouncedUpdate(fetchPosts)
-      )
-      .subscribe();
-
-    // Real-time for reel likes
     const reelLikesChannel = supabase
       .channel('home-reel-likes')
       .on(
@@ -197,39 +174,17 @@ const Home = () => {
           schema: 'public',
           table: 'reel_likes'
         },
-        () => {
-          debouncedUpdate(() => {
-            fetchReels();
-            fetchLikedReels();
-          });
-        }
-      )
-      .subscribe();
-
-    // Real-time for reel comments
-    const reelCommentsChannel = supabase
-      .channel('home-reel-comments')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'reel_comments'
-        },
-        () => debouncedUpdate(fetchReels)
+        () => fetchLikedReels()
       )
       .subscribe();
 
     return () => {
       isMounted = false;
-      clearTimeout(updateTimeout);
       supabase.removeChannel(storiesChannel);
       supabase.removeChannel(postsChannel);
       supabase.removeChannel(reelsChannel);
       supabase.removeChannel(likesChannel);
-      supabase.removeChannel(postCommentsChannel);
       supabase.removeChannel(reelLikesChannel);
-      supabase.removeChannel(reelCommentsChannel);
     };
   }, []);
 
@@ -309,13 +264,12 @@ const Home = () => {
   };
 
   const fetchLikedPosts = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!currentUser) return;
 
     const { data } = await supabase
       .from("post_likes")
       .select("post_id")
-      .eq("user_id", user.id);
+      .eq("user_id", currentUser.id);
 
     if (data) {
       setLikedPosts(new Set(data.map(like => like.post_id)));
@@ -323,13 +277,12 @@ const Home = () => {
   };
 
   const fetchLikedReels = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!currentUser) return;
 
     const { data } = await supabase
       .from("reel_likes")
       .select("reel_id")
-      .eq("user_id", user.id);
+      .eq("user_id", currentUser.id);
 
     if (data) {
       setLikedReels(new Set(data.map(like => like.reel_id)));
