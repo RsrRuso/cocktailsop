@@ -87,8 +87,6 @@ const Notifications = () => {
         return <Eye className="w-5 h-5 text-purple-500" />;
       case 'message':
         return <Send className="w-5 h-5 text-cyan-500" />;
-      case 'verification_pending':
-        return <Bell className="w-5 h-5 text-orange-500" />;
       default:
         return <Bell className="w-5 h-5 text-primary" />;
     }
