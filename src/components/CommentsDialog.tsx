@@ -220,12 +220,15 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
       ? { reel_id: postId, user_id: currentUserId, content: commentText, parent_comment_id: replyId }
       : { post_id: postId, user_id: currentUserId, content: commentText, parent_comment_id: replyId };
     
-    supabase
-      .from(tableName)
-      .insert(insertData as any)
-      .select()
-      .then(({ error }) => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from(tableName)
+          .insert(insertData as any)
+          .select();
+        
         if (error) {
+          console.error('Failed to post comment:', error);
           toast.error("Failed to post comment");
           // Remove temp comment on error
           setComments(prev => {
@@ -241,11 +244,29 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
           });
           setNewComment(commentText);
           if (replyId) setReplyingTo(replyId);
-        } else {
-          // Replace temp with real comment from DB
-          fetchComments();
+        } else if (data && data.length > 0) {
+          console.log('Comment posted successfully:', data[0]);
+          // Just keep the optimistic update - no need to refetch
         }
-      });
+      } catch (err) {
+        console.error('Comment API call failed:', err);
+        toast.error("Failed to post comment");
+        // Remove temp comment on error
+        setComments(prev => {
+          const removeTempComment = (comments: Comment[]): Comment[] => {
+            return comments
+              .filter(c => c.id !== tempComment.id)
+              .map(c => ({
+                ...c,
+                replies: c.replies ? removeTempComment(c.replies) : []
+              }));
+          };
+          return removeTempComment(prev);
+        });
+        setNewComment(commentText);
+        if (replyId) setReplyingTo(replyId);
+      }
+    })();
   };
 
   const handleReaction = async (commentId: string, emoji: string) => {

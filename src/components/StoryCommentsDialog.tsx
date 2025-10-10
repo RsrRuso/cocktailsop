@@ -115,23 +115,33 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId, onCommentAdded }: St
     onCommentAdded?.(); // Increment count instantly
 
     // Background API call - no await, instant UI
-    supabase
-      .from("story_comments")
-      .insert({
-        story_id: storyId,
-        user_id: currentUserId,
-        content: commentText,
-      })
-      .then(({ error }) => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("story_comments")
+          .insert({
+            story_id: storyId,
+            user_id: currentUserId,
+            content: commentText,
+          })
+          .select();
+        
         if (error) {
+          console.error('Failed to post story comment:', error);
           toast.error("Failed to post comment");
           setComments(prev => prev.filter(c => c.id !== tempComment.id));
           setNewComment(commentText);
-        } else {
-          // Replace temp with real comment from DB
-          fetchComments();
+        } else if (data && data.length > 0) {
+          console.log('Story comment posted successfully:', data[0]);
+          // Just keep the optimistic update - no need to refetch
         }
-      });
+      } catch (err) {
+        console.error('Story comment API call failed:', err);
+        toast.error("Failed to post comment");
+        setComments(prev => prev.filter(c => c.id !== tempComment.id));
+        setNewComment(commentText);
+      }
+    })();
   };
 
   const handleDeleteComment = async (commentId: string) => {
