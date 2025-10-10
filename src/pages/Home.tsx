@@ -620,10 +620,25 @@ const Home = () => {
                             muted={!mutedVideos.has(item.id + url)}
                             autoPlay
                             preload="metadata"
-                            className="w-full h-auto max-h-96 object-cover"
+                            className="w-full h-auto max-h-96 object-cover cursor-pointer"
+                            onClick={(e) => {
+                              const video = e.currentTarget;
+                              if (!document.fullscreenElement) {
+                                video.requestFullscreen();
+                                const videoId = item.id + url;
+                                setMutedVideos(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.add(videoId);
+                                  return newSet;
+                                });
+                              } else {
+                                document.exitFullscreen();
+                              }
+                            }}
                           />
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setMutedVideos(prev => {
                                 const newSet = new Set(prev);
                                 const videoId = item.id + url;
@@ -635,7 +650,7 @@ const Home = () => {
                                 return newSet;
                               });
                             }}
-                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all"
+                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
                           >
                             {mutedVideos.has(item.id + url) ? (
                               <Volume2 className="w-4 h-4 text-white" />
