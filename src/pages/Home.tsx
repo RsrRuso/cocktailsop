@@ -292,8 +292,8 @@ const Home = () => {
 
   // Filter feed based on selected region using actual profile region data
   const filteredFeed = selectedRegion && selectedRegion !== "All" 
-    ? feed.filter(item => item.profiles?.region === selectedRegion || item.profiles?.region === "All")
-    : feed;
+    ? feed.filter(item => item.profiles && (item.profiles?.region === selectedRegion || item.profiles?.region === "All"))
+    : feed.filter(item => item.profiles !== null);
 
   return (
     <div className="min-h-screen pb-20 pt-16">
@@ -408,15 +408,15 @@ const Home = () => {
               {/* Header */}
               <div className="flex items-center gap-3 px-2 pt-2">
                 <div className="relative">
-                  <Avatar className={`w-10 h-10 avatar-glow ring-1 ring-offset-1 ring-offset-background bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)}`}>
-                    <AvatarImage src={item.profiles.avatar_url || undefined} />
-                    <AvatarFallback>{item.profiles.username[0]}</AvatarFallback>
+                  <Avatar className={`w-10 h-10 avatar-glow ring-1 ring-offset-1 ring-offset-background bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-gray-400 to-gray-200'}`}>
+                    <AvatarImage src={item.profiles?.avatar_url || undefined} />
+                    <AvatarFallback>{item.profiles?.username?.[0] || '?'}</AvatarFallback>
                   </Avatar>
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold">{item.profiles.full_name}</p>
+                  <p className="font-semibold">{item.profiles?.full_name || 'Unknown User'}</p>
                   <p className="text-sm text-muted-foreground">
-                    {item.profiles.professional_title?.replace(/_/g, " ")}
+                    {item.profiles?.professional_title?.replace(/_/g, " ") || ''}
                   </p>
                 </div>
                 
