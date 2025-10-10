@@ -548,7 +548,7 @@ const StoryViewer = () => {
       {currentMediaIndex > 0 && (
         <button
           onClick={goToPreviousMedia}
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 flex items-center justify-center z-10"
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 flex items-center justify-center z-20"
         >
           <ChevronLeft className="w-6 h-6 text-white" />
         </button>
@@ -557,7 +557,7 @@ const StoryViewer = () => {
       {(currentMediaIndex < totalMedia - 1 || currentStoryIndex < stories.length - 1) && (
         <button
           onClick={goToNextMedia}
-          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 flex items-center justify-center z-10"
+          className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 flex items-center justify-center z-20"
         >
           <ChevronRight className="w-6 h-6 text-white" />
         </button>
@@ -565,7 +565,7 @@ const StoryViewer = () => {
 
       {/* Bottom actions - Instagram style */}
       {!isOwnStory && (
-        <div className="absolute bottom-6 left-0 right-0 px-4 z-10">
+        <div className="absolute bottom-6 left-0 right-0 px-4 z-20">
           <div className="flex items-center gap-2">
             {/* Like Button */}
             <Button
@@ -621,7 +621,7 @@ const StoryViewer = () => {
       )}
 
       {/* Floating hearts animation */}
-      <div className="absolute bottom-24 left-0 right-0 pointer-events-none z-20">
+      <div className="absolute bottom-24 left-0 right-0 pointer-events-none z-30">
         {floatingHearts.map((heart) => (
           <div
             key={heart.id}
@@ -636,8 +636,8 @@ const StoryViewer = () => {
         ))}
       </div>
 
-      {/* Tap zones for navigation */}
-      <div className="absolute inset-0 flex pointer-events-none">
+      {/* Tap zones for navigation - BEHIND everything */}
+      <div className="absolute inset-0 flex pointer-events-none z-0">
         <div className="w-1/3 h-full pointer-events-auto" onClick={goToPreviousMedia} />
         <div className="w-1/3 h-full" />
         <div className="w-1/3 h-full pointer-events-auto" onClick={goToNextMedia} />
