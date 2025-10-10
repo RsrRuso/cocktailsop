@@ -12,6 +12,7 @@ import FollowersDialog from "@/components/FollowersDialog";
 import FollowingDialog from "@/components/FollowingDialog";
 import { VenueVerification } from "@/components/VenueVerification";
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
+import CareerMetricsDialog from "@/components/CareerMetricsDialog";
 
 interface Profile {
   username: string;
@@ -58,6 +59,8 @@ const UserProfile = () => {
   const [showFollowing, setShowFollowing] = useState(false);
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
+  const [metricsDialogOpen, setMetricsDialogOpen] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState<"network" | "professional" | null>(null);
 
   useEffect(() => {
     if (userId) {
@@ -621,13 +624,25 @@ const UserProfile = () => {
                       </Badge>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center glass rounded-lg p-3 border border-border/50">
-                    <span className="text-sm text-muted-foreground">Network Reach</span>
-                    <span className="text-sm font-semibold">{calculateNetworkReach().toLocaleString()}</span>
+                  <div 
+                    className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
+                    onClick={() => {
+                      setSelectedMetric("network");
+                      setMetricsDialogOpen(true);
+                    }}
+                  >
+                    <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Network Reach</span>
+                    <span className="text-sm font-semibold group-hover:scale-105 transition-transform">{calculateNetworkReach().toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between items-center glass rounded-lg p-3 border border-border/50">
-                    <span className="text-sm text-muted-foreground">Professional Score</span>
-                    <span className="text-sm font-semibold text-primary">{calculateProfessionalScore()}/100</span>
+                  <div 
+                    className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
+                    onClick={() => {
+                      setSelectedMetric("professional");
+                      setMetricsDialogOpen(true);
+                    }}
+                  >
+                    <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Professional Score</span>
+                    <span className="text-sm font-semibold text-primary group-hover:scale-105 transition-transform">{calculateProfessionalScore()}/100</span>
                   </div>
                 </div>
               </div>
@@ -663,6 +678,13 @@ const UserProfile = () => {
         badgeLevel={profile?.badge_level as any}
         username={profile?.username}
         isOwnProfile={false}
+      />
+
+      <CareerMetricsDialog
+        open={metricsDialogOpen}
+        onOpenChange={setMetricsDialogOpen}
+        metricType={selectedMetric}
+        currentValue={selectedMetric === "network" ? calculateNetworkReach() : calculateProfessionalScore()}
       />
     </div>
   );
