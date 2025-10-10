@@ -232,16 +232,25 @@ const MessageThread = () => {
     }
     setCurrentUser(user);
 
-    // Get conversation and other user
-    const { data: conversation } = await supabase
-      .from("conversations")
-      .select("*")
-      .eq("id", conversationId)
-      .single();
+    // Fetch all data in parallel for instant loading
+    const [conversationResult, messagesResult] = await Promise.all([
+      supabase
+        .from("conversations")
+        .select("*")
+        .eq("id", conversationId)
+        .single(),
+      supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true })
+    ]);
 
-    if (conversation) {
-      const otherUserId = conversation.participant_ids.find((id: string) => id !== user.id);
+    // Handle conversation and profile
+    if (conversationResult.data) {
+      const otherUserId = conversationResult.data.participant_ids.find((id: string) => id !== user.id);
       
+      // Fetch other user profile
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -251,16 +260,10 @@ const MessageThread = () => {
       setOtherUser(profile);
     }
 
-    // Fetch messages
-    const { data: messagesData } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true });
-
-    if (messagesData) {
+    // Handle messages
+    if (messagesResult.data) {
       setMessages(
-        messagesData.map((msg: any) => ({
+        messagesResult.data.map((msg: any) => ({
           ...msg,
           reactions: (msg.reactions as Reaction[]) || [],
         }))
@@ -268,7 +271,7 @@ const MessageThread = () => {
       scrollToBottom();
       
       // Mark all unread messages as read
-      const unreadIds = messagesData
+      const unreadIds = messagesResult.data
         .filter(msg => !msg.read && msg.sender_id !== user.id)
         .map(msg => msg.id);
       
@@ -324,12 +327,19 @@ const MessageThread = () => {
   const handleSend = async () => {
     if (!newMessage.trim() || !currentUser || !conversationId) return;
 
+    const trimmedMessage = newMessage.trim();
+    
+    // Clear input immediately for better UX
+    setNewMessage("");
+    setReplyingTo(null);
+    
     try {
       const messageData: any = {
         conversation_id: conversationId,
         sender_id: currentUser.id,
-        content: newMessage.trim(),
+        content: trimmedMessage,
         delivered: false,
+        read: false,
       };
 
       if (replyingTo) {
@@ -341,28 +351,39 @@ const MessageThread = () => {
         const { error } = await supabase
           .from("messages")
           .update({
-            content: newMessage.trim(),
+            content: trimmedMessage,
             edited: true,
             edited_at: new Date().toISOString(),
           })
           .eq("id", editingMessage.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error editing message:", error);
+          throw error;
+        }
         
         toast({
           title: "Success",
-          description: "Message edited successfully",
+          description: "Message edited",
         });
         
         setEditingMessage(null);
       } else {
         // Create new message
-        const { error } = await supabase.from("messages").insert(messageData);
-        if (error) throw error;
-      }
+        const { data, error } = await supabase
+          .from("messages")
+          .insert(messageData)
+          .select();
 
-      setNewMessage("");
-      setReplyingTo(null);
+        if (error) {
+          console.error("Error sending message:", error);
+          throw error;
+        }
+
+        if (!data || data.length === 0) {
+          throw new Error("Message was not created");
+        }
+      }
       
       // Update typing status
       if (channelRef.current) {
@@ -378,11 +399,14 @@ const MessageThread = () => {
         .from("conversations")
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", conversationId);
-    } catch (error) {
-      console.error("Error sending message:", error);
+        
+    } catch (error: any) {
+      console.error("Failed to send message:", error);
+      // Restore message on error
+      setNewMessage(trimmedMessage);
       toast({
-        title: "Error",
-        description: "Failed to send message",
+        title: "Failed to send",
+        description: error?.message || "Please check your connection and try again",
         variant: "destructive",
       });
     }
