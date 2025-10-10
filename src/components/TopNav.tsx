@@ -110,7 +110,8 @@ const TopNav = () => {
       .from("notifications")
       .select("*", { count: 'exact', head: true })
       .eq("user_id", user.id)
-      .eq("read", false);
+      .eq("read", false)
+      .neq("type", "message");
 
     setUnreadNotificationsCount(count || 0);
   };
