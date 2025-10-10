@@ -696,7 +696,7 @@ const InventoryManager = () => {
           <DialogHeader>
             <DialogTitle>Share to WhatsApp</DialogTitle>
             <DialogDescription>
-              Click on each number to open WhatsApp and share the message
+              Click on each number to share the message
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -710,8 +710,7 @@ const InventoryManager = () => {
                   key={number}
                   href={whatsappUrl}
                   target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between w-full p-3 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+                  className="flex items-center justify-between w-full p-3 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
                 >
                   <span className="font-mono">+{number}</span>
                   <Share2 className="h-4 w-4" />
