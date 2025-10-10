@@ -446,6 +446,22 @@ const Home = () => {
     }
   };
 
+  const handleDeleteReel = async (reelId: string) => {
+    try {
+      const { error } = await supabase
+        .from("reels")
+        .delete()
+        .eq("id", reelId);
+
+      if (error) throw error;
+      toast.success("Reel deleted successfully");
+      fetchReels();
+    } catch (error) {
+      console.error('Error deleting reel:', error);
+      toast.error("Failed to delete reel");
+    }
+  };
+
   const regions = [
     { name: "USA", flag: "🇺🇸", gradient: "from-pink-600 to-pink-400" },
     { name: "UK", flag: "🇬🇧", gradient: "from-blue-600 to-purple-500" },
@@ -675,6 +691,7 @@ const Home = () => {
 
                           {/* Fullscreen Action Buttons - Only visible in fullscreen */}
                           <div className="fullscreen-actions hidden absolute right-4 top-1/2 -translate-y-1/2 flex-col gap-6 z-20">
+                            {/* Like Button */}
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -688,6 +705,7 @@ const Home = () => {
                               <span className="text-white text-xs font-bold">{item.like_count || 0}</span>
                             </button>
                             
+                            {/* Comment Button */}
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -702,6 +720,7 @@ const Home = () => {
                               <span className="text-white text-xs font-bold">{item.comment_count || 0}</span>
                             </button>
                             
+                            {/* Share/Send Button */}
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -717,6 +736,50 @@ const Home = () => {
                                 <Send className="w-6 h-6 text-white" />
                               </div>
                             </button>
+
+                            {/* Bookmark Button */}
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toast.success("Saved to bookmarks");
+                              }}
+                              className="flex flex-col items-center gap-1 transition-all hover:scale-110"
+                            >
+                              <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                </svg>
+                              </div>
+                            </button>
+
+                            {/* Three Dot Menu - Only for own posts */}
+                            {currentUser && item.user_id === currentUser.id && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button 
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex flex-col items-center gap-1 transition-all hover:scale-110"
+                                  >
+                                    <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70">
+                                      <MoreVertical className="w-6 h-6 text-white" />
+                                    </div>
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="glass">
+                                  <DropdownMenuItem onClick={() => navigate(item.type === 'post' ? `/edit-post/${item.id}` : `/edit-reel/${item.id}`)}>
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
                           </div>
                         </div>
                       ) : (
