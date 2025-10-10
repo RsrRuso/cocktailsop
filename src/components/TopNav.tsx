@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 
 const TopNav = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const TopNav = () => {
     const saved = localStorage.getItem('theme');
     return (saved as 'light' | 'grey' | 'dark' | 'black') || 'dark';
   });
+  const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -129,7 +131,10 @@ const TopNav = () => {
     <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20">
       <div className="flex items-center justify-between px-4 py-3">
         {currentUser?.is_founder ? (
-          <div className="relative group cursor-pointer">
+          <div 
+            className="relative group cursor-pointer"
+            onClick={() => setBadgeDialogOpen(true)}
+          >
             {/* Multi-layer radiant glow system */}
             <div className="absolute -inset-6 bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-500 blur-3xl opacity-60 group-hover:opacity-100 transition-all duration-500 animate-pulse" />
             <div className="absolute -inset-5 bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 blur-2xl opacity-40 group-hover:opacity-70 transition-all duration-700" style={{ animation: 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
@@ -273,13 +278,26 @@ const TopNav = () => {
             </div>
           </div>
         ) : currentUser?.is_verified && (
-          <div className="relative group">
+          <div 
+            className="relative group cursor-pointer"
+            onClick={() => setBadgeDialogOpen(true)}
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-primary via-accent to-primary blur-md opacity-75 group-hover:opacity-100 transition-opacity rounded-xl" />
             <div className="relative w-12 h-12 bg-gradient-to-br from-primary to-accent flex items-center justify-center transform rotate-45 rounded-lg shadow-lg group-hover:scale-110 transition-transform">
               <BadgeCheck className="w-7 h-7 text-primary-foreground -rotate-45" strokeWidth={2.5} />
             </div>
           </div>
         )}
+
+        <BadgeInfoDialog
+          open={badgeDialogOpen}
+          onOpenChange={setBadgeDialogOpen}
+          isFounder={currentUser?.is_founder}
+          isVerified={currentUser?.is_verified}
+          badgeLevel={currentUser?.badge_level}
+          username={currentUser?.username}
+          isOwnProfile={true}
+        />
 
         <div className="flex items-center gap-2">
           <button
