@@ -276,19 +276,21 @@ const InventoryManager = () => {
 
     if (addError || transferError) {
       toast.error("Failed to complete transfer");
-    } else {
-      toast.success("Inventory transferred successfully");
-      
-      // Fetch current inventory for the destination store
-      const { data: currentInventory } = await supabase
-        .from("inventory")
-        .select(`
-          *,
-          items(name),
-          stores(name, area)
-        `)
-        .eq("store_id", toStoreId)
-        .order("expiration_date");
+      return;
+    }
+
+    toast.success("Inventory transferred successfully");
+    
+    // Fetch current inventory for the destination store
+    const { data: currentInventory } = await supabase
+      .from("inventory")
+      .select(`
+        *,
+        items(name),
+        stores(name, area)
+      `)
+      .eq("store_id", toStoreId)
+      .order("expiration_date");
 
       let message = `🔄 *Inventory Transfer Complete*\n\n`;
       message += `Item: ${item?.name}\n`;
@@ -314,7 +316,6 @@ const InventoryManager = () => {
       shareToWhatsApp(message);
       e.currentTarget.reset();
       fetchData();
-    }
   };
 
   const shareExpirationSuggestions = () => {
