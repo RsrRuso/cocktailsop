@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import FollowersDialog from "@/components/FollowersDialog";
 import FollowingDialog from "@/components/FollowingDialog";
 import { VenueVerification } from "@/components/VenueVerification";
+import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 
 interface Profile {
   username: string;
@@ -31,6 +32,8 @@ interface Profile {
   show_phone: boolean;
   show_whatsapp: boolean;
   show_website: boolean;
+  is_founder: boolean;
+  is_verified: boolean;
 }
 
 interface Story {
@@ -72,6 +75,7 @@ const Profile = () => {
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [showAvatarDialog, setShowAvatarDialog] = useState(false);
+  const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -602,11 +606,26 @@ const Profile = () => {
               <div className="space-y-4">
                 <h4 className="font-semibold text-lg">Career Metrics</h4>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center glass rounded-lg p-3 border border-border/50">
-                    <span className="text-sm text-muted-foreground">Badge Level</span>
-                    <Badge className={`bg-gradient-to-r ${getBadgeColor(profile.badge_level)} border-0 text-white capitalize`}>
-                      {profile.badge_level}
-                    </Badge>
+                  <div 
+                    className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
+                    onClick={() => setBadgeDialogOpen(true)}
+                  >
+                    <span className="text-sm text-muted-foreground">Badge Status</span>
+                    <div className="flex items-center gap-2">
+                      {profile.is_founder && (
+                        <span className="text-xs font-semibold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+                          Founder
+                        </span>
+                      )}
+                      {profile.is_verified && !profile.is_founder && (
+                        <span className="text-xs font-semibold text-primary">
+                          Verified
+                        </span>
+                      )}
+                      <Badge className={`bg-gradient-to-r ${getBadgeColor(profile.badge_level)} border-0 text-white capitalize group-hover:scale-105 transition-transform`}>
+                        {profile.badge_level}
+                      </Badge>
+                    </div>
                   </div>
                   <div className="flex justify-between items-center glass rounded-lg p-3 border border-border/50">
                     <span className="text-sm text-muted-foreground">Network Reach</span>
@@ -640,6 +659,16 @@ const Profile = () => {
         open={showFollowing}
         onOpenChange={setShowFollowing}
         userId={currentUserId}
+      />
+
+      <BadgeInfoDialog
+        open={badgeDialogOpen}
+        onOpenChange={setBadgeDialogOpen}
+        isFounder={profile?.is_founder}
+        isVerified={profile?.is_verified}
+        badgeLevel={profile?.badge_level as any}
+        username={profile?.username}
+        isOwnProfile={true}
       />
 
       {/* Avatar Photo Dialog */}
