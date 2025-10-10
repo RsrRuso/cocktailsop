@@ -5,14 +5,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RoutePreloader } from "@/components/RoutePreloader";
 
-// Eager load critical routes
+// Eager load ONLY index/landing/auth (no user data)
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
-import Home from "./pages/Home";
 
-// Lazy load all other routes for code splitting
+// Lazy load ALL other routes including Home for code splitting
+const Home = lazy(() => import("./pages/Home"));
 const Profile = lazy(() => import("./pages/Profile"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
 const EditProfile = lazy(() => import("./pages/EditProfile"));
@@ -50,6 +51,7 @@ const PageLoader = () => (
 const App = () => (
   <TooltipProvider>
     <BrowserRouter>
+      <RoutePreloader />
       <Toaster />
       <Sonner />
       <Suspense fallback={<PageLoader />}>

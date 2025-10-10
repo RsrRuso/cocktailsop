@@ -1,5 +1,6 @@
 import { Home, PlusSquare, Search, Video, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { preloadRoute } from "@/components/RoutePreloader";
 
 const BottomNav = () => {
   const navigate = useNavigate();
@@ -13,6 +14,8 @@ const BottomNav = () => {
         <div className="flex items-center justify-around px-2 py-2 max-w-2xl mx-auto">
           <button
             onClick={() => navigate("/home")}
+            onMouseEnter={() => preloadRoute("/home")}
+            onTouchStart={() => preloadRoute("/home")}
             className={`flex items-center justify-center w-12 h-12 transition-all ${
               isActive("/home") 
                 ? "text-foreground scale-110" 
@@ -24,6 +27,8 @@ const BottomNav = () => {
 
           <button
             onClick={() => navigate("/explore")}
+            onMouseEnter={() => preloadRoute("/explore")}
+            onTouchStart={() => preloadRoute("/explore")}
             className={`flex items-center justify-center w-12 h-12 transition-all ${
               isActive("/explore") 
                 ? "text-foreground scale-110" 
@@ -35,6 +40,8 @@ const BottomNav = () => {
 
           <button
             onClick={() => navigate("/create")}
+            onMouseEnter={() => preloadRoute("/create")}
+            onTouchStart={() => preloadRoute("/create")}
             className="flex items-center justify-center -mt-2"
           >
             <div className="w-12 h-12 rounded-xl border-2 border-foreground/20 hover:border-foreground/40 transition-all flex items-center justify-center bg-background">
@@ -44,6 +51,8 @@ const BottomNav = () => {
 
           <button
             onClick={() => navigate("/reels")}
+            onMouseEnter={() => preloadRoute("/reels")}
+            onTouchStart={() => preloadRoute("/reels")}
             className={`flex items-center justify-center w-12 h-12 transition-all ${
               isActive("/reels") 
                 ? "text-foreground scale-110" 
@@ -55,6 +64,8 @@ const BottomNav = () => {
 
           <button
             onClick={() => navigate("/profile")}
+            onMouseEnter={() => preloadRoute("/profile")}
+            onTouchStart={() => preloadRoute("/profile")}
             className={`flex items-center justify-center w-12 h-12 transition-all ${
               isActive("/profile") 
                 ? "text-foreground scale-110" 
