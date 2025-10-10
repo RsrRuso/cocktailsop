@@ -31,8 +31,8 @@ const CreateReel = () => {
       return;
     }
 
-    if (file.size > 100 * 1024 * 1024) {
-      toast.error("Video size should be less than 100MB");
+    if (file.size > 200 * 1024 * 1024) {
+      toast.error("Video size should be less than 200MB");
       return;
     }
 

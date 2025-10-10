@@ -226,6 +226,20 @@ All colors MUST be HSL.
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
   
+  /* Shimmer animation for loading effects */
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+
   /* Fullscreen video controls */
   .reel-container:fullscreen .fullscreen-actions,
   .reel-container:-webkit-full-screen .fullscreen-actions {
