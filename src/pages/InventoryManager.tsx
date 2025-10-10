@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { Package, Store, Users, ArrowRightLeft, AlertCircle, Share2 } from "lucide-react";
@@ -21,6 +22,8 @@ const InventoryManager = () => {
   const [expirationSuggestions, setExpirationSuggestions] = useState<any[]>([]);
   const [whatsappNumbers, setWhatsappNumbers] = useState<string[]>([]);
   const [newWhatsappNumber, setNewWhatsappNumber] = useState("");
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [messageToShare, setMessageToShare] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -73,17 +76,15 @@ const InventoryManager = () => {
       toast.error("Please add WhatsApp numbers first");
       return;
     }
-    const encodedMessage = encodeURIComponent(message);
-    
-    // Share to all numbers sequentially with small delay
-    whatsappNumbers.forEach((number, index) => {
-      setTimeout(() => {
-        const cleanNumber = number.replace(/[^0-9]/g, '');
-        window.open(`https://wa.me/${cleanNumber}?text=${encodedMessage}`, '_blank');
-      }, index * 1000); // 1 second delay between each
-    });
-    
-    toast.success(`Sharing to ${whatsappNumbers.length} WhatsApp number(s)`);
+    setMessageToShare(message);
+    setShareDialogOpen(true);
+  };
+
+  const shareToSingleNumber = (number: string) => {
+    const encodedMessage = encodeURIComponent(messageToShare);
+    const cleanNumber = number.replace(/[^0-9]/g, '');
+    window.open(`https://wa.me/${cleanNumber}?text=${encodedMessage}`, '_blank');
+    toast.success(`Opening WhatsApp for +${cleanNumber}`);
   };
 
   const handleAddWhatsappNumber = () => {
@@ -696,6 +697,30 @@ const InventoryManager = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Share to WhatsApp</DialogTitle>
+            <DialogDescription>
+              Click on each number to open WhatsApp and share the message
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {whatsappNumbers.map((number) => (
+              <Button
+                key={number}
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => shareToSingleNumber(number)}
+              >
+                <span className="font-mono">+{number}</span>
+                <Share2 className="h-4 w-4" />
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>
