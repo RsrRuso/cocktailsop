@@ -259,7 +259,10 @@ const InventoryManager = () => {
       user_id: user.id,
     });
 
-    // Record transfer
+    // Record transfer with auto-detected dates
+    const transferDate = new Date().toISOString();
+    const receivedDate = new Date().toISOString();
+    
     const { error: transferError } = await supabase.from("transfers").insert({
       from_store_id: fromStoreId,
       to_store_id: toStoreId,
@@ -267,6 +270,8 @@ const InventoryManager = () => {
       quantity,
       transferred_by: transferredBy,
       user_id: user.id,
+      transfer_date: transferDate,
+      received_at: receivedDate,
     });
 
     if (addError || transferError) {
@@ -290,7 +295,10 @@ const InventoryManager = () => {
       message += `From: ${fromStore?.name} - ${fromStore?.area}\n`;
       message += `To: ${toStore?.name} - ${toStore?.area}\n`;
       message += `Quantity Transferred: ${quantity}\n`;
-      message += `Transferred By: ${employee?.name}\n\n`;
+      message += `Transferred By: ${employee?.name}\n`;
+      message += `Transfer Date: ${new Date(transferDate).toLocaleDateString()} ${new Date(transferDate).toLocaleTimeString()}\n`;
+      message += `Received Date: ${new Date(receivedDate).toLocaleDateString()} ${new Date(receivedDate).toLocaleTimeString()}\n`;
+      message += `Expiration Date: ${new Date(expirationDate).toLocaleDateString()}\n\n`;
       message += `📦 *Current Inventory at ${toStore?.name}*\n\n`;
       
       if (currentInventory && currentInventory.length > 0) {

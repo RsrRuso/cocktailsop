@@ -871,7 +871,9 @@ export type Database = {
           id: string
           item_id: string
           quantity: number
+          received_at: string | null
           to_store_id: string
+          transfer_date: string | null
           transferred_by: string
           user_id: string
         }
@@ -881,7 +883,9 @@ export type Database = {
           id?: string
           item_id: string
           quantity: number
+          received_at?: string | null
           to_store_id: string
+          transfer_date?: string | null
           transferred_by: string
           user_id: string
         }
@@ -891,7 +895,9 @@ export type Database = {
           id?: string
           item_id?: string
           quantity?: number
+          received_at?: string | null
           to_store_id?: string
+          transfer_date?: string | null
           transferred_by?: string
           user_id?: string
         }
