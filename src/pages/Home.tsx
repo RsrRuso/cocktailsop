@@ -16,6 +16,7 @@ import ShareDialog from "@/components/ShareDialog";
 import CommentsDialog from "@/components/CommentsDialog";
 import { ReelFullscreen } from "@/components/ReelFullscreen";
 import { LazyImage } from "@/components/LazyImage";
+import { FeedItem } from "@/components/FeedItem";
 import { useFeedData } from "@/hooks/useFeedData";
 import { useOptimisticLike } from "@/hooks/useOptimisticLike";
 
@@ -99,6 +100,14 @@ const Home = () => {
     ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return mergedFeed;
   }, [posts, reels]);
+
+  // Memoize filtered feed
+  const filteredFeed = useMemo(() => {
+    if (selectedRegion && selectedRegion !== "All") {
+      return feed.filter(item => item.profiles && (item.profiles?.region === selectedRegion || item.profiles?.region === "All"));
+    }
+    return feed.filter(item => item.profiles !== null);
+  }, [feed, selectedRegion]);
 
   useEffect(() => {
     let isMounted = true;
@@ -275,10 +284,17 @@ const Home = () => {
     { name: "Africa", flag: "🌍", gradient: "from-purple-600 to-pink-500" },
   ];
 
-  // Filter feed based on selected region using actual profile region data
-  const filteredFeed = selectedRegion && selectedRegion !== "All" 
-    ? feed.filter(item => item.profiles && (item.profiles?.region === selectedRegion || item.profiles?.region === "All"))
-    : feed.filter(item => item.profiles !== null);
+  const handleToggleMute = useCallback((videoId: string) => {
+    setMutedVideos(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(videoId)) {
+        newSet.delete(videoId);
+      } else {
+        newSet.add(videoId);
+      }
+      return newSet;
+    });
+  }, []);
 
   return (
     <div className="min-h-screen pb-20 pt-16">
@@ -389,148 +405,30 @@ const Home = () => {
       <div className="space-y-6 px-4">
         {filteredFeed.length > 0 ? (
           filteredFeed.map((item) => (
-            <div key={item.id} className="glass rounded-xl p-2 space-y-3 border border-border/50">
-              {/* Header */}
-              <div className="flex items-center gap-3 px-2 pt-2">
-                <div className="relative">
-                  <Avatar className={`w-10 h-10 avatar-glow ring-1 ring-offset-1 ring-offset-background bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-gray-400 to-gray-200'}`}>
-                    <AvatarImage src={item.profiles?.avatar_url || undefined} />
-                    <AvatarFallback>{item.profiles?.username?.[0] || '?'}</AvatarFallback>
-                  </Avatar>
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold">{item.profiles?.full_name || 'Unknown User'}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {item.profiles?.professional_title?.replace(/_/g, " ") || ''}
-                  </p>
-                </div>
-                
-                {currentUser && item.user_id === currentUser.id && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="glass-hover p-2 rounded-xl">
-                        <MoreVertical className="w-5 h-5" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="glass">
-                      {item.type === 'post' && (
-                        <DropdownMenuItem 
-                          onClick={() => navigate(`/edit-post/${item.id}`)}
-                        >
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit Post
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem 
-                        onClick={() => item.type === 'post' ? handleDeletePost(item.id) : toast.info("Reel deletion coming soon")}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
-
-              {/* Content */}
-              {'content' in item && item.content && (
-                <p className="text-sm px-2">{item.content}</p>
-              )}
-
-              {/* Media */}
-              {item.media_urls && item.media_urls.length > 0 && (
-                <div className={`grid gap-1 ${item.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                  {item.media_urls.map((url, idx) => (
-                    <div key={idx} className="relative rounded-xl overflow-hidden">
-                      {item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
-                        <div className="relative">
-                          <video 
-                            src={url} 
-                            loop
-                            playsInline
-                            muted={!mutedVideos.has(item.id + url)}
-                            autoPlay
-                            preload="metadata"
-                            className="w-full h-auto max-h-96 object-cover cursor-pointer"
-                            onClick={() => setFullscreenReel(item)}
-                          />
-                          
-                          {/* Mute button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setMutedVideos(prev => {
-                                const newSet = new Set(prev);
-                                const videoId = item.id + url;
-                                if (newSet.has(videoId)) {
-                                  newSet.delete(videoId);
-                                } else {
-                                  newSet.add(videoId);
-                                }
-                                return newSet;
-                              });
-                            }}
-                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
-                          >
-                            {mutedVideos.has(item.id + url) ? (
-                              <Volume2 className="w-4 h-4 text-white" />
-                            ) : (
-                              <VolumeX className="w-4 h-4 text-white" />
-                            )}
-                          </button>
-                        </div>
-                      ) : (
-                        <img
-                          src={url} 
-                          alt="Post media"
-                          loading="lazy"
-                          className="w-full h-auto object-cover"
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex items-center gap-6 px-2 pb-1">
-                <button 
-                  onClick={() => item.type === 'post' ? handleLikePost(item.id) : handleLikeReel(item.id)}
-                  className={`flex items-center gap-2 transition-all hover:scale-110 ${
-                    (item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)) 
-                      ? 'text-red-500' 
-                      : 'text-muted-foreground hover:text-red-500'
-                  }`}
-                >
-                  <Heart className={`w-5 h-5 ${(item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)) ? 'fill-current' : ''}`} />
-                  <span className="text-sm font-bold min-w-[20px]">{item.like_count || 0}</span>
-                </button>
-                <button 
-                  onClick={() => {
-                    setSelectedPostId(item.id);
-                    setCommentsDialogOpen(true);
-                  }}
-                  className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                  <span className="text-sm font-bold min-w-[20px]">{item.comment_count || 0}</span>
-                </button>
-                <button 
-                  onClick={() => {
-                    setSelectedPostId(item.id);
-                    setSelectedPostContent(item.type === 'post' ? item.content : item.caption);
-                    setSelectedPostType(item.type);
-                    setSelectedMediaUrls(item.media_urls || []);
-                    setShareDialogOpen(true);
-                  }}
-                  className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"
-                >
-                  <Send className="w-5 h-5" />
-                  <span className="text-xs">Send</span>
-                </button>
-              </div>
-            </div>
+            <FeedItem
+              key={item.id}
+              item={item}
+              currentUserId={currentUser?.id}
+              isLiked={item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)}
+              mutedVideos={mutedVideos}
+              onLike={() => item.type === 'post' ? handleLikePost(item.id) : handleLikeReel(item.id)}
+              onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : toast.info("Reel deletion coming soon")}
+              onEdit={() => navigate(`/edit-post/${item.id}`)}
+              onComment={() => {
+                setSelectedPostId(item.id);
+                setCommentsDialogOpen(true);
+              }}
+              onShare={() => {
+                setSelectedPostId(item.id);
+                setSelectedPostContent(item.type === 'post' ? item.content : item.caption);
+                setSelectedPostType(item.type);
+                setSelectedMediaUrls(item.media_urls || []);
+                setShareDialogOpen(true);
+              }}
+              onToggleMute={handleToggleMute}
+              onFullscreen={() => setFullscreenReel(item)}
+              getBadgeColor={getBadgeColor}
+            />
           ))
         ) : (
           // Loading skeletons
