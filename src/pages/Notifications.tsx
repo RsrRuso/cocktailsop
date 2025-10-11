@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
 import { TestNotificationButton } from "@/components/TestNotificationButton";
 
@@ -21,7 +20,6 @@ interface Notification {
 const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const navigate = useNavigate();
-  const { sendNotification } = usePushNotifications();
   const { showNotification } = useInAppNotificationContext();
 
   useEffect(() => {
@@ -39,10 +37,9 @@ const Notifications = () => {
         },
         (payload) => {
           fetchNotifications();
-          // Send both push and in-app notification
+          // Send in-app notification
           const newNotification = payload.new as Notification;
           if (newNotification.type !== 'message') {
-            sendNotification('New Notification', newNotification.content);
             showNotification(
               'New Notification',
               newNotification.content,
