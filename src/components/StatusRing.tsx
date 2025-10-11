@@ -22,10 +22,17 @@ const StatusRing = ({
   return (
     <div className={`relative inline-block ${className}`}>
       {hasStatus && statusText && (
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-          <div className="bg-muted/95 backdrop-blur-sm text-muted-foreground px-3 py-1.5 rounded-2xl text-xs whitespace-nowrap shadow-sm">
-            {emoji && <span className="mr-1">{emoji}</span>}
-            {statusText}
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-10 pointer-events-none max-w-[200px]">
+          <div className="bg-muted/95 backdrop-blur-sm text-muted-foreground px-3 py-1.5 rounded-2xl text-xs shadow-sm overflow-hidden">
+            <div className="flex items-center gap-1">
+              {emoji && <span className="shrink-0">{emoji}</span>}
+              <div className="overflow-hidden">
+                <div className="animate-marquee whitespace-nowrap inline-block">
+                  {statusText}
+                  {statusText.length > 30 && <span className="ml-8">{statusText}</span>}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
