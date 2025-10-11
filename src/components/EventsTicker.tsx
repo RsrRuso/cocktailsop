@@ -71,20 +71,24 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
       <div className="relative overflow-hidden">
         <div className="animate-marquee whitespace-nowrap">
           {events.map((event) => (
-            <button
+            <div
               key={event.id}
-              onClick={() => handleEventClick(event)}
-              className="inline-flex items-center mx-8 hover:opacity-80 transition-opacity cursor-pointer"
+              className="inline-flex items-center mx-8 hover:opacity-80 transition-opacity"
             >
-              <span className="font-semibold text-foreground hover:underline">{event.title}</span>
-              {event.event_date && (
-                <span className="ml-2 text-sm text-muted-foreground">
-                  {new Date(event.event_date).toLocaleDateString()}
+              <button
+                onClick={() => handleEventClick(event)}
+                className="inline-flex items-center hover:underline cursor-pointer"
+              >
+                <span className="font-semibold text-foreground">{event.title}</span>
+                {event.event_date && (
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    {new Date(event.event_date).toLocaleDateString()}
+                  </span>
+                )}
+                <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                  {event.attendee_count || 0} going
                 </span>
-              )}
-              <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-                {event.attendee_count || 0} going
-              </span>
+              </button>
               <button
                 onClick={(e) => handleCommentsClick(event, e)}
                 className="ml-2 inline-flex items-center gap-1 text-xs bg-accent/20 text-accent-foreground px-2 py-0.5 rounded-full hover:bg-accent/30 transition-colors"
@@ -93,7 +97,7 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
                 {event.comment_count || 0}
               </button>
               <span className="mx-2 text-primary">•</span>
-            </button>
+            </div>
           ))}
         </div>
       </div>
