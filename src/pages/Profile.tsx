@@ -274,30 +274,31 @@ const Profile = () => {
                     onAddStatusClick={() => setShowStatusDialog(true)}
                   />
                 </div>
-                
-                {/* Instagram-style verification badge */}
-                {(userRoles.isFounder || userRoles.isVerified) && (
-                  <div 
-                    className="absolute -bottom-1 -right-1 cursor-pointer"
-                    onClick={() => setBadgeDialogOpen(true)}
-                  >
-                    {userRoles.isFounder ? (
-                      <div className="relative group">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-sm opacity-75 group-hover:opacity-100 transition-opacity" />
-                        <div className="relative w-8 h-8 bg-gradient-to-br from-cyan-200 via-blue-400 to-purple-500 transform rotate-45 rounded-sm shadow-lg flex items-center justify-center">
-                          <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="relative bg-blue-500 rounded-full p-1 shadow-lg ring-2 ring-background">
-                        <BadgeCheck className="w-5 h-5 text-white" fill="currentColor" strokeWidth={0} />
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
               <div>
-                <h2 className="text-2xl font-bold">{profile.full_name}</h2>
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-2xl font-bold">{profile.full_name}</h2>
+                  {/* Instagram-style verification badge */}
+                  {(userRoles.isFounder || userRoles.isVerified) && (
+                    <div 
+                      className="cursor-pointer flex-shrink-0"
+                      onClick={() => setBadgeDialogOpen(true)}
+                    >
+                      {userRoles.isFounder ? (
+                        <div className="relative group">
+                          <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-[2px] opacity-75 group-hover:opacity-100 transition-opacity" />
+                          <div className="relative w-5 h-5 bg-gradient-to-br from-cyan-200 via-blue-400 to-purple-500 transform rotate-45 rounded-[2px] shadow-md flex items-center justify-center">
+                            <div className="w-1 h-1 bg-white rounded-full" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-blue-500 rounded-full p-0.5 shadow-sm">
+                          <BadgeCheck className="w-4 h-4 text-white" fill="currentColor" strokeWidth={0} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <p className="text-muted-foreground">@{profile.username}</p>
                 <p className="text-sm text-primary capitalize mt-1">
                   {profile.professional_title?.replace(/_/g, " ")}
