@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -257,8 +258,8 @@ const Profile = () => {
         <div className="glass rounded-xl p-4 space-y-6 border border-border/50">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <Avatar 
-                className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)} cursor-pointer transition-transform hover:scale-105 ${stories.length > 0 ? 'ring-4 ring-primary' : ''}`}
+              <div
+                className={`cursor-pointer transition-transform hover:scale-105 ${stories.length > 0 ? 'ring-4 ring-primary rounded-full' : ''}`}
                 onClick={() => {
                   if (stories.length > 0) {
                     navigate(`/story/${currentUserId}`);
@@ -267,9 +268,17 @@ const Profile = () => {
                   }
                 }}
               >
-                <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl">{profile.username[0]}</AvatarFallback>
-              </Avatar>
+                <OptimizedAvatar
+                  src={profile.avatar_url}
+                  alt={profile.username}
+                  fallback={profile.username[0]}
+                  userId={currentUserId}
+                  className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)}`}
+                  showStatus={true}
+                  showAddButton={true}
+                  onAddStatusClick={() => setShowStatusDialog(true)}
+                />
+              </div>
               <div>
                 <h2 className="text-2xl font-bold">{profile.full_name}</h2>
                 <p className="text-muted-foreground">@{profile.username}</p>

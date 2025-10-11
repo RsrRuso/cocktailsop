@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MessageCircle, Send, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
@@ -174,12 +175,13 @@ const Messages = () => {
                 onClick={() => navigate(`/messages/${conversation.id}`)}
               >
                 <div className="relative">
-                  <Avatar className="w-14 h-14">
-                    <AvatarImage src={conversation.otherUser?.avatar_url || undefined} />
-                    <AvatarFallback className="text-sm">
-                      {conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
-                    </AvatarFallback>
-                  </Avatar>
+                  <OptimizedAvatar
+                    src={conversation.otherUser?.avatar_url}
+                    alt={conversation.otherUser?.username || 'User'}
+                    fallback={conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
+                    userId={conversation.otherUser?.id}
+                    className="w-14 h-14"
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold">

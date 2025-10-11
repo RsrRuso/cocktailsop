@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX } from "lucide-react";
 import TopNav from "@/components/TopNav";
+import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { toast } from "sonner";
 import CommentsDialog from "@/components/CommentsDialog";
 import {
@@ -327,6 +328,13 @@ const Reels = () => {
               {/* User Info - Left Bottom */}
               <div className="absolute bottom-20 left-4 right-20 z-10 space-y-2">
                 <div className="flex items-center gap-2">
+                  <OptimizedAvatar
+                    src={reel.profiles?.avatar_url}
+                    alt={reel.profiles?.username || 'User'}
+                    fallback={reel.profiles?.username?.[0] || '?'}
+                    userId={reel.user_id}
+                    className="w-10 h-10 border-2 border-white"
+                  />
                   <p className="text-white font-semibold">@{reel.profiles?.username}</p>
                 </div>
                 <p className="text-white text-sm line-clamp-2">{reel.caption}</p>

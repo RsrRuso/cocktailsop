@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useParams, useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -264,10 +265,14 @@ const UserProfile = () => {
                 username={profile.username}
                 hasStory={hasStory}
               >
-                <Avatar className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)} cursor-pointer hover:scale-105 transition-transform`}>
-                  <AvatarImage src={profile.avatar_url || undefined} />
-                  <AvatarFallback className="text-2xl">{profile.username[0]}</AvatarFallback>
-                </Avatar>
+                <OptimizedAvatar
+                  src={profile.avatar_url}
+                  alt={profile.username}
+                  fallback={profile.username[0]}
+                  userId={userId!}
+                  className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)} cursor-pointer hover:scale-105 transition-transform`}
+                  showStatus={true}
+                />
               </AvatarClickMenu>
               <div>
                 <h2 className="text-2xl font-bold">{profile.full_name}</h2>

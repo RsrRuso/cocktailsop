@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useMessageThread, Message } from "@/hooks/useMessageThread";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { MessageBubble } from "@/components/MessageBubble";
@@ -129,12 +130,13 @@ const MessageThread = () => {
         {otherUser && (
           <>
             <div className="relative cursor-pointer hover:scale-105 transition-transform" onClick={() => navigate(`/user/${otherUser.id}`)}>
-              <div className={`relative w-12 h-12 rounded-full p-[2px] transition-all duration-300 ${isOnline ? 'neon-green animate-pulse' : 'bg-border'}`}>
-                <Avatar className="w-full h-full border-2 border-background avatar-glow">
-                  <AvatarImage src={otherUser.avatar_url || undefined} />
-                  <AvatarFallback className="text-sm">{otherUser.username[0].toUpperCase()}</AvatarFallback>
-                </Avatar>
-              </div>
+              <OptimizedAvatar
+                src={otherUser.avatar_url}
+                alt={otherUser.username}
+                fallback={otherUser.username[0].toUpperCase()}
+                userId={otherUser.id}
+                className="w-12 h-12 border-2 border-background avatar-glow"
+              />
               {isOnline && <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full neon-green border-2 border-background animate-pulse"></div>}
             </div>
             <div className="flex-1">

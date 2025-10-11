@@ -234,8 +234,8 @@ const TopNav = () => {
               fallback={currentUser?.username?.[0] || "U"}
               userId={currentUser?.id}
               className="w-10 h-10 ring-2 ring-primary/30"
-              showAddButton={true}
-              onAddStatusClick={() => setShowStatusDialog(true)}
+              showStatus={false}
+              showAddButton={false}
             />
           </div>
 
