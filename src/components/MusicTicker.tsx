@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Music } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Music, Play, Pause } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import OptimizedAvatar from "./OptimizedAvatar";
@@ -7,6 +7,7 @@ import OptimizedAvatar from "./OptimizedAvatar";
 interface MusicShare {
   id: string;
   user_id: string;
+  track_id: string;
   track_title: string;
   track_artist: string;
   created_at: string;
@@ -19,6 +20,8 @@ interface MusicShare {
 const MusicTicker = () => {
   const { user } = useAuth();
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     fetchMusicShares();
@@ -59,9 +62,17 @@ const MusicTicker = () => {
         .select("id, username, avatar_url")
         .in("id", userIds);
 
+      // Fetch track info from popular_music
+      const trackIds = sharesData.map(share => share.track_id);
+      const { data: tracksData } = await supabase
+        .from("popular_music")
+        .select("track_id, preview_url")
+        .in("track_id", trackIds);
+
       // Merge the data
       const enrichedShares = sharesData.map(share => ({
         ...share,
+        preview_url: tracksData?.find(t => t.track_id === share.track_id)?.preview_url || null,
         profiles: profilesData?.find(p => p.id === share.user_id) || {
           username: "Unknown",
           avatar_url: null
@@ -72,30 +83,58 @@ const MusicTicker = () => {
     }
   };
 
+  const handlePlayPause = (share: any) => {
+    if (playingId === share.id) {
+      audioRef.current?.pause();
+      setPlayingId(null);
+    } else {
+      if (audioRef.current && share.preview_url) {
+        audioRef.current.src = share.preview_url;
+        audioRef.current.play();
+        setPlayingId(share.id);
+      }
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
+
   if (musicShares.length === 0) return null;
 
   return (
     <div className="border-b border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5 overflow-hidden">
+      <audio ref={audioRef} onEnded={() => setPlayingId(null)} />
       <div className="flex items-center gap-4 px-4 py-2 animate-fade-in">
         <Music className="w-4 h-4 text-primary animate-pulse" />
         <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide">
           {musicShares.map((share) => (
-            <div
+            <button
               key={share.id}
-              className="flex items-center gap-2 whitespace-nowrap flex-shrink-0 animate-scale-in"
+              onClick={() => handlePlayPause(share)}
+              className="flex items-center gap-2 whitespace-nowrap flex-shrink-0 animate-scale-in hover:bg-primary/10 rounded-full px-3 py-1 transition-all group"
             >
               <OptimizedAvatar
                 src={share.profiles?.avatar_url || ""}
                 alt={share.profiles?.username || "User"}
                 className="w-6 h-6"
               />
-              <div className="text-sm">
+              <div className="text-sm flex items-center gap-2">
                 <span className="font-semibold">{share.profiles?.username}</span>
-                <span className="opacity-70 mx-1">•</span>
+                <span className="opacity-70">•</span>
                 <span className="opacity-90">{share.track_title}</span>
-                <span className="opacity-50 text-xs ml-1">by {share.track_artist}</span>
+                <span className="opacity-50 text-xs">by {share.track_artist}</span>
+                {playingId === share.id ? (
+                  <Pause className="w-4 h-4 text-primary ml-2" />
+                ) : (
+                  <Play className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity ml-2" />
+                )}
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>
