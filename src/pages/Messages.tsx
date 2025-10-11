@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 interface Profile {
   id: string;
@@ -29,6 +30,7 @@ const Messages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const { sendNotification } = usePushNotifications();
 
   useEffect(() => {
     fetchConversations().finally(() => setIsLoading(false));
@@ -39,11 +41,31 @@ const Messages = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'messages'
         },
-        () => {
+        async (payload) => {
+          const { data: { user } } = await supabase.auth.getUser();
+          const newMessage = payload.new as any;
+          
+          // Only send push notification if message is from someone else
+          if (user && newMessage.sender_id !== user.id) {
+            // Fetch sender profile for notification
+            const { data: senderProfile } = await supabase
+              .from('profiles')
+              .select('username, full_name')
+              .eq('id', newMessage.sender_id)
+              .single();
+            
+            if (senderProfile) {
+              sendNotification(
+                `New message from ${senderProfile.full_name}`,
+                newMessage.content.substring(0, 100)
+              );
+            }
+          }
+          
           fetchConversations();
         }
       )

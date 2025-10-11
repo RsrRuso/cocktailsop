@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CreateStatusDialog from "@/components/CreateStatusDialog";
+import { NotificationSettings } from "@/components/NotificationSettings";
 
 const TopNav = () => {
   const navigate = useNavigate();
@@ -173,6 +174,8 @@ const TopNav = () => {
               </div>
             )}
           </button>
+
+          <NotificationSettings />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 interface Notification {
   id: string;
@@ -18,6 +19,7 @@ interface Notification {
 const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const navigate = useNavigate();
+  const { sendNotification } = usePushNotifications();
 
   useEffect(() => {
     fetchNotifications();
@@ -32,8 +34,13 @@ const Notifications = () => {
           schema: 'public',
           table: 'notifications'
         },
-        () => {
+        (payload) => {
           fetchNotifications();
+          // Send push notification
+          const newNotification = payload.new as Notification;
+          if (newNotification.type !== 'message') {
+            sendNotification('New Notification', newNotification.content);
+          }
         }
       )
       .subscribe();

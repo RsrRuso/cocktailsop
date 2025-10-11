@@ -201,6 +201,26 @@ Edit `capacitor.config.ts` to customize:
 - Icons
 - Permissions
 
+### 🔔 Push Notifications Setup
+
+Your app now includes push notification support! To enable notifications:
+
+1. **In the app:** Click the bell icon in the top navigation
+2. **Grant permission:** Accept when prompted to enable notifications
+3. **That's it!** You'll now receive:
+   - New message notifications with sound
+   - Activity notifications (likes, comments, follows)
+   - Event reminders
+
+**For native mobile apps:**
+After adding push notifications, make sure to:
+```bash
+npm run build
+npx cap sync
+```
+
+This syncs the notification plugin to your native projects.
+
 ---
 
 ## 🚀 Publishing
