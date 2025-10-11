@@ -36,7 +36,7 @@ export const useFeedData = (selectedRegion: string | null) => {
         .from("posts")
         .select("id, user_id, content, media_urls, like_count, comment_count, created_at")
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(10);
 
       if (error) throw error;
       if (!postsData) return;
@@ -72,7 +72,7 @@ export const useFeedData = (selectedRegion: string | null) => {
         .from("reels")
         .select("id, user_id, video_url, caption, like_count, comment_count, view_count, created_at")
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(10);
 
       if (error) throw error;
       if (!reelsData) return;
