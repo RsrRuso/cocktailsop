@@ -22,15 +22,15 @@ const StatusRing = ({
   return (
     <div className={`relative inline-block ${className}`}>
       {hasStatus && statusText && (
-        <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-10 pointer-events-none max-w-[150px]">
+        <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-[100px]">
           <div className="relative">
-            <div className="bg-muted/95 backdrop-blur-sm text-muted-foreground px-2 py-1 rounded-full text-[10px] overflow-hidden shadow-[0_0_12px_rgba(147,197,253,0.6)]">
-              <div className="flex items-center gap-1">
+            <div className="bg-muted/95 backdrop-blur-sm text-muted-foreground px-2 py-1.5 rounded-full text-[10px] overflow-hidden shadow-[0_0_12px_rgba(147,197,253,0.6)] min-h-[28px] flex items-center justify-center">
+              <div className="flex items-center gap-1 justify-center">
                 {emoji && <span className="shrink-0 text-[11px]">{emoji}</span>}
-                <div className="overflow-hidden">
+                <div className="overflow-hidden flex-1 text-center">
                   <div className="animate-marquee whitespace-nowrap inline-block">
                     {statusText}
-                    {statusText.length > 30 && <span className="ml-8">{statusText}</span>}
+                    {statusText.length > 15 && <span className="ml-6">{statusText}</span>}
                   </div>
                 </div>
               </div>
