@@ -69,19 +69,14 @@ export const FeedItem = memo(({
             <div className="flex items-center relative">
               <p className="font-semibold">{item.profiles?.full_name || item.profiles?.username || 'Unknown User'}</p>
               {item.profiles?.badge_level && (
-                <div className={`ml-1 w-4 h-4 rounded-full bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)} flex items-center justify-center text-[8px] font-bold text-white shadow-lg`}>
-                  {item.profiles.badge_level[0].toUpperCase()}
+                <div className="relative ml-1.5 group">
+                  <div className={`absolute -inset-1 bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)} blur-md opacity-60 group-hover:opacity-100 transition-all duration-300 rounded-full animate-pulse`} />
+                  <div className={`relative w-5 h-5 rounded-full bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)} flex items-center justify-center text-[9px] font-bold text-white shadow-xl ring-2 ring-white/30 group-hover:scale-110 transition-transform duration-200`}>
+                    {item.profiles.badge_level[0].toUpperCase()}
+                  </div>
                 </div>
               )}
             </div>
-            {item.profiles?.professional_title && (
-              <div className="relative group">
-                <div className={`absolute inset-0 bg-gradient-to-br ${professionalBadge.gradient} blur-sm opacity-75 group-hover:opacity-100 transition-opacity rounded-md`} />
-                <div className={`relative w-7 h-7 bg-gradient-to-br ${professionalBadge.gradient} flex items-center justify-center transform rotate-45 rounded-md shadow-lg`}>
-                  <BadgeIcon className="w-4 h-4 text-white -rotate-45" />
-                </div>
-              </div>
-            )}
           </div>
           <p className="text-sm text-blue-500 capitalize">
             {item.profiles?.professional_title?.replace(/_/g, " ") || ''}

@@ -161,8 +161,11 @@ const TopNav = () => {
         <div className="flex items-center gap-2">
           {/* Badge Level Indicator */}
           {currentUser?.badge_level && (
-            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center text-xs font-bold text-white shadow-lg`}>
-              {currentUser.badge_level[0].toUpperCase()}
+            <div className="relative group">
+              <div className={`absolute -inset-2 bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} blur-lg opacity-50 group-hover:opacity-75 transition-all duration-300 rounded-full animate-pulse`} />
+              <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center text-sm font-bold text-white shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                {currentUser.badge_level[0].toUpperCase()}
+              </div>
             </div>
           )}
           
