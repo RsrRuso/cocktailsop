@@ -510,6 +510,33 @@ export type Database = {
           },
         ]
       }
+      music_shares: {
+        Row: {
+          created_at: string
+          id: string
+          track_artist: string
+          track_id: string
+          track_title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          track_artist: string
+          track_id: string
+          track_title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          track_artist?: string
+          track_id?: string
+          track_title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           content: string
