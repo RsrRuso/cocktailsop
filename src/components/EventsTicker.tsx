@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Calendar } from 'lucide-react';
+import { Calendar, MessageCircle } from 'lucide-react';
 import { EventDetailDialog } from './EventDetailDialog';
+import { EventCommentsDialog } from './EventCommentsDialog';
 
 interface Event {
   id: string;
@@ -23,6 +24,7 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -43,6 +45,12 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
   const handleEventClick = (event: Event) => {
     setSelectedEvent(event);
     setDialogOpen(true);
+  };
+
+  const handleCommentsClick = (event: Event, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedEvent(event);
+    setCommentsDialogOpen(true);
   };
 
   if (events.length === 0) return null;
@@ -72,6 +80,13 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
               <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
                 {event.attendee_count || 0} going
               </span>
+              <button
+                onClick={(e) => handleCommentsClick(event, e)}
+                className="ml-2 inline-flex items-center gap-1 text-xs bg-accent/20 text-accent-foreground px-2 py-0.5 rounded-full hover:bg-accent/30 transition-colors"
+              >
+                <MessageCircle className="w-3 h-3" />
+                {event.comment_count || 0}
+              </button>
               <span className="mx-2 text-primary">•</span>
             </button>
           ))}
@@ -97,6 +112,13 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
           };
           fetchEvents();
         }}
+      />
+
+      <EventCommentsDialog
+        eventId={selectedEvent?.id || null}
+        eventTitle={selectedEvent?.title || ''}
+        open={commentsDialogOpen}
+        onOpenChange={setCommentsDialogOpen}
       />
     </div>
   );
