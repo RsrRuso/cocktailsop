@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
+import CreateStatusDialog from "@/components/CreateStatusDialog";
 
 const TopNav = () => {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ const TopNav = () => {
     return (saved as 'light' | 'grey' | 'dark' | 'black') || 'dark';
   });
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -225,17 +227,19 @@ const TopNav = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <button onClick={() => navigate("/profile")}>
+          <div onClick={() => navigate("/profile")} className="cursor-pointer">
             <OptimizedAvatar
               src={currentUser?.avatar_url}
               alt={currentUser?.username || 'User'}
               fallback={currentUser?.username?.[0] || "U"}
               userId={currentUser?.id}
               className="w-10 h-10 ring-2 ring-primary/30"
+              showAddButton={true}
+              onAddStatusClick={() => setShowStatusDialog(true)}
             />
-          </button>
+          </div>
 
-          <button 
+          <button
             onClick={() => navigate("/ops-tools")}
             className="glass-hover px-3 py-2 rounded-2xl font-semibold text-sm"
           >
@@ -243,6 +247,24 @@ const TopNav = () => {
           </button>
         </div>
       </div>
+
+      {user && (
+        <CreateStatusDialog
+          open={showStatusDialog}
+          onOpenChange={setShowStatusDialog}
+          userId={user.id}
+        />
+      )}
+
+      <BadgeInfoDialog 
+        open={badgeDialogOpen}
+        onOpenChange={setBadgeDialogOpen}
+        badgeLevel={currentUser?.badge_level || 'bronze'}
+        username={currentUser?.username}
+        isFounder={userRoles.isFounder}
+        isVerified={userRoles.isVerified}
+        isOwnProfile={true}
+      />
     </div>
   );
 };

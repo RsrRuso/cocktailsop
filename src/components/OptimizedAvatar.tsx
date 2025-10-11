@@ -11,6 +11,8 @@ interface OptimizedAvatarProps {
   className?: string;
   userId?: string | null;
   showStatus?: boolean;
+  showAddButton?: boolean;
+  onAddStatusClick?: () => void;
 }
 
 const OptimizedAvatar = ({ 
@@ -19,7 +21,9 @@ const OptimizedAvatar = ({
   fallback, 
   className,
   userId,
-  showStatus = true 
+  showStatus = true,
+  showAddButton = false,
+  onAddStatusClick
 }: OptimizedAvatarProps) => {
   const [imageError, setImageError] = useState(false);
   const { data: status } = useUserStatus(showStatus ? userId : null);
@@ -44,7 +48,13 @@ const OptimizedAvatar = ({
   );
 
   return (
-    <StatusRing hasStatus={!!status}>
+    <StatusRing 
+      hasStatus={!!status}
+      statusText={status?.status_text}
+      emoji={status?.emoji}
+      showAddButton={showAddButton}
+      onAddClick={onAddStatusClick}
+    >
       {avatar}
     </StatusRing>
   );
