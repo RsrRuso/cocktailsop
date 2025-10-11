@@ -22,11 +22,11 @@ const StatusRing = ({
   return (
     <div className={`relative inline-block ${className}`}>
       {hasStatus && statusText && (
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-10 pointer-events-none max-w-[200px]">
+        <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-10 pointer-events-none max-w-[150px]">
           <div className="relative">
-            <div className="bg-muted/95 backdrop-blur-sm text-muted-foreground px-3 py-1.5 rounded-2xl text-xs shadow-sm overflow-hidden">
+            <div className="bg-muted/95 backdrop-blur-sm text-muted-foreground px-2 py-1 rounded-full text-[10px] overflow-hidden shadow-[0_0_12px_rgba(147,197,253,0.6)]">
               <div className="flex items-center gap-1">
-                {emoji && <span className="shrink-0">{emoji}</span>}
+                {emoji && <span className="shrink-0 text-[11px]">{emoji}</span>}
                 <div className="overflow-hidden">
                   <div className="animate-marquee whitespace-nowrap inline-block">
                     {statusText}
@@ -35,11 +35,11 @@ const StatusRing = ({
                 </div>
               </div>
             </div>
-            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2">
-              <div className="w-3 h-3 bg-muted/95 backdrop-blur-sm rounded-full"></div>
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
+              <div className="w-2 h-2 bg-muted/95 backdrop-blur-sm rounded-full shadow-[0_0_8px_rgba(147,197,253,0.5)]"></div>
             </div>
-            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 translate-x-1">
-              <div className="w-2 h-2 bg-muted/95 backdrop-blur-sm rounded-full"></div>
+            <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 translate-x-0.5">
+              <div className="w-1.5 h-1.5 bg-muted/95 backdrop-blur-sm rounded-full shadow-[0_0_6px_rgba(147,197,253,0.4)]"></div>
             </div>
           </div>
         </div>
