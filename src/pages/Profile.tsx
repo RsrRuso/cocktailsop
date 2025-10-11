@@ -261,13 +261,7 @@ const Profile = () => {
               <div className="relative">
                 <div
                   className={`cursor-pointer transition-transform hover:scale-105 ${stories.length > 0 ? 'ring-4 ring-primary rounded-full' : ''}`}
-                  onClick={() => {
-                    if (stories.length > 0) {
-                      navigate(`/story/${currentUserId}`);
-                    } else {
-                      setShowAvatarDialog(true);
-                    }
-                  }}
+                  onClick={() => setShowAvatarDialog(true)}
                 >
                   <OptimizedAvatar
                     src={profile.avatar_url}

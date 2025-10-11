@@ -1,9 +1,12 @@
 import { Home, PlusSquare, Search, Video } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import OptimizedAvatar from "@/components/OptimizedAvatar";
+import { useAuth } from "@/contexts/AuthContext";
 
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { profile } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -57,17 +60,19 @@ const BottomNav = () => {
             onClick={() => navigate("/profile")}
             className={`flex items-center justify-center w-12 h-12 transition-all ${
               isActive("/profile") 
-                ? "text-foreground scale-110" 
-                : "text-muted-foreground hover:text-foreground"
+                ? "scale-110" 
+                : ""
             }`}
           >
-            <div className={`w-7 h-7 rounded-full border-2 ${
-              isActive("/profile") 
-                ? "border-foreground" 
-                : "border-muted-foreground"
-            } overflow-hidden`}>
-              <div className="w-full h-full bg-gradient-to-br from-primary to-accent" />
-            </div>
+            <OptimizedAvatar
+              src={profile?.avatar_url}
+              alt={profile?.username || 'User'}
+              fallback={profile?.username?.[0] || "U"}
+              userId={profile?.id}
+              className={`w-8 h-8 ${isActive("/profile") ? "ring-2 ring-foreground" : "ring-2 ring-muted-foreground/50"}`}
+              showStatus={false}
+              showAddButton={false}
+            />
           </button>
         </div>
       </div>
