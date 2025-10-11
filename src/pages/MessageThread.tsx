@@ -78,79 +78,68 @@ const MessageThread = () => {
     const trimmedMessage = newMessage.trim();
     const tempId = `temp-${Date.now()}`;
     
-    // Clear input immediately
-    setNewMessage("");
-    const wasEditing = !!editingMessage;
-    const editId = editingMessage?.id;
-    setEditingMessage(null);
-    setReplyingTo(null);
+    // Optimistically add message to UI instantly
+    const optimisticMessage: Message = {
+      id: tempId,
+      content: trimmedMessage,
+      sender_id: currentUser.id,
+      created_at: new Date().toISOString(),
+      read: false,
+      delivered: false,
+      reactions: [],
+      reply_to_id: replyingTo?.id || null,
+      edited: false,
+      edited_at: null,
+    };
     
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setNewMessage("");
+    setReplyingTo(null);
+
     // Play sent sound
+    const sentSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZUA0PVKzn7K5fGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBQ==');
+    sentSound.volume = 0.5;
+    sentSound.play().catch(() => {});
+
     try {
-      const sentSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZUA0PVKzn7K5fGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBQ==');
-      sentSound.volume = 0.5;
-      sentSound.play();
-    } catch {}
-
-    if (wasEditing && editId) {
-      // Handle edit
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === editId
-            ? { ...msg, content: trimmedMessage, edited: true, edited_at: new Date().toISOString() }
-            : msg
-        )
-      );
-
-      supabase
-        .from("messages")
-        .update({
-          content: trimmedMessage,
-          edited: true,
-          edited_at: new Date().toISOString(),
-        })
-        .eq("id", editId);
-    } else {
-      // Add optimistic message
-      const optimisticMessage: Message = {
-        id: tempId,
-        content: trimmedMessage,
+      const messageData: any = {
+        conversation_id: conversationId,
         sender_id: currentUser.id,
-        created_at: new Date().toISOString(),
-        read: false,
+        content: trimmedMessage,
         delivered: false,
-        reactions: [],
-        reply_to_id: replyingTo?.id || null,
-        edited: false,
-        edited_at: null,
+        read: false,
       };
-      
-      setMessages((prev) => [...prev, optimisticMessage]);
 
-      // Send to backend
-      supabase
-        .from("messages")
-        .insert({
-          conversation_id: conversationId,
-          sender_id: currentUser.id,
-          content: trimmedMessage,
-          reply_to_id: replyingTo?.id || null,
-          delivered: false,
-          read: false,
-        })
-        .then(() => {
-          // Remove temp message when real one arrives via realtime
-          setTimeout(() => {
-            setMessages((prev) => prev.filter((m) => m.id !== tempId));
-          }, 1000);
-        });
+      if (replyingTo) {
+        messageData.reply_to_id = replyingTo.id;
+      }
+
+      if (editingMessage) {
+        await supabase
+          .from("messages")
+          .update({
+            content: trimmedMessage,
+            edited: true,
+            edited_at: new Date().toISOString(),
+          })
+          .eq("id", editingMessage.id);
+        setEditingMessage(null);
+        // Remove the optimistic message for edits
+        setMessages((prev) => prev.filter(m => m.id !== tempId));
+      } else {
+        await supabase.from("messages").insert(messageData);
+      }
+
+      updateTypingStatus(false);
+      await supabase
+        .from("conversations")
+        .update({ last_message_at: new Date().toISOString() })
+        .eq("id", conversationId);
+    } catch (error) {
+      // Remove optimistic message on error
+      setMessages((prev) => prev.filter(m => m.id !== tempId));
+      setNewMessage(trimmedMessage);
     }
-
-    updateTypingStatus(false);
-    supabase
-      .from("conversations")
-      .update({ last_message_at: new Date().toISOString() })
-      .eq("id", conversationId);
   };
 
   const quickEmojis = [
@@ -212,16 +201,8 @@ const MessageThread = () => {
                 isOwn={isOwn}
                 onReaction={() => setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id)}
                 onReply={() => setReplyingTo(message)}
-                onEdit={isOwn && !message.media_url ? () => { setEditingMessage(message); setNewMessage(message.content); } : undefined}
-                onDelete={isOwn ? () => {
-                  if (message.media_url) {
-                    if (window.confirm(`Delete this ${message.media_type}?`)) {
-                      handleDelete(message.id);
-                    }
-                  } else {
-                    handleDelete(message.id);
-                  }
-                } : undefined}
+                onEdit={isOwn ? () => { setEditingMessage(message); setNewMessage(message.content); } : undefined}
+                onDelete={isOwn ? () => handleDelete(message.id) : undefined}
               />
 
               {showEmojiPicker === message.id && (
@@ -245,7 +226,7 @@ const MessageThread = () => {
               )}
 
               {message.reactions && message.reactions.length > 0 && (
-                <div className={`flex gap-1 mt-1 flex-wrap ${message.media_url ? 'px-4 pb-2' : ''}`}>
+                <div className="flex gap-1 mt-1 flex-wrap">
                   {message.reactions.map((reaction, idx) => (
                     <button key={idx} onClick={() => handleReaction(message.id, reaction.emoji)} className={`glass backdrop-blur-lg rounded-full px-2 py-0.5 text-xs flex items-center gap-1 hover:scale-110 transition-transform ${reaction.user_ids.includes(currentUser?.id || "") ? "ring-1 ring-primary glow-primary" : ""}`}>
                       <span>{reaction.emoji}</span>
