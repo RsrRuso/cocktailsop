@@ -81,18 +81,21 @@ const Messages = () => {
         profilesData?.map(p => [p.id, p]) || []
       );
 
-      // Get unread counts for each conversation
+      // Get unread counts for ALL conversations in ONE query (batch optimization)
+      const convIds = data.map(c => c.id);
+      const { data: unreadMessages } = await supabase
+        .from("messages")
+        .select("conversation_id")
+        .in("conversation_id", convIds)
+        .eq("read", false)
+        .neq("sender_id", user.id);
+
+      // Count unread messages per conversation
       const unreadCountsMap = new Map<string, number>();
-      for (const conv of data) {
-        const { count } = await supabase
-          .from("messages")
-          .select("*", { count: 'exact', head: true })
-          .eq("conversation_id", conv.id)
-          .eq("read", false)
-          .neq("sender_id", user.id);
-        
-        unreadCountsMap.set(conv.id, count || 0);
-      }
+      unreadMessages?.forEach(msg => {
+        const current = unreadCountsMap.get(msg.conversation_id) || 0;
+        unreadCountsMap.set(msg.conversation_id, current + 1);
+      });
 
       const conversationsWithData = data.map((conv) => {
         const otherUserId = conv.participant_ids.find((id: string) => id !== user.id);

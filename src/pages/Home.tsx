@@ -170,7 +170,7 @@ const Home = () => {
 
       setStories(storiesWithProfiles);
     } catch (error) {
-      console.error('Fetch stories failed');
+      // Silently fail
     }
   }, []);
 
@@ -215,7 +215,6 @@ const Home = () => {
       toast.success("Post deleted successfully");
       refreshFeed();
     } catch (error) {
-      console.error('Error deleting post:', error);
       toast.error("Failed to delete post");
     }
   }, [refreshFeed]);
@@ -231,7 +230,6 @@ const Home = () => {
       toast.success("Reel deleted successfully");
       refreshFeed();
     } catch (error) {
-      console.error('Error deleting reel:', error);
       toast.error("Failed to delete reel");
     }
   };

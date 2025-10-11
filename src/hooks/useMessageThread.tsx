@@ -273,7 +273,7 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
       .update({ reactions: updatedReactions })
       .eq('id', messageId);
 
-    if (error) console.error('Error updating reaction:', error);
+    // Silently fail reaction update
   };
 
   const handleDelete = async (messageId: string) => {
@@ -285,13 +285,12 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
         const filePath = urlParts.slice(-2).join('/');
         await supabase.storage.from('stories').remove([filePath]);
       } catch (error) {
-        console.error('Error deleting media file:', error);
+        // Silently fail media deletion
       }
     }
 
     const { error } = await supabase.from('messages').delete().eq('id', messageId);
     if (error) {
-      console.error('Error deleting message:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete message',

@@ -61,7 +61,7 @@ export const useFeedData = (selectedRegion: string | null) => {
 
       setPosts(filteredPosts);
     } catch (error) {
-      console.error('Fetch posts failed');
+      // Silently fail and show empty feed
     }
   }, [selectedRegion]);
 
@@ -97,7 +97,7 @@ export const useFeedData = (selectedRegion: string | null) => {
 
       setReels(filteredReels);
     } catch (error) {
-      console.error('Fetch reels failed');
+      // Silently fail and show empty feed
     }
   }, [selectedRegion]);
 
