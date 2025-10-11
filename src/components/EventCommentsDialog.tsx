@@ -101,22 +101,14 @@ export const EventCommentsDialog = ({ eventId, eventTitle, eventDate, open, onOp
     // Check if comment indicates attendance
     const attendanceKeywords = ['i\'m going', 'im going', 'i am going', 'count me in', 'i\'ll be there', 'ill be there'];
     if (attendanceKeywords.some(keyword => commentText.toLowerCase().includes(keyword))) {
-      const scheduled = await scheduleEventReminder(eventTitle, eventDate || null);
+      await scheduleEventReminder(eventTitle, eventDate || null);
+      const added = await addToCalendar(eventTitle, eventDate || null);
       
-      toast.success('Comment posted!', {
-        action: {
-          label: 'Add to Calendar',
-          onClick: async () => {
-            const added = await addToCalendar(eventTitle, eventDate || null);
-            if (added) {
-              toast.success('Added to calendar!');
-            } else {
-              toast.error('Could not add to calendar');
-            }
-          },
-        },
-        duration: 6000,
-      });
+      if (added) {
+        toast.success('Comment posted! Event saved to calendar');
+      } else {
+        toast.success('Comment posted!');
+      }
     } else {
       toast.success('Comment posted!');
     }

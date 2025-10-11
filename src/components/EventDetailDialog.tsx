@@ -164,24 +164,17 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
         setIsAttending(true);
         setAttendeeCount(prev => prev + 1);
         
-        // Schedule reminder and suggest calendar
-        const scheduled = await scheduleEventReminder(event.title, event.event_date);
+        // Schedule reminder
+        await scheduleEventReminder(event.title, event.event_date);
         
-        // Show suggestion to add to calendar
-        toast.success("You're going!", {
-          action: {
-            label: 'Add to Calendar',
-            onClick: async () => {
-              const added = await addToCalendar(event.title, event.event_date, event.description || undefined);
-              if (added) {
-                toast.success('Added to calendar!');
-              } else {
-                toast.error('Could not add to calendar');
-              }
-            },
-          },
-          duration: 6000,
-        });
+        // Automatically add to calendar
+        const added = await addToCalendar(event.title, event.event_date, event.description || undefined);
+        
+        if (added) {
+          toast.success("You're going! Event saved to calendar");
+        } else {
+          toast.success("You're going!");
+        }
       }
     }
   };
@@ -214,22 +207,14 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
       // Check if comment indicates attendance
       const attendanceKeywords = ['i\'m going', 'im going', 'i am going', 'count me in', 'i\'ll be there', 'ill be there'];
       if (attendanceKeywords.some(keyword => commentText.toLowerCase().includes(keyword))) {
-        const scheduled = await scheduleEventReminder(event.title, event.event_date);
+        await scheduleEventReminder(event.title, event.event_date);
+        const added = await addToCalendar(event.title, event.event_date, event.description || undefined);
         
-        toast.success('Comment added!', {
-          action: {
-            label: 'Add to Calendar',
-            onClick: async () => {
-              const added = await addToCalendar(event.title, event.event_date, event.description || undefined);
-              if (added) {
-                toast.success('Added to calendar!');
-              } else {
-                toast.error('Could not add to calendar');
-              }
-            },
-          },
-          duration: 6000,
-        });
+        if (added) {
+          toast.success('Comment added! Event saved to calendar');
+        } else {
+          toast.success('Comment added!');
+        }
       } else {
         toast.success('Comment added!');
       }
