@@ -240,6 +240,25 @@ All colors MUST be HSL.
     animation: shimmer 2s infinite;
   }
 
+  /* Marquee animation for events ticker */
+  @keyframes marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+  
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+    display: inline-block;
+  }
+  
+  .animate-marquee:hover {
+    animation-play-state: paused;
+  }
+
   /* Fullscreen video controls */
   .reel-container:fullscreen .fullscreen-actions,
   .reel-container:-webkit-full-screen .fullscreen-actions {

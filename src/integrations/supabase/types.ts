@@ -177,6 +177,42 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_date: string | null
+          id: string
+          is_active: boolean | null
+          region: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          region: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          region?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string | null

@@ -5,6 +5,9 @@ import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { EventsTicker } from "@/components/EventsTicker";
+import { CreateEventDialog } from "@/components/CreateEventDialog";
+import { useManagerRole } from "@/hooks/useManagerRole";
 
 const Explore = () => {
   const navigate = useNavigate();
@@ -13,6 +16,8 @@ const Explore = () => {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"top" | "accounts" | "regions">("top");
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedRegion, setSelectedRegion] = useState("All");
+  const { isManager } = useManagerRole();
 
   useEffect(() => {
     // Fetch posts only when they're needed (in background)
@@ -176,6 +181,16 @@ const Explore = () => {
 
         {activeTab === "regions" && (
           <div className="space-y-6">
+            {/* Event Ticker */}
+            <EventsTicker region={selectedRegion} />
+            
+            {/* Manager Controls */}
+            {isManager && (
+              <div className="flex justify-end">
+                <CreateEventDialog />
+              </div>
+            )}
+            
             <div className="glass rounded-3xl p-6 border border-primary/20">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
@@ -185,37 +200,55 @@ const Explore = () => {
               </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-3xl p-8 bg-gradient-to-br from-pink-600 to-rose-500 cursor-pointer hover:scale-105 transition-all shadow-xl">
+                <div 
+                  onClick={() => setSelectedRegion('USA')}
+                  className="rounded-3xl p-8 bg-gradient-to-br from-pink-600 to-rose-500 cursor-pointer hover:scale-105 transition-all shadow-xl"
+                >
                   <div className="text-5xl mb-3">🇺🇸</div>
                   <h3 className="text-2xl font-bold text-white mb-1">USA</h3>
                   <p className="text-sm text-white/80">{Math.floor(Math.random() * 3000) + 2000} professionals</p>
                 </div>
 
-                <div className="rounded-3xl p-8 bg-gradient-to-br from-blue-600 to-indigo-500 cursor-pointer hover:scale-105 transition-all shadow-xl">
+                <div 
+                  onClick={() => setSelectedRegion('UK')}
+                  className="rounded-3xl p-8 bg-gradient-to-br from-blue-600 to-indigo-500 cursor-pointer hover:scale-105 transition-all shadow-xl"
+                >
                   <div className="text-5xl mb-3">🇬🇧</div>
                   <h3 className="text-2xl font-bold text-white mb-1">UK</h3>
                   <p className="text-sm text-white/80">{Math.floor(Math.random() * 2000) + 1500} professionals</p>
                 </div>
 
-                <div className="rounded-3xl p-8 bg-gradient-to-br from-emerald-600 to-teal-500 cursor-pointer hover:scale-105 transition-all shadow-xl">
+                <div 
+                  onClick={() => setSelectedRegion('Europe')}
+                  className="rounded-3xl p-8 bg-gradient-to-br from-emerald-600 to-teal-500 cursor-pointer hover:scale-105 transition-all shadow-xl"
+                >
                   <div className="text-5xl mb-3">🇪🇺</div>
                   <h3 className="text-2xl font-bold text-white mb-1">Europe</h3>
                   <p className="text-sm text-white/80">{Math.floor(Math.random() * 4000) + 3000} professionals</p>
                 </div>
 
-                <div className="rounded-3xl p-8 bg-gradient-to-br from-orange-600 to-amber-500 cursor-pointer hover:scale-105 transition-all shadow-xl">
+                <div 
+                  onClick={() => setSelectedRegion('Asia')}
+                  className="rounded-3xl p-8 bg-gradient-to-br from-orange-600 to-amber-500 cursor-pointer hover:scale-105 transition-all shadow-xl"
+                >
                   <div className="text-5xl mb-3">🌏</div>
                   <h3 className="text-2xl font-bold text-white mb-1">Asia</h3>
                   <p className="text-sm text-white/80">{Math.floor(Math.random() * 5000) + 4000} professionals</p>
                 </div>
 
-                <div className="rounded-3xl p-8 bg-gradient-to-br from-purple-600 to-violet-500 cursor-pointer hover:scale-105 transition-all shadow-xl">
+                <div 
+                  onClick={() => setSelectedRegion('Middle East')}
+                  className="rounded-3xl p-8 bg-gradient-to-br from-purple-600 to-violet-500 cursor-pointer hover:scale-105 transition-all shadow-xl"
+                >
                   <div className="text-5xl mb-3">🌍</div>
                   <h3 className="text-2xl font-bold text-white mb-1">Middle East</h3>
                   <p className="text-sm text-white/80">{Math.floor(Math.random() * 2000) + 1000} professionals</p>
                 </div>
 
-                <div className="rounded-3xl p-8 bg-gradient-to-br from-yellow-600 to-orange-500 cursor-pointer hover:scale-105 transition-all shadow-xl">
+                <div 
+                  onClick={() => setSelectedRegion('Africa')}
+                  className="rounded-3xl p-8 bg-gradient-to-br from-yellow-600 to-orange-500 cursor-pointer hover:scale-105 transition-all shadow-xl"
+                >
                   <div className="text-5xl mb-3">🌍</div>
                   <h3 className="text-2xl font-bold text-white mb-1">Africa</h3>
                   <p className="text-sm text-white/80">{Math.floor(Math.random() * 1500) + 800} professionals</p>
