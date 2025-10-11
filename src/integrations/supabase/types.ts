@@ -49,6 +49,38 @@ export type Database = {
           },
         ]
       }
+      bot_activity_log: {
+        Row: {
+          activity_type: string
+          bot_id: string
+          created_at: string | null
+          id: string
+          target_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          bot_id: string
+          created_at?: string | null
+          id?: string
+          target_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          bot_id?: string
+          created_at?: string | null
+          id?: string
+          target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_activity_log_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string | null
@@ -531,6 +563,7 @@ export type Database = {
           following_count: number | null
           full_name: string
           id: string
+          is_bot: boolean | null
           phone: string | null
           post_count: number | null
           professional_title:
@@ -555,6 +588,7 @@ export type Database = {
           following_count?: number | null
           full_name: string
           id: string
+          is_bot?: boolean | null
           phone?: string | null
           post_count?: number | null
           professional_title?:
@@ -579,6 +613,7 @@ export type Database = {
           following_count?: number | null
           full_name?: string
           id?: string
+          is_bot?: boolean | null
           phone?: string | null
           post_count?: number | null
           professional_title?:

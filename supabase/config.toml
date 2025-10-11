@@ -1,1 +1,4 @@
 project_id = "cbfqwaqwliehgxsdueem"
+
+[functions.bot-activity]
+verify_jwt = true
