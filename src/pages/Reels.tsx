@@ -354,6 +354,7 @@ const Reels = () => {
         onOpenChange={setShowComments}
         postId={selectedReelForComments}
         isReel={true}
+        onCommentChange={fetchReels}
       />
 
       <LikesDialog

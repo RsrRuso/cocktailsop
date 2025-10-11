@@ -28,9 +28,10 @@ interface CommentsDialogProps {
   onOpenChange: (open: boolean) => void;
   postId: string;
   isReel?: boolean;
+  onCommentChange?: () => void;
 }
 
-const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: CommentsDialogProps) => {
+const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentChange }: CommentsDialogProps) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,6 +150,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
       if (error) throw error;
       
       setReplyingTo(null);
+      onCommentChange?.();
     } catch (error) {
       console.error("Error posting comment:", error);
       toast.error("Failed to post comment");
@@ -168,6 +170,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
       if (error) throw error;
       
       toast.success("Comment deleted");
+      onCommentChange?.();
     } catch (error) {
       console.error("Error deleting comment:", error);
       toast.error("Failed to delete comment");

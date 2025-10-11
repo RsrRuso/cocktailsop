@@ -437,6 +437,7 @@ const Home = () => {
         onOpenChange={setCommentsDialogOpen}
         postId={selectedPostId}
         isReel={selectedPostType === 'reel'}
+        onCommentChange={refreshFeed}
       />
 
       <LikesDialog
