@@ -164,7 +164,15 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
+          console.log('DELETE event received:', payload);
+          const deletedId = payload.old?.id;
+          if (deletedId) {
+            setMessages((prev) => {
+              const filtered = prev.filter((msg) => msg.id !== deletedId);
+              console.log('Messages after delete:', filtered.length);
+              return filtered;
+            });
+          }
         }
       )
       .subscribe();
@@ -277,7 +285,11 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
   };
 
   const handleDelete = async (messageId: string) => {
+    console.log('Deleting message:', messageId);
     const message = messages.find((m) => m.id === messageId);
+
+    // Optimistically remove from UI immediately
+    setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
 
     if (message?.media_url) {
       try {
@@ -292,12 +304,19 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
     const { error } = await supabase.from('messages').delete().eq('id', messageId);
     if (error) {
       console.error('Error deleting message:', error);
+      // Revert optimistic update on error
+      if (message) {
+        setMessages((prev) => [...prev, message].sort((a, b) => 
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        ));
+      }
       toast({
         title: 'Error',
         description: 'Failed to delete message',
         variant: 'destructive',
       });
     } else {
+      console.log('Message deleted successfully from DB');
       toast({
         title: 'Success',
         description: 'Message deleted successfully',
