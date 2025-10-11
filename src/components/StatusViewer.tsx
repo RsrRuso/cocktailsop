@@ -80,62 +80,70 @@ const StatusViewer = ({ userId, onClose }: StatusViewerProps) => {
   if (!status) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/80 to-transparent p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <OptimizedAvatar
-              src={status.profiles.avatar_url}
-              alt={status.profiles.username}
-              className="w-10 h-10 ring-2 ring-white"
-            />
-            <span className="text-white font-semibold">
-              {status.profiles.username}
-            </span>
-          </div>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="text-white hover:bg-white/20"
-          >
-            <X className="w-6 h-6" />
-          </Button>
-        </div>
-      </div>
+    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="relative max-w-md w-full">
+        {/* Close Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="absolute -top-12 right-0 text-white hover:bg-white/20 z-20"
+        >
+          <X className="w-6 h-6" />
+        </Button>
 
-      {/* Content */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-2xl">
+        {/* Status Card */}
+        <div className="relative flex flex-col items-center">
+          {/* Status Bubble */}
           {status.status_text && (
-            <div className="relative overflow-hidden bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 rounded-2xl border border-primary/30 p-8">
-              <div className="animate-marquee-slow whitespace-nowrap text-4xl md:text-6xl font-bold text-white">
+            <div className="mb-4 px-6 py-3 bg-muted/90 backdrop-blur-sm rounded-3xl shadow-2xl max-w-[280px] overflow-hidden">
+              <div className="animate-marquee-slow whitespace-nowrap text-sm font-medium text-foreground">
                 {status.status_text}
               </div>
             </div>
           )}
 
+          {/* Avatar */}
+          <div className="relative">
+            <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500 opacity-75 blur-lg"></div>
+            <div className="relative rounded-full bg-gradient-to-br from-purple-400 via-pink-500 to-rose-500 p-1 shadow-2xl">
+              <div className="bg-background rounded-full p-1">
+                <OptimizedAvatar
+                  src={status.profiles.avatar_url}
+                  alt={status.profiles.username}
+                  className="w-32 h-32"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Username */}
+          <h3 className="mt-4 text-xl font-bold text-white">
+            {status.profiles.username}
+          </h3>
+
+          {/* Music Player */}
           {status.music_url && (
-            <div className="mt-8 flex items-center justify-center gap-4 bg-black/50 backdrop-blur-sm rounded-2xl p-6">
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={toggleMusic}
-                className="text-white hover:bg-white/20"
-              >
-                {isPlaying ? (
-                  <Pause className="w-8 h-8" />
-                ) : (
-                  <Play className="w-8 h-8" />
-                )}
-              </Button>
-              
-              <div className="flex-1">
-                <div className="flex items-center gap-2 text-white">
-                  <Music className="w-5 h-5" />
-                  <span className="text-lg font-medium">{status.music_title}</span>
+            <div className="mt-6 w-full bg-muted/50 backdrop-blur-sm rounded-2xl p-4 border border-border/50">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleMusic}
+                  className="text-white hover:bg-white/20 shrink-0"
+                >
+                  {isPlaying ? (
+                    <Pause className="w-6 h-6" />
+                  ) : (
+                    <Play className="w-6 h-6" />
+                  )}
+                </Button>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 text-white">
+                    <Music className="w-4 h-4 shrink-0" />
+                    <span className="text-sm font-medium truncate">{status.music_title}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -149,7 +157,7 @@ const StatusViewer = ({ userId, onClose }: StatusViewerProps) => {
           100% { transform: translateX(-100%); }
         }
         .animate-marquee-slow {
-          animation: marquee-slow 15s linear infinite;
+          animation: marquee-slow 8s linear infinite;
         }
       `}</style>
     </div>

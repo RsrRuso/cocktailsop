@@ -270,43 +270,39 @@ const Home = () => {
       <div className="px-4 py-4 overflow-x-auto scrollbar-hide">
         <div className="flex gap-4">
           {/* Your Status */}
-          <div className="flex flex-col items-center gap-2 min-w-[80px]">
+          <div className="relative flex flex-col items-center gap-2 min-w-[80px]">
             <button
               onClick={() => currentUser?.id && hasStatus(currentUser.id) ? setStatusViewerUserId(currentUser.id) : navigate("/profile")}
               className="relative group"
             >
-              {hasStatus(currentUser?.id || '') ? (
-                <div className="relative">
-                  <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500 opacity-75 blur group-hover:opacity-100 transition-all duration-300"></div>
-                  <div className="relative rounded-full bg-gradient-to-br from-purple-400 via-pink-500 to-rose-500 p-0.5 shadow-xl">
-                    <div className="bg-background rounded-full p-0.5">
-                      <Avatar className="w-16 h-16">
-                        <AvatarImage src={currentUser?.avatar_url || undefined} />
-                        <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
-                      </Avatar>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="w-16 h-16 rounded-full glass border-2 border-border flex items-center justify-center">
-                  <Avatar className="w-14 h-14">
-                    <AvatarImage src={currentUser?.avatar_url || undefined} />
-                    <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
-                  </Avatar>
+              {hasStatus(currentUser?.id || '') && (
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-2 bg-muted/90 backdrop-blur-sm rounded-2xl shadow-lg z-10 whitespace-nowrap">
+                  <p className="text-xs font-medium text-foreground">Your Status</p>
                 </div>
               )}
+              <div className="relative">
+                <div className={`absolute -inset-1 rounded-full ${hasStatus(currentUser?.id || '') ? 'bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500 opacity-75 blur group-hover:opacity-100' : 'bg-border/50'} transition-all duration-300`}></div>
+                <div className={`relative rounded-full ${hasStatus(currentUser?.id || '') ? 'bg-gradient-to-br from-purple-400 via-pink-500 to-rose-500' : 'bg-border'} p-0.5 shadow-xl`}>
+                  <div className="bg-background rounded-full p-0.5">
+                    <Avatar className="w-16 h-16">
+                      <AvatarImage src={currentUser?.avatar_url || undefined} />
+                      <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                </div>
+              </div>
               {!hasStatus(currentUser?.id || '') && (
-                <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary">
-                  <span className="text-white text-lg font-bold">+</span>
+                <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-white flex items-center justify-center border-2 border-background shadow-lg">
+                  <span className="text-foreground text-lg font-bold">+</span>
                 </div>
               )}
             </button>
-            <span className="text-xs text-muted-foreground">{hasStatus(currentUser?.id || '') ? 'Your Status' : 'Add Status'}</span>
+            <span className="text-xs text-muted-foreground truncate w-full text-center">{currentUser?.username || 'You'}</span>
           </div>
 
           {/* User Statuses */}
           {stories.map((story) => (
-            <div key={story.id} className="flex flex-col items-center gap-2 min-w-[80px]">
+            <div key={story.id} className="relative flex flex-col items-center gap-2 min-w-[80px]">
               <button 
                 onClick={() => {
                   if (hasStatus(story.user_id)) {
@@ -317,6 +313,11 @@ const Home = () => {
                 }}
                 className="relative group cursor-pointer"
               >
+                {hasStatus(story.user_id) && (
+                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-2 bg-muted/90 backdrop-blur-sm rounded-2xl shadow-lg z-10 whitespace-nowrap">
+                    <p className="text-xs font-medium text-foreground">Status</p>
+                  </div>
+                )}
                 {hasStatus(story.user_id) ? (
                   <>
                     <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500 opacity-75 blur group-hover:opacity-100 transition-all duration-300"></div>
