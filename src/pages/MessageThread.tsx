@@ -129,7 +129,7 @@ const MessageThread = () => {
         
         {otherUser && (
           <>
-            <div className="relative cursor-pointer hover:scale-105 transition-transform shrink-0" onClick={() => navigate(`/user/${otherUser.id}`)}>
+            <div className="relative cursor-pointer hover:scale-105 transition-transform shrink-0 pt-6" onClick={() => navigate(`/user/${otherUser.id}`)}>
               <OptimizedAvatar
                 src={otherUser.avatar_url}
                 alt={otherUser.username}
