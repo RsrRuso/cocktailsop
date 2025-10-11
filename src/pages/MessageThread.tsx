@@ -111,7 +111,7 @@ const MessageThread = () => {
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", conversationId);
     } catch (error) {
-      console.error("Failed to send message:", error);
+      // Restore message on send failure
       setNewMessage(trimmedMessage);
     }
   };
