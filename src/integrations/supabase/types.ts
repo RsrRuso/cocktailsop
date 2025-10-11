@@ -49,38 +49,6 @@ export type Database = {
           },
         ]
       }
-      bot_activity_log: {
-        Row: {
-          activity_type: string
-          bot_id: string
-          created_at: string | null
-          id: string
-          target_id: string | null
-        }
-        Insert: {
-          activity_type: string
-          bot_id: string
-          created_at?: string | null
-          id?: string
-          target_id?: string | null
-        }
-        Update: {
-          activity_type?: string
-          bot_id?: string
-          created_at?: string | null
-          id?: string
-          target_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bot_activity_log_bot_id_fkey"
-            columns: ["bot_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       conversations: {
         Row: {
           created_at: string | null
