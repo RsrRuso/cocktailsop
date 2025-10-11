@@ -72,10 +72,11 @@ const CreateReel = () => {
         return;
       }
 
-      video.currentTime = 1; // Get frame at 1 second
+      // Use current frame instead of seeking (faster)
+      video.currentTime = 0.1;
       video.onseeked = () => {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.8));
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
       };
     });
   };
@@ -97,19 +98,15 @@ const CreateReel = () => {
         return;
       }
 
-      // Stage 1: Generate thumbnail
-      setUploadStage("Generating thumbnail");
-      setUploadProgress(10);
-      const thumbnail = await generateThumbnail();
-      
-      // Stage 2: Prepare video
-      setUploadStage("Preparing video");
-      setUploadProgress(20);
+      // Stage 1: Prepare upload
+      setUploadStage("Preparing upload");
+      setUploadProgress(5);
       const fileExt = selectedVideo.name.split(".").pop();
       const videoFileName = `${user.id}/${Date.now()}.${fileExt}`;
 
-      // Stage 3: Upload video to storage with real progress tracking
+      // Stage 2: Upload video (main operation)
       setUploadStage("Uploading video");
+      setUploadProgress(15);
       
       const { data: videoData, error: videoError } = await supabase.storage
         .from("reels")
@@ -120,58 +117,55 @@ const CreateReel = () => {
 
       if (videoError) throw videoError;
 
-      setUploadProgress(65);
-      setUploadStage("Processing video");
+      setUploadProgress(70);
+      setUploadStage("Processing");
 
       const { data: { publicUrl: videoUrl } } = supabase.storage
         .from("reels")
         .getPublicUrl(videoFileName);
 
-      // Stage 4: Upload thumbnail if generated
-      setUploadStage("Uploading thumbnail");
-      setUploadProgress(75);
+      // Stage 3: Generate and upload thumbnail in background
+      setUploadStage("Finalizing");
+      setUploadProgress(80);
       
-      let thumbnailPublicUrl = videoUrl;
-      if (thumbnail) {
-        const thumbnailBlob = await fetch(thumbnail).then((res) => res.blob());
-        const thumbnailFileName = `${user.id}/${Date.now()}-thumb.jpg`;
-
-        const { error: thumbError } = await supabase.storage
-          .from("reels")
-          .upload(thumbnailFileName, thumbnailBlob, {
+      // Generate thumbnail quickly without blocking
+      const thumbnailPromise = generateThumbnail().then(async (thumbnail) => {
+        if (thumbnail) {
+          const thumbnailBlob = await fetch(thumbnail).then((res) => res.blob());
+          const thumbnailFileName = `${user.id}/${Date.now()}-thumb.jpg`;
+          await supabase.storage.from("reels").upload(thumbnailFileName, thumbnailBlob, {
             contentType: "image/jpeg",
             upsert: false,
           });
-
-        if (!thumbError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from("reels")
-            .getPublicUrl(thumbnailFileName);
-          thumbnailPublicUrl = publicUrl;
+          const { data: { publicUrl } } = supabase.storage.from("reels").getPublicUrl(thumbnailFileName);
+          return publicUrl;
         }
-      }
+        return videoUrl;
+      }).catch(() => videoUrl);
 
-      // Stage 5: Save to database
+      // Stage 4: Save to database
       setUploadStage("Saving reel");
       setUploadProgress(90);
+
+      const thumbnailUrl = await thumbnailPromise;
 
       const { error: dbError } = await supabase.from("reels").insert({
         user_id: user.id,
         video_url: videoUrl,
         caption: caption || "",
-        thumbnail_url: thumbnailPublicUrl,
+        thumbnail_url: thumbnailUrl,
       });
 
       if (dbError) throw dbError;
 
-      // Stage 6: Complete
+      // Stage 5: Complete
       setUploadStage("Complete!");
       setUploadProgress(100);
       
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 500));
       toast.success("🎉 Reel uploaded successfully!", {
-        description: "Your reel is now live and ready to be viewed!",
-        duration: 4000,
+        description: "Your reel is now live!",
+        duration: 3000,
       });
       navigate("/thunder");
     } catch (error: any) {
@@ -275,10 +269,10 @@ const CreateReel = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-6 gap-2 text-xs">
-                    {['Prepare', 'Thumbnail', 'Upload', 'Process', 'Save', 'Done'].map((stage, idx) => {
-                      const stageProgress = (idx + 1) * 16.67;
-                      const isActive = uploadProgress >= stageProgress - 8;
+                  <div className="grid grid-cols-5 gap-2 text-xs">
+                    {['Prepare', 'Upload', 'Process', 'Save', 'Done'].map((stage, idx) => {
+                      const stageProgress = (idx + 1) * 20;
+                      const isActive = uploadProgress >= stageProgress - 10;
                       const isComplete = uploadProgress >= stageProgress;
                       
                       return (
