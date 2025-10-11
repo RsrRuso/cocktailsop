@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { LogOut, Settings, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX, Play, Phone, MessageSquare, Globe, Award, TrendingUp, Target, CheckCircle, Sparkles } from "lucide-react";
+import { LogOut, Settings, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX, Play, Phone, MessageSquare, Globe, Award, TrendingUp, Target, CheckCircle, Sparkles, BadgeCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import FollowersDialog from "@/components/FollowersDialog";
@@ -258,26 +258,49 @@ const Profile = () => {
         <div className="glass rounded-xl p-4 space-y-6 border border-border/50">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div
-                className={`cursor-pointer transition-transform hover:scale-105 ${stories.length > 0 ? 'ring-4 ring-primary rounded-full' : ''}`}
-                onClick={() => {
-                  if (stories.length > 0) {
-                    navigate(`/story/${currentUserId}`);
-                  } else {
-                    setShowAvatarDialog(true);
-                  }
-                }}
-              >
-                <OptimizedAvatar
-                  src={profile.avatar_url}
-                  alt={profile.username}
-                  fallback={profile.username[0]}
-                  userId={currentUserId}
-                  className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)}`}
-                  showStatus={true}
-                  showAddButton={true}
-                  onAddStatusClick={() => setShowStatusDialog(true)}
-                />
+              <div className="relative">
+                <div
+                  className={`cursor-pointer transition-transform hover:scale-105 ${stories.length > 0 ? 'ring-4 ring-primary rounded-full' : ''}`}
+                  onClick={() => {
+                    if (stories.length > 0) {
+                      navigate(`/story/${currentUserId}`);
+                    } else {
+                      setShowAvatarDialog(true);
+                    }
+                  }}
+                >
+                  <OptimizedAvatar
+                    src={profile.avatar_url}
+                    alt={profile.username}
+                    fallback={profile.username[0]}
+                    userId={currentUserId}
+                    className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)}`}
+                    showStatus={true}
+                    showAddButton={true}
+                    onAddStatusClick={() => setShowStatusDialog(true)}
+                  />
+                </div>
+                
+                {/* Instagram-style verification badge */}
+                {(userRoles.isFounder || userRoles.isVerified) && (
+                  <div 
+                    className="absolute -bottom-1 -right-1 cursor-pointer"
+                    onClick={() => setBadgeDialogOpen(true)}
+                  >
+                    {userRoles.isFounder ? (
+                      <div className="relative group">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-sm opacity-75 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative w-8 h-8 bg-gradient-to-br from-cyan-200 via-blue-400 to-purple-500 transform rotate-45 rounded-sm shadow-lg flex items-center justify-center">
+                          <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative bg-blue-500 rounded-full p-1 shadow-lg ring-2 ring-background">
+                        <BadgeCheck className="w-5 h-5 text-white" fill="currentColor" strokeWidth={0} />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <h2 className="text-2xl font-bold">{profile.full_name}</h2>
