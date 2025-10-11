@@ -2,6 +2,7 @@ import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit, Volume2, VolumeX } from "lucide-react";
+import { getProfessionalBadge } from "@/lib/profileUtils";
 import { LazyImage } from "@/components/LazyImage";
 import { LazyVideo } from "@/components/LazyVideo";
 import {
@@ -44,6 +45,8 @@ export const FeedItem = memo(({
   getBadgeColor
 }: FeedItemProps) => {
   const navigate = useNavigate();
+  const professionalBadge = getProfessionalBadge(item.profiles?.professional_title || null);
+  const BadgeIcon = professionalBadge.icon;
 
   return (
     <div className="glass rounded-xl p-2 space-y-3 border border-border/50">
@@ -62,7 +65,14 @@ export const FeedItem = memo(({
           className="flex-1 cursor-pointer"
           onClick={() => navigate(`/user/${item.user_id}`)}
         >
-          <p className="font-semibold">{item.profiles?.full_name || item.profiles?.username || 'Unknown User'}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-semibold">{item.profiles?.full_name || item.profiles?.username || 'Unknown User'}</p>
+            {item.profiles?.professional_title && (
+              <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${professionalBadge.gradient} flex items-center justify-center`}>
+                <BadgeIcon className="w-3 h-3 text-white" />
+              </div>
+            )}
+          </div>
           <p className="text-sm text-blue-500 capitalize">
             {item.profiles?.professional_title?.replace(/_/g, " ") || ''}
           </p>
