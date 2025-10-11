@@ -29,7 +29,7 @@ interface Comment {
     username: string;
     avatar_url: string | null;
     full_name: string;
-  };
+  } | null;
 }
 
 interface EventDetailDialogProps {
@@ -71,7 +71,7 @@ export const EventDetailDialog = ({ event, open, onOpenChange }: EventDetailDial
     const [eventRes, commentsRes] = await Promise.all([
       supabase.from('events').select('like_count, comment_count, attendee_count').eq('id', event.id).single(),
       supabase.from('event_comments')
-        .select('*, profiles(username, avatar_url, full_name)')
+        .select('*, profiles!event_comments_user_id_fkey(username, avatar_url, full_name)')
         .eq('event_id', event.id)
         .order('created_at', { ascending: false })
     ]);
@@ -83,7 +83,7 @@ export const EventDetailDialog = ({ event, open, onOpenChange }: EventDetailDial
     }
 
     if (commentsRes.data) {
-      setComments(commentsRes.data);
+      setComments(commentsRes.data as Comment[]);
     }
   };
 
@@ -150,11 +150,11 @@ export const EventDetailDialog = ({ event, open, onOpenChange }: EventDetailDial
     const { data, error } = await supabase
       .from('event_comments')
       .insert({ event_id: event.id, user_id: user.id, content: newComment.trim() })
-      .select('*, profiles(username, avatar_url, full_name)')
+      .select('*, profiles!event_comments_user_id_fkey(username, avatar_url, full_name)')
       .single();
 
     if (!error && data) {
-      setComments(prev => [data, ...prev]);
+      setComments(prev => [data as Comment, ...prev]);
       setCommentCount(prev => prev + 1);
       setNewComment('');
       toast.success('Comment added!');
