@@ -99,44 +99,48 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          const newMsg = payload.new as any;
-          
-          // Prevent duplicate messages
-          setMessages((prev) => {
-            const exists = prev.some(m => m.id === newMsg.id);
-            if (exists) return prev;
+          try {
+            const newMsg = payload.new as any;
             
-            return [
-              ...prev,
-              {
-                ...newMsg,
-                reactions: (newMsg.reactions as Reaction[]) || [],
-              },
-            ];
-          });
+            // Prevent duplicate messages
+            setMessages((prev) => {
+              const exists = prev.some(m => m.id === newMsg.id);
+              if (exists) return prev;
+              
+              return [
+                ...prev,
+                {
+                  ...newMsg,
+                  reactions: Array.isArray(newMsg.reactions) ? newMsg.reactions : [],
+                },
+              ];
+            });
 
-          if (newMsg.sender_id !== currentUser.id) {
-            supabase
-              .from('messages')
-              .update({ delivered: true })
-              .eq('id', newMsg.id)
-              .then(() => {});
+            if (newMsg.sender_id !== currentUser.id) {
+              supabase
+                .from('messages')
+                .update({ delivered: true })
+                .eq('id', newMsg.id)
+                .then(() => {});
 
-            const receivedSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZUA0PVKzn7K5fGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBQ==');
-            receivedSound.volume = 1.0;
-            receivedSound.play().catch(() => {});
+              const receivedSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZUA0PVKzn7K5fGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBQ==');
+              receivedSound.volume = 1.0;
+              receivedSound.play().catch(() => {});
 
-            if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
-              new Notification('New message from ' + otherUser?.full_name, {
-                body: newMsg.content || 'Sent a media file',
-                icon: otherUser?.avatar_url || '/favicon.ico',
-                badge: '/favicon.ico',
-                tag: 'message-' + newMsg.id,
-                requireInteraction: false,
-              });
+              if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+                new Notification('New message from ' + otherUser?.full_name, {
+                  body: newMsg.content || 'Sent a media file',
+                  icon: otherUser?.avatar_url || '/favicon.ico',
+                  badge: '/favicon.ico',
+                  tag: 'message-' + newMsg.id,
+                  requireInteraction: false,
+                });
+              }
+
+              markAsRead(newMsg.id);
             }
-
-            markAsRead(newMsg.id);
+          } catch (error) {
+            // Silently handle parse errors
           }
         }
       )
@@ -149,17 +153,22 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          const updatedMsg = payload.new as any;
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === updatedMsg.id
-                ? {
-                    ...updatedMsg,
-                    reactions: (updatedMsg.reactions as Reaction[]) || [],
-                  }
-                : msg
-            )
-          );
+          try {
+            const updatedMsg = payload.new as any;
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === updatedMsg.id
+                  ? {
+                      ...updatedMsg,
+                      reactions: Array.isArray(updatedMsg.reactions) ? updatedMsg.reactions : [],
+                    }
+                  : msg
+              )
+            );
+          } catch (error) {
+            // Silently handle parse errors
+            return;
+          }
         }
       )
       .on(
@@ -188,47 +197,51 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
   const initializeChat = async () => {
     if (!conversationId) return;
 
-    const [conversationResult, messagesResult] = await Promise.all([
-      supabase
-        .from('conversations')
-        .select('*')
-        .eq('id', conversationId)
-        .single(),
-      supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true }),
-    ]);
+    const { data: conversationData } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('id', conversationId)
+      .single();
 
-    if (conversationResult.data && currentUser) {
-      const otherUserId = conversationResult.data.participant_ids.find(
+    if (conversationData && currentUser) {
+      const otherUserId = conversationData.participant_ids.find(
         (id: string) => id !== currentUser.id
       );
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', otherUserId)
-        .single();
+      // Fetch other user profile and messages in parallel
+      const [profileResult, messagesResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url')
+          .eq('id', otherUserId)
+          .single(),
+        supabase
+          .from('messages')
+          .select('*')
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: true })
+          .limit(100),
+      ]);
 
-      setOtherUser(profile);
-    }
+      if (profileResult.data) {
+        setOtherUser(profileResult.data);
+      }
 
-    if (messagesResult.data && currentUser) {
-      setMessages(
-        messagesResult.data.map((msg: any) => ({
-          ...msg,
-          reactions: (msg.reactions as Reaction[]) || [],
-        }))
-      );
+      if (messagesResult.data && currentUser) {
+        setMessages(
+          messagesResult.data.map((msg: any) => ({
+            ...msg,
+            reactions: Array.isArray(msg.reactions) ? msg.reactions : [],
+          }))
+        );
 
-      const unreadIds = messagesResult.data
-        .filter((msg) => !msg.read && msg.sender_id !== currentUser.id)
-        .map((msg) => msg.id);
+        const unreadIds = messagesResult.data
+          .filter((msg) => !msg.read && msg.sender_id !== currentUser.id)
+          .map((msg) => msg.id);
 
-      if (unreadIds.length > 0) {
-        await supabase.from('messages').update({ read: true }).in('id', unreadIds);
+        if (unreadIds.length > 0) {
+          supabase.from('messages').update({ read: true }).in('id', unreadIds).then(() => {});
+        }
       }
     }
   };
