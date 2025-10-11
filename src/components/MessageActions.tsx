@@ -48,7 +48,10 @@ export const MessageActions = ({
           variant="ghost"
           className="h-6 w-6 glass hover:bg-destructive/20"
           onClick={() => {
-            if (confirm('Are you sure you want to delete this message?')) {
+            const mediaTypeLabel = message.media_type === 'image' ? 'photo' : 
+                                  message.media_type === 'video' ? 'video' : 
+                                  message.media_type === 'voice' ? 'voice recording' : 'message';
+            if (confirm(`Delete this ${mediaTypeLabel}?`)) {
               onDelete();
             }
           }}

@@ -20,15 +20,12 @@ export const MessageBubble = ({
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
       <div
+        id={`message-${message.id}`}
         className={`relative group max-w-[75%] ${
           message.media_url && (message.media_type === 'image' || message.media_type === 'video')
             ? ''
             : 'glass backdrop-blur-xl px-4 py-2'
-        } rounded-2xl ${isOwn ? 'glow-primary' : ''} ${
-          message.media_url && (message.media_type === 'image' || message.media_type === 'video')
-            ? 'overflow-hidden'
-            : ''
-        }`}
+        } rounded-2xl ${isOwn ? 'glow-primary' : ''}`}
       >
         {message.reply_to_id && replyMessage && (
           <div
