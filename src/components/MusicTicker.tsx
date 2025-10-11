@@ -44,25 +44,31 @@ const MusicTicker = () => {
   }, []);
 
   const fetchMusicShares = async () => {
-    const { data, error } = await supabase
+    const { data: sharesData, error } = await supabase
       .from("music_shares")
-      .select(`
-        id,
-        user_id,
-        track_title,
-        track_artist,
-        created_at,
-        profiles!inner(
-          username,
-          avatar_url
-        )
-      `)
+      .select("*")
       .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
       .order("created_at", { ascending: false })
       .limit(10);
 
-    if (!error && data) {
-      setMusicShares(data as any);
+    if (!error && sharesData) {
+      // Fetch profiles for each share
+      const userIds = sharesData.map(share => share.user_id);
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .in("id", userIds);
+
+      // Merge the data
+      const enrichedShares = sharesData.map(share => ({
+        ...share,
+        profiles: profilesData?.find(p => p.id === share.user_id) || {
+          username: "Unknown",
+          avatar_url: null
+        }
+      }));
+
+      setMusicShares(enrichedShares as any);
     }
   };
 
