@@ -1,1 +1,4 @@
 project_id = "cbfqwaqwliehgxsdueem"
+
+[functions.fetch-spotify-tracks]
+verify_jwt = false
