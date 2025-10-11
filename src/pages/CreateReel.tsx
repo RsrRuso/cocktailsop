@@ -137,10 +137,16 @@ const CreateReel = () => {
       setUploadStage("Done!");
       
       toast.success("Reel uploaded successfully!");
-      setTimeout(() => navigate("/thunder"), 500);
+      
+      // Reset form after successful upload
+      setTimeout(() => {
+        setPreviewUrl("");
+        setSelectedVideo(null);
+        setCaption("");
+      }, 1000);
     } catch (error: any) {
       console.error("Error:", error);
-      toast.error(error.message || "Upload failed");
+      toast.error("Upload failed: " + (error.message || "Unknown error"));
     } finally {
       setLoading(false);
       setUploadProgress(0);
