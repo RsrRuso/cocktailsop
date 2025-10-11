@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Calendar, MessageCircle } from 'lucide-react';
 import { EventDetailDialog } from './EventDetailDialog';
 import { EventCommentsDialog } from './EventCommentsDialog';
+import { EventsListDialog } from './EventsListDialog';
 
 interface Event {
   id: string;
@@ -25,6 +26,7 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+  const [listDialogOpen, setListDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -59,9 +61,12 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
     <div className="w-full overflow-hidden bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-2xl p-4 mb-4 border border-primary/20">
       <div className="flex items-center gap-2 mb-2">
         <Calendar className="w-4 h-4 text-primary" />
-        <span className="text-xs font-semibold text-primary uppercase tracking-wide">
+        <button
+          onClick={() => setListDialogOpen(true)}
+          className="text-xs font-semibold text-primary uppercase tracking-wide hover:underline cursor-pointer"
+        >
           Upcoming Events
-        </span>
+        </button>
       </div>
       <div className="relative overflow-hidden">
         <div className="animate-marquee whitespace-nowrap">
@@ -120,6 +125,12 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
         eventDate={selectedEvent?.event_date}
         open={commentsDialogOpen}
         onOpenChange={setCommentsDialogOpen}
+      />
+
+      <EventsListDialog
+        region={region}
+        open={listDialogOpen}
+        onOpenChange={setListDialogOpen}
       />
     </div>
   );
