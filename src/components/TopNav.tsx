@@ -139,10 +139,35 @@ const TopNav = () => {
     localStorage.setItem('theme', newTheme);
   };
 
+  const getBadgeColor = (level: string) => {
+    switch (level) {
+      case 'diamond':
+        return 'from-cyan-400 via-blue-400 to-purple-500';
+      case 'platinum':
+        return 'from-slate-300 via-slate-400 to-slate-500';
+      case 'gold':
+        return 'from-yellow-300 via-yellow-400 to-yellow-600';
+      case 'silver':
+        return 'from-gray-300 via-gray-400 to-gray-500';
+      case 'bronze':
+      default:
+        return 'from-amber-600 via-amber-700 to-amber-800';
+    }
+  };
+
   return (
     <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20">
       <div className="flex items-center justify-between px-4 py-3">
-        {userRoles.isFounder ? (
+        <div className="flex items-center gap-2">
+          {/* Badge Level Indicator */}
+          {currentUser?.badge_level && (
+            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center text-xs font-bold text-white shadow-lg`}>
+              {currentUser.badge_level[0].toUpperCase()}
+            </div>
+          )}
+          
+          {/* Founder/Verified Diamond */}
+          {userRoles.isFounder ? (
           <div 
             className="relative group cursor-pointer w-14 h-14"
             onClick={() => setBadgeDialogOpen(true)}
@@ -166,7 +191,8 @@ const TopNav = () => {
               <BadgeCheck className="w-7 h-7 text-primary-foreground -rotate-45" strokeWidth={2.5} />
             </div>
           </div>
-        )}
+          )}
+        </div>
 
         <BadgeInfoDialog
           open={badgeDialogOpen}

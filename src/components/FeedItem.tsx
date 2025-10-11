@@ -66,7 +66,14 @@ export const FeedItem = memo(({
           onClick={() => navigate(`/user/${item.user_id}`)}
         >
           <div className="flex items-center gap-2">
-            <p className="font-semibold">{item.profiles?.full_name || item.profiles?.username || 'Unknown User'}</p>
+            <div className="flex items-center relative">
+              <p className="font-semibold">{item.profiles?.full_name || item.profiles?.username || 'Unknown User'}</p>
+              {item.profiles?.badge_level && (
+                <div className={`ml-1 w-4 h-4 rounded-full bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)} flex items-center justify-center text-[8px] font-bold text-white shadow-lg`}>
+                  {item.profiles.badge_level[0].toUpperCase()}
+                </div>
+              )}
+            </div>
             {item.profiles?.professional_title && (
               <div className="relative group">
                 <div className={`absolute inset-0 bg-gradient-to-br ${professionalBadge.gradient} blur-sm opacity-75 group-hover:opacity-100 transition-opacity rounded-md`} />
