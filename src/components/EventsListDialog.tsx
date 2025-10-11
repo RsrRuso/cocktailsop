@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { Heart, MessageCircle, Users, Calendar } from 'lucide-react';
+import { Heart, MessageCircle, Users, Calendar, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { EventDetailDialog } from './EventDetailDialog';
 import { EventCommentsDialog } from './EventCommentsDialog';
 import OptimizedAvatar from './OptimizedAvatar';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface EventLike {
   id: string;
@@ -157,12 +160,16 @@ const AttendeesDialog = ({ eventId, open, onOpenChange }: AttendeesDialogProps) 
 };
 
 export const EventsListDialog = ({ region, open, onOpenChange }: EventsListDialogProps) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [likesDialogOpen, setLikesDialogOpen] = useState(false);
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [attendeesDialogOpen, setAttendeesDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -205,6 +212,40 @@ export const EventsListDialog = ({ region, open, onOpenChange }: EventsListDialo
     setAttendeesDialogOpen(true);
   };
 
+  const handleDeleteClick = (event: Event, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEventToDelete(event);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!eventToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventToDelete.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Event deleted successfully",
+      });
+
+      setDeleteDialogOpen(false);
+      setEventToDelete(null);
+      fetchEvents();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete event",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -215,14 +256,26 @@ export const EventsListDialog = ({ region, open, onOpenChange }: EventsListDialo
           <div className="flex-1 overflow-y-auto px-6 pb-6">
             <div className="space-y-4">
               {events.map((event) => (
-                <div
+                  <div
                   key={event.id}
                   onClick={() => handleEventClick(event)}
                   className="p-4 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">{event.title}</h3>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="font-semibold text-lg flex-1">{event.title}</h3>
+                        {user?.id === event.user_id && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => handleDeleteClick(event, e)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                       {event.description && (
                         <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                           {event.description}
@@ -311,6 +364,26 @@ export const EventsListDialog = ({ region, open, onOpenChange }: EventsListDialo
         open={attendeesDialogOpen}
         onOpenChange={setAttendeesDialogOpen}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{eventToDelete?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
