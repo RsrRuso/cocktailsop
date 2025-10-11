@@ -27,7 +27,7 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
     const fetchEvents = async () => {
       const { data } = await supabase
         .from('events')
-        .select('*')
+        .select('id, title, description, event_date, region, like_count, comment_count, attendee_count')
         .eq('region', region)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
@@ -68,6 +68,9 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
                   {new Date(event.event_date).toLocaleDateString()}
                 </span>
               )}
+              <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                {event.attendee_count || 0} going
+              </span>
               <span className="mx-2 text-primary">•</span>
             </button>
           ))}
