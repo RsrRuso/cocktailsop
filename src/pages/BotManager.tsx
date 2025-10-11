@@ -12,9 +12,11 @@ const BotManager = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creatingBots, setCreatingBots] = useState(false);
+  const [generatingPosts, setGeneratingPosts] = useState(false);
   const [generatingActivity, setGeneratingActivity] = useState(false);
   const [bots, setBots] = useState<any[]>([]);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [numPostsToGenerate, setNumPostsToGenerate] = useState(10);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -106,10 +108,10 @@ const BotManager = () => {
 
       toast({
         title: "Success",
-        description: `Created ${response.data.bots.length} bots`,
+        description: `Created ${response.data.bots.length} bot accounts`,
       });
 
-      fetchBots();
+      await fetchBots();
     } catch (error) {
       console.error('Error creating bots:', error);
       toast({
@@ -119,6 +121,38 @@ const BotManager = () => {
       });
     } finally {
       setCreatingBots(false);
+    }
+  };
+
+  const handleGeneratePosts = async () => {
+    setGeneratingPosts(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke('bot-activity', {
+        body: { action: 'generate_posts', numBots: numPostsToGenerate },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      toast({
+        title: "Success",
+        description: `Generated ${response.data.count} posts`,
+      });
+
+      await fetchActivityLogs();
+    } catch (error) {
+      console.error('Error generating posts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate posts",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingPosts(false);
     }
   };
 
@@ -138,10 +172,10 @@ const BotManager = () => {
 
       toast({
         title: "Success",
-        description: `Generated ${response.data.activities.length} activities`,
+        description: `Generated ${response.data.count} activities`,
       });
 
-      fetchActivityLogs();
+      await fetchActivityLogs();
     } catch (error) {
       console.error('Error generating activity:', error);
       toast({
@@ -178,28 +212,28 @@ const BotManager = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Bot Creation
+                Create Bot Accounts
               </CardTitle>
               <CardDescription>
-                Create bot accounts to simulate platform activity
+                Create 20 diverse bot accounts to simulate platform activity
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button
                 onClick={handleCreateBots}
-                disabled={creatingBots || bots.length >= 5}
+                disabled={creatingBots || bots.length >= 20}
                 className="w-full"
               >
                 {creatingBots ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Bots...
+                    Creating 20 Bots...
                   </>
                 ) : (
                   'Create Bot Accounts'
                 )}
               </Button>
-              {bots.length >= 5 && (
+              {bots.length >= 20 && (
                 <p className="text-sm text-muted-foreground mt-2">
                   Maximum bots already created
                 </p>
@@ -210,11 +244,56 @@ const BotManager = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Generate Activity
+                <TrendingUp className="h-5 w-5" />
+                Generate Bot Posts
               </CardTitle>
               <CardDescription>
-                Make bots interact with content (likes, comments, follows)
+                Create AI-generated posts from bot accounts
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-medium">Number of posts:</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={numPostsToGenerate}
+                  onChange={(e) => setNumPostsToGenerate(Math.min(20, Math.max(1, parseInt(e.target.value) || 1)))}
+                  className="w-20 px-3 py-1 border rounded-md"
+                />
+              </div>
+              <Button
+                onClick={handleGeneratePosts}
+                disabled={generatingPosts || bots.length === 0}
+                variant="secondary"
+                className="w-full"
+              >
+                {generatingPosts ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating Posts...
+                  </>
+                ) : (
+                  'Generate Bot Posts'
+                )}
+              </Button>
+              {bots.length === 0 && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Create bots first to generate posts
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Generate Engagement
+              </CardTitle>
+              <CardDescription>
+                Make bots interact with existing content (likes, comments, follows)
               </CardDescription>
             </CardHeader>
             <CardContent>

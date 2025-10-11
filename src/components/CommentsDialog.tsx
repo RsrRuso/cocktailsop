@@ -115,17 +115,23 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     
-    if (!newComment.trim()) return;
+    const trimmedComment = newComment.trim();
+    
+    if (!trimmedComment) {
+      toast.error("Comment cannot be empty");
+      return;
+    }
+    
     if (!user?.id) {
       toast.error("Please login to comment");
       return;
     }
 
     setSubmitting(true);
-    const content = newComment.trim();
+    const content = trimmedComment;
     setNewComment("");
 
     try {
@@ -279,7 +285,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: Comments
             />
             <Button
               type="submit"
-              disabled={submitting || !newComment.trim()}
+              disabled={submitting || !newComment.trim() || !user}
               className="glow-primary self-end"
               size="icon"
             >
