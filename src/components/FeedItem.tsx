@@ -62,8 +62,8 @@ export const FeedItem = memo(({
           className="flex-1 cursor-pointer"
           onClick={() => navigate(`/user/${item.user_id}`)}
         >
-          <p className="font-semibold">{item.profiles?.full_name || 'Unknown User'}</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="font-semibold">{item.profiles?.full_name || item.profiles?.username || 'Unknown User'}</p>
+          <p className="text-sm text-blue-500 capitalize">
             {item.profiles?.professional_title?.replace(/_/g, " ") || ''}
           </p>
         </div>
