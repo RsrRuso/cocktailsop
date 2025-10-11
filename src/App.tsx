@@ -18,6 +18,7 @@ const UserProfile = lazy(() => import("./pages/UserProfile"));
 const EditProfile = lazy(() => import("./pages/EditProfile"));
 const EditPost = lazy(() => import("./pages/EditPost"));
 const EditReel = lazy(() => import("./pages/EditReel"));
+const PostDetail = lazy(() => import("./pages/PostDetail"));
 const Thunder = lazy(() => import("./pages/Thunder"));
 const Messages = lazy(() => import("./pages/Messages"));
 const MessageThread = lazy(() => import("./pages/MessageThread"));
@@ -77,6 +78,7 @@ const App = () => (
           <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/edit-post/:id" element={<EditPost />} />
           <Route path="/edit-reel/:id" element={<EditReel />} />
+          <Route path="/post/:id" element={<PostDetail />} />
           <Route path="/thunder" element={<Thunder />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/messages/:conversationId" element={<MessageThread />} />
