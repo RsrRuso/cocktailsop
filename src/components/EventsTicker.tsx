@@ -9,6 +9,7 @@ interface Event {
   description: string | null;
   event_date: string | null;
   region: string;
+  user_id: string;
   like_count?: number;
   comment_count?: number;
   attendee_count?: number;
@@ -27,7 +28,7 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
     const fetchEvents = async () => {
       const { data } = await supabase
         .from('events')
-        .select('id, title, description, event_date, region, like_count, comment_count, attendee_count')
+        .select('id, title, description, event_date, region, user_id, like_count, comment_count, attendee_count')
         .eq('region', region)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
@@ -81,6 +82,21 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
         event={selectedEvent}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        onEventUpdated={() => {
+          // Refresh events when updated/deleted
+          const fetchEvents = async () => {
+            const { data } = await supabase
+              .from('events')
+              .select('id, title, description, event_date, region, user_id, like_count, comment_count, attendee_count')
+              .eq('region', region)
+              .eq('is_active', true)
+              .order('created_at', { ascending: false })
+              .limit(10);
+
+            if (data) setEvents(data);
+          };
+          fetchEvents();
+        }}
       />
     </div>
   );
