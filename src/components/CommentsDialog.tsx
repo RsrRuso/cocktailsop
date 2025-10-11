@@ -161,119 +161,29 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
     }
 
     const tableName = isReel ? "reel_comments" : "post_comments";
-    
-    // Instant optimistic update
-    const tempComment: Comment = {
-      id: 'temp-' + Date.now(),
-      user_id: user.id,
-      content: newComment.trim(),
-      created_at: new Date().toISOString(),
-      parent_comment_id: replyingTo,
-      reactions: [],
-      profiles: profile ? { username: profile.username, avatar_url: profile.avatar_url } : { username: 'You', avatar_url: null },
-      replies: []
-    };
-    
-    // Add to appropriate location (reply or root)
-    if (replyingTo) {
-      // Add as reply
-      setComments(prev => {
-        const updateReplies = (comments: Comment[]): Comment[] => {
-          return comments.map(c => {
-            if (c.id === replyingTo) {
-              return { ...c, replies: [...(c.replies || []), tempComment] };
-            }
-            if (c.replies && c.replies.length > 0) {
-              return { ...c, replies: updateReplies(c.replies) };
-            }
-            return c;
-          });
-        };
-        return updateReplies(prev);
-      });
-    } else {
-      // Add as root comment
-      setComments(prev => [...prev, tempComment]);
-    }
-    
     const commentText = newComment.trim();
     const replyId = replyingTo;
+    
     setNewComment("");
     setReplyingTo(null);
-    onCommentAdded?.(); // Increment count instantly
 
-    // Background API call - no await, instant UI
+    // Database insert only - triggers will handle count
     const insertData = isReel 
       ? { reel_id: postId, user_id: user.id, content: commentText, parent_comment_id: replyId }
       : { post_id: postId, user_id: user.id, content: commentText, parent_comment_id: replyId };
     
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from(tableName)
-          .insert(insertData as any)
-          .select();
-        
-        if (error) {
-          console.error('Comment error:', error.code);
-          toast.error("Failed to post comment");
-          // Remove temp comment on error
-          setComments(prev => {
-            const removeTempComment = (comments: Comment[]): Comment[] => {
-              return comments
-                .filter(c => c.id !== tempComment.id)
-                .map(c => ({
-                  ...c,
-                  replies: c.replies ? removeTempComment(c.replies) : []
-                }));
-            };
-            return removeTempComment(prev);
-          });
-          setNewComment(commentText);
-          if (replyId) setReplyingTo(replyId);
-        } else if (data && data.length > 0) {
-          console.log('Comment posted');
-          // Replace temp comment with real one from database
-          setComments(prev => {
-            const replaceTemp = (comments: Comment[]): Comment[] => {
-              return comments.map(c => {
-                if (c.id === tempComment.id) {
-                  const dbComment = data[0] as any;
-                  return { 
-                    ...dbComment, 
-                    reactions: (dbComment.reactions || []) as Reaction[],
-                    profiles: tempComment.profiles, 
-                    replies: [] 
-                  };
-                }
-                if (c.replies && c.replies.length > 0) {
-                  return { ...c, replies: replaceTemp(c.replies) };
-                }
-                return c;
-              });
-            };
-            return replaceTemp(prev);
-          });
-        }
-      } catch (err) {
-        console.error('Comment failed');
-        toast.error("Failed to post comment");
-        // Remove temp comment on error
-        setComments(prev => {
-          const removeTempComment = (comments: Comment[]): Comment[] => {
-            return comments
-              .filter(c => c.id !== tempComment.id)
-              .map(c => ({
-                ...c,
-                replies: c.replies ? removeTempComment(c.replies) : []
-              }));
-          };
-          return removeTempComment(prev);
-        });
-        setNewComment(commentText);
-        if (replyId) setReplyingTo(replyId);
-      }
-    })();
+    const { error } = await supabase
+      .from(tableName)
+      .insert(insertData as any);
+    
+    if (error) {
+      toast.error("Failed to post comment");
+      setNewComment(commentText);
+      if (replyId) setReplyingTo(replyId);
+    } else {
+      // Refetch to get updated list with new comment
+      fetchComments();
+    }
   };
 
   const handleReaction = async (commentId: string, emoji: string) => {
@@ -321,51 +231,19 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
 
   const handleDeleteComment = async (commentId: string) => {
     const tableName = isReel ? "reel_comments" : "post_comments";
-    const parentTable = isReel ? "reels" : "posts";
     
-    console.log('Deleting comment:', { tableName, commentId });
-    
-    // Optimistically remove from UI
-    setComments(prev => {
-      const removeComment = (comments: Comment[]): Comment[] => {
-        return comments
-          .filter(c => c.id !== commentId)
-          .map(c => ({
-            ...c,
-            replies: c.replies ? removeComment(c.replies) : []
-          }));
-      };
-      return removeComment(prev);
-    });
-    
-    // Delete from database
+    // Delete from database - triggers will handle count
     const { error } = await supabase
       .from(tableName as any)
       .delete()
       .eq("id", commentId);
 
     if (error) {
-      console.error('Failed to delete comment:', error);
-      toast.error(`Failed to delete comment: ${error.message}`);
-      fetchComments(); // Revert UI on error
+      toast.error("Failed to delete comment");
     } else {
-      console.log('Comment deleted successfully');
       toast.success("Comment deleted");
-      onCommentDeleted?.(); // Notify parent to decrement count
-      
-      // Decrement comment count on parent post/reel
-      const { data: parent } = await supabase
-        .from(parentTable as any)
-        .select("comment_count")
-        .eq("id", postId)
-        .single();
-      
-      if (parent && (parent as any).comment_count > 0) {
-        await supabase
-          .from(parentTable as any)
-          .update({ comment_count: (parent as any).comment_count - 1 } as any)
-          .eq("id", postId);
-      }
+      // Refetch to get updated list
+      fetchComments();
     }
   };
 

@@ -50,25 +50,14 @@ const Reels = () => {
 
   useEffect(() => {
     if (user) {
-      // Fetch reels first for instant display
       fetchReels();
-      
-      // Load liked reels in background
-      setTimeout(() => fetchLikedReels(), 100);
+      fetchLikedReels();
     }
 
-    // Only subscribe to main reels changes
+    // Subscribe to reel updates for comment counts
     const reelsChannel = supabase
       .channel('reels-page')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'reels'
-        },
-        () => fetchReels()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reels' }, () => fetchReels())
       .subscribe();
 
     return () => {
@@ -365,12 +354,6 @@ const Reels = () => {
         onOpenChange={setShowComments}
         postId={selectedReelForComments}
         isReel={true}
-        onCommentAdded={() => {
-          setReels(reels.map(r => r.id === selectedReelForComments ? { ...r, comment_count: r.comment_count + 1 } : r));
-        }}
-        onCommentDeleted={() => {
-          setReels(reels.map(r => r.id === selectedReelForComments ? { ...r, comment_count: Math.max(0, r.comment_count - 1) } : r));
-        }}
       />
 
       <LikesDialog

@@ -124,7 +124,23 @@ const Home = () => {
       fetchLikedPosts();
       fetchLikedReels();
     }
-  }, [user?.id, fetchLikedPosts, fetchLikedReels]);
+
+    // Subscribe to comment count changes
+    const postsChannel = supabase
+      .channel('posts-comments')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => refreshFeed())
+      .subscribe();
+
+    const reelsChannel = supabase
+      .channel('reels-comments')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reels' }, () => refreshFeed())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(postsChannel);
+      supabase.removeChannel(reelsChannel);
+    };
+  }, [user?.id, fetchLikedPosts, fetchLikedReels, refreshFeed]);
 
   // Merge posts and reels into unified feed
   const fetchStories = useCallback(async () => {
@@ -421,20 +437,6 @@ const Home = () => {
         onOpenChange={setCommentsDialogOpen}
         postId={selectedPostId}
         isReel={selectedPostType === 'reel'}
-        onCommentAdded={() => {
-          if (selectedPostType === 'post') {
-            setPosts(posts.map(p => p.id === selectedPostId ? { ...p, comment_count: p.comment_count + 1 } : p));
-          } else {
-            setReels(reels.map(r => r.id === selectedPostId ? { ...r, comment_count: r.comment_count + 1 } : r));
-          }
-        }}
-        onCommentDeleted={() => {
-          if (selectedPostType === 'post') {
-            setPosts(posts.map(p => p.id === selectedPostId ? { ...p, comment_count: Math.max(0, p.comment_count - 1) } : p));
-          } else {
-            setReels(reels.map(r => r.id === selectedPostId ? { ...r, comment_count: Math.max(0, r.comment_count - 1) } : r));
-          }
-        }}
       />
 
       <LikesDialog
