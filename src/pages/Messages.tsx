@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
 
 interface Profile {
   id: string;
@@ -31,6 +32,7 @@ const Messages = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const { sendNotification } = usePushNotifications();
+  const { showNotification } = useInAppNotificationContext();
 
   useEffect(() => {
     fetchConversations().finally(() => setIsLoading(false));
@@ -62,6 +64,11 @@ const Messages = () => {
               sendNotification(
                 `New message from ${senderProfile.full_name}`,
                 newMessage.content.substring(0, 100)
+              );
+              showNotification(
+                senderProfile.full_name,
+                newMessage.content.substring(0, 100),
+                'message'
               );
             }
           }

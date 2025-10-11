@@ -7,6 +7,8 @@ import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send } from "luc
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
+import { TestNotificationButton } from "@/components/TestNotificationButton";
 
 interface Notification {
   id: string;
@@ -20,6 +22,7 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const navigate = useNavigate();
   const { sendNotification } = usePushNotifications();
+  const { showNotification } = useInAppNotificationContext();
 
   useEffect(() => {
     fetchNotifications();
@@ -36,10 +39,15 @@ const Notifications = () => {
         },
         (payload) => {
           fetchNotifications();
-          // Send push notification
+          // Send both push and in-app notification
           const newNotification = payload.new as Notification;
           if (newNotification.type !== 'message') {
             sendNotification('New Notification', newNotification.content);
+            showNotification(
+              'New Notification',
+              newNotification.content,
+              newNotification.type as any
+            );
           }
         }
       )
@@ -168,6 +176,7 @@ const Notifications = () => {
         )}
       </div>
 
+      <TestNotificationButton />
       <BottomNav />
     </div>
   );
