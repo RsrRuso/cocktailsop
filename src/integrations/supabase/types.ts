@@ -1246,7 +1246,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "user" | "moderator" | "admin" | "founder" | "verified"
+      app_role:
+        | "user"
+        | "moderator"
+        | "admin"
+        | "founder"
+        | "verified"
+        | "manager"
       badge_level: "bronze" | "silver" | "gold" | "platinum"
       equipment_type:
         | "fridge"
@@ -1398,7 +1404,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["user", "moderator", "admin", "founder", "verified"],
+      app_role: [
+        "user",
+        "moderator",
+        "admin",
+        "founder",
+        "verified",
+        "manager",
+      ],
       badge_level: ["bronze", "silver", "gold", "platinum"],
       equipment_type: [
         "fridge",
