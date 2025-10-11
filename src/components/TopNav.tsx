@@ -142,43 +142,31 @@ const TopNav = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20">
       <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3">
-          {/* Professional Title Badge */}
-          {currentUser?.professional_title && (
-            <div className="relative group">
-              <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${professionalBadge.gradient} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>
-                <BadgeIcon className="w-7 h-7 text-white" />
-              </div>
+        {userRoles.isFounder ? (
+          <div 
+            className="relative group cursor-pointer w-14 h-14"
+            onClick={() => setBadgeDialogOpen(true)}
+          >
+            {/* Simplified glow */}
+            <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-md opacity-60 group-hover:opacity-80 transition-opacity" />
+            
+            {/* Diamond shape using CSS only */}
+            <div className="relative w-full h-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-cyan-200 via-blue-400 to-purple-500 transform rotate-45 rounded-sm shadow-lg group-hover:scale-110 transition-transform" />
+              <div className="absolute w-2 h-2 bg-white rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
             </div>
-          )}
-          
-          {/* Founder/Verified Badges */}
-          {userRoles.isFounder ? (
-            <div 
-              className="relative group cursor-pointer w-14 h-14"
-              onClick={() => setBadgeDialogOpen(true)}
-            >
-              {/* Simplified glow */}
-              <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-md opacity-60 group-hover:opacity-80 transition-opacity" />
-              
-              {/* Diamond shape using CSS only */}
-              <div className="relative w-full h-full flex items-center justify-center">
-                <div className="w-8 h-8 bg-gradient-to-br from-cyan-200 via-blue-400 to-purple-500 transform rotate-45 rounded-sm shadow-lg group-hover:scale-110 transition-transform" />
-                <div className="absolute w-2 h-2 bg-white rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
-              </div>
+          </div>
+        ) : userRoles.isVerified && (
+          <div 
+            className="relative group cursor-pointer"
+            onClick={() => setBadgeDialogOpen(true)}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary via-accent to-primary blur-md opacity-75 group-hover:opacity-100 transition-opacity rounded-xl" />
+            <div className="relative w-12 h-12 bg-gradient-to-br from-primary to-accent flex items-center justify-center transform rotate-45 rounded-lg shadow-lg group-hover:scale-110 transition-transform">
+              <BadgeCheck className="w-7 h-7 text-primary-foreground -rotate-45" strokeWidth={2.5} />
             </div>
-          ) : userRoles.isVerified && (
-            <div 
-              className="relative group cursor-pointer"
-              onClick={() => setBadgeDialogOpen(true)}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-primary via-accent to-primary blur-md opacity-75 group-hover:opacity-100 transition-opacity rounded-xl" />
-              <div className="relative w-12 h-12 bg-gradient-to-br from-primary to-accent flex items-center justify-center transform rotate-45 rounded-lg shadow-lg group-hover:scale-110 transition-transform">
-                <BadgeCheck className="w-7 h-7 text-primary-foreground -rotate-45" strokeWidth={2.5} />
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <BadgeInfoDialog
           open={badgeDialogOpen}
