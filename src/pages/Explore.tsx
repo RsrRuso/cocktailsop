@@ -103,7 +103,7 @@ const Explore = () => {
               <div
                 key={post.id}
                 className="relative aspect-square glass-hover cursor-pointer rounded-lg overflow-hidden group"
-                onClick={() => navigate(`/user/${post.profiles?.id}`)}
+                onClick={() => navigate(`/post/${post.id}`)}
               >
                 {post.media_urls?.[0] ? (
                   <img
