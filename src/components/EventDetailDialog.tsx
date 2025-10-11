@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Heart, MessageCircle, CheckCircle, Send, Pencil, Trash2, Smile, Reply, MoreVertical } from 'lucide-react';
@@ -542,12 +541,12 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
 
                   {/* Comments Section */}
                   <div className="flex-1 flex flex-col min-h-0">
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-3 flex-shrink-0">
                       <MessageCircle className="w-5 h-5" />
                       <span className="font-semibold">Comments ({commentCount})</span>
                     </div>
 
-                    <ScrollArea className="flex-1 pr-4">
+                    <div className="flex-1 overflow-y-auto pr-4 min-h-0">
                       <div className="space-y-4 pb-4">
                         {comments.length === 0 ? (
                           <p className="text-sm text-muted-foreground text-center py-8">
@@ -568,7 +567,7 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
                           </>
                         )}
                       </div>
-                    </ScrollArea>
+                    </div>
 
                     {/* Comment Input */}
                     <div className="pt-4 border-t space-y-2 flex-shrink-0">
