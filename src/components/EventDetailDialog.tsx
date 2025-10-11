@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { scheduleEventReminder } from '@/lib/eventReminders';
 
 interface Event {
   id: string;
@@ -162,7 +163,14 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
       if (!error) {
         setIsAttending(true);
         setAttendeeCount(prev => prev + 1);
-        toast.success("You're going!");
+        
+        // Schedule reminder on device
+        const scheduled = await scheduleEventReminder(event.title, event.event_date);
+        if (scheduled) {
+          toast.success("You're going! Reminder saved on device");
+        } else {
+          toast.success("You're going!");
+        }
       }
     }
   };
@@ -171,12 +179,13 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
     if (!event || !user || !newComment.trim()) return;
 
     setIsSubmitting(true);
+    const commentText = newComment.trim();
     const { data, error } = await supabase
       .from('event_comments')
       .insert({ 
         event_id: event.id, 
         user_id: user.id, 
-        content: newComment.trim(),
+        content: commentText,
         parent_comment_id: replyToId 
       })
       .select('*, profiles!event_comments_user_id_fkey(username, avatar_url, full_name)')
@@ -190,7 +199,19 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
       setCommentCount(prev => prev + 1);
       setNewComment('');
       setReplyToId(null);
-      toast.success('Comment added!');
+      
+      // Check if comment indicates attendance and schedule reminder
+      const attendanceKeywords = ['i\'m going', 'im going', 'i am going', 'count me in', 'i\'ll be there', 'ill be there'];
+      if (attendanceKeywords.some(keyword => commentText.toLowerCase().includes(keyword))) {
+        const scheduled = await scheduleEventReminder(event.title, event.event_date);
+        if (scheduled) {
+          toast.success('Comment added! Reminder saved on device');
+        } else {
+          toast.success('Comment added!');
+        }
+      } else {
+        toast.success('Comment added!');
+      }
     } else {
       toast.error('Failed to add comment');
     }

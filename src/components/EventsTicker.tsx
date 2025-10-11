@@ -117,6 +117,7 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
       <EventCommentsDialog
         eventId={selectedEvent?.id || null}
         eventTitle={selectedEvent?.title || ''}
+        eventDate={selectedEvent?.event_date}
         open={commentsDialogOpen}
         onOpenChange={setCommentsDialogOpen}
       />

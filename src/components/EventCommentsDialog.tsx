@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MessageCircle, Reply, ThumbsUp, Trash2, Edit2, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import OptimizedAvatar from './OptimizedAvatar';
+import { scheduleEventReminder } from '@/lib/eventReminders';
 
 interface Reaction {
   emoji: string;
@@ -30,11 +31,12 @@ interface Comment {
 interface EventCommentsDialogProps {
   eventId: string | null;
   eventTitle: string;
+  eventDate?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export const EventCommentsDialog = ({ eventId, eventTitle, open, onOpenChange }: EventCommentsDialogProps) => {
+export const EventCommentsDialog = ({ eventId, eventTitle, eventDate, open, onOpenChange }: EventCommentsDialogProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyToId, setReplyToId] = useState<string | null>(null);
@@ -79,8 +81,9 @@ export const EventCommentsDialog = ({ eventId, eventTitle, open, onOpenChange }:
   const handleSubmitComment = async () => {
     if (!newComment.trim() || !eventId || !currentUserId) return;
 
+    const commentText = newComment.trim();
     const { error } = await supabase.from('event_comments').insert({
-      content: newComment,
+      content: commentText,
       event_id: eventId,
       user_id: currentUserId,
       parent_comment_id: replyToId,
@@ -91,10 +94,22 @@ export const EventCommentsDialog = ({ eventId, eventTitle, open, onOpenChange }:
       return;
     }
 
-    toast.success('Comment posted!');
     setNewComment('');
     setReplyToId(null);
     fetchComments();
+
+    // Check if comment indicates attendance and schedule reminder
+    const attendanceKeywords = ['i\'m going', 'im going', 'i am going', 'count me in', 'i\'ll be there', 'ill be there'];
+    if (attendanceKeywords.some(keyword => commentText.toLowerCase().includes(keyword))) {
+      const scheduled = await scheduleEventReminder(eventTitle, eventDate || null);
+      if (scheduled) {
+        toast.success('Comment posted! Reminder saved on device');
+      } else {
+        toast.success('Comment posted!');
+      }
+    } else {
+      toast.success('Comment posted!');
+    }
   };
 
   const handleReaction = async (commentId: string, emoji: string) => {
