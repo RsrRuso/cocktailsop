@@ -13,6 +13,9 @@ import { ReelFullscreen } from "@/components/ReelFullscreen";
 import { FeedItem } from "@/components/FeedItem";
 import { useFeedData } from "@/hooks/useFeedData";
 import { useOptimisticLike } from "@/hooks/useOptimisticLike";
+import { useManagerRole } from "@/hooks/useManagerRole";
+import { EventsTicker } from "@/components/EventsTicker";
+import { CreateEventDialog } from "@/components/CreateEventDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,6 +92,7 @@ const Home = () => {
   const [showLikes, setShowLikes] = useState(false);
   const [selectedLikesPostId, setSelectedLikesPostId] = useState("");
   const [isReelLikes, setIsReelLikes] = useState(false);
+  const { isManager } = useManagerRole();
   
   // Update currentUser when profile changes
   useEffect(() => {
@@ -341,6 +345,11 @@ const Home = () => {
             className="w-[calc(100vw-2rem)] max-w-md mx-4 glass border border-border/50 shadow-2xl z-50 bg-background/95 backdrop-blur-xl"
             align="center"
           >
+            {isManager && (
+              <div className="p-2 border-b border-border/50">
+                <CreateEventDialog />
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2 p-2">
               {regions.map((region) => (
                 <DropdownMenuItem
@@ -362,6 +371,13 @@ const Home = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Events Ticker */}
+      {selectedRegion && (
+        <div className="px-4">
+          <EventsTicker region={selectedRegion} />
+        </div>
+      )}
 
       {/* Feed */}
       <div className="space-y-6 px-4">
