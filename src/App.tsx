@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AuthProvider } from "./contexts/AuthContext";
-import StatusBanner from "./components/StatusBanner";
 
 // Eager load ONLY index/landing/auth (no user data)
 import Index from "./pages/Index";
@@ -69,7 +68,6 @@ const App = () => (
       <BrowserRouter>
         <Toaster />
         <Sonner />
-        <StatusBanner />
         <Suspense fallback={<PageLoader />}>
           <Routes>
           <Route path="/" element={<Index />} />
