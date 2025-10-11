@@ -15,6 +15,7 @@ import FollowingDialog from "@/components/FollowingDialog";
 import { VenueVerification } from "@/components/VenueVerification";
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CareerMetricsDialog from "@/components/CareerMetricsDialog";
+import StatusUpload from "@/components/StatusUpload";
 import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore } from "@/lib/profileUtils";
 
 interface Profile {
@@ -248,6 +249,13 @@ const Profile = () => {
       )}
 
       <div className="px-4 space-y-6" style={{ marginTop: coverUrl ? '-3rem' : '1.5rem' }}>
+        {/* Status Upload */}
+        <StatusUpload
+          userId={currentUserId}
+          avatarUrl={profile.avatar_url}
+          username={profile.username}
+        />
+        
         {/* Profile Header */}
         <div className="glass rounded-xl p-4 space-y-6 border border-border/50">
           <div className="flex items-start justify-between">
