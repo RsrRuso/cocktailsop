@@ -78,6 +78,11 @@ const MessageThread = () => {
     setNewMessage("");
     setReplyingTo(null);
 
+    // Play sent sound
+    const sentSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZUA0PVKzn7K5fGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBQ==');
+    sentSound.volume = 0.5;
+    sentSound.play().catch(() => {});
+
     try {
       const messageData: any = {
         conversation_id: conversationId,
@@ -102,7 +107,8 @@ const MessageThread = () => {
           .eq("id", editingMessage.id);
         setEditingMessage(null);
       } else {
-        await supabase.from("messages").insert(messageData);
+        const { error } = await supabase.from("messages").insert(messageData);
+        if (error) throw error;
       }
 
       updateTypingStatus(false);
@@ -111,12 +117,15 @@ const MessageThread = () => {
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", conversationId);
     } catch (error) {
-      // Restore message on send failure
       setNewMessage(trimmedMessage);
     }
   };
 
-  const quickEmojis = ["🔥", "❤️", "👍", "😂", "😮", "😢", "🎉", "👏"];
+  const quickEmojis = [
+    "❤️", "😂", "😮", "😢", "🔥", "👍", "👏", "🎉",
+    "😍", "🥰", "😘", "😊", "😎", "🤔", "😱", "😭",
+    "🙏", "💪", "✨", "⭐", "💯", "🎊", "🎈", "🌟"
+  ];
 
   return (
     <div className="fixed inset-0 bg-background flex flex-col">
@@ -176,10 +185,18 @@ const MessageThread = () => {
               />
 
               {showEmojiPicker === message.id && (
-                <div className="absolute bottom-full mb-2 glass backdrop-blur-xl rounded-2xl p-4 z-20 border border-primary/20 glow-primary shadow-2xl max-w-xs">
-                  <div className="flex flex-wrap gap-2">
+                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 glass backdrop-blur-xl rounded-2xl p-3 z-[100] border border-primary/20 glow-primary shadow-2xl w-80">
+                  <div className="grid grid-cols-8 gap-1">
                     {quickEmojis.map((emoji) => (
-                      <button key={emoji} onClick={() => { handleReaction(message.id, emoji); setShowEmojiPicker(null); }} className="hover:scale-125 transition-transform text-2xl w-10 h-10 flex items-center justify-center rounded-lg hover:bg-primary/10">
+                      <button 
+                        key={emoji} 
+                        onClick={() => { 
+                          handleReaction(message.id, emoji); 
+                          setShowEmojiPicker(null); 
+                        }} 
+                        className="hover:scale-125 transition-all duration-200 text-2xl w-9 h-9 flex items-center justify-center rounded-lg hover:bg-primary/20 active:scale-110"
+                        title={emoji}
+                      >
                         {emoji}
                       </button>
                     ))}
