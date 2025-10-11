@@ -22,7 +22,7 @@ const Explore = () => {
   const fetchExplorePosts = async () => {
     const { data } = await supabase
       .from("posts")
-      .select("id, content, media_urls, like_count, profiles(username, avatar_url)")
+      .select("id, content, media_urls, like_count, comment_count, profiles(id, username, avatar_url, full_name)")
       .order("like_count", { ascending: false })
       .limit(18);
 
@@ -102,14 +102,14 @@ const Explore = () => {
               filteredPosts.map((post) => (
               <div
                 key={post.id}
-                className="aspect-square glass-hover cursor-pointer rounded-lg overflow-hidden"
-                onClick={() => navigate("/home")}
+                className="relative aspect-square glass-hover cursor-pointer rounded-lg overflow-hidden group"
+                onClick={() => navigate(`/user/${post.profiles?.id}`)}
               >
                 {post.media_urls?.[0] ? (
                   <img
                     src={post.media_urls[0]}
                     alt=""
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                     loading="lazy"
                   />
                 ) : (
@@ -117,6 +117,35 @@ const Explore = () => {
                     <p className="text-xs text-white line-clamp-4">{post.content}</p>
                   </div>
                 )}
+                
+                {/* Overlay with author info and engagement */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3">
+                  <div className="flex items-center gap-2">
+                    {post.profiles?.avatar_url ? (
+                      <img 
+                        src={post.profiles.avatar_url} 
+                        alt={post.profiles.username}
+                        className="w-6 h-6 rounded-full border-2 border-white"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white text-xs font-bold border-2 border-white">
+                        {post.profiles?.username?.[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-white text-xs font-semibold drop-shadow-lg">
+                      @{post.profiles?.username}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-white text-xs font-semibold">
+                    <span className="flex items-center gap-1">
+                      ❤️ {post.like_count}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      💬 {post.comment_count}
+                    </span>
+                  </div>
+                </div>
               </div>
             ))
             )}
