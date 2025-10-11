@@ -129,14 +129,30 @@ const Home = () => {
   // Merge posts and reels into unified feed
   const fetchStories = useCallback(async () => {
     try {
+      // Fetch stories WITHOUT profile join
       const { data } = await supabase
         .from("stories")
-        .select("id, user_id, media_urls, media_types, profiles(username, avatar_url)")
+        .select("id, user_id, media_urls, media_types")
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
         .limit(10);
 
-      if (data) setStories(data);
+      if (!data) return;
+
+      // Fetch profiles separately
+      const userIds = [...new Set(data.map(s => s.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIds);
+
+      // Map profiles to stories
+      const storiesWithProfiles = data.map(story => ({
+        ...story,
+        profiles: profiles?.find(p => p.id === story.user_id) || { username: 'Unknown', avatar_url: null }
+      }));
+
+      setStories(storiesWithProfiles);
     } catch (error) {
       console.error('Fetch stories failed');
     }

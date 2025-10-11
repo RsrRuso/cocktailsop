@@ -31,36 +31,35 @@ export const useFeedData = (selectedRegion: string | null) => {
 
   const fetchPosts = useCallback(async () => {
     try {
-      let query = supabase
+      // Fetch posts WITHOUT expensive profile joins
+      const { data: postsData, error } = await supabase
         .from("posts")
-        .select("id, user_id, content, media_urls, comment_count, created_at, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
+        .select("id, user_id, content, media_urls, like_count, comment_count, created_at")
         .order("created_at", { ascending: false })
         .limit(20);
 
-      if (selectedRegion && selectedRegion !== "All") {
-        query = query.or(`profiles.region.eq.${selectedRegion},profiles.region.eq.All`);
-      }
+      if (error) throw error;
+      if (!postsData) return;
 
-      const { data: postsData } = await query;
-      
-      if (postsData) {
-        // Fetch actual like counts for each post
-        const postsWithLikeCounts = await Promise.all(
-          postsData.map(async (post) => {
-            const { count } = await supabase
-              .from("post_likes")
-              .select("*", { count: 'exact', head: true })
-              .eq("post_id", post.id);
-            
-            return {
-              ...post,
-              like_count: count || 0
-            };
-          })
-        );
-        
-        setPosts(postsWithLikeCounts);
-      }
+      // Fetch profiles separately in ONE query
+      const userIds = [...new Set(postsData.map(p => p.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url, professional_title, badge_level, region')
+        .in('id', userIds);
+
+      // Map profiles to posts
+      const postsWithProfiles = postsData.map(post => ({
+        ...post,
+        profiles: profiles?.find(p => p.id === post.user_id) || null
+      }));
+
+      // Filter by region if needed
+      const filteredPosts = selectedRegion && selectedRegion !== "All"
+        ? postsWithProfiles.filter(p => p.profiles?.region === selectedRegion || p.profiles?.region === "All")
+        : postsWithProfiles;
+
+      setPosts(filteredPosts);
     } catch (error) {
       console.error('Fetch posts failed');
     }
@@ -68,36 +67,35 @@ export const useFeedData = (selectedRegion: string | null) => {
 
   const fetchReels = useCallback(async () => {
     try {
-      let query = supabase
+      // Fetch reels WITHOUT expensive profile joins
+      const { data: reelsData, error } = await supabase
         .from("reels")
-        .select("id, user_id, video_url, caption, comment_count, view_count, created_at, profiles(username, full_name, avatar_url, professional_title, badge_level, region)")
+        .select("id, user_id, video_url, caption, like_count, comment_count, view_count, created_at")
         .order("created_at", { ascending: false })
         .limit(20);
 
-      if (selectedRegion && selectedRegion !== "All") {
-        query = query.or(`profiles.region.eq.${selectedRegion},profiles.region.eq.All`);
-      }
+      if (error) throw error;
+      if (!reelsData) return;
 
-      const { data: reelsData } = await query;
-      
-      if (reelsData) {
-        // Fetch actual like counts for each reel
-        const reelsWithLikeCounts = await Promise.all(
-          reelsData.map(async (reel) => {
-            const { count } = await supabase
-              .from("reel_likes")
-              .select("*", { count: 'exact', head: true })
-              .eq("reel_id", reel.id);
-            
-            return {
-              ...reel,
-              like_count: count || 0
-            };
-          })
-        );
-        
-        setReels(reelsWithLikeCounts);
-      }
+      // Fetch profiles separately in ONE query
+      const userIds = [...new Set(reelsData.map(r => r.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url, professional_title, badge_level, region')
+        .in('id', userIds);
+
+      // Map profiles to reels
+      const reelsWithProfiles = reelsData.map(reel => ({
+        ...reel,
+        profiles: profiles?.find(p => p.id === reel.user_id) || null
+      }));
+
+      // Filter by region if needed
+      const filteredReels = selectedRegion && selectedRegion !== "All"
+        ? reelsWithProfiles.filter(r => r.profiles?.region === selectedRegion || r.profiles?.region === "All")
+        : reelsWithProfiles;
+
+      setReels(filteredReels);
     } catch (error) {
       console.error('Fetch reels failed');
     }

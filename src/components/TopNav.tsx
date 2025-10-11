@@ -36,12 +36,13 @@ const TopNav = () => {
       if (profile && isMounted) {
         setCurrentUser(profile);
         
-        // Fetch user roles in background (non-blocking)
-        if (user) {
+        // Fetch user roles ONLY ONCE in background
+        if (user && !userRoles.isFounder && !userRoles.isVerified) {
           const { data: rolesData } = await supabase
             .from('user_roles')
             .select('role')
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .limit(2); // Only need to check for 2 roles
           
           if (rolesData && isMounted) {
             setUserRoles({
@@ -52,59 +53,24 @@ const TopNav = () => {
         }
       }
       
-      // Fetch counts in background
-      await Promise.all([
-        fetchUnreadNotifications(),
-        fetchUnreadMessages()
-      ]);
+      // Fetch counts ONCE
+      if (user && isMounted) {
+        await Promise.all([
+          fetchUnreadNotifications(),
+          fetchUnreadMessages()
+        ]);
+      }
     };
 
     initializeNav();
 
-    // Set up realtime subscriptions with debouncing
-    let updateTimeout: NodeJS.Timeout;
-    const debouncedUpdate = (callback: () => void) => {
-      clearTimeout(updateTimeout);
-      updateTimeout = setTimeout(callback, 1000);
-    };
-
-    const notificationsChannel = supabase
-      .channel('topnav-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications'
-        },
-        () => {
-          if (isMounted) debouncedUpdate(fetchUnreadNotifications);
-        }
-      )
-      .subscribe();
-
-    const messagesChannel = supabase
-      .channel('topnav-messages')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages'
-        },
-        () => {
-          if (isMounted) debouncedUpdate(fetchUnreadMessages);
-        }
-      )
-      .subscribe();
-
+    // Remove realtime subscriptions - they cause too much overhead
+    // Use polling only when user interacts with notifications/messages
+    
     return () => {
       isMounted = false;
-      clearTimeout(updateTimeout);
-      supabase.removeChannel(notificationsChannel);
-      supabase.removeChannel(messagesChannel);
     };
-  }, [user, profile]);
+  }, [user?.id]); // Only re-run if user ID changes
 
   const fetchUnreadNotifications = async () => {
     if (!user) return;

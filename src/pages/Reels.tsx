@@ -77,23 +77,29 @@ const Reels = () => {
   }, [user]);
 
   const fetchReels = async () => {
-    const { data } = await supabase
+    // Fetch reels WITHOUT expensive profile joins
+    const { data, error } = await supabase
       .from("reels")
-      .select(`
-        *,
-        profiles:user_id (
-          username,
-          full_name,
-          avatar_url,
-          badge_level
-        )
-      `)
+      .select("id, user_id, video_url, caption, like_count, comment_count, view_count, created_at")
       .order("created_at", { ascending: false })
       .limit(10);
 
-    if (data) {
-      setReels(data);
-    }
+    if (error || !data) return;
+
+    // Fetch profiles separately in ONE query
+    const userIds = [...new Set(data.map(r => r.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url, badge_level')
+      .in('id', userIds);
+
+    // Map profiles to reels
+    const reelsWithProfiles = data.map(reel => ({
+      ...reel,
+      profiles: profiles?.find(p => p.id === reel.user_id) || null
+    }));
+
+    setReels(reelsWithProfiles);
   };
 
   const fetchLikedReels = async () => {
