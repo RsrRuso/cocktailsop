@@ -23,15 +23,23 @@ const StatusRing = ({
     <div className={`relative inline-block ${className}`}>
       {hasStatus && statusText && (
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-10 pointer-events-none max-w-[200px]">
-          <div className="bg-muted/95 backdrop-blur-sm text-muted-foreground px-3 py-1.5 rounded-2xl text-xs shadow-sm overflow-hidden">
-            <div className="flex items-center gap-1">
-              {emoji && <span className="shrink-0">{emoji}</span>}
-              <div className="overflow-hidden">
-                <div className="animate-marquee whitespace-nowrap inline-block">
-                  {statusText}
-                  {statusText.length > 30 && <span className="ml-8">{statusText}</span>}
+          <div className="relative">
+            <div className="bg-muted/95 backdrop-blur-sm text-muted-foreground px-3 py-1.5 rounded-2xl text-xs shadow-sm overflow-hidden">
+              <div className="flex items-center gap-1">
+                {emoji && <span className="shrink-0">{emoji}</span>}
+                <div className="overflow-hidden">
+                  <div className="animate-marquee whitespace-nowrap inline-block">
+                    {statusText}
+                    {statusText.length > 30 && <span className="ml-8">{statusText}</span>}
+                  </div>
                 </div>
               </div>
+            </div>
+            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2">
+              <div className="w-3 h-3 bg-muted/95 backdrop-blur-sm rounded-full"></div>
+            </div>
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 translate-x-1">
+              <div className="w-2 h-2 bg-muted/95 backdrop-blur-sm rounded-full"></div>
             </div>
           </div>
         </div>
