@@ -123,13 +123,13 @@ const MessageThread = () => {
     <div className="fixed inset-0 bg-background flex flex-col">
       {/* Header */}
       <div className="glass backdrop-blur-xl border-b border-primary/20 p-4 flex items-center gap-3 glow-primary">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} className="glass">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} className="glass shrink-0">
           <ArrowLeft className="w-5 h-5" />
         </Button>
         
         {otherUser && (
           <>
-            <div className="relative cursor-pointer hover:scale-105 transition-transform" onClick={() => navigate(`/user/${otherUser.id}`)}>
+            <div className="relative cursor-pointer hover:scale-105 transition-transform shrink-0" onClick={() => navigate(`/user/${otherUser.id}`)}>
               <OptimizedAvatar
                 src={otherUser.avatar_url}
                 alt={otherUser.username}
@@ -139,12 +139,14 @@ const MessageThread = () => {
               />
               {isOnline && <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full neon-green border-2 border-background animate-pulse"></div>}
             </div>
-            <div className="flex-1">
-              <p className="font-semibold">{otherUser.full_name}</p>
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+              <p className="font-semibold truncate">{otherUser.full_name}</p>
               {isTyping ? (
                 <p className="text-sm neon-green-text animate-pulse">typing...</p>
               ) : (
-                <p className="text-sm text-muted-foreground">{isOnline ? 'Online' : '@' + otherUser.username}</p>
+                <p className="text-sm text-muted-foreground truncate">
+                  {isOnline ? 'Online' : '@' + otherUser.username}
+                </p>
               )}
             </div>
           </>
