@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AuthProvider } from "./contexts/AuthContext";
 
 // Eager load ONLY index/landing/auth (no user data)
 import Index from "./pages/Index";
@@ -63,13 +62,12 @@ const PageLoader = () => (
 );
 
 const App = () => (
-  <AuthProvider>
-    <TooltipProvider>
-      <BrowserRouter>
-        <Toaster />
-        <Sonner />
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
+  <TooltipProvider>
+    <BrowserRouter>
+      <Toaster />
+      <Sonner />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/landing" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
@@ -116,7 +114,6 @@ const App = () => (
       </Suspense>
     </BrowserRouter>
   </TooltipProvider>
-  </AuthProvider>
 );
 
 export default App;

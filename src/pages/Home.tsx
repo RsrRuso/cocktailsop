@@ -170,7 +170,7 @@ const Home = () => {
 
       setStories(storiesWithProfiles);
     } catch (error) {
-      // Silently fail
+      console.error('Fetch stories failed');
     }
   }, []);
 
@@ -215,6 +215,7 @@ const Home = () => {
       toast.success("Post deleted successfully");
       refreshFeed();
     } catch (error) {
+      console.error('Error deleting post:', error);
       toast.error("Failed to delete post");
     }
   }, [refreshFeed]);
@@ -230,6 +231,7 @@ const Home = () => {
       toast.success("Reel deleted successfully");
       refreshFeed();
     } catch (error) {
+      console.error('Error deleting reel:', error);
       toast.error("Failed to delete reel");
     }
   };
@@ -264,34 +266,32 @@ const Home = () => {
       <div className="px-4 py-4 overflow-x-auto scrollbar-hide">
         <div className="flex gap-4">
           {/* Your Story */}
-          <div className="relative flex flex-col items-center gap-2 min-w-[80px]">
+          <div className="flex flex-col items-center gap-2 min-w-[80px]">
             <button
-              onClick={() => navigate("/create/story")}
+              onClick={() => navigate("/story-options")}
               className="relative group"
             >
-              <div className="relative">
-                <div className="absolute -inset-1 rounded-full bg-border/50 transition-all duration-300"></div>
-                <div className="relative rounded-full bg-border p-0.5 shadow-xl">
-                  <div className="bg-background rounded-full p-0.5">
-                    <Avatar className="w-16 h-16">
-                      <AvatarImage src={currentUser?.avatar_url || undefined} />
-                      <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
-                    </Avatar>
-                  </div>
-                </div>
+              <div className="w-16 h-16 rounded-full glass border-2 border-border flex items-center justify-center">
+                <Avatar className="w-14 h-14">
+                  <AvatarImage src={currentUser?.avatar_url || undefined} />
+                  <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                </Avatar>
               </div>
-              <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-lg">
-                <span className="text-primary-foreground text-lg font-bold">+</span>
+              <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary">
+                <span className="text-white text-lg font-bold">+</span>
               </div>
             </button>
-            <span className="text-xs text-muted-foreground truncate w-full text-center">Your Story</span>
+            <span className="text-xs text-muted-foreground">Your Story</span>
           </div>
 
           {/* Other Stories */}
           {stories.map((story) => (
-            <div key={story.id} className="relative flex flex-col items-center gap-2 min-w-[80px]">
+            <div key={story.id} className="flex flex-col items-center gap-2 min-w-[80px]">
               <button 
-                onClick={() => navigate(`/story/${story.user_id}`)}
+                onClick={() => {
+                  // Preload story images before navigation for instant display
+                  navigate(`/story/${story.user_id}`);
+                }}
                 className="relative group cursor-pointer"
               >
                 <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>

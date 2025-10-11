@@ -119,7 +119,7 @@ const StoryViewer = () => {
         ignoreDuplicates: true
       });
     
-    // Silently fail view tracking
+    if (error) console.error("Error tracking view:", error);
   };
 
   const checkIfLiked = async () => {
@@ -176,7 +176,7 @@ const StoryViewer = () => {
       }
     } catch (error) {
       // Revert on error
-      // Silently fail like action
+      console.error("Like error:", error);
       setIsLiked(wasLiked);
       if (currentStory) {
         currentStory.like_count = wasLiked 
@@ -571,7 +571,7 @@ const StoryViewer = () => {
               size="icon"
               onClick={(e) => {
                 e.stopPropagation();
-                
+                console.log('Like button clicked');
                 handleLike();
               }}
               className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 z-20"
@@ -589,7 +589,7 @@ const StoryViewer = () => {
               size="icon"
               onClick={(e) => {
                 e.stopPropagation();
-                
+                console.log('Comment button clicked');
                 setShowCommentsDialog(true);
               }}
               className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 relative z-20"

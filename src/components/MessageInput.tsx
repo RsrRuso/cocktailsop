@@ -1,12 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Progress } from './ui/progress';
 import { Send, Paperclip, Mic, Reply, Edit2, X, Loader2 } from 'lucide-react';
 import { Message } from '@/hooks/useMessageThread';
 import { AttachmentMenu } from './AttachmentMenu';
-import { useAuth } from '@/contexts/AuthContext';
-import { useGlobalPresence } from '@/hooks/useGlobalPresence';
 
 interface MessageInputProps {
   value: string;
@@ -46,20 +44,6 @@ export const MessageInput = ({
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
-  const { user, profile } = useAuth();
-  const { setTyping } = useGlobalPresence(
-    user?.id,
-    profile?.username,
-    profile?.avatar_url
-  );
-
-  useEffect(() => {
-    if (value.length > 0) {
-      setTyping(true);
-    } else {
-      setTyping(false);
-    }
-  }, [value, setTyping]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
