@@ -59,8 +59,8 @@ const CreateReel = () => {
     }
 
     setLoading(true);
-    setUploadProgress(10);
-    setUploadStage("Uploading");
+    setUploadProgress(0);
+    setUploadStage("Preparing");
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -69,25 +69,55 @@ const CreateReel = () => {
         return;
       }
 
-      // Upload video directly
+      // Simulate preparing stage
+      for (let i = 0; i <= 15; i += 3) {
+        setUploadProgress(i);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
       const fileExt = selectedVideo.name.split(".").pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
-      setUploadProgress(30);
+      setUploadProgress(20);
+      setUploadStage("Uploading");
+
+      // Simulate upload progress
+      const uploadInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 70) {
+            clearInterval(uploadInterval);
+            return 70;
+          }
+          return prev + 5;
+        });
+      }, 200);
+
       const { error: uploadError } = await supabase.storage
         .from("reels")
         .upload(fileName, selectedVideo, {
           contentType: selectedVideo.type,
+          upsert: false,
         });
+
+      clearInterval(uploadInterval);
 
       if (uploadError) throw uploadError;
 
-      setUploadProgress(70);
-      setUploadStage("Saving");
+      setUploadProgress(75);
+      setUploadStage("Processing");
+
+      // Smooth transition through processing
+      for (let i = 75; i <= 85; i += 2) {
+        setUploadProgress(i);
+        await new Promise(resolve => setTimeout(resolve, 80));
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from("reels")
         .getPublicUrl(fileName);
+
+      setUploadProgress(90);
+      setUploadStage("Saving");
 
       const { error: dbError } = await supabase.from("reels").insert({
         user_id: user.id,
@@ -98,11 +128,16 @@ const CreateReel = () => {
 
       if (dbError) throw dbError;
 
-      setUploadProgress(100);
-      setUploadStage("Complete!");
+      // Final completion
+      for (let i = 90; i <= 100; i += 2) {
+        setUploadProgress(i);
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      setUploadStage("Done!");
       
       toast.success("Reel uploaded successfully!");
-      navigate("/thunder");
+      setTimeout(() => navigate("/thunder"), 500);
     } catch (error: any) {
       console.error("Error:", error);
       toast.error(error.message || "Upload failed");
@@ -200,20 +235,20 @@ const CreateReel = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 text-xs">
-                    {['Upload', 'Save', 'Done'].map((stage, idx) => {
-                      const stageProgress = (idx + 1) * 33.33;
-                      const isActive = uploadProgress >= stageProgress - 15;
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    {['Prepare', 'Upload', 'Process', 'Save'].map((stage, idx) => {
+                      const stageProgress = (idx + 1) * 25;
+                      const isActive = uploadProgress >= stageProgress - 20;
                       const isComplete = uploadProgress >= stageProgress;
                       
                       return (
                         <div key={stage} className="text-center space-y-1">
-                          <div className={`w-2 h-2 rounded-full mx-auto transition-all ${
+                          <div className={`w-2 h-2 rounded-full mx-auto transition-all duration-300 ${
                             isComplete ? 'bg-green-500 scale-125' : 
                             isActive ? 'bg-primary animate-pulse' : 
                             'bg-muted'
                           }`} />
-                          <p className={`transition-colors ${
+                          <p className={`transition-colors duration-200 ${
                             isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
                           }`}>{stage}</p>
                         </div>
