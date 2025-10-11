@@ -212,8 +212,16 @@ const MessageThread = () => {
                 isOwn={isOwn}
                 onReaction={() => setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id)}
                 onReply={() => setReplyingTo(message)}
-                onEdit={isOwn ? () => { setEditingMessage(message); setNewMessage(message.content); } : undefined}
-                onDelete={isOwn ? () => handleDelete(message.id) : undefined}
+                onEdit={isOwn && !message.media_url ? () => { setEditingMessage(message); setNewMessage(message.content); } : undefined}
+                onDelete={isOwn ? () => {
+                  if (message.media_url) {
+                    if (window.confirm(`Delete this ${message.media_type}?`)) {
+                      handleDelete(message.id);
+                    }
+                  } else {
+                    handleDelete(message.id);
+                  }
+                } : undefined}
               />
 
               {showEmojiPicker === message.id && (
@@ -237,7 +245,7 @@ const MessageThread = () => {
               )}
 
               {message.reactions && message.reactions.length > 0 && (
-                <div className="flex gap-1 mt-1 flex-wrap">
+                <div className={`flex gap-1 mt-1 flex-wrap ${message.media_url ? 'px-4 pb-2' : ''}`}>
                   {message.reactions.map((reaction, idx) => (
                     <button key={idx} onClick={() => handleReaction(message.id, reaction.emoji)} className={`glass backdrop-blur-lg rounded-full px-2 py-0.5 text-xs flex items-center gap-1 hover:scale-110 transition-transform ${reaction.user_ids.includes(currentUser?.id || "") ? "ring-1 ring-primary glow-primary" : ""}`}>
                       <span>{reaction.emoji}</span>
