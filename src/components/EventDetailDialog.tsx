@@ -6,13 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Heart, MessageCircle, CheckCircle, Send, Pencil, Trash2, Smile, Reply, MoreVertical } from 'lucide-react';
+import { Heart, MessageCircle, CheckCircle, Send, Pencil, Trash2, Smile, Reply, MoreVertical, CalendarPlus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { scheduleEventReminder } from '@/lib/eventReminders';
+import { scheduleEventReminder, addToCalendar } from '@/lib/eventReminders';
 
 interface Event {
   id: string;
@@ -164,13 +164,24 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
         setIsAttending(true);
         setAttendeeCount(prev => prev + 1);
         
-        // Schedule reminder on device
+        // Schedule reminder and suggest calendar
         const scheduled = await scheduleEventReminder(event.title, event.event_date);
-        if (scheduled) {
-          toast.success("You're going! Reminder saved on device");
-        } else {
-          toast.success("You're going!");
-        }
+        
+        // Show suggestion to add to calendar
+        toast.success("You're going!", {
+          action: {
+            label: 'Add to Calendar',
+            onClick: async () => {
+              const added = await addToCalendar(event.title, event.event_date, event.description || undefined);
+              if (added) {
+                toast.success('Added to calendar!');
+              } else {
+                toast.error('Could not add to calendar');
+              }
+            },
+          },
+          duration: 6000,
+        });
       }
     }
   };
@@ -200,15 +211,25 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
       setNewComment('');
       setReplyToId(null);
       
-      // Check if comment indicates attendance and schedule reminder
+      // Check if comment indicates attendance
       const attendanceKeywords = ['i\'m going', 'im going', 'i am going', 'count me in', 'i\'ll be there', 'ill be there'];
       if (attendanceKeywords.some(keyword => commentText.toLowerCase().includes(keyword))) {
         const scheduled = await scheduleEventReminder(event.title, event.event_date);
-        if (scheduled) {
-          toast.success('Comment added! Reminder saved on device');
-        } else {
-          toast.success('Comment added!');
-        }
+        
+        toast.success('Comment added!', {
+          action: {
+            label: 'Add to Calendar',
+            onClick: async () => {
+              const added = await addToCalendar(event.title, event.event_date, event.description || undefined);
+              if (added) {
+                toast.success('Added to calendar!');
+              } else {
+                toast.error('Could not add to calendar');
+              }
+            },
+          },
+          duration: 6000,
+        });
       } else {
         toast.success('Comment added!');
       }

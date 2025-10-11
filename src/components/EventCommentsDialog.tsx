@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MessageCircle, Reply, ThumbsUp, Trash2, Edit2, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import OptimizedAvatar from './OptimizedAvatar';
-import { scheduleEventReminder } from '@/lib/eventReminders';
+import { scheduleEventReminder, addToCalendar } from '@/lib/eventReminders';
 
 interface Reaction {
   emoji: string;
@@ -98,15 +98,25 @@ export const EventCommentsDialog = ({ eventId, eventTitle, eventDate, open, onOp
     setReplyToId(null);
     fetchComments();
 
-    // Check if comment indicates attendance and schedule reminder
+    // Check if comment indicates attendance
     const attendanceKeywords = ['i\'m going', 'im going', 'i am going', 'count me in', 'i\'ll be there', 'ill be there'];
     if (attendanceKeywords.some(keyword => commentText.toLowerCase().includes(keyword))) {
       const scheduled = await scheduleEventReminder(eventTitle, eventDate || null);
-      if (scheduled) {
-        toast.success('Comment posted! Reminder saved on device');
-      } else {
-        toast.success('Comment posted!');
-      }
+      
+      toast.success('Comment posted!', {
+        action: {
+          label: 'Add to Calendar',
+          onClick: async () => {
+            const added = await addToCalendar(eventTitle, eventDate || null);
+            if (added) {
+              toast.success('Added to calendar!');
+            } else {
+              toast.error('Could not add to calendar');
+            }
+          },
+        },
+        duration: 6000,
+      });
     } else {
       toast.success('Comment posted!');
     }

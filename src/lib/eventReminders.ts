@@ -44,3 +44,55 @@ export const scheduleEventReminder = async (eventTitle: string, eventDate: strin
   }
   return false;
 };
+
+export const addToCalendar = async (
+  eventTitle: string,
+  eventDate: string | null,
+  description?: string
+) => {
+  if (!eventDate) return false;
+
+  const eventDateTime = new Date(eventDate);
+  const endDateTime = new Date(eventDateTime.getTime() + 2 * 60 * 60 * 1000); // 2 hours duration
+
+  // Create .ics file download (works on all platforms)
+  const icsContent = generateICSFile(eventTitle, eventDateTime, endDateTime, description);
+  downloadICSFile(icsContent, `${eventTitle}.ics`);
+  return true;
+};
+
+const generateICSFile = (
+  title: string,
+  startDate: Date,
+  endDate: Date,
+  description?: string
+): string => {
+  const formatDate = (date: Date) => {
+    return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  };
+
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Spec Verse//Event//EN',
+    'BEGIN:VEVENT',
+    `DTSTART:${formatDate(startDate)}`,
+    `DTEND:${formatDate(endDate)}`,
+    `SUMMARY:${title}`,
+    `DESCRIPTION:${description || title}`,
+    'STATUS:CONFIRMED',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+};
+
+const downloadICSFile = (content: string, filename: string) => {
+  const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+};
