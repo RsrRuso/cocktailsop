@@ -177,35 +177,134 @@ export type Database = {
         }
         Relationships: []
       }
+      event_attendees: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_attendees_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_comments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_likes: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_likes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
+          attendee_count: number | null
+          comment_count: number | null
           created_at: string | null
           description: string | null
           event_date: string | null
           id: string
           is_active: boolean | null
+          like_count: number | null
           region: string
           title: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          attendee_count?: number | null
+          comment_count?: number | null
           created_at?: string | null
           description?: string | null
           event_date?: string | null
           id?: string
           is_active?: boolean | null
+          like_count?: number | null
           region: string
           title: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          attendee_count?: number | null
+          comment_count?: number | null
           created_at?: string | null
           description?: string | null
           event_date?: string | null
           id?: string
           is_active?: boolean | null
+          like_count?: number | null
           region?: string
           title?: string
           updated_at?: string | null

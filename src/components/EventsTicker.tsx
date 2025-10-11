@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar } from 'lucide-react';
+import { EventDetailDialog } from './EventDetailDialog';
 
 interface Event {
   id: string;
@@ -8,6 +9,9 @@ interface Event {
   description: string | null;
   event_date: string | null;
   region: string;
+  like_count?: number;
+  comment_count?: number;
+  attendee_count?: number;
 }
 
 interface EventsTickerProps {
@@ -16,6 +20,8 @@ interface EventsTickerProps {
 
 export const EventsTicker = ({ region }: EventsTickerProps) => {
   const [events, setEvents] = useState<Event[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -33,6 +39,11 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
     fetchEvents();
   }, [region]);
 
+  const handleEventClick = (event: Event) => {
+    setSelectedEvent(event);
+    setDialogOpen(true);
+  };
+
   if (events.length === 0) return null;
 
   return (
@@ -46,18 +57,28 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
       <div className="relative overflow-hidden">
         <div className="animate-marquee whitespace-nowrap">
           {events.map((event) => (
-            <span key={event.id} className="inline-flex items-center mx-8">
-              <span className="font-semibold text-foreground">{event.title}</span>
+            <button
+              key={event.id}
+              onClick={() => handleEventClick(event)}
+              className="inline-flex items-center mx-8 hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              <span className="font-semibold text-foreground hover:underline">{event.title}</span>
               {event.event_date && (
                 <span className="ml-2 text-sm text-muted-foreground">
                   {new Date(event.event_date).toLocaleDateString()}
                 </span>
               )}
               <span className="mx-2 text-primary">•</span>
-            </span>
+            </button>
           ))}
         </div>
       </div>
+      
+      <EventDetailDialog
+        event={selectedEvent}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   );
 };
