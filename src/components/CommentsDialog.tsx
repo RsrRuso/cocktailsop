@@ -1,28 +1,14 @@
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, Trash2, Smile, Heart, ThumbsUp, MessageCircle } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Send, Trash2, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface Reaction {
-  user_id: string;
-  emoji: string;
-}
+import { formatDistanceToNow } from "date-fns";
 
 interface Comment {
   id: string;
@@ -30,7 +16,6 @@ interface Comment {
   content: string;
   created_at: string;
   parent_comment_id: string | null;
-  reactions: Reaction[];
   profiles: {
     username: string;
     avatar_url: string | null;
@@ -38,333 +23,235 @@ interface Comment {
   replies?: Comment[];
 }
 
-interface CurrentUserProfile {
-  username: string;
-  avatar_url: string | null;
-}
-
 interface CommentsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   postId: string;
   isReel?: boolean;
-  onCommentAdded?: () => void;
-  onCommentDeleted?: () => void;
 }
 
-const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentAdded, onCommentDeleted }: CommentsDialogProps) => {
-  const { user, profile } = useAuth();
+const CommentsDialog = ({ open, onOpenChange, postId, isReel = false }: CommentsDialogProps) => {
+  const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const emojis = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
+  const tableName = isReel ? "reel_comments" : "post_comments";
+  const columnName = isReel ? "reel_id" : "post_id";
 
   useEffect(() => {
     if (open) {
-      fetchComments();
+      loadComments();
+      
+      // Subscribe to new comments
+      const channel = supabase
+        .channel(`comments-${postId}-${isReel}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: tableName,
+            filter: `${columnName}=eq.${postId}`
+          },
+          () => {
+            loadComments();
+          }
+        )
+        .subscribe();
 
-      // Defer realtime subscriptions
-      const timer = setTimeout(() => {
-        const channel = supabase
-          .channel(`comments-${postId}`)
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: isReel ? 'reel_comments' : 'post_comments',
-              filter: isReel ? `reel_id=eq.${postId}` : `post_id=eq.${postId}`
-            },
-            (payload) => {
-              // Only refetch if the new comment is from another user
-              if (payload.new && (payload.new as any).user_id !== user?.id) {
-                fetchComments();
-              }
-            }
-          )
-          .subscribe();
-
-        return () => {
-          clearTimeout(timer);
-          supabase.removeChannel(channel);
-        };
-      }, 1000);
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [open, postId, isReel]);
 
-  const fetchComments = async () => {
+  const loadComments = async () => {
     try {
-      const tableName = isReel ? "reel_comments" : "post_comments";
-      const columnName = isReel ? "reel_id" : "post_id";
+      setLoading(true);
       
-      const { data: commentsData, error } = await supabase
+      const { data, error } = await supabase
         .from(tableName as any)
-        .select("*")
+        .select(`
+          id,
+          user_id,
+          content,
+          created_at,
+          parent_comment_id,
+          profiles (username, avatar_url)
+        `)
         .eq(columnName, postId)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
 
-      if (commentsData && commentsData.length > 0) {
-        // Batch fetch all profiles at once
-        const uniqueUserIds = [...new Set(commentsData.map((c: any) => c.user_id))];
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, username, avatar_url")
-          .in("id", uniqueUserIds);
-
-        // Create profile lookup map
-        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-
-        // Attach profiles to comments
-        const commentsWithProfiles = commentsData.map((comment: any) => ({
-          ...comment,
-          reactions: comment.reactions || [],
-          profiles: profileMap.get(comment.user_id) || { username: "Unknown", avatar_url: null }
-        }));
-      
       // Build comment tree
       const commentMap = new Map<string, Comment>();
       const rootComments: Comment[] = [];
-      
-      commentsWithProfiles.forEach((comment: Comment) => {
+
+      (data || []).forEach((comment: any) => {
         commentMap.set(comment.id, { ...comment, replies: [] });
       });
-      
-      commentsWithProfiles.forEach((comment: Comment) => {
+
+      (data || []).forEach((comment: any) => {
         if (comment.parent_comment_id) {
           const parent = commentMap.get(comment.parent_comment_id);
           if (parent) {
-            parent.replies = parent.replies || [];
-            parent.replies.push(commentMap.get(comment.id)!);
+            parent.replies?.push(commentMap.get(comment.id)!);
           }
         } else {
           rootComments.push(commentMap.get(comment.id)!);
         }
       });
-      
-        setComments(rootComments);
-      } else {
-        setComments([]);
-      }
+
+      setComments(rootComments);
     } catch (error) {
-      console.error("Error fetching comments:", error);
+      console.error("Error loading comments:", error);
       toast.error("Failed to load comments");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleAddComment = async () => {
-    if (!newComment.trim() || !user?.id) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newComment.trim()) return;
+    if (!user?.id) {
       toast.error("Please login to comment");
       return;
     }
 
-    const tableName = isReel ? "reel_comments" : "post_comments";
-    const commentText = newComment.trim();
-    const replyId = replyingTo;
-    
+    setSubmitting(true);
+    const content = newComment.trim();
     setNewComment("");
-    setReplyingTo(null);
 
-    // Database insert only - triggers will handle count
-    const insertData = isReel 
-      ? { reel_id: postId, user_id: user.id, content: commentText, parent_comment_id: replyId }
-      : { post_id: postId, user_id: user.id, content: commentText, parent_comment_id: replyId };
-    
-    const { error } = await supabase
-      .from(tableName)
-      .insert(insertData as any);
-    
-    if (error) {
+    try {
+      const insertData = {
+        [columnName]: postId,
+        user_id: user.id,
+        content,
+        parent_comment_id: replyingTo
+      };
+
+      const { error } = await supabase
+        .from(tableName)
+        .insert(insertData as any);
+
+      if (error) throw error;
+      
+      setReplyingTo(null);
+    } catch (error) {
+      console.error("Error posting comment:", error);
       toast.error("Failed to post comment");
-      setNewComment(commentText);
-      if (replyId) setReplyingTo(replyId);
-    } else {
-      // Refetch to get updated list with new comment
-      fetchComments();
+      setNewComment(content);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleReaction = async (commentId: string, emoji: string) => {
-    if (!user?.id) {
-      toast.error("Please login to react");
-      return;
-    }
-    
-    const tableName = isReel ? "reel_comments" : "post_comments";
-    
-    // Get current comment
-    const { data: comment, error: fetchError } = await supabase
-      .from(tableName as any)
-      .select("reactions")
-      .eq("id", commentId)
-      .single();
+  const handleDelete = async (commentId: string) => {
+    try {
+      const { error } = await supabase
+        .from(tableName as any)
+        .delete()
+        .eq("id", commentId);
 
-    if (fetchError || !comment) return;
-
-    const reactions = (comment as any).reactions || [];
-    const existingReactionIndex = reactions.findIndex(
-      (r: Reaction) => r.user_id === user.id && r.emoji === emoji
-    );
-
-    let updatedReactions;
-    if (existingReactionIndex > -1) {
-      // Remove reaction
-      updatedReactions = reactions.filter((_: any, i: number) => i !== existingReactionIndex);
-    } else {
-      // Add reaction
-      updatedReactions = [...reactions, { user_id: user.id, emoji }];
-    }
-
-    const { error } = await supabase
-      .from(tableName as any)
-      .update({ reactions: updatedReactions })
-      .eq("id", commentId);
-
-    if (error) {
-      toast.error("Failed to update reaction");
-    } else {
-      fetchComments();
-    }
-  };
-
-  const handleDeleteComment = async (commentId: string) => {
-    const tableName = isReel ? "reel_comments" : "post_comments";
-    
-    // Delete from database - triggers will handle count
-    const { error } = await supabase
-      .from(tableName as any)
-      .delete()
-      .eq("id", commentId);
-
-    if (error) {
-      toast.error("Failed to delete comment");
-    } else {
+      if (error) throw error;
+      
       toast.success("Comment deleted");
-      // Refetch to get updated list
-      fetchComments();
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast.error("Failed to delete comment");
     }
   };
 
   const renderComment = (comment: Comment, level: number = 0) => (
-    <div key={comment.id} className={`flex gap-3 ${level > 0 ? 'ml-8 mt-3' : ''}`}>
-      <Avatar className="w-8 h-8 flex-shrink-0">
-        <AvatarImage src={comment.profiles.avatar_url || undefined} />
-        <AvatarFallback>{comment.profiles.username[0]}</AvatarFallback>
-      </Avatar>
-      <div className="flex-1 space-y-2">
-        <div className="bg-muted/30 rounded-2xl px-3 py-2">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-sm">{comment.profiles.username}</p>
-            <p className="text-xs text-muted-foreground">
-              {new Date(comment.created_at).toLocaleDateString()}
-            </p>
-          </div>
-          <p className="text-sm mt-1">{comment.content}</p>
-        </div>
+    <div key={comment.id} className={`${level > 0 ? 'ml-8 mt-2' : 'mt-3'}`}>
+      <div className="flex gap-3">
+        <Avatar className="w-8 h-8 flex-shrink-0">
+          <AvatarImage src={comment.profiles.avatar_url || undefined} />
+          <AvatarFallback>{comment.profiles.username[0]}</AvatarFallback>
+        </Avatar>
         
-        {/* Reactions display */}
-        {comment.reactions && comment.reactions.length > 0 && (
-          <div className="flex gap-1 items-center ml-2">
-            {Object.entries(
-              comment.reactions.reduce((acc: Record<string, number>, r: Reaction) => {
-                acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-                return acc;
-              }, {})
-            ).map(([emoji, count]) => (
-              <button
-                key={emoji}
-                onClick={() => handleReaction(comment.id, emoji)}
-                className="flex items-center gap-1 px-2 py-0.5 bg-muted/50 rounded-full text-xs hover:bg-muted"
-              >
-                <span>{emoji}</span>
-                <span>{count}</span>
-              </button>
-            ))}
+        <div className="flex-1 min-w-0">
+          <div className="bg-muted/30 rounded-2xl px-3 py-2">
+            <div className="flex items-center gap-2 mb-1">
+              <p className="font-semibold text-sm">{comment.profiles.username}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+              </p>
+            </div>
+            <p className="text-sm break-words">{comment.content}</p>
           </div>
-        )}
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-4 ml-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-6 px-0 text-xs font-semibold text-muted-foreground hover:text-foreground">
-                <Smile className="w-3 h-3 mr-1" />
-                React
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2" side="top">
-              <div className="flex gap-2">
-                {emojis.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => handleReaction(comment.id, emoji)}
-                    className="text-xl hover:scale-125 transition-transform"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-6 px-0 text-xs font-semibold text-muted-foreground hover:text-foreground"
-            onClick={() => setReplyingTo(comment.id)}
-          >
-            <MessageCircle className="w-3 h-3 mr-1" />
-            Reply
-          </Button>
-
-          {comment.user_id === user?.id && (
+          <div className="flex items-center gap-3 mt-1 ml-2">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleDeleteComment(comment.id)}
-              className="h-6 px-0 text-xs font-semibold text-destructive hover:text-destructive"
+              onClick={() => setReplyingTo(comment.id)}
+              className="h-7 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
             >
-              <Trash2 className="w-3 h-3 mr-1" />
-              Delete
+              <MessageCircle className="w-3 h-3 mr-1" />
+              Reply
             </Button>
+
+            {comment.user_id === user?.id && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDelete(comment.id)}
+                className="h-7 px-2 text-xs font-semibold text-destructive hover:text-destructive"
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                Delete
+              </Button>
+            )}
+          </div>
+
+          {comment.replies && comment.replies.length > 0 && (
+            <div>
+              {comment.replies.map((reply) => renderComment(reply, level + 1))}
+            </div>
           )}
         </div>
-
-        {/* Replies */}
-        {comment.replies && comment.replies.length > 0 && (
-          <div className="space-y-2">
-            {comment.replies.map((reply) => renderComment(reply, level + 1))}
-          </div>
-        )}
       </div>
     </div>
   );
 
   return (
-    <Dialog open={open} onOpenChange={(open) => {
-      onOpenChange(open);
-      if (!open) setReplyingTo(null);
-    }}>
-      <DialogContent className="glass max-w-lg max-h-[80vh] flex flex-col">
-        <DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg h-[80vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Comments</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 py-4">
-          {comments.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No comments yet. Be the first!</p>
+        <ScrollArea className="flex-1 px-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : comments.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p>No comments yet</p>
+              <p className="text-sm">Be the first to comment!</p>
+            </div>
           ) : (
-            comments.map((comment) => renderComment(comment))
+            <div className="pb-4">
+              {comments.map((comment) => renderComment(comment))}
+            </div>
           )}
-        </div>
+        </ScrollArea>
 
-        <div className="flex flex-col gap-2 pt-4 border-t">
+        <form onSubmit={handleSubmit} className="p-4 border-t">
           {replyingTo && (
-            <div className="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-lg">
+            <div className="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-lg mb-2">
               <p className="text-sm text-muted-foreground">Replying to comment</p>
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => setReplyingTo(null)}
@@ -374,25 +261,32 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentA
               </Button>
             </div>
           )}
+          
           <div className="flex gap-2">
             <Textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder={replyingTo ? "Write a reply..." : "Write a comment..."}
-              onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleAddComment())}
-              className="flex-1 min-h-[40px] max-h-[120px] resize-none"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+              disabled={submitting}
+              className="flex-1 min-h-[42px] max-h-[120px] resize-none"
               rows={1}
             />
             <Button
-              onClick={handleAddComment}
-              disabled={!newComment.trim()}
+              type="submit"
+              disabled={submitting || !newComment.trim()}
               className="glow-primary self-end"
               size="icon"
             >
               <Send className="w-4 h-4" />
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

@@ -658,9 +658,6 @@ const StoryViewer = () => {
         open={showCommentsDialog}
         onOpenChange={setShowCommentsDialog}
         storyId={currentStory.id}
-        onCommentAdded={() => {
-          setStories(stories.map((s, i) => i === currentStoryIndex ? { ...s, comment_count: s.comment_count + 1 } : s));
-        }}
       />
     </div>
   );
