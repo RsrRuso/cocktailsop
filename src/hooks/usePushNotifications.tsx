@@ -52,38 +52,36 @@ export const usePushNotifications = () => {
         return granted;
       } else {
         // Web browser
-        if ('Notification' in window) {
-          const permission = await Notification.requestPermission();
-          const granted = permission === 'granted';
-          setPermissionGranted(granted);
-
-          if (granted) {
-            toast({
-              title: "Notifications Enabled",
-              description: "You will now receive browser notifications",
-            });
-          } else {
-            toast({
-              title: "Notifications Disabled",
-              description: "Please allow notifications in your browser",
-              variant: "destructive",
-            });
-          }
-
-          return granted;
-        } else {
+        if (!('Notification' in window)) {
           toast({
             title: "Not Supported",
-            description: "Notifications are not supported in this browser. They will work in the mobile app.",
+            description: "Your browser doesn't support notifications. Use a modern browser or the mobile app.",
+            variant: "destructive",
           });
           return false;
         }
+
+        const permission = await Notification.requestPermission();
+        const granted = permission === 'granted';
+        setPermissionGranted(granted);
+
+        if (granted) {
+          toast({
+            title: "Notifications Enabled",
+            description: "You'll receive browser notifications for messages and updates",
+          });
+        } else if (permission === 'denied') {
+          toast({
+            title: "Notifications Blocked",
+            description: "Please allow notifications in your browser settings",
+            variant: "destructive",
+          });
+        }
+
+        return granted;
       }
     } catch (error) {
-      toast({
-        title: "Not Available",
-        description: "Notifications are only available in the mobile app",
-      });
+      console.error('Notification error:', error);
       return false;
     }
   };
