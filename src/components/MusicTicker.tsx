@@ -3,6 +3,7 @@ import { Music, Play, Pause } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import OptimizedAvatar from "./OptimizedAvatar";
+import { useHaptic } from "@/hooks/useHaptic";
 
 interface MusicShare {
   id: string;
@@ -19,6 +20,7 @@ interface MusicShare {
 
 const MusicTicker = () => {
   const { user } = useAuth();
+  const { lightTap } = useHaptic();
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -84,6 +86,7 @@ const MusicTicker = () => {
   };
 
   const handlePlayPause = (share: any) => {
+    lightTap();
     if (playingId === share.id) {
       audioRef.current?.pause();
       setPlayingId(null);

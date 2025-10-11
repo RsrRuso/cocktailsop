@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getProfessionalBadge } from "@/lib/profileUtils";
+import { useHaptic } from "@/hooks/useHaptic";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +21,7 @@ import MusicTicker from "@/components/MusicTicker";
 const TopNav = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth(); // Use cached auth
+  const { lightTap } = useHaptic();
   const [currentUser, setCurrentUser] = useState<any>(profile);
   const [userRoles, setUserRoles] = useState({ isFounder: false, isVerified: false });
   const professionalBadge = getProfessionalBadge(currentUser?.professional_title || null);
@@ -134,7 +136,10 @@ const TopNav = () => {
           <div className="flex items-center gap-2">
             {/* Music Button */}
             <button
-              onClick={() => setMusicDialogOpen(true)}
+              onClick={() => {
+                lightTap();
+                setMusicDialogOpen(true);
+              }}
               className="glass-hover p-2.5 rounded-2xl"
             >
               <Music className="w-5 h-5" />
@@ -153,7 +158,10 @@ const TopNav = () => {
 
           <div className="flex items-center gap-2">
           <button
-            onClick={() => navigate("/notifications")}
+            onClick={() => {
+              lightTap();
+              navigate("/notifications");
+            }}
             className="glass-hover p-2.5 rounded-2xl relative"
           >
             <Bell className="w-5 h-5" />
@@ -165,7 +173,10 @@ const TopNav = () => {
           </button>
 
           <button
-            onClick={() => navigate("/messages")}
+            onClick={() => {
+              lightTap();
+              navigate("/messages");
+            }}
             className="glass-hover p-2.5 rounded-2xl relative"
           >
             <Send className="w-5 h-5" />
@@ -178,24 +189,27 @@ const TopNav = () => {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="glass-hover p-2.5 rounded-2xl">
+              <button 
+                onClick={lightTap}
+                className="glass-hover p-2.5 rounded-2xl"
+              >
                 <Palette className="w-5 h-5" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="glass">
-              <DropdownMenuItem onClick={() => changeTheme('light')}>
+              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('light'); }}>
                 <Sun className="w-4 h-4 mr-2" />
                 Light
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => changeTheme('grey')}>
+              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('grey'); }}>
                 <Palette className="w-4 h-4 mr-2" />
                 Grey
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => changeTheme('dark')}>
+              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('dark'); }}>
                 <Moon className="w-4 h-4 mr-2" />
                 Dark
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => changeTheme('black')}>
+              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('black'); }}>
                 <Moon className="w-4 h-4 mr-2 fill-current" />
                 Black
               </DropdownMenuItem>
@@ -203,7 +217,10 @@ const TopNav = () => {
           </DropdownMenu>
 
           <button
-            onClick={() => navigate("/ops-tools")}
+            onClick={() => {
+              lightTap();
+              navigate("/ops-tools");
+            }}
             className="glass-hover px-3 py-2 rounded-2xl font-semibold text-sm"
           >
             OPS

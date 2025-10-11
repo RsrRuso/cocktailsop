@@ -4,6 +4,7 @@ import { Music, Play, Check, Pause } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useHaptic } from "@/hooks/useHaptic";
 
 interface MusicSelectionDialogProps {
   open: boolean;
@@ -21,6 +22,7 @@ interface MusicTrack {
 
 const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps) => {
   const { user } = useAuth();
+  const { lightTap } = useHaptic();
   const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [popularTracks, setPopularTracks] = useState<MusicTrack[]>([]);
@@ -51,6 +53,7 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
   );
 
   const handlePlayPause = (track: MusicTrack) => {
+    lightTap();
     if (playingTrack === track.track_id) {
       audioRef.current?.pause();
       setPlayingTrack(null);
@@ -64,6 +67,7 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
   };
 
   const handleSelectTrack = async (track: MusicTrack) => {
+    lightTap();
     if (!user) {
       toast.error("Please log in to share music");
       return;
