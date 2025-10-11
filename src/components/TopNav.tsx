@@ -1,6 +1,7 @@
 import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -225,13 +226,13 @@ const TopNav = () => {
           </DropdownMenu>
 
           <button onClick={() => navigate("/profile")}>
-            <Avatar className="w-10 h-10 ring-2 ring-primary/30">
-              <AvatarImage 
-                src={currentUser?.avatar_url || undefined}
-                loading="eager"
-              />
-              <AvatarFallback>{currentUser?.username?.[0] || "U"}</AvatarFallback>
-            </Avatar>
+            <OptimizedAvatar
+              src={currentUser?.avatar_url}
+              alt={currentUser?.username || 'User'}
+              fallback={currentUser?.username?.[0] || "U"}
+              userId={currentUser?.id}
+              className="w-10 h-10 ring-2 ring-primary/30"
+            />
           </button>
 
           <button 

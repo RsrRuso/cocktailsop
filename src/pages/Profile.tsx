@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { LogOut, Settings, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX, Play, Phone, MessageSquare, Globe, Award, TrendingUp, Target, CheckCircle } from "lucide-react";
+import { LogOut, Settings, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX, Play, Phone, MessageSquare, Globe, Award, TrendingUp, Target, CheckCircle, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import FollowersDialog from "@/components/FollowersDialog";
@@ -15,6 +15,8 @@ import FollowingDialog from "@/components/FollowingDialog";
 import { VenueVerification } from "@/components/VenueVerification";
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CareerMetricsDialog from "@/components/CareerMetricsDialog";
+import CreateStatusDialog from "@/components/CreateStatusDialog";
+import { useUserStatus } from "@/hooks/useUserStatus";
 import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore } from "@/lib/profileUtils";
 
 interface Profile {
@@ -85,6 +87,9 @@ const Profile = () => {
   const [metricsDialogOpen, setMetricsDialogOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<"network" | "professional" | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  
+  const { data: userStatus, refetch: refetchStatus } = useUserStatus(currentUserId);
 
   useEffect(() => {
     const initializeProfile = async () => {
@@ -344,13 +349,36 @@ const Profile = () => {
             </button>
           </div>
 
-          <Button 
-            className="w-full glow-primary"
-            onClick={() => navigate("/profile/edit")}
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Edit Profile
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              className="w-full glow-primary"
+              onClick={() => navigate("/profile/edit")}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Edit Profile
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setShowStatusDialog(true)}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              {userStatus ? "Update Status" : "Share Status"}
+            </Button>
+            
+            {userStatus && (
+              <div className="text-center p-3 rounded-lg glass border border-border/50">
+                <p className="text-sm font-medium flex items-center justify-center gap-2">
+                  {userStatus.emoji && <span className="text-xl">{userStatus.emoji}</span>}
+                  {userStatus.status_text}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Expires {new Date(userStatus.expires_at).toLocaleString()}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Content Tabs */}
@@ -692,6 +720,15 @@ const Profile = () => {
         onOpenChange={setMetricsDialogOpen}
         metricType={selectedMetric}
         currentValue={selectedMetric === "network" ? (profile ? calculateNetworkReach(profile, posts, reels) : 0) : (profile ? calculateProfessionalScore(profile, userRoles, posts, reels, stories) : 0)}
+      />
+
+      <CreateStatusDialog
+        open={showStatusDialog}
+        onOpenChange={(open) => {
+          setShowStatusDialog(open);
+          if (!open) refetchStatus();
+        }}
+        userId={currentUserId}
       />
 
       {/* Avatar Photo Dialog */}

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit, Volume2, VolumeX } from "lucide-react";
+import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { getProfessionalBadge } from "@/lib/profileUtils";
 import { LazyImage } from "@/components/LazyImage";
 import { LazyVideo } from "@/components/LazyVideo";
@@ -56,10 +56,13 @@ export const FeedItem = memo(({
           className="relative cursor-pointer"
           onClick={() => navigate(`/user/${item.user_id}`)}
         >
-          <Avatar className={`w-10 h-10 avatar-glow ring-1 ring-offset-1 ring-offset-background bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-gray-400 to-gray-200'}`}>
-            <AvatarImage src={item.profiles?.avatar_url || undefined} />
-            <AvatarFallback>{item.profiles?.username?.[0] || '?'}</AvatarFallback>
-          </Avatar>
+          <OptimizedAvatar
+            src={item.profiles?.avatar_url}
+            alt={item.profiles?.username || 'User'}
+            fallback={item.profiles?.username?.[0] || '?'}
+            userId={item.user_id}
+            className={`w-10 h-10 avatar-glow ring-1 ring-offset-1 ring-offset-background bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-gray-400 to-gray-200'}`}
+          />
         </div>
         <div 
           className="flex-1 cursor-pointer"

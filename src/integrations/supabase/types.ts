@@ -1137,6 +1137,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_status: {
+        Row: {
+          created_at: string
+          emoji: string | null
+          expires_at: string
+          id: string
+          status_text: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string | null
+          expires_at?: string
+          id?: string
+          status_text: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string | null
+          expires_at?: string
+          id?: string
+          status_text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       venues: {
         Row: {
           address: string | null
