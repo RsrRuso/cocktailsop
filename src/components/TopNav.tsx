@@ -1,4 +1,4 @@
-import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck } from "lucide-react";
+import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck, Music } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CreateStatusDialog from "@/components/CreateStatusDialog";
+import MusicSelectionDialog from "@/components/MusicSelectionDialog";
+import MusicTicker from "@/components/MusicTicker";
 
 const TopNav = () => {
   const navigate = useNavigate();
@@ -30,6 +32,7 @@ const TopNav = () => {
   });
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [musicDialogOpen, setMusicDialogOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -125,31 +128,30 @@ const TopNav = () => {
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20">
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          {/* Badge Level Indicator */}
-          {currentUser?.badge_level && (
-            <div className="relative group">
-              <div className={`absolute -inset-2 bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} blur-lg opacity-50 group-hover:opacity-75 transition-all duration-300 rounded-full animate-pulse`} />
-              <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center text-sm font-bold text-white shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
-                {currentUser.badge_level[0].toUpperCase()}
+    <>
+      <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            {/* Music Button */}
+            <button
+              onClick={() => setMusicDialogOpen(true)}
+              className="glass-hover p-2.5 rounded-2xl"
+            >
+              <Music className="w-5 h-5" />
+            </button>
+
+            {/* Badge Level Indicator */}
+            {currentUser?.badge_level && (
+              <div className="relative group">
+                <div className={`absolute -inset-2 bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} blur-lg opacity-50 group-hover:opacity-75 transition-all duration-300 rounded-full animate-pulse`} />
+                <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center text-sm font-bold text-white shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                  {currentUser.badge_level[0].toUpperCase()}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        <BadgeInfoDialog
-          open={badgeDialogOpen}
-          onOpenChange={setBadgeDialogOpen}
-          isFounder={userRoles.isFounder}
-          isVerified={userRoles.isVerified}
-          badgeLevel={currentUser?.badge_level}
-          username={currentUser?.username}
-          isOwnProfile={true}
-        />
-
-        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
           <button
             onClick={() => navigate("/notifications")}
             className="glass-hover p-2.5 rounded-2xl relative"
@@ -206,7 +208,10 @@ const TopNav = () => {
           >
             OPS
           </button>
+          </div>
         </div>
+
+        <MusicTicker />
       </div>
 
       {user && (
@@ -217,6 +222,11 @@ const TopNav = () => {
         />
       )}
 
+      <MusicSelectionDialog
+        open={musicDialogOpen}
+        onOpenChange={setMusicDialogOpen}
+      />
+
       <BadgeInfoDialog 
         open={badgeDialogOpen}
         onOpenChange={setBadgeDialogOpen}
@@ -226,7 +236,7 @@ const TopNav = () => {
         isVerified={userRoles.isVerified}
         isOwnProfile={true}
       />
-    </div>
+    </>
   );
 };
 
