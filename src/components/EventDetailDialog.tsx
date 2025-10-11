@@ -327,7 +327,7 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
                     <span className="font-semibold">Comments ({commentCount})</span>
                   </div>
 
-                  <ScrollArea className="flex-1 pr-4">
+                  <ScrollArea className="flex-1 pr-4 max-h-[300px]">
                     {comments.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-8">
                         No comments yet. Be the first to comment!
