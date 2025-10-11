@@ -171,8 +171,15 @@ const MessageThread = () => {
                 isOwn={isOwn}
                 onReaction={() => setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id)}
                 onReply={() => setReplyingTo(message)}
-                onEdit={isOwn ? () => { setEditingMessage(message); setNewMessage(message.content); } : undefined}
-                onDelete={isOwn ? () => handleDelete(message.id) : undefined}
+                onEdit={isOwn && !message.media_url ? () => { setEditingMessage(message); setNewMessage(message.content); } : undefined}
+                onDelete={isOwn ? () => {
+                  const mediaTypeLabel = message.media_type === 'image' ? 'photo' : 
+                                        message.media_type === 'video' ? 'video' : 
+                                        message.media_type === 'voice' ? 'voice recording' : 'message';
+                  if (confirm(`Delete this ${mediaTypeLabel}?`)) {
+                    handleDelete(message.id);
+                  }
+                } : undefined}
               />
 
               {showEmojiPicker === message.id && (
