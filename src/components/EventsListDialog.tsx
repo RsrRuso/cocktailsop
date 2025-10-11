@@ -79,6 +79,8 @@ interface Event {
   event_date: string | null;
   region: string;
   user_id: string;
+  venue_name?: string | null;
+  address?: string | null;
   like_count?: number;
   comment_count?: number;
   attendee_count?: number;
@@ -171,7 +173,7 @@ export const EventsListDialog = ({ region, open, onOpenChange }: EventsListDialo
   const fetchEvents = async () => {
     const { data } = await supabase
       .from('events')
-      .select('id, title, description, event_date, region, user_id, like_count, comment_count, attendee_count')
+      .select('id, title, description, event_date, region, user_id, venue_name, address, like_count, comment_count, attendee_count')
       .eq('region', region)
       .eq('is_active', true)
       .order('event_date', { ascending: true, nullsFirst: false })
@@ -230,6 +232,16 @@ export const EventsListDialog = ({ region, open, onOpenChange }: EventsListDialo
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                           <Calendar className="w-4 h-4" />
                           {format(new Date(event.event_date), 'PPP p')}
+                        </div>
+                      )}
+                      {(event.venue_name || event.address) && (
+                        <div className="mb-3 space-y-1">
+                          {event.venue_name && (
+                            <p className="text-sm font-medium">{event.venue_name}</p>
+                          )}
+                          {event.address && (
+                            <p className="text-sm text-muted-foreground">{event.address}</p>
+                          )}
                         </div>
                       )}
                       <div className="flex items-center gap-4 flex-wrap">

@@ -289,6 +289,7 @@ export type Database = {
       }
       events: {
         Row: {
+          address: string | null
           attendee_count: number | null
           comment_count: number | null
           created_at: string | null
@@ -301,8 +302,10 @@ export type Database = {
           title: string
           updated_at: string | null
           user_id: string
+          venue_name: string | null
         }
         Insert: {
+          address?: string | null
           attendee_count?: number | null
           comment_count?: number | null
           created_at?: string | null
@@ -315,8 +318,10 @@ export type Database = {
           title: string
           updated_at?: string | null
           user_id: string
+          venue_name?: string | null
         }
         Update: {
+          address?: string | null
           attendee_count?: number | null
           comment_count?: number | null
           created_at?: string | null
@@ -329,6 +334,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
           user_id?: string
+          venue_name?: string | null
         }
         Relationships: []
       }

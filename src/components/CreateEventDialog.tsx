@@ -22,6 +22,8 @@ export const CreateEventDialog = () => {
     description: '',
     region: 'All',
     event_date: '',
+    venue_name: '',
+    address: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,6 +38,8 @@ export const CreateEventDialog = () => {
         description: formData.description || null,
         region: formData.region,
         event_date: formData.event_date || null,
+        venue_name: formData.venue_name || null,
+        address: formData.address || null,
       });
 
       if (error) throw error;
@@ -45,7 +49,7 @@ export const CreateEventDialog = () => {
         description: "Event created successfully!",
       });
       setOpen(false);
-      setFormData({ title: '', description: '', region: 'All', event_date: '' });
+      setFormData({ title: '', description: '', region: 'All', event_date: '', venue_name: '', address: '' });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -126,6 +130,28 @@ export const CreateEventDialog = () => {
               type="date"
               value={formData.event_date}
               onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
+              className="glass"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="venue_name">Venue Name</Label>
+            <Input
+              id="venue_name"
+              value={formData.venue_name}
+              onChange={(e) => setFormData({ ...formData, venue_name: e.target.value })}
+              placeholder="The Grand Hotel"
+              className="glass"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              placeholder="123 Main Street, Dubai"
               className="glass"
             />
           </div>
