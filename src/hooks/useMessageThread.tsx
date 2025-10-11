@@ -195,39 +195,43 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
   }, [conversationId, currentUser, otherUser]);
 
   const initializeChat = async () => {
-    if (!conversationId) return;
+    if (!conversationId || !currentUser) return;
 
-    const { data: conversationData } = await supabase
-      .from('conversations')
-      .select('*')
-      .eq('id', conversationId)
-      .single();
+    try {
+      const { data: conversationData } = await supabase
+        .from('conversations')
+        .select('participant_ids')
+        .eq('id', conversationId)
+        .single();
 
-    if (conversationData && currentUser) {
+      if (!conversationData) return;
+
       const otherUserId = conversationData.participant_ids.find(
         (id: string) => id !== currentUser.id
       );
 
-      // Fetch other user profile and messages in parallel
+      if (!otherUserId) return;
+
+      // Fetch profile and last 50 messages in parallel
       const [profileResult, messagesResult] = await Promise.all([
         supabase
           .from('profiles')
           .select('id, username, full_name, avatar_url')
           .eq('id', otherUserId)
-          .single(),
+          .maybeSingle(),
         supabase
           .from('messages')
           .select('*')
           .eq('conversation_id', conversationId)
           .order('created_at', { ascending: true })
-          .limit(100),
+          .limit(50),
       ]);
 
       if (profileResult.data) {
         setOtherUser(profileResult.data);
       }
 
-      if (messagesResult.data && currentUser) {
+      if (messagesResult.data) {
         setMessages(
           messagesResult.data.map((msg: any) => ({
             ...msg,
@@ -235,14 +239,17 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
           }))
         );
 
+        // Mark unread messages as read (non-blocking)
         const unreadIds = messagesResult.data
           .filter((msg) => !msg.read && msg.sender_id !== currentUser.id)
           .map((msg) => msg.id);
 
         if (unreadIds.length > 0) {
-          supabase.from('messages').update({ read: true }).in('id', unreadIds).then(() => {});
+          supabase.from('messages').update({ read: true }).in('id', unreadIds);
         }
       }
+    } catch (error) {
+      console.error('Error initializing chat:', error);
     }
   };
 

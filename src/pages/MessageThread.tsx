@@ -78,68 +78,79 @@ const MessageThread = () => {
     const trimmedMessage = newMessage.trim();
     const tempId = `temp-${Date.now()}`;
     
-    // Optimistically add message to UI instantly
-    const optimisticMessage: Message = {
-      id: tempId,
-      content: trimmedMessage,
-      sender_id: currentUser.id,
-      created_at: new Date().toISOString(),
-      read: false,
-      delivered: false,
-      reactions: [],
-      reply_to_id: replyingTo?.id || null,
-      edited: false,
-      edited_at: null,
-    };
-    
-    setMessages((prev) => [...prev, optimisticMessage]);
+    // Clear input immediately
     setNewMessage("");
+    const wasEditing = !!editingMessage;
+    const editId = editingMessage?.id;
+    setEditingMessage(null);
     setReplyingTo(null);
-
+    
     // Play sent sound
-    const sentSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZUA0PVKzn7K5fGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBQ==');
-    sentSound.volume = 0.5;
-    sentSound.play().catch(() => {});
-
     try {
-      const messageData: any = {
-        conversation_id: conversationId,
-        sender_id: currentUser.id,
+      const sentSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZUA0PVKzn7K5fGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBQ==');
+      sentSound.volume = 0.5;
+      sentSound.play();
+    } catch {}
+
+    if (wasEditing && editId) {
+      // Handle edit
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === editId
+            ? { ...msg, content: trimmedMessage, edited: true, edited_at: new Date().toISOString() }
+            : msg
+        )
+      );
+
+      supabase
+        .from("messages")
+        .update({
+          content: trimmedMessage,
+          edited: true,
+          edited_at: new Date().toISOString(),
+        })
+        .eq("id", editId);
+    } else {
+      // Add optimistic message
+      const optimisticMessage: Message = {
+        id: tempId,
         content: trimmedMessage,
-        delivered: false,
+        sender_id: currentUser.id,
+        created_at: new Date().toISOString(),
         read: false,
+        delivered: false,
+        reactions: [],
+        reply_to_id: replyingTo?.id || null,
+        edited: false,
+        edited_at: null,
       };
+      
+      setMessages((prev) => [...prev, optimisticMessage]);
 
-      if (replyingTo) {
-        messageData.reply_to_id = replyingTo.id;
-      }
-
-      if (editingMessage) {
-        await supabase
-          .from("messages")
-          .update({
-            content: trimmedMessage,
-            edited: true,
-            edited_at: new Date().toISOString(),
-          })
-          .eq("id", editingMessage.id);
-        setEditingMessage(null);
-        // Remove the optimistic message for edits
-        setMessages((prev) => prev.filter(m => m.id !== tempId));
-      } else {
-        await supabase.from("messages").insert(messageData);
-      }
-
-      updateTypingStatus(false);
-      await supabase
-        .from("conversations")
-        .update({ last_message_at: new Date().toISOString() })
-        .eq("id", conversationId);
-    } catch (error) {
-      // Remove optimistic message on error
-      setMessages((prev) => prev.filter(m => m.id !== tempId));
-      setNewMessage(trimmedMessage);
+      // Send to backend
+      supabase
+        .from("messages")
+        .insert({
+          conversation_id: conversationId,
+          sender_id: currentUser.id,
+          content: trimmedMessage,
+          reply_to_id: replyingTo?.id || null,
+          delivered: false,
+          read: false,
+        })
+        .then(() => {
+          // Remove temp message when real one arrives via realtime
+          setTimeout(() => {
+            setMessages((prev) => prev.filter((m) => m.id !== tempId));
+          }, 1000);
+        });
     }
+
+    updateTypingStatus(false);
+    supabase
+      .from("conversations")
+      .update({ last_message_at: new Date().toISOString() })
+      .eq("id", conversationId);
   };
 
   const quickEmojis = [
