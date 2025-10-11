@@ -443,27 +443,30 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-          <DialogHeader>
-            <div className="flex items-start justify-between">
-              <DialogTitle className="text-2xl font-bold">{event.title}</DialogTitle>
-              {isCreator && !isEditing && (
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}>
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setShowDeleteDialog(true)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          </DialogHeader>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
+          <div className="p-6 flex-shrink-0">
+            <DialogHeader>
+              <div className="flex items-start justify-between">
+                <DialogTitle className="text-2xl font-bold">{event.title}</DialogTitle>
+                {isCreator && !isEditing && (
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setShowDeleteDialog(true)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </DialogHeader>
+          </div>
 
-          <div className="flex-1 overflow-hidden flex flex-col gap-4">
-            {isEditing ? (
-              /* Edit Form */
-              <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto px-6 pb-6">
+            <div className="flex flex-col gap-4">
+              {isEditing ? (
+                /* Edit Form */
+                <div className="space-y-4">
                 <div>
                   <Label htmlFor="edit-title">Title</Label>
                   <Input
@@ -493,12 +496,12 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
                 <div className="flex gap-2">
                   <Button onClick={handleUpdateEvent}>Save Changes</Button>
                   <Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <>
-                {/* Event Details */}
-                <div className="space-y-2">
+              ) : (
+                <>
+                  {/* Event Details */}
+                  <div className="space-y-2">
                   {event.event_date && (
                     <p className="text-sm text-muted-foreground">
                       📅 {new Date(event.event_date).toLocaleDateString('en-US', {
@@ -512,11 +515,11 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
                   <p className="text-sm text-muted-foreground">📍 {event.region}</p>
                   {event.description && (
                     <p className="text-foreground mt-4">{event.description}</p>
-                  )}
-                </div>
+                    )}
+                  </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-2 py-4 border-y">
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 py-4 border-y">
                   <Button
                     variant={hasLiked ? "default" : "outline"}
                     size="sm"
@@ -534,39 +537,39 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
                   >
                     <CheckCircle className={`w-4 h-4 mr-2 ${isAttending ? 'fill-current' : ''}`} />
                     I'll Go {attendeeCount > 0 && `(${attendeeCount})`}
-                  </Button>
-                </div>
-
-                {/* Comments Section */}
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2 mb-3">
-                    <MessageCircle className="w-5 h-5" />
-                    <span className="font-semibold">Comments ({commentCount})</span>
+                    </Button>
                   </div>
 
-                  <ScrollArea className="h-[300px] pr-4">
-                    {comments.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-8">
-                        No comments yet. Be the first to comment!
-                      </p>
-                    ) : (
-                      <div className="space-y-4">
-                        {comments
-                          .filter(c => !c.parent_comment_id)
-                          .map((comment) => (
-                            <div key={comment.id}>
-                              {renderComment(comment)}
-                              {comments
-                                .filter(c => c.parent_comment_id === comment.id)
-                                .map(reply => renderComment(reply, true))}
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </ScrollArea>
+                  {/* Comments Section */}
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2 mb-3">
+                      <MessageCircle className="w-5 h-5" />
+                      <span className="font-semibold">Comments ({commentCount})</span>
+                    </div>
 
-                  {/* Comment Input */}
-                  <div className="mt-4 pt-4 border-t space-y-2">
+                    <div className="space-y-4 mb-4">
+                      {comments.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">
+                          No comments yet. Be the first to comment!
+                        </p>
+                      ) : (
+                        <>
+                          {comments
+                            .filter(c => !c.parent_comment_id)
+                            .map((comment) => (
+                              <div key={comment.id}>
+                                {renderComment(comment)}
+                                {comments
+                                  .filter(c => c.parent_comment_id === comment.id)
+                                  .map(reply => renderComment(reply, true))}
+                              </div>
+                            ))}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Comment Input */}
+                    <div className="pt-4 border-t space-y-2">
                     {replyToId && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Reply className="w-4 h-4" />
@@ -598,12 +601,13 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
                         size="icon"
                       >
                         <Send className="w-4 h-4" />
-                      </Button>
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
