@@ -11,6 +11,7 @@ import { MessageBubble } from "@/components/MessageBubble";
 import { MessageActions } from "@/components/MessageActions";
 import { MessageInput } from "@/components/MessageInput";
 import { MediaRecorder } from "@/components/MediaRecorder";
+import { useUserStatus } from "@/hooks/useUserStatus";
 
 const MessageThread = () => {
   const { conversationId } = useParams();
@@ -32,6 +33,8 @@ const MessageThread = () => {
     handleReaction,
     handleDelete,
   } = useMessageThread(conversationId, currentUser);
+
+  const { data: userStatus } = useUserStatus(otherUser?.id);
 
   const {
     isRecording,
@@ -138,6 +141,18 @@ const MessageThread = () => {
                 className="w-12 h-12 border-2 border-background avatar-glow"
               />
               {isOnline && <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full neon-green border-2 border-background animate-pulse"></div>}
+              
+              {/* User Status on Avatar */}
+              {userStatus && (
+                <div className="absolute -top-2 -right-2 bg-background/95 backdrop-blur-sm px-2 py-0.5 rounded-full border border-primary/20 shadow-lg flex items-center gap-1 animate-fade-in">
+                  {userStatus.emoji && (
+                    <span className="text-xs">{userStatus.emoji}</span>
+                  )}
+                  <span className="text-[10px] font-medium max-w-[80px] truncate">
+                    {userStatus.status_text}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0 flex flex-col justify-center">
               <p className="font-semibold truncate">{otherUser.full_name}</p>
