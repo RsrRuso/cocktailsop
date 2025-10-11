@@ -7,13 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { Calendar, Plus } from 'lucide-react';
 
 const REGIONS = ['USA', 'UK', 'Europe', 'Asia', 'Middle East', 'Africa', 'All'];
 
 export const CreateEventDialog = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -39,11 +40,18 @@ export const CreateEventDialog = () => {
 
       if (error) throw error;
 
-      toast.success('Event created successfully!');
+      toast({
+        title: "Success!",
+        description: "Event created successfully!",
+      });
       setOpen(false);
       setFormData({ title: '', description: '', region: 'All', event_date: '' });
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create event');
+      toast({
+        title: "Error",
+        description: error.message || 'Failed to create event',
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
