@@ -47,8 +47,12 @@ const MusicTicker = () => {
     const { data, error } = await supabase
       .from("music_shares")
       .select(`
-        *,
-        profiles:user_id (
+        id,
+        user_id,
+        track_title,
+        track_artist,
+        created_at,
+        profiles!inner(
           username,
           avatar_url
         )
@@ -58,7 +62,7 @@ const MusicTicker = () => {
       .limit(10);
 
     if (!error && data) {
-      setMusicShares(data);
+      setMusicShares(data as any);
     }
   };
 

@@ -572,6 +572,36 @@ export type Database = {
           },
         ]
       }
+      popular_music: {
+        Row: {
+          artist: string
+          created_at: string
+          duration: string
+          id: string
+          preview_url: string | null
+          title: string
+          track_id: string
+        }
+        Insert: {
+          artist: string
+          created_at?: string
+          duration: string
+          id?: string
+          preview_url?: string | null
+          title: string
+          track_id: string
+        }
+        Update: {
+          artist?: string
+          created_at?: string
+          duration?: string
+          id?: string
+          preview_url?: string | null
+          title?: string
+          track_id?: string
+        }
+        Relationships: []
+      }
       post_comments: {
         Row: {
           content: string

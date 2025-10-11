@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Music, Play, Check } from "lucide-react";
+import { Music, Play, Check, Pause } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,28 +12,37 @@ interface MusicSelectionDialogProps {
 
 interface MusicTrack {
   id: string;
+  track_id: string;
   title: string;
   artist: string;
   duration: string;
+  preview_url: string | null;
 }
-
-const popularTracks: MusicTrack[] = [
-  { id: "1", title: "Blinding Lights", artist: "The Weeknd", duration: "3:20" },
-  { id: "2", title: "As It Was", artist: "Harry Styles", duration: "2:47" },
-  { id: "3", title: "Heat Waves", artist: "Glass Animals", duration: "3:59" },
-  { id: "4", title: "Levitating", artist: "Dua Lipa", duration: "3:23" },
-  { id: "5", title: "Stay", artist: "The Kid LAROI, Justin Bieber", duration: "2:21" },
-  { id: "6", title: "Good 4 U", artist: "Olivia Rodrigo", duration: "2:58" },
-  { id: "7", title: "Peaches", artist: "Justin Bieber ft. Daniel Caesar", duration: "3:18" },
-  { id: "8", title: "drivers license", artist: "Olivia Rodrigo", duration: "4:02" },
-  { id: "9", title: "Save Your Tears", artist: "The Weeknd", duration: "3:36" },
-  { id: "10", title: "Montero", artist: "Lil Nas X", duration: "2:17" },
-];
 
 const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps) => {
   const { user } = useAuth();
   const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [popularTracks, setPopularTracks] = useState<MusicTrack[]>([]);
+  const [playingTrack, setPlayingTrack] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      fetchPopularMusic();
+    }
+  }, [open]);
+
+  const fetchPopularMusic = async () => {
+    const { data, error } = await supabase
+      .from("popular_music")
+      .select("*")
+      .order("title", { ascending: true });
+
+    if (!error && data) {
+      setPopularTracks(data);
+    }
+  };
 
   const filteredTracks = popularTracks.filter(
     (track) =>
@@ -41,17 +50,30 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
       track.artist.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handlePlayPause = (track: MusicTrack) => {
+    if (playingTrack === track.track_id) {
+      audioRef.current?.pause();
+      setPlayingTrack(null);
+    } else {
+      if (audioRef.current) {
+        audioRef.current.src = track.preview_url || "";
+        audioRef.current.play();
+        setPlayingTrack(track.track_id);
+      }
+    }
+  };
+
   const handleSelectTrack = async (track: MusicTrack) => {
     if (!user) {
       toast.error("Please log in to share music");
       return;
     }
 
-    setSelectedTrack(track.id);
+    setSelectedTrack(track.track_id);
 
     const { error } = await supabase.from("music_shares").insert({
       user_id: user.id,
-      track_id: track.id,
+      track_id: track.track_id,
       track_title: track.title,
       track_artist: track.artist,
     });
@@ -69,6 +91,14 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
     }, 1000);
   };
 
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[80vh]">
@@ -78,6 +108,8 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
             Choose Music
           </DialogTitle>
         </DialogHeader>
+
+        <audio ref={audioRef} onEnded={() => setPlayingTrack(null)} />
 
         <div className="space-y-4">
           <input
@@ -90,9 +122,8 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
 
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {filteredTracks.map((track) => (
-              <button
+              <div
                 key={track.id}
-                onClick={() => handleSelectTrack(track)}
                 className="w-full p-4 rounded-xl glass hover:bg-primary/10 transition-all flex items-center justify-between group"
               >
                 <div className="flex items-center gap-3">
@@ -104,15 +135,33 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
                     <div className="text-sm opacity-70">{track.artist}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <span className="text-sm opacity-50">{track.duration}</span>
-                  {selectedTrack === track.id ? (
-                    <Check className="w-5 h-5 text-green-500" />
-                  ) : (
-                    <Play className="w-5 h-5 opacity-0 group-hover:opacity-50 transition-opacity" />
-                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlayPause(track);
+                    }}
+                    className="p-2 rounded-full hover:bg-primary/20 transition-colors"
+                  >
+                    {playingTrack === track.track_id ? (
+                      <Pause className="w-5 h-5 text-primary" />
+                    ) : (
+                      <Play className="w-5 h-5" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleSelectTrack(track)}
+                    className="p-2 rounded-full hover:bg-green-500/20 transition-colors"
+                  >
+                    {selectedTrack === track.track_id ? (
+                      <Check className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <Check className="w-5 h-5 opacity-0 group-hover:opacity-50 transition-opacity" />
+                    )}
+                  </button>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </div>
