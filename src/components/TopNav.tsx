@@ -1,4 +1,4 @@
-import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck, Lightbulb, PenLine } from "lucide-react";
+import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -15,6 +15,8 @@ import {
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CreateStatusDialog from "@/components/CreateStatusDialog";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import lightbulbIcon from "@/assets/lightbulb-icon.png";
+import penPaperIcon from "@/assets/pen-paper-icon.png";
 
 const TopNav = () => {
   const navigate = useNavigate();
@@ -129,12 +131,12 @@ const TopNav = () => {
     <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <button className="glass-hover p-2.5 rounded-2xl">
-            <Lightbulb className="w-5 h-5" />
+          <button className="glass-hover p-2 rounded-2xl w-10 h-10 flex items-center justify-center">
+            <img src={lightbulbIcon} alt="Ideas" className="w-6 h-6 object-contain" />
           </button>
           
-          <button className="glass-hover p-2.5 rounded-2xl">
-            <PenLine className="w-5 h-5" />
+          <button className="glass-hover p-2 rounded-2xl w-10 h-10 flex items-center justify-center">
+            <img src={penPaperIcon} alt="Notes" className="w-6 h-6 object-contain" />
           </button>
           
           {/* Badge Level Indicator */}
