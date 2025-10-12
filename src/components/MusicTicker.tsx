@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
-import { Music, X } from "lucide-react";
+import { Music, X, RotateCcw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -117,9 +117,16 @@ const MusicTicker = () => {
 
   const handleMouseMove = (e: MouseEvent) => {
     if (isDragging) {
+      const newX = e.clientX - dragOffset.x;
+      const newY = e.clientY - dragOffset.y;
+      
+      // Keep within viewport bounds
+      const maxX = window.innerWidth - 224; // 56 * 4 = 224px (w-56)
+      const maxY = window.innerHeight - 150;
+      
       setPosition({
-        x: e.clientX - dragOffset.x,
-        y: e.clientY - dragOffset.y
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY))
       });
     }
   };
@@ -128,16 +135,23 @@ const MusicTicker = () => {
     setIsDragging(false);
   };
 
+  const handleReplay = () => {
+    // Force reload the iframe by setting to null then back
+    const currentTrack = playingTrackId;
+    setPlayingTrackId(null);
+    setTimeout(() => setPlayingTrackId(currentTrack), 100);
+  };
+
   useEffect(() => {
     if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
       return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, dragOffset]);
+  }, [isDragging, dragOffset, position]);
 
   const handleDeleteShare = async (shareId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -229,24 +243,35 @@ const MusicTicker = () => {
 
       {playingTrackId && (
         <div 
-          className="fixed z-50 w-56 p-2 bg-background/20 backdrop-blur-md rounded-xl shadow-2xl border border-primary/10 cursor-move"
+          className="fixed z-50 w-56 p-2 bg-background/20 backdrop-blur-md rounded-xl shadow-2xl border border-primary/10 select-none"
           style={{ 
             left: `${position.x}px`, 
             top: `${position.y}px`,
-            userSelect: 'none'
           }}
-          onMouseDown={handleMouseDown}
         >
-          <div className="flex items-center justify-between mb-1.5">
+          <div 
+            className="flex items-center justify-between mb-1.5 cursor-move"
+            onMouseDown={handleMouseDown}
+          >
             <span className="text-[10px] font-medium text-foreground/80">Now Playing</span>
-            <button
-              onClick={() => setPlayingTrackId(null)}
-              className="w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors"
-            >
-              <X className="w-3 h-3 text-red-400" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleReplay}
+                className="w-5 h-5 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center transition-colors"
+                title="Replay"
+              >
+                <RotateCcw className="w-3 h-3 text-primary" />
+              </button>
+              <button
+                onClick={() => setPlayingTrackId(null)}
+                className="w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors"
+                title="Close"
+              >
+                <X className="w-3 h-3 text-red-400" />
+              </button>
+            </div>
           </div>
-          <div className="rounded-lg overflow-hidden pointer-events-auto">
+          <div className="rounded-lg overflow-hidden">
             <iframe
               style={{ borderRadius: '8px' }}
               src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`}
