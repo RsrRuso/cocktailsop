@@ -40,17 +40,17 @@ const TopNav = () => {
   });
 
   const regions = [
-    { name: 'Global', flag: '🌍' },
-    { name: 'North America', flag: '🇺🇸' },
-    { name: 'Europe', flag: '🇪🇺' },
-    { name: 'Asia', flag: '🇯🇵' },
-    { name: 'South America', flag: '🇧🇷' },
-    { name: 'Africa', flag: '🌍' },
-    { name: 'Oceania', flag: '🇦🇺' },
+    { name: "All", flag: "🌐" },
+    { name: "USA", flag: "🇺🇸" },
+    { name: "UK", flag: "🇬🇧" },
+    { name: "Europe", flag: "🇪🇺" },
+    { name: "Asia", flag: "🌏" },
+    { name: "Middle East", flag: "🌍" },
+    { name: "Africa", flag: "🌍" },
   ];
 
   const handleRegionChange = (region: string) => {
-    const newRegion = region === 'Global' ? null : region;
+    const newRegion = region === 'All' ? null : region;
     setSelectedRegion(newRegion);
     localStorage.setItem('selectedRegion', newRegion || '');
     // Dispatch custom event for same-window communication
@@ -181,7 +181,7 @@ const TopNav = () => {
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="glass">
+              <DropdownMenuContent align="start" className="glass z-[60] bg-background/95 backdrop-blur-xl border border-border/50">
                 {regions.map((region) => (
                   <DropdownMenuItem
                     key={region.name}
@@ -189,9 +189,9 @@ const TopNav = () => {
                       lightTap(); 
                       handleRegionChange(region.name);
                     }}
-                    className={selectedRegion === region.name ? 'bg-primary/20 text-primary font-semibold' : ''}
+                    className={`cursor-pointer ${selectedRegion === region.name ? 'bg-primary/20 text-primary font-semibold' : ''}`}
                   >
-                    <span className="mr-2">{region.flag}</span>
+                    <span className="mr-2 text-lg">{region.flag}</span>
                     {region.name}
                   </DropdownMenuItem>
                 ))}
