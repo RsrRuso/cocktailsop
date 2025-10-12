@@ -17,6 +17,9 @@ import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CreateStatusDialog from "@/components/CreateStatusDialog";
 import MusicSelectionDialog from "@/components/MusicSelectionDialog";
 import SpotifyConnect from "@/components/SpotifyConnect";
+import { CreateEventDialog } from "@/components/CreateEventDialog";
+import { EventsListDialog } from "@/components/EventsListDialog";
+import { useManagerRole } from "@/hooks/useManagerRole";
 
 const TopNav = () => {
   const navigate = useNavigate();
@@ -40,6 +43,8 @@ const TopNav = () => {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(() => {
     return localStorage.getItem('selectedRegion') || null;
   });
+  const [eventsDialogOpen, setEventsDialogOpen] = useState(false);
+  const { isManager } = useManagerRole();
 
   // Determine which badge to show
   const displayBadgeProfile = viewedUserProfile || currentUser;
@@ -259,6 +264,24 @@ const TopNav = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Events Button */}
+            {selectedRegion && (
+              <button
+                onClick={() => {
+                  lightTap();
+                  setEventsDialogOpen(true);
+                }}
+                className="glass-hover p-2.5 rounded-2xl"
+              >
+                <Calendar className="w-5 h-5" />
+              </button>
+            )}
+
+            {/* Create Event Button - Only for managers */}
+            {isManager && selectedRegion && (
+              <CreateEventDialog />
+            )}
+
             {/* Spotify Connect */}
             {/* <SpotifyConnect /> */}
           </div>
@@ -358,6 +381,14 @@ const TopNav = () => {
         isVerified={userRoles.isVerified}
         isOwnProfile={true}
       />
+
+      {selectedRegion && (
+        <EventsListDialog
+          region={selectedRegion}
+          open={eventsDialogOpen}
+          onOpenChange={setEventsDialogOpen}
+        />
+      )}
     </>
   );
 };
