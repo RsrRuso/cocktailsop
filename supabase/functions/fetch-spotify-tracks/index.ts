@@ -49,60 +49,38 @@ serve(async (req) => {
       throw new Error('No Spotify connection found. Please connect your Spotify account first.');
     }
 
-    console.log('Fetching tracks from Spotify playlists...');
+    console.log('Fetching user top tracks from Spotify...');
     console.log('Using access token:', connection.access_token.substring(0, 20) + '...');
 
-    // First, get user's playlists
-    const playlistsResponse = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
+    // Fetch user's top tracks (most listened to)
+    const topTracksResponse = await fetch('https://api.spotify.com/v1/me/top/tracks?limit=50&time_range=medium_term', {
       headers: {
         'Authorization': `Bearer ${connection.access_token}`
       }
     });
 
-    console.log('Playlists response status:', playlistsResponse.status);
+    console.log('Top tracks response status:', topTracksResponse.status);
 
-    if (!playlistsResponse.ok) {
-      const errorText = await playlistsResponse.text();
-      console.error('Spotify API error:', playlistsResponse.status, errorText);
-      throw new Error(`Failed to fetch playlists from Spotify: ${playlistsResponse.status} ${errorText}`);
+    if (!topTracksResponse.ok) {
+      const errorText = await topTracksResponse.text();
+      console.error('Spotify API error:', topTracksResponse.status, errorText);
+      throw new Error(`Failed to fetch top tracks from Spotify: ${topTracksResponse.status} ${errorText}`);
     }
 
-    const playlistsData = await playlistsResponse.json();
-    console.log('Playlists data:', JSON.stringify(playlistsData, null, 2));
-    console.log(`Found ${playlistsData.items?.length || 0} playlists`);
+    const topTracksData = await topTracksResponse.json();
+    console.log('Top tracks data:', JSON.stringify(topTracksData, null, 2));
+    console.log(`Found ${topTracksData.items?.length || 0} top tracks`);
 
-    const allTracks: any[] = [];
-    const trackIds = new Set<string>();
-
-    // Fetch tracks from each playlist
-    for (const playlist of playlistsData.items.slice(0, 10)) { // Limit to first 10 playlists
-      const tracksResponse = await fetch(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks?limit=50`, {
-        headers: {
-          'Authorization': `Bearer ${connection.access_token}`
-        }
-      });
-
-      if (tracksResponse.ok) {
-        const tracksData = await tracksResponse.json();
-        for (const item of tracksData.items) {
-          if (item.track && !trackIds.has(item.track.id)) {
-            trackIds.add(item.track.id);
-            allTracks.push(item);
-          }
-        }
-      }
-    }
-
-    console.log(`Found ${allTracks.length} unique tracks from playlists`);
+    const tracks = topTracksData.items || [];
 
     // Format tracks for database
-    const formattedTracks = allTracks.slice(0, 100).map((item: any) => ({
-      track_id: item.track.id,
-      title: item.track.name,
-      artist: item.track.artists.map((a: any) => a.name).join(', '),
-      duration: Math.floor(item.track.duration_ms / 1000 / 60) + ':' + 
-                String(Math.floor(item.track.duration_ms / 1000) % 60).padStart(2, '0'),
-      preview_url: item.track.album.images[0]?.url || null
+    const formattedTracks = tracks.slice(0, 100).map((track: any) => ({
+      track_id: track.id,
+      title: track.name,
+      artist: track.artists.map((a: any) => a.name).join(', '),
+      duration: Math.floor(track.duration_ms / 1000 / 60) + ':' + 
+                String(Math.floor(track.duration_ms / 1000) % 60).padStart(2, '0'),
+      preview_url: track.album.images[0]?.url || null
     }));
 
     console.log('Clearing existing tracks...');
