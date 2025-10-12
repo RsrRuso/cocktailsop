@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX, ArrowLeft } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { toast } from "sonner";
@@ -196,6 +196,14 @@ const Reels = () => {
   return (
     <div className="h-screen bg-background overflow-hidden relative">
       <TopNav />
+      
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="fixed top-20 left-4 z-30 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all"
+      >
+        <ArrowLeft className="w-5 h-5 text-white" />
+      </button>
       
       {reels.length === 0 ? (
         <div className="h-full flex items-center justify-center px-4">
