@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
-import { Music } from "lucide-react";
+import { Music, X } from "lucide-react";
 import { Dialog, DialogContent } from "./ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface MusicShare {
   id: string;
@@ -22,6 +24,7 @@ interface MusicShare {
 }
 
 const MusicTicker = () => {
+  const { user } = useAuth();
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
 
@@ -85,6 +88,24 @@ const MusicTicker = () => {
     setPlayingTrackId(trackId);
   };
 
+  const handleDeleteShare = async (shareId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const { error } = await supabase
+      .from('music_shares')
+      .delete()
+      .eq('id', shareId);
+
+    if (error) {
+      console.error('Error deleting music share:', error);
+      toast.error("Failed to delete music share");
+      return;
+    }
+
+    toast.success("Music share deleted");
+    fetchMusicShares();
+  };
+
   if (musicShares.length === 0) {
     return (
       <div className="w-full py-4 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50">
@@ -109,9 +130,18 @@ const MusicTicker = () => {
             return (
               <div
                 key={`${share.id}-${index}`}
-                className="flex items-center gap-3 px-4 py-3 bg-gradient-to-br from-card to-card/50 rounded-xl border border-primary/20 shadow-lg shrink-0 min-w-[300px] max-w-[300px] hover:scale-105 hover:shadow-xl hover:border-primary/40 transition-all cursor-pointer group"
+                className="flex items-center gap-3 px-4 py-3 bg-gradient-to-br from-card to-card/50 rounded-xl border border-primary/20 shadow-lg shrink-0 min-w-[300px] max-w-[300px] hover:scale-105 hover:shadow-xl hover:border-primary/40 transition-all cursor-pointer group relative"
                 onClick={() => handlePlayTrack(track.track_id)}
               >
+                {user?.id === share.user_id && (
+                  <button
+                    onClick={(e) => handleDeleteShare(share.id, e)}
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10"
+                    title="Delete"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                )}
                 {track.preview_url && (
                   <div className="relative shrink-0">
                     <img 
