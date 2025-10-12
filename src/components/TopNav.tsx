@@ -41,12 +41,12 @@ const TopNav = () => {
 
   const regions = [
     { name: "All", flag: "🌐" },
-    { name: "USA", flag: "🇺🇸" },
-    { name: "UK", flag: "🇬🇧" },
-    { name: "Europe", flag: "🇪🇺" },
-    { name: "Asia", flag: "🌏" },
-    { name: "Middle East", flag: "🌍" },
-    { name: "Africa", flag: "🌍" },
+    { name: "USA", flag: "🗽" },
+    { name: "UK", flag: "👑" },
+    { name: "Europe", flag: "🏰" },
+    { name: "Asia", flag: "🏯" },
+    { name: "Middle East", flag: "🌙" },
+    { name: "Africa", flag: "🦁" },
   ];
 
   const handleRegionChange = (region: string) => {
