@@ -35,7 +35,8 @@ const UpdateSpotifyTracks = () => {
       <div className="glass rounded-xl p-8 max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Update Music Library</h1>
         <p className="text-muted-foreground mb-6">
-          Click the button below to update the music library with 50 royalty-free tracks with working preview URLs.
+          Click the button below to fetch the latest popular tracks from Spotify's Global Top 50 and other popular playlists. 
+          The library will be updated with ~50 trending songs (preview URLs available where permitted by Spotify).
         </p>
         <Button 
           onClick={handleUpdateTracks} 
