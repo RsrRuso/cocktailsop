@@ -46,7 +46,7 @@ const Notifications = () => {
     
     // Set up realtime subscription for new notifications
     const channel = supabase
-      .channel('notifications-changes')
+      .channel(`notifications-${Date.now()}`)
       .on(
         'postgres_changes',
         {
@@ -92,7 +92,7 @@ const Notifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [showNotification]);
+  }, []);
 
   const fetchNotifications = async () => {
     const { data: { user } } = await supabase.auth.getUser();

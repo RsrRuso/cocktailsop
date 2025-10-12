@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useMemo } from 'react';
 import { useInAppNotifications } from '@/hooks/useInAppNotifications';
 import { InAppNotification } from '@/components/InAppNotification';
 
@@ -15,8 +15,10 @@ const InAppNotificationContext = createContext<InAppNotificationContextType | un
 export const InAppNotificationProvider = ({ children }: { children: ReactNode }) => {
   const { currentNotification, showNotification, closeNotification } = useInAppNotifications();
 
+  const contextValue = useMemo(() => ({ showNotification }), [showNotification]);
+
   return (
-    <InAppNotificationContext.Provider value={{ showNotification }}>
+    <InAppNotificationContext.Provider value={contextValue}>
       {children}
       <InAppNotification 
         notification={currentNotification} 
