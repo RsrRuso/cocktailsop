@@ -1,10 +1,11 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit, Volume2, VolumeX } from "lucide-react";
+import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit, Volume2, VolumeX, Eye } from "lucide-react";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { getProfessionalBadge } from "@/lib/profileUtils";
 import { LazyImage } from "@/components/LazyImage";
 import { LazyVideo } from "@/components/LazyVideo";
+import { useViewTracking } from "@/hooks/useViewTracking";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +48,9 @@ export const FeedItem = memo(({
   const navigate = useNavigate();
   const professionalBadge = getProfessionalBadge(item.profiles?.professional_title || null);
   const BadgeIcon = professionalBadge.icon;
+
+  // Track post views
+  useViewTracking('post', item.id, currentUserId, true);
 
   return (
     <div className="glass rounded-xl p-2 space-y-3 border border-border/50">
@@ -194,6 +198,10 @@ export const FeedItem = memo(({
           <Send className="w-5 h-5" />
           <span className="text-xs">Send</span>
         </button>
+        <div className="flex items-center gap-2 text-muted-foreground ml-auto">
+          <Eye className="w-5 h-5" />
+          <span className="text-sm font-bold">{item.view_count || 0}</span>
+        </div>
       </div>
     </div>
   );
