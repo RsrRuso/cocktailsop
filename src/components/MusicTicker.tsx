@@ -157,23 +157,68 @@ const MusicTicker = () => {
 
     const isLiked = likedShares.has(shareId);
 
+    // Optimistic update - instant UI feedback
+    setMusicShares(prev => prev.map(share => 
+      share.id === shareId 
+        ? { ...share, like_count: share.like_count + (isLiked ? -1 : 1) }
+        : share
+    ));
+    
+    setLikedShares(prev => {
+      const next = new Set(prev);
+      if (isLiked) {
+        next.delete(shareId);
+      } else {
+        next.add(shareId);
+      }
+      return next;
+    });
+
+    // Database update
     if (isLiked) {
-      await supabase
+      const { error } = await supabase
         .from("music_share_likes")
         .delete()
         .eq("music_share_id", shareId)
         .eq("user_id", user.id);
+      
+      if (error) {
+        console.error("Error unliking:", error);
+        // Revert on error
+        setMusicShares(prev => prev.map(share => 
+          share.id === shareId 
+            ? { ...share, like_count: share.like_count + 1 }
+            : share
+        ));
+        setLikedShares(prev => {
+          const next = new Set(prev);
+          next.add(shareId);
+          return next;
+        });
+      }
     } else {
-      await supabase
+      const { error } = await supabase
         .from("music_share_likes")
         .insert({
           music_share_id: shareId,
           user_id: user.id,
         });
+      
+      if (error) {
+        console.error("Error liking:", error);
+        // Revert on error
+        setMusicShares(prev => prev.map(share => 
+          share.id === shareId 
+            ? { ...share, like_count: share.like_count - 1 }
+            : share
+        ));
+        setLikedShares(prev => {
+          const next = new Set(prev);
+          next.delete(shareId);
+          return next;
+        });
+      }
     }
-
-    fetchMusicShares();
-    fetchLikedShares();
   };
 
   const handleComment = (share: MusicShare, e: React.MouseEvent) => {
