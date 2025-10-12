@@ -14,9 +14,12 @@ serve(async (req) => {
     const clientId = Deno.env.get('SPOTIFY_CLIENT_ID');
     const clientSecret = Deno.env.get('SPOTIFY_CLIENT_SECRET');
 
+    console.log('Checking Spotify credentials...');
     if (!clientId || !clientSecret) {
+      console.error('Missing credentials - ID:', !!clientId, 'Secret:', !!clientSecret);
       throw new Error('Spotify credentials not configured');
     }
+    console.log('Credentials found, getting access token...');
 
     // Get Spotify access token
     const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
@@ -36,6 +39,7 @@ serve(async (req) => {
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
+    console.log('Access token obtained successfully');
 
     // Search for popular tracks instead of using a playlist
     const searches = [
@@ -47,6 +51,7 @@ serve(async (req) => {
       'Calm Down', 'Unholy', 'Kill Bill', 'Creepin', 'Die For You'
     ];
 
+    console.log(`Searching for ${searches.length} tracks...`);
     const trackPromises = searches.slice(0, 50).map(async (query) => {
       const searchResponse = await fetch(
         `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`,
@@ -64,13 +69,18 @@ serve(async (req) => {
             duration: formatDuration(track.duration_ms),
             preview_url: track.preview_url
           };
+        } else if (track) {
+          console.log(`Track "${query}" found but no preview URL`);
         }
+      } else {
+        console.error(`Search failed for "${query}":`, searchResponse.status);
       }
       return null;
     });
 
     const trackResults = await Promise.all(trackPromises);
     const formattedTracks = trackResults.filter(t => t !== null);
+    console.log(`Found ${formattedTracks.length} tracks with previews`);
 
     return new Response(
       JSON.stringify({ tracks: formattedTracks }),
