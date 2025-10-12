@@ -93,22 +93,22 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="sm:max-w-md max-h-[70vh]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             <Youtube className="w-5 h-5 text-red-500" />
-            Select Music from YouTube
+            Select Music
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Search for tracks..."
+              placeholder="Search tracks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-9"
             />
           </div>
 
@@ -116,7 +116,7 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
             <div className="rounded-lg overflow-hidden bg-black">
               <iframe
                 width="100%"
-                height="400"
+                height="200"
                 src={`https://www.youtube.com/embed/${previewVideoId}?autoplay=1`}
                 title="YouTube video player"
                 frameBorder="0"
@@ -126,51 +126,39 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
             </div>
           )}
 
-          <ScrollArea className="h-[300px] pr-4">
-            <div className="space-y-2">
+          <ScrollArea className="h-[280px]">
+            <div className="space-y-1 pr-3">
               {filteredTracks.map((track) => (
                 <div
                   key={track.id}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
+                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent transition-colors group"
                 >
-                  {track.preview_url && (
-                    <img 
-                      src={track.preview_url} 
-                      alt={track.title}
-                      className="w-20 h-20 object-cover rounded shrink-0"
-                    />
-                  )}
-                  
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{track.title}</p>
-                    <p className="text-sm text-muted-foreground truncate">{track.artist}</p>
+                    <p className="font-medium text-sm truncate">{track.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
                     <p className="text-xs text-muted-foreground">{track.duration}</p>
                   </div>
                   
-                  <div className="flex items-center gap-2 ml-4">
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handlePreview(track)}
-                      className="shrink-0"
+                      className="h-8 px-2"
                     >
-                      <Youtube className="w-4 h-4 mr-1" />
-                      {previewVideoId === track.track_id ? "Close" : "Preview"}
+                      <Youtube className="w-4 h-4" />
                     </Button>
                     
                     <Button
                       variant={selectedTrack?.id === track.id ? "default" : "outline"}
                       size="sm"
                       onClick={() => handleSelectTrack(track)}
-                      className="shrink-0"
+                      className="h-8 px-3"
                     >
                       {selectedTrack?.id === track.id ? (
-                        <>
-                          <Check className="w-4 h-4 mr-1" />
-                          Selected
-                        </>
+                        <Check className="w-4 h-4" />
                       ) : (
-                        "Select"
+                        <span className="text-xs">Select</span>
                       )}
                     </Button>
                   </div>
