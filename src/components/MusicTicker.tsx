@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
 import { Music, X } from "lucide-react";
-import { Dialog, DialogContent } from "./ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -192,24 +191,31 @@ const MusicTicker = () => {
         </div>
       </div>
 
-      <Dialog open={!!playingTrackId} onOpenChange={() => setPlayingTrackId(null)}>
-        <DialogContent className="max-w-sm p-2 glass border-primary/20 bg-background/40 backdrop-blur-xl">
-          {playingTrackId && (
-            <div className="rounded-lg overflow-hidden">
-              <iframe
-                style={{ borderRadius: '12px' }}
-                src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`}
-                width="100%"
-                height="152"
-                frameBorder="0"
-                allowFullScreen
-                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                loading="lazy"
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {playingTrackId && (
+        <div className="fixed bottom-4 right-4 z-50 w-80 p-2 glass border-primary/20 bg-background/40 backdrop-blur-xl rounded-xl shadow-2xl">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-foreground">Now Playing</span>
+            <button
+              onClick={() => setPlayingTrackId(null)}
+              className="w-6 h-6 rounded-full bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center transition-colors"
+            >
+              <X className="w-4 h-4 text-red-500" />
+            </button>
+          </div>
+          <div className="rounded-lg overflow-hidden">
+            <iframe
+              style={{ borderRadius: '12px' }}
+              src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`}
+              width="100%"
+              height="152"
+              frameBorder="0"
+              allowFullScreen
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 };
