@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck } from "lucide-react";
+import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
@@ -127,6 +127,10 @@ const Notifications = () => {
     }
   };
 
+  const isNotificationClickable = (notification: Notification) => {
+    return !!(notification.post_id || notification.reel_id || notification.story_id || notification.reference_user_id);
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'like':
@@ -157,6 +161,8 @@ const Notifications = () => {
   };
 
   const handleNotificationClick = async (notification: Notification) => {
+    if (!isNotificationClickable(notification)) return;
+
     // Mark as read if not already
     if (!notification.read) {
       await supabase
@@ -255,9 +261,11 @@ const Notifications = () => {
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
-                className={`glass rounded-xl p-4 cursor-pointer hover:glass-hover transition-all ${
-                  !notification.read ? "border-l-4 border-primary bg-primary/5" : ""
-                }`}
+                className={`glass rounded-xl p-4 transition-all ${
+                  isNotificationClickable(notification)
+                    ? "cursor-pointer hover:glass-hover"
+                    : "opacity-60 cursor-default"
+                } ${!notification.read ? "border-l-4 border-primary bg-primary/5" : ""}`}
               >
                 <div className="flex items-start gap-3">
                   <div className="shrink-0 mt-0.5">
@@ -269,9 +277,14 @@ const Notifications = () => {
                       {new Date(notification.created_at).toLocaleString()}
                     </p>
                   </div>
-                  {!notification.read && (
-                    <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2" />
-                  )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {!notification.read && (
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    )}
+                    {isNotificationClickable(notification) && (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
