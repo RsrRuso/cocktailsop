@@ -18,8 +18,10 @@ export const useInAppNotifications = () => {
       timestamp: new Date(),
     };
 
+    console.log('[IN-APP NOTIFICATION] Creating notification:', notification);
     setCurrentNotification(notification);
     playNotificationSound(0.6);
+    console.log('[IN-APP NOTIFICATION] Notification state updated');
   }, []);
 
   const closeNotification = useCallback(() => {
