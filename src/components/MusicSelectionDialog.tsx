@@ -28,6 +28,7 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
   const [popularTracks, setPopularTracks] = useState<MusicTrack[]>([]);
   const [selectedTrack, setSelectedTrack] = useState<MusicTrack | null>(null);
   const [previewVideoId, setPreviewVideoId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (open && searchQuery.trim() === '') {
@@ -97,12 +98,16 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
   };
 
   const handleSelectTrack = async (track: MusicTrack) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
     setSelectedTrack(track);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error("Please log in to share music");
       setSelectedTrack(null);
+      setIsSubmitting(false);
       return;
     }
 
@@ -117,6 +122,7 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
       toast.error("Failed to share music");
       console.error(error);
       setSelectedTrack(null);
+      setIsSubmitting(false);
       return;
     }
 
@@ -124,6 +130,7 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
     setTimeout(() => {
       onOpenChange(false);
       setSelectedTrack(null);
+      setIsSubmitting(false);
     }, 1500);
   };
 
@@ -223,7 +230,7 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
                       variant={selectedTrack?.id === track.id ? "default" : "outline"}
                       size="sm"
                       onClick={() => handleSelectTrack(track)}
-                      disabled={!!selectedTrack}
+                      disabled={isSubmitting}
                       className="h-5 px-1.5 text-[9px] transition-all"
                     >
                       {selectedTrack?.id === track.id ? (
