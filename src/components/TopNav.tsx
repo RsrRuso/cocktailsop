@@ -35,6 +35,27 @@ const TopNav = () => {
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [musicDialogOpen, setMusicDialogOpen] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(() => {
+    return localStorage.getItem('selectedRegion') || null;
+  });
+
+  const regions = [
+    { name: 'Global', flag: '🌍' },
+    { name: 'North America', flag: '🇺🇸' },
+    { name: 'Europe', flag: '🇪🇺' },
+    { name: 'Asia', flag: '🇯🇵' },
+    { name: 'South America', flag: '🇧🇷' },
+    { name: 'Africa', flag: '🌍' },
+    { name: 'Oceania', flag: '🇦🇺' },
+  ];
+
+  const handleRegionChange = (region: string) => {
+    const newRegion = region === 'Global' ? null : region;
+    setSelectedRegion(newRegion);
+    localStorage.setItem('selectedRegion', newRegion || '');
+    // Dispatch custom event for same-window communication
+    window.dispatchEvent(new CustomEvent('regionChange', { detail: newRegion }));
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -144,6 +165,38 @@ const TopNav = () => {
             >
               <Music className="w-5 h-5" />
             </button>
+
+            {/* Region Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button 
+                  onClick={lightTap}
+                  className="glass-hover p-2.5 rounded-2xl flex items-center gap-1.5"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {selectedRegion && (
+                    <span className="text-xs">{regions.find(r => r.name === selectedRegion)?.flag}</span>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="glass">
+                {regions.map((region) => (
+                  <DropdownMenuItem
+                    key={region.name}
+                    onClick={() => { 
+                      lightTap(); 
+                      handleRegionChange(region.name);
+                    }}
+                    className={selectedRegion === region.name ? 'bg-primary/20 text-primary font-semibold' : ''}
+                  >
+                    <span className="mr-2">{region.flag}</span>
+                    {region.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Spotify Connect */}
             {/* <SpotifyConnect /> */}

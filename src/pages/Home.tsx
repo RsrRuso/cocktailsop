@@ -89,7 +89,9 @@ const Home = () => {
   const [selectedReelId, setSelectedReelId] = useState("");
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [fullscreenReel, setFullscreenReel] = useState<FeedItem | null>(null);
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(() => {
+    return localStorage.getItem('selectedRegion') || null;
+  });
   const [showLikes, setShowLikes] = useState(false);
   const [selectedLikesPostId, setSelectedLikesPostId] = useState("");
   const [isReelLikes, setIsReelLikes] = useState(false);
@@ -141,9 +143,16 @@ const Home = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reels' }, () => refreshFeed())
       .subscribe();
 
+    // Listen for region changes from TopNav
+    const handleRegionChange = (e: CustomEvent) => {
+      setSelectedRegion(e.detail);
+    };
+    window.addEventListener('regionChange' as any, handleRegionChange);
+
     return () => {
       supabase.removeChannel(postsChannel);
       supabase.removeChannel(reelsChannel);
+      window.removeEventListener('regionChange' as any, handleRegionChange);
     };
   }, [user?.id, fetchLikedPosts, fetchLikedReels, refreshFeed]);
 
@@ -241,15 +250,6 @@ const Home = () => {
     }
   };
 
-  const regions = [
-    { name: "All", flag: "🌐", gradient: "from-gray-600 to-gray-400" },
-    { name: "USA", flag: "🇺🇸", gradient: "from-pink-600 to-pink-400" },
-    { name: "UK", flag: "🇬🇧", gradient: "from-blue-600 to-purple-500" },
-    { name: "Europe", flag: "🇪🇺", gradient: "from-green-600 to-teal-500" },
-    { name: "Asia", flag: "🌏", gradient: "from-orange-600 to-amber-700" },
-    { name: "Middle East", flag: "🌍", gradient: "from-yellow-600 to-orange-500" },
-    { name: "Africa", flag: "🌍", gradient: "from-purple-600 to-pink-500" },
-  ];
 
   const handleToggleMute = useCallback((videoId: string) => {
     setMutedVideos(prev => {
@@ -343,51 +343,6 @@ const Home = () => {
         </button>
       </div> */}
 
-      {/* Explore by Region */}
-      <div className="px-4 py-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="w-full glass rounded-xl p-2.5 flex items-center justify-between hover:bg-accent/50 transition-colors group">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <span className="text-sm font-semibold">
-                  {selectedRegion ? `${regions.find(r => r.name === selectedRegion)?.flag} ${selectedRegion}` : 'Explore by Region'}
-                </span>
-              </div>
-              <svg className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent 
-            className="w-64 glass border border-border/50 shadow-2xl z-50 bg-background/95 backdrop-blur-xl"
-            align="center"
-          >
-            {isManager && (
-              <div className="p-2 border-b border-border/50">
-                <CreateEventDialog />
-              </div>
-            )}
-            {regions.map((region) => (
-              <DropdownMenuItem
-                key={region.name}
-                className={`cursor-pointer py-2.5 px-3 flex items-center gap-3 ${selectedRegion === region.name ? 'bg-primary/20 text-primary font-semibold' : ''}`}
-                onClick={() => {
-                  setSelectedRegion(region.name);
-                  toast.success(`Now showing content from ${region.name}`);
-                }}
-              >
-                <span className="text-xl">{region.flag}</span>
-                <span className="text-sm">{region.name}</span>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
 
       {/* Events Ticker */}
       {selectedRegion && (
