@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.search-spotify-music]
 verify_jwt = false
+
+[functions.spotify-oauth-callback]
+verify_jwt = false
+
+[functions.get-user-spotify-playlists]
+verify_jwt = false

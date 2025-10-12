@@ -16,6 +16,7 @@ import {
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CreateStatusDialog from "@/components/CreateStatusDialog";
 import MusicSelectionDialog from "@/components/MusicSelectionDialog";
+import SpotifyConnect from "@/components/SpotifyConnect";
 
 const TopNav = () => {
   const navigate = useNavigate();
@@ -143,6 +144,9 @@ const TopNav = () => {
             >
               <Music className="w-5 h-5" />
             </button>
+
+            {/* Spotify Connect */}
+            <SpotifyConnect />
 
             {/* Badge Level Indicator */}
             {currentUser?.badge_level && (
