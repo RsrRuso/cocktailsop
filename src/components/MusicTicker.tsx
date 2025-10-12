@@ -75,7 +75,7 @@ const MusicTicker = () => {
   return (
     <>
       <div className="w-full overflow-hidden py-3 bg-background/50 backdrop-blur-sm border-y border-border">
-        <div className="flex gap-4 animate-scroll">
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide px-4" style={{ scrollBehavior: 'smooth' }}>
           {musicShares.map((share, index) => {
             const track = share.track;
             if (!track) return null;
@@ -83,7 +83,7 @@ const MusicTicker = () => {
             return (
               <div
                 key={`${share.id}-${index}`}
-                className="flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border shrink-0 min-w-[320px] hover:bg-accent/50 transition-colors animate-fade-in cursor-pointer"
+                className="flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border shrink-0 min-w-[280px] max-w-[280px] hover:bg-accent/50 transition-colors animate-fade-in cursor-pointer"
                 style={{
                   animationDelay: `${index * 0.1}s`,
                 }}
@@ -93,7 +93,7 @@ const MusicTicker = () => {
                   <img 
                     src={track.preview_url} 
                     alt={share.track_title}
-                    className="w-16 h-16 object-cover rounded shrink-0"
+                    className="w-12 h-12 object-cover rounded shrink-0"
                   />
                 )}
                 
@@ -102,9 +102,9 @@ const MusicTicker = () => {
                     <OptimizedAvatar
                       src={share.profile?.avatar_url}
                       alt={share.profile?.username || 'User'}
-                      className="w-4 h-4 inline-block"
+                      className="w-3 h-3 inline-block"
                     />
-                    @{share.profile?.username || 'Unknown'} shared
+                    @{share.profile?.username || 'Unknown'}
                   </p>
                   <p className="font-medium text-sm truncate">{share.track_title}</p>
                   <p className="text-xs text-muted-foreground truncate">{share.track_artist}</p>
