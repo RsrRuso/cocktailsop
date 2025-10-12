@@ -30,11 +30,15 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
 
   useEffect(() => {
     const fetchEvents = async () => {
+      // Update expired events before fetching
+      await supabase.rpc('update_expired_events');
+      
       const { data } = await supabase
         .from('events')
         .select('id, title, description, event_date, region, user_id, like_count, comment_count, attendee_count')
         .eq('region', region)
         .eq('is_active', true)
+        .eq('status', 'upcoming')
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -109,11 +113,14 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
         onEventUpdated={() => {
           // Refresh events when updated/deleted
           const fetchEvents = async () => {
+            await supabase.rpc('update_expired_events');
+            
             const { data } = await supabase
               .from('events')
               .select('id, title, description, event_date, region, user_id, like_count, comment_count, attendee_count')
               .eq('region', region)
               .eq('is_active', true)
+              .eq('status', 'upcoming')
               .order('created_at', { ascending: false })
               .limit(10);
 

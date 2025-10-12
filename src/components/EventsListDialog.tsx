@@ -87,6 +87,7 @@ interface Event {
   like_count?: number;
   comment_count?: number;
   attendee_count?: number;
+  status?: string;
 }
 
 interface EventsListDialogProps {
@@ -178,9 +179,12 @@ export const EventsListDialog = ({ region, open, onOpenChange }: EventsListDialo
   }, [open, region]);
 
   const fetchEvents = async () => {
+    // Update expired events before fetching
+    await supabase.rpc('update_expired_events');
+    
     const { data } = await supabase
       .from('events')
-      .select('id, title, description, event_date, region, user_id, venue_name, address, like_count, comment_count, attendee_count')
+      .select('id, title, description, event_date, region, user_id, venue_name, address, like_count, comment_count, attendee_count, status')
       .eq('region', region)
       .eq('is_active', true)
       .order('event_date', { ascending: true, nullsFirst: false })
@@ -188,6 +192,9 @@ export const EventsListDialog = ({ region, open, onOpenChange }: EventsListDialo
 
     if (data) setEvents(data);
   };
+
+  const upcomingEvents = events.filter(e => e.status === 'upcoming');
+  const completedEvents = events.filter(e => e.status === 'completed');
 
   const handleEventClick = (event: Event) => {
     setSelectedEvent(event);
@@ -251,11 +258,15 @@ export const EventsListDialog = ({ region, open, onOpenChange }: EventsListDialo
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0">
           <DialogHeader className="p-6 pb-4">
-            <DialogTitle className="text-2xl">Upcoming Events - {region}</DialogTitle>
+            <DialogTitle className="text-2xl">Events - {region}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto px-6 pb-6">
-            <div className="space-y-4">
-              {events.map((event) => (
+            {/* Upcoming Events Section */}
+            {upcomingEvents.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold mb-4 text-primary">Upcoming Events</h3>
+                <div className="space-y-4">
+                  {upcomingEvents.map((event) => (
                   <div
                   key={event.id}
                   onClick={() => handleEventClick(event)}
@@ -326,14 +337,98 @@ export const EventsListDialog = ({ region, open, onOpenChange }: EventsListDialo
                     </div>
                   </div>
                 </div>
-              ))}
-              {events.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No upcoming events in {region}</p>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Completed Events Section */}
+            {completedEvents.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-muted-foreground">Completed Events</h3>
+                <div className="space-y-4 opacity-60">
+                  {completedEvents.map((event) => (
+                      <div
+                      key={event.id}
+                      onClick={() => handleEventClick(event)}
+                      className="p-4 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h3 className="font-semibold text-lg flex-1">{event.title}</h3>
+                            {user?.id === event.user_id && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={(e) => handleDeleteClick(event, e)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                          {event.description && (
+                            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                              {event.description}
+                            </p>
+                          )}
+                          {event.event_date && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                              <Calendar className="w-4 h-4" />
+                              {format(new Date(event.event_date), 'PPP p')}
+                            </div>
+                          )}
+                          {(event.venue_name || event.address) && (
+                            <div className="mb-3 space-y-1">
+                              {event.venue_name && (
+                                <p className="text-sm font-medium">{event.venue_name}</p>
+                              )}
+                              {event.address && (
+                                <p className="text-sm text-muted-foreground">{event.address}</p>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-4 flex-wrap">
+                            <button
+                              onClick={(e) => handleLikesClick(event, e)}
+                              className="flex items-center gap-1.5 text-sm hover:text-primary transition-colors"
+                            >
+                              <Heart className="w-4 h-4" />
+                              <span className="font-medium">{event.like_count || 0}</span>
+                              <span className="text-muted-foreground">likes</span>
+                            </button>
+                            <button
+                              onClick={(e) => handleCommentsClick(event, e)}
+                              className="flex items-center gap-1.5 text-sm hover:text-primary transition-colors"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              <span className="font-medium">{event.comment_count || 0}</span>
+                              <span className="text-muted-foreground">comments</span>
+                            </button>
+                            <button
+                              onClick={(e) => handleAttendeesClick(event, e)}
+                              className="flex items-center gap-1.5 text-sm hover:text-primary transition-colors"
+                            >
+                              <Users className="w-4 h-4" />
+                              <span className="font-medium">{event.attendee_count || 0}</span>
+                              <span className="text-muted-foreground">went</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {events.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No events in {region}</p>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
