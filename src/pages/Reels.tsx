@@ -49,6 +49,7 @@ const Reels = () => {
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [showLikes, setShowLikes] = useState(false);
   const [selectedReelForLikes, setSelectedReelForLikes] = useState("");
+  const [targetReelId, setTargetReelId] = useState<string | null>(null);
 
   // Auto-unmute current reel, mute others
   useEffect(() => {
@@ -79,27 +80,34 @@ const Reels = () => {
   // Navigate to specific reel if coming from profile
   useEffect(() => {
     const state = location.state as { scrollToReelId?: string; reelData?: any };
-    if (state?.scrollToReelId) {
+    if (state?.scrollToReelId && !targetReelId) {
+      setTargetReelId(state.scrollToReelId);
       // If reel data was passed, use it immediately for instant display
-      if (state.reelData && reels.length === 0) {
+      if (state.reelData) {
         setReels([state.reelData]);
         setCurrentIndex(0);
-      } else if (reels.length > 0) {
-        const reelIndex = reels.findIndex(r => r.id === state.scrollToReelId);
-        if (reelIndex !== -1) {
-          requestAnimationFrame(() => {
-            const container = document.querySelector('.snap-y') as HTMLElement;
-            if (container) {
-              container.scrollTop = reelIndex * window.innerHeight;
-              setCurrentIndex(reelIndex);
-            }
-          });
-        }
       }
-      // Clear navigation state
+      // Clear navigation state immediately
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, reels, navigate, location.pathname]);
+  }, [location.state, targetReelId, navigate, location.pathname]);
+
+  // Scroll to target reel when all reels are loaded
+  useEffect(() => {
+    if (targetReelId && reels.length > 1) {
+      const reelIndex = reels.findIndex(r => r.id === targetReelId);
+      if (reelIndex !== -1) {
+        setCurrentIndex(reelIndex);
+        requestAnimationFrame(() => {
+          const container = document.querySelector('.snap-y') as HTMLElement;
+          if (container) {
+            container.scrollTop = reelIndex * window.innerHeight;
+          }
+        });
+        setTargetReelId(null); // Clear after successful scroll
+      }
+    }
+  }, [reels, targetReelId]);
 
   const fetchReels = async () => {
     // Fetch reels WITHOUT expensive profile joins
