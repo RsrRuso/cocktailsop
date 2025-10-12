@@ -16,7 +16,6 @@ import {
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CreateStatusDialog from "@/components/CreateStatusDialog";
 import MusicSelectionDialog from "@/components/MusicSelectionDialog";
-import MusicTicker from "@/components/MusicTicker";
 
 const TopNav = () => {
   const navigate = useNavigate();
@@ -227,8 +226,6 @@ const TopNav = () => {
           </button>
           </div>
         </div>
-
-        <MusicTicker />
       </div>
 
       {user && (
