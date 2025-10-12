@@ -14,6 +14,7 @@ import { FeedItem } from "@/components/FeedItem";
 import { useFeedData } from "@/hooks/useFeedData";
 import { useOptimisticLike } from "@/hooks/useOptimisticLike";
 import { useManagerRole } from "@/hooks/useManagerRole";
+import { EventsTicker } from "@/components/EventsTicker";
 import MusicTicker from "@/components/MusicTicker";
 import {
   DropdownMenu,
@@ -317,6 +318,13 @@ const Home = () => {
 
       {/* Music Ticker */}
       <MusicTicker />
+
+      {/* Events Ticker */}
+      {selectedRegion && (
+        <div className="px-4">
+          <EventsTicker region={selectedRegion} />
+        </div>
+      )}
 
       {/* Feed */}
       <div className="space-y-6 px-4">
