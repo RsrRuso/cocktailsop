@@ -22,7 +22,7 @@ export const CareerMetricsDialog = ({ open, onOpenChange, metrics }: CareerMetri
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl glass">
+      <DialogContent className="max-w-2xl glass max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-primary" />
@@ -30,7 +30,7 @@ export const CareerMetricsDialog = ({ open, onOpenChange, metrics }: CareerMetri
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6">
+        <div className="space-y-6 pb-4">
           {/* Score and Badge */}
           <div className="text-center space-y-4">
             <div className="space-y-2">
