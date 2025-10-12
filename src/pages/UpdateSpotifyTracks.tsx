@@ -10,37 +10,21 @@ const UpdateSpotifyTracks = () => {
   const handleUpdateTracks = async () => {
     setIsUpdating(true);
     try {
-      // Fetch tracks from Spotify via edge function
+      // Call edge function which now handles everything including DB update
       const { data: functionData, error: functionError } = await supabase.functions.invoke(
         'fetch-spotify-tracks'
       );
 
       if (functionError) throw functionError;
 
-      if (!functionData?.tracks || functionData.tracks.length === 0) {
-        toast.error("No tracks retrieved from Spotify");
-        return;
+      if (functionData?.success) {
+        toast.success(functionData.message || `Successfully updated ${functionData.count} tracks!`);
+      } else {
+        toast.error("Failed to update music library");
       }
-
-      // Clear existing tracks
-      const { error: deleteError } = await supabase
-        .from('popular_music')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000');
-
-      if (deleteError) throw deleteError;
-
-      // Insert new tracks
-      const { error: insertError } = await supabase
-        .from('popular_music')
-        .insert(functionData.tracks);
-
-      if (insertError) throw insertError;
-
-      toast.success(`Successfully updated ${functionData.tracks.length} tracks from Spotify!`);
     } catch (error) {
-      console.error('Error updating Spotify tracks:', error);
-      toast.error("Failed to update tracks from Spotify");
+      console.error('Error updating music library:', error);
+      toast.error("Failed to update music library");
     } finally {
       setIsUpdating(false);
     }

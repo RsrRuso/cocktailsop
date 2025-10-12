@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,12 @@ serve(async (req) => {
   }
 
   try {
+    // Create admin client to bypass RLS
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     console.log('Generating royalty-free music library...');
     
     // Curated list of royalty-free music with working preview URLs
@@ -69,8 +76,26 @@ serve(async (req) => {
 
     console.log(`Generated ${formattedTracks.length} royalty-free tracks`);
 
+    // Clear existing tracks and insert new ones using admin client
+    console.log('Clearing existing tracks...');
+    await supabaseAdmin.from('popular_music').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    
+    console.log('Inserting new tracks...');
+    const { error: insertError } = await supabaseAdmin.from('popular_music').insert(formattedTracks);
+    
+    if (insertError) {
+      console.error('Insert error:', insertError);
+      throw insertError;
+    }
+
+    console.log('Successfully updated music library!');
+
     return new Response(
-      JSON.stringify({ tracks: formattedTracks }),
+      JSON.stringify({ 
+        success: true,
+        message: `Successfully updated ${formattedTracks.length} tracks`,
+        count: formattedTracks.length 
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
