@@ -208,6 +208,16 @@ const Reels = () => {
   };
 
   const handleDeleteReel = async (reelId: string) => {
+    if (!user?.id) {
+      toast.error("Please login to delete reels");
+      return;
+    }
+
+    // Confirm deletion
+    if (!window.confirm("Are you sure you want to delete this reel?")) {
+      return;
+    }
+
     // Optimistic update - remove instantly
     setReels(prev => prev.filter(r => r.id !== reelId));
     toast.success("Reel deleted");
@@ -216,12 +226,16 @@ const Reels = () => {
       const { error } = await supabase
         .from("reels")
         .delete()
-        .eq("id", reelId);
+        .eq("id", reelId)
+        .eq("user_id", user.id);
 
-      if (error) throw error;
-    } catch (error) {
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
+    } catch (error: any) {
       console.error('Error deleting reel:', error);
-      toast.error("Failed to delete reel");
+      toast.error(error?.message || "Failed to delete reel");
       // Refresh to restore if failed
       fetchReels();
     }
