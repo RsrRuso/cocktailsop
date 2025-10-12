@@ -110,10 +110,11 @@ export const NotificationTestPanel = () => {
         .from('events')
         .insert({
           user_id: user.id,
-          title: '🧪 Test Event',
-          description: 'Test event to trigger follower notifications!',
-          region: 'Test Region',
-          event_date: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+          title: '🧪 Test Event - Notification Demo',
+          description: 'This is a test event to trigger follower notifications!',
+          region: 'All',
+          event_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'upcoming',
         });
 
       if (error) throw error;
