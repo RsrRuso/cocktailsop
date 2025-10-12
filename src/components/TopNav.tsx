@@ -421,7 +421,7 @@ const TopNav = () => {
               lightTap();
               navigate("/ops-tools");
             }}
-            className="glass-hover px-2.5 py-1.5 rounded-2xl font-semibold text-xs"
+            className="glass-hover p-2 rounded-2xl font-semibold text-[10px]"
           >
             OPS
           </button>
@@ -431,7 +431,7 @@ const TopNav = () => {
               lightTap();
               navigate("/introduction");
             }}
-            className="glass-hover px-2.5 py-1.5 rounded-2xl font-semibold text-xs"
+            className="glass-hover p-2 rounded-2xl font-semibold text-[10px]"
           >
             INFO
           </button>
