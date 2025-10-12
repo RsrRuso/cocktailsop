@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
-import { Youtube } from "lucide-react";
+import { Music } from "lucide-react";
 import { Dialog, DialogContent } from "./ui/dialog";
 
 interface MusicShare {
@@ -23,7 +23,7 @@ interface MusicShare {
 
 const MusicTicker = () => {
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
-  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+  const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMusicShares();
@@ -80,9 +80,9 @@ const MusicTicker = () => {
     setMusicShares(sharesWithDetails as any);
   };
 
-  const handlePlayVideo = (videoId: string) => {
-    console.log('Opening YouTube player for video:', videoId);
-    setPlayingVideoId(videoId);
+  const handlePlayTrack = (trackId: string) => {
+    console.log('Opening Spotify player for track:', trackId);
+    setPlayingTrackId(trackId);
   };
 
   if (musicShares.length === 0) {
@@ -110,7 +110,7 @@ const MusicTicker = () => {
               <div
                 key={`${share.id}-${index}`}
                 className="flex items-center gap-3 px-4 py-3 bg-gradient-to-br from-card to-card/50 rounded-xl border border-primary/20 shadow-lg shrink-0 min-w-[300px] max-w-[300px] hover:scale-105 hover:shadow-xl hover:border-primary/40 transition-all cursor-pointer group"
-                onClick={() => handlePlayVideo(track.track_id)}
+                onClick={() => handlePlayTrack(track.track_id)}
               >
                 {track.preview_url && (
                   <div className="relative shrink-0">
@@ -136,8 +136,8 @@ const MusicTicker = () => {
                   <p className="text-xs text-muted-foreground truncate">{share.track_artist}</p>
                 </div>
 
-                <div className="shrink-0 bg-red-500/10 p-2 rounded-lg group-hover:bg-red-500/20 transition-colors">
-                  <Youtube className="w-5 h-5 text-red-500" />
+                <div className="shrink-0 bg-green-500/10 p-2 rounded-lg group-hover:bg-green-500/20 transition-colors">
+                  <Music className="w-5 h-5 text-green-500" />
                 </div>
               </div>
             );
@@ -145,18 +145,19 @@ const MusicTicker = () => {
         </div>
       </div>
 
-      <Dialog open={!!playingVideoId} onOpenChange={() => setPlayingVideoId(null)}>
-        <DialogContent className="max-w-4xl">
-          {playingVideoId && (
-            <div className="rounded-lg overflow-hidden bg-black">
+      <Dialog open={!!playingTrackId} onOpenChange={() => setPlayingTrackId(null)}>
+        <DialogContent className="max-w-2xl">
+          {playingTrackId && (
+            <div className="rounded-lg overflow-hidden">
               <iframe
+                style={{ borderRadius: '12px' }}
+                src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator`}
                 width="100%"
-                height="500"
-                src={`https://www.youtube.com/embed/${playingVideoId}?autoplay=1`}
-                title="YouTube video player"
+                height="352"
                 frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                loading="lazy"
               />
             </div>
           )}
