@@ -37,36 +37,40 @@ serve(async (req) => {
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
-    // Fetch popular tracks from Spotify (using a popular playlist)
-    const playlistId = '37i9dQZEVXbMDoHDwVN2tF'; // Global Top 50 playlist
-    const tracksResponse = await fetch(
-      `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
+    // Search for popular tracks instead of using a playlist
+    const searches = [
+      'Blinding Lights', 'Shape of You', 'Someone You Loved', 'Dance Monkey', 'Sunflower',
+      'Circles', 'Memories', 'Senorita', 'Bad Guy', 'Old Town Road',
+      'Happier', 'Shallow', 'Without Me', 'Rockstar', 'Perfect',
+      'drivers license', 'Levitating', 'Save Your Tears', 'good 4 u', 'Heat Waves',
+      'As It Was', 'Stay', 'Easy On Me', 'Anti-Hero', 'Flowers',
+      'Calm Down', 'Unholy', 'Kill Bill', 'Creepin', 'Die For You'
+    ];
+
+    const trackPromises = searches.slice(0, 50).map(async (query) => {
+      const searchResponse = await fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`,
+        { headers: { 'Authorization': `Bearer ${accessToken}` } }
+      );
+      
+      if (searchResponse.ok) {
+        const data = await searchResponse.json();
+        const track = data.tracks?.items?.[0];
+        if (track && track.preview_url) {
+          return {
+            track_id: track.id,
+            title: track.name,
+            artist: track.artists.map((a: any) => a.name).join(', '),
+            duration: formatDuration(track.duration_ms),
+            preview_url: track.preview_url
+          };
         }
       }
-    );
+      return null;
+    });
 
-    if (!tracksResponse.ok) {
-      const errorText = await tracksResponse.text();
-      console.error('Spotify API error:', tracksResponse.status, errorText);
-      throw new Error(`Spotify API error: ${tracksResponse.status} - ${errorText}`);
-    }
-
-    const tracksData = await tracksResponse.json();
-    
-    // Format tracks for our database
-    const formattedTracks = tracksData.items
-      .filter((item: any) => item.track && item.track.preview_url)
-      .slice(0, 50)
-      .map((item: any) => ({
-        track_id: item.track.id,
-        title: item.track.name,
-        artist: item.track.artists.map((a: any) => a.name).join(', '),
-        duration: formatDuration(item.track.duration_ms),
-        preview_url: item.track.preview_url
-      }));
+    const trackResults = await Promise.all(trackPromises);
+    const formattedTracks = trackResults.filter(t => t !== null);
 
     return new Response(
       JSON.stringify({ tracks: formattedTracks }),
