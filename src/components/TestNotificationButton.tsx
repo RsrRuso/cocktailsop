@@ -14,7 +14,6 @@ export const TestNotificationButton = () => {
 
   const handleTest = () => {
     const randomNotif = testNotifications[Math.floor(Math.random() * testNotifications.length)];
-    console.log('[TEST NOTIFICATION] Button clicked, showing:', randomNotif);
     showNotification(randomNotif.title, randomNotif.message, randomNotif.type);
   };
 

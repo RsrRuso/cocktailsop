@@ -25,16 +25,11 @@ export const InAppNotification = ({
 
   useEffect(() => {
     if (notification) {
-      console.log('[IN-APP NOTIFICATION COMPONENT] Received notification:', notification);
       setShouldRender(true);
       // Trigger animation after render
-      setTimeout(() => {
-        console.log('[IN-APP NOTIFICATION COMPONENT] Setting visible to true');
-        setIsVisible(true);
-      }, 10);
+      setTimeout(() => setIsVisible(true), 10);
       
       const timer = setTimeout(() => {
-        console.log('[IN-APP NOTIFICATION COMPONENT] Auto-closing notification');
         setIsVisible(false);
         setTimeout(() => {
           setShouldRender(false);
@@ -43,8 +38,6 @@ export const InAppNotification = ({
       }, autoCloseDelay);
 
       return () => clearTimeout(timer);
-    } else {
-      console.log('[IN-APP NOTIFICATION COMPONENT] No notification to display');
     }
   }, [notification, autoCloseDelay, onClose]);
 
