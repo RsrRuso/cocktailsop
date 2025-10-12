@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send } from "lucide-react";
+import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
@@ -96,10 +96,20 @@ const Notifications = () => {
         return <MessageCircle className="w-5 h-5 text-blue-500" />;
       case 'follow':
         return <UserPlus className="w-5 h-5 text-green-500" />;
+      case 'unfollow':
+        return <UserMinus className="w-5 h-5 text-orange-500" />;
       case 'profile_view':
         return <Eye className="w-5 h-5 text-purple-500" />;
       case 'message':
         return <Send className="w-5 h-5 text-cyan-500" />;
+      case 'new_post':
+        return <Image className="w-5 h-5 text-blue-400" />;
+      case 'new_reel':
+        return <Video className="w-5 h-5 text-pink-500" />;
+      case 'new_music':
+        return <Music className="w-5 h-5 text-green-400" />;
+      case 'new_story':
+        return <MessageSquare className="w-5 h-5 text-yellow-500" />;
       default:
         return <Bell className="w-5 h-5 text-primary" />;
     }
