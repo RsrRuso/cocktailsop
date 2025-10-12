@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX } from "lucide-react";
 import TopNav from "@/components/TopNav";
@@ -35,7 +35,6 @@ interface Reel {
 
 const Reels = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const [reels, setReels] = useState<Reel[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -75,26 +74,6 @@ const Reels = () => {
       supabase.removeChannel(reelsChannel);
     };
   }, [user]);
-
-  // Handle navigation to specific reel
-  useEffect(() => {
-    const state = location.state as { scrollToReelId?: string };
-    if (state?.scrollToReelId && reels.length > 0) {
-      const reelIndex = reels.findIndex(r => r.id === state.scrollToReelId);
-      if (reelIndex !== -1) {
-        setCurrentIndex(reelIndex);
-        // Immediately scroll to that reel
-        setTimeout(() => {
-          const container = document.querySelector('.snap-y');
-          if (container) {
-            container.scrollTop = reelIndex * window.innerHeight;
-          }
-        }, 0);
-        // Clear the state
-        navigate(location.pathname, { replace: true });
-      }
-    }
-  }, [location.state, reels, navigate, location.pathname]);
 
   const fetchReels = async () => {
     // Fetch reels WITHOUT expensive profile joins
