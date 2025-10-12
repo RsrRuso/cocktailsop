@@ -118,8 +118,8 @@ const MusicTicker = () => {
     <>
       
       <div className="w-full overflow-x-auto py-2 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50 relative scrollbar-hide">
-        <div className="flex gap-4 animate-scroll-left">
-          {[...musicShares, ...musicShares].map((share, index) => {
+        <div className="flex gap-4 px-4 animate-scroll-left" style={{ width: 'max-content' }}>
+          {[...musicShares, ...musicShares, ...musicShares].map((share, index) => {
             return (
               <div
                 key={`${share.id}-${index}`}
