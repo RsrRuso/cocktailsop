@@ -46,6 +46,13 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const redirectUri = `${supabaseUrl}/functions/v1/spotify-oauth-callback`;
 
+    console.log('Spotify Config:', {
+      clientId: clientId ? `${clientId.substring(0, 8)}...` : 'missing',
+      clientSecret: clientSecret ? 'present' : 'missing',
+      redirectUri,
+      supabaseUrl
+    });
+
     if (!clientId || !clientSecret) {
       console.error('Missing Spotify credentials');
       return new Response(
