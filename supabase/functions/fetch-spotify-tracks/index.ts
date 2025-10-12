@@ -40,19 +40,23 @@ serve(async (req) => {
     const { access_token } = await tokenResponse.json();
     console.log('Successfully got Spotify access token');
 
-    // Fetch multiple playlists to get a good variety of popular tracks
-    const playlistIds = [
-      '37i9dQZEVXbMDoHDwVN2tF', // Global Top 50
-      '37i9dQZEVXbLiRSasKsNU9', // Top Hits
-      '37i9dQZEVXbNG2KDcFcKOF', // Top Songs - Global
+    // Search for popular tracks using various popular search terms
+    const searchTerms = [
+      'year:2024-2025',
+      'year:2024',
+      'pop',
+      'hip hop',
+      'rock',
+      'electronic',
+      'dance'
     ];
 
     const allTracks: any[] = [];
     
-    for (const playlistId of playlistIds) {
-      console.log(`Fetching playlist: ${playlistId}`);
-      const playlistResponse = await fetch(
-        `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`,
+    for (const term of searchTerms) {
+      console.log(`Searching for: ${term}`);
+      const searchResponse = await fetch(
+        `https://api.spotify.com/v1/search?q=${encodeURIComponent(term)}&type=track&limit=50&market=US`,
         {
           headers: {
             'Authorization': `Bearer ${access_token}`
@@ -60,13 +64,16 @@ serve(async (req) => {
         }
       );
 
-      if (playlistResponse.ok) {
-        const playlistData = await playlistResponse.json();
-        console.log(`Successfully fetched ${playlistData.items?.length || 0} tracks from playlist ${playlistId}`);
-        allTracks.push(...playlistData.items);
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json();
+        const trackCount = searchData.tracks?.items?.length || 0;
+        console.log(`Successfully fetched ${trackCount} tracks for "${term}"`);
+        if (searchData.tracks?.items) {
+          allTracks.push(...searchData.tracks.items);
+        }
       } else {
-        const errorText = await playlistResponse.text();
-        console.error(`Failed to fetch playlist ${playlistId}: ${playlistResponse.status} - ${errorText}`);
+        const errorText = await searchResponse.text();
+        console.error(`Failed to search for "${term}": ${searchResponse.status} - ${errorText}`);
       }
     }
 
@@ -75,20 +82,20 @@ serve(async (req) => {
     // Remove duplicates and format tracks
     const seenTrackIds = new Set();
     const formattedTracks = allTracks
-      .filter(item => {
-        if (!item.track || !item.track.id || seenTrackIds.has(item.track.id)) {
+      .filter(track => {
+        if (!track || !track.id || seenTrackIds.has(track.id)) {
           return false;
         }
-        seenTrackIds.add(item.track.id);
+        seenTrackIds.add(track.id);
         return true;
       })
       .slice(0, 50) // Take top 50 unique tracks
-      .map(item => ({
-        track_id: item.track.id,
-        title: item.track.name,
-        artist: item.track.artists.map((a: any) => a.name).join(', '),
-        duration: formatDuration(item.track.duration_ms),
-        preview_url: item.track.preview_url || null
+      .map(track => ({
+        track_id: track.id,
+        title: track.name,
+        artist: track.artists.map((a: any) => a.name).join(', '),
+        duration: formatDuration(track.duration_ms),
+        preview_url: track.preview_url || null
       }));
 
     console.log(`Formatted ${formattedTracks.length} popular tracks`);
