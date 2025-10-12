@@ -16,6 +16,7 @@ import { useOptimisticLike } from "@/hooks/useOptimisticLike";
 import { useManagerRole } from "@/hooks/useManagerRole";
 import { EventsTicker } from "@/components/EventsTicker";
 import { CreateEventDialog } from "@/components/CreateEventDialog";
+import MusicTicker from "@/components/MusicTicker";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -316,11 +317,14 @@ const Home = () => {
         </div>
       </div>
 
+      {/* Music Ticker */}
+      <MusicTicker />
+
       {/* Music Library Update */}
       {isManager && (
         <div className="px-4 py-2">
           <button
-            onClick={() => navigate("/update-spotify")}
+            onClick={() => navigate("/update-music-library")}
             className="w-full glass rounded-2xl p-4 flex items-center justify-between hover:bg-accent/50 transition-colors group"
           >
             <div className="flex items-center gap-3">
