@@ -119,9 +119,9 @@ const MusicTicker = () => {
   return (
     <>
       
-      <div className="w-full overflow-x-auto py-2 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50 scrollbar-hide">
-        <div className="flex gap-4 px-4">
-          {musicShares.map((share, index) => {
+      <div className="w-full overflow-hidden py-2 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50 relative">
+        <div className="flex gap-4 animate-scroll-left">
+          {[...musicShares, ...musicShares].map((share, index) => {
             return (
               <div
                 key={`${share.id}-${index}`}
@@ -177,7 +177,7 @@ const MusicTicker = () => {
       </div>
 
       <Dialog open={!!playingTrackId} onOpenChange={() => setPlayingTrackId(null)}>
-        <DialogContent className="max-w-md p-2">
+        <DialogContent className="max-w-sm p-2 glass border-primary/20 bg-background/40 backdrop-blur-xl">
           {playingTrackId && (
             <div className="rounded-lg overflow-hidden">
               <iframe
