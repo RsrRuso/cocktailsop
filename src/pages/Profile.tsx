@@ -946,6 +946,7 @@ const Profile = () => {
         badgeLevel={profile?.badge_level as any}
         username={profile?.username}
         isOwnProfile={true}
+        professionalScore={profile ? calculateProfessionalScore(profile, userRoles, posts, reels, stories) : undefined}
       />
 
       <CareerMetricsDialog
