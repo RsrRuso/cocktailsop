@@ -202,7 +202,7 @@ const MusicTicker = () => {
           </VisuallyHidden>
           <button
             onClick={() => setPlayingTrackId(null)}
-            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center shadow-lg transition-colors z-10"
+            className="absolute bottom-2 left-2 w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center shadow-lg transition-colors z-10"
             aria-label="Close player"
           >
             <X className="w-5 h-5 text-white" />
