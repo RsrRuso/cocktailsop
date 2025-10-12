@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Music, Play, Check, Pause } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Search, Check, Youtube } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
-import { useHaptic } from "@/hooks/useHaptic";
 
 interface MusicSelectionDialogProps {
   open: boolean;
@@ -13,25 +14,24 @@ interface MusicSelectionDialogProps {
 
 interface MusicTrack {
   id: string;
-  track_id: string;
+  track_id: string; // YouTube video ID
   title: string;
-  artist: string;
+  artist: string; // YouTube channel name
   duration: string;
-  preview_url: string | null;
+  preview_url: string | null; // Thumbnail URL
 }
 
 const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps) => {
-  const { user } = useAuth();
-  const { lightTap } = useHaptic();
-  const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [popularTracks, setPopularTracks] = useState<MusicTrack[]>([]);
-  const [playingTrack, setPlayingTrack] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [selectedTrack, setSelectedTrack] = useState<MusicTrack | null>(null);
+  const [previewVideoId, setPreviewVideoId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       fetchPopularMusic();
+    } else {
+      setPreviewVideoId(null);
     }
   }, [open]);
 
@@ -39,7 +39,8 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
     const { data, error } = await supabase
       .from("popular_music")
       .select("*")
-      .order("title", { ascending: true });
+      .order("created_at", { ascending: false })
+      .limit(50);
 
     if (!error && data) {
       setPopularTracks(data);
@@ -52,28 +53,22 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
       track.artist.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handlePlayPause = (track: MusicTrack) => {
-    lightTap();
-    if (playingTrack === track.track_id) {
-      audioRef.current?.pause();
-      setPlayingTrack(null);
+  const handlePreview = (track: MusicTrack) => {
+    if (previewVideoId === track.track_id) {
+      setPreviewVideoId(null);
     } else {
-      if (audioRef.current) {
-        audioRef.current.src = track.preview_url || "";
-        audioRef.current.play();
-        setPlayingTrack(track.track_id);
-      }
+      setPreviewVideoId(track.track_id);
     }
   };
 
   const handleSelectTrack = async (track: MusicTrack) => {
-    lightTap();
+    setSelectedTrack(track);
+
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error("Please log in to share music");
       return;
     }
-
-    setSelectedTrack(track.track_id);
 
     const { error } = await supabase.from("music_shares").insert({
       user_id: user.id,
@@ -95,79 +90,93 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
     }, 1000);
   };
 
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-    };
-  }, []);
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Music className="w-5 h-5" />
-            Choose Music
+            <Youtube className="w-5 h-5 text-red-500" />
+            Select Music from YouTube
           </DialogTitle>
         </DialogHeader>
-
-        <audio ref={audioRef} onEnded={() => setPlayingTrack(null)} />
-
+        
         <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="Search music..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-2 rounded-xl glass border border-primary/20 focus:outline-none focus:border-primary/40"
-          />
-
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {filteredTracks.map((track) => (
-              <div
-                key={track.id}
-                className="w-full p-4 rounded-xl glass hover:bg-primary/10 transition-all flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <Music className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-semibold">{track.title}</div>
-                    <div className="text-sm opacity-70">{track.artist}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm opacity-50">{track.duration}</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePlayPause(track);
-                    }}
-                    className="p-2 rounded-full hover:bg-primary/20 transition-colors"
-                  >
-                    {playingTrack === track.track_id ? (
-                      <Pause className="w-5 h-5 text-primary" />
-                    ) : (
-                      <Play className="w-5 h-5" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleSelectTrack(track)}
-                    className="p-2 rounded-full hover:bg-green-500/20 transition-colors"
-                  >
-                    {selectedTrack === track.track_id ? (
-                      <Check className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <Check className="w-5 h-5 opacity-0 group-hover:opacity-50 transition-opacity" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search for tracks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
           </div>
+
+          {previewVideoId && (
+            <div className="rounded-lg overflow-hidden bg-black">
+              <iframe
+                width="100%"
+                height="400"
+                src={`https://www.youtube.com/embed/${previewVideoId}?autoplay=1`}
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          )}
+
+          <ScrollArea className="h-[300px] pr-4">
+            <div className="space-y-2">
+              {filteredTracks.map((track) => (
+                <div
+                  key={track.id}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
+                >
+                  {track.preview_url && (
+                    <img 
+                      src={track.preview_url} 
+                      alt={track.title}
+                      className="w-20 h-20 object-cover rounded shrink-0"
+                    />
+                  )}
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{track.title}</p>
+                    <p className="text-sm text-muted-foreground truncate">{track.artist}</p>
+                    <p className="text-xs text-muted-foreground">{track.duration}</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 ml-4">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handlePreview(track)}
+                      className="shrink-0"
+                    >
+                      <Youtube className="w-4 h-4 mr-1" />
+                      {previewVideoId === track.track_id ? "Close" : "Preview"}
+                    </Button>
+                    
+                    <Button
+                      variant={selectedTrack?.id === track.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleSelectTrack(track)}
+                      className="shrink-0"
+                    >
+                      {selectedTrack?.id === track.id ? (
+                        <>
+                          <Check className="w-4 h-4 mr-1" />
+                          Selected
+                        </>
+                      ) : (
+                        "Select"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
       </DialogContent>
     </Dialog>

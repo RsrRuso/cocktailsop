@@ -1,9 +1,8 @@
-import { useEffect, useState, useRef } from "react";
-import { Music, Play, Pause } from "lucide-react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import OptimizedAvatar from "./OptimizedAvatar";
-import { useHaptic } from "@/hooks/useHaptic";
+import { Youtube } from "lucide-react";
+import { Dialog, DialogContent } from "./ui/dialog";
 
 interface MusicShare {
   id: string;
@@ -12,18 +11,19 @@ interface MusicShare {
   track_title: string;
   track_artist: string;
   created_at: string;
-  profiles: {
+  profile?: {
     username: string;
     avatar_url: string | null;
+  };
+  track?: {
+    track_id: string;
+    preview_url: string | null;
   };
 }
 
 const MusicTicker = () => {
-  const { user } = useAuth();
-  const { lightTap } = useHaptic();
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMusicShares();
@@ -49,99 +49,91 @@ const MusicTicker = () => {
   }, []);
 
   const fetchMusicShares = async () => {
-    const { data: sharesData, error } = await supabase
+    const { data, error } = await supabase
       .from("music_shares")
-      .select("*")
+      .select(`
+        *,
+        profile:profiles(username, avatar_url),
+        track:popular_music!music_shares_track_id_fkey(track_id, preview_url)
+      `)
       .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(20);
 
-    if (!error && sharesData) {
-      // Fetch profiles for each share
-      const userIds = sharesData.map(share => share.user_id);
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("id, username, avatar_url")
-        .in("id", userIds);
-
-      // Fetch track info from popular_music
-      const trackIds = sharesData.map(share => share.track_id);
-      const { data: tracksData } = await supabase
-        .from("popular_music")
-        .select("track_id, preview_url")
-        .in("track_id", trackIds);
-
-      // Merge the data
-      const enrichedShares = sharesData.map(share => ({
-        ...share,
-        preview_url: tracksData?.find(t => t.track_id === share.track_id)?.preview_url || null,
-        profiles: profilesData?.find(p => p.id === share.user_id) || {
-          username: "Unknown",
-          avatar_url: null
-        }
-      }));
-
-      setMusicShares(enrichedShares as any);
+    if (!error && data) {
+      setMusicShares(data as any);
     }
   };
 
-  const handlePlayPause = (share: any) => {
-    lightTap();
-    if (playingId === share.id) {
-      audioRef.current?.pause();
-      setPlayingId(null);
-    } else {
-      if (audioRef.current && share.preview_url) {
-        audioRef.current.src = share.preview_url;
-        audioRef.current.play();
-        setPlayingId(share.id);
-      }
-    }
+  const handlePlayVideo = (videoId: string) => {
+    setPlayingVideoId(videoId);
   };
-
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-    };
-  }, []);
 
   if (musicShares.length === 0) return null;
 
   return (
-    <div className="border-b border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5 overflow-hidden">
-      <audio ref={audioRef} onEnded={() => setPlayingId(null)} />
-      <div className="flex items-center gap-4 px-4 py-2 animate-fade-in">
-        <Music className="w-4 h-4 text-primary animate-pulse" />
-        <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide">
-          {musicShares.map((share) => (
-            <button
-              key={share.id}
-              onClick={() => handlePlayPause(share)}
-              className="flex items-center gap-2 whitespace-nowrap flex-shrink-0 animate-scale-in hover:bg-primary/10 rounded-full px-3 py-1 transition-all group"
-            >
-              <OptimizedAvatar
-                src={share.profiles?.avatar_url || ""}
-                alt={share.profiles?.username || "User"}
-                className="w-6 h-6"
-              />
-              <div className="text-sm flex items-center gap-2">
-                <span className="font-semibold">{share.profiles?.username}</span>
-                <span className="opacity-70">•</span>
-                <span className="opacity-90">{share.track_title}</span>
-                <span className="opacity-50 text-xs">by {share.track_artist}</span>
-                {playingId === share.id ? (
-                  <Pause className="w-4 h-4 text-primary ml-2" />
-                ) : (
-                  <Play className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity ml-2" />
+    <>
+      <div className="w-full overflow-hidden py-3 bg-background/50 backdrop-blur-sm border-y border-border">
+        <div className="flex gap-4 animate-scroll">
+          {musicShares.map((share, index) => {
+            const track = share.track;
+            if (!track) return null;
+
+            return (
+              <div
+                key={`${share.id}-${index}`}
+                className="flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border shrink-0 min-w-[320px] hover:bg-accent/50 transition-colors animate-fade-in cursor-pointer"
+                style={{
+                  animationDelay: `${index * 0.1}s`,
+                }}
+                onClick={() => handlePlayVideo(track.track_id)}
+              >
+                {track.preview_url && (
+                  <img 
+                    src={track.preview_url} 
+                    alt={share.track_title}
+                    className="w-16 h-16 object-cover rounded shrink-0"
+                  />
                 )}
+                
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                    <OptimizedAvatar
+                      src={share.profile?.avatar_url}
+                      alt={share.profile?.username || 'User'}
+                      className="w-4 h-4 inline-block"
+                    />
+                    @{share.profile?.username || 'Unknown'} shared
+                  </p>
+                  <p className="font-medium text-sm truncate">{share.track_title}</p>
+                  <p className="text-xs text-muted-foreground truncate">{share.track_artist}</p>
+                </div>
+
+                <Youtube className="w-5 h-5 text-red-500 shrink-0" />
               </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       </div>
-    </div>
+
+      <Dialog open={!!playingVideoId} onOpenChange={() => setPlayingVideoId(null)}>
+        <DialogContent className="max-w-4xl">
+          {playingVideoId && (
+            <div className="rounded-lg overflow-hidden bg-black">
+              <iframe
+                width="100%"
+                height="500"
+                src={`https://www.youtube.com/embed/${playingVideoId}?autoplay=1`}
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
