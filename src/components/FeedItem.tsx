@@ -122,7 +122,11 @@ export const FeedItem = memo(({
         <div className={`grid gap-1 ${item.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
           {item.media_urls.map((url: string, idx: number) => (
             <div key={idx} className="relative rounded-xl overflow-hidden">
-              {item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
+              {url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('audio') ? (
+                <div className="bg-primary/10 rounded-xl p-4">
+                  <audio src={url} controls className="w-full" />
+                </div>
+              ) : item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
                 <div className="relative">
                   <LazyVideo
                     src={url}

@@ -5,15 +5,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Send, Image as ImageIcon, X, Crop } from "lucide-react";
+import { ArrowLeft, Send, Image as ImageIcon, X, Crop, Music } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import ImageCropDialog from "@/components/ImageCropDialog";
 
-interface ImageFile {
+interface MediaFile {
   file: File;
   preview: string;
   cropped?: string;
+  type: 'image' | 'audio';
 }
 
 const CreatePost = () => {
@@ -21,22 +22,22 @@ const CreatePost = () => {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [images, setImages] = useState<ImageFile[]>([]);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [currentCropIndex, setCurrentCropIndex] = useState<number | null>(null);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (images.length + acceptedFiles.length > 10) {
-      toast.error("Maximum 10 images allowed");
+    if (mediaFiles.length + acceptedFiles.length > 10) {
+      toast.error("Maximum 10 media files allowed");
       return;
     }
 
     // Validate MIME types
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/webm'];
     
     for (const file of acceptedFiles) {
       if (!allowedTypes.includes(file.type)) {
-        toast.error(`Invalid file type: ${file.name}. Please upload JPEG, PNG, WebP, or GIF`);
+        toast.error(`Invalid file type: ${file.name}. Please upload images or audio files`);
         return;
       }
       if (file.size > 15 * 1024 * 1024) {
@@ -46,31 +47,34 @@ const CreatePost = () => {
     }
 
     acceptedFiles.forEach((file) => {
+      const isAudio = file.type.startsWith('audio/');
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImages((prev) => [
+        setMediaFiles((prev) => [
           ...prev,
           {
             file,
             preview: reader.result as string,
+            type: isAudio ? 'audio' : 'image',
           },
         ]);
       };
       reader.readAsDataURL(file);
     });
-  }, [images.length]);
+  }, [mediaFiles.length]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       "image/*": [".png", ".jpg", ".jpeg", ".webp", ".gif"],
+      "audio/*": [".mp3", ".wav", ".ogg", ".webm"],
     },
     maxFiles: 10,
     multiple: true,
   });
 
-  const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+  const removeMedia = (index: number) => {
+    setMediaFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const openCropDialog = (index: number) => {
@@ -80,26 +84,33 @@ const CreatePost = () => {
 
   const handleCropComplete = (croppedImage: string) => {
     if (currentCropIndex !== null) {
-      setImages((prev) =>
-        prev.map((img, i) =>
-          i === currentCropIndex ? { ...img, cropped: croppedImage } : img
+      setMediaFiles((prev) =>
+        prev.map((media, i) =>
+          i === currentCropIndex ? { ...media, cropped: croppedImage } : media
         )
       );
     }
   };
 
-  const uploadToStorage = async (imageFile: ImageFile, userId: string, index: number) => {
-    const fileExt = imageFile.file.name.split(".").pop();
+  const uploadToStorage = async (mediaFile: MediaFile, userId: string, index: number) => {
+    const fileExt = mediaFile.file.name.split(".").pop();
     const fileName = `${userId}/${Date.now()}-${index}.${fileExt}`;
     
-    // Convert base64 to blob
-    const imageToUpload = imageFile.cropped || imageFile.preview;
-    const blob = await fetch(imageToUpload).then((res) => res.blob());
+    let blob: Blob;
+    
+    if (mediaFile.type === 'audio') {
+      // For audio, use the original file
+      blob = mediaFile.file;
+    } else {
+      // For images, convert base64 to blob (may be cropped)
+      const imageToUpload = mediaFile.cropped || mediaFile.preview;
+      blob = await fetch(imageToUpload).then((res) => res.blob());
+    }
 
     const { data, error } = await supabase.storage
       .from("posts")
       .upload(fileName, blob, {
-        contentType: imageFile.file.type,
+        contentType: mediaFile.file.type,
         upsert: false,
       });
 
@@ -113,8 +124,8 @@ const CreatePost = () => {
   };
 
   const handlePost = async () => {
-    if (!content.trim() && images.length === 0) {
-      toast.error("Please add content or images");
+    if (!content.trim() && mediaFiles.length === 0) {
+      toast.error("Please add content or media files");
       return;
     }
 
@@ -128,15 +139,15 @@ const CreatePost = () => {
         return;
       }
 
-      // Upload images to storage
+      // Upload media files to storage
       const uploadedUrls: string[] = [];
-      for (let i = 0; i < images.length; i++) {
-        const url = await uploadToStorage(images[i], user.id, i);
+      for (let i = 0; i < mediaFiles.length; i++) {
+        const url = await uploadToStorage(mediaFiles[i], user.id, i);
         uploadedUrls.push(url);
-        setUploadProgress(((i + 1) / images.length) * 100);
+        setUploadProgress(((i + 1) / mediaFiles.length) * 100);
       }
 
-      // Create post with uploaded image URLs
+      // Create post with uploaded media URLs
       const { error } = await supabase.from("posts").insert({
         user_id: user.id,
         content: content,
@@ -173,7 +184,7 @@ const CreatePost = () => {
           <h1 className="text-xl font-bold">Create Post</h1>
           <Button
             onClick={handlePost}
-            disabled={loading || (!content.trim() && images.length === 0)}
+            disabled={loading || (!content.trim() && mediaFiles.length === 0)}
             className="glow-primary"
             size="sm"
           >
@@ -191,7 +202,7 @@ const CreatePost = () => {
           />
 
           {/* Drag and Drop Area */}
-          {images.length === 0 && (
+          {mediaFiles.length === 0 && (
             <div
               {...getRootProps()}
               className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
@@ -201,57 +212,81 @@ const CreatePost = () => {
               }`}
             >
               <input {...getInputProps()} />
-              <ImageIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <div className="flex justify-center gap-4 mb-4">
+                <ImageIcon className="w-12 h-12 text-muted-foreground" />
+                <Music className="w-12 h-12 text-muted-foreground" />
+              </div>
               <p className="text-sm font-medium mb-1">
                 {isDragActive
-                  ? "Drop images here..."
-                  : "Drag and drop images, or click to select"}
+                  ? "Drop files here..."
+                  : "Drag and drop images or music, or click to select"}
               </p>
               <p className="text-xs text-muted-foreground">
-                Up to 10 images • Max 15MB each
+                Up to 10 files • Max 15MB each
               </p>
             </div>
           )}
 
-          {/* Image Grid */}
-          {images.length > 0 && (
+          {/* Media Grid */}
+          {mediaFiles.length > 0 && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {images.map((image, index) => (
-                  <div key={index} className="relative group aspect-square">
-                    <img
-                      src={image.cropped || image.preview}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover rounded-xl"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2">
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="w-8 h-8"
-                        onClick={() => openCropDialog(index)}
-                      >
-                        <Crop className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="destructive"
-                        className="w-8 h-8"
-                        onClick={() => removeImage(index)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
+                {mediaFiles.map((media, index) => (
+                  <div key={index} className="relative group">
+                    {media.type === 'image' ? (
+                      <div className="aspect-square">
+                        <img
+                          src={media.cropped || media.preview}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2">
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            className="w-8 h-8"
+                            onClick={() => openCropDialog(index)}
+                          >
+                            <Crop className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            className="w-8 h-8"
+                            onClick={() => removeMedia(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-primary/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2">
+                        <Music className="w-8 h-8 text-primary" />
+                        <p className="text-xs text-center truncate w-full">{media.file.name}</p>
+                        <audio src={media.preview} controls className="w-full" />
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          className="w-8 h-8 mt-2"
+                          onClick={() => removeMedia(index)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))}
 
-                {images.length < 10 && (
+                {mediaFiles.length < 10 && (
                   <div
                     {...getRootProps()}
                     className="aspect-square border-2 border-dashed border-muted-foreground/30 rounded-xl flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
                   >
                     <input {...getInputProps()} />
-                    <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                    <div className="flex flex-col items-center gap-2">
+                      <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                      <Music className="w-6 h-6 text-muted-foreground" />
+                    </div>
                   </div>
                 )}
               </div>
@@ -273,7 +308,7 @@ const CreatePost = () => {
       <ImageCropDialog
         open={cropDialogOpen}
         onOpenChange={setCropDialogOpen}
-        imageSrc={currentCropIndex !== null ? images[currentCropIndex]?.preview : ""}
+        imageSrc={currentCropIndex !== null && mediaFiles[currentCropIndex]?.type === 'image' ? mediaFiles[currentCropIndex]?.preview : ""}
         onCropComplete={handleCropComplete}
       />
     </div>
