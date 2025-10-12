@@ -20,6 +20,7 @@ const MessageThread = () => {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+  const [showAllEmojis, setShowAllEmojis] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -118,6 +119,12 @@ const MessageThread = () => {
   };
 
   const quickEmojis = ["🔥", "❤️", "👍", "😂", "😮", "😢", "🎉", "👏"];
+  const allEmojis = [
+    "🔥", "❤️", "👍", "😂", "😮", "😢", "🎉", "👏",
+    "💯", "✨", "⚡", "💪", "🙌", "🤝", "💖", "🌟",
+    "🎊", "🎈", "🎁", "🌈", "☀️", "🌙", "⭐", "💫",
+    "😍", "🥰", "😎", "🤩", "🤗", "🥳", "😊", "🙏"
+  ];
 
   return (
     <div className="fixed inset-0 bg-background flex flex-col">
@@ -180,23 +187,44 @@ const MessageThread = () => {
               />
 
               {showEmojiPicker === message.id && (
-                <div className="absolute bottom-full mb-2 glass backdrop-blur-xl rounded-2xl p-4 z-20 border border-primary/20 glow-primary shadow-2xl max-w-xs">
+                <div className="absolute bottom-full mb-2 neon-blue backdrop-blur-xl rounded-2xl p-4 z-20 neon-blue-glow shadow-2xl max-w-xs">
                   <div className="flex flex-wrap gap-2">
-                    {quickEmojis.map((emoji) => (
-                      <button key={emoji} onClick={() => { handleReaction(message.id, emoji); setShowEmojiPicker(null); }} className="hover:scale-125 transition-transform text-2xl w-10 h-10 flex items-center justify-center rounded-lg hover:bg-primary/10">
+                    {(showAllEmojis ? allEmojis : quickEmojis).map((emoji) => (
+                      <button 
+                        key={emoji} 
+                        onClick={() => { 
+                          handleReaction(message.id, emoji); 
+                          setShowEmojiPicker(null); 
+                          setShowAllEmojis(false);
+                        }} 
+                        className="hover:scale-125 transition-all duration-200 text-3xl w-12 h-12 flex items-center justify-center rounded-xl hover:neon-blue"
+                      >
                         {emoji}
                       </button>
                     ))}
+                    <button
+                      onClick={() => setShowAllEmojis(!showAllEmojis)}
+                      className="hover:scale-110 transition-all duration-200 text-2xl w-12 h-12 flex items-center justify-center rounded-xl neon-blue font-bold"
+                    >
+                      {showAllEmojis ? "−" : "+"}
+                    </button>
                   </div>
                 </div>
               )}
 
               {message.reactions && message.reactions.length > 0 && (
-                <div className="flex gap-1 mt-1 flex-wrap">
+                <div className="flex gap-2 mt-2 flex-wrap">
                   {message.reactions.map((reaction, idx) => (
-                    <button key={idx} onClick={() => handleReaction(message.id, reaction.emoji)} className={`glass backdrop-blur-lg rounded-full px-2 py-0.5 text-xs flex items-center gap-1 hover:scale-110 transition-transform ${reaction.user_ids.includes(currentUser?.id || "") ? "ring-1 ring-primary glow-primary" : ""}`}>
+                    <button 
+                      key={idx} 
+                      onClick={() => handleReaction(message.id, reaction.emoji)} 
+                      className={`backdrop-blur-lg rounded-full px-3 py-1 text-xl flex items-center hover:scale-110 transition-all duration-200 ${
+                        reaction.user_ids.includes(currentUser?.id || "") 
+                          ? "neon-blue neon-blue-glow" 
+                          : "glass hover:neon-blue"
+                      }`}
+                    >
                       <span>{reaction.emoji}</span>
-                      <span className="text-[10px] opacity-70">{reaction.user_ids.length}</span>
                     </button>
                   ))}
                 </div>

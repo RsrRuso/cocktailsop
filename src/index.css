@@ -30,6 +30,7 @@ All colors MUST be HSL.
     --ring: 220 90% 56%;
     --radius: 1rem;
     --neon-green: 120 100% 50%;
+    --neon-blue: 195 100% 65%;
     
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 10%;
@@ -233,6 +234,16 @@ All colors MUST be HSL.
     text-shadow: 
       0 0 10px hsl(var(--neon-green) / 0.8),
       0 0 20px hsl(var(--neon-green) / 0.6);
+  }
+
+  .neon-blue {
+    background: hsl(var(--neon-blue) / 0.15);
+    border: 1px solid hsl(var(--neon-blue) / 0.4);
+    box-shadow: 0 0 20px hsl(var(--neon-blue) / 0.3), inset 0 0 20px hsl(var(--neon-blue) / 0.1);
+  }
+
+  .neon-blue-glow {
+    box-shadow: 0 0 20px hsl(var(--neon-blue) / 0.5), 0 0 40px hsl(var(--neon-blue) / 0.3);
   }
   
   .message-3d {
