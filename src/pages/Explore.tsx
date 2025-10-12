@@ -22,7 +22,7 @@ const Explore = () => {
   const fetchExplorePosts = async () => {
     const { data } = await supabase
       .from("posts")
-      .select("id, content, media_urls, like_count, comment_count, profiles(id, username, avatar_url, full_name)")
+      .select("id, content, media_urls, like_count, comment_count, view_count, profiles(id, username, avatar_url, full_name)")
       .order("like_count", { ascending: false })
       .limit(18);
 
