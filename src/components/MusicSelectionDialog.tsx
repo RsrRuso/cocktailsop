@@ -68,6 +68,7 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error("Please log in to share music");
+      setSelectedTrack(null);
       return;
     }
 
@@ -81,14 +82,15 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
     if (error) {
       toast.error("Failed to share music");
       console.error(error);
+      setSelectedTrack(null);
       return;
     }
 
-    toast.success(`Now sharing: ${track.title}`);
+    toast.success(`✓ Now sharing: ${track.title}`);
     setTimeout(() => {
       onOpenChange(false);
       setSelectedTrack(null);
-    }, 1000);
+    }, 1500);
   };
 
   return (
@@ -163,10 +165,14 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
                       variant={selectedTrack?.id === track.id ? "default" : "outline"}
                       size="sm"
                       onClick={() => handleSelectTrack(track)}
-                      className="h-6 px-2 text-[10px]"
+                      disabled={!!selectedTrack}
+                      className="h-6 px-2 text-[10px] transition-all"
                     >
                       {selectedTrack?.id === track.id ? (
-                        <Check className="w-3 h-3" />
+                        <span className="flex items-center gap-1 animate-scale-in">
+                          <Check className="w-3 h-3" />
+                          <span>Added</span>
+                        </span>
                       ) : (
                         "Add"
                       )}
