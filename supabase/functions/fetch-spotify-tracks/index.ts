@@ -49,29 +49,40 @@ serve(async (req) => {
       throw new Error('No Spotify connection found. Please connect your Spotify account first.');
     }
 
-    console.log('Fetching user top tracks from Spotify...');
+    console.log('Fetching recently played tracks from Spotify...');
     console.log('Using access token:', connection.access_token.substring(0, 20) + '...');
 
-    // Fetch user's top tracks (most listened to)
-    const topTracksResponse = await fetch('https://api.spotify.com/v1/me/top/tracks?limit=50&time_range=medium_term', {
+    // Fetch user's recently played tracks
+    const recentTracksResponse = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=50', {
       headers: {
         'Authorization': `Bearer ${connection.access_token}`
       }
     });
 
-    console.log('Top tracks response status:', topTracksResponse.status);
+    console.log('Recently played response status:', recentTracksResponse.status);
 
-    if (!topTracksResponse.ok) {
-      const errorText = await topTracksResponse.text();
-      console.error('Spotify API error:', topTracksResponse.status, errorText);
-      throw new Error(`Failed to fetch top tracks from Spotify: ${topTracksResponse.status} ${errorText}`);
+    if (!recentTracksResponse.ok) {
+      const errorText = await recentTracksResponse.text();
+      console.error('Spotify API error:', recentTracksResponse.status, errorText);
+      throw new Error(`Failed to fetch recently played tracks from Spotify: ${recentTracksResponse.status} ${errorText}`);
     }
 
-    const topTracksData = await topTracksResponse.json();
-    console.log('Top tracks data:', JSON.stringify(topTracksData, null, 2));
-    console.log(`Found ${topTracksData.items?.length || 0} top tracks`);
+    const recentTracksData = await recentTracksResponse.json();
+    console.log('Recently played data:', JSON.stringify(recentTracksData, null, 2));
+    console.log(`Found ${recentTracksData.items?.length || 0} recently played tracks`);
 
-    const tracks = topTracksData.items || [];
+    const trackIds = new Set<string>();
+    const tracks: any[] = [];
+    
+    // Deduplicate tracks
+    for (const item of recentTracksData.items || []) {
+      if (item.track && !trackIds.has(item.track.id)) {
+        trackIds.add(item.track.id);
+        tracks.push(item.track);
+      }
+    }
+
+    console.log(`${tracks.length} unique tracks after deduplication`);
 
     // Format tracks for database
     const formattedTracks = tracks.slice(0, 100).map((track: any) => ({
