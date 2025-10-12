@@ -26,8 +26,6 @@ const MusicTicker = () => {
   const { user } = useAuth();
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
-  const [position, setPosition] = useState({ x: window.innerWidth - 280, y: window.innerHeight - 200 });
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     fetchMusicShares();
@@ -103,33 +101,6 @@ const MusicTicker = () => {
   const handlePlayTrack = (trackId: string) => {
     console.log('Opening Spotify player for track:', trackId);
     setPlayingTrackId(trackId);
-  };
-
-  const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y
-    });
-  };
-
-  const handleDrag = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!dragStart) return;
-    
-    const newX = e.clientX - dragStart.x;
-    const newY = e.clientY - dragStart.y;
-    
-    setPosition({
-      x: Math.max(0, Math.min(newX, window.innerWidth - 224)),
-      y: Math.max(0, Math.min(newY, window.innerHeight - 150))
-    });
-  };
-
-  const handleDragEnd = () => {
-    setDragStart(null);
-  };
-
-  const handleClose = () => {
-    setPlayingTrackId(null);
   };
 
   const handleDeleteShare = async (shareId: string, e: React.MouseEvent) => {
@@ -221,24 +192,11 @@ const MusicTicker = () => {
       </div>
 
       {playingTrackId && (
-        <div 
-          className="fixed z-50 w-56 bg-background/20 backdrop-blur-md rounded-xl shadow-2xl border border-primary/10"
-          style={{ 
-            left: `${position.x}px`, 
-            top: `${position.y}px`,
-          }}
-          onMouseMove={dragStart ? handleDrag : undefined}
-          onMouseUp={handleDragEnd}
-          onMouseLeave={handleDragEnd}
-        >
-          <div 
-            className="flex items-center justify-between p-2 pb-1.5 cursor-move select-none"
-            onMouseDown={handleDragStart}
-          >
+        <div className="fixed bottom-4 right-4 z-50 w-56 bg-background/20 backdrop-blur-md rounded-xl shadow-2xl border border-primary/10">
+          <div className="flex items-center justify-between p-2 pb-1.5">
             <span className="text-[10px] font-medium text-foreground/80">🎵 Now Playing</span>
             <button
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={handleClose}
+              onClick={() => setPlayingTrackId(null)}
               className="w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors"
             >
               <X className="w-3 h-3 text-red-400" />
