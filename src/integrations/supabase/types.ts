@@ -1408,6 +1408,13 @@ export type Database = {
             referencedRelation: "stories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "story_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       story_likes: {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { queryClient } from "@/lib/queryClient";
 import { X, ChevronLeft, ChevronRight, Heart, Eye, Trash2, MoreVertical, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -315,6 +316,13 @@ const StoryViewer = () => {
   }, [currentStoryIndex, currentMediaIndex, stories]);
 
   const fetchStories = async () => {
+    // Check cache first
+    const cached = queryClient.getQueryData(['stories', userId]);
+    if (cached) {
+      setStories(cached as Story[]);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("stories")
       .select(`
@@ -338,6 +346,9 @@ const StoryViewer = () => {
     }
 
     const storiesData = data as Story[];
+    
+    // Cache the stories
+    queryClient.setQueryData(['stories', userId], storiesData);
     
     // Only preload first story's media for instant display
     if (storiesData[0]) {

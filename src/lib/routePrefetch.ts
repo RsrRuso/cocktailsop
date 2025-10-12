@@ -2,6 +2,39 @@ import { queryClient } from './queryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { deduplicateRequest } from './requestDeduplication';
 
+// Prefetch story data for user
+export const prefetchStories = async (userId: string) => {
+  await queryClient.prefetchQuery({
+    queryKey: ['stories', userId],
+    queryFn: () => deduplicateRequest(`stories-${userId}`, async () => {
+      const { data } = await supabase
+        .from('stories')
+        .select(`
+          *,
+          profiles (username, avatar_url)
+        `)
+        .eq('user_id', userId)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: true });
+      
+      // Preload first story media for instant display
+      if (data && data[0]) {
+        const firstStory = data[0];
+        firstStory.media_urls?.forEach((url: string, index: number) => {
+          const mediaType = firstStory.media_types?.[index];
+          if (!mediaType || mediaType.startsWith('image')) {
+            const img = new Image();
+            img.src = url;
+          }
+        });
+      }
+      
+      return data || [];
+    }),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
 // Prefetch profile data before navigation
 export const prefetchProfile = async (userId: string) => {
   await Promise.all([
