@@ -5,7 +5,7 @@ export const getBadgeColor = (level: string) => {
     bronze: "from-amber-700 to-amber-500",
     silver: "from-gray-400 to-gray-200",
     gold: "from-yellow-500 to-yellow-300",
-    platinum: "from-blue-400 to-purple-500",
+    platinum: "from-blue-400 via-blue-500 to-purple-600",
   };
   return colors[level as keyof typeof colors] || colors.bronze;
 };

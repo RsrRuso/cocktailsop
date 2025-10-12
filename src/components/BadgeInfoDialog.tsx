@@ -52,8 +52,9 @@ const BadgeInfoDialog = ({
     platinum: {
       name: 'Platinum',
       icon: Star,
-      color: 'from-blue-400 to-purple-600',
+      color: 'from-blue-400 via-blue-500 to-purple-600',
       textColor: 'text-purple-600',
+      bgStyle: 'bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600',
       requirements: '2,000-10,000 followers',
       perks: ['Premium badge', 'Monetization options', 'Verified tick eligibility']
     },
@@ -201,9 +202,18 @@ const BadgeInfoDialog = ({
           {/* Level Badge Section */}
           <div className={`relative p-6 rounded-2xl bg-gradient-to-br ${currentBadge.color}/10 border-2 border-current/20`}>
             <div className="flex items-center gap-4 mb-4">
-              <div className={`p-3 rounded-xl bg-gradient-to-br ${currentBadge.color}`}>
-                <BadgeIcon className="w-8 h-8 text-white" />
-              </div>
+              {badgeLevel === 'platinum' ? (
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 blur-md opacity-75" />
+                  <div className="relative w-16 h-16 bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl">
+                    <Star className="w-9 h-9 text-white" strokeWidth={2.5} fill="none" />
+                  </div>
+                </div>
+              ) : (
+                <div className={`p-3 rounded-xl bg-gradient-to-br ${currentBadge.color}`}>
+                  <BadgeIcon className="w-8 h-8 text-white" />
+                </div>
+              )}
               <div>
                 <h3 className={`text-xl font-bold ${currentBadge.textColor}`}>
                   {currentBadge.name} Level
@@ -245,6 +255,7 @@ const BadgeInfoDialog = ({
                 {Object.entries(badgeLevelInfo).map(([level, info]) => {
                   const Icon = info.icon;
                   const isCurrentLevel = level === badgeLevel;
+                  const isPlatinum = level === 'platinum';
                   return (
                     <div 
                       key={level}
@@ -254,7 +265,13 @@ const BadgeInfoDialog = ({
                           : 'opacity-50 hover:opacity-70'
                       }`}
                     >
-                      <Icon className={`w-6 h-6 ${info.textColor}`} />
+                      {isPlatinum ? (
+                        <div className="relative w-6 h-6 bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 rounded-md flex items-center justify-center">
+                          <Star className="w-3.5 h-3.5 text-white" strokeWidth={2.5} fill="none" />
+                        </div>
+                      ) : (
+                        <Icon className={`w-6 h-6 ${info.textColor}`} />
+                      )}
                       <span className="text-[10px] font-medium">{info.name}</span>
                     </div>
                   );
