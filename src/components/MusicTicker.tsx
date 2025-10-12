@@ -49,12 +49,30 @@ const MusicTicker = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
 
   const fetchMusicShares = async () => {
+    if (!user) return;
+
+    // Get users that current user follows
+    const { data: followingData } = await supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", user.id);
+
+    const followingIds = followingData?.map(f => f.following_id) || [];
+    const allowedUserIds = [...followingIds, user.id]; // Include current user's shares
+
+    if (allowedUserIds.length === 0) {
+      setMusicShares([]);
+      return;
+    }
+
+    // Fetch music shares from followed users and current user
     const { data, error } = await supabase
       .from("music_shares")
       .select("*")
+      .in("user_id", allowedUserIds)
       .order("created_at", { ascending: false });
 
     if (error || !data) {
