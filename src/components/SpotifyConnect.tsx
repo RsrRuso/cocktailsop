@@ -37,13 +37,24 @@ const SpotifyConnect = () => {
   };
 
   const handleConnect = async () => {
+    console.log('Connect Spotify button clicked');
+    
     const { data: { user } } = await supabase.auth.getUser();
+    console.log('Current user:', user?.id);
+    
     if (!user) {
       toast.error('Please log in first');
       return;
     }
 
     const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
+    console.log('Spotify Client ID:', clientId);
+    
+    if (!clientId || clientId === 'YOUR_SPOTIFY_CLIENT_ID_HERE') {
+      toast.error('Spotify Client ID not configured');
+      return;
+    }
+
     const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/spotify-oauth-callback`;
     const scopes = [
       'user-read-email',
@@ -66,17 +77,24 @@ const SpotifyConnect = () => {
       `&state=${user.id}` +
       `&show_dialog=true`;
 
+    console.log('Opening Spotify auth URL:', authUrl);
+
     // Open Spotify auth in new window
     const width = 500;
     const height = 700;
     const left = window.screen.width / 2 - width / 2;
     const top = window.screen.height / 2 - height / 2;
     
-    window.open(
+    const popup = window.open(
       authUrl,
       'Spotify Authorization',
       `width=${width},height=${height},left=${left},top=${top}`
     );
+    
+    if (!popup) {
+      toast.error('Please allow popups for this site');
+      return;
+    }
 
     // Listen for successful connection
     window.addEventListener('message', handleAuthMessage);
