@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, ChevronRight } from "lucide-react";
+import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
@@ -17,12 +17,6 @@ interface Notification {
   content: string;
   read: boolean;
   created_at: string;
-  post_id?: string | null;
-  reel_id?: string | null;
-  story_id?: string | null;
-  music_share_id?: string | null;
-  event_id?: string | null;
-  reference_user_id?: string | null;
 }
 
 const Notifications = () => {
@@ -100,7 +94,7 @@ const Notifications = () => {
 
     const { data } = await supabase
       .from("notifications")
-      .select("id, type, content, read, created_at, post_id, reel_id, story_id, music_share_id, event_id, reference_user_id")
+      .select("*")
       .eq("user_id", user.id)
       .neq("type", "message")
       .order("created_at", { ascending: false })
@@ -125,10 +119,6 @@ const Notifications = () => {
       toast.success("All notifications marked as read");
       fetchNotifications();
     }
-  };
-
-  const isNotificationClickable = (notification: Notification) => {
-    return !!(notification.post_id || notification.reel_id || notification.story_id || notification.music_share_id || notification.reference_user_id);
   };
 
   const getNotificationIcon = (type: string) => {
@@ -161,8 +151,6 @@ const Notifications = () => {
   };
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (!isNotificationClickable(notification)) return;
-
     // Mark as read if not already
     if (!notification.read) {
       await supabase
@@ -170,63 +158,6 @@ const Notifications = () => {
         .update({ read: true })
         .eq("id", notification.id);
       fetchNotifications();
-    }
-
-    // Navigate based on notification type
-    switch (notification.type) {
-      case 'like':
-      case 'comment':
-        if (notification.post_id) {
-          navigate(`/post/${notification.post_id}`);
-        } else if (notification.reel_id) {
-          navigate('/reels'); // Reels page will auto-play the specific reel if needed
-        } else if (notification.story_id && notification.reference_user_id) {
-          navigate(`/story/${notification.reference_user_id}`);
-        }
-        break;
-      
-      case 'follow':
-      case 'unfollow':
-      case 'profile_view':
-        if (notification.reference_user_id) {
-          navigate(`/user/${notification.reference_user_id}`);
-        }
-        break;
-      
-      case 'new_post':
-      case 'new_reel':
-      case 'new_story':
-        if (notification.reference_user_id) {
-          navigate(`/user/${notification.reference_user_id}`);
-        }
-        break;
-      
-      case 'new_music':
-        // Navigate to Thunder (music) page
-        navigate('/thunder');
-        break;
-      
-      case 'new_user':
-        // Extract username from content (e.g., "🎉 New user registered: username")
-        const usernameMatch = notification.content.match(/: (.+)$/);
-        if (usernameMatch) {
-          const username = usernameMatch[1];
-          // Fetch user ID by username
-          const { data } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('username', username)
-            .single();
-          
-          if (data) {
-            navigate(`/user/${data.id}`);
-          }
-        }
-        break;
-      
-      default:
-        // For other notification types, stay on notifications page
-        break;
     }
   };
 
@@ -265,11 +196,9 @@ const Notifications = () => {
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
-                className={`glass rounded-xl p-4 transition-all ${
-                  isNotificationClickable(notification)
-                    ? "cursor-pointer hover:glass-hover"
-                    : "opacity-60 cursor-default"
-                } ${!notification.read ? "border-l-4 border-primary bg-primary/5" : ""}`}
+                className={`glass rounded-xl p-4 cursor-pointer hover:glass-hover transition-all ${
+                  !notification.read ? "border-l-4 border-primary bg-primary/5" : ""
+                }`}
               >
                 <div className="flex items-start gap-3">
                   <div className="shrink-0 mt-0.5">
@@ -281,14 +210,9 @@ const Notifications = () => {
                       {new Date(notification.created_at).toLocaleString()}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {!notification.read && (
-                      <div className="w-2 h-2 rounded-full bg-primary" />
-                    )}
-                    {isNotificationClickable(notification) && (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                    )}
-                  </div>
+                  {!notification.read && (
+                    <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2" />
+                  )}
                 </div>
               </div>
             ))}
