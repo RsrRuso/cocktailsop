@@ -40,7 +40,8 @@ export const useOptimizedProfile = (userId: string | null) => {
       return data as Profile | null;
     }),
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes - very aggressive
+    gcTime: 60 * 60 * 1000,
   });
 };
 
@@ -62,7 +63,8 @@ export const useOptimizedProfileData = (userId: string | null) => {
       return data || [];
     }),
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   const reels = useQuery({
@@ -80,7 +82,8 @@ export const useOptimizedProfileData = (userId: string | null) => {
       return data || [];
     }),
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   const experiences = useQuery({
@@ -97,7 +100,8 @@ export const useOptimizedProfileData = (userId: string | null) => {
       return data || [];
     }),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   const certifications = useQuery({
@@ -114,7 +118,8 @@ export const useOptimizedProfileData = (userId: string | null) => {
       return data || [];
     }),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   const recognitions = useQuery({
@@ -131,7 +136,8 @@ export const useOptimizedProfileData = (userId: string | null) => {
       return data || [];
     }),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   const competitions = useQuery({
@@ -148,7 +154,8 @@ export const useOptimizedProfileData = (userId: string | null) => {
       return data || [];
     }),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
   const stories = useQuery({
@@ -167,7 +174,8 @@ export const useOptimizedProfileData = (userId: string | null) => {
       return data || [];
     }),
     enabled: !!userId,
-    staleTime: 1 * 60 * 1000, // 1 minute for stories
+    staleTime: 5 * 60 * 1000, // 5 minutes for stories
+    gcTime: 10 * 60 * 1000,
   });
 
   const userRoles = useQuery({
@@ -186,7 +194,8 @@ export const useOptimizedProfileData = (userId: string | null) => {
       };
     }),
     enabled: !!userId,
-    staleTime: 10 * 60 * 1000, // 10 minutes for roles
+    staleTime: 30 * 60 * 1000, // 30 minutes for roles
+    gcTime: 60 * 60 * 1000,
   });
 
   return {

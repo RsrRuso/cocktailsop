@@ -22,6 +22,7 @@ export const useUserStatus = (userId: string | null | undefined) => {
       return data;
     },
     enabled: !!userId,
-    staleTime: 30000, // 30 seconds
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000,
   });
 };
