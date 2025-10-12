@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { prefetchProfile, prefetchHomeFeed } from '@/lib/routePrefetch';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,43 +6,35 @@ import { useAuth } from '@/contexts/AuthContext';
 export const RoutePreloader = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const prefetchedRoutes = useRef(new Set<string>());
+
+  const prefetchRoute = useCallback(async (path: string) => {
+    if (!user?.id || prefetchedRoutes.current.has(path)) return;
+    
+    prefetchedRoutes.current.add(path);
+    const region = localStorage.getItem('selectedRegion');
+    
+    if (path === '/home') {
+      await prefetchHomeFeed(region);
+    } else if (path === '/profile') {
+      await prefetchProfile(user.id);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
-    // Prefetch data based on current route
-    const prefetchData = async () => {
-      if (location.pathname === '/home' && user?.id) {
-        const region = localStorage.getItem('selectedRegion');
-        await prefetchHomeFeed(region);
-      } else if (location.pathname === '/profile' && user?.id) {
-        await prefetchProfile(user.id);
-      }
-    };
-
-    // Debounce prefetching
-    const timer = setTimeout(prefetchData, 100);
+    const timer = setTimeout(() => prefetchRoute(location.pathname), 50);
     return () => clearTimeout(timer);
-  }, [location.pathname, user?.id]);
+  }, [location.pathname, prefetchRoute]);
 
-  // Prefetch on link hover
   useEffect(() => {
-    const handleMouseEnter = async (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const link = target.closest('a[href]') as HTMLAnchorElement;
-      
-      if (!link || !user?.id) return;
-
-      const href = link.getAttribute('href');
-      if (href === '/profile') {
-        await prefetchProfile(user.id);
-      } else if (href === '/home') {
-        const region = localStorage.getItem('selectedRegion');
-        await prefetchHomeFeed(region);
-      }
+    const handleMouseEnter = (e: MouseEvent) => {
+      const link = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement;
+      if (link) prefetchRoute(link.getAttribute('href') || '');
     };
 
     document.addEventListener('mouseenter', handleMouseEnter, true);
     return () => document.removeEventListener('mouseenter', handleMouseEnter, true);
-  }, [user?.id]);
+  }, [prefetchRoute]);
 
   return null;
 };

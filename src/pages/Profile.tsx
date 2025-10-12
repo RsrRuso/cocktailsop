@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useOptimizedProfileData } from "@/hooks/useOptimizedProfile";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import MusicTicker from "@/components/MusicTicker";
@@ -81,54 +83,49 @@ interface Reel {
 
 const Profile = () => {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [userRoles, setUserRoles] = useState<UserRoles>({ isFounder: false, isVerified: false });
+  const { user } = useAuth();
+  
+  // Use optimized hook for all data
+  const { 
+    profile, 
+    posts, 
+    reels, 
+    experiences, 
+    certifications, 
+    recognitions, 
+    stories, 
+    userRoles, 
+    isLoading,
+    refetchAll 
+  } = useOptimizedProfileData(user?.id || null);
+  
   const [coverUrl, setCoverUrl] = useState<string>("");
-  const [stories, setStories] = useState<Story[]>([]);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [reels, setReels] = useState<Reel[]>([]);
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string>("");
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [showAvatarDialog, setShowAvatarDialog] = useState(false);
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [metricsDialogOpen, setMetricsDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [experiences, setExperiences] = useState<any[]>([]);
-  const [certifications, setCertifications] = useState<any[]>([]);
-  const [recognitions, setRecognitions] = useState<any[]>([]);
   const [showAddExperience, setShowAddExperience] = useState(false);
   const [showAddCertification, setShowAddCertification] = useState(false);
   const [showAddRecognition, setShowAddRecognition] = useState(false);
   const [regionalData, setRegionalData] = useState<{ maxScore: number; userRank: number; totalUsers: number } | null>(null);
   
-  const { data: userStatus, refetch: refetchStatus } = useUserStatus(currentUserId);
+  const { data: userStatus, refetch: refetchStatus } = useUserStatus(user?.id || "");
 
   useEffect(() => {
-    const initializeProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
-      
-      setCurrentUserId(user.id);
-      await Promise.all([
-        fetchProfile(user.id),
-        fetchStories(user.id),
-        fetchPosts(user.id),
-        fetchReels(user.id),
-        fetchExperiences(user.id),
-        fetchCertifications(user.id),
-        fetchRecognitions(user.id),
-      ]);
-      setIsLoading(false);
-    };
-    
-    initializeProfile();
-  }, []);
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (profile?.cover_url) {
+      setCoverUrl(profile.cover_url);
+    }
+  }, [profile]);
 
   // Update career score and fetch regional comparison when data changes
   useEffect(() => {
@@ -138,19 +135,16 @@ const Profile = () => {
   }, [experiences, certifications, recognitions, profile]);
 
   const updateCareerScore = async () => {
-    if (!profile || !currentUserId) return;
+    if (!profile || !user?.id) return;
 
-    // Calculate raw score
     const rawMetrics = calculateCareerScore(experiences, certifications, recognitions);
     const rawScore = rawMetrics.rawScore;
 
-    // Update user's career score in profile
     await supabase
       .from('profiles')
       .update({ career_score: rawScore })
-      .eq('id', currentUserId);
+      .eq('id', user.id);
 
-    // Fetch regional comparison data
     const region = profile.region || 'All';
     
     let query = supabase
@@ -177,97 +171,9 @@ const Profile = () => {
     }
   };
 
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (data) {
-      setProfile(data);
-      setCoverUrl(data.cover_url || "");
-      
-      // Fetch user roles
-      const { data: rolesData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', data.id);
-      
-      if (rolesData) {
-        setUserRoles({
-          isFounder: rolesData.some(r => r.role === 'founder'),
-          isVerified: rolesData.some(r => r.role === 'verified')
-        });
-      }
-    }
-  };
-
-  const fetchPosts = async (userId: string) => {
-    const { data } = await supabase
-      .from("posts")
-      .select("id, content, media_urls, like_count, comment_count, view_count, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(12);
-
-    if (data) setPosts(data);
-  };
-
-  const fetchReels = async (userId: string) => {
-    const { data } = await supabase
-      .from("reels")
-      .select("id, video_url, caption, like_count, comment_count, view_count, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(12);
-
-    if (data) setReels(data);
-  };
-
-  const fetchExperiences = async (userId: string) => {
-    const { data } = await supabase
-      .from("work_experiences")
-      .select("*")
-      .eq("user_id", userId)
-      .order("start_date", { ascending: false });
-
-    if (data) setExperiences(data);
-  };
-
-  const fetchCertifications = async (userId: string) => {
-    const { data } = await supabase
-      .from("certifications")
-      .select("*")
-      .eq("user_id", userId)
-      .order("issue_date", { ascending: false });
-    
-    if (data) setCertifications(data);
-  };
-
-  const fetchRecognitions = async (userId: string) => {
-    const { data } = await supabase
-      .from("recognitions")
-      .select("*")
-      .eq("user_id", userId)
-      .order("issue_date", { ascending: false });
-    
-    if (data) setRecognitions(data);
-  };
-
-  const fetchStories = async (uid?: string) => {
-    const userIdToUse = uid || currentUserId;
-    if (!userIdToUse) return;
-
-    const { data } = await supabase
-      .from("stories")
-      .select("id, media_urls, media_types, created_at, expires_at")
-      .eq("user_id", userIdToUse)
-      .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false })
-      .limit(6);
-
-    if (data) setStories(data);
+  const fetchStories = async () => {
+    if (!user?.id) return;
+    refetchAll();
   };
 
   const handleDeleteStory = async (storyId: string) => {
@@ -362,7 +268,7 @@ const Profile = () => {
                     src={profile.avatar_url}
                     alt={profile.username}
                     fallback={profile.username[0]}
-                    userId={currentUserId}
+                    userId={user?.id || ""}
                     className={`w-24 h-24 avatar-3d ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)}`}
                     showStatus={true}
                     showAddButton={true}
@@ -616,7 +522,7 @@ const Profile = () => {
                       src={story.media_urls[0]} 
                       alt="Story" 
                       className="w-full h-48 object-cover cursor-pointer"
-                      onClick={() => navigate(`/story/${currentUserId}`)}
+                      onClick={() => navigate(`/story/${user?.id}`)}
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <Button
@@ -910,15 +816,15 @@ const Profile = () => {
               </h4>
               <ExperienceTimeline
                 experiences={experiences}
-                userId={currentUserId}
-                onUpdate={() => fetchExperiences(currentUserId)}
+                userId={user?.id || ""}
+                onUpdate={() => refetchAll()}
                 isOwnProfile={true}
               />
             </div>
 
             {/* Venue Verification */}
             <div className="glass rounded-xl p-4 space-y-4 border border-border/50">
-              <VenueVerification userId={currentUserId} />
+              <VenueVerification userId={user?.id || ""} />
             </div>
           </TabsContent>
         </Tabs>
@@ -929,13 +835,13 @@ const Profile = () => {
       <FollowersDialog
         open={showFollowers}
         onOpenChange={setShowFollowers}
-        userId={currentUserId}
+        userId={user?.id || ""}
       />
 
       <FollowingDialog
         open={showFollowing}
         onOpenChange={setShowFollowing}
-        userId={currentUserId}
+        userId={user?.id || ""}
       />
 
       <BadgeInfoDialog
@@ -965,22 +871,22 @@ const Profile = () => {
       <AddExperienceDialog
         open={showAddExperience}
         onOpenChange={setShowAddExperience}
-        userId={currentUserId}
-        onSuccess={() => fetchExperiences(currentUserId)}
+        userId={user?.id || ""}
+        onSuccess={() => refetchAll()}
       />
 
       <AddCertificationDialog
         open={showAddCertification}
         onOpenChange={setShowAddCertification}
-        userId={currentUserId}
-        onSuccess={() => fetchCertifications(currentUserId)}
+        userId={user?.id || ""}
+        onSuccess={() => refetchAll()}
       />
 
       <AddRecognitionDialog
         open={showAddRecognition}
         onOpenChange={setShowAddRecognition}
-        userId={currentUserId}
-        onSuccess={() => fetchRecognitions(currentUserId)}
+        userId={user?.id || ""}
+        onSuccess={() => refetchAll()}
       />
 
       <CreateStatusDialog
@@ -989,7 +895,7 @@ const Profile = () => {
           setShowStatusDialog(open);
           if (!open) refetchStatus();
         }}
-        userId={currentUserId}
+        userId={user?.id || ""}
       />
 
       {/* Avatar Photo Dialog */}
