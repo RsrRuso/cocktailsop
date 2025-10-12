@@ -1,33 +1,42 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { usePageTransition } from "@/hooks/usePageTransition";
 
 const Index = () => {
   const navigate = useNavigate();
+  usePageTransition(); // Track performance
 
   useEffect(() => {
-    checkAuth();
+    const startTime = performance.now();
+    
+    // Try to get cached session synchronously first
+    const cachedSession = localStorage.getItem('sb-cbfqwaqwliehgxsdueem-auth-token');
+    
+    if (cachedSession) {
+      // Navigate immediately based on cached session
+      const loadTime = performance.now() - startTime;
+      console.log(`Fast auth check: ${loadTime.toFixed(2)}ms`);
+      navigate("/home", { replace: true });
+    } else {
+      // Only check async if no cache
+      checkAuth(startTime);
+    }
   }, []);
 
-  const checkAuth = async () => {
+  const checkAuth = async (startTime: number) => {
     const { data: { session } } = await supabase.auth.getSession();
+    const loadTime = performance.now() - startTime;
+    console.log(`Full auth check: ${loadTime.toFixed(2)}ms`);
+    
     if (session) {
-      navigate("/home");
+      navigate("/home", { replace: true });
     } else {
-      navigate("/landing");
+      navigate("/landing", { replace: true });
     }
   };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="glass glow-primary rounded-2xl p-8">
-        <h1 className="text-4xl font-bold text-gradient-primary">
-          SpecVerse
-        </h1>
-        <p className="text-muted-foreground mt-2">Loading...</p>
-      </div>
-    </div>
-  );
+  return null; // No UI needed, immediate redirect
 };
 
 export default Index;

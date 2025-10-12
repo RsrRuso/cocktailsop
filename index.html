@@ -17,8 +17,12 @@
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     
     <!-- Preconnect to Supabase for faster API requests -->
-    <link rel="preconnect" href="https://cbfqwaqwliehgxsdueem.supabase.co" />
+    <link rel="preconnect" href="https://cbfqwaqwliehgxsdueem.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://cbfqwaqwliehgxsdueem.supabase.co" />
+    
+    <!-- Prefetch critical resources -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+    <link rel="modulepreload" href="/src/App.tsx" />
   </head>
 
   <body>

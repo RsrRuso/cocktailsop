@@ -22,7 +22,8 @@ export const RoutePreloader = () => {
   }, [user?.id]);
 
   useEffect(() => {
-    const timer = setTimeout(() => prefetchRoute(location.pathname), 50);
+    // Defer prefetching until after initial render for faster perceived load
+    const timer = setTimeout(() => prefetchRoute(location.pathname), 500);
     return () => clearTimeout(timer);
   }, [location.pathname, prefetchRoute]);
 
