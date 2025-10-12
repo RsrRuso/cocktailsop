@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
 import { Music, X } from "lucide-react";
-import { Dialog, DialogContent, DialogOverlay } from "./ui/dialog";
+import { Dialog, DialogContent, DialogOverlay, DialogTitle, DialogDescription } from "./ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -192,9 +193,13 @@ const MusicTicker = () => {
         </div>
       </div>
 
-      <Dialog open={!!playingTrackId} onOpenChange={() => setPlayingTrackId(null)}>
+      <Dialog open={!!playingTrackId} onOpenChange={() => setPlayingTrackId(null)} modal={false}>
         <DialogOverlay className="bg-transparent pointer-events-none" />
-        <DialogContent className="max-w-sm p-2 bg-transparent border-0 shadow-none fixed top-4 left-1/2 -translate-x-1/2 pointer-events-auto">
+        <DialogContent className="max-w-sm p-2 bg-transparent border-0 shadow-none fixed top-4 left-1/2 -translate-x-1/2 pointer-events-auto z-50">
+          <VisuallyHidden>
+            <DialogTitle>Spotify Player</DialogTitle>
+            <DialogDescription>Listen to the selected track</DialogDescription>
+          </VisuallyHidden>
           {playingTrackId && (
             <div className="rounded-lg overflow-hidden">
               <iframe
