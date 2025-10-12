@@ -55,9 +55,7 @@ const MusicTicker = () => {
     const { data, error } = await supabase
       .from("music_shares")
       .select("*")
-      .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      .order("created_at", { ascending: false })
-      .limit(20);
+      .order("created_at", { ascending: false });
 
     if (error || !data) {
       console.error("Error fetching music shares:", error);
