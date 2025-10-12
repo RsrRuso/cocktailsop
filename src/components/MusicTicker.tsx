@@ -119,12 +119,9 @@ const MusicTicker = () => {
   return (
     <>
       
-      <div className="w-full overflow-hidden py-2 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50 relative">
-        <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10" />
-        <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10" />
-        
-        <div className="flex gap-4 animate-scroll-left">
-          {[...musicShares, ...musicShares].map((share, index) => {
+      <div className="w-full overflow-x-auto py-2 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50 scrollbar-hide">
+        <div className="flex gap-4 px-4">
+          {musicShares.map((share, index) => {
             return (
               <div
                 key={`${share.id}-${index}`}
@@ -180,14 +177,14 @@ const MusicTicker = () => {
       </div>
 
       <Dialog open={!!playingTrackId} onOpenChange={() => setPlayingTrackId(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md p-2">
           {playingTrackId && (
             <div className="rounded-lg overflow-hidden">
               <iframe
                 style={{ borderRadius: '12px' }}
-                src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator`}
+                src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`}
                 width="100%"
-                height="352"
+                height="152"
                 frameBorder="0"
                 allowFullScreen
                 allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
