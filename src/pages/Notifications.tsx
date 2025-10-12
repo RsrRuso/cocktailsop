@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
 import { TestNotificationButton } from "@/components/TestNotificationButton";
+import { NotificationTestPanel } from "@/components/NotificationTestPanel";
 
 interface Notification {
   id: string;
@@ -131,6 +132,8 @@ const Notifications = () => {
       <TopNav />
 
       <div className="px-4 py-6 space-y-4">
+        <NotificationTestPanel />
+        
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Notifications</h2>
           {notifications.some(n => !n.read) && (
