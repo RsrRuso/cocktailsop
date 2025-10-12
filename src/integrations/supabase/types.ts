@@ -684,6 +684,35 @@ export type Database = {
           },
         ]
       }
+      post_views: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_views_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           comment_count: number | null
@@ -694,6 +723,7 @@ export type Database = {
           media_urls: string[] | null
           updated_at: string | null
           user_id: string
+          view_count: number | null
         }
         Insert: {
           comment_count?: number | null
@@ -704,6 +734,7 @@ export type Database = {
           media_urls?: string[] | null
           updated_at?: string | null
           user_id: string
+          view_count?: number | null
         }
         Update: {
           comment_count?: number | null
@@ -714,6 +745,7 @@ export type Database = {
           media_urls?: string[] | null
           updated_at?: string | null
           user_id?: string
+          view_count?: number | null
         }
         Relationships: [
           {
@@ -943,6 +975,35 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reel_views: {
+        Row: {
+          id: string
+          reel_id: string
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          reel_id: string
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          reel_id?: string
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reel_views_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "reels"
             referencedColumns: ["id"]
           },
         ]
