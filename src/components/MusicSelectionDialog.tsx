@@ -117,7 +117,7 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
       .select("id")
       .eq("user_id", user.id)
       .eq("track_id", track.track_id)
-      .single();
+      .maybeSingle();
 
     if (existingShare) {
       toast.error("You've already shared this track");
