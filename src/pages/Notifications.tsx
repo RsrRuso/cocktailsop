@@ -17,12 +17,12 @@ interface Notification {
   content: string;
   read: boolean;
   created_at: string;
-  post_id?: string;
-  reel_id?: string;
-  story_id?: string;
-  music_share_id?: string;
-  event_id?: string;
-  reference_user_id?: string;
+  post_id?: string | null;
+  reel_id?: string | null;
+  story_id?: string | null;
+  music_share_id?: string | null;
+  event_id?: string | null;
+  reference_user_id?: string | null;
 }
 
 const Notifications = () => {
@@ -100,7 +100,7 @@ const Notifications = () => {
 
     const { data } = await supabase
       .from("notifications")
-      .select("*")
+      .select("id, type, content, read, created_at, post_id, reel_id, story_id, music_share_id, event_id, reference_user_id")
       .eq("user_id", user.id)
       .neq("type", "message")
       .order("created_at", { ascending: false })
