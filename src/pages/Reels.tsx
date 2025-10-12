@@ -78,21 +78,26 @@ const Reels = () => {
 
   // Navigate to specific reel if coming from profile
   useEffect(() => {
-    const state = location.state as { scrollToReelId?: string };
-    if (state?.scrollToReelId && reels.length > 0) {
-      const reelIndex = reels.findIndex(r => r.id === state.scrollToReelId);
-      if (reelIndex !== -1) {
-        // Use requestAnimationFrame to ensure DOM is ready
-        requestAnimationFrame(() => {
-          const container = document.querySelector('.snap-y') as HTMLElement;
-          if (container) {
-            container.scrollTop = reelIndex * window.innerHeight;
-            setCurrentIndex(reelIndex);
-          }
-        });
-        // Clear navigation state
-        navigate(location.pathname, { replace: true, state: {} });
+    const state = location.state as { scrollToReelId?: string; reelData?: any };
+    if (state?.scrollToReelId) {
+      // If reel data was passed, use it immediately for instant display
+      if (state.reelData && reels.length === 0) {
+        setReels([state.reelData]);
+        setCurrentIndex(0);
+      } else if (reels.length > 0) {
+        const reelIndex = reels.findIndex(r => r.id === state.scrollToReelId);
+        if (reelIndex !== -1) {
+          requestAnimationFrame(() => {
+            const container = document.querySelector('.snap-y') as HTMLElement;
+            if (container) {
+              container.scrollTop = reelIndex * window.innerHeight;
+              setCurrentIndex(reelIndex);
+            }
+          });
+        }
       }
+      // Clear navigation state
+      navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, reels, navigate, location.pathname]);
 
