@@ -8,7 +8,7 @@ export const useInAppNotifications = () => {
   const showNotification = useCallback((
     title: string,
     message: string,
-    type?: 'message' | 'like' | 'comment' | 'follow' | 'default'
+    type?: 'message' | 'like' | 'comment' | 'follow' | 'new_user' | 'default'
   ) => {
     const notification: NotificationData = {
       id: Date.now().toString(),

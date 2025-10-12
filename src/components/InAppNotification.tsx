@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { X, Bell, MessageCircle, Heart, UserPlus } from 'lucide-react';
+import { X, Bell, MessageCircle, Heart, UserPlus, UserCheck } from 'lucide-react';
 
 export interface NotificationData {
   id: string;
   title: string;
   message: string;
-  type?: 'message' | 'like' | 'comment' | 'follow' | 'default';
+  type?: 'message' | 'like' | 'comment' | 'follow' | 'new_user' | 'default';
   timestamp: Date;
 }
 
@@ -51,6 +51,8 @@ export const InAppNotification = ({
         return <MessageCircle className="w-5 h-5 text-green-500" />;
       case 'follow':
         return <UserPlus className="w-5 h-5 text-purple-500" />;
+      case 'new_user':
+        return <UserCheck className="w-5 h-5 text-emerald-500" />;
       default:
         return <Bell className="w-5 h-5 text-primary" />;
     }
