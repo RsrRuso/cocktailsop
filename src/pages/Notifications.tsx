@@ -17,6 +17,12 @@ interface Notification {
   content: string;
   read: boolean;
   created_at: string;
+  post_id?: string;
+  reel_id?: string;
+  story_id?: string;
+  music_share_id?: string;
+  event_id?: string;
+  reference_user_id?: string;
 }
 
 const Notifications = () => {
@@ -100,7 +106,7 @@ const Notifications = () => {
       .order("created_at", { ascending: false })
       .limit(50);
 
-    if (data) setNotifications(data);
+    if (data) setNotifications(data as Notification[]);
   };
 
   const handleMarkAllAsRead = async () => {
@@ -158,6 +164,27 @@ const Notifications = () => {
         .update({ read: true })
         .eq("id", notification.id);
       fetchNotifications();
+    }
+
+    // Navigate based on notification type and reference IDs
+    if (notification.post_id) {
+      navigate(`/post/${notification.post_id}`);
+    } else if (notification.reel_id) {
+      navigate('/reels');
+    } else if (notification.story_id) {
+      navigate(`/story/${notification.story_id}`);
+    } else if (notification.music_share_id) {
+      navigate('/thunder');
+    } else if (notification.event_id) {
+      // Open events dialog - could navigate to home and trigger event dialog
+      navigate('/');
+    } else if (notification.reference_user_id) {
+      // For follow/unfollow notifications, navigate to the user's profile
+      navigate(`/profile/${notification.reference_user_id}`);
+    } else if (notification.type === 'profile_view' && notification.reference_user_id) {
+      navigate(`/profile/${notification.reference_user_id}`);
+    } else if (notification.type === 'new_user') {
+      navigate('/explore');
     }
   };
 
