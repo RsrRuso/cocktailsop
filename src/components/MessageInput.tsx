@@ -5,6 +5,7 @@ import { Progress } from './ui/progress';
 import { Send, Paperclip, Mic, Reply, Edit2, X, Loader2 } from 'lucide-react';
 import { Message } from '@/hooks/useMessageThread';
 import { AttachmentMenu } from './AttachmentMenu';
+import MusicSelectionDialog from './MusicSelectionDialog';
 
 interface MessageInputProps {
   value: string;
@@ -42,6 +43,7 @@ export const MessageInput = ({
   onStartVideoRecording,
 }: MessageInputProps) => {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showMusicDialog, setShowMusicDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
@@ -154,9 +156,18 @@ export const MessageInput = ({
                 onStartVideoRecording();
                 setShowAttachMenu(false);
               }}
+              onSelectMusic={() => {
+                setShowMusicDialog(true);
+                setShowAttachMenu(false);
+              }}
             />
           )}
         </div>
+
+        <MusicSelectionDialog
+          open={showMusicDialog}
+          onOpenChange={setShowMusicDialog}
+        />
 
         <Input
           value={value}
