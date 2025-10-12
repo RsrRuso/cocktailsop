@@ -44,7 +44,8 @@ export const AddExperienceDialog = ({ open, onOpenChange, userId, onSuccess, edi
         ...formData,
         user_id: userId,
         skills,
-        end_date: formData.is_current ? null : formData.end_date || null,
+        start_date: formData.start_date ? `${formData.start_date}-01` : null,
+        end_date: formData.is_current ? null : (formData.end_date ? `${formData.end_date}-01` : null),
       };
 
       if (editData) {
