@@ -317,8 +317,8 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Music Ticker */}
-      <MusicTicker />
+      {/* Music Ticker - Hidden */}
+      {/* <MusicTicker /> */}
 
       {/* Music Library Update */}
       {isManager && (
