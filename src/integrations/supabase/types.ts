@@ -703,24 +703,42 @@ export type Database = {
         Row: {
           content: string
           created_at: string | null
+          event_id: string | null
           id: string
+          music_share_id: string | null
+          post_id: string | null
           read: boolean | null
+          reel_id: string | null
+          reference_user_id: string | null
+          story_id: string | null
           type: string
           user_id: string
         }
         Insert: {
           content: string
           created_at?: string | null
+          event_id?: string | null
           id?: string
+          music_share_id?: string | null
+          post_id?: string | null
           read?: boolean | null
+          reel_id?: string | null
+          reference_user_id?: string | null
+          story_id?: string | null
           type: string
           user_id: string
         }
         Update: {
           content?: string
           created_at?: string | null
+          event_id?: string | null
           id?: string
+          music_share_id?: string | null
+          post_id?: string | null
           read?: boolean | null
+          reel_id?: string | null
+          reference_user_id?: string | null
+          story_id?: string | null
           type?: string
           user_id?: string
         }
@@ -1792,7 +1810,19 @@ export type Database = {
     }
     Functions: {
       create_notification: {
-        Args: { p_content: string; p_type: string; p_user_id: string }
+        Args:
+          | {
+              p_content: string
+              p_event_id?: string
+              p_music_share_id?: string
+              p_post_id?: string
+              p_reel_id?: string
+              p_reference_user_id?: string
+              p_story_id?: string
+              p_type: string
+              p_user_id: string
+            }
+          | { p_content: string; p_type: string; p_user_id: string }
         Returns: undefined
       }
       has_role: {
