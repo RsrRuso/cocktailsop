@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
-import { Music, X, Play, Pause } from "lucide-react";
+import { Music, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -27,9 +27,7 @@ const MusicTicker = () => {
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
   const [position, setPosition] = useState({ x: window.innerWidth - 280, y: window.innerHeight - 200 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     fetchMusicShares();
@@ -105,56 +103,33 @@ const MusicTicker = () => {
   const handlePlayTrack = (trackId: string) => {
     console.log('Opening Spotify player for track:', trackId);
     setPlayingTrackId(trackId);
-    setIsPlaying(true);
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-    setDragOffset({
+  const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    setDragStart({
       x: e.clientX - position.x,
       y: e.clientY - position.y
     });
   };
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      
-      const newX = e.clientX - dragOffset.x;
-      const newY = e.clientY - dragOffset.y;
-      
-      // Keep within viewport bounds
-      const maxX = window.innerWidth - 224; // 56 * 4 = 224px (w-56)
-      const maxY = window.innerHeight - 150;
-      
-      setPosition({
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY))
-      });
-    };
+  const handleDrag = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!dragStart) return;
+    
+    const newX = e.clientX - dragStart.x;
+    const newY = e.clientY - dragStart.y;
+    
+    setPosition({
+      x: Math.max(0, Math.min(newX, window.innerWidth - 224)),
+      y: Math.max(0, Math.min(newY, window.innerHeight - 150))
+    });
+  };
 
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
+  const handleDragEnd = () => {
+    setDragStart(null);
+  };
 
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, dragOffset.x, dragOffset.y]);
-
-  const togglePlay = () => {
-    const currentTrack = playingTrackId;
+  const handleClose = () => {
     setPlayingTrackId(null);
-    setTimeout(() => {
-      setPlayingTrackId(currentTrack);
-      setIsPlaying(prev => !prev);
-    }, 100);
   };
 
   const handleDeleteShare = async (shareId: string, e: React.MouseEvent) => {
@@ -251,58 +226,32 @@ const MusicTicker = () => {
           style={{ 
             left: `${position.x}px`, 
             top: `${position.y}px`,
-            cursor: isDragging ? 'grabbing' : 'default',
-            userSelect: 'none'
           }}
+          onMouseMove={dragStart ? handleDrag : undefined}
+          onMouseUp={handleDragEnd}
+          onMouseLeave={handleDragEnd}
         >
           <div 
-            className="flex items-center justify-between p-2 pb-1.5 cursor-grab active:cursor-grabbing"
-            onMouseDown={handleMouseDown}
-            style={{ touchAction: 'none' }}
+            className="flex items-center justify-between p-2 pb-1.5 cursor-move select-none"
+            onMouseDown={handleDragStart}
           >
-            <span className="text-[10px] font-medium text-foreground/80 pointer-events-none">Now Playing</span>
-            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-              <button
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  togglePlay();
-                }}
-                className="w-5 h-5 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center transition-colors cursor-pointer"
-                title={isPlaying ? "Pause" : "Play"}
-              >
-                {isPlaying ? (
-                  <Pause className="w-3 h-3 text-primary" />
-                ) : (
-                  <Play className="w-3 h-3 text-primary" />
-                )}
-              </button>
-              <button
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setPlayingTrackId(null);
-                  setIsPlaying(false);
-                }}
-                className="w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors cursor-pointer"
-                title="Close"
-              >
-                <X className="w-3 h-3 text-red-400" />
-              </button>
-            </div>
+            <span className="text-[10px] font-medium text-foreground/80">🎵 Now Playing</span>
+            <button
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={handleClose}
+              className="w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors"
+            >
+              <X className="w-3 h-3 text-red-400" />
+            </button>
           </div>
-          <div className="px-2 pb-2 rounded-lg overflow-hidden">
+          <div className="px-2 pb-2">
             <iframe
               style={{ borderRadius: '8px' }}
               src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`}
               width="100%"
               height="80"
               frameBorder="0"
-              allowFullScreen
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
             />
           </div>
         </div>
