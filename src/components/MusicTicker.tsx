@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
 import { Music, X } from "lucide-react";
@@ -27,7 +27,6 @@ const MusicTicker = () => {
   const { user } = useAuth();
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
-  const hasAutoPlayed = useRef(false);
 
   useEffect(() => {
     fetchMusicShares();
@@ -82,19 +81,6 @@ const MusicTicker = () => {
     }));
 
     setMusicShares(sharesWithDetails as any);
-    
-    // Auto-play the most recent track on first click
-    if (!hasAutoPlayed.current && sharesWithDetails.length > 0) {
-      const handleFirstClick = () => {
-        const latestTrack = sharesWithDetails[0];
-        if (latestTrack.track?.track_id) {
-          setPlayingTrackId(latestTrack.track.track_id);
-          hasAutoPlayed.current = true;
-        }
-        document.removeEventListener('click', handleFirstClick);
-      };
-      document.addEventListener('click', handleFirstClick);
-    }
   };
 
   const handlePlayTrack = (trackId: string) => {
