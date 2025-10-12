@@ -50,6 +50,7 @@ serve(async (req) => {
     }
 
     console.log('Fetching tracks from Spotify...');
+    console.log('Using access token:', connection.access_token.substring(0, 20) + '...');
 
     // Fetch user's saved tracks from Spotify
     const spotifyResponse = await fetch('https://api.spotify.com/v1/me/tracks?limit=50', {
@@ -58,13 +59,16 @@ serve(async (req) => {
       }
     });
 
+    console.log('Spotify response status:', spotifyResponse.status);
+
     if (!spotifyResponse.ok) {
       const errorText = await spotifyResponse.text();
-      console.error('Spotify API error:', errorText);
-      throw new Error('Failed to fetch tracks from Spotify');
+      console.error('Spotify API error:', spotifyResponse.status, errorText);
+      throw new Error(`Failed to fetch tracks from Spotify: ${spotifyResponse.status} ${errorText}`);
     }
 
     const spotifyData = await spotifyResponse.json();
+    console.log('Spotify response data:', JSON.stringify(spotifyData, null, 2));
     const tracks = spotifyData.items;
 
     console.log(`Found ${tracks.length} tracks from Spotify`);
