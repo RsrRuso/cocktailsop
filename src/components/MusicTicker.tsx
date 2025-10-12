@@ -51,18 +51,33 @@ const MusicTicker = () => {
   const fetchMusicShares = async () => {
     const { data, error } = await supabase
       .from("music_shares")
-      .select(`
-        *,
-        profile:profiles(username, avatar_url),
-        track:popular_music!music_shares_track_id_fkey(track_id, preview_url)
-      `)
+      .select("*")
       .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
       .order("created_at", { ascending: false })
       .limit(20);
 
-    if (!error && data) {
-      setMusicShares(data as any);
+    if (error || !data) {
+      console.error("Error fetching music shares:", error);
+      return;
     }
+
+    // Fetch related profiles and tracks separately
+    const userIds = [...new Set(data.map(share => share.user_id))];
+    const trackIds = [...new Set(data.map(share => share.track_id))];
+
+    const [{ data: profiles }, { data: tracks }] = await Promise.all([
+      supabase.from('profiles').select('id, username, avatar_url').in('id', userIds),
+      supabase.from('popular_music').select('track_id, preview_url').in('track_id', trackIds)
+    ]);
+
+    // Map profiles and tracks to shares
+    const sharesWithDetails = data.map(share => ({
+      ...share,
+      profile: profiles?.find(p => p.id === share.user_id),
+      track: tracks?.find(t => t.track_id === share.track_id)
+    }));
+
+    setMusicShares(sharesWithDetails as any);
   };
 
   const handlePlayVideo = (videoId: string) => {
