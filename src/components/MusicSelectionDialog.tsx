@@ -111,6 +111,21 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
       return;
     }
 
+    // Check if this track is already shared by the user
+    const { data: existingShare } = await supabase
+      .from("music_shares")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("track_id", track.track_id)
+      .single();
+
+    if (existingShare) {
+      toast.error("You've already shared this track");
+      setSelectedTrack(null);
+      setIsSubmitting(false);
+      return;
+    }
+
     const { error } = await supabase.from("music_shares").insert({
       user_id: user.id,
       track_id: track.track_id,
