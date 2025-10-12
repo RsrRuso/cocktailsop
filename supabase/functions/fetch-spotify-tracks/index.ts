@@ -12,98 +12,54 @@ serve(async (req) => {
   }
 
   try {
-    // Create admin client to bypass RLS
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const youtubeApiKey = Deno.env.get('YOUTUBE_API_KEY');
-    
-    if (!youtubeApiKey) {
-      throw new Error('YouTube API key not configured');
-    }
+    console.log('Seeding popular music library with curated tracks...');
 
-    console.log('Fetching popular music videos from YouTube...');
-
-    // Search for popular music using various popular search terms
-    const searchTerms = [
-      'popular music 2024',
-      'top hits 2025',
-      'trending songs',
-      'pop music',
-      'hip hop music',
-      'rock music',
-      'electronic music'
+    // Curated list of popular music videos - no API required
+    const popularTracks = [
+      { track_id: 'dQw4w9WgXcQ', title: 'Never Gonna Give You Up', artist: 'Rick Astley', duration: '3:33' },
+      { track_id: '9bZkp7q19f0', title: 'PSY - GANGNAM STYLE', artist: 'officialpsy', duration: '4:13' },
+      { track_id: 'kJQP7kiw5Fk', title: 'Luis Fonsi - Despacito ft. Daddy Yankee', artist: 'Luis Fonsi', duration: '4:42' },
+      { track_id: 'JGwWNGJdvx8', title: 'Ed Sheeran - Shape of You', artist: 'Ed Sheeran', duration: '3:54' },
+      { track_id: 'RgKAFK5djSk', title: 'Wiz Khalifa - See You Again ft. Charlie Puth', artist: 'Wiz Khalifa', duration: '3:49' },
+      { track_id: 'CevxZvSJLk8', title: 'Katy Perry - Roar', artist: 'Katy Perry', duration: '3:43' },
+      { track_id: 'OPf0YbXqDm0', title: 'Mark Ronson - Uptown Funk ft. Bruno Mars', artist: 'Mark Ronson', duration: '4:30' },
+      { track_id: '450p7goxZqg', title: 'All of Me (Edited Video)', artist: 'John Legend', duration: '4:30' },
+      { track_id: 'hLQl3WQQoQ0', title: 'Adele - Someone Like You', artist: 'Adele', duration: '4:45' },
+      { track_id: 'fWNaR-rxAic', title: 'Carly Rae Jepsen - Call Me Maybe', artist: 'Carly Rae Jepsen', duration: '3:13' },
+      { track_id: '2vjPBrBU-TM', title: 'Shakira - Waka Waka (This Time for Africa)', artist: 'Shakira', duration: '3:29' },
+      { track_id: 'YQHsXMglC9A', title: 'Adele - Hello', artist: 'Adele', duration: '6:07' },
+      { track_id: 'e-ORhEE9VVg', title: 'Taylor Swift - Blank Space', artist: 'Taylor Swift', duration: '4:32' },
+      { track_id: 'RBumgq5yVrA', title: 'Passenger - Let Her Go', artist: 'Passenger', duration: '4:12' },
+      { track_id: 'pB-5XG-DbAA', title: 'Guns N\' Roses - Sweet Child O\' Mine', artist: 'Guns N\' Roses', duration: '5:56' },
+      { track_id: 'lDK9QqIzhwk', title: 'Linkin Park - Numb', artist: 'Linkin Park', duration: '3:07' },
+      { track_id: 'djV11Xbc914', title: 'a-ha - Take On Me', artist: 'a-ha', duration: '3:46' },
+      { track_id: 'hTWKbfoikeg', title: 'Nirvana - Smells Like Teen Spirit', artist: 'Nirvana', duration: '5:01' },
+      { track_id: 'HgzGwKwLmgM', title: 'Queen - Don\'t Stop Me Now', artist: 'Queen', duration: '3:29' },
+      { track_id: 'fJ9rUzIMcZQ', title: 'Queen - Bohemian Rhapsody', artist: 'Queen', duration: '5:55' },
+      { track_id: 'A_MjCqQoLLA', title: 'Hey Ya! - Outkast', artist: 'Outkast', duration: '3:55' },
+      { track_id: '60ItHLz5WEA', title: 'Avicii - Wake Me Up', artist: 'Avicii', duration: '4:09' },
+      { track_id: 'Zi_XLOBDo_Y', title: 'Michael Jackson - Billie Jean', artist: 'Michael Jackson', duration: '4:54' },
+      { track_id: 'WpYeekQkAdc', title: 'The Weeknd - Blinding Lights', artist: 'The Weeknd', duration: '3:20' },
+      { track_id: 'ru0K8uYEZWw', title: 'CKay - love nwantiti', artist: 'CKay', duration: '2:53' },
     ];
 
-    const allVideos: any[] = [];
-    
-    for (const term of searchTerms) {
-      console.log(`Searching YouTube for: ${term}`);
-      const searchResponse = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(term)}&type=video&videoCategoryId=10&maxResults=15&key=${youtubeApiKey}`,
-        {
-          headers: {
-            'Accept': 'application/json'
-          }
-        }
-      );
+    const formattedTracks = popularTracks.map(track => ({
+      track_id: track.track_id,
+      title: track.title,
+      artist: track.artist,
+      duration: track.duration,
+      preview_url: `https://img.youtube.com/vi/${track.track_id}/hqdefault.jpg`
+    }));
 
-      if (searchResponse.ok) {
-        const searchData = await searchResponse.json();
-        const videoCount = searchData.items?.length || 0;
-        console.log(`Successfully fetched ${videoCount} videos for "${term}"`);
-        if (searchData.items) {
-          // Get video details for duration
-          const videoIds = searchData.items.map((item: any) => item.id.videoId).join(',');
-          const detailsResponse = await fetch(
-            `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds}&key=${youtubeApiKey}`
-          );
-          
-          if (detailsResponse.ok) {
-            const detailsData = await detailsResponse.json();
-            const videosWithDuration = searchData.items.map((item: any, index: number) => ({
-              ...item,
-              duration: detailsData.items[index]?.contentDetails?.duration
-            }));
-            allVideos.push(...videosWithDuration);
-          }
-        }
-      } else {
-        const errorText = await searchResponse.text();
-        console.error(`Failed to search for "${term}": ${searchResponse.status} - ${errorText}`);
-      }
-    }
-
-    console.log(`Fetched ${allVideos.length} total videos from YouTube`);
-
-    // Remove duplicates and format videos
-    const seenVideoIds = new Set();
-    const formattedTracks = allVideos
-      .filter(video => {
-        if (!video || !video.id?.videoId || seenVideoIds.has(video.id.videoId)) {
-          return false;
-        }
-        seenVideoIds.add(video.id.videoId);
-        return true;
-      })
-      .slice(0, 50) // Take top 50 unique videos
-      .map(video => ({
-        track_id: video.id.videoId,
-        title: video.snippet.title,
-        artist: video.snippet.channelTitle,
-        duration: formatYouTubeDuration(video.duration || 'PT0S'),
-        preview_url: video.snippet.thumbnails?.high?.url || video.snippet.thumbnails?.default?.url || null
-      }));
-
-    console.log(`Formatted ${formattedTracks.length} popular tracks`);
-
-    // Clear existing tracks and insert new ones using admin client
     console.log('Clearing existing tracks...');
     await supabaseAdmin.from('popular_music').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     
-    console.log('Inserting new tracks...');
+    console.log('Inserting curated tracks...');
     const { error: insertError } = await supabaseAdmin.from('popular_music').insert(formattedTracks);
     
     if (insertError) {
@@ -126,7 +82,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error fetching Spotify tracks:', error);
+    console.error('Error updating music library:', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       {
@@ -136,18 +92,3 @@ serve(async (req) => {
     );
   }
 });
-
-function formatYouTubeDuration(duration: string): string {
-  // Parse ISO 8601 duration format (e.g., PT4M33S)
-  const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-  if (!match) return '0:00';
-  
-  const hours = (match[1] || '').replace('H', '');
-  const minutes = (match[2] || '').replace('M', '');
-  const seconds = (match[3] || '').replace('S', '');
-  
-  const totalMinutes = (hours ? parseInt(hours) * 60 : 0) + (minutes ? parseInt(minutes) : 0);
-  const totalSeconds = seconds ? parseInt(seconds) : 0;
-  
-  return `${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
-}
