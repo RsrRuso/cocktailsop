@@ -26,6 +26,9 @@ const MusicTicker = () => {
   const { user } = useAuth();
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+  const [position, setPosition] = useState({ x: window.innerWidth - 280, y: window.innerHeight - 200 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     fetchMusicShares();
@@ -102,6 +105,39 @@ const MusicTicker = () => {
     console.log('Opening Spotify player for track:', trackId);
     setPlayingTrackId(trackId);
   };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).tagName === 'IFRAME') return;
+    setIsDragging(true);
+    setDragOffset({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    });
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (isDragging) {
+      setPosition({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, dragOffset]);
 
   const handleDeleteShare = async (shareId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -192,22 +228,30 @@ const MusicTicker = () => {
       </div>
 
       {playingTrackId && (
-        <div className="fixed bottom-4 right-4 z-50 w-80 p-2 glass border-primary/20 bg-background/40 backdrop-blur-xl rounded-xl shadow-2xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-foreground">Now Playing</span>
+        <div 
+          className="fixed z-50 w-56 p-2 bg-background/20 backdrop-blur-md rounded-xl shadow-2xl border border-primary/10 cursor-move"
+          style={{ 
+            left: `${position.x}px`, 
+            top: `${position.y}px`,
+            userSelect: 'none'
+          }}
+          onMouseDown={handleMouseDown}
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-medium text-foreground/80">Now Playing</span>
             <button
               onClick={() => setPlayingTrackId(null)}
-              className="w-6 h-6 rounded-full bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center transition-colors"
+              className="w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors"
             >
-              <X className="w-4 h-4 text-red-500" />
+              <X className="w-3 h-3 text-red-400" />
             </button>
           </div>
-          <div className="rounded-lg overflow-hidden">
+          <div className="rounded-lg overflow-hidden pointer-events-auto">
             <iframe
-              style={{ borderRadius: '12px' }}
+              style={{ borderRadius: '8px' }}
               src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`}
               width="100%"
-              height="152"
+              height="80"
               frameBorder="0"
               allowFullScreen
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
