@@ -49,43 +49,39 @@ serve(async (req) => {
       throw new Error('No Spotify connection found. Please connect your Spotify account first.');
     }
 
-    console.log('Fetching recently played tracks from Spotify...');
+    console.log('Fetching popular tracks from Spotify...');
     console.log('Using access token:', connection.access_token.substring(0, 20) + '...');
 
-    // Fetch user's recently played tracks
-    const recentTracksResponse = await fetch('https://api.spotify.com/v1/me/player/recently-played?limit=50', {
-      headers: {
-        'Authorization': `Bearer ${connection.access_token}`
-      }
-    });
-
-    console.log('Recently played response status:', recentTracksResponse.status);
-
-    if (!recentTracksResponse.ok) {
-      const errorText = await recentTracksResponse.text();
-      console.error('Spotify API error:', recentTracksResponse.status, errorText);
-      throw new Error(`Failed to fetch recently played tracks from Spotify: ${recentTracksResponse.status} ${errorText}`);
-    }
-
-    const recentTracksData = await recentTracksResponse.json();
-    console.log('Recently played data:', JSON.stringify(recentTracksData, null, 2));
-    console.log(`Found ${recentTracksData.items?.length || 0} recently played tracks`);
-
+    // Search for popular tracks across different genres
+    const genres = ['pop', 'rock', 'hip-hop', 'electronic', 'jazz'];
+    const allTracks: any[] = [];
     const trackIds = new Set<string>();
-    const tracks: any[] = [];
-    
-    // Deduplicate tracks
-    for (const item of recentTracksData.items || []) {
-      if (item.track && !trackIds.has(item.track.id)) {
-        trackIds.add(item.track.id);
-        tracks.push(item.track);
+
+    for (const genre of genres) {
+      const searchResponse = await fetch(
+        `https://api.spotify.com/v1/search?q=genre:${genre}&type=track&limit=10`,
+        {
+          headers: {
+            'Authorization': `Bearer ${connection.access_token}`
+          }
+        }
+      );
+
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json();
+        for (const track of searchData.tracks?.items || []) {
+          if (!trackIds.has(track.id)) {
+            trackIds.add(track.id);
+            allTracks.push(track);
+          }
+        }
       }
     }
 
-    console.log(`${tracks.length} unique tracks after deduplication`);
+    console.log(`Found ${allTracks.length} popular tracks`);
 
     // Format tracks for database
-    const formattedTracks = tracks.slice(0, 100).map((track: any) => ({
+    const formattedTracks = allTracks.slice(0, 100).map((track: any) => ({
       track_id: track.id,
       title: track.name,
       artist: track.artists.map((a: any) => a.name).join(', '),
