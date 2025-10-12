@@ -38,7 +38,7 @@ serve(async (req) => {
     // Fetch popular tracks from Spotify (using a popular playlist)
     const playlistId = '37i9dQZEVXbMDoHDwVN2tF'; // Global Top 50 playlist
     const tracksResponse = await fetch(
-      `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=15`,
+      `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`,
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`
@@ -55,7 +55,7 @@ serve(async (req) => {
     // Format tracks for our database
     const formattedTracks = tracksData.items
       .filter((item: any) => item.track && item.track.preview_url)
-      .slice(0, 15)
+      .slice(0, 50)
       .map((item: any) => ({
         track_id: item.track.id,
         title: item.track.name,
