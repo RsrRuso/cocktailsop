@@ -61,7 +61,7 @@ export const playNotificationSound = async (volume: number = 0.5) => {
     // Play the sound
     source.start(0);
   } catch (error) {
-    console.log('Could not play notification sound:', error);
+    // Could not play notification sound
   }
 };
 
@@ -70,8 +70,8 @@ export const playNotificationSoundFromFile = (audioUrl: string = '/notification.
   try {
     const audio = new Audio(audioUrl);
     audio.volume = Math.min(Math.max(volume, 0), 1);
-    audio.play().catch(err => console.log('Could not play audio file:', err));
+    audio.play().catch(() => {});
   } catch (error) {
-    console.log('Could not play notification sound from file:', error);
+    // Could not play notification sound from file
   }
 };

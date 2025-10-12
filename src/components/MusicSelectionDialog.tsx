@@ -64,8 +64,6 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
 
   const searchSpotify = async () => {
     try {
-      console.log('Searching Spotify for:', searchQuery);
-      
       const { data, error } = await supabase.functions.invoke('search-spotify-music', {
         body: { query: searchQuery }
       });
@@ -77,7 +75,6 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
       }
 
       if (data?.tracks) {
-        console.log('Found tracks:', data.tracks.length);
         setPopularTracks(data.tracks);
       }
     } catch (error) {
@@ -89,7 +86,6 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
   const filteredTracks = popularTracks;
 
   const handlePreview = (track: MusicTrack) => {
-    console.log('Preview clicked for track:', track.track_id, track.title);
     if (previewVideoId === track.track_id) {
       setPreviewVideoId(null);
     } else {
@@ -106,14 +102,12 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
 
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
-        console.error('Auth error:', authError);
+
         toast.error("Please log in to share music");
         setSelectedTrack(null);
         setIsSubmitting(false);
         return;
       }
-
-      console.log('Adding music share for user:', user.id, 'track:', track.track_id);
 
       // Check if this track is already shared by the user
       const { data: existingShare, error: checkError } = await supabase
@@ -153,7 +147,6 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
         return;
       }
 
-      console.log('Music share added successfully');
       toast.success(`✓ Now sharing: ${track.title}`);
       setTimeout(() => {
         onOpenChange(false);

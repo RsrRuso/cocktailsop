@@ -587,7 +587,6 @@ const StoryViewer = () => {
               size="icon"
               onClick={(e) => {
                 e.stopPropagation();
-                console.log('Like button clicked');
                 handleLike();
               }}
               className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 z-20"
@@ -605,7 +604,6 @@ const StoryViewer = () => {
               size="icon"
               onClick={(e) => {
                 e.stopPropagation();
-                console.log('Comment button clicked');
                 setShowCommentsDialog(true);
               }}
               className="w-12 h-12 rounded-full bg-transparent hover:bg-white/10 relative z-20"

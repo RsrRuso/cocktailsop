@@ -7,8 +7,6 @@ import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus,
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
-import { TestNotificationButton } from "@/components/TestNotificationButton";
-import { NotificationTestPanel } from "@/components/NotificationTestPanel";
 import { LocalNotifications } from '@capacitor/local-notifications';
 
 interface Notification {
@@ -34,10 +32,9 @@ const Notifications = () => {
     // Request notification permissions
     const requestPermissions = async () => {
       try {
-        const result = await LocalNotifications.requestPermissions();
-        console.log('Notification permissions:', result);
+        await LocalNotifications.requestPermissions();
       } catch (error) {
-        console.log('Notification permissions not available on web');
+        // Notification permissions not available on web
       }
     };
     
@@ -83,7 +80,7 @@ const Notifications = () => {
               ]
             });
           } catch (error) {
-            console.log('Local notifications not available:', error);
+            // Local notifications not available
           }
         }
       )
@@ -197,8 +194,6 @@ const Notifications = () => {
       <TopNav />
 
       <div className="px-4 py-6 space-y-4">
-        <NotificationTestPanel />
-        
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Notifications</h2>
           {notifications.some(n => !n.read) && (
@@ -251,7 +246,6 @@ const Notifications = () => {
         )}
       </div>
 
-      <TestNotificationButton />
       <BottomNav />
     </div>
   );

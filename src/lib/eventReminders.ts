@@ -4,7 +4,6 @@ import { Capacitor } from '@capacitor/core';
 export const scheduleEventReminder = async (eventTitle: string, eventDate: string | null) => {
   // Only works on native platforms
   if (!Capacitor.isNativePlatform()) {
-    console.log('Local notifications only available on native platforms');
     return;
   }
 
@@ -12,7 +11,6 @@ export const scheduleEventReminder = async (eventTitle: string, eventDate: strin
     // Request permission
     const permission = await LocalNotifications.requestPermissions();
     if (permission.display !== 'granted') {
-      console.log('Notification permission not granted');
       return;
     }
 

@@ -13,9 +13,6 @@ export const usePageTransition = () => {
       const endTime = performance.now();
       const duration = endTime - startTime;
       
-      // Log page transition time
-      console.log(`Page ${location.pathname} loaded in ${duration.toFixed(2)}ms`);
-      
       // Warn if slower than 5 seconds
       if (duration > 5000) {
         console.warn(`Slow page load: ${location.pathname} took ${(duration / 1000).toFixed(2)}s`);

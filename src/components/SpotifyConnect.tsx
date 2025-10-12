@@ -37,10 +37,7 @@ const SpotifyConnect = () => {
   };
 
   const handleConnect = async () => {
-    console.log('Connect Spotify button clicked');
-    
     const { data: { user } } = await supabase.auth.getUser();
-    console.log('Current user:', user?.id);
     
     if (!user) {
       toast.error('Please log in first');
@@ -48,7 +45,6 @@ const SpotifyConnect = () => {
     }
 
     const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
-    console.log('Spotify Client ID:', clientId);
     
     if (!clientId || clientId === 'YOUR_SPOTIFY_CLIENT_ID_HERE') {
       toast.error('Spotify Client ID not configured');
@@ -76,8 +72,6 @@ const SpotifyConnect = () => {
       `&scope=${encodeURIComponent(scopes)}` +
       `&state=${user.id}` +
       `&show_dialog=true`;
-
-    console.log('Opening Spotify auth URL:', authUrl);
 
     // Open Spotify auth in new window
     const width = 500;

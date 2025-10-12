@@ -195,10 +195,7 @@ export const smartUpload = async (
       
       try {
         fileToUpload = await compressImage(file);
-        const savedSpace = ((1 - fileToUpload.size / file.size) * 100).toFixed(0);
-        console.log(`Image compressed: ${savedSpace}% smaller`);
       } catch (error) {
-        console.log("Compression failed, uploading original", error);
         fileToUpload = file;
       }
       

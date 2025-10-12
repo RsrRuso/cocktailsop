@@ -88,8 +88,6 @@ const CreateStory = () => {
     }
 
     try {
-      console.log('Starting powerful upload...');
-      
       // Upload files using powerful upload system
       const results = await uploadMultiple('stories', user.id, selectedMedia);
       
@@ -107,8 +105,6 @@ const CreateStory = () => {
         throw new Error('All uploads failed');
       }
 
-      console.log('All files uploaded, checking for existing story...');
-
       // Check if user has an active story (within last 24 hours)
       const { data: existingStories, error: fetchError } = await supabase
         .from("stories")
@@ -122,17 +118,12 @@ const CreateStory = () => {
         throw fetchError;
       }
 
-      console.log('Existing stories found:', existingStories?.length || 0);
-
       if (existingStories && existingStories.length > 0) {
         // Add to the most recent story
         const existingStory = existingStories[0];
-        console.log('Adding to existing story:', existingStory.id);
         
         const updatedMediaUrls = [...(existingStory.media_urls || []), ...uploadedUrls];
         const updatedMediaTypes = [...(existingStory.media_types || []), ...mediaTypes];
-
-        console.log('Updated media count:', updatedMediaUrls.length);
 
         const { error: updateError } = await supabase
           .from("stories")
@@ -150,7 +141,6 @@ const CreateStory = () => {
         toast.success(`Added ${uploadedUrls.length} to your story! (${updatedMediaUrls.length} total)`);
       } else {
         // Create new story
-        console.log('Creating new story');
         
         const { error: insertError } = await supabase
           .from("stories")

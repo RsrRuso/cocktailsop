@@ -183,7 +183,7 @@ const Home = () => {
 
       setStories(storiesWithProfiles);
     } catch (error) {
-      console.error('Fetch stories failed');
+      // Error fetching stories
     }
   }, []);
 

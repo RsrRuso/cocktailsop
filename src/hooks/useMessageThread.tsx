@@ -164,12 +164,10 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          console.log('DELETE event received:', payload);
           const deletedId = payload.old?.id;
           if (deletedId) {
             setMessages((prev) => {
               const filtered = prev.filter((msg) => msg.id !== deletedId);
-              console.log('Messages after delete:', filtered.length);
               return filtered;
             });
           }
@@ -285,7 +283,6 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
   };
 
   const handleDelete = async (messageId: string) => {
-    console.log('Deleting message:', messageId);
     const message = messages.find((m) => m.id === messageId);
 
     // Optimistically remove from UI immediately
@@ -316,7 +313,6 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
         variant: 'destructive',
       });
     } else {
-      console.log('Message deleted successfully from DB');
       toast({
         title: 'Success',
         description: 'Message deleted successfully',

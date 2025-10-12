@@ -53,7 +53,6 @@ const MusicTicker = () => {
           table: "music_shares",
         },
         (payload) => {
-          console.log("New music share:", payload.new);
           fetchMusicShares(); // Refetch for new shares
         }
       )
@@ -65,7 +64,6 @@ const MusicTicker = () => {
           table: "music_shares",
         },
         (payload) => {
-          console.log("Deleted music share:", payload.old);
           setMusicShares(prev => prev.filter(s => s.id !== payload.old.id));
         }
       )
@@ -77,9 +75,8 @@ const MusicTicker = () => {
           table: "music_shares",
         },
         (payload: any) => {
-          console.log("Updated music share counts:", payload.new);
           // Update counts in real-time from trigger updates
-          setMusicShares(prev => prev.map(share => 
+          setMusicShares(prev => prev.map(share =>
             share.id === payload.new.id 
               ? { ...share, like_count: payload.new.like_count, comment_count: payload.new.comment_count }
               : share
@@ -177,7 +174,6 @@ const MusicTicker = () => {
   };
 
   const handlePlayTrack = (trackId: string) => {
-    console.log('Opening Spotify player for track:', trackId);
     setPlayingTrackId(trackId);
   };
 
