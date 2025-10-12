@@ -234,18 +234,28 @@ const Home = () => {
   }, [refreshFeed]);
 
   const handleDeleteReel = async (reelId: string) => {
+    if (!user?.id) {
+      toast.error("Please login to delete reels");
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to delete this reel?")) {
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("reels")
         .delete()
-        .eq("id", reelId);
+        .eq("id", reelId)
+        .eq("user_id", user.id);
 
       if (error) throw error;
       toast.success("Reel deleted successfully");
       refreshFeed();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting reel:', error);
-      toast.error("Failed to delete reel");
+      toast.error(error?.message || "Failed to delete reel");
     }
   };
 
@@ -337,7 +347,7 @@ const Home = () => {
               isLiked={item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)}
               mutedVideos={mutedVideos}
               onLike={() => item.type === 'post' ? handleLikePost(item.id) : handleLikeReel(item.id)}
-              onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : toast.info("Reel deletion coming soon")}
+              onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
               onEdit={() => navigate(`/edit-post/${item.id}`)}
               onComment={() => {
                 setSelectedPostId(item.id);
