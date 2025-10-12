@@ -48,35 +48,64 @@ const MusicTicker = () => {
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "music_shares",
         },
-        () => {
-          fetchMusicShares();
+        (payload) => {
+          console.log("New music share:", payload.new);
+          fetchMusicShares(); // Refetch for new shares
         }
       )
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "DELETE",
+          schema: "public",
+          table: "music_shares",
+        },
+        (payload) => {
+          console.log("Deleted music share:", payload.old);
+          setMusicShares(prev => prev.filter(s => s.id !== payload.old.id));
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "music_shares",
+        },
+        (payload: any) => {
+          console.log("Updated music share counts:", payload.new);
+          // Update counts in real-time from trigger updates
+          setMusicShares(prev => prev.map(share => 
+            share.id === payload.new.id 
+              ? { ...share, like_count: payload.new.like_count, comment_count: payload.new.comment_count }
+              : share
+          ));
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
           schema: "public",
           table: "music_share_likes",
         },
         () => {
-          fetchMusicShares();
           if (user) fetchLikedShares();
         }
       )
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "DELETE",
           schema: "public",
-          table: "music_share_comments",
+          table: "music_share_likes",
         },
         () => {
-          fetchMusicShares();
+          if (user) fetchLikedShares();
         }
       )
       .subscribe();
