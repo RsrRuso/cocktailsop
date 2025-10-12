@@ -29,7 +29,7 @@ const OptimizedAvatar = ({
   const { data: status } = useUserStatus(showStatus ? userId : null);
 
   // Only render image if src exists and no error
-  const shouldShowImage = src && !imageError && !src.startsWith('data:');
+  const shouldShowImage = src && !imageError;
 
   const avatar = (
     <Avatar className={className}>
