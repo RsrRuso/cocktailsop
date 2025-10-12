@@ -44,6 +44,7 @@ const TopNav = () => {
     return localStorage.getItem('selectedRegion') || null;
   });
   const [eventsDialogOpen, setEventsDialogOpen] = useState(false);
+  const [regionDropdownOpen, setRegionDropdownOpen] = useState(false);
   const { isManager } = useManagerRole();
 
   // Determine which badge to show
@@ -233,7 +234,7 @@ const TopNav = () => {
             </button>
 
             {/* Region Dropdown */}
-            <DropdownMenu>
+            <DropdownMenu open={regionDropdownOpen} onOpenChange={setRegionDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <button 
                   onClick={lightTap}
@@ -269,6 +270,7 @@ const TopNav = () => {
                       onClick={() => {
                         lightTap();
                         setEventsDialogOpen(true);
+                        setRegionDropdownOpen(false);
                       }}
                       className="cursor-pointer"
                     >
@@ -281,6 +283,7 @@ const TopNav = () => {
                         onClick={(e) => {
                           e.preventDefault();
                           lightTap();
+                          setRegionDropdownOpen(false);
                         }}
                         className="cursor-pointer p-0"
                       >
