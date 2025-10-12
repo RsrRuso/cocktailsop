@@ -85,7 +85,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  // Use optimized hook for all data
+  // Use optimized hook for all data - removed currentUserId references
   const { 
     profile, 
     posts, 
@@ -129,47 +129,47 @@ const Profile = () => {
 
   // Update career score and fetch regional comparison when data changes
   useEffect(() => {
-    if (profile && experiences && certifications && recognitions) {
+    const updateCareerScore = async () => {
+      if (!profile || !user?.id) return;
+
+      const rawMetrics = calculateCareerScore(experiences, certifications, recognitions);
+      const rawScore = rawMetrics.rawScore;
+
+      await supabase
+        .from('profiles')
+        .update({ career_score: rawScore })
+        .eq('id', user.id);
+
+      const region = profile.region || 'All';
+      
+      let query = supabase
+        .from('profiles')
+        .select('career_score');
+      
+      if (region !== 'All') {
+        query = query.eq('region', region);
+      }
+      
+      const { data: regionalProfiles } = await query
+        .order('career_score', { ascending: false });
+
+      if (regionalProfiles && regionalProfiles.length > 0) {
+        const scores = regionalProfiles.map(p => p.career_score || 0);
+        const maxScore = Math.max(...scores);
+        const userRank = scores.findIndex(s => s <= rawScore) + 1;
+        
+        setRegionalData({
+          maxScore,
+          userRank,
+          totalUsers: regionalProfiles.length
+        });
+      }
+    };
+
+    if (profile && experiences && certifications && recognitions && user?.id) {
       updateCareerScore();
     }
-  }, [experiences, certifications, recognitions, profile]);
-
-  const updateCareerScore = async () => {
-    if (!profile || !user?.id) return;
-
-    const rawMetrics = calculateCareerScore(experiences, certifications, recognitions);
-    const rawScore = rawMetrics.rawScore;
-
-    await supabase
-      .from('profiles')
-      .update({ career_score: rawScore })
-      .eq('id', user.id);
-
-    const region = profile.region || 'All';
-    
-    let query = supabase
-      .from('profiles')
-      .select('career_score');
-    
-    if (region !== 'All') {
-      query = query.eq('region', region);
-    }
-    
-    const { data: regionalProfiles } = await query
-      .order('career_score', { ascending: false });
-
-    if (regionalProfiles && regionalProfiles.length > 0) {
-      const scores = regionalProfiles.map(p => p.career_score || 0);
-      const maxScore = Math.max(...scores);
-      const userRank = scores.findIndex(s => s <= rawScore) + 1;
-      
-      setRegionalData({
-        maxScore,
-        userRank,
-        totalUsers: regionalProfiles.length
-      });
-    }
-  };
+  }, [experiences, certifications, recognitions, profile, user?.id]);
 
   const fetchStories = async () => {
     if (!user?.id) return;
