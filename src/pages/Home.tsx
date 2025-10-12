@@ -369,7 +369,7 @@ const Home = () => {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
-            className="w-[calc(100vw-2rem)] max-w-md mx-4 glass border border-border/50 shadow-2xl z-50 bg-background/95 backdrop-blur-xl"
+            className="w-64 glass border border-border/50 shadow-2xl z-50 bg-background/95 backdrop-blur-xl"
             align="center"
           >
             {isManager && (
@@ -377,24 +377,19 @@ const Home = () => {
                 <CreateEventDialog />
               </div>
             )}
-            <div className="grid grid-cols-2 gap-2 p-2">
-              {regions.map((region) => (
-                <DropdownMenuItem
-                  key={region.name}
-                  className={`cursor-pointer rounded-xl p-4 bg-gradient-to-br ${region.gradient} relative overflow-hidden group transition-all hover:scale-105 focus:scale-105 ${selectedRegion === region.name ? 'ring-2 ring-white' : ''}`}
-                  onClick={() => {
-                    setSelectedRegion(region.name);
-                    toast.success(`Now showing content from ${region.name}`);
-                  }}
-                >
-                  <div className="relative z-10 flex items-center gap-3">
-                    <span className="text-3xl">{region.flag}</span>
-                    <span className="text-sm font-bold text-white">{region.name}</span>
-                  </div>
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
-                </DropdownMenuItem>
-              ))}
-            </div>
+            {regions.map((region) => (
+              <DropdownMenuItem
+                key={region.name}
+                className={`cursor-pointer py-2.5 px-3 flex items-center gap-3 ${selectedRegion === region.name ? 'bg-primary/20 text-primary font-semibold' : ''}`}
+                onClick={() => {
+                  setSelectedRegion(region.name);
+                  toast.success(`Now showing content from ${region.name}`);
+                }}
+              >
+                <span className="text-xl">{region.flag}</span>
+                <span className="text-sm">{region.name}</span>
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
