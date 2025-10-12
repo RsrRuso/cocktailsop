@@ -151,7 +151,7 @@ All colors MUST be HSL.
 }
 
 .animate-scroll-left {
-  animation: scroll-left 20s linear infinite;
+  animation: scroll-left 15s linear infinite;
 }
 
 .animate-scroll-left:hover {
