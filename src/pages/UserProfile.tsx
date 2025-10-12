@@ -371,7 +371,7 @@ const UserProfile = () => {
                       <div 
                         key={`reel-${item.id}`} 
                         className="glass rounded-xl overflow-hidden cursor-pointer border border-border/50"
-                        onClick={() => navigate('/reels')}
+                        onClick={() => navigate('/reels', { state: { scrollToReelId: item.id } })}
                       >
                         <video
                           src={item.video_url}
