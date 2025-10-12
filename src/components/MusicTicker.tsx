@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
-import { Music, X, Heart, MessageCircle } from "lucide-react";
+import { Music, X, Heart, MessageCircle, Send } from "lucide-react";
 import { Dialog, DialogContent, DialogOverlay, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { MusicShareCommentsDialog } from "./MusicShareCommentsDialog";
+import MusicSelectionDialog from "./MusicSelectionDialog";
 
 interface MusicShare {
   id: string;
@@ -34,6 +35,7 @@ const MusicTicker = () => {
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
   const [likedShares, setLikedShares] = useState<Set<string>>(new Set());
   const [selectedShareForComments, setSelectedShareForComments] = useState<MusicShare | null>(null);
+  const [showMusicSelection, setShowMusicSelection] = useState(false);
 
   useEffect(() => {
     fetchMusicShares();
@@ -199,18 +201,39 @@ const MusicTicker = () => {
 
   if (musicShares.length === 0) {
     return (
-      <div className="w-full py-4 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50">
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">🎵 No music shared yet - be the first to share!</p>
+      <>
+        <div className="w-full py-4 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50">
+          <div className="flex items-center justify-center gap-3">
+            <p className="text-sm text-muted-foreground">🎵 No music shared yet</p>
+            <Button
+              onClick={() => setShowMusicSelection(true)}
+              size="sm"
+              className="h-7 gap-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+            >
+              <Send className="w-3.5 h-3.5" />
+              Share Music
+            </Button>
+          </div>
         </div>
-      </div>
+        <MusicSelectionDialog
+          open={showMusicSelection}
+          onOpenChange={setShowMusicSelection}
+        />
+      </>
     );
   }
 
   return (
     <>
-      
       <div className="w-full overflow-x-auto py-2 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50 relative scrollbar-hide">
+        <Button
+          onClick={() => setShowMusicSelection(true)}
+          size="sm"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-7 gap-1.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg"
+        >
+          <Send className="w-3.5 h-3.5" />
+          Share
+        </Button>
         <div className="flex gap-4 px-4 animate-scroll-left" style={{ width: 'max-content' }}>
           {[...musicShares, ...musicShares, ...musicShares].map((share, index) => {
             const isLiked = likedShares.has(share.id);
@@ -334,6 +357,11 @@ const MusicTicker = () => {
           trackArtist={selectedShareForComments.track_artist}
         />
       )}
+
+      <MusicSelectionDialog
+        open={showMusicSelection}
+        onOpenChange={setShowMusicSelection}
+      />
     </>
   );
 };
