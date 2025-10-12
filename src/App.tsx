@@ -6,6 +6,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InAppNotificationProvider } from "@/contexts/InAppNotificationContext";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { RoutePreloader } from "@/components/RoutePreloader";
 
 // Eager load ONLY index/landing/auth (no user data)
 import Index from "./pages/Index";
@@ -65,13 +69,16 @@ const PageLoader = () => (
 );
 
 const App = () => (
-  <TooltipProvider>
-    <InAppNotificationProvider>
-      <BrowserRouter>
-        <Toaster />
-        <Sonner />
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <InAppNotificationProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <RoutePreloader />
+            <Toaster />
+            <Sonner />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/landing" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
@@ -116,11 +123,13 @@ const App = () => (
           <Route path="/update-music-library" element={<UpdateMusicLibrary />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </InAppNotificationProvider>
-  </TooltipProvider>
+              </Routes>
+            </Suspense>
+          </AuthProvider>
+        </BrowserRouter>
+      </InAppNotificationProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;
