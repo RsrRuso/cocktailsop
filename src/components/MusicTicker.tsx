@@ -118,7 +118,7 @@ const MusicTicker = () => {
 
   return (
     <>
-      <div className="w-full overflow-hidden py-4 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50 relative">
+      <div className="w-full overflow-hidden py-2 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50 relative">
         <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10" />
         <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10" />
         
@@ -130,7 +130,7 @@ const MusicTicker = () => {
             return (
               <div
                 key={`${share.id}-${index}`}
-                className="flex items-center gap-3 px-4 py-3 bg-gradient-to-br from-card to-card/50 rounded-xl border border-primary/20 shadow-lg shrink-0 min-w-[300px] max-w-[300px] hover:scale-105 hover:shadow-xl hover:border-primary/40 transition-all cursor-pointer group relative"
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-br from-card to-card/50 rounded-lg border border-primary/20 shadow-lg shrink-0 min-w-[280px] max-w-[280px] hover:scale-105 hover:shadow-xl hover:border-primary/40 transition-all cursor-pointer group relative"
                 onClick={() => handlePlayTrack(track.track_id)}
               >
                 {user?.id === share.user_id && (
@@ -147,27 +147,27 @@ const MusicTicker = () => {
                     <img 
                       src={track.preview_url} 
                       alt={share.track_title}
-                      className="w-14 h-14 object-cover rounded-lg"
+                      className="w-10 h-10 object-cover rounded-lg"
                     />
                     <div className="absolute inset-0 bg-black/20 rounded-lg group-hover:bg-black/0 transition-all" />
                   </div>
                 )}
                 
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mb-1">
+                  <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1 mb-0.5">
                     <OptimizedAvatar
                       src={share.profile?.avatar_url}
                       alt={share.profile?.username || 'User'}
-                      className="w-4 h-4 inline-block ring-1 ring-primary/20"
+                      className="w-3 h-3 inline-block ring-1 ring-primary/20"
                     />
                     <span className="font-medium">@{share.profile?.username || 'Unknown'}</span>
                   </p>
-                  <p className="font-bold text-sm truncate text-foreground">{share.track_title}</p>
-                  <p className="text-xs text-muted-foreground truncate">{share.track_artist}</p>
+                  <p className="font-bold text-xs truncate text-foreground">{share.track_title}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{share.track_artist}</p>
                 </div>
 
-                <div className="shrink-0 bg-green-500/10 p-2 rounded-lg group-hover:bg-green-500/20 transition-colors">
-                  <Music className="w-5 h-5 text-green-500" />
+                <div className="shrink-0 bg-green-500/10 p-1.5 rounded-lg group-hover:bg-green-500/20 transition-colors">
+                  <Music className="w-4 h-4 text-green-500" />
                 </div>
               </div>
             );
