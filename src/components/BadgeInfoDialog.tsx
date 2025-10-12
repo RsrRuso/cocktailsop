@@ -11,6 +11,7 @@ interface BadgeInfoDialogProps {
   badgeLevel?: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
   username?: string;
   isOwnProfile?: boolean;
+  professionalScore?: number;
 }
 
 const BadgeInfoDialog = ({ 
@@ -20,7 +21,8 @@ const BadgeInfoDialog = ({
   isVerified, 
   badgeLevel = 'bronze',
   username = 'User',
-  isOwnProfile = true
+  isOwnProfile = true,
+  professionalScore
 }: BadgeInfoDialogProps) => {
   const badgeLevelInfo = {
     bronze: {
@@ -141,6 +143,56 @@ const BadgeInfoDialog = ({
                   <Badge variant="secondary">Enhanced Trust</Badge>
                   <Badge variant="secondary">Venue Access</Badge>
                   <Badge variant="secondary">Professional Features</Badge>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Professional Badge Section */}
+          {professionalScore !== undefined && (
+            <div className="relative p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-orange-500/10 border-2 border-purple-400/30">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="relative">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-purple-400 via-pink-500 to-orange-400 blur-xl opacity-50" />
+                  <Award className="w-12 h-12 text-purple-400 relative" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent">
+                    Professional Badge
+                  </h3>
+                  <p className="text-sm text-muted-foreground">Score: {professionalScore}/100</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">How is the Professional Score calculated?</p>
+                <div className="text-xs text-muted-foreground space-y-2">
+                  <div>
+                    <p className="font-medium text-foreground">Base Score (up to 45 points):</p>
+                    <p className="ml-2">Based on your professional title. Default is 75 × 60% = 45 points.</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Status Bonuses (up to +18 points):</p>
+                    <ul className="ml-2 space-y-0.5">
+                      <li>• Founder: +10 points</li>
+                      <li>• Verified: +8 points</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Badge Level Bonus (up to +15 points):</p>
+                    <ul className="ml-2 space-y-0.5">
+                      <li>• Bronze: +3 | Silver: +6 | Gold: +9</li>
+                      <li>• Platinum: +12 | Diamond: +15</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Engagement Score (up to +10 points):</p>
+                    <p className="ml-2">Average engagement from your posts and reels.</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Activity Bonus (up to +8 points):</p>
+                    <p className="ml-2">Active content creation (posts, reels, stories).</p>
+                  </div>
+                  <p className="font-medium text-foreground pt-2">Total: Maximum 100 points</p>
                 </div>
               </div>
             </div>
