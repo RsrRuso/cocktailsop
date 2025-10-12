@@ -65,7 +65,7 @@ export const FeedItem = memo(({
             alt={item.profiles?.username || 'User'}
             fallback={item.profiles?.username?.[0] || '?'}
             userId={item.user_id}
-            className={`w-10 h-10 avatar-glow ring-1 ring-offset-1 ring-offset-background bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-gray-400 to-gray-200'}`}
+            className={`w-10 h-10 avatar-3d ring-1 ring-offset-1 ring-offset-background bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-gray-400 to-gray-200'}`}
           />
         </div>
         <div 

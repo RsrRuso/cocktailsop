@@ -250,7 +250,7 @@ const Profile = () => {
       
       {/* Cover Photo */}
       {coverUrl && (
-        <div className="w-full h-48 overflow-hidden">
+        <div className="w-full h-48 overflow-hidden cover-3d rounded-b-2xl">
           <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
         </div>
       )}
@@ -270,7 +270,7 @@ const Profile = () => {
                     alt={profile.username}
                     fallback={profile.username[0]}
                     userId={currentUserId}
-                    className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)}`}
+                    className={`w-24 h-24 avatar-3d ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)}`}
                     showStatus={true}
                     showAddButton={true}
                     onAddStatusClick={() => setShowStatusDialog(true)}

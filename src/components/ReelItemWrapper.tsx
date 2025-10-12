@@ -172,14 +172,14 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
             alt={reel.profiles?.username || 'User'}
             fallback={reel.profiles?.username?.[0] || '?'}
             userId={reel.user_id}
-            className="w-10 h-10 border-2 border-white"
+            className="w-10 h-10 border-2 border-white avatar-3d"
           />
-          <p className="text-white font-semibold">@{reel.profiles?.username}</p>
+          <p className="text-white font-semibold text-3d-neon">@{reel.profiles?.username}</p>
         </div>
-        <p className="text-white text-sm line-clamp-2">{reel.caption}</p>
+        <p className="text-white text-sm line-clamp-2 text-3d-neon">{reel.caption}</p>
         <div className="flex items-center gap-2">
           <Music className="w-4 h-4 text-white" />
-          <p className="text-white text-xs">Original Audio</p>
+          <p className="text-white text-xs text-3d-neon">Original Audio</p>
         </div>
       </div>
     </div>

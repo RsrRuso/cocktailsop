@@ -241,7 +241,7 @@ const UserProfile = () => {
       
       {/* Cover Photo */}
       {profile.cover_url && (
-        <div className="w-full h-48 overflow-hidden">
+        <div className="w-full h-48 overflow-hidden cover-3d rounded-b-2xl">
           <img src={profile.cover_url} alt="Cover" className="w-full h-full object-cover" />
         </div>
       )}
@@ -272,7 +272,7 @@ const UserProfile = () => {
                   alt={profile.username}
                   fallback={profile.username[0]}
                   userId={userId!}
-                  className={`w-24 h-24 avatar-glow ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)} cursor-pointer hover:scale-105 transition-transform`}
+                  className={`w-24 h-24 avatar-3d ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)} cursor-pointer`}
                   showStatus={true}
                 />
               </AvatarClickMenu>
