@@ -222,7 +222,7 @@ const MusicTicker = () => {
             <iframe
               key={iframeKey}
               style={{ borderRadius: '8px' }}
-              src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`}
+              src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0&autoplay=1`}
               width="100%"
               height="80"
               frameBorder="0"
