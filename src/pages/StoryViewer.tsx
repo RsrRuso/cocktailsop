@@ -49,6 +49,11 @@ const StoryViewer = () => {
   const [showViewersDialog, setShowViewersDialog] = useState(false);
   const [showLikesDialog, setShowLikesDialog] = useState(false);
   const [showCommentsDialog, setShowCommentsDialog] = useState(false);
+
+  // Pause story when any dialog is open
+  useEffect(() => {
+    setIsPaused(showViewersDialog || showLikesDialog || showCommentsDialog);
+  }, [showViewersDialog, showLikesDialog, showCommentsDialog]);
   const [lastTap, setLastTap] = useState(0);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);

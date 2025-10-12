@@ -112,6 +112,9 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
         });
 
       if (error) throw error;
+      
+      // Successfully posted
+      toast.success("Comment posted!");
     } catch (error) {
       console.error("Error posting comment:", error);
       toast.error("Failed to post comment");
