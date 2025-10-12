@@ -10,7 +10,19 @@ const UpdateMusicLibrary = () => {
   const handleUpdateTracks = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-spotify-tracks');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error("Please log in first");
+        setIsLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('fetch-spotify-tracks', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
 
       if (error) throw error;
 
@@ -35,13 +47,13 @@ const UpdateMusicLibrary = () => {
           <h1 className="text-3xl font-bold">Music Library</h1>
         </div>
         <p className="text-muted-foreground mb-6">
-          Load a curated collection of 25+ popular music tracks. This library includes classics and hits 
-          from various genres - all fully playable through YouTube.
+          Sync your Spotify library to share your favorite tracks with others. 
+          This will load up to 50 of your saved tracks from Spotify.
         </p>
         <div className="bg-accent/50 rounded-lg p-4 mb-6">
-          <p className="text-sm font-medium mb-2">🎵 No API Keys Required</p>
+          <p className="text-sm font-medium mb-2">🎵 Spotify Connected</p>
           <p className="text-xs text-muted-foreground">
-            Pre-selected collection of popular tracks ready to use. Each track plays in full through YouTube embeds.
+            Your Spotify account is connected. Click below to sync your saved tracks.
           </p>
         </div>
         <Button 

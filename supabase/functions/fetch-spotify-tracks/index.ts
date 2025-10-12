@@ -12,55 +12,80 @@ serve(async (req) => {
   }
 
   try {
+    // Get the authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('Seeding popular music library with curated tracks...');
+    // Create a Supabase client with the user's JWT
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
 
-    // Curated list of popular music videos - no API required
-    const popularTracks = [
-      { track_id: 'dQw4w9WgXcQ', title: 'Never Gonna Give You Up', artist: 'Rick Astley', duration: '3:33' },
-      { track_id: '9bZkp7q19f0', title: 'PSY - GANGNAM STYLE', artist: 'officialpsy', duration: '4:13' },
-      { track_id: 'kJQP7kiw5Fk', title: 'Luis Fonsi - Despacito ft. Daddy Yankee', artist: 'Luis Fonsi', duration: '4:42' },
-      { track_id: 'JGwWNGJdvx8', title: 'Ed Sheeran - Shape of You', artist: 'Ed Sheeran', duration: '3:54' },
-      { track_id: 'RgKAFK5djSk', title: 'Wiz Khalifa - See You Again ft. Charlie Puth', artist: 'Wiz Khalifa', duration: '3:49' },
-      { track_id: 'CevxZvSJLk8', title: 'Katy Perry - Roar', artist: 'Katy Perry', duration: '3:43' },
-      { track_id: 'OPf0YbXqDm0', title: 'Mark Ronson - Uptown Funk ft. Bruno Mars', artist: 'Mark Ronson', duration: '4:30' },
-      { track_id: '450p7goxZqg', title: 'All of Me (Edited Video)', artist: 'John Legend', duration: '4:30' },
-      { track_id: 'hLQl3WQQoQ0', title: 'Adele - Someone Like You', artist: 'Adele', duration: '4:45' },
-      { track_id: 'fWNaR-rxAic', title: 'Carly Rae Jepsen - Call Me Maybe', artist: 'Carly Rae Jepsen', duration: '3:13' },
-      { track_id: '2vjPBrBU-TM', title: 'Shakira - Waka Waka (This Time for Africa)', artist: 'Shakira', duration: '3:29' },
-      { track_id: 'YQHsXMglC9A', title: 'Adele - Hello', artist: 'Adele', duration: '6:07' },
-      { track_id: 'e-ORhEE9VVg', title: 'Taylor Swift - Blank Space', artist: 'Taylor Swift', duration: '4:32' },
-      { track_id: 'RBumgq5yVrA', title: 'Passenger - Let Her Go', artist: 'Passenger', duration: '4:12' },
-      { track_id: 'pB-5XG-DbAA', title: 'Guns N\' Roses - Sweet Child O\' Mine', artist: 'Guns N\' Roses', duration: '5:56' },
-      { track_id: 'lDK9QqIzhwk', title: 'Linkin Park - Numb', artist: 'Linkin Park', duration: '3:07' },
-      { track_id: 'djV11Xbc914', title: 'a-ha - Take On Me', artist: 'a-ha', duration: '3:46' },
-      { track_id: 'hTWKbfoikeg', title: 'Nirvana - Smells Like Teen Spirit', artist: 'Nirvana', duration: '5:01' },
-      { track_id: 'HgzGwKwLmgM', title: 'Queen - Don\'t Stop Me Now', artist: 'Queen', duration: '3:29' },
-      { track_id: 'fJ9rUzIMcZQ', title: 'Queen - Bohemian Rhapsody', artist: 'Queen', duration: '5:55' },
-      { track_id: 'A_MjCqQoLLA', title: 'Hey Ya! - Outkast', artist: 'Outkast', duration: '3:55' },
-      { track_id: '60ItHLz5WEA', title: 'Avicii - Wake Me Up', artist: 'Avicii', duration: '4:09' },
-      { track_id: 'Zi_XLOBDo_Y', title: 'Michael Jackson - Billie Jean', artist: 'Michael Jackson', duration: '4:54' },
-      { track_id: 'WpYeekQkAdc', title: 'The Weeknd - Blinding Lights', artist: 'The Weeknd', duration: '3:20' },
-      { track_id: 'ru0K8uYEZWw', title: 'CKay - love nwantiti', artist: 'CKay', duration: '2:53' },
-    ];
+    // Get the current user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      throw new Error('User not authenticated');
+    }
 
-    const formattedTracks = popularTracks.map(track => ({
-      track_id: track.track_id,
-      title: track.title,
-      artist: track.artist,
-      duration: track.duration,
-      preview_url: `https://img.youtube.com/vi/${track.track_id}/hqdefault.jpg`
+    console.log('Fetching Spotify connection for user:', user.id);
+
+    // Get the user's Spotify connection
+    const { data: connection, error: connectionError } = await supabaseAdmin
+      .from('spotify_connections')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (connectionError || !connection) {
+      throw new Error('No Spotify connection found. Please connect your Spotify account first.');
+    }
+
+    console.log('Fetching tracks from Spotify...');
+
+    // Fetch user's saved tracks from Spotify
+    const spotifyResponse = await fetch('https://api.spotify.com/v1/me/tracks?limit=50', {
+      headers: {
+        'Authorization': `Bearer ${connection.access_token}`
+      }
+    });
+
+    if (!spotifyResponse.ok) {
+      const errorText = await spotifyResponse.text();
+      console.error('Spotify API error:', errorText);
+      throw new Error('Failed to fetch tracks from Spotify');
+    }
+
+    const spotifyData = await spotifyResponse.json();
+    const tracks = spotifyData.items;
+
+    console.log(`Found ${tracks.length} tracks from Spotify`);
+
+    // Format tracks for database
+    const formattedTracks = tracks.map((item: any) => ({
+      track_id: item.track.id,
+      title: item.track.name,
+      artist: item.track.artists.map((a: any) => a.name).join(', '),
+      duration: Math.floor(item.track.duration_ms / 1000 / 60) + ':' + 
+                String(Math.floor(item.track.duration_ms / 1000) % 60).padStart(2, '0'),
+      preview_url: item.track.album.images[0]?.url || null
     }));
 
     console.log('Clearing existing tracks...');
     await supabaseAdmin.from('popular_music').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     
-    console.log('Inserting curated tracks...');
-    const { error: insertError } = await supabaseAdmin.from('popular_music').insert(formattedTracks);
+    console.log('Inserting user tracks...');
+    const { error: insertError } = await supabaseAdmin
+      .from('popular_music')
+      .insert(formattedTracks);
     
     if (insertError) {
       console.error('Insert error:', insertError);
@@ -72,7 +97,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: `Successfully updated ${formattedTracks.length} tracks`,
+        message: `Successfully updated ${formattedTracks.length} tracks from your Spotify library`,
         count: formattedTracks.length 
       }),
       {
