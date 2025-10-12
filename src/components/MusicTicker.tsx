@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
 import { Music, X } from "lucide-react";
+import { Dialog, DialogContent } from "./ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -191,30 +192,24 @@ const MusicTicker = () => {
         </div>
       </div>
 
-      {playingTrackId && (
-        <div className="fixed top-4 right-4 z-50 w-56 bg-background/20 backdrop-blur-md rounded-xl shadow-2xl border border-primary/10">
-          <div className="flex items-center justify-between p-2 pb-1.5">
-            <span className="text-[10px] font-medium text-foreground/80">🎵 Click ▶️ inside player to start</span>
-            <button
-              onClick={() => setPlayingTrackId(null)}
-              className="w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors"
-              title="Close"
-            >
-              <X className="w-3 h-3 text-red-400" />
-            </button>
-          </div>
-          <div className="px-2 pb-2">
-            <iframe
-              style={{ borderRadius: '8px' }}
-              src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`}
-              width="100%"
-              height="80"
-              frameBorder="0"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            />
-          </div>
-        </div>
-      )}
+      <Dialog open={!!playingTrackId} onOpenChange={() => setPlayingTrackId(null)}>
+        <DialogContent className="max-w-sm p-2 glass border-primary/20 bg-background/40 backdrop-blur-xl">
+          {playingTrackId && (
+            <div className="rounded-lg overflow-hidden">
+              <iframe
+                style={{ borderRadius: '12px' }}
+                src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`}
+                width="100%"
+                height="152"
+                frameBorder="0"
+                allowFullScreen
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                loading="lazy"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
