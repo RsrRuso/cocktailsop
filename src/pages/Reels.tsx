@@ -49,7 +49,6 @@ const Reels = () => {
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [showLikes, setShowLikes] = useState(false);
   const [selectedReelForLikes, setSelectedReelForLikes] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
 
   // Auto-unmute current reel, mute others
   useEffect(() => {
@@ -80,23 +79,24 @@ const Reels = () => {
   // Handle navigation to specific reel
   useEffect(() => {
     const state = location.state as { scrollToReelId?: string };
-    if (state?.scrollToReelId && reels.length > 0 && !isLoading) {
+    if (state?.scrollToReelId && reels.length > 0) {
       const reelIndex = reels.findIndex(r => r.id === state.scrollToReelId);
       if (reelIndex !== -1) {
         setCurrentIndex(reelIndex);
-        // Scroll to that reel
-        const container = document.querySelector('.snap-y');
-        if (container) {
-          container.scrollTop = reelIndex * window.innerHeight;
-        }
+        // Immediately scroll to that reel
+        setTimeout(() => {
+          const container = document.querySelector('.snap-y');
+          if (container) {
+            container.scrollTop = reelIndex * window.innerHeight;
+          }
+        }, 0);
         // Clear the state
         navigate(location.pathname, { replace: true });
       }
     }
-  }, [location.state, reels, isLoading, navigate, location.pathname]);
+  }, [location.state, reels, navigate, location.pathname]);
 
   const fetchReels = async () => {
-    setIsLoading(true);
     // Fetch reels WITHOUT expensive profile joins
     const { data, error } = await supabase
       .from("reels")
@@ -104,10 +104,7 @@ const Reels = () => {
       .order("created_at", { ascending: false })
       .limit(10);
 
-    if (error || !data) {
-      setIsLoading(false);
-      return;
-    }
+    if (error || !data) return;
 
     // Fetch profiles separately in ONE query
     const userIds = [...new Set(data.map(r => r.user_id))];
@@ -123,7 +120,6 @@ const Reels = () => {
     }));
 
     setReels(reelsWithProfiles);
-    setIsLoading(false);
   };
 
   const fetchLikedReels = async () => {
@@ -222,11 +218,7 @@ const Reels = () => {
     <div className="h-screen bg-background overflow-hidden relative">
       <TopNav />
       
-      {isLoading ? (
-        <div className="h-full flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      ) : reels.length === 0 ? (
+      {reels.length === 0 ? (
         <div className="h-full flex items-center justify-center px-4">
           <div className="text-center space-y-4">
             <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
