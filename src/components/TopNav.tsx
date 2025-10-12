@@ -155,6 +155,22 @@ const TopNav = () => {
       <div className="fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
+            {/* Badge Level Indicator - Moved to left corner */}
+            {currentUser?.badge_level && (
+              <div className="relative group">
+                <div className={`absolute -inset-2 bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} blur-lg opacity-50 group-hover:opacity-75 transition-all duration-300 ${currentUser.badge_level === 'platinum' ? 'rounded-xl' : 'rounded-full'} animate-pulse`} />
+                {currentUser.badge_level === 'platinum' ? (
+                  <div className={`relative w-10 h-10 rounded-xl bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                    <Star className="w-5 h-5 text-white" strokeWidth={2.5} fill="none" />
+                  </div>
+                ) : (
+                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center text-sm font-bold text-white shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                    {currentUser.badge_level[0].toUpperCase()}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Music Button */}
             <button
               onClick={() => {
@@ -200,22 +216,6 @@ const TopNav = () => {
 
             {/* Spotify Connect */}
             {/* <SpotifyConnect /> */}
-
-            {/* Badge Level Indicator */}
-            {currentUser?.badge_level && (
-              <div className="relative group">
-                <div className={`absolute -inset-2 bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} blur-lg opacity-50 group-hover:opacity-75 transition-all duration-300 ${currentUser.badge_level === 'platinum' ? 'rounded-xl' : 'rounded-full'} animate-pulse`} />
-                {currentUser.badge_level === 'platinum' ? (
-                  <div className={`relative w-10 h-10 rounded-xl bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
-                    <Star className="w-5 h-5 text-white" strokeWidth={2.5} fill="none" />
-                  </div>
-                ) : (
-                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center text-sm font-bold text-white shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
-                    {currentUser.badge_level[0].toUpperCase()}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-2">
