@@ -128,7 +128,7 @@ const Notifications = () => {
   };
 
   const isNotificationClickable = (notification: Notification) => {
-    return !!(notification.post_id || notification.reel_id || notification.story_id || notification.reference_user_id);
+    return !!(notification.post_id || notification.reel_id || notification.story_id || notification.music_share_id || notification.reference_user_id);
   };
 
   const getNotificationIcon = (type: string) => {
@@ -196,10 +196,14 @@ const Notifications = () => {
       case 'new_post':
       case 'new_reel':
       case 'new_story':
-      case 'new_music':
         if (notification.reference_user_id) {
           navigate(`/user/${notification.reference_user_id}`);
         }
+        break;
+      
+      case 'new_music':
+        // Navigate to Thunder (music) page
+        navigate('/thunder');
         break;
       
       case 'new_user':
