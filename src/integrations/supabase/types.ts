@@ -1532,6 +1532,60 @@ export type Database = {
         }
         Relationships: []
       }
+      work_experiences: {
+        Row: {
+          company_name: string
+          created_at: string | null
+          description: string | null
+          employment_type: string
+          end_date: string | null
+          id: string
+          is_current: boolean | null
+          is_project: boolean | null
+          location: string | null
+          position: string
+          project_link: string | null
+          skills: string[] | null
+          start_date: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string | null
+          description?: string | null
+          employment_type: string
+          end_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          is_project?: boolean | null
+          location?: string | null
+          position: string
+          project_link?: string | null
+          skills?: string[] | null
+          start_date: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string | null
+          description?: string | null
+          employment_type?: string
+          end_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          is_project?: boolean | null
+          location?: string | null
+          position?: string
+          project_link?: string | null
+          skills?: string[] | null
+          start_date?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

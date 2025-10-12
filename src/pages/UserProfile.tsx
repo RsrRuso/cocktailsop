@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Star, Heart, MessageCircle, Volume2, VolumeX, Play, Award, TrendingUp, Target, CheckCircle } from "lucide-react";
+import { ArrowLeft, Star, Heart, MessageCircle, Volume2, VolumeX, Play, Award, TrendingUp, Target, CheckCircle, Briefcase } from "lucide-react";
 import FollowersDialog from "@/components/FollowersDialog";
 import FollowingDialog from "@/components/FollowingDialog";
 import { VenueVerification } from "@/components/VenueVerification";
@@ -17,6 +17,7 @@ import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CareerMetricsDialog from "@/components/CareerMetricsDialog";
 import AvatarClickMenu from "@/components/AvatarClickMenu";
 import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore } from "@/lib/profileUtils";
+import { ExperienceTimeline } from "@/components/ExperienceTimeline";
 
 interface Profile {
   username: string;
@@ -70,8 +71,16 @@ const UserProfile = () => {
   const [metricsDialogOpen, setMetricsDialogOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<"network" | "professional" | null>(null);
   const [hasStory, setHasStory] = useState(false);
+  const [experiences, setExperiences] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
+    const initUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    };
+    initUser();
+
     if (userId) {
       // Fetch all data in parallel for faster loading
       Promise.all([
@@ -79,7 +88,8 @@ const UserProfile = () => {
         checkFollowStatus(),
         fetchPosts(),
         fetchReels(),
-        checkForStory()
+        checkForStory(),
+        fetchExperiences()
       ]).then(() => {
         // Track view after data loads to avoid blocking
         trackProfileView();
@@ -176,6 +186,18 @@ const UserProfile = () => {
       .limit(20);
 
     if (data) setReels(data);
+  };
+
+  const fetchExperiences = async () => {
+    if (!userId) return;
+
+    const { data } = await supabase
+      .from("work_experiences")
+      .select("*")
+      .eq("user_id", userId)
+      .order("start_date", { ascending: false });
+
+    if (data) setExperiences(data);
   };
 
   const handleFollow = async () => {
@@ -580,6 +602,20 @@ const UserProfile = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Work Experience Timeline */}
+            <div className="glass rounded-xl p-4 space-y-4 border border-border/50">
+              <h4 className="font-semibold text-lg flex items-center gap-2">
+                <Briefcase className="w-5 h-5" />
+                Work Experience & Projects
+              </h4>
+              <ExperienceTimeline
+                experiences={experiences}
+                userId={userId || ""}
+                onUpdate={fetchExperiences}
+                isOwnProfile={false}
+              />
             </div>
 
             {/* Venue Verification */}

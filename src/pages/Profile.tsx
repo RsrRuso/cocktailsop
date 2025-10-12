@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { LogOut, Settings, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX, Play, Phone, MessageSquare, Globe, Award, TrendingUp, Target, CheckCircle, Sparkles, BadgeCheck } from "lucide-react";
+import { LogOut, Settings, Star, Trash2, Heart, MessageCircle, Volume2, VolumeX, Play, Phone, MessageSquare, Globe, Award, TrendingUp, Target, CheckCircle, Sparkles, BadgeCheck, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import FollowersDialog from "@/components/FollowersDialog";
@@ -20,6 +20,7 @@ import CareerMetricsDialog from "@/components/CareerMetricsDialog";
 import CreateStatusDialog from "@/components/CreateStatusDialog";
 import { useUserStatus } from "@/hooks/useUserStatus";
 import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore } from "@/lib/profileUtils";
+import { ExperienceTimeline } from "@/components/ExperienceTimeline";
 
 interface Profile {
   username: string;
@@ -90,6 +91,7 @@ const Profile = () => {
   const [selectedMetric, setSelectedMetric] = useState<"network" | "professional" | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [experiences, setExperiences] = useState<any[]>([]);
   
   const { data: userStatus, refetch: refetchStatus } = useUserStatus(currentUserId);
 
@@ -106,7 +108,8 @@ const Profile = () => {
         fetchProfile(user.id),
         fetchStories(user.id),
         fetchPosts(user.id),
-        fetchReels(user.id)
+        fetchReels(user.id),
+        fetchExperiences(user.id)
       ]);
       setIsLoading(false);
     };
@@ -160,6 +163,16 @@ const Profile = () => {
       .limit(12);
 
     if (data) setReels(data);
+  };
+
+  const fetchExperiences = async (userId: string) => {
+    const { data } = await supabase
+      .from("work_experiences")
+      .select("*")
+      .eq("user_id", userId)
+      .order("start_date", { ascending: false });
+
+    if (data) setExperiences(data);
   };
 
   const fetchStories = async (uid?: string) => {
@@ -700,6 +713,20 @@ const Profile = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Work Experience Timeline */}
+            <div className="glass rounded-xl p-4 space-y-4 border border-border/50">
+              <h4 className="font-semibold text-lg flex items-center gap-2">
+                <Briefcase className="w-5 h-5" />
+                Work Experience & Projects
+              </h4>
+              <ExperienceTimeline
+                experiences={experiences}
+                userId={currentUserId}
+                onUpdate={() => fetchExperiences(currentUserId)}
+                isOwnProfile={true}
+              />
             </div>
 
             {/* Venue Verification */}
