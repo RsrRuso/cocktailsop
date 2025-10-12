@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Briefcase, Calendar, FolderGit2, Award, Star, Medal } from "lucide-react";
+import { Trophy, Briefcase, Calendar, FolderGit2, Award, Star, Medal, Target } from "lucide-react";
 import { CareerMetrics } from "@/lib/careerMetrics";
 
 interface CareerMetricsDialogProps {
@@ -18,6 +18,8 @@ export const CareerMetricsDialog = ({ open, onOpenChange, metrics }: CareerMetri
     { icon: Award, label: "Diplomas", value: metrics.diplomas, color: "text-yellow-500" },
     { icon: Medal, label: "Certificates", value: metrics.certificates, color: "text-orange-500" },
     { icon: Star, label: "Network Recognitions", value: metrics.recognitions, color: "text-pink-500" },
+    { icon: Target, label: "Competitions", value: metrics.competitions, color: "text-cyan-500" },
+    { icon: Trophy, label: "Wins", value: metrics.wins, color: "text-amber-500" },
   ];
 
   return (
@@ -78,12 +80,14 @@ export const CareerMetricsDialog = ({ open, onOpenChange, metrics }: CareerMetri
             <div className="text-xs text-muted-foreground space-y-2">
               <p className="font-medium">Raw Score Components:</p>
               <ul className="space-y-1 ml-2">
-                <li>• Working Places: 5 points each (max 25)</li>
-                <li>• Years of Experience: 2 points per year (max 20)</li>
-                <li>• Projects: 3 points each (max 15)</li>
-                <li>• Diplomas: 10 points each (max 20)</li>
-                <li>• Certificates: 5 points each (max 10)</li>
-                <li>• Recognitions: 10 points each (max 10)</li>
+                <li>• Working Places: 5 points each (max 20)</li>
+                <li>• Years of Experience: 2 points per year (max 15)</li>
+                <li>• Projects: 3 points each (max 12)</li>
+                <li>• Diplomas: 8 points each (max 16)</li>
+                <li>• Certificates: 3 points each (max 9)</li>
+                <li>• Recognitions: 8 points each (max 8)</li>
+                <li>• Competitions: 3 points each (max 10)</li>
+                <li>• Wins: 10 points each (max 10)</li>
               </ul>
               <p className="font-medium mt-3">Regional Competitive Scoring:</p>
               <p className="ml-2">

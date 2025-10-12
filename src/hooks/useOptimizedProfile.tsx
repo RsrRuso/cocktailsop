@@ -134,6 +134,23 @@ export const useOptimizedProfileData = (userId: string | null) => {
     staleTime: 5 * 60 * 1000,
   });
 
+  const competitions = useQuery({
+    queryKey: ['competitions', userId],
+    queryFn: () => deduplicateRequest(`competitions-${userId}`, async () => {
+      if (!userId) return [];
+      
+      const { data } = await supabase
+        .from('competitions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('competition_date', { ascending: false });
+
+      return data || [];
+    }),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const stories = useQuery({
     queryKey: ['stories', userId],
     queryFn: () => deduplicateRequest(`stories-${userId}`, async () => {
@@ -179,9 +196,10 @@ export const useOptimizedProfileData = (userId: string | null) => {
     experiences: experiences.data || [],
     certifications: certifications.data || [],
     recognitions: recognitions.data || [],
+    competitions: competitions.data || [],
     stories: stories.data || [],
     userRoles: userRoles.data || { isFounder: false, isVerified: false },
-    isLoading: profile.isLoading || posts.isLoading || reels.isLoading,
+    isLoading: profile.isLoading || posts.isLoading || reels.isLoading || competitions.isLoading,
     refetchAll: () => {
       profile.refetch();
       posts.refetch();
@@ -189,6 +207,7 @@ export const useOptimizedProfileData = (userId: string | null) => {
       experiences.refetch();
       certifications.refetch();
       recognitions.refetch();
+      competitions.refetch();
       stories.refetch();
       userRoles.refetch();
     },

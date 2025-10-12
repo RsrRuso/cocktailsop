@@ -94,6 +94,45 @@ export type Database = {
         }
         Relationships: []
       }
+      competitions: {
+        Row: {
+          certificate_url: string | null
+          competition_date: string
+          created_at: string
+          description: string | null
+          id: string
+          organizer: string | null
+          result: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          certificate_url?: string | null
+          competition_date: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          organizer?: string | null
+          result: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          certificate_url?: string | null
+          competition_date?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          organizer?: string | null
+          result?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string | null

@@ -7,6 +7,8 @@ export interface CareerMetrics {
   diplomas: number;
   certificates: number;
   recognitions: number;
+  competitions: number;
+  wins: number;
   rawScore: number; // Raw calculated score
   score: number; // Regional comparative score (capped at 99)
   regionalRank: string; // e.g., "Top 5% in Middle East"
@@ -21,6 +23,7 @@ export const calculateCareerScore = (
   experiences: any[],
   certifications: any[],
   recognitions: any[],
+  competitions: any[],
   regionalMaxScore?: number,
   userRank?: number,
   totalUsersInRegion?: number
@@ -47,15 +50,21 @@ export const calculateCareerScore = (
   // Count recognitions
   const recognitionsCount = recognitions.length;
   
-  // Calculate score (0-100)
-  const workingPlacesScore = Math.min(workingPlaces * 5, 25);
-  const yearsScore = Math.min(totalYears * 2, 20);
-  const projectsScore = Math.min(projectsCompleted * 3, 15);
-  const diplomasScore = Math.min(diplomas * 10, 20);
-  const certificatesScore = Math.min(certificates * 5, 10);
-  const recognitionsScore = Math.min(recognitionsCount * 10, 10);
+  // Count competitions and wins
+  const competitionsCount = competitions.length;
+  const winsCount = competitions.filter(comp => comp.result === 'won').length;
   
-  const rawScore = workingPlacesScore + yearsScore + projectsScore + diplomasScore + certificatesScore + recognitionsScore;
+  // Calculate score (0-100) with adjusted weights
+  const workingPlacesScore = Math.min(workingPlaces * 5, 20);
+  const yearsScore = Math.min(totalYears * 2, 15);
+  const projectsScore = Math.min(projectsCompleted * 3, 12);
+  const diplomasScore = Math.min(diplomas * 8, 16);
+  const certificatesScore = Math.min(certificates * 3, 9);
+  const recognitionsScore = Math.min(recognitionsCount * 8, 8);
+  const competitionsScore = Math.min(competitionsCount * 3, 10);
+  const winsScore = Math.min(winsCount * 10, 10);
+  
+  const rawScore = workingPlacesScore + yearsScore + projectsScore + diplomasScore + certificatesScore + recognitionsScore + competitionsScore + winsScore;
   
   // Calculate regional comparative score - top scorer gets 50, never reaches 100
   let displayScore = rawScore;
@@ -85,6 +94,8 @@ export const calculateCareerScore = (
     diplomas,
     certificates,
     recognitions: recognitionsCount,
+    competitions: competitionsCount,
+    wins: winsCount,
     rawScore: Math.round(rawScore),
     score: Math.round(displayScore),
     regionalRank,

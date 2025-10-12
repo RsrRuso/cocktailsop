@@ -74,6 +74,7 @@ const UserProfile = () => {
   const [experiences, setExperiences] = useState<any[]>([]);
   const [certifications, setCertifications] = useState<any[]>([]);
   const [recognitions, setRecognitions] = useState<any[]>([]);
+  const [competitions, setCompetitions] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
@@ -94,6 +95,7 @@ const UserProfile = () => {
         fetchExperiences(),
         fetchCertifications(),
         fetchRecognitions(),
+        fetchCompetitions(),
       ]).then(() => {
         // Track view after data loads to avoid blocking
         trackProfileView();
@@ -226,6 +228,18 @@ const UserProfile = () => {
       .order("issue_date", { ascending: false });
     
     if (data) setRecognitions(data);
+  };
+
+  const fetchCompetitions = async () => {
+    if (!userId) return;
+
+    const { data } = await supabase
+      .from("competitions")
+      .select("*")
+      .eq("user_id", userId)
+      .order("competition_date", { ascending: false });
+    
+    if (data) setCompetitions(data);
   };
 
   const handleFollow = async () => {
@@ -676,7 +690,7 @@ const UserProfile = () => {
       <CareerMetricsDialog
         open={metricsDialogOpen}
         onOpenChange={setMetricsDialogOpen}
-        metrics={calculateCareerScore(experiences, certifications, recognitions)}
+        metrics={calculateCareerScore(experiences, certifications, recognitions, competitions)}
       />
     </div>
   );

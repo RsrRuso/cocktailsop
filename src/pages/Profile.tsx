@@ -25,6 +25,7 @@ import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculatePr
 import { AddExperienceDialog } from "@/components/AddExperienceDialog";
 import { AddCertificationDialog } from "@/components/AddCertificationDialog";
 import { AddRecognitionDialog } from "@/components/AddRecognitionDialog";
+import { AddCompetitionDialog } from "@/components/AddCompetitionDialog";
 import { ExperienceTimeline } from "@/components/ExperienceTimeline";
 import { calculateCareerScore } from "@/lib/careerMetrics";
 
@@ -92,7 +93,8 @@ const Profile = () => {
     reels, 
     experiences, 
     certifications, 
-    recognitions, 
+    recognitions,
+    competitions,
     stories, 
     userRoles, 
     isLoading,
@@ -132,7 +134,7 @@ const Profile = () => {
     const updateCareerScore = async () => {
       if (!profile || !user?.id) return;
 
-      const rawMetrics = calculateCareerScore(experiences, certifications, recognitions);
+      const rawMetrics = calculateCareerScore(experiences, certifications, recognitions, competitions);
       const rawScore = rawMetrics.rawScore;
 
       await supabase
@@ -166,10 +168,10 @@ const Profile = () => {
       }
     };
 
-    if (profile && experiences && certifications && recognitions && user?.id) {
+    if (profile && experiences && certifications && recognitions && competitions && user?.id) {
       updateCareerScore();
     }
-  }, [experiences, certifications, recognitions, profile, user?.id]);
+  }, [experiences, certifications, recognitions, competitions, profile, user?.id]);
 
   const fetchStories = async () => {
     if (!user?.id) return;
@@ -710,14 +712,15 @@ const Profile = () => {
               </div>
               
               {(() => {
-                const metrics = calculateCareerScore(
-                  experiences, 
-                  certifications, 
-                  recognitions,
-                  regionalData?.maxScore,
-                  regionalData?.userRank,
-                  regionalData?.totalUsers
-                );
+  const metrics = calculateCareerScore(
+    experiences,
+    certifications,
+    recognitions,
+    competitions,
+    regionalData?.maxScore,
+    regionalData?.userRank,
+    regionalData?.totalUsers
+  );
                 return (
                   <>
                     {/* Score and Badge */}
@@ -862,6 +865,7 @@ const Profile = () => {
           experiences, 
           certifications, 
           recognitions,
+          competitions,
           regionalData?.maxScore,
           regionalData?.userRank,
           regionalData?.totalUsers
