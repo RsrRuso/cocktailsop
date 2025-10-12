@@ -42,6 +42,39 @@ export const MusicShareCommentsDialog = ({
   useEffect(() => {
     if (open && musicShareId) {
       fetchComments();
+
+      // Real-time subscription for comments
+      const channel = supabase
+        .channel(`music_share_comments:${musicShareId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "music_share_comments",
+            filter: `music_share_id=eq.${musicShareId}`,
+          },
+          () => {
+            fetchComments();
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "music_share_comments",
+            filter: `music_share_id=eq.${musicShareId}`,
+          },
+          () => {
+            fetchComments();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [open, musicShareId]);
 

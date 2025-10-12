@@ -108,6 +108,19 @@ const MusicTicker = () => {
           if (user) fetchLikedShares();
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "follows",
+          filter: `follower_id=eq.${user?.id}`,
+        },
+        () => {
+          // Refetch when user follows/unfollows someone
+          fetchMusicShares();
+        }
+      )
       .subscribe();
 
     return () => {
