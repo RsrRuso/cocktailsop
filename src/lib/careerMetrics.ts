@@ -57,25 +57,22 @@ export const calculateCareerScore = (
   
   const rawScore = workingPlacesScore + yearsScore + projectsScore + diplomasScore + certificatesScore + recognitionsScore;
   
-  // Calculate regional comparative score (capped at 99, never reaches 100)
+  // Calculate regional comparative score - top scorer gets 50, never reaches 100
   let displayScore = rawScore;
   let regionalRank = "Calculating...";
   
   if (regionalMaxScore && regionalMaxScore > 0) {
-    // Score relative to regional max, capped at 99
-    displayScore = Math.min((rawScore / regionalMaxScore) * 99, 99);
+    // Score relative to regional max: top scorer gets 50, others proportionally less
+    displayScore = (rawScore / regionalMaxScore) * 50;
     
     // Calculate rank percentage
     if (userRank !== undefined && totalUsersInRegion && totalUsersInRegion > 0) {
       const percentile = ((totalUsersInRegion - userRank) / totalUsersInRegion) * 100;
-      if (percentile >= 90) regionalRank = `Top ${Math.round(100 - percentile)}%`;
-      else if (percentile >= 75) regionalRank = `Top ${Math.round(100 - percentile)}%`;
-      else if (percentile >= 50) regionalRank = `Top ${Math.round(100 - percentile)}%`;
-      else regionalRank = `Top ${Math.round(100 - percentile)}%`;
+      regionalRank = `Top ${Math.round(100 - percentile)}%`;
     }
   } else {
-    // If no regional data, cap at 99
-    displayScore = Math.min(rawScore, 99);
+    // If no regional data, use raw score but cap at 50
+    displayScore = Math.min((rawScore / 100) * 50, 50);
   }
   
   // Determine badge based on display score
@@ -96,25 +93,26 @@ export const calculateCareerScore = (
 };
 
 const getBadge = (score: number) => {
-  if (score >= 81) {
+  // Adjusted for max score of 50
+  if (score >= 40) {
     return {
       level: "Expert",
       color: "text-purple-500",
       description: "Industry Leader",
     };
-  } else if (score >= 61) {
+  } else if (score >= 30) {
     return {
       level: "Advanced",
       color: "text-blue-500",
       description: "Highly Skilled",
     };
-  } else if (score >= 41) {
+  } else if (score >= 20) {
     return {
       level: "Intermediate",
       color: "text-green-500",
       description: "Experienced Professional",
     };
-  } else if (score >= 21) {
+  } else if (score >= 10) {
     return {
       level: "Beginner",
       color: "text-yellow-500",

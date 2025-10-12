@@ -51,7 +51,7 @@ export const CareerMetricsDialog = ({ open, onOpenChange, metrics }: CareerMetri
                 <span className="text-sm text-muted-foreground">- {metrics.badge.description}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Scores are calculated relative to other professionals in your region. Keep growing to reach the top!
+                Scores are calculated relative to other professionals in your region. The top scorer reaches 50 to keep competition alive!
               </p>
             </div>
           </div>
