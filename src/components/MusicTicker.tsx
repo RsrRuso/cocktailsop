@@ -27,7 +27,7 @@ const MusicTicker = () => {
   const { user } = useAuth();
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const hasAutoPlayed = useRef(false);
 
   useEffect(() => {
     fetchMusicShares();
@@ -47,21 +47,8 @@ const MusicTicker = () => {
       )
       .subscribe();
 
-    // Start playing on first user interaction
-    const handleFirstClick = () => {
-      if (audioRef.current && audioRef.current.paused) {
-        audioRef.current.play().catch(err => {
-          console.log('Playback failed:', err);
-        });
-      }
-      document.removeEventListener('click', handleFirstClick);
-    };
-    
-    document.addEventListener('click', handleFirstClick);
-
     return () => {
       supabase.removeChannel(channel);
-      document.removeEventListener('click', handleFirstClick);
     };
   }, []);
 
@@ -96,15 +83,17 @@ const MusicTicker = () => {
 
     setMusicShares(sharesWithDetails as any);
     
-    // Auto-play the most recent track's preview
-    if (sharesWithDetails.length > 0 && audioRef.current) {
-      const latestTrack = sharesWithDetails[0];
-      if (latestTrack.track?.preview_url) {
-        audioRef.current.src = latestTrack.track.preview_url;
-        audioRef.current.play().catch(err => {
-          console.log('Auto-play blocked by browser:', err);
-        });
-      }
+    // Auto-play the most recent track on first click
+    if (!hasAutoPlayed.current && sharesWithDetails.length > 0) {
+      const handleFirstClick = () => {
+        const latestTrack = sharesWithDetails[0];
+        if (latestTrack.track?.track_id) {
+          setPlayingTrackId(latestTrack.track.track_id);
+          hasAutoPlayed.current = true;
+        }
+        document.removeEventListener('click', handleFirstClick);
+      };
+      document.addEventListener('click', handleFirstClick);
     }
   };
 
@@ -143,8 +132,6 @@ const MusicTicker = () => {
 
   return (
     <>
-      {/* Hidden audio player that starts on first click */}
-      <audio ref={audioRef} loop className="hidden" />
       
       <div className="w-full overflow-hidden py-2 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50 relative">
         <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10" />
