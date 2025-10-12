@@ -125,14 +125,11 @@ const MusicTicker = () => {
         
         <div className="flex gap-4 animate-scroll-left">
           {[...musicShares, ...musicShares].map((share, index) => {
-            const track = share.track;
-            if (!track) return null;
-
             return (
               <div
                 key={`${share.id}-${index}`}
                 className="flex items-center gap-2 px-3 py-2 bg-gradient-to-br from-card to-card/50 rounded-lg border border-primary/20 shadow-lg shrink-0 min-w-[280px] max-w-[280px] hover:scale-105 hover:shadow-xl hover:border-primary/40 transition-all cursor-pointer group relative"
-                onClick={() => handlePlayTrack(track.track_id)}
+                onClick={() => handlePlayTrack(share.track_id)}
               >
                 {user?.id === share.user_id && (
                   <button
@@ -143,14 +140,20 @@ const MusicTicker = () => {
                     <X className="w-4 h-4 text-white" />
                   </button>
                 )}
-                {track.preview_url && (
+                {share.track?.preview_url ? (
                   <div className="relative shrink-0">
                     <img 
-                      src={track.preview_url} 
+                      src={share.track.preview_url} 
                       alt={share.track_title}
                       className="w-10 h-10 object-cover rounded-lg"
                     />
                     <div className="absolute inset-0 bg-black/20 rounded-lg group-hover:bg-black/0 transition-all" />
+                  </div>
+                ) : (
+                  <div className="relative shrink-0">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
+                      <Music className="w-5 h-5 text-purple-400" />
+                    </div>
                   </div>
                 )}
                 
