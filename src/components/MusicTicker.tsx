@@ -274,14 +274,14 @@ const MusicTicker = () => {
                   )}
                   
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1 mb-0.5">
+                    <div className="text-[10px] text-muted-foreground truncate flex items-center gap-1 mb-0.5">
                       <OptimizedAvatar
                         src={share.profile?.avatar_url}
                         alt={share.profile?.username || 'User'}
                         className="w-3 h-3 inline-block ring-1 ring-primary/20"
                       />
                       <span className="font-medium">@{share.profile?.username || 'Unknown'}</span>
-                    </p>
+                    </div>
                     <p className="font-bold text-xs truncate text-foreground">{share.track_title}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{share.track_artist}</p>
                   </div>
