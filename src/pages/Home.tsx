@@ -317,11 +317,11 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Music Ticker - Hidden */}
-      {/* <MusicTicker /> */}
+      {/* Music Ticker */}
+      <MusicTicker />
 
-      {/* Music Library Update */}
-      {isManager && (
+      {/* Music Library Update - Hidden */}
+      {/* {isManager && (
         <div className="px-4 py-2">
           <button
             onClick={() => navigate("/update-music-library")}
@@ -343,7 +343,7 @@ const Home = () => {
             </svg>
           </button>
         </div>
-      )}
+      )} */}
 
       {/* Explore by Region */}
       <div className="px-4 py-4">
