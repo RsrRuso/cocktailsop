@@ -1,5 +1,5 @@
 import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck, Music, Star, Medal, Diamond } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useEffect, useState } from "react";
@@ -20,9 +20,11 @@ import SpotifyConnect from "@/components/SpotifyConnect";
 
 const TopNav = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile } = useAuth(); // Use cached auth
   const { lightTap } = useHaptic();
   const [currentUser, setCurrentUser] = useState<any>(profile);
+  const [viewedUserProfile, setViewedUserProfile] = useState<any>(null);
   const [userRoles, setUserRoles] = useState({ isFounder: false, isVerified: false });
   const professionalBadge = getProfessionalBadge(currentUser?.professional_title || null);
   const BadgeIcon = professionalBadge.icon;
@@ -38,6 +40,9 @@ const TopNav = () => {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(() => {
     return localStorage.getItem('selectedRegion') || null;
   });
+
+  // Determine which badge to show
+  const displayBadgeProfile = viewedUserProfile || currentUser;
 
   const regions = [
     { name: "All", flag: "🌐" },
@@ -101,6 +106,38 @@ const TopNav = () => {
     };
   }, [user?.id]); // Only re-run if user ID changes
 
+  // Fetch viewed user's profile when on user profile page
+  useEffect(() => {
+    const fetchViewedUserProfile = async () => {
+      const match = location.pathname.match(/^\/user\/([a-f0-9-]+)$/);
+      
+      if (match) {
+        const viewedUserId = match[1];
+        
+        // Don't fetch if viewing own profile
+        if (viewedUserId === user?.id) {
+          setViewedUserProfile(null);
+          return;
+        }
+        
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', viewedUserId)
+          .single();
+        
+        if (data) {
+          setViewedUserProfile(data);
+        }
+      } else {
+        // Not on a user profile page, clear viewed user
+        setViewedUserProfile(null);
+      }
+    };
+
+    fetchViewedUserProfile();
+  }, [location.pathname, user?.id]);
+
   const fetchUnreadNotifications = async () => {
     if (!user) return;
 
@@ -156,23 +193,23 @@ const TopNav = () => {
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             {/* Badge Level Indicator - Moved to left corner */}
-            {currentUser?.badge_level && (
+            {displayBadgeProfile?.badge_level && (
               <div className="relative group">
-                <div className={`absolute -inset-2 bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} blur-lg opacity-50 group-hover:opacity-75 transition-all duration-300 ${currentUser.badge_level === 'platinum' ? 'rounded-xl' : 'rounded-full'} animate-pulse`} />
-                {currentUser.badge_level === 'platinum' ? (
-                  <div className={`relative w-10 h-10 rounded-xl bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                <div className={`absolute -inset-2 bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} blur-lg opacity-50 group-hover:opacity-75 transition-all duration-300 ${displayBadgeProfile.badge_level === 'platinum' ? 'rounded-xl' : 'rounded-full'} animate-pulse`} />
+                {displayBadgeProfile.badge_level === 'platinum' ? (
+                  <div className={`relative w-10 h-10 rounded-xl bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
                     <Star className="w-5 h-5 text-white" strokeWidth={2.5} fill="none" />
                   </div>
-                ) : currentUser.badge_level === 'gold' ? (
-                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                ) : displayBadgeProfile.badge_level === 'gold' ? (
+                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
                     <Star className="w-5 h-5 text-yellow-900" strokeWidth={2.5} fill="currentColor" />
                   </div>
-                ) : currentUser.badge_level === 'diamond' ? (
-                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                ) : displayBadgeProfile.badge_level === 'diamond' ? (
+                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
                     <Diamond className="w-5 h-5 text-cyan-900" strokeWidth={2} fill="none" />
                   </div>
                 ) : (
-                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
                     <Medal className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
                 )}
