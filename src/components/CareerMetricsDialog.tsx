@@ -38,15 +38,21 @@ export const CareerMetricsDialog = ({ open, onOpenChange, metrics }: CareerMetri
                 {metrics.score}
               </div>
               <div className="text-sm text-muted-foreground">Career Development Score</div>
+              <div className="text-xs text-primary font-medium">{metrics.regionalRank}</div>
             </div>
             
             <Progress value={metrics.score} className="h-3" />
             
-            <div className="flex items-center justify-center gap-2">
-              <Badge className={`${metrics.badge.color} text-lg px-4 py-2`}>
-                {metrics.badge.level}
-              </Badge>
-              <span className="text-sm text-muted-foreground">- {metrics.badge.description}</span>
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex items-center gap-2">
+                <Badge className={`${metrics.badge.color} text-lg px-4 py-2`}>
+                  {metrics.badge.level}
+                </Badge>
+                <span className="text-sm text-muted-foreground">- {metrics.badge.description}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Scores are calculated relative to other professionals in your region. Keep growing to reach the top!
+              </p>
             </div>
           </div>
 

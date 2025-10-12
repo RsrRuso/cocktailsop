@@ -828,6 +828,7 @@ export type Database = {
           avatar_url: string | null
           badge_level: Database["public"]["Enums"]["badge_level"] | null
           bio: string | null
+          career_score: number | null
           cover_url: string | null
           created_at: string | null
           follower_count: number | null
@@ -853,6 +854,7 @@ export type Database = {
           avatar_url?: string | null
           badge_level?: Database["public"]["Enums"]["badge_level"] | null
           bio?: string | null
+          career_score?: number | null
           cover_url?: string | null
           created_at?: string | null
           follower_count?: number | null
@@ -878,6 +880,7 @@ export type Database = {
           avatar_url?: string | null
           badge_level?: Database["public"]["Enums"]["badge_level"] | null
           bio?: string | null
+          career_score?: number | null
           cover_url?: string | null
           created_at?: string | null
           follower_count?: number | null

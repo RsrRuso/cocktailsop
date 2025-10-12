@@ -7,7 +7,9 @@ export interface CareerMetrics {
   diplomas: number;
   certificates: number;
   recognitions: number;
-  score: number;
+  rawScore: number; // Raw calculated score
+  score: number; // Regional comparative score (capped at 99)
+  regionalRank: string; // e.g., "Top 5% in Middle East"
   badge: {
     level: string;
     color: string;
@@ -18,7 +20,10 @@ export interface CareerMetrics {
 export const calculateCareerScore = (
   experiences: any[],
   certifications: any[],
-  recognitions: any[]
+  recognitions: any[],
+  regionalMaxScore?: number,
+  userRank?: number,
+  totalUsersInRegion?: number
 ): CareerMetrics => {
   // Count working places (non-projects)
   const workingPlaces = experiences.filter(exp => !exp.is_project).length;
@@ -50,10 +55,31 @@ export const calculateCareerScore = (
   const certificatesScore = Math.min(certificates * 5, 10);
   const recognitionsScore = Math.min(recognitionsCount * 10, 10);
   
-  const score = workingPlacesScore + yearsScore + projectsScore + diplomasScore + certificatesScore + recognitionsScore;
+  const rawScore = workingPlacesScore + yearsScore + projectsScore + diplomasScore + certificatesScore + recognitionsScore;
   
-  // Determine badge
-  const badge = getBadge(score);
+  // Calculate regional comparative score (capped at 99, never reaches 100)
+  let displayScore = rawScore;
+  let regionalRank = "Calculating...";
+  
+  if (regionalMaxScore && regionalMaxScore > 0) {
+    // Score relative to regional max, capped at 99
+    displayScore = Math.min((rawScore / regionalMaxScore) * 99, 99);
+    
+    // Calculate rank percentage
+    if (userRank !== undefined && totalUsersInRegion && totalUsersInRegion > 0) {
+      const percentile = ((totalUsersInRegion - userRank) / totalUsersInRegion) * 100;
+      if (percentile >= 90) regionalRank = `Top ${Math.round(100 - percentile)}%`;
+      else if (percentile >= 75) regionalRank = `Top ${Math.round(100 - percentile)}%`;
+      else if (percentile >= 50) regionalRank = `Top ${Math.round(100 - percentile)}%`;
+      else regionalRank = `Top ${Math.round(100 - percentile)}%`;
+    }
+  } else {
+    // If no regional data, cap at 99
+    displayScore = Math.min(rawScore, 99);
+  }
+  
+  // Determine badge based on display score
+  const badge = getBadge(displayScore);
   
   return {
     workingPlaces,
@@ -62,7 +88,9 @@ export const calculateCareerScore = (
     diplomas,
     certificates,
     recognitions: recognitionsCount,
-    score: Math.round(score),
+    rawScore: Math.round(rawScore),
+    score: Math.round(displayScore),
+    regionalRank,
     badge,
   };
 };

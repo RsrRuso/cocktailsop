@@ -27,6 +27,7 @@ import { ExperienceTimeline } from "@/components/ExperienceTimeline";
 import { calculateCareerScore } from "@/lib/careerMetrics";
 
 interface Profile {
+  id: string;
   username: string;
   full_name: string;
   bio: string | null;
@@ -34,6 +35,7 @@ interface Profile {
   cover_url: string | null;
   professional_title: string | null;
   badge_level: string;
+  region: string | null;
   follower_count: number;
   following_count: number;
   post_count: number;
@@ -100,6 +102,7 @@ const Profile = () => {
   const [showAddExperience, setShowAddExperience] = useState(false);
   const [showAddCertification, setShowAddCertification] = useState(false);
   const [showAddRecognition, setShowAddRecognition] = useState(false);
+  const [regionalData, setRegionalData] = useState<{ maxScore: number; userRank: number; totalUsers: number } | null>(null);
   
   const { data: userStatus, refetch: refetchStatus } = useUserStatus(currentUserId);
 
@@ -126,6 +129,53 @@ const Profile = () => {
     
     initializeProfile();
   }, []);
+
+  // Update career score and fetch regional comparison when data changes
+  useEffect(() => {
+    if (profile && experiences && certifications && recognitions) {
+      updateCareerScore();
+    }
+  }, [experiences, certifications, recognitions, profile]);
+
+  const updateCareerScore = async () => {
+    if (!profile || !currentUserId) return;
+
+    // Calculate raw score
+    const rawMetrics = calculateCareerScore(experiences, certifications, recognitions);
+    const rawScore = rawMetrics.rawScore;
+
+    // Update user's career score in profile
+    await supabase
+      .from('profiles')
+      .update({ career_score: rawScore })
+      .eq('id', currentUserId);
+
+    // Fetch regional comparison data
+    const region = profile.region || 'All';
+    
+    let query = supabase
+      .from('profiles')
+      .select('career_score');
+    
+    if (region !== 'All') {
+      query = query.eq('region', region);
+    }
+    
+    const { data: regionalProfiles } = await query
+      .order('career_score', { ascending: false });
+
+    if (regionalProfiles && regionalProfiles.length > 0) {
+      const scores = regionalProfiles.map(p => p.career_score || 0);
+      const maxScore = Math.max(...scores);
+      const userRank = scores.findIndex(s => s <= rawScore) + 1;
+      
+      setRegionalData({
+        maxScore,
+        userRank,
+        totalUsers: regionalProfiles.length
+      });
+    }
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -754,13 +804,23 @@ const Profile = () => {
               </div>
               
               {(() => {
-                const metrics = calculateCareerScore(experiences, certifications, recognitions);
+                const metrics = calculateCareerScore(
+                  experiences, 
+                  certifications, 
+                  recognitions,
+                  regionalData?.maxScore,
+                  regionalData?.userRank,
+                  regionalData?.totalUsers
+                );
                 return (
                   <>
                     {/* Score and Badge */}
                     <div className="text-center p-4 glass rounded-lg border border-border/50">
                       <div className="text-5xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent mb-2">
                         {metrics.score}
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-2">
+                        {metrics.regionalRank} {profile.region && profile.region !== 'All' ? `in ${profile.region}` : 'globally'}
                       </div>
                       <Badge className={`${metrics.badge.color} text-sm px-3 py-1`}>
                         {metrics.badge.level} - {metrics.badge.description}
@@ -891,7 +951,14 @@ const Profile = () => {
       <CareerMetricsDialog
         open={metricsDialogOpen}
         onOpenChange={setMetricsDialogOpen}
-        metrics={calculateCareerScore(experiences, certifications, recognitions)}
+        metrics={calculateCareerScore(
+          experiences, 
+          certifications, 
+          recognitions,
+          regionalData?.maxScore,
+          regionalData?.userRank,
+          regionalData?.totalUsers
+        )}
       />
 
       <AddExperienceDialog
