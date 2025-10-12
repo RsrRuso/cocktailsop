@@ -13,6 +13,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CreateStatusDialog from "@/components/CreateStatusDialog";
 import MusicSelectionDialog from "@/components/MusicSelectionDialog";
@@ -20,12 +26,14 @@ import SpotifyConnect from "@/components/SpotifyConnect";
 import { CreateEventDialog } from "@/components/CreateEventDialog";
 import { EventsListDialog } from "@/components/EventsListDialog";
 import { useManagerRole } from "@/hooks/useManagerRole";
+import { useToast } from "@/hooks/use-toast";
 
 const TopNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile } = useAuth(); // Use cached auth
   const { lightTap } = useHaptic();
+  const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<any>(profile);
   const [viewedUserProfile, setViewedUserProfile] = useState<any>(null);
   const [userRoles, setUserRoles] = useState({ isFounder: false, isVerified: false });
@@ -44,8 +52,56 @@ const TopNav = () => {
     return localStorage.getItem('selectedRegion') || null;
   });
   const [eventsDialogOpen, setEventsDialogOpen] = useState(false);
+  const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
   const [regionDropdownOpen, setRegionDropdownOpen] = useState(false);
   const { isManager } = useManagerRole();
+  
+  const [eventFormData, setEventFormData] = useState({
+    title: '',
+    description: '',
+    region: 'All',
+    event_date: '',
+    venue_name: '',
+    address: '',
+  });
+  const [eventLoading, setEventLoading] = useState(false);
+
+  const REGIONS = ['USA', 'UK', 'Europe', 'Asia', 'Middle East', 'Africa', 'All'];
+
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    setEventLoading(true);
+    try {
+      const { error } = await supabase.from('events').insert({
+        user_id: user.id,
+        title: eventFormData.title,
+        description: eventFormData.description || null,
+        region: eventFormData.region,
+        event_date: eventFormData.event_date || null,
+        venue_name: eventFormData.venue_name || null,
+        address: eventFormData.address || null,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Event created successfully!",
+      });
+      setCreateEventDialogOpen(false);
+      setEventFormData({ title: '', description: '', region: 'All', event_date: '', venue_name: '', address: '' });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || 'Failed to create event',
+        variant: "destructive",
+      });
+    } finally {
+      setEventLoading(false);
+    }
+  };
 
   // Determine which badge to show
   const displayBadgeProfile = viewedUserProfile || currentUser;
@@ -280,14 +336,15 @@ const TopNav = () => {
                     
                     {isManager && (
                       <DropdownMenuItem
-                        onClick={(e) => {
-                          e.preventDefault();
+                        onClick={() => {
                           lightTap();
+                          setCreateEventDialogOpen(true);
                           setRegionDropdownOpen(false);
                         }}
-                        className="cursor-pointer p-0"
+                        className="cursor-pointer"
                       >
-                        <CreateEventDialog />
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Create Event
                       </DropdownMenuItem>
                     )}
                   </>
@@ -396,11 +453,113 @@ const TopNav = () => {
       />
 
       {selectedRegion && (
-        <EventsListDialog
-          region={selectedRegion}
-          open={eventsDialogOpen}
-          onOpenChange={setEventsDialogOpen}
-        />
+        <>
+          <EventsListDialog
+            region={selectedRegion}
+            open={eventsDialogOpen}
+            onOpenChange={setEventsDialogOpen}
+          />
+          
+          <Dialog open={createEventDialogOpen} onOpenChange={setCreateEventDialogOpen}>
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  Create New Event
+                </DialogTitle>
+                <DialogDescription>
+                  Create an event announcement that will appear in the ticker for the selected region.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateEvent} className="space-y-4 overflow-y-auto flex-1 pr-2">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Event Title *</Label>
+                  <Input
+                    id="title"
+                    value={eventFormData.title}
+                    onChange={(e) => setEventFormData({ ...eventFormData, title: e.target.value })}
+                    placeholder="Annual Mixology Competition"
+                    required
+                    className="glass"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={eventFormData.description}
+                    onChange={(e) => setEventFormData({ ...eventFormData, description: e.target.value })}
+                    placeholder="Join us for the biggest mixology event of the year..."
+                    rows={3}
+                    className="glass"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="region">Region *</Label>
+                  <Select
+                    value={eventFormData.region}
+                    onValueChange={(value) => setEventFormData({ ...eventFormData, region: value })}
+                  >
+                    <SelectTrigger className="glass">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {REGIONS.map((region) => (
+                        <SelectItem key={region} value={region}>
+                          {region}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="event_date">Event Date</Label>
+                  <Input
+                    id="event_date"
+                    type="datetime-local"
+                    value={eventFormData.event_date}
+                    onChange={(e) => setEventFormData({ ...eventFormData, event_date: e.target.value })}
+                    className="glass"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="venue_name">Venue Name</Label>
+                  <Input
+                    id="venue_name"
+                    value={eventFormData.venue_name}
+                    onChange={(e) => setEventFormData({ ...eventFormData, venue_name: e.target.value })}
+                    placeholder="The Grand Hotel"
+                    className="glass"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    value={eventFormData.address}
+                    onChange={(e) => setEventFormData({ ...eventFormData, address: e.target.value })}
+                    placeholder="123 Main Street, Dubai"
+                    className="glass"
+                  />
+                </div>
+
+                <div className="flex gap-2 justify-end pt-4">
+                  <Button type="button" variant="outline" onClick={() => setCreateEventDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={eventLoading}>
+                    {eventLoading ? 'Creating...' : 'Create Event'}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </>
       )}
     </>
   );
