@@ -1810,19 +1810,17 @@ export type Database = {
     }
     Functions: {
       create_notification: {
-        Args:
-          | {
-              p_content: string
-              p_event_id?: string
-              p_music_share_id?: string
-              p_post_id?: string
-              p_reel_id?: string
-              p_reference_user_id?: string
-              p_story_id?: string
-              p_type: string
-              p_user_id: string
-            }
-          | { p_content: string; p_type: string; p_user_id: string }
+        Args: {
+          p_content: string
+          p_event_id?: string
+          p_music_share_id?: string
+          p_post_id?: string
+          p_reel_id?: string
+          p_reference_user_id?: string
+          p_story_id?: string
+          p_type: string
+          p_user_id: string
+        }
         Returns: undefined
       }
       has_role: {
