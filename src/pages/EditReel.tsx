@@ -31,11 +31,11 @@ const EditReel = () => {
       .select("*")
       .eq("id", id)
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       toast.error("Reel not found or you don't have permission");
-      navigate("/thunder");
+      navigate("/reels");
       return;
     }
 
@@ -57,7 +57,7 @@ const EditReel = () => {
       toast.error("Failed to update reel");
     } else {
       toast.success("Reel updated successfully!");
-      navigate("/thunder");
+      navigate("/reels");
     }
     setLoading(false);
   };
@@ -82,7 +82,7 @@ const EditReel = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/thunder")}
+            onClick={() => navigate("/reels")}
             className="glass-hover"
           >
             <ArrowLeft className="w-5 h-5" />
