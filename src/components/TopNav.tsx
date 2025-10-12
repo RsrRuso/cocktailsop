@@ -146,7 +146,7 @@ const TopNav = () => {
             </button>
 
             {/* Spotify Connect */}
-            <SpotifyConnect />
+            {/* <SpotifyConnect /> */}
 
             {/* Badge Level Indicator */}
             {currentUser?.badge_level && (

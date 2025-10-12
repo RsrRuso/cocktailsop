@@ -321,7 +321,7 @@ const Home = () => {
       <MusicTicker />
 
       {/* Music Library Update */}
-      <div className="px-4 py-2">
+      {/* <div className="px-4 py-2">
         <button
           onClick={() => navigate("/update-music-library")}
           className="w-full glass rounded-2xl p-4 flex items-center justify-between hover:bg-accent/50 transition-colors group"
@@ -341,7 +341,7 @@ const Home = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
-      </div>
+      </div> */}
 
       {/* Explore by Region */}
       <div className="px-4 py-4">
