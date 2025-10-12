@@ -75,14 +75,27 @@ export const CareerMetricsDialog = ({ open, onOpenChange, metrics }: CareerMetri
           {/* Scoring System Info */}
           <div className="glass p-4 rounded-lg space-y-2">
             <h4 className="font-semibold text-sm">How is the score calculated?</h4>
-            <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• Working Places: 5 points each (max 25)</li>
-              <li>• Years of Experience: 2 points per year (max 20)</li>
-              <li>• Projects: 3 points each (max 15)</li>
-              <li>• Diplomas: 10 points each (max 20)</li>
-              <li>• Certificates: 5 points each (max 10)</li>
-              <li>• Recognitions: 10 points each (max 10)</li>
-            </ul>
+            <div className="text-xs text-muted-foreground space-y-2">
+              <p className="font-medium">Raw Score Components:</p>
+              <ul className="space-y-1 ml-2">
+                <li>• Working Places: 5 points each (max 25)</li>
+                <li>• Years of Experience: 2 points per year (max 20)</li>
+                <li>• Projects: 3 points each (max 15)</li>
+                <li>• Diplomas: 10 points each (max 20)</li>
+                <li>• Certificates: 5 points each (max 10)</li>
+                <li>• Recognitions: 10 points each (max 10)</li>
+              </ul>
+              <p className="font-medium mt-3">Regional Competitive Scoring:</p>
+              <p className="ml-2">
+                Your displayed score is calculated relative to the top performer in your region:
+              </p>
+              <p className="ml-2 italic">
+                (Your Raw Score ÷ Top Score in Region) × 50
+              </p>
+              <p className="ml-2 mt-1">
+                The top scorer reaches 50 to keep competition alive. No one reaches 100!
+              </p>
+            </div>
           </div>
         </div>
       </DialogContent>
