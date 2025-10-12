@@ -29,7 +29,9 @@ serve(async (req) => {
     });
 
     if (!tokenResponse.ok) {
-      throw new Error('Failed to get Spotify access token');
+      const errorText = await tokenResponse.text();
+      console.error('Spotify token error:', tokenResponse.status, errorText);
+      throw new Error(`Failed to get Spotify access token: ${tokenResponse.status}`);
     }
 
     const tokenData = await tokenResponse.json();
@@ -47,7 +49,9 @@ serve(async (req) => {
     );
 
     if (!tracksResponse.ok) {
-      throw new Error('Failed to fetch Spotify tracks');
+      const errorText = await tracksResponse.text();
+      console.error('Spotify API error:', tracksResponse.status, errorText);
+      throw new Error(`Spotify API error: ${tracksResponse.status} - ${errorText}`);
     }
 
     const tracksData = await tracksResponse.json();
