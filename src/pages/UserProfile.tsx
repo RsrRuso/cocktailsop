@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useParams, useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import MusicTicker from "@/components/MusicTicker";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -236,6 +237,7 @@ const UserProfile = () => {
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
+      <MusicTicker />
       
       {/* Cover Photo */}
       {profile.cover_url && (
