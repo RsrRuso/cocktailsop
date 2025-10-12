@@ -261,26 +261,36 @@ const TopNav = () => {
                     {region.name}
                   </DropdownMenuItem>
                 ))}
+                
+                {selectedRegion && (
+                  <>
+                    <div className="my-1 h-px bg-border/50" />
+                    <DropdownMenuItem
+                      onClick={() => {
+                        lightTap();
+                        setEventsDialogOpen(true);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      View Events
+                    </DropdownMenuItem>
+                    
+                    {isManager && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          lightTap();
+                        }}
+                        className="cursor-pointer p-0"
+                      >
+                        <CreateEventDialog />
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
-
-            {/* Events Button */}
-            {selectedRegion && (
-              <button
-                onClick={() => {
-                  lightTap();
-                  setEventsDialogOpen(true);
-                }}
-                className="glass-hover p-2.5 rounded-2xl"
-              >
-                <Calendar className="w-5 h-5" />
-              </button>
-            )}
-
-            {/* Create Event Button - Only for managers */}
-            {isManager && selectedRegion && (
-              <CreateEventDialog />
-            )}
 
             {/* Spotify Connect */}
             {/* <SpotifyConnect /> */}
