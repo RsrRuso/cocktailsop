@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
 import { Music, X } from "lucide-react";
@@ -27,6 +27,7 @@ const MusicTicker = () => {
   const { user } = useAuth();
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     fetchMusicShares();
@@ -81,6 +82,17 @@ const MusicTicker = () => {
     }));
 
     setMusicShares(sharesWithDetails as any);
+    
+    // Auto-play the most recent track's preview
+    if (sharesWithDetails.length > 0 && audioRef.current) {
+      const latestTrack = sharesWithDetails[0];
+      if (latestTrack.track?.preview_url) {
+        audioRef.current.src = latestTrack.track.preview_url;
+        audioRef.current.play().catch(err => {
+          console.log('Auto-play blocked by browser:', err);
+        });
+      }
+    }
   };
 
   const handlePlayTrack = (trackId: string) => {
@@ -118,6 +130,9 @@ const MusicTicker = () => {
 
   return (
     <>
+      {/* Hidden audio player for auto-play */}
+      <audio ref={audioRef} loop className="hidden" />
+      
       <div className="w-full overflow-hidden py-2 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50 relative">
         <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10" />
         <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10" />
