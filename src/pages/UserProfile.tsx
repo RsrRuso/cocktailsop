@@ -18,6 +18,7 @@ import CareerMetricsDialog from "@/components/CareerMetricsDialog";
 import AvatarClickMenu from "@/components/AvatarClickMenu";
 import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore } from "@/lib/profileUtils";
 import { ExperienceTimeline } from "@/components/ExperienceTimeline";
+import { calculateCareerScore } from "@/lib/careerMetrics";
 
 interface Profile {
   username: string;
@@ -69,9 +70,10 @@ const UserProfile = () => {
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [metricsDialogOpen, setMetricsDialogOpen] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState<"network" | "professional" | null>(null);
   const [hasStory, setHasStory] = useState(false);
   const [experiences, setExperiences] = useState<any[]>([]);
+  const [certifications, setCertifications] = useState<any[]>([]);
+  const [recognitions, setRecognitions] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
@@ -89,7 +91,9 @@ const UserProfile = () => {
         fetchPosts(),
         fetchReels(),
         checkForStory(),
-        fetchExperiences()
+        fetchExperiences(),
+        fetchCertifications(),
+        fetchRecognitions(),
       ]).then(() => {
         // Track view after data loads to avoid blocking
         trackProfileView();
@@ -195,9 +199,33 @@ const UserProfile = () => {
       .from("work_experiences")
       .select("*")
       .eq("user_id", userId)
-      .order("start_date", { ascending: false });
+      .order("start_date", { ascending: false});
 
     if (data) setExperiences(data);
+  };
+
+  const fetchCertifications = async () => {
+    if (!userId) return;
+
+    const { data } = await supabase
+      .from("certifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("issue_date", { ascending: false });
+    
+    if (data) setCertifications(data);
+  };
+
+  const fetchRecognitions = async () => {
+    if (!userId) return;
+
+    const { data } = await supabase
+      .from("recognitions")
+      .select("*")
+      .eq("user_id", userId)
+      .order("issue_date", { ascending: false });
+    
+    if (data) setRecognitions(data);
   };
 
   const handleFollow = async () => {
@@ -582,20 +610,14 @@ const UserProfile = () => {
                   </div>
                   <div 
                     className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
-                    onClick={() => {
-                      setSelectedMetric("network");
-                      setMetricsDialogOpen(true);
-                    }}
+                    onClick={() => setMetricsDialogOpen(true)}
                   >
                     <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Network Reach</span>
                     <span className="text-sm font-semibold group-hover:scale-105 transition-transform">{profile ? calculateNetworkReach(profile, posts, reels).toLocaleString() : 0}</span>
                   </div>
                   <div 
                     className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
-                    onClick={() => {
-                      setSelectedMetric("professional");
-                      setMetricsDialogOpen(true);
-                    }}
+                    onClick={() => setMetricsDialogOpen(true)}
                   >
                     <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Professional Score</span>
                     <span className="text-sm font-semibold text-primary group-hover:scale-105 transition-transform">{profile ? calculateProfessionalScore(profile, userRoles, posts, reels, []) : 0}/100</span>
@@ -653,8 +675,7 @@ const UserProfile = () => {
       <CareerMetricsDialog
         open={metricsDialogOpen}
         onOpenChange={setMetricsDialogOpen}
-        metricType={selectedMetric}
-        currentValue={selectedMetric === "network" ? (profile ? calculateNetworkReach(profile, posts, reels) : 0) : (profile ? calculateProfessionalScore(profile, userRoles, posts, reels, []) : 0)}
+        metrics={calculateCareerScore(experiences, certifications, recognitions)}
       />
     </div>
   );

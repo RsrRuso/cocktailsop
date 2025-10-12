@@ -20,7 +20,11 @@ import CareerMetricsDialog from "@/components/CareerMetricsDialog";
 import CreateStatusDialog from "@/components/CreateStatusDialog";
 import { useUserStatus } from "@/hooks/useUserStatus";
 import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore } from "@/lib/profileUtils";
+import { AddExperienceDialog } from "@/components/AddExperienceDialog";
+import { AddCertificationDialog } from "@/components/AddCertificationDialog";
+import { AddRecognitionDialog } from "@/components/AddRecognitionDialog";
 import { ExperienceTimeline } from "@/components/ExperienceTimeline";
+import { calculateCareerScore } from "@/lib/careerMetrics";
 
 interface Profile {
   username: string;
@@ -88,10 +92,14 @@ const Profile = () => {
   const [showAvatarDialog, setShowAvatarDialog] = useState(false);
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [metricsDialogOpen, setMetricsDialogOpen] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState<"network" | "professional" | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [experiences, setExperiences] = useState<any[]>([]);
+  const [certifications, setCertifications] = useState<any[]>([]);
+  const [recognitions, setRecognitions] = useState<any[]>([]);
+  const [showAddExperience, setShowAddExperience] = useState(false);
+  const [showAddCertification, setShowAddCertification] = useState(false);
+  const [showAddRecognition, setShowAddRecognition] = useState(false);
   
   const { data: userStatus, refetch: refetchStatus } = useUserStatus(currentUserId);
 
@@ -109,7 +117,9 @@ const Profile = () => {
         fetchStories(user.id),
         fetchPosts(user.id),
         fetchReels(user.id),
-        fetchExperiences(user.id)
+        fetchExperiences(user.id),
+        fetchCertifications(user.id),
+        fetchRecognitions(user.id),
       ]);
       setIsLoading(false);
     };
@@ -173,6 +183,26 @@ const Profile = () => {
       .order("start_date", { ascending: false });
 
     if (data) setExperiences(data);
+  };
+
+  const fetchCertifications = async (userId: string) => {
+    const { data } = await supabase
+      .from("certifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("issue_date", { ascending: false });
+    
+    if (data) setCertifications(data);
+  };
+
+  const fetchRecognitions = async (userId: string) => {
+    const { data } = await supabase
+      .from("recognitions")
+      .select("*")
+      .eq("user_id", userId)
+      .order("issue_date", { ascending: false });
+    
+    if (data) setRecognitions(data);
   };
 
   const fetchStories = async (uid?: string) => {
@@ -693,20 +723,14 @@ const Profile = () => {
                   </div>
                   <div 
                     className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
-                    onClick={() => {
-                      setSelectedMetric("network");
-                      setMetricsDialogOpen(true);
-                    }}
+                    onClick={() => setMetricsDialogOpen(true)}
                   >
                     <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Network Reach</span>
                     <span className="text-sm font-semibold group-hover:scale-105 transition-transform">{profile ? calculateNetworkReach(profile, posts, reels).toLocaleString() : 0}</span>
                   </div>
                   <div 
                     className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
-                    onClick={() => {
-                      setSelectedMetric("professional");
-                      setMetricsDialogOpen(true);
-                    }}
+                    onClick={() => setMetricsDialogOpen(true)}
                   >
                     <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Professional Score</span>
                     <span className="text-sm font-semibold text-primary group-hover:scale-105 transition-transform">{profile ? calculateProfessionalScore(profile, userRoles, posts, reels, stories) : 0}/100</span>
@@ -764,8 +788,28 @@ const Profile = () => {
       <CareerMetricsDialog
         open={metricsDialogOpen}
         onOpenChange={setMetricsDialogOpen}
-        metricType={selectedMetric}
-        currentValue={selectedMetric === "network" ? (profile ? calculateNetworkReach(profile, posts, reels) : 0) : (profile ? calculateProfessionalScore(profile, userRoles, posts, reels, stories) : 0)}
+        metrics={calculateCareerScore(experiences, certifications, recognitions)}
+      />
+
+      <AddExperienceDialog
+        open={showAddExperience}
+        onOpenChange={setShowAddExperience}
+        userId={currentUserId}
+        onSuccess={() => fetchExperiences(currentUserId)}
+      />
+
+      <AddCertificationDialog
+        open={showAddCertification}
+        onOpenChange={setShowAddCertification}
+        userId={currentUserId}
+        onSuccess={() => fetchCertifications(currentUserId)}
+      />
+
+      <AddRecognitionDialog
+        open={showAddRecognition}
+        onOpenChange={setShowAddRecognition}
+        userId={currentUserId}
+        onSuccess={() => fetchRecognitions(currentUserId)}
       />
 
       <CreateStatusDialog

@@ -1,126 +1,84 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { TrendingUp, Users, Award } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Trophy, Briefcase, Calendar, FolderGit2, Award, Star, Medal } from "lucide-react";
+import { CareerMetrics } from "@/lib/careerMetrics";
 
 interface CareerMetricsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  metricType: "network" | "professional" | null;
-  currentValue: number;
+  metrics: CareerMetrics;
 }
 
-const CareerMetricsDialog = ({ open, onOpenChange, metricType, currentValue }: CareerMetricsDialogProps) => {
-  const getMetricInfo = () => {
-    if (metricType === "network") {
-      return {
-        title: "Network Reach",
-        icon: Users,
-        description: "Your total professional influence and audience across the platform",
-        calculation: [
-          { label: "Follower Reach", formula: "Followers × 1.5", description: "Your direct audience - most valuable" },
-          { label: "Following Reach", formula: "Following × 0.5", description: "Your networking connections" },
-          { label: "Post Engagement", formula: "Total Likes + Comments × 0.3", description: "Content engagement bonus (max 500)" },
-          { label: "Reel Views", formula: "Total Views × 0.1", description: "Video content reach (max 300)" },
-        ],
-        tips: [
-          "Grow your follower base for the biggest impact",
-          "Post engaging content to boost engagement bonuses",
-          "Create reels to increase your view count",
-          "Network with industry professionals",
-        ]
-      };
-    } else {
-      return {
-        title: "Professional Score",
-        icon: Award,
-        description: "A comprehensive measure of your professional status and achievements",
-        calculation: [
-          { label: "Base Score", formula: "Professional Title × 60%", description: "Based on your selected role" },
-          { label: "Status Bonuses", formula: "Founder +10, Verified +8", description: "Special status recognition" },
-          { label: "Badge Level", formula: "Bronze: 0, Silver: +5, Gold: +10, Platinum: +15", description: "Achievement level bonus" },
-          { label: "Engagement Quality", formula: "Avg Post Engagement × 0.5", description: "Content quality indicator (max 10)" },
-          { label: "Activity Bonus", formula: "Posts +3, Reels +3", description: "Platform activity reward" },
-        ],
-        tips: [
-          "Verify your work experience to increase status",
-          "Level up your badge through consistent activity",
-          "Create high-quality engaging content",
-          "Stay active with diverse content types",
-        ]
-      };
-    }
-  };
-
-  const info = getMetricInfo();
-  const Icon = info.icon;
+export const CareerMetricsDialog = ({ open, onOpenChange, metrics }: CareerMetricsDialogProps) => {
+  const metricsData = [
+    { icon: Briefcase, label: "Working Places", value: metrics.workingPlaces, color: "text-blue-500" },
+    { icon: Calendar, label: "Years Experience", value: metrics.totalYears, color: "text-green-500" },
+    { icon: FolderGit2, label: "Projects Completed", value: metrics.projectsCompleted, color: "text-purple-500" },
+    { icon: Award, label: "Diplomas", value: metrics.diplomas, color: "text-yellow-500" },
+    { icon: Medal, label: "Certificates", value: metrics.certificates, color: "text-orange-500" },
+    { icon: Star, label: "Network Recognitions", value: metrics.recognitions, color: "text-pink-500" },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
+      <DialogContent className="max-w-2xl glass">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-2xl">
-            <Icon className="w-6 h-6 text-primary" />
-            {info.title}
+          <DialogTitle className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-primary" />
+            Career Metrics
           </DialogTitle>
-          <DialogDescription>
-            {info.description}
-          </DialogDescription>
         </DialogHeader>
-
-        <ScrollArea className="max-h-[60vh] pr-4">
-          <div className="space-y-6">
-            {/* Current Score */}
-            <div className="glass rounded-xl p-6 border border-border/50 bg-gradient-to-br from-primary/10 to-primary/5">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-2">Your Current {info.title}</p>
-                <p className="text-5xl font-bold text-primary">{currentValue.toLocaleString()}</p>
+        
+        <div className="space-y-6">
+          {/* Score and Badge */}
+          <div className="text-center space-y-4">
+            <div className="space-y-2">
+              <div className="text-6xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                {metrics.score}
               </div>
+              <div className="text-sm text-muted-foreground">Career Development Score</div>
             </div>
-
-            {/* How It's Calculated */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-500" />
-                How It's Calculated
-              </h3>
-              <div className="space-y-3">
-                {info.calculation.map((item, index) => (
-                  <div key={index} className="glass rounded-lg p-4 border border-border/50 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium">{item.label}</p>
-                      <code className="text-xs bg-muted px-2 py-1 rounded">{item.formula}</code>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Tips to Improve */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <Award className="w-5 h-5 text-yellow-500" />
-                How to Improve
-              </h3>
-              <div className="space-y-2">
-                {info.tips.map((tip, index) => (
-                  <div key={index} className="flex items-start gap-2 glass rounded-lg p-3 border border-border/50">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-primary">{index + 1}</span>
-                    </div>
-                    <p className="text-sm">{tip}</p>
-                  </div>
-                ))}
-              </div>
+            
+            <Progress value={metrics.score} className="h-3" />
+            
+            <div className="flex items-center justify-center gap-2">
+              <Badge className={`${metrics.badge.color} text-lg px-4 py-2`}>
+                {metrics.badge.level}
+              </Badge>
+              <span className="text-sm text-muted-foreground">- {metrics.badge.description}</span>
             </div>
           </div>
-        </ScrollArea>
+
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            {metricsData.map((metric) => {
+              const Icon = metric.icon;
+              return (
+                <div key={metric.label} className="glass p-4 rounded-lg space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Icon className={`w-5 h-5 ${metric.color}`} />
+                    <span className="text-sm text-muted-foreground">{metric.label}</span>
+                  </div>
+                  <div className="text-3xl font-bold">{metric.value}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Scoring System Info */}
+          <div className="glass p-4 rounded-lg space-y-2">
+            <h4 className="font-semibold text-sm">How is the score calculated?</h4>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              <li>• Working Places: 5 points each (max 25)</li>
+              <li>• Years of Experience: 2 points per year (max 20)</li>
+              <li>• Projects: 3 points each (max 15)</li>
+              <li>• Diplomas: 10 points each (max 20)</li>
+              <li>• Certificates: 5 points each (max 10)</li>
+              <li>• Recognitions: 10 points each (max 10)</li>
+            </ul>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
