@@ -330,8 +330,8 @@ const Home = () => {
                 </svg>
               </div>
               <div className="text-left">
-                <h2 className="text-lg font-bold">Update Spotify Library</h2>
-                <p className="text-xs text-muted-foreground">Sync top 50 tracks with real previews</p>
+                <h2 className="text-lg font-bold">Update Music Library</h2>
+                <p className="text-xs text-muted-foreground">Sync 50 royalty-free tracks</p>
               </div>
             </div>
             <svg className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">

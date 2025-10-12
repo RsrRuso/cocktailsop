@@ -49,9 +49,9 @@ const UpdateSpotifyTracks = () => {
   return (
     <div className="container mx-auto p-6">
       <div className="glass rounded-xl p-8 max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Update Spotify Music Library</h1>
+        <h1 className="text-3xl font-bold mb-6">Update Music Library</h1>
         <p className="text-muted-foreground mb-6">
-          Click the button below to fetch the latest popular tracks from Spotify and update the music library.
+          Click the button below to update the music library with 50 royalty-free tracks with working preview URLs.
         </p>
         <Button 
           onClick={handleUpdateTracks} 
@@ -64,7 +64,7 @@ const UpdateSpotifyTracks = () => {
               Updating Tracks...
             </>
           ) : (
-            "Update Spotify Tracks"
+            "Update Music Library"
           )}
         </Button>
       </div>
