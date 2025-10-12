@@ -371,12 +371,15 @@ const UserProfile = () => {
                       <div 
                         key={`reel-${item.id}`} 
                         className="glass rounded-xl overflow-hidden cursor-pointer border border-border/50"
-                        onClick={() => navigate('/reels')}
+                        onClick={() => {
+                          // Navigate to reels and auto-scroll to this reel
+                          navigate('/reels', { state: { scrollToReelId: item.id } });
+                        }}
                       >
                         <video
                           src={item.video_url}
                           className="w-full aspect-[9/16] object-cover"
-                          muted={!mutedVideos.has(item.id)}
+                          muted
                           playsInline
                           loop
                           autoPlay

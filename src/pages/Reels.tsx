@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX } from "lucide-react";
 import TopNav from "@/components/TopNav";
@@ -35,6 +35,7 @@ interface Reel {
 
 const Reels = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [reels, setReels] = useState<Reel[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -48,6 +49,7 @@ const Reels = () => {
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
   const [showLikes, setShowLikes] = useState(false);
   const [selectedReelForLikes, setSelectedReelForLikes] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   // Auto-unmute current reel, mute others
   useEffect(() => {
@@ -75,7 +77,26 @@ const Reels = () => {
     };
   }, [user]);
 
+  // Handle navigation to specific reel
+  useEffect(() => {
+    const state = location.state as { scrollToReelId?: string };
+    if (state?.scrollToReelId && reels.length > 0 && !isLoading) {
+      const reelIndex = reels.findIndex(r => r.id === state.scrollToReelId);
+      if (reelIndex !== -1) {
+        setCurrentIndex(reelIndex);
+        // Scroll to that reel
+        const container = document.querySelector('.snap-y');
+        if (container) {
+          container.scrollTop = reelIndex * window.innerHeight;
+        }
+        // Clear the state
+        navigate(location.pathname, { replace: true });
+      }
+    }
+  }, [location.state, reels, isLoading, navigate, location.pathname]);
+
   const fetchReels = async () => {
+    setIsLoading(true);
     // Fetch reels WITHOUT expensive profile joins
     const { data, error } = await supabase
       .from("reels")
@@ -83,7 +104,10 @@ const Reels = () => {
       .order("created_at", { ascending: false })
       .limit(10);
 
-    if (error || !data) return;
+    if (error || !data) {
+      setIsLoading(false);
+      return;
+    }
 
     // Fetch profiles separately in ONE query
     const userIds = [...new Set(data.map(r => r.user_id))];
@@ -99,6 +123,7 @@ const Reels = () => {
     }));
 
     setReels(reelsWithProfiles);
+    setIsLoading(false);
   };
 
   const fetchLikedReels = async () => {
@@ -197,7 +222,11 @@ const Reels = () => {
     <div className="h-screen bg-background overflow-hidden relative">
       <TopNav />
       
-      {reels.length === 0 ? (
+      {isLoading ? (
+        <div className="h-full flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      ) : reels.length === 0 ? (
         <div className="h-full flex items-center justify-center px-4">
           <div className="text-center space-y-4">
             <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
