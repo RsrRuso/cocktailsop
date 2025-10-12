@@ -12,11 +12,28 @@ serve(async (req) => {
   }
 
   try {
-    const { code } = await req.json();
+    const url = new URL(req.url);
+    const code = url.searchParams.get('code');
+    const state = url.searchParams.get('state'); // User ID
+    const error = url.searchParams.get('error');
     
-    if (!code) {
+    // If user denied access
+    if (error) {
       return new Response(
-        JSON.stringify({ error: 'Authorization code is required' }),
+        `<html><body><script>
+          window.opener.postMessage({ type: 'spotify-auth-error', error: '${error}' }, '*');
+          window.close();
+        </script></body></html>`,
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+          status: 200,
+        }
+      );
+    }
+    
+    if (!code || !state) {
+      return new Response(
+        JSON.stringify({ error: 'Authorization code and user ID required' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
@@ -32,10 +49,13 @@ serve(async (req) => {
     if (!clientId || !clientSecret) {
       console.error('Missing Spotify credentials');
       return new Response(
-        JSON.stringify({ error: 'Spotify credentials not configured' }),
+        `<html><body><script>
+          window.opener.postMessage({ type: 'spotify-auth-error', error: 'Spotify credentials not configured' }, '*');
+          window.close();
+        </script></body></html>`,
         {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+          status: 200,
         }
       );
     }
@@ -59,51 +79,33 @@ serve(async (req) => {
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('Token exchange error:', errorText);
-      throw new Error('Failed to exchange code for token');
-    }
-
-    const tokenData = await tokenResponse.json();
-    
-    // Get user's Supabase auth token from request
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Not authenticated' }),
+        `<html><body><script>
+          window.opener.postMessage({ type: 'spotify-auth-error', error: 'Failed to exchange code for token' }, '*');
+          window.close();
+        </script></body></html>`,
         {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+          status: 200,
         }
       );
     }
+
+    const tokenData = await tokenResponse.json();
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get user from auth token
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-
-    if (userError || !user) {
-      console.error('User error:', userError);
-      return new Response(
-        JSON.stringify({ error: 'User not found' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401,
-        }
-      );
-    }
-
     // Calculate token expiry
     const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
 
-    // Store or update Spotify connection
+    // Store connection with the user's app ID from state parameter
     const { error: upsertError } = await supabaseAdmin
       .from('spotify_connections')
       .upsert({
-        user_id: user.id,
+        user_id: state, // App user ID from state parameter
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
         expires_at: expiresAt,
@@ -114,18 +116,28 @@ serve(async (req) => {
 
     if (upsertError) {
       console.error('Upsert error:', upsertError);
-      throw upsertError;
+      return new Response(
+        `<html><body><script>
+          window.opener.postMessage({ type: 'spotify-auth-error', error: 'Failed to store connection' }, '*');
+          window.close();
+        </script></body></html>`,
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'text/html' },
+          status: 200,
+        }
+      );
     }
 
     console.log('Spotify connection stored successfully');
 
+    // Return HTML that closes popup and notifies parent
     return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: 'Spotify account connected successfully'
-      }),
+      `<html><body><script>
+        window.opener.postMessage({ type: 'spotify-auth-success' }, '*');
+        window.close();
+      </script></body></html>`,
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'text/html' },
         status: 200,
       }
     );

@@ -36,7 +36,13 @@ const SpotifyConnect = () => {
     }
   };
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Please log in first');
+      return;
+    }
+
     const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
     const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/spotify-oauth-callback`;
     const scopes = [
@@ -57,6 +63,7 @@ const SpotifyConnect = () => {
       `&response_type=code` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=${encodeURIComponent(scopes)}` +
+      `&state=${user.id}` +
       `&show_dialog=true`;
 
     // Open Spotify auth in new window
