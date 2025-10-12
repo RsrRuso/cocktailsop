@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
-import { Music, X, RotateCcw } from "lucide-react";
+import { Music, X, Play } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -109,6 +109,10 @@ const MusicTicker = () => {
     setIframeKey(prev => prev + 1);
   };
 
+  const handlePlay = () => {
+    setIframeKey(prev => prev + 1);
+  };
+
   const handleDeleteShare = async (shareId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -203,11 +207,11 @@ const MusicTicker = () => {
             <span className="text-[10px] font-medium text-foreground/80">🎵 Now Playing</span>
             <div className="flex items-center gap-1">
               <button
-                onClick={handleReplay}
-                className="w-5 h-5 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center transition-colors"
-                title="Replay"
+                onClick={handlePlay}
+                className="w-5 h-5 rounded-full bg-green-500/20 hover:bg-green-500/30 flex items-center justify-center transition-colors"
+                title="Play"
               >
-                <RotateCcw className="w-3 h-3 text-primary" />
+                <Play className="w-3 h-3 text-green-500 fill-green-500" />
               </button>
               <button
                 onClick={() => setPlayingTrackId(null)}
