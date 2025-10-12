@@ -105,11 +105,11 @@ const MusicTicker = () => {
   const handlePlayTrack = (trackId: string) => {
     console.log('Opening Spotify player for track:', trackId);
     setPlayingTrackId(trackId);
+    setIsPlaying(true);
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation();
     setIsDragging(true);
     setDragOffset({
       x: e.clientX - position.x,
@@ -117,39 +117,27 @@ const MusicTicker = () => {
     });
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    
-    const newX = e.clientX - dragOffset.x;
-    const newY = e.clientY - dragOffset.y;
-    
-    // Keep within viewport bounds
-    const maxX = window.innerWidth - 224; // 56 * 4 = 224px (w-56)
-    const maxY = window.innerHeight - 150;
-    
-    setPosition({
-      x: Math.max(0, Math.min(newX, maxX)),
-      y: Math.max(0, Math.min(newY, maxY))
-    });
-  };
-
-  const handleMouseUp = (e: MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying);
-    if (isPlaying) {
-      // Pause by setting to null temporarily
-      const currentTrack = playingTrackId;
-      setPlayingTrackId(null);
-      setTimeout(() => setPlayingTrackId(currentTrack), 50);
-    }
-  };
-
   useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
+      const newX = e.clientX - dragOffset.x;
+      const newY = e.clientY - dragOffset.y;
+      
+      // Keep within viewport bounds
+      const maxX = window.innerWidth - 224; // 56 * 4 = 224px (w-56)
+      const maxY = window.innerHeight - 150;
+      
+      setPosition({
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY))
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
@@ -158,7 +146,16 @@ const MusicTicker = () => {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, dragOffset, position]);
+  }, [isDragging, dragOffset.x, dragOffset.y]);
+
+  const togglePlay = () => {
+    const currentTrack = playingTrackId;
+    setPlayingTrackId(null);
+    setTimeout(() => {
+      setPlayingTrackId(currentTrack);
+      setIsPlaying(prev => !prev);
+    }, 100);
+  };
 
   const handleDeleteShare = async (shareId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -250,25 +247,29 @@ const MusicTicker = () => {
 
       {playingTrackId && (
         <div 
-          className="fixed z-50 w-56 p-2 bg-background/20 backdrop-blur-md rounded-xl shadow-2xl border border-primary/10"
+          className="fixed z-50 w-56 bg-background/20 backdrop-blur-md rounded-xl shadow-2xl border border-primary/10"
           style={{ 
             left: `${position.x}px`, 
             top: `${position.y}px`,
-            cursor: isDragging ? 'grabbing' : 'default'
+            cursor: isDragging ? 'grabbing' : 'default',
+            userSelect: 'none'
           }}
         >
           <div 
-            className="flex items-center justify-between mb-1.5 cursor-grab active:cursor-grabbing"
+            className="flex items-center justify-between p-2 pb-1.5 cursor-grab active:cursor-grabbing"
             onMouseDown={handleMouseDown}
+            style={{ touchAction: 'none' }}
           >
-            <span className="text-[10px] font-medium text-foreground/80">Now Playing</span>
-            <div className="flex items-center gap-1">
+            <span className="text-[10px] font-medium text-foreground/80 pointer-events-none">Now Playing</span>
+            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
               <button
+                onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   togglePlay();
                 }}
-                className="w-5 h-5 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center transition-colors"
+                className="w-5 h-5 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center transition-colors cursor-pointer"
                 title={isPlaying ? "Pause" : "Play"}
               >
                 {isPlaying ? (
@@ -278,20 +279,23 @@ const MusicTicker = () => {
                 )}
               </button>
               <button
+                onMouseDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   setPlayingTrackId(null);
+                  setIsPlaying(false);
                 }}
-                className="w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors"
+                className="w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors cursor-pointer"
                 title="Close"
               >
                 <X className="w-3 h-3 text-red-400" />
               </button>
             </div>
           </div>
-          <div className="rounded-lg overflow-hidden pointer-events-none">
+          <div className="px-2 pb-2 rounded-lg overflow-hidden">
             <iframe
-              style={{ borderRadius: '8px', pointerEvents: 'auto' }}
+              style={{ borderRadius: '8px' }}
               src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`}
               width="100%"
               height="80"
