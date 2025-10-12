@@ -54,6 +54,7 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
   );
 
   const handlePreview = (track: MusicTrack) => {
+    console.log('Preview clicked for track:', track.track_id, track.title);
     if (previewVideoId === track.track_id) {
       setPreviewVideoId(null);
     } else {

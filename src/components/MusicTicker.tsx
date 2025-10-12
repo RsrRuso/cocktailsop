@@ -66,6 +66,7 @@ const MusicTicker = () => {
   };
 
   const handlePlayVideo = (videoId: string) => {
+    console.log('Opening YouTube player for video:', videoId);
     setPlayingVideoId(videoId);
   };
 
