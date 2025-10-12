@@ -53,6 +53,7 @@ const Reels = () => {
   useEffect(() => {
     if (reels.length > 0 && currentIndex >= 0 && currentIndex < reels.length) {
       const currentReelId = reels[currentIndex].id;
+      // Keep all reels EXCEPT current in the muted set
       setMutedVideos(new Set(reels.map(r => r.id).filter(id => id !== currentReelId)));
     }
   }, [currentIndex, reels]);
@@ -231,7 +232,7 @@ const Reels = () => {
                 className="absolute inset-0 w-full h-full object-cover"
                 loop
                 playsInline
-                muted={!mutedVideos.has(reel.id)}
+                muted={mutedVideos.has(reel.id)}
                 autoPlay={index === currentIndex}
                 preload={Math.abs(index - currentIndex) <= 1 ? "auto" : "none"}
               />
@@ -251,10 +252,10 @@ const Reels = () => {
                 }}
                 className="absolute top-20 right-4 z-20 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all"
               >
-                {!mutedVideos.has(reel.id) ? (
-                  <Volume2 className="w-5 h-5 text-white" />
-                ) : (
+                {mutedVideos.has(reel.id) ? (
                   <VolumeX className="w-5 h-5 text-white" />
+                ) : (
+                  <Volume2 className="w-5 h-5 text-white" />
                 )}
               </button>
 
