@@ -68,7 +68,8 @@ serve(async (req) => {
     }
 
     const playlistsData = await playlistsResponse.json();
-    console.log(`Found ${playlistsData.items.length} playlists`);
+    console.log('Playlists data:', JSON.stringify(playlistsData, null, 2));
+    console.log(`Found ${playlistsData.items?.length || 0} playlists`);
 
     const allTracks: any[] = [];
     const trackIds = new Set<string>();
