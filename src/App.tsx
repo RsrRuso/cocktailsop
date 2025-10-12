@@ -56,6 +56,7 @@ const Reels = lazy(() => import("./pages/Reels"));
 const Reposted = lazy(() => import("./pages/Reposted"));
 const StoryViewer = lazy(() => import("./pages/StoryViewer"));
 const UpdateMusicLibrary = lazy(() => import("./pages/UpdateMusicLibrary"));
+const Introduction = lazy(() => import("./pages/Introduction"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -121,6 +122,7 @@ const App = () => (
           <Route path="/reels" element={<Reels />} />
           <Route path="/reposted" element={<Reposted />} />
           <Route path="/update-music-library" element={<UpdateMusicLibrary />} />
+          <Route path="/introduction" element={<Introduction />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
               </Routes>

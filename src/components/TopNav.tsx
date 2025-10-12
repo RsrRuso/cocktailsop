@@ -425,6 +425,16 @@ const TopNav = () => {
           >
             OPS
           </button>
+          
+          <button
+            onClick={() => {
+              lightTap();
+              navigate("/introduction");
+            }}
+            className="glass-hover px-3 py-2 rounded-2xl font-semibold text-sm"
+          >
+            INFO
+          </button>
           </div>
         </div>
       </div>
