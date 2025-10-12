@@ -250,7 +250,7 @@ const Profile = () => {
       
       {/* Cover Photo */}
       {coverUrl && (
-        <div className="w-full h-48 overflow-hidden cover-3d rounded-b-2xl">
+        <div className="w-full h-48 cover-3d">
           <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
         </div>
       )}

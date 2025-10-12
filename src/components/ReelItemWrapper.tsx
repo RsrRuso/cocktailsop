@@ -165,7 +165,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
       </div>
 
       {/* User Info - Left Bottom */}
-      <div className="absolute bottom-20 left-4 right-20 z-10 space-y-2">
+      <div className="absolute bottom-20 left-4 right-20 z-10 space-y-3">
         <div className="flex items-center gap-2">
           <OptimizedAvatar
             src={reel.profiles?.avatar_url}
@@ -174,12 +174,12 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
             userId={reel.user_id}
             className="w-10 h-10 border-2 border-white avatar-3d"
           />
-          <p className="text-white font-semibold text-3d-neon">@{reel.profiles?.username}</p>
+          <p className="text-white font-bold text-lg text-3d-neon">@{reel.profiles?.username}</p>
         </div>
-        <p className="text-white text-sm line-clamp-2 text-3d-neon">{reel.caption}</p>
+        <p className="text-white text-base line-clamp-3 caption-3d-neon">{reel.caption}</p>
         <div className="flex items-center gap-2">
-          <Music className="w-4 h-4 text-white" />
-          <p className="text-white text-xs text-3d-neon">Original Audio</p>
+          <Music className="w-5 h-5 text-white drop-shadow-[0_0_10px_rgba(195,221,253,0.8)]" />
+          <p className="text-white text-sm font-semibold text-3d-neon">Original Audio</p>
         </div>
       </div>
     </div>
