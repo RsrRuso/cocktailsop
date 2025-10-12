@@ -411,41 +411,96 @@ const Profile = () => {
         </div>
 
         {/* Content Tabs */}
-        <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 glass">
-            <TabsTrigger value="posts">Posts</TabsTrigger>
+        <Tabs defaultValue="feed" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 glass">
+            <TabsTrigger value="feed">Feed</TabsTrigger>
             <TabsTrigger value="stories">Stories</TabsTrigger>
-            <TabsTrigger value="reels">Reels</TabsTrigger>
             <TabsTrigger value="growth">Growth</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="posts" className="mt-4">
-            {posts.length === 0 ? (
+          <TabsContent value="feed" className="mt-4">
+            {[...posts.map(p => ({ ...p, type: 'post' })), ...reels.map(r => ({ ...r, type: 'reel' }))]
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .length === 0 ? (
               <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
-                <p>No posts yet</p>
+                <p>No posts or reels yet</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {posts.map((post) => (
-                  <div key={post.id} className="glass rounded-xl p-4 space-y-3 border border-border/50">
-                    {post.content && <p className="text-sm">{post.content}</p>}
-                    {post.media_urls && post.media_urls.length > 0 && (
-                      <div className={`grid gap-2 ${post.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                        {post.media_urls.map((url, idx) => (
-                          <img key={idx} src={url} alt="Post" className="w-full rounded-lg object-cover" />
-                        ))}
+                {[...posts.map(p => ({ ...p, type: 'post' })), ...reels.map(r => ({ ...r, type: 'reel' }))]
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .map((item: any) => (
+                    item.type === 'post' ? (
+                      <div key={`post-${item.id}`} className="glass rounded-xl p-4 space-y-3 border border-border/50">
+                        {item.content && <p className="text-sm">{item.content}</p>}
+                        {item.media_urls && item.media_urls.length > 0 && (
+                          <div className={`grid gap-2 ${item.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                            {item.media_urls.map((url, idx) => (
+                              <img key={idx} src={url} alt="Post" className="w-full rounded-lg object-cover" />
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Heart className="w-4 h-4" /> {item.like_count || 0}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageCircle className="w-4 h-4" /> {item.comment_count || 0}
+                          </span>
+                        </div>
                       </div>
-                    )}
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Heart className="w-4 h-4" /> {post.like_count || 0}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MessageCircle className="w-4 h-4" /> {post.comment_count || 0}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                    ) : (
+                      <div 
+                        key={`reel-${item.id}`} 
+                        className="glass rounded-xl overflow-hidden cursor-pointer border border-border/50"
+                        onClick={() => navigate('/reels')}
+                      >
+                        <video
+                          src={item.video_url}
+                          className="w-full aspect-[9/16] object-cover"
+                          muted={!mutedVideos.has(item.id)}
+                          playsInline
+                          loop
+                          autoPlay
+                        />
+                        <div className="p-4 space-y-2">
+                          {item.caption && <p className="text-sm">{item.caption}</p>}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Play className="w-4 h-4" /> {item.view_count || 0}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Heart className="w-4 h-4" /> {item.like_count || 0}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MessageCircle className="w-4 h-4" /> {item.comment_count || 0}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMutedVideos(prev => {
+                                  const newSet = new Set(prev);
+                                  if (newSet.has(item.id)) {
+                                    newSet.delete(item.id);
+                                  } else {
+                                    newSet.add(item.id);
+                                  }
+                                  return newSet;
+                                });
+                              }}
+                              className="ml-auto"
+                            >
+                              {mutedVideos.has(item.id) ? (
+                                <Volume2 className="w-4 h-4" />
+                              ) : (
+                                <VolumeX className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  ))}
               </div>
             )}
           </TabsContent>
@@ -482,76 +537,6 @@ const Profile = () => {
                         {story.media_urls.length} items
                       </div>
                     )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="reels" className="mt-4">
-            {reels.length === 0 ? (
-              <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
-                <p>No reels yet</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 gap-1">
-                {reels.map((reel) => (
-                  <div 
-                    key={reel.id} 
-                    className="aspect-[9/16] relative overflow-hidden cursor-pointer group"
-                  >
-                    <video
-                      src={reel.video_url}
-                      className="w-full h-full object-cover"
-                      muted={!mutedVideos.has(reel.id)}
-                      playsInline
-                      loop
-                      autoPlay
-                      onClick={() => navigate('/reels')}
-                    />
-                    
-                    {/* View Count - Always Visible */}
-                    <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-sm font-semibold drop-shadow-lg z-10">
-                      <Play className="w-4 h-4 fill-white" />
-                      <span>{reel.view_count || 0}</span>
-                    </div>
-                    
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMutedVideos(prev => {
-                          const newSet = new Set(prev);
-                          if (newSet.has(reel.id)) {
-                            newSet.delete(reel.id);
-                          } else {
-                            newSet.add(reel.id);
-                          }
-                          return newSet;
-                        });
-                      }}
-                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all opacity-0 group-hover:opacity-100 z-10"
-                    >
-                      {mutedVideos.has(reel.id) ? (
-                        <Volume2 className="w-3 h-3 text-white" />
-                      ) : (
-                        <VolumeX className="w-3 h-3 text-white" />
-                      )}
-                    </button>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="absolute bottom-2 left-2 right-2 space-y-1">
-                        {reel.caption && (
-                          <p className="text-xs text-white line-clamp-2">{reel.caption}</p>
-                        )}
-                        <div className="flex items-center gap-3 text-xs text-white">
-                          <span className="flex items-center gap-1">
-                            <Heart className="w-3 h-3" /> {reel.like_count || 0}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MessageCircle className="w-3 h-3" /> {reel.comment_count || 0}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 ))}
               </div>
