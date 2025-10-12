@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
-import { Music, X } from "lucide-react";
+import { Music, X, Heart, MessageCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogOverlay, DialogTitle, DialogDescription } from "./ui/dialog";
+import { Button } from "./ui/button";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { MusicShareCommentsDialog } from "./MusicShareCommentsDialog";
 
 interface MusicShare {
   id: string;
@@ -14,6 +16,8 @@ interface MusicShare {
   track_title: string;
   track_artist: string;
   created_at: string;
+  like_count: number;
+  comment_count: number;
   profile?: {
     username: string;
     avatar_url: string | null;
@@ -28,9 +32,14 @@ const MusicTicker = () => {
   const { user } = useAuth();
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+  const [likedShares, setLikedShares] = useState<Set<string>>(new Set());
+  const [selectedShareForComments, setSelectedShareForComments] = useState<MusicShare | null>(null);
 
   useEffect(() => {
     fetchMusicShares();
+    if (user) {
+      fetchLikedShares();
+    }
 
     const channel = supabase
       .channel("music_shares_changes")
@@ -40,6 +49,29 @@ const MusicTicker = () => {
           event: "*",
           schema: "public",
           table: "music_shares",
+        },
+        () => {
+          fetchMusicShares();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "music_share_likes",
+        },
+        () => {
+          fetchMusicShares();
+          if (user) fetchLikedShares();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "music_share_comments",
         },
         () => {
           fetchMusicShares();
@@ -105,6 +137,48 @@ const MusicTicker = () => {
     setPlayingTrackId(trackId);
   };
 
+  const fetchLikedShares = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("music_share_likes")
+      .select("music_share_id")
+      .eq("user_id", user.id);
+
+    const likedIds = new Set(data?.map(l => l.music_share_id) || []);
+    setLikedShares(likedIds);
+  };
+
+  const handleLike = async (shareId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+
+    const isLiked = likedShares.has(shareId);
+
+    if (isLiked) {
+      await supabase
+        .from("music_share_likes")
+        .delete()
+        .eq("music_share_id", shareId)
+        .eq("user_id", user.id);
+    } else {
+      await supabase
+        .from("music_share_likes")
+        .insert({
+          music_share_id: shareId,
+          user_id: user.id,
+        });
+    }
+
+    fetchMusicShares();
+    fetchLikedShares();
+  };
+
+  const handleComment = (share: MusicShare, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedShareForComments(share);
+  };
+
   const handleDeleteShare = async (shareId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -139,11 +213,11 @@ const MusicTicker = () => {
       <div className="w-full overflow-x-auto py-2 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50 relative scrollbar-hide">
         <div className="flex gap-4 px-4 animate-scroll-left" style={{ width: 'max-content' }}>
           {[...musicShares, ...musicShares, ...musicShares].map((share, index) => {
+            const isLiked = likedShares.has(share.id);
             return (
               <div
                 key={`${share.id}-${index}`}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-br from-card to-card/50 rounded-lg border border-primary/20 shadow-lg shrink-0 min-w-[280px] max-w-[280px] hover:scale-105 hover:shadow-xl hover:border-primary/40 transition-all cursor-pointer group relative"
-                onClick={() => handlePlayTrack(share.track_id)}
+                className="flex flex-col gap-2 px-3 py-2 bg-gradient-to-br from-card to-card/50 rounded-lg border border-primary/20 shadow-lg shrink-0 min-w-[280px] max-w-[280px] hover:scale-105 hover:shadow-xl hover:border-primary/40 transition-all group relative"
               >
                 {user?.id === share.user_id && (
                   <button
@@ -154,38 +228,65 @@ const MusicTicker = () => {
                     <X className="w-4 h-4 text-white" />
                   </button>
                 )}
-                {share.track?.preview_url ? (
-                  <div className="relative shrink-0">
-                    <img 
-                      src={share.track.preview_url} 
-                      alt={share.track_title}
-                      className="w-10 h-10 object-cover rounded-lg"
-                    />
-                    <div className="absolute inset-0 bg-black/20 rounded-lg group-hover:bg-black/0 transition-all" />
-                  </div>
-                ) : (
-                  <div className="relative shrink-0">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
-                      <Music className="w-5 h-5 text-purple-400" />
-                    </div>
-                  </div>
-                )}
                 
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1 mb-0.5">
-                    <OptimizedAvatar
-                      src={share.profile?.avatar_url}
-                      alt={share.profile?.username || 'User'}
-                      className="w-3 h-3 inline-block ring-1 ring-primary/20"
-                    />
-                    <span className="font-medium">@{share.profile?.username || 'Unknown'}</span>
-                  </p>
-                  <p className="font-bold text-xs truncate text-foreground">{share.track_title}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">{share.track_artist}</p>
+                <div 
+                  className="flex items-center gap-2 cursor-pointer"
+                  onClick={() => handlePlayTrack(share.track_id)}
+                >
+                  {share.track?.preview_url ? (
+                    <div className="relative shrink-0">
+                      <img 
+                        src={share.track.preview_url} 
+                        alt={share.track_title}
+                        className="w-10 h-10 object-cover rounded-lg"
+                      />
+                      <div className="absolute inset-0 bg-black/20 rounded-lg group-hover:bg-black/0 transition-all" />
+                    </div>
+                  ) : (
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center">
+                        <Music className="w-5 h-5 text-purple-400" />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1 mb-0.5">
+                      <OptimizedAvatar
+                        src={share.profile?.avatar_url}
+                        alt={share.profile?.username || 'User'}
+                        className="w-3 h-3 inline-block ring-1 ring-primary/20"
+                      />
+                      <span className="font-medium">@{share.profile?.username || 'Unknown'}</span>
+                    </p>
+                    <p className="font-bold text-xs truncate text-foreground">{share.track_title}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{share.track_artist}</p>
+                  </div>
+
+                  <div className="shrink-0 bg-green-500/10 p-1.5 rounded-lg group-hover:bg-green-500/20 transition-colors">
+                    <Music className="w-4 h-4 text-green-500" />
+                  </div>
                 </div>
 
-                <div className="shrink-0 bg-green-500/10 p-1.5 rounded-lg group-hover:bg-green-500/20 transition-colors">
-                  <Music className="w-4 h-4 text-green-500" />
+                <div className="flex items-center gap-2 pt-1 border-t border-border/30">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-6 px-2 gap-1 ${isLiked ? 'text-red-500' : ''}`}
+                    onClick={(e) => handleLike(share.id, e)}
+                  >
+                    <Heart className={`w-3 h-3 ${isLiked ? 'fill-current' : ''}`} />
+                    <span className="text-xs">{share.like_count || 0}</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 gap-1"
+                    onClick={(e) => handleComment(share, e)}
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                    <span className="text-xs">{share.comment_count || 0}</span>
+                  </Button>
                 </div>
               </div>
             );
@@ -223,6 +324,16 @@ const MusicTicker = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {selectedShareForComments && (
+        <MusicShareCommentsDialog
+          open={!!selectedShareForComments}
+          onOpenChange={(open) => !open && setSelectedShareForComments(null)}
+          musicShareId={selectedShareForComments.id}
+          trackTitle={selectedShareForComments.track_title}
+          trackArtist={selectedShareForComments.track_artist}
+        />
+      )}
     </>
   );
 };

@@ -594,26 +594,93 @@ export type Database = {
           },
         ]
       }
-      music_shares: {
+      music_share_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          music_share_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          music_share_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          music_share_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "music_share_comments_music_share_id_fkey"
+            columns: ["music_share_id"]
+            isOneToOne: false
+            referencedRelation: "music_shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      music_share_likes: {
         Row: {
           created_at: string
           id: string
+          music_share_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          music_share_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          music_share_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "music_share_likes_music_share_id_fkey"
+            columns: ["music_share_id"]
+            isOneToOne: false
+            referencedRelation: "music_shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      music_shares: {
+        Row: {
+          comment_count: number | null
+          created_at: string
+          id: string
+          like_count: number | null
           track_artist: string
           track_id: string
           track_title: string
           user_id: string
         }
         Insert: {
+          comment_count?: number | null
           created_at?: string
           id?: string
+          like_count?: number | null
           track_artist: string
           track_id: string
           track_title: string
           user_id: string
         }
         Update: {
+          comment_count?: number | null
           created_at?: string
           id?: string
+          like_count?: number | null
           track_artist?: string
           track_id?: string
           track_title?: string
