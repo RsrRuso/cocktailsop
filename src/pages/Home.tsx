@@ -348,7 +348,7 @@ const Home = () => {
               mutedVideos={mutedVideos}
               onLike={() => item.type === 'post' ? handleLikePost(item.id) : handleLikeReel(item.id)}
               onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
-              onEdit={() => navigate(`/edit-post/${item.id}`)}
+              onEdit={() => item.type === 'post' ? navigate(`/edit-post/${item.id}`) : navigate(`/edit-reel/${item.id}`)}
               onComment={() => {
                 setSelectedPostId(item.id);
                 setSelectedPostType(item.type);
