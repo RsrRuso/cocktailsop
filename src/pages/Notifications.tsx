@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
 import { TestNotificationButton } from "@/components/TestNotificationButton";
 import { NotificationTestPanel } from "@/components/NotificationTestPanel";
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 interface Notification {
   id: string;
@@ -24,6 +25,17 @@ const Notifications = () => {
   const { showNotification } = useInAppNotificationContext();
 
   useEffect(() => {
+    // Request notification permissions
+    const requestPermissions = async () => {
+      try {
+        const result = await LocalNotifications.requestPermissions();
+        console.log('Notification permissions:', result);
+      } catch (error) {
+        console.log('Notification permissions not available on web');
+      }
+    };
+    
+    requestPermissions();
     fetchNotifications();
     
     // Set up realtime subscription for new notifications
@@ -36,16 +48,36 @@ const Notifications = () => {
           schema: 'public',
           table: 'notifications'
         },
-        (payload) => {
+        async (payload) => {
           fetchNotifications();
-          // Send in-app notification
+          
           const newNotification = payload.new as Notification;
-          if (newNotification.type !== 'message') {
-            showNotification(
-              'New Notification',
-              newNotification.content,
-              newNotification.type as any
-            );
+          
+          // Send in-app notification for ALL types
+          showNotification(
+            'New Notification',
+            newNotification.content,
+            newNotification.type as any
+          );
+          
+          // Send mobile push notification
+          try {
+            await LocalNotifications.schedule({
+              notifications: [
+                {
+                  title: 'New Notification',
+                  body: newNotification.content,
+                  id: Math.floor(Math.random() * 1000000),
+                  schedule: { at: new Date(Date.now() + 100) },
+                  sound: 'default',
+                  attachments: undefined,
+                  actionTypeId: '',
+                  extra: { type: newNotification.type }
+                }
+              ]
+            });
+          } catch (error) {
+            console.log('Local notifications not available:', error);
           }
         }
       )
@@ -54,7 +86,7 @@ const Notifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [showNotification]);
 
   const fetchNotifications = async () => {
     const { data: { user } } = await supabase.auth.getUser();
