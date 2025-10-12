@@ -383,6 +383,7 @@ export type Database = {
           is_active: boolean | null
           like_count: number | null
           region: string
+          status: string
           title: string
           updated_at: string | null
           user_id: string
@@ -399,6 +400,7 @@ export type Database = {
           is_active?: boolean | null
           like_count?: number | null
           region: string
+          status?: string
           title: string
           updated_at?: string | null
           user_id: string
@@ -415,6 +417,7 @@ export type Database = {
           is_active?: boolean | null
           like_count?: number | null
           region?: string
+          status?: string
           title?: string
           updated_at?: string | null
           user_id?: string
@@ -1812,6 +1815,10 @@ export type Database = {
         Returns: boolean
       }
       recalculate_follow_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_expired_events: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
