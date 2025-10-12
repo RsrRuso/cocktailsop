@@ -22,22 +22,22 @@ const CreateStory = () => {
     let processedCount = 0;
 
     files.forEach((file) => {
-      // Validate MIME types
-      const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
-      const allowedVideoTypes = ['video/mp4', 'video/webm'];
+      // Validate MIME types - accept all common video and image formats
+      const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/heic'];
+      const allowedVideoTypes = [
+        'video/mp4', 
+        'video/webm', 
+        'video/quicktime',  // .mov (iPhone)
+        'video/x-msvideo',  // .avi
+        'video/3gpp',       // .3gp (Android)
+        'video/x-matroska', // .mkv
+        'video/mpeg',       // .mpeg
+        'video/x-m4v'       // .m4v
+      ];
       const isVideo = file.type.startsWith('video/');
       const isImage = file.type.startsWith('image/');
       
-      if (isVideo && !allowedVideoTypes.includes(file.type)) {
-        toast.error(`${file.name}: Invalid video format. Please upload MP4 or WebM`);
-        return;
-      }
-      
-      if (isImage && !allowedImageTypes.includes(file.type)) {
-        toast.error(`${file.name}: Invalid image format. Please upload JPEG, PNG, or WebP`);
-        return;
-      }
-      
+      // More lenient validation - accept any video or image format
       if (!isVideo && !isImage) {
         toast.error(`${file.name}: Invalid file type. Please upload images or videos only`);
         return;
@@ -284,7 +284,7 @@ const CreateStory = () => {
             </Button>
           </div>
           <p className="text-xs text-center text-muted-foreground mt-2">
-            📸 Images: 15MB max • 🎥 Videos: 50MB max • High quality preserved
+            📸 All image formats • 🎥 All video formats • Max 50MB
           </p>
         </div>
       </div>

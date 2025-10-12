@@ -22,10 +22,21 @@ const CreateReel = () => {
     const file = acceptedFiles[0];
     if (!file) return;
 
-    // Validate video file type
-    const allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Invalid video format. Please upload MP4, WebM, or QuickTime");
+    // Validate video file type - accept all common video formats
+    const allowedTypes = [
+      'video/mp4', 
+      'video/webm', 
+      'video/quicktime',  // .mov (iPhone)
+      'video/x-msvideo',  // .avi
+      'video/3gpp',       // .3gp (Android)
+      'video/x-matroska', // .mkv
+      'video/mpeg',       // .mpeg
+      'video/x-m4v'       // .m4v
+    ];
+    
+    // More lenient - accept any video format
+    if (!file.type.startsWith('video/')) {
+      toast.error("Please upload a video file");
       return;
     }
 
@@ -287,7 +298,7 @@ const CreateReel = () => {
                     : "Drag and drop a video, or click to select"}
                 </p>
                 <p className="text-xs text-muted-foreground px-4 text-center">
-                  MP4, MOV, AVI, WebM • Max 200MB
+                  All video formats supported • Max 200MB
                 </p>
               </div>
 
