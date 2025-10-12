@@ -49,6 +49,14 @@ const Reels = () => {
   const [showLikes, setShowLikes] = useState(false);
   const [selectedReelForLikes, setSelectedReelForLikes] = useState("");
 
+  // Auto-unmute current reel, mute others
+  useEffect(() => {
+    if (reels.length > 0 && currentIndex >= 0 && currentIndex < reels.length) {
+      const currentReelId = reels[currentIndex].id;
+      setMutedVideos(new Set(reels.map(r => r.id).filter(id => id !== currentReelId)));
+    }
+  }, [currentIndex, reels]);
+
   useEffect(() => {
     if (user) {
       fetchReels();
@@ -243,7 +251,7 @@ const Reels = () => {
                 }}
                 className="absolute top-20 right-4 z-20 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all"
               >
-                {mutedVideos.has(reel.id) ? (
+                {!mutedVideos.has(reel.id) ? (
                   <Volume2 className="w-5 h-5 text-white" />
                 ) : (
                   <VolumeX className="w-5 h-5 text-white" />
