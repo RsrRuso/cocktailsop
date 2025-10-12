@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { UserPlus, UserMinus, Image, Video, Music, MessageSquare, Loader2 } from 'lucide-react';
+import { UserPlus, UserMinus, Image, Video, Music, MessageSquare, Loader2, Calendar } from 'lucide-react';
 
 export const NotificationTestPanel = () => {
   const [loading, setLoading] = useState<string | null>(null);
@@ -100,6 +100,31 @@ export const NotificationTestPanel = () => {
     }
   };
 
+  const createTestEvent = async () => {
+    setLoading('event');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('events')
+        .insert({
+          user_id: user.id,
+          title: '🧪 Test Event',
+          description: 'Test event to trigger follower notifications!',
+          region: 'Test Region',
+          event_date: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+        });
+
+      if (error) throw error;
+      toast.success('Test event created! Followers will get notified.');
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <Card className="glass p-6 space-y-4">
       <div className="space-y-2">
@@ -165,6 +190,20 @@ export const NotificationTestPanel = () => {
           )}
           Create Test Story
         </Button>
+
+        <Button
+          onClick={createTestEvent}
+          disabled={!!loading}
+          variant="outline"
+          className="glass-hover justify-start gap-2"
+        >
+          {loading === 'event' ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Calendar className="w-4 h-4 text-purple-500" />
+          )}
+          Create Test Event
+        </Button>
       </div>
 
       <div className="pt-4 border-t border-primary/20">
@@ -193,6 +232,10 @@ export const NotificationTestPanel = () => {
           <li className="flex items-center gap-2">
             <MessageSquare className="w-3 h-3 text-yellow-500" />
             New story notifications to followers
+          </li>
+          <li className="flex items-center gap-2">
+            <Calendar className="w-3 h-3 text-purple-500" />
+            New event notifications to followers
           </li>
         </ul>
       </div>
