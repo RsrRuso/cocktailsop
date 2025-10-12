@@ -5,18 +5,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Upload, Video, X, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
+import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
 
 const CreateReel = () => {
   const navigate = useNavigate();
   const [caption, setCaption] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStage, setUploadStage] = useState("");
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const { uploadState, uploadSingle } = usePowerfulUpload();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -69,10 +68,6 @@ const CreateReel = () => {
       return;
     }
 
-    setLoading(true);
-    setUploadProgress(0);
-    setUploadStage("Preparing");
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -80,88 +75,35 @@ const CreateReel = () => {
         return;
       }
 
-      // Simulate preparing stage
-      for (let i = 0; i <= 15; i += 3) {
-        setUploadProgress(i);
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
-      const fileExt = selectedVideo.name.split(".").pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      // Upload using powerful upload system
+      const result = await uploadSingle('reels', user.id, selectedVideo);
       
-      setUploadProgress(20);
-      setUploadStage("Uploading");
-
-      // Simulate upload progress
-      const uploadInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 70) {
-            clearInterval(uploadInterval);
-            return 70;
-          }
-          return prev + 5;
-        });
-      }, 200);
-
-      const { error: uploadError } = await supabase.storage
-        .from("reels")
-        .upload(fileName, selectedVideo, {
-          contentType: selectedVideo.type,
-          upsert: false,
-        });
-
-      clearInterval(uploadInterval);
-
-      if (uploadError) throw uploadError;
-
-      setUploadProgress(75);
-      setUploadStage("Processing");
-
-      // Smooth transition through processing
-      for (let i = 75; i <= 85; i += 2) {
-        setUploadProgress(i);
-        await new Promise(resolve => setTimeout(resolve, 80));
+      if (result.error) {
+        throw result.error;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from("reels")
-        .getPublicUrl(fileName);
-
-      setUploadProgress(90);
-      setUploadStage("Saving");
-
+      // Save to database
       const { error: dbError } = await supabase.from("reels").insert({
         user_id: user.id,
-        video_url: publicUrl,
+        video_url: result.publicUrl,
         caption: caption || "",
-        thumbnail_url: publicUrl,
+        thumbnail_url: result.publicUrl,
       });
 
       if (dbError) throw dbError;
 
-      // Final completion
-      for (let i = 90; i <= 100; i += 2) {
-        setUploadProgress(i);
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-
-      setUploadStage("Done!");
-      
       toast.success("Reel uploaded successfully!");
       
-      // Reset form after successful upload
+      // Reset form
       setTimeout(() => {
         setPreviewUrl("");
         setSelectedVideo(null);
         setCaption("");
+        navigate("/reels");
       }, 1000);
     } catch (error: any) {
       console.error("Error:", error);
       toast.error("Upload failed: " + (error.message || "Unknown error"));
-    } finally {
-      setLoading(false);
-      setUploadProgress(0);
-      setUploadStage("");
     }
   };
 
@@ -182,12 +124,21 @@ const CreateReel = () => {
           <h1 className="text-xl font-bold">Create Reel</h1>
           <Button
             onClick={handleCreateReel}
-            disabled={loading || !previewUrl}
+            disabled={uploadState.isUploading || !previewUrl}
             className="glow-primary"
             size="sm"
           >
-            <Upload className="w-4 h-4 mr-2" />
-            Share
+            {uploadState.isUploading ? (
+              <>
+                <Zap className="w-4 h-4 mr-2 animate-pulse" />
+                Uploading
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4 mr-2" />
+                Share
+              </>
+            )}
           </Button>
         </div>
 
@@ -217,60 +168,34 @@ const CreateReel = () => {
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
                 className="glass border-primary/20 min-h-[100px]"
+                disabled={uploadState.isUploading}
               />
 
-              {loading && (
+              {uploadState.isUploading && (
                 <div className="glass rounded-xl p-6 space-y-4 border border-primary/20">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {uploadProgress === 100 ? (
+                      {uploadState.progress === 100 ? (
                         <CheckCircle2 className="w-6 h-6 text-green-500 animate-in zoom-in" />
                       ) : (
-                        <div className="relative w-6 h-6">
-                          <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
-                          <div 
-                            className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"
-                          />
-                        </div>
+                        <Zap className="w-6 h-6 text-primary animate-pulse" />
                       )}
                       <div>
-                        <p className="font-semibold text-sm">{uploadStage}</p>
-                        <p className="text-xs text-muted-foreground">Please wait...</p>
+                        <p className="font-semibold text-sm">{uploadState.stage}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {uploadState.progress < 100 ? "Please wait..." : "Complete!"}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                        {Math.round(uploadProgress)}%
+                        {Math.round(uploadState.progress)}%
                       </p>
                     </div>
                   </div>
                   
                   <div className="relative">
-                    <Progress value={uploadProgress} className="h-3" />
-                    <div className="absolute inset-0 overflow-hidden rounded-full">
-                      <div className="h-full w-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-2 text-xs">
-                    {['Prepare', 'Upload', 'Process', 'Save'].map((stage, idx) => {
-                      const stageProgress = (idx + 1) * 25;
-                      const isActive = uploadProgress >= stageProgress - 20;
-                      const isComplete = uploadProgress >= stageProgress;
-                      
-                      return (
-                        <div key={stage} className="text-center space-y-1">
-                          <div className={`w-2 h-2 rounded-full mx-auto transition-all duration-300 ${
-                            isComplete ? 'bg-green-500 scale-125' : 
-                            isActive ? 'bg-primary animate-pulse' : 
-                            'bg-muted'
-                          }`} />
-                          <p className={`transition-colors duration-200 ${
-                            isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
-                          }`}>{stage}</p>
-                        </div>
-                      );
-                    })}
+                    <Progress value={uploadState.progress} className="h-3" />
                   </div>
                 </div>
               )}
@@ -297,8 +222,9 @@ const CreateReel = () => {
                     ? "Drop video here..."
                     : "Drag and drop a video, or click to select"}
                 </p>
-                <p className="text-xs text-muted-foreground px-4 text-center">
-                  All video formats supported • Max 200MB
+                <p className="text-xs text-muted-foreground px-4 text-center flex items-center justify-center gap-2">
+                  <Zap className="w-3 h-3 text-primary" />
+                  <span>All video formats • Smart compression • Max 200MB</span>
                 </p>
               </div>
 

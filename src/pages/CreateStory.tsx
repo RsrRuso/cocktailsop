@@ -2,16 +2,18 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Upload, Camera, X } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { ArrowLeft, Upload, Camera, X, CheckCircle2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
+import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
 
 const CreateStory = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { uploadState, uploadMultiple } = usePowerfulUpload();
 
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -79,7 +81,6 @@ const CreateStory = () => {
       return;
     }
 
-    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       navigate("/auth");
@@ -87,39 +88,23 @@ const CreateStory = () => {
     }
 
     try {
-      console.log('Starting story upload...');
+      console.log('Starting powerful upload...');
       
-      // Upload files to storage
+      // Upload files using powerful upload system
+      const results = await uploadMultiple('stories', user.id, selectedMedia);
+      
       const uploadedUrls: string[] = [];
       const mediaTypes: string[] = [];
-
-      for (let i = 0; i < selectedMedia.length; i++) {
-        const file = selectedMedia[i];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        
-        console.log(`Uploading file ${i + 1}/${selectedMedia.length}:`, fileName);
-        
-        const { error: uploadError } = await supabase.storage
-          .from('stories')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          throw uploadError;
+      
+      results.forEach((result, index) => {
+        if (!result.error) {
+          uploadedUrls.push(result.publicUrl);
+          mediaTypes.push(selectedMedia[index].type.startsWith('video') ? 'video' : 'image');
         }
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('stories')
-          .getPublicUrl(fileName);
-
-        uploadedUrls.push(publicUrl);
-        mediaTypes.push(file.type.startsWith('video') ? 'video' : 'image');
-        
-        toast.info(`Uploaded ${i + 1}/${selectedMedia.length}`);
+      });
+      
+      if (uploadedUrls.length === 0) {
+        throw new Error('All uploads failed');
       }
 
       console.log('All files uploaded, checking for existing story...');
@@ -187,8 +172,6 @@ const CreateStory = () => {
     } catch (error) {
       console.error('Error creating/updating story:', error);
       toast.error(`Failed: ${error.message || 'Unknown error'}`);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -275,17 +258,51 @@ const CreateStory = () => {
               Upload from Gallery
             </Button>
 
+            {uploadState.isUploading && (
+              <div className="glass rounded-xl p-4 space-y-3 border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {uploadState.progress === 100 ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <Zap className="w-5 h-5 text-primary animate-pulse" />
+                    )}
+                    <div>
+                      <p className="font-semibold text-sm">{uploadState.stage}</p>
+                      {uploadState.currentFile && (
+                        <p className="text-xs text-muted-foreground">
+                          {uploadState.currentFile}/{uploadState.totalFiles} files
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xl font-bold text-primary">
+                    {Math.round(uploadState.progress)}%
+                  </p>
+                </div>
+                <Progress value={uploadState.progress} className="h-2" />
+              </div>
+            )}
+
             <Button
               onClick={handleCreateStory}
-              disabled={loading || previewUrls.length === 0}
+              disabled={uploadState.isUploading || previewUrls.length === 0}
               className="w-full glow-primary h-14"
             >
-              {loading ? "Creating..." : `Share Story (${previewUrls.length})`}
+              {uploadState.isUploading ? (
+                <>
+                  <Zap className="w-4 h-4 mr-2 animate-pulse" />
+                  Uploading...
+                </>
+              ) : (
+                `Share Story (${previewUrls.length})`
+              )}
             </Button>
           </div>
-          <p className="text-xs text-center text-muted-foreground mt-2">
-            📸 All image formats • 🎥 All video formats • Max 50MB
-          </p>
+          <div className="flex items-center justify-center gap-2 text-xs text-center text-muted-foreground mt-2">
+            <Zap className="w-3 h-3 text-primary" />
+            <span>Smart compression • Auto-retry • Up to 200MB per file</span>
+          </div>
         </div>
       </div>
     </div>
