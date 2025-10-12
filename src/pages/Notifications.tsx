@@ -17,6 +17,12 @@ interface Notification {
   content: string;
   read: boolean;
   created_at: string;
+  post_id?: string;
+  reel_id?: string;
+  story_id?: string;
+  music_share_id?: string;
+  event_id?: string;
+  reference_user_id?: string;
 }
 
 const Notifications = () => {
@@ -158,6 +164,59 @@ const Notifications = () => {
         .update({ read: true })
         .eq("id", notification.id);
       fetchNotifications();
+    }
+
+    // Navigate based on notification type
+    switch (notification.type) {
+      case 'like':
+      case 'comment':
+        if (notification.post_id) {
+          navigate(`/post/${notification.post_id}`);
+        } else if (notification.reel_id) {
+          navigate('/reels'); // Reels page will auto-play the specific reel if needed
+        } else if (notification.story_id && notification.reference_user_id) {
+          navigate(`/story/${notification.reference_user_id}`);
+        }
+        break;
+      
+      case 'follow':
+      case 'unfollow':
+      case 'profile_view':
+        if (notification.reference_user_id) {
+          navigate(`/user/${notification.reference_user_id}`);
+        }
+        break;
+      
+      case 'new_post':
+      case 'new_reel':
+      case 'new_story':
+      case 'new_music':
+        if (notification.reference_user_id) {
+          navigate(`/user/${notification.reference_user_id}`);
+        }
+        break;
+      
+      case 'new_user':
+        // Extract username from content (e.g., "🎉 New user registered: username")
+        const usernameMatch = notification.content.match(/: (.+)$/);
+        if (usernameMatch) {
+          const username = usernameMatch[1];
+          // Fetch user ID by username
+          const { data } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('username', username)
+            .single();
+          
+          if (data) {
+            navigate(`/user/${data.id}`);
+          }
+        }
+        break;
+      
+      default:
+        // For other notification types, stay on notifications page
+        break;
     }
   };
 
