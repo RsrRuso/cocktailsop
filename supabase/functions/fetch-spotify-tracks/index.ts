@@ -62,7 +62,11 @@ serve(async (req) => {
 
       if (playlistResponse.ok) {
         const playlistData = await playlistResponse.json();
+        console.log(`Successfully fetched ${playlistData.items?.length || 0} tracks from playlist ${playlistId}`);
         allTracks.push(...playlistData.items);
+      } else {
+        const errorText = await playlistResponse.text();
+        console.error(`Failed to fetch playlist ${playlistId}: ${playlistResponse.status} - ${errorText}`);
       }
     }
 
