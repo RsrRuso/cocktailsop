@@ -739,6 +739,109 @@ const Profile = () => {
               </div>
             </div>
 
+            {/* Career KPIs Summary */}
+            <div className="glass rounded-xl p-4 space-y-4 border border-border/50">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-lg">Career Development Score</h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMetricsDialogOpen(true)}
+                  className="text-xs"
+                >
+                  View Details
+                </Button>
+              </div>
+              
+              {(() => {
+                const metrics = calculateCareerScore(experiences, certifications, recognitions);
+                return (
+                  <>
+                    {/* Score and Badge */}
+                    <div className="text-center p-4 glass rounded-lg border border-border/50">
+                      <div className="text-5xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent mb-2">
+                        {metrics.score}
+                      </div>
+                      <Badge className={`${metrics.badge.color} text-sm px-3 py-1`}>
+                        {metrics.badge.level} - {metrics.badge.description}
+                      </Badge>
+                    </div>
+
+                    {/* KPIs Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="glass rounded-lg p-3 border border-border/50">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Briefcase className="w-4 h-4 text-blue-500" />
+                          <span className="text-xs text-muted-foreground">Working Places</span>
+                        </div>
+                        <div className="text-2xl font-bold">{metrics.workingPlaces}</div>
+                      </div>
+                      
+                      <div className="glass rounded-lg p-3 border border-border/50">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Award className="w-4 h-4 text-green-500" />
+                          <span className="text-xs text-muted-foreground">Years Experience</span>
+                        </div>
+                        <div className="text-2xl font-bold">{metrics.totalYears}</div>
+                      </div>
+                      
+                      <div className="glass rounded-lg p-3 border border-border/50">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Target className="w-4 h-4 text-purple-500" />
+                          <span className="text-xs text-muted-foreground">Projects</span>
+                        </div>
+                        <div className="text-2xl font-bold">{metrics.projectsCompleted}</div>
+                      </div>
+                      
+                      <div className="glass rounded-lg p-3 border border-border/50">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Award className="w-4 h-4 text-yellow-500" />
+                          <span className="text-xs text-muted-foreground">Diplomas</span>
+                        </div>
+                        <div className="text-2xl font-bold">{metrics.diplomas}</div>
+                      </div>
+                      
+                      <div className="glass rounded-lg p-3 border border-border/50">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Award className="w-4 h-4 text-orange-500" />
+                          <span className="text-xs text-muted-foreground">Certificates</span>
+                        </div>
+                        <div className="text-2xl font-bold">{metrics.certificates}</div>
+                      </div>
+                      
+                      <div className="glass rounded-lg p-3 border border-border/50">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Star className="w-4 h-4 text-pink-500" />
+                          <span className="text-xs text-muted-foreground">Recognitions</span>
+                        </div>
+                        <div className="text-2xl font-bold">{metrics.recognitions}</div>
+                      </div>
+                    </div>
+
+                    {/* Add Actions */}
+                    <div className="space-y-2">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setShowAddCertification(true)}
+                      >
+                        <Award className="w-4 h-4 mr-2" />
+                        Add Certification/Diploma
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setShowAddRecognition(true)}
+                      >
+                        <Star className="w-4 h-4 mr-2" />
+                        Add Recognition
+                      </Button>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
             {/* Work Experience Timeline */}
             <div className="glass rounded-xl p-4 space-y-4 border border-border/50">
               <h4 className="font-semibold text-lg flex items-center gap-2">
