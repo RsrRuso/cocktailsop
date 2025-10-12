@@ -100,53 +100,72 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
   const handleSelectTrack = async (track: MusicTrack) => {
     if (isSubmitting) return;
     
-    setIsSubmitting(true);
-    setSelectedTrack(track);
+    try {
+      setIsSubmitting(true);
+      setSelectedTrack(track);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("Please log in to share music");
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.error('Auth error:', authError);
+        toast.error("Please log in to share music");
+        setSelectedTrack(null);
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('Adding music share for user:', user.id, 'track:', track.track_id);
+
+      // Check if this track is already shared by the user
+      const { data: existingShare, error: checkError } = await supabase
+        .from("music_shares")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("track_id", track.track_id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing share:', checkError);
+        toast.error("Error checking music library");
+        setSelectedTrack(null);
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (existingShare) {
+        toast.error("You've already shared this track");
+        setSelectedTrack(null);
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { error: insertError } = await supabase.from("music_shares").insert({
+        user_id: user.id,
+        track_id: track.track_id,
+        track_title: track.title,
+        track_artist: track.artist,
+      });
+
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        toast.error(`Failed to add music: ${insertError.message}`);
+        setSelectedTrack(null);
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('Music share added successfully');
+      toast.success(`✓ Now sharing: ${track.title}`);
+      setTimeout(() => {
+        onOpenChange(false);
+        setSelectedTrack(null);
+        setIsSubmitting(false);
+      }, 1500);
+    } catch (error) {
+      console.error('Unexpected error adding music:', error);
+      toast.error("Failed to add music");
       setSelectedTrack(null);
       setIsSubmitting(false);
-      return;
     }
-
-    // Check if this track is already shared by the user
-    const { data: existingShare } = await supabase
-      .from("music_shares")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("track_id", track.track_id)
-      .maybeSingle();
-
-    if (existingShare) {
-      toast.error("You've already shared this track");
-      setSelectedTrack(null);
-      setIsSubmitting(false);
-      return;
-    }
-
-    const { error } = await supabase.from("music_shares").insert({
-      user_id: user.id,
-      track_id: track.track_id,
-      track_title: track.title,
-      track_artist: track.artist,
-    });
-
-    if (error) {
-      toast.error("Failed to share music");
-      console.error(error);
-      setSelectedTrack(null);
-      setIsSubmitting(false);
-      return;
-    }
-
-    toast.success(`✓ Now sharing: ${track.title}`);
-    setTimeout(() => {
-      onOpenChange(false);
-      setSelectedTrack(null);
-      setIsSubmitting(false);
-    }, 1500);
   };
 
   return (
