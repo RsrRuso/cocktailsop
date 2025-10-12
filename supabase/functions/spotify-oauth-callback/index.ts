@@ -108,8 +108,10 @@ serve(async (req) => {
     // Calculate token expiry
     const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
 
+    console.log('Attempting to store connection for user:', state);
+
     // Store connection with the user's app ID from state parameter
-    const { error: upsertError } = await supabaseAdmin
+    const { data: upsertData, error: upsertError } = await supabaseAdmin
       .from('spotify_connections')
       .upsert({
         user_id: state, // App user ID from state parameter
@@ -119,13 +121,14 @@ serve(async (req) => {
         scope: tokenData.scope
       }, {
         onConflict: 'user_id'
-      });
+      })
+      .select();
 
     if (upsertError) {
       console.error('Upsert error:', upsertError);
       return new Response(
         `<html><body><script>
-          window.opener.postMessage({ type: 'spotify-auth-error', error: 'Failed to store connection' }, '*');
+          window.opener.postMessage({ type: 'spotify-auth-error', error: 'Failed to store connection: ${upsertError.message}' }, '*');
           window.close();
         </script></body></html>`,
         {
@@ -135,7 +138,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Spotify connection stored successfully');
+    console.log('Spotify connection stored successfully:', upsertData);
 
     // Return HTML that closes popup and notifies parent
     return new Response(
