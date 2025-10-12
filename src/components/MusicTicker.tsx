@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import OptimizedAvatar from "./OptimizedAvatar";
-import { Music, X, Play } from "lucide-react";
+import { Music, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -26,7 +26,6 @@ const MusicTicker = () => {
   const { user } = useAuth();
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
-  const [iframeKey, setIframeKey] = useState(0);
 
   useEffect(() => {
     fetchMusicShares();
@@ -102,15 +101,6 @@ const MusicTicker = () => {
   const handlePlayTrack = (trackId: string) => {
     console.log('Opening Spotify player for track:', trackId);
     setPlayingTrackId(trackId);
-    setIframeKey(prev => prev + 1);
-  };
-
-  const handleReplay = () => {
-    setIframeKey(prev => prev + 1);
-  };
-
-  const handlePlay = () => {
-    setIframeKey(prev => prev + 1);
   };
 
   const handleDeleteShare = async (shareId: string, e: React.MouseEvent) => {
@@ -204,29 +194,19 @@ const MusicTicker = () => {
       {playingTrackId && (
         <div className="fixed top-4 right-4 z-50 w-56 bg-background/20 backdrop-blur-md rounded-xl shadow-2xl border border-primary/10">
           <div className="flex items-center justify-between p-2 pb-1.5">
-            <span className="text-[10px] font-medium text-foreground/80">🎵 Now Playing</span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={handlePlay}
-                className="w-5 h-5 rounded-full bg-green-500/20 hover:bg-green-500/30 flex items-center justify-center transition-colors"
-                title="Play"
-              >
-                <Play className="w-3 h-3 text-green-500 fill-green-500" />
-              </button>
-              <button
-                onClick={() => setPlayingTrackId(null)}
-                className="w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors"
-                title="Close"
-              >
-                <X className="w-3 h-3 text-red-400" />
-              </button>
-            </div>
+            <span className="text-[10px] font-medium text-foreground/80">🎵 Click ▶️ inside player to start</span>
+            <button
+              onClick={() => setPlayingTrackId(null)}
+              className="w-5 h-5 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-colors"
+              title="Close"
+            >
+              <X className="w-3 h-3 text-red-400" />
+            </button>
           </div>
           <div className="px-2 pb-2">
             <iframe
-              key={iframeKey}
               style={{ borderRadius: '8px' }}
-              src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0&autoplay=1`}
+              src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`}
               width="100%"
               height="80"
               frameBorder="0"
