@@ -2,10 +2,11 @@ import { Wine, Briefcase, Warehouse, Truck, Building2 } from "lucide-react";
 
 export const getBadgeColor = (level: string) => {
   const colors = {
-    bronze: "from-amber-700 to-amber-500",
-    silver: "from-gray-400 to-gray-200",
-    gold: "from-yellow-500 to-yellow-300",
+    bronze: "from-amber-700 to-amber-900",
+    silver: "from-gray-400 to-gray-600",
+    gold: "from-yellow-400 to-yellow-600",
     platinum: "from-blue-400 via-blue-500 to-purple-600",
+    diamond: "from-cyan-400 to-cyan-600",
   };
   return colors[level as keyof typeof colors] || colors.bronze;
 };
@@ -79,10 +80,11 @@ export const calculateProfessionalScore = (
   if (userRoles.isVerified) statusBonus += 8;
   
   const badgeBonus = {
-    bronze: 0,
-    silver: 5,
-    gold: 10,
-    platinum: 15
+    bronze: 3,
+    silver: 6,
+    gold: 9,
+    platinum: 12,
+    diamond: 15
   }[profile.badge_level as string] || 0;
   
   const avgPostEngagement = posts.length > 0 

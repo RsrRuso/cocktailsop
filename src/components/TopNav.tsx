@@ -1,4 +1,4 @@
-import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck, Music, Star } from "lucide-react";
+import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck, Music, Star, Medal, Diamond } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -137,16 +137,16 @@ const TopNav = () => {
   const getBadgeColor = (level: string) => {
     switch (level) {
       case 'diamond':
-        return 'from-cyan-400 via-blue-400 to-purple-500';
+        return 'from-cyan-400 to-cyan-600';
       case 'platinum':
         return 'from-blue-400 via-blue-500 to-purple-600';
       case 'gold':
-        return 'from-yellow-300 via-yellow-400 to-yellow-600';
+        return 'from-yellow-400 to-yellow-600';
       case 'silver':
-        return 'from-gray-300 via-gray-400 to-gray-500';
+        return 'from-gray-400 to-gray-600';
       case 'bronze':
       default:
-        return 'from-amber-600 via-amber-700 to-amber-800';
+        return 'from-amber-700 to-amber-900';
     }
   };
 
@@ -163,9 +163,17 @@ const TopNav = () => {
                   <div className={`relative w-10 h-10 rounded-xl bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
                     <Star className="w-5 h-5 text-white" strokeWidth={2.5} fill="none" />
                   </div>
+                ) : currentUser.badge_level === 'gold' ? (
+                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                    <Star className="w-5 h-5 text-yellow-900" strokeWidth={2.5} fill="currentColor" />
+                  </div>
+                ) : currentUser.badge_level === 'diamond' ? (
+                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                    <Diamond className="w-5 h-5 text-cyan-900" strokeWidth={2} fill="none" />
+                  </div>
                 ) : (
-                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center text-sm font-bold text-white shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
-                    {currentUser.badge_level[0].toUpperCase()}
+                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(currentUser.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                    <Medal className="w-5 h-5 text-white" strokeWidth={2} />
                   </div>
                 )}
               </div>

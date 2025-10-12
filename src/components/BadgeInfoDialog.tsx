@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { BadgeCheck, Diamond, Award, Star, TrendingUp } from "lucide-react";
+import { BadgeCheck, Diamond, Award, Star, TrendingUp, Medal } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface BadgeInfoDialogProps {
@@ -27,17 +27,19 @@ const BadgeInfoDialog = ({
   const badgeLevelInfo = {
     bronze: {
       name: 'Bronze',
-      icon: Award,
+      icon: Medal,
       color: 'from-amber-700 to-amber-900',
       textColor: 'text-amber-700',
+      iconStyle: 'medal',
       requirements: '0-100 followers',
       perks: ['Basic profile features', 'Post and share content']
     },
     silver: {
       name: 'Silver',
-      icon: Award,
+      icon: Medal,
       color: 'from-gray-400 to-gray-600',
       textColor: 'text-gray-600',
+      iconStyle: 'medal',
       requirements: '100-500 followers',
       perks: ['Enhanced visibility', 'Priority in search', 'Custom profile themes']
     },
@@ -46,6 +48,7 @@ const BadgeInfoDialog = ({
       icon: Star,
       color: 'from-yellow-400 to-yellow-600',
       textColor: 'text-yellow-600',
+      iconStyle: 'star',
       requirements: '500-2,000 followers',
       perks: ['Featured content', 'Analytics dashboard', 'Early feature access']
     },
@@ -55,14 +58,16 @@ const BadgeInfoDialog = ({
       color: 'from-blue-400 via-blue-500 to-purple-600',
       textColor: 'text-purple-600',
       bgStyle: 'bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600',
+      iconStyle: 'platinum-star',
       requirements: '2,000-10,000 followers',
       perks: ['Premium badge', 'Monetization options', 'Verified tick eligibility']
     },
     diamond: {
       name: 'Diamond',
       icon: Diamond,
-      color: 'from-cyan-400 to-purple-600',
+      color: 'from-cyan-400 to-cyan-600',
       textColor: 'text-cyan-500',
+      iconStyle: 'diamond',
       requirements: '10,000+ followers',
       perks: ['Elite status', 'Direct support line', 'Exclusive events access']
     }
@@ -209,9 +214,21 @@ const BadgeInfoDialog = ({
                     <Star className="w-9 h-9 text-white" strokeWidth={2.5} fill="none" />
                   </div>
                 </div>
+              ) : badgeLevel === 'gold' ? (
+                <div className="relative">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600">
+                    <Star className="w-8 h-8 text-yellow-900" strokeWidth={2.5} fill="currentColor" />
+                  </div>
+                </div>
+              ) : badgeLevel === 'diamond' ? (
+                <div className="relative">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-400 to-cyan-600">
+                    <Diamond className="w-8 h-8 text-cyan-900" strokeWidth={2} fill="none" />
+                  </div>
+                </div>
               ) : (
                 <div className={`p-3 rounded-xl bg-gradient-to-br ${currentBadge.color}`}>
-                  <BadgeIcon className="w-8 h-8 text-white" />
+                  <BadgeIcon className="w-8 h-8 text-white" strokeWidth={2} />
                 </div>
               )}
               <div>
@@ -256,6 +273,9 @@ const BadgeInfoDialog = ({
                   const Icon = info.icon;
                   const isCurrentLevel = level === badgeLevel;
                   const isPlatinum = level === 'platinum';
+                  const isGold = level === 'gold';
+                  const isDiamond = level === 'diamond';
+                  
                   return (
                     <div 
                       key={level}
@@ -269,8 +289,14 @@ const BadgeInfoDialog = ({
                         <div className="relative w-6 h-6 bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 rounded-md flex items-center justify-center">
                           <Star className="w-3.5 h-3.5 text-white" strokeWidth={2.5} fill="none" />
                         </div>
+                      ) : isGold ? (
+                        <div className="w-6 h-6 flex items-center justify-center">
+                          <Star className="w-5 h-5 text-yellow-500" strokeWidth={2.5} fill="currentColor" />
+                        </div>
+                      ) : isDiamond ? (
+                        <Diamond className="w-6 h-6 text-cyan-400" strokeWidth={2} fill="none" />
                       ) : (
-                        <Icon className={`w-6 h-6 ${info.textColor}`} />
+                        <Icon className={`w-6 h-6 ${info.textColor}`} strokeWidth={2} />
                       )}
                       <span className="text-[10px] font-medium">{info.name}</span>
                     </div>
