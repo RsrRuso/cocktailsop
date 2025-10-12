@@ -193,7 +193,7 @@ const MusicTicker = () => {
       </div>
 
       <Dialog open={!!playingTrackId} onOpenChange={() => setPlayingTrackId(null)}>
-        <DialogContent className="max-w-sm p-2 glass border-primary/20 bg-background/40 backdrop-blur-xl">
+        <DialogContent className="max-w-sm p-2 glass border-primary/10 bg-background/5 backdrop-blur-md">
           {playingTrackId && (
             <div className="rounded-lg overflow-hidden">
               <iframe
