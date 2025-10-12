@@ -70,47 +70,60 @@ const MusicTicker = () => {
     setPlayingVideoId(videoId);
   };
 
-  if (musicShares.length === 0) return null;
+  if (musicShares.length === 0) {
+    return (
+      <div className="w-full py-4 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">🎵 No music shared yet - be the first to share!</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
-      <div className="w-full overflow-hidden py-3 bg-background/50 backdrop-blur-sm border-y border-border">
-        <div className="flex gap-4 overflow-x-auto scrollbar-hide px-4" style={{ scrollBehavior: 'smooth' }}>
-          {musicShares.map((share, index) => {
+      <div className="w-full overflow-hidden py-4 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 backdrop-blur-sm border-y border-border/50 relative">
+        <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10" />
+        <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10" />
+        
+        <div className="flex gap-4 animate-scroll-left">
+          {[...musicShares, ...musicShares].map((share, index) => {
             const track = share.track;
             if (!track) return null;
 
             return (
               <div
                 key={`${share.id}-${index}`}
-                className="flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border shrink-0 min-w-[280px] max-w-[280px] hover:bg-accent/50 transition-colors animate-fade-in cursor-pointer"
-                style={{
-                  animationDelay: `${index * 0.1}s`,
-                }}
+                className="flex items-center gap-3 px-4 py-3 bg-gradient-to-br from-card to-card/50 rounded-xl border border-primary/20 shadow-lg shrink-0 min-w-[300px] max-w-[300px] hover:scale-105 hover:shadow-xl hover:border-primary/40 transition-all cursor-pointer group"
                 onClick={() => handlePlayVideo(track.track_id)}
               >
                 {track.preview_url && (
-                  <img 
-                    src={track.preview_url} 
-                    alt={share.track_title}
-                    className="w-12 h-12 object-cover rounded shrink-0"
-                  />
+                  <div className="relative shrink-0">
+                    <img 
+                      src={track.preview_url} 
+                      alt={share.track_title}
+                      className="w-14 h-14 object-cover rounded-lg"
+                    />
+                    <div className="absolute inset-0 bg-black/20 rounded-lg group-hover:bg-black/0 transition-all" />
+                  </div>
                 )}
                 
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mb-1">
                     <OptimizedAvatar
                       src={share.profile?.avatar_url}
                       alt={share.profile?.username || 'User'}
-                      className="w-3 h-3 inline-block"
+                      className="w-4 h-4 inline-block ring-1 ring-primary/20"
                     />
-                    @{share.profile?.username || 'Unknown'}
+                    <span className="font-medium">@{share.profile?.username || 'Unknown'}</span>
                   </p>
-                  <p className="font-medium text-sm truncate">{share.track_title}</p>
+                  <p className="font-bold text-sm truncate text-foreground">{share.track_title}</p>
                   <p className="text-xs text-muted-foreground truncate">{share.track_artist}</p>
                 </div>
 
-                <Youtube className="w-5 h-5 text-red-500 shrink-0" />
+                <div className="shrink-0 bg-red-500/10 p-2 rounded-lg group-hover:bg-red-500/20 transition-colors">
+                  <Youtube className="w-5 h-5 text-red-500" />
+                </div>
               </div>
             );
           })}
