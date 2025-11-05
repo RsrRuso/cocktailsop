@@ -40,9 +40,16 @@ const signInSchema = z.object({
     .max(128, 'Password too long')
 });
 
+const resetPasswordSchema = z.object({
+  email: z.string()
+    .email('Invalid email format')
+    .max(255, 'Email too long')
+});
+
 const Auth = () => {
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -54,7 +61,17 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      if (isSignUp) {
+      if (isForgotPassword) {
+        // Validate email
+        const validated = resetPasswordSchema.parse({ email });
+
+        const { error } = await supabase.auth.resetPasswordForEmail(validated.email, {
+          redirectTo: `${window.location.origin}/auth`,
+        });
+        if (error) throw error;
+        toast.success("Password reset link sent! Check your email");
+        setIsForgotPassword(false);
+      } else if (isSignUp) {
         // Validate signup inputs
         const validated = signUpSchema.parse({
           email,
@@ -119,7 +136,7 @@ const Auth = () => {
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
-          {isSignUp && (
+          {isSignUp && !isForgotPassword && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name</Label>
@@ -156,36 +173,56 @@ const Auth = () => {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="glass"
-            />
-          </div>
+          {!isForgotPassword && (
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="glass"
+              />
+              {!isSignUp && (
+                <button
+                  type="button"
+                  onClick={() => setIsForgotPassword(true)}
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Forgot password?
+                </button>
+              )}
+            </div>
+          )}
 
           <Button
             type="submit"
             className="w-full glow-primary"
             disabled={loading}
           >
-            {loading ? "Processing..." : isSignUp ? "Sign Up" : "Sign In"}
+            {loading ? "Processing..." : isForgotPassword ? "Send Reset Link" : isSignUp ? "Sign Up" : "Sign In"}
           </Button>
         </form>
 
-        <div className="text-center">
-          <button
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-sm text-muted-foreground hover:text-primary transition-colors"
-          >
-            {isSignUp
-              ? "Already have an account? Sign in"
-              : "Don't have an account? Sign up"}
-          </button>
+        <div className="text-center space-y-2">
+          {isForgotPassword ? (
+            <button
+              onClick={() => setIsForgotPassword(false)}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              Back to sign in
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              {isSignUp
+                ? "Already have an account? Sign in"
+                : "Don't have an account? Sign up"}
+            </button>
+          )}
         </div>
       </div>
     </div>
