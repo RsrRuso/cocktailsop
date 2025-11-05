@@ -50,18 +50,46 @@ const Auth = () => {
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Check if user is coming from password reset link
+  useState(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    if (hashParams.get('type') === 'recovery') {
+      setIsResettingPassword(true);
+    }
+  });
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (isForgotPassword) {
+      if (isResettingPassword) {
+        // Validate new password
+        if (password !== confirmPassword) {
+          toast.error("Passwords don't match");
+          setLoading(false);
+          return;
+        }
+
+        const validated = signUpSchema.shape.password.parse(password);
+
+        const { error } = await supabase.auth.updateUser({
+          password: validated
+        });
+        
+        if (error) throw error;
+        toast.success("Password updated successfully!");
+        setIsResettingPassword(false);
+        navigate("/home");
+      } else if (isForgotPassword) {
         // Validate email
         const validated = resetPasswordSchema.parse({ email });
 
@@ -136,64 +164,95 @@ const Auth = () => {
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
-          {isSignUp && !isForgotPassword && (
+          {isResettingPassword ? (
             <>
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="password">New Password</Label>
                 <Input
-                  id="fullName"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                   className="glass"
+                  placeholder="Enter new password"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   className="glass"
+                  placeholder="Confirm new password"
                 />
               </div>
             </>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="glass"
-            />
-          </div>
-
-          {!isForgotPassword && (
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="glass"
-              />
-              {!isSignUp && (
-                <button
-                  type="button"
-                  onClick={() => setIsForgotPassword(true)}
-                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Forgot password?
-                </button>
+          ) : (
+            <>
+              {isSignUp && !isForgotPassword && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <Input
+                      id="fullName"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      className="glass"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                      className="glass"
+                    />
+                  </div>
+                </>
               )}
-            </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="glass"
+                />
+              </div>
+
+              {!isForgotPassword && (
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="glass"
+                  />
+                  {!isSignUp && (
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotPassword(true)}
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
           )}
 
           <Button
@@ -201,12 +260,22 @@ const Auth = () => {
             className="w-full glow-primary"
             disabled={loading}
           >
-            {loading ? "Processing..." : isForgotPassword ? "Send Reset Link" : isSignUp ? "Sign Up" : "Sign In"}
+            {loading ? "Processing..." : isResettingPassword ? "Update Password" : isForgotPassword ? "Send Reset Link" : isSignUp ? "Sign Up" : "Sign In"}
           </Button>
         </form>
 
         <div className="text-center space-y-2">
-          {isForgotPassword ? (
+          {isResettingPassword ? (
+            <button
+              onClick={() => {
+                setIsResettingPassword(false);
+                navigate("/auth");
+              }}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              Back to sign in
+            </button>
+          ) : isForgotPassword ? (
             <button
               onClick={() => setIsForgotPassword(false)}
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
