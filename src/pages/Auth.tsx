@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,12 +59,12 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
 
   // Check if user is coming from password reset link
-  useState(() => {
+  useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     if (hashParams.get('type') === 'recovery') {
       setIsResettingPassword(true);
     }
-  });
+  }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
