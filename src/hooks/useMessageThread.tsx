@@ -37,6 +37,17 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
   const { toast } = useToast();
   const channelRef = useRef<any>(null);
 
+  const markUnreadAsDelivered = async () => {
+    if (!conversationId || !currentUser) return;
+    
+    await supabase
+      .from('messages')
+      .update({ delivered: true })
+      .eq('conversation_id', conversationId)
+      .neq('sender_id', currentUser.id)
+      .eq('delivered', false);
+  };
+
   useEffect(() => {
     if (!conversationId || !currentUser) return;
 
@@ -59,6 +70,8 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
         if (otherUserPresence && otherUserPresence[0]) {
           setIsOnline(true);
           setIsTyping(otherUserPresence[0].typing || false);
+          // Mark unread messages as delivered when other user comes online
+          markUnreadAsDelivered();
         } else {
           setIsOnline(false);
           setIsTyping(false);
@@ -67,6 +80,8 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
       .on('presence', { event: 'join' }, ({ key }) => {
         if (key !== currentUser.id) {
           setIsOnline(true);
+          // Mark unread messages as delivered when other user joins
+          markUnreadAsDelivered();
         }
       })
       .on('presence', { event: 'leave' }, ({ key }) => {
@@ -233,7 +248,10 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
   };
 
   const markAsRead = async (messageId: string) => {
-    await supabase.from('messages').update({ read: true }).eq('id', messageId);
+    await supabase
+      .from('messages')
+      .update({ read: true, delivered: true })
+      .eq('id', messageId);
   };
 
   const updateTypingStatus = (typing: boolean) => {

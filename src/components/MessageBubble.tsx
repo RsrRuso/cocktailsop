@@ -97,13 +97,13 @@ export const MessageBubble = ({
             })}
           </span>
           {isOwn && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1" title={message.read ? 'Read' : message.delivered ? 'Delivered' : 'Sent'}>
               {message.read ? (
-                <CheckCheck className="w-3 h-3 text-neon-green glow-accent" />
+                <CheckCheck className="w-4 h-4 text-emerald-500 animate-pulse" />
               ) : message.delivered ? (
-                <CheckCheck className="w-3 h-3" />
+                <CheckCheck className="w-4 h-4 text-muted-foreground" />
               ) : (
-                <Check className="w-3 h-3" />
+                <Check className="w-4 h-4 text-muted-foreground" />
               )}
             </div>
           )}
