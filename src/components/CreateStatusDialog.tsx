@@ -25,8 +25,8 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
   useEffect(() => {
     const fetchCurrentUser = async () => {
       setAuthChecked(false);
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUserId(user?.id || null);
+      const { data: { session } } = await supabase.auth.getSession();
+      setCurrentUserId(session?.user?.id || null);
       setAuthChecked(true);
     };
     if (open) {
@@ -55,11 +55,17 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
 
     setLoading(true);
     try {
+      // Verify auth session before upsert
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
       // Use upsert to handle both insert and update
       const { error } = await supabase
         .from('user_status')
         .upsert({
-          user_id: currentUserId,
+          user_id: session.user.id,
           status_text: statusText,
           emoji: selectedEmoji || null,
           expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
