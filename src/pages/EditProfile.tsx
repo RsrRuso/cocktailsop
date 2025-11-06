@@ -8,12 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save, Camera, Wand2 } from "lucide-react";
+import { ArrowLeft, Save, Camera } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { AvatarCropper } from "@/components/AvatarCropper";
 import { CoverPhotoCropper } from "@/components/CoverPhotoCropper";
-import AvatarGeneratorDialog from "@/components/AvatarGeneratorDialog";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -29,7 +28,6 @@ const EditProfile = () => {
   const [showCoverCropper, setShowCoverCropper] = useState(false);
   const [croppedCoverBlob, setCroppedCoverBlob] = useState<Blob | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
-  const [showAvatarGenerator, setShowAvatarGenerator] = useState(false);
   const [profile, setProfile] = useState({
     username: "",
     full_name: "",
@@ -128,17 +126,6 @@ const EditProfile = () => {
     setCoverUrl(url);
     setShowCoverCropper(false);
     toast.success("Cover photo cropped! Click Save to update your profile.");
-  };
-
-  const handleAvatarGenerated = (imageUrl: string) => {
-    setAvatarUrl(imageUrl);
-    // Convert base64 to blob for saving
-    fetch(imageUrl)
-      .then(res => res.blob())
-      .then(blob => {
-        setCroppedBlob(blob);
-        toast.success("AI avatar generated! Click Save to update your profile.");
-      });
   };
 
   const handleSave = async () => {
@@ -309,20 +296,10 @@ const EditProfile = () => {
                 className="hidden"
               />
             </div>
-            <div className="flex flex-col gap-2 w-full max-w-xs">
-              <Button
-                variant="outline"
-                onClick={() => setShowAvatarGenerator(true)}
-                className="w-full border-primary/30 bg-background/50 backdrop-blur-sm hover:bg-primary/10"
-              >
-                <Wand2 className="w-4 h-4 mr-2" />
-                Generate AI Avatar
-              </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                Click camera to upload (max 10MB) or generate with AI<br/>
-                Image will be cropped to circular format
-              </p>
-            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Click camera to upload high-quality avatar (max 10MB)<br/>
+              Image will be cropped to circular format
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -480,12 +457,6 @@ const EditProfile = () => {
           </Button>
         </div>
       </div>
-
-      <AvatarGeneratorDialog
-        open={showAvatarGenerator}
-        onOpenChange={setShowAvatarGenerator}
-        onAvatarGenerated={handleAvatarGenerated}
-      />
     </div>
   );
 };
