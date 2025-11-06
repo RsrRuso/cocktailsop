@@ -41,23 +41,15 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
 
     setLoading(true);
     try {
-      // Delete existing status first (if any)
-      const { error: deleteError } = await supabase
-        .from('user_status')
-        .delete()
-        .eq('user_id', userId);
-
-      if (deleteError) {
-        console.error('Error deleting old status:', deleteError);
-      }
-
-      // Create new status
+      // Use upsert to handle duplicate key constraint
       const { error } = await supabase
         .from('user_status')
-        .insert({
+        .upsert({
           user_id: userId,
           status_text: statusText,
           emoji: selectedEmoji || null,
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) throw error;
