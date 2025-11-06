@@ -1328,6 +1328,70 @@ export type Database = {
         }
         Relationships: []
       }
+      status_reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          id: string
+          status_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          id?: string
+          status_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          status_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "status_reactions_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "user_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      status_replies: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          status_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          status_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          status_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "status_replies_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "user_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           area: string
@@ -1681,6 +1745,8 @@ export type Database = {
           emoji: string | null
           expires_at: string
           id: string
+          reaction_count: number | null
+          reply_count: number | null
           status_text: string
           user_id: string
         }
@@ -1689,6 +1755,8 @@ export type Database = {
           emoji?: string | null
           expires_at?: string
           id?: string
+          reaction_count?: number | null
+          reply_count?: number | null
           status_text: string
           user_id: string
         }
@@ -1697,6 +1765,8 @@ export type Database = {
           emoji?: string | null
           expires_at?: string
           id?: string
+          reaction_count?: number | null
+          reply_count?: number | null
           status_text?: string
           user_id?: string
         }
@@ -1834,22 +1904,10 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
-      is_founder: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
-      is_verified: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
-      recalculate_follow_counts: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      update_expired_events: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      is_founder: { Args: { user_id: string }; Returns: boolean }
+      is_verified: { Args: { user_id: string }; Returns: boolean }
+      recalculate_follow_counts: { Args: never; Returns: undefined }
+      update_expired_events: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role:

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -12,8 +12,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, Eye } from "lucide-react";
+import { User, Eye, MessageSquare } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
+import { useUserStatus } from "@/hooks/useUserStatus";
+import StatusReactionsDialog from "./StatusReactionsDialog";
 
 interface AvatarClickMenuProps {
   userId: string;
@@ -32,6 +35,8 @@ const AvatarClickMenu = ({
 }: AvatarClickMenuProps) => {
   const navigate = useNavigate();
   const [showProfilePicture, setShowProfilePicture] = useState(false);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const { data: userStatus } = useUserStatus(userId);
 
   const handleViewStory = () => {
     navigate(`/story/${userId}`);
@@ -52,6 +57,12 @@ const AvatarClickMenu = ({
             <DropdownMenuItem onClick={handleViewStory}>
               <Eye className="w-4 h-4 mr-2" />
               View Story
+            </DropdownMenuItem>
+          )}
+          {userStatus && (
+            <DropdownMenuItem onClick={() => setShowStatusDialog(true)}>
+              <MessageSquare className="w-4 h-4 mr-2" />
+              View Status
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -79,6 +90,19 @@ const AvatarClickMenu = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      {userStatus && (
+        <StatusReactionsDialog
+          open={showStatusDialog}
+          onOpenChange={setShowStatusDialog}
+          statusId={userStatus.id}
+          statusUserId={userStatus.user_id}
+          statusText={userStatus.status_text}
+          emoji={userStatus.emoji}
+          reactionCount={userStatus.reaction_count || 0}
+          replyCount={userStatus.reply_count || 0}
+        />
+      )}
     </>
   );
 };

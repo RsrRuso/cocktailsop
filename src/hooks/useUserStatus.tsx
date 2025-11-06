@@ -9,7 +9,7 @@ export const useUserStatus = (userId: string | null | undefined) => {
       
       const { data, error } = await supabase
         .from('user_status')
-        .select('*')
+        .select('*, reaction_count, reply_count')
         .eq('user_id', userId)
         .gt('expires_at', new Date().toISOString())
         .single();
