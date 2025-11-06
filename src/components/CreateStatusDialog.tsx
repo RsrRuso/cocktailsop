@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Smile } from "lucide-react";
+import { Sparkles, Wand2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CreateStatusDialogProps {
   open: boolean;
@@ -12,7 +13,20 @@ interface CreateStatusDialogProps {
   userId?: string;
 }
 
-const popularEmojis = ["😊", "😎", "🔥", "💪", "✨", "🎉", "❤️", "👍", "🌟", "💯"];
+const futuristicEmojis = [
+  { value: "⚡", label: "⚡ Electric" },
+  { value: "🔮", label: "🔮 Mystic" },
+  { value: "🌌", label: "🌌 Galaxy" },
+  { value: "💎", label: "💎 Crystal" },
+  { value: "🚀", label: "🚀 Launch" },
+  { value: "🤖", label: "🤖 Tech" },
+  { value: "🧬", label: "🧬 DNA" },
+  { value: "⚛️", label: "⚛️ Atomic" },
+  { value: "🔬", label: "🔬 Science" },
+  { value: "💫", label: "💫 Stellar" },
+  { value: "🌠", label: "🌠 Cosmic" },
+  { value: "🎯", label: "🎯 Target" },
+];
 
 const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogProps) => {
   const [statusText, setStatusText] = useState("");
@@ -110,6 +124,7 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
               value={statusText}
               onChange={(e) => setStatusText(e.target.value)}
               maxLength={100}
+              className="bg-background/50 backdrop-blur-sm"
             />
             <p className="text-xs text-muted-foreground mt-1">
               {statusText.length}/100 • Expires in 24 hours
@@ -118,21 +133,34 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
 
           <div>
             <label className="text-sm font-medium mb-2 flex items-center gap-2">
-              <Smile className="w-4 h-4" />
-              Choose an emoji (optional)
+              <Sparkles className="w-4 h-4 text-primary" />
+              Futuristic Emoji (optional)
             </label>
-            <div className="grid grid-cols-5 gap-2">
-              {popularEmojis.map((emoji) => (
-                <Button
-                  key={emoji}
-                  variant={selectedEmoji === emoji ? "default" : "outline"}
-                  className="text-2xl h-12"
-                  onClick={() => setSelectedEmoji(emoji === selectedEmoji ? "" : emoji)}
-                >
-                  {emoji}
-                </Button>
-              ))}
-            </div>
+            <Select value={selectedEmoji} onValueChange={setSelectedEmoji}>
+              <SelectTrigger className="w-full bg-background/50 backdrop-blur-sm border-primary/20">
+                <SelectValue placeholder="Select an emoji">
+                  {selectedEmoji ? (
+                    <span className="text-2xl">{selectedEmoji}</span>
+                  ) : (
+                    "No emoji selected"
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-background/95 backdrop-blur-sm border-primary/20">
+                <SelectItem value=" " className="text-muted-foreground">
+                  No emoji
+                </SelectItem>
+                {futuristicEmojis.map((emoji) => (
+                  <SelectItem 
+                    key={emoji.value} 
+                    value={emoji.value}
+                    className="text-lg hover:bg-primary/10 cursor-pointer"
+                  >
+                    {emoji.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex gap-2">
