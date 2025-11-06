@@ -19,12 +19,15 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
   const [selectedEmoji, setSelectedEmoji] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
+      setAuthChecked(false);
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
+      setAuthChecked(true);
     };
     if (open) {
       fetchCurrentUser();
@@ -41,10 +44,10 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
       return;
     }
 
-    if (!currentUserId) {
+    if (!authChecked || !currentUserId) {
       toast({
         title: "Authentication required",
-        description: "Please log in to share a status",
+        description: "Please wait for authentication or log in",
         variant: "destructive",
       });
       return;
@@ -52,17 +55,37 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      // Check if status already exists for this user
+      const { data: existingStatus } = await supabase
         .from('user_status')
-        .upsert({
-          user_id: currentUserId,
-          status_text: statusText,
-          emoji: selectedEmoji || null,
-        }, {
-          onConflict: 'user_id'
-        });
+        .select('id')
+        .eq('user_id', currentUserId)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existingStatus) {
+        // Update existing status
+        const { error } = await supabase
+          .from('user_status')
+          .update({
+            status_text: statusText,
+            emoji: selectedEmoji || null,
+            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Reset expiry to 24 hours
+          })
+          .eq('user_id', currentUserId);
+
+        if (error) throw error;
+      } else {
+        // Insert new status
+        const { error } = await supabase
+          .from('user_status')
+          .insert({
+            user_id: currentUserId,
+            status_text: statusText,
+            emoji: selectedEmoji || null,
+          });
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Status shared!",
@@ -129,16 +152,16 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
               variant="outline"
               className="flex-1"
               onClick={() => onOpenChange(false)}
-              disabled={loading}
+              disabled={loading || !authChecked}
             >
               Cancel
             </Button>
             <Button
               className="flex-1"
               onClick={handleCreateStatus}
-              disabled={loading}
+              disabled={loading || !authChecked || !currentUserId}
             >
-              Share Status
+              {!authChecked ? "Loading..." : "Share Status"}
             </Button>
           </div>
         </div>
