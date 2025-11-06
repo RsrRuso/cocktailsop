@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Smile } from "lucide-react";
 interface CreateStatusDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  userId: string;
+  userId?: string;
 }
 
 const popularEmojis = ["😊", "😎", "🔥", "💪", "✨", "🎉", "❤️", "👍", "🌟", "💯"];
@@ -18,7 +18,18 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
   const [statusText, setStatusText] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("");
   const [loading, setLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    if (open) {
+      fetchCurrentUser();
+    }
+  }, [open]);
 
   const handleCreateStatus = async () => {
     if (!statusText.trim()) {
@@ -30,9 +41,9 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
       return;
     }
 
-    if (!userId) {
+    if (!currentUserId) {
       toast({
-        title: "Error",
+        title: "Authentication required",
         description: "Please log in to share a status",
         variant: "destructive",
       });
@@ -41,11 +52,10 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
 
     setLoading(true);
     try {
-      // Use upsert to handle duplicate key constraint
       const { error } = await supabase
         .from('user_status')
         .upsert({
-          user_id: userId,
+          user_id: currentUserId,
           status_text: statusText,
           emoji: selectedEmoji || null,
         }, {

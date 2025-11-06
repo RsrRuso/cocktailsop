@@ -265,33 +265,47 @@ const UserProfile = () => {
   };
 
   const handleMessage = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !userId) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !userId) return;
 
-    // Check if conversation already exists
-    const { data: existingConversations } = await supabase
-      .from("conversations")
-      .select("*")
-      .contains("participant_ids", [user.id])
-      .contains("participant_ids", [userId]);
-
-    let conversationId;
-
-    if (existingConversations && existingConversations.length > 0) {
-      conversationId = existingConversations[0].id;
-    } else {
-      // Create new conversation
-      const { data: newConversation } = await supabase
+      // Check if conversation already exists
+      const { data: existingConversations, error: fetchError } = await supabase
         .from("conversations")
-        .insert({ participant_ids: [user.id, userId] })
-        .select()
-        .single();
-      
-      conversationId = newConversation?.id;
-    }
+        .select("*")
+        .contains("participant_ids", [user.id])
+        .contains("participant_ids", [userId]);
 
-    if (conversationId) {
-      navigate(`/messages/${conversationId}`);
+      if (fetchError) {
+        console.error("Error fetching conversations:", fetchError);
+        return;
+      }
+
+      let conversationId;
+
+      if (existingConversations && existingConversations.length > 0) {
+        conversationId = existingConversations[0].id;
+      } else {
+        // Create new conversation
+        const { data: newConversation, error: createError } = await supabase
+          .from("conversations")
+          .insert({ participant_ids: [user.id, userId] })
+          .select()
+          .single();
+        
+        if (createError) {
+          console.error("Error creating conversation:", createError);
+          return;
+        }
+        
+        conversationId = newConversation?.id;
+      }
+
+      if (conversationId) {
+        navigate(`/messages/${conversationId}`);
+      }
+    } catch (error) {
+      console.error("Error in handleMessage:", error);
     }
   };
 
