@@ -55,37 +55,19 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
 
     setLoading(true);
     try {
-      // Check if status already exists for this user
-      const { data: existingStatus } = await supabase
+      // Use upsert to handle both insert and update
+      const { error } = await supabase
         .from('user_status')
-        .select('id')
-        .eq('user_id', currentUserId)
-        .maybeSingle();
+        .upsert({
+          user_id: currentUserId,
+          status_text: statusText,
+          emoji: selectedEmoji || null,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        }, {
+          onConflict: 'user_id',
+        });
 
-      if (existingStatus) {
-        // Update existing status
-        const { error } = await supabase
-          .from('user_status')
-          .update({
-            status_text: statusText,
-            emoji: selectedEmoji || null,
-            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Reset expiry to 24 hours
-          })
-          .eq('user_id', currentUserId);
-
-        if (error) throw error;
-      } else {
-        // Insert new status
-        const { error } = await supabase
-          .from('user_status')
-          .insert({
-            user_id: currentUserId,
-            status_text: statusText,
-            emoji: selectedEmoji || null,
-          });
-
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Status shared!",
