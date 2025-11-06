@@ -30,13 +30,26 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
       return;
     }
 
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "Please log in to share a status",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       // Delete existing status first (if any)
-      await supabase
+      const { error: deleteError } = await supabase
         .from('user_status')
         .delete()
         .eq('user_id', userId);
+
+      if (deleteError) {
+        console.error('Error deleting old status:', deleteError);
+      }
 
       // Create new status
       const { error } = await supabase
@@ -57,11 +70,11 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
       setStatusText("");
       setSelectedEmoji("");
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating status:', error);
       toast({
         title: "Error",
-        description: "Failed to share status",
+        description: error?.message || "Failed to share status",
         variant: "destructive",
       });
     } finally {

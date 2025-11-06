@@ -65,14 +65,14 @@ const UserSelectionDialog = ({ open, onOpenChange, postContent, postId, postType
       return;
     }
 
-    // Check if conversation exists
-    const { data: existingConv } = await supabase
+    // Check if conversation exists between these two users
+    const { data: existingConvs } = await supabase
       .from("conversations")
       .select("id")
-      .contains("participant_ids", [user.id, recipientId])
-      .single();
+      .contains("participant_ids", [user.id])
+      .contains("participant_ids", [recipientId]);
 
-    let conversationId = existingConv?.id;
+    let conversationId = existingConvs?.[0]?.id;
 
     // Create conversation if doesn't exist
     if (!conversationId) {
