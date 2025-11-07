@@ -12,7 +12,14 @@ interface CreateStatusDialogProps {
   userId?: string;
 }
 
-const popularEmojis = ["😊", "😎", "🔥", "💪", "✨", "🎉", "❤️", "👍", "🌟", "💯"];
+const emojiCategories = {
+  faces: ["😊", "😎", "🤩", "😍", "🥳", "😇", "🤗", "😏", "😈", "👽", "🤖", "👾"],
+  emotions: ["❤️", "💖", "💯", "💫", "✨", "⭐", "🌟", "💥", "🔥", "⚡", "💎", "👑"],
+  gestures: ["👍", "👊", "🤘", "✌️", "🤙", "👏", "🙌", "💪", "🦾", "🤝", "👐", "🫶"],
+  activities: ["🎉", "🎊", "🎈", "🎁", "🏆", "🥇", "🎯", "🎮", "🎸", "🎤", "🎧", "🎨"],
+  nature: ["🌈", "🌺", "🌸", "🌼", "🌻", "🦋", "🐝", "🌙", "☀️", "🌊", "🍀", "🌹"],
+  food: ["🍕", "🍔", "🍟", "🌮", "🍣", "🍰", "🍩", "🍪", "🍦", "🍓", "🥂", "☕"],
+};
 
 const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogProps) => {
   const [statusText, setStatusText] = useState("");
@@ -121,16 +128,27 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
               <Smile className="w-4 h-4" />
               Choose an emoji (optional)
             </label>
-            <div className="grid grid-cols-5 gap-2">
-              {popularEmojis.map((emoji) => (
-                <Button
-                  key={emoji}
-                  variant={selectedEmoji === emoji ? "default" : "outline"}
-                  className="text-2xl h-12"
-                  onClick={() => setSelectedEmoji(emoji === selectedEmoji ? "" : emoji)}
-                >
-                  {emoji}
-                </Button>
+            <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+              {Object.entries(emojiCategories).map(([category, emojis]) => (
+                <div key={category}>
+                  <p className="text-xs text-muted-foreground capitalize mb-2 font-semibold">{category}</p>
+                  <div className="grid grid-cols-6 gap-2">
+                    {emojis.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className={`emoji-3d text-3xl h-14 rounded-lg transition-all duration-200 ${
+                          selectedEmoji === emoji 
+                            ? "bg-primary/20 scale-110 ring-2 ring-primary" 
+                            : "bg-secondary/50 hover:bg-secondary hover:scale-105"
+                        }`}
+                        onClick={() => setSelectedEmoji(emoji === selectedEmoji ? "" : emoji)}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
