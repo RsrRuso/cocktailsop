@@ -49,6 +49,63 @@ export type Database = {
           },
         ]
       }
+      business_ideas: {
+        Row: {
+          category: string
+          created_at: string | null
+          current_funding: number | null
+          description: string
+          funding_goal: number | null
+          hashtags: string[] | null
+          headline: string
+          id: string
+          interest_count: number | null
+          looking_for: string[] | null
+          media_urls: string[] | null
+          stage: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+          view_count: number | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          current_funding?: number | null
+          description: string
+          funding_goal?: number | null
+          hashtags?: string[] | null
+          headline: string
+          id?: string
+          interest_count?: number | null
+          looking_for?: string[] | null
+          media_urls?: string[] | null
+          stage?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+          view_count?: number | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          current_funding?: number | null
+          description?: string
+          funding_goal?: number | null
+          hashtags?: string[] | null
+          headline?: string
+          id?: string
+          interest_count?: number | null
+          looking_for?: string[] | null
+          media_urls?: string[] | null
+          stage?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          view_count?: number | null
+        }
+        Relationships: []
+      }
       certifications: {
         Row: {
           created_at: string
@@ -458,6 +515,41 @@ export type Database = {
           },
         ]
       }
+      idea_interests: {
+        Row: {
+          created_at: string | null
+          id: string
+          idea_id: string
+          notes: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          idea_id: string
+          notes?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          idea_id?: string
+          notes?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "idea_interests_idea_id_fkey"
+            columns: ["idea_id"]
+            isOneToOne: false
+            referencedRelation: "business_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory: {
         Row: {
           created_at: string
@@ -502,6 +594,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      investor_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          id: string
+          industries: string[] | null
+          investment_focus: string[] | null
+          investment_range_max: number | null
+          investment_range_min: number | null
+          linkedin_url: string | null
+          portfolio_url: string | null
+          preferred_stages: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          industries?: string[] | null
+          investment_focus?: string[] | null
+          investment_range_max?: number | null
+          investment_range_min?: number | null
+          linkedin_url?: string | null
+          portfolio_url?: string | null
+          preferred_stages?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          industries?: string[] | null
+          investment_focus?: string[] | null
+          investment_range_max?: number | null
+          investment_range_min?: number | null
+          linkedin_url?: string | null
+          portfolio_url?: string | null
+          preferred_stages?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       items: {
         Row: {
@@ -962,6 +1099,7 @@ export type Database = {
           following_count: number | null
           full_name: string
           id: string
+          interests: string[] | null
           is_bot: boolean | null
           phone: string | null
           post_count: number | null
@@ -973,6 +1111,7 @@ export type Database = {
           show_website: boolean | null
           show_whatsapp: boolean | null
           updated_at: string | null
+          user_type: string | null
           username: string
           website: string | null
           whatsapp: string | null
@@ -988,6 +1127,7 @@ export type Database = {
           following_count?: number | null
           full_name: string
           id: string
+          interests?: string[] | null
           is_bot?: boolean | null
           phone?: string | null
           post_count?: number | null
@@ -999,6 +1139,7 @@ export type Database = {
           show_website?: boolean | null
           show_whatsapp?: boolean | null
           updated_at?: string | null
+          user_type?: string | null
           username: string
           website?: string | null
           whatsapp?: string | null
@@ -1014,6 +1155,7 @@ export type Database = {
           following_count?: number | null
           full_name?: string
           id?: string
+          interests?: string[] | null
           is_bot?: boolean | null
           phone?: string | null
           post_count?: number | null
@@ -1025,6 +1167,7 @@ export type Database = {
           show_website?: boolean | null
           show_whatsapp?: boolean | null
           updated_at?: string | null
+          user_type?: string | null
           username?: string
           website?: string | null
           whatsapp?: string | null
