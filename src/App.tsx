@@ -29,6 +29,7 @@ const Messages = lazy(() => import("./pages/Messages"));
 const MessageThread = lazy(() => import("./pages/MessageThread"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Tools = lazy(() => import("./pages/Tools"));
+const BusinessHub = lazy(() => import("./pages/BusinessHub"));
 const OpsTools = lazy(() => import("./pages/OpsTools"));
 const InventoryManager = lazy(() => import("./pages/InventoryManager"));
 const TemperatureLog = lazy(() => import("./pages/TemperatureLog"));
@@ -95,6 +96,7 @@ const App = () => (
           <Route path="/messages/:conversationId" element={<MessageThread />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/tools" element={<Tools />} />
+          <Route path="/business-hub" element={<BusinessHub />} />
           <Route path="/ops-tools" element={<OpsTools />} />
           <Route path="/inventory-manager" element={<InventoryManager />} />
           <Route path="/temperature-log" element={<TemperatureLog />} />

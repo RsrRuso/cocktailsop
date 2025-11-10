@@ -187,7 +187,27 @@ const Tools = () => {
         </div>
 
         {/* Tools Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-3">Business & Networking</h3>
+          <button
+            onClick={() => window.location.href = '/business-hub'}
+            className="glass-hover rounded-2xl p-6 text-left space-y-3 w-full"
+          >
+            <div className="w-12 h-12 rounded-xl glass flex items-center justify-center glow-primary">
+              <Users className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold">Business Hub</h3>
+              <p className="text-sm text-muted-foreground">
+                Connect investors with innovative business ideas
+              </p>
+            </div>
+          </button>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-3">Professional Tools</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {tools.map((tool) => (
             <button
               key={tool.name}
@@ -208,6 +228,7 @@ const Tools = () => {
               </div>
             </button>
           ))}
+          </div>
         </div>
       </div>
 
