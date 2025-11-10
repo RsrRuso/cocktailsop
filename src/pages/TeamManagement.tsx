@@ -544,6 +544,15 @@ const TeamManagement = () => {
       </div>
 
       <BottomNav />
+      
+      {selectedTeam && (
+        <InviteTeamMemberDialog
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
+          teamId={selectedTeam.id}
+          teamName={selectedTeam.name}
+        />
+      )}
     </div>
   );
 };

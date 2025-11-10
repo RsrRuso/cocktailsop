@@ -48,23 +48,15 @@ export const InviteTeamMemberDialog = ({
         return;
       }
 
-      // Check if user is already a member
-      const { data: existingMember } = await supabase
-        .from("team_members")
-        .select("user_id, profiles!inner(email)")
-        .eq("team_id", teamId)
-        .single();
-
       // Check if there's a pending invitation
-      const { data: existingInvitation } = await supabase
+      const { data: existingInvitations } = await supabase
         .from("team_invitations")
         .select("id")
         .eq("team_id", teamId)
         .eq("invited_email", email.toLowerCase())
-        .eq("status", "pending")
-        .single();
+        .eq("status", "pending");
 
-      if (existingInvitation) {
+      if (existingInvitations && existingInvitations.length > 0) {
         toast.error("An invitation has already been sent to this email");
         return;
       }

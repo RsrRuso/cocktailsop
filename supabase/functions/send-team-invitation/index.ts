@@ -61,9 +61,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Invitation details:", invitation);
 
-    // Create invitation link
-    const appUrl = supabaseUrl.replace(
-      /https:\/\/[^.]+\.supabase\.co/,
+    // Create invitation link - use APP_URL env var or construct from Supabase URL
+    const appUrl = Deno.env.get("APP_URL") || supabaseUrl.replace(
+      /https:\/\/.*\.supabase\.co/,
       "https://f6820a39-52e7-42af-bcec-46bcaaa4573d.lovableproject.com"
     );
     const invitationLink = `${appUrl}/team-invitation?token=${invitation.token}`;
