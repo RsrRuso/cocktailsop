@@ -49,6 +49,44 @@ export type Database = {
           },
         ]
       }
+      business_analytics: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          idea_id: string | null
+          metric_type: string
+          metric_value: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          idea_id?: string | null
+          metric_type: string
+          metric_value?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          idea_id?: string | null
+          metric_type?: string
+          metric_value?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_analytics_idea_id_fkey"
+            columns: ["idea_id"]
+            isOneToOne: false
+            referencedRelation: "business_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_ideas: {
         Row: {
           category: string
@@ -2180,68 +2218,146 @@ export type Database = {
           },
         ]
       }
+      task_templates: {
+        Row: {
+          category: string | null
+          checklist: Json | null
+          created_at: string | null
+          description: string | null
+          estimated_hours: number | null
+          id: string
+          name: string
+          priority: string | null
+          tags: string[] | null
+          team_id: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          checklist?: Json | null
+          created_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          name: string
+          priority?: string | null
+          tags?: string[] | null
+          team_id?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          checklist?: Json | null
+          created_at?: string | null
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          name?: string
+          priority?: string | null
+          tags?: string[] | null
+          team_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_templates_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           actual_hours: number | null
           assigned_to: string | null
           attachments: Json | null
           category: string | null
+          checklist: Json | null
           completed_at: string | null
           created_at: string | null
+          deadline: string | null
+          dependencies: string[] | null
           description: string | null
           due_date: string | null
           estimated_hours: number | null
           id: string
+          parent_task_id: string | null
           priority: string | null
           progress: number | null
           status: string | null
           tags: string[] | null
+          task_number: string | null
           team_id: string | null
+          time_tracking: Json | null
           title: string
           updated_at: string | null
           user_id: string
+          watchers: string[] | null
         }
         Insert: {
           actual_hours?: number | null
           assigned_to?: string | null
           attachments?: Json | null
           category?: string | null
+          checklist?: Json | null
           completed_at?: string | null
           created_at?: string | null
+          deadline?: string | null
+          dependencies?: string[] | null
           description?: string | null
           due_date?: string | null
           estimated_hours?: number | null
           id?: string
+          parent_task_id?: string | null
           priority?: string | null
           progress?: number | null
           status?: string | null
           tags?: string[] | null
+          task_number?: string | null
           team_id?: string | null
+          time_tracking?: Json | null
           title: string
           updated_at?: string | null
           user_id: string
+          watchers?: string[] | null
         }
         Update: {
           actual_hours?: number | null
           assigned_to?: string | null
           attachments?: Json | null
           category?: string | null
+          checklist?: Json | null
           completed_at?: string | null
           created_at?: string | null
+          deadline?: string | null
+          dependencies?: string[] | null
           description?: string | null
           due_date?: string | null
           estimated_hours?: number | null
           id?: string
+          parent_task_id?: string | null
           priority?: string | null
           progress?: number | null
           status?: string | null
           tags?: string[] | null
+          task_number?: string | null
           team_id?: string | null
+          time_tracking?: Json | null
           title?: string
           updated_at?: string | null
           user_id?: string
+          watchers?: string[] | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_team_id_fkey"
             columns: ["team_id"]
@@ -2591,6 +2707,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_task_hierarchy: {
+        Args: { task_id: string }
+        Returns: {
+          id: string
+          level: number
+          title: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2610,6 +2734,7 @@ export type Database = {
       }
       is_verified: { Args: { user_id: string }; Returns: boolean }
       recalculate_follow_counts: { Args: never; Returns: undefined }
+      update_business_analytics: { Args: never; Returns: undefined }
       update_expired_events: { Args: never; Returns: undefined }
     }
     Enums: {
