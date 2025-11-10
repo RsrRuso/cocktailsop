@@ -337,6 +337,7 @@ const OpsTools = () => {
         icon: CheckCircle2,
         gradient: "from-violet-600 to-purple-500",
         premium: true,
+        path: "/task-manager",
       },
       {
         name: "Trend Forecasting",
