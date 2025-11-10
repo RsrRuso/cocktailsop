@@ -67,6 +67,13 @@ const Reposted = lazy(() => import("./pages/Reposted"));
 const StoryViewer = lazy(() => import("./pages/StoryViewer"));
 const UpdateMusicLibrary = lazy(() => import("./pages/UpdateMusicLibrary"));
 const Introduction = lazy(() => import("./pages/Introduction"));
+const Chat = lazy(() => import("./pages/Chat"));
+const Calendar = lazy(() => import("./pages/Calendar"));
+const Documents = lazy(() => import("./pages/Documents"));
+const Company = lazy(() => import("./pages/Company"));
+const TimeOff = lazy(() => import("./pages/TimeOff"));
+const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
+const Analytics = lazy(() => import("./pages/Analytics"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -143,6 +150,13 @@ const App = () => (
           <Route path="/reposted" element={<Reposted />} />
           <Route path="/update-music-library" element={<UpdateMusicLibrary />} />
           <Route path="/introduction" element={<Introduction />} />
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/documents" element={<Documents />} />
+          <Route path="/company" element={<Company />} />
+          <Route path="/time-off" element={<TimeOff />} />
+          <Route path="/knowledge-base" element={<KnowledgeBase />} />
+          <Route path="/analytics" element={<Analytics />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
               </Routes>
