@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Users, Plus, Settings, Trash2, UserPlus, Shield, Crown, User as UserIcon, Search, Mail } from "lucide-react";
+import { Users, Plus, Settings, Trash2, UserPlus, Shield, Crown, User as UserIcon, Search, Mail, Send } from "lucide-react";
 import { format } from "date-fns";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -41,11 +41,20 @@ interface TeamMember {
   };
 }
 
+interface PendingInvitation {
+  id: string;
+  invited_email: string;
+  role: string;
+  created_at: string;
+  status: string;
+}
+
 const TeamManagement = () => {
   const { user } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -65,7 +74,18 @@ const TeamManagement = () => {
   useEffect(() => {
     if (selectedTeam) {
       fetchTeamMembers();
+      fetchPendingInvitations();
     }
+  }, [selectedTeam]);
+
+  useEffect(() => {
+    // Listen for invitation sent event to refresh the list
+    const handleInvitationSent = () => {
+      fetchPendingInvitations();
+    };
+    
+    window.addEventListener('invitationSent', handleInvitationSent);
+    return () => window.removeEventListener('invitationSent', handleInvitationSent);
   }, [selectedTeam]);
 
   const fetchTeams = async () => {
@@ -127,6 +147,42 @@ const TeamManagement = () => {
       }
     } catch (error: any) {
       toast.error("Failed to load team members");
+    }
+  };
+
+  const fetchPendingInvitations = async () => {
+    if (!selectedTeam) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("team_invitations")
+        .select("id, invited_email, role, created_at, status")
+        .eq("team_id", selectedTeam.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setPendingInvitations(data || []);
+    } catch (error: any) {
+      console.error("Failed to load pending invitations:", error);
+    }
+  };
+
+  const handleResendInvitation = async (invitationId: string, email: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("send-team-invitation", {
+        body: { invitationId },
+      });
+
+      if (error) {
+        console.error("Resend error:", error);
+        toast.error("Failed to resend invitation");
+      } else {
+        toast.success(`Invitation resent to ${email}`);
+      }
+    } catch (error: any) {
+      console.error("Resend error:", error);
+      toast.error("Failed to resend invitation");
     }
   };
 
@@ -535,15 +591,55 @@ const TeamManagement = () => {
                         </Button>
                       </div>
                     )}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
+                   </div>
 
-      <BottomNav />
+                   {/* Pending Invitations Section */}
+                   {pendingInvitations.length > 0 && (
+                     <>
+                       <Separator className="my-6" />
+                       <div className="space-y-3">
+                         <h3 className="text-lg font-semibold flex items-center gap-2">
+                           <Mail className="w-5 h-5" />
+                           Pending Invitations ({pendingInvitations.length})
+                         </h3>
+                         {pendingInvitations.map((invitation) => (
+                           <Card key={invitation.id} className="border-2 border-dashed">
+                             <CardContent className="p-4">
+                               <div className="flex items-center justify-between">
+                                 <div className="flex-1">
+                                   <div className="font-medium">{invitation.invited_email}</div>
+                                   <div className="flex items-center gap-2 mt-1">
+                                     <Badge variant="outline" className="font-medium">
+                                       {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}
+                                     </Badge>
+                                     <span className="text-xs text-muted-foreground">
+                                       Sent {format(new Date(invitation.created_at), "MMM dd, yyyy")}
+                                     </span>
+                                   </div>
+                                 </div>
+                                 <Button
+                                   size="sm"
+                                   variant="outline"
+                                   onClick={() => handleResendInvitation(invitation.id, invitation.invited_email)}
+                                 >
+                                   <Send className="w-3 h-3 mr-1" />
+                                   Resend
+                                 </Button>
+                               </div>
+                             </CardContent>
+                           </Card>
+                         ))}
+                       </div>
+                     </>
+                   )}
+                 </ScrollArea>
+               </CardContent>
+             </Card>
+           )}
+         </div>
+       </div>
+
+       <BottomNav />
       
       {selectedTeam && (
         <InviteTeamMemberDialog

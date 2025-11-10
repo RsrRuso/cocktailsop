@@ -94,6 +94,9 @@ export const InviteTeamMemberDialog = ({
       setEmail("");
       setRole("member");
       onOpenChange(false);
+      
+      // Trigger a refresh of pending invitations by dispatching a custom event
+      window.dispatchEvent(new CustomEvent('invitationSent'));
     } catch (error: any) {
       console.error("Invite error:", error);
       toast.error(error.message || "Failed to send invitation");
