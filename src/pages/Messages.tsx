@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Send, Search } from "lucide-react";
+import { MessageCircle, Send, Search, Pin, Archive, MoreVertical, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { formatDistanceToNow } from "date-fns";
 
 interface Profile {
   id: string;
@@ -23,6 +26,9 @@ interface Conversation {
   last_message_at: string;
   otherUser?: Profile;
   unreadCount?: number;
+  lastMessage?: string;
+  isPinned?: boolean;
+  isArchived?: boolean;
 }
 
 const Messages = () => {
@@ -30,6 +36,9 @@ const Messages = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
+  const [pinnedChats, setPinnedChats] = useState<Set<string>>(new Set());
+  const [archivedChats, setArchivedChats] = useState<Set<string>>(new Set());
   const { showNotification } = useInAppNotificationContext();
 
   useEffect(() => {
@@ -118,12 +127,34 @@ const Messages = () => {
         unreadCountsMap.set(conv.id, count || 0);
       }
 
+      // Get last message for each conversation
+      const lastMessagesMap = new Map<string, string>();
+      for (const conv of data) {
+        const { data: lastMsg } = await supabase
+          .from("messages")
+          .select("content, media_type")
+          .eq("conversation_id", conv.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (lastMsg) {
+          const preview = lastMsg.media_type 
+            ? `📎 ${lastMsg.media_type === 'image' ? 'Photo' : lastMsg.media_type === 'video' ? 'Video' : lastMsg.media_type === 'voice' ? 'Voice message' : 'File'}`
+            : lastMsg.content.substring(0, 50);
+          lastMessagesMap.set(conv.id, preview);
+        }
+      }
+
       const conversationsWithData = data.map((conv) => {
         const otherUserId = conv.participant_ids.find((id: string) => id !== user.id);
         return {
           ...conv,
           otherUser: profilesMap.get(otherUserId),
-          unreadCount: unreadCountsMap.get(conv.id) || 0
+          unreadCount: unreadCountsMap.get(conv.id) || 0,
+          lastMessage: lastMessagesMap.get(conv.id),
+          isPinned: pinnedChats.has(conv.id),
+          isArchived: archivedChats.has(conv.id)
         };
       });
 
@@ -144,13 +175,66 @@ const Messages = () => {
     fetchConversations();
   };
 
+  const togglePin = (convId: string) => {
+    setPinnedChats(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(convId)) {
+        newSet.delete(convId);
+      } else {
+        newSet.add(convId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleArchive = (convId: string) => {
+    setArchivedChats(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(convId)) {
+        newSet.delete(convId);
+      } else {
+        newSet.add(convId);
+      }
+      return newSet;
+    });
+  };
+
+  const filteredConversations = conversations
+    .filter(conv => {
+      const matchesSearch = searchQuery === "" || 
+        conv.otherUser?.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        conv.otherUser?.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        conv.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesArchive = showArchived ? conv.isArchived : !conv.isArchived;
+      
+      return matchesSearch && matchesArchive;
+    })
+    .sort((a, b) => {
+      // Pinned chats first
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      // Then by last message time
+      return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+    });
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
       
       <div className="pt-16 px-4">
         <div className="flex items-center justify-between py-4">
-          <h1 className="text-2xl font-bold">Messages</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+            Messages
+          </h1>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setShowArchived(!showArchived)}
+            className="glass"
+          >
+            {showArchived ? 'Active' : 'Archived'}
+          </Button>
         </div>
 
         {/* Search */}
@@ -161,9 +245,27 @@ const Messages = () => {
             placeholder="Search messages..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 glass border-border/50"
+            className="pl-10 glass border-border/50 focus:border-primary/50 transition-all"
           />
         </div>
+
+        {/* Stats */}
+        {!showArchived && (
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="glass rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-primary">{conversations.filter(c => !c.isArchived).length}</p>
+              <p className="text-xs text-muted-foreground">Active</p>
+            </div>
+            <div className="glass rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-accent">{conversations.filter(c => c.unreadCount! > 0).length}</p>
+              <p className="text-xs text-muted-foreground">Unread</p>
+            </div>
+            <div className="glass rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-primary">{pinnedChats.size}</p>
+              <p className="text-xs text-muted-foreground">Pinned</p>
+            </div>
+          </div>
+        )}
 
         {/* Conversations List */}
         <div className="space-y-2">
@@ -178,7 +280,7 @@ const Messages = () => {
                 </div>
               </div>
             ))
-          ) : conversations.length === 0 ? (
+          ) : filteredConversations.length === 0 ? (
             <div className="glass rounded-2xl p-12 text-center space-y-4 mt-8">
               <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
                 <MessageCircle className="w-10 h-10 text-primary" />
@@ -191,37 +293,83 @@ const Messages = () => {
               </div>
             </div>
           ) : (
-            conversations.map((conversation) => (
+            filteredConversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className="glass-hover rounded-xl p-4 flex items-center gap-3 cursor-pointer message-3d transition-all duration-300"
-                onClick={() => navigate(`/messages/${conversation.id}`)}
+                className={`relative group glass-hover rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] ${
+                  conversation.isPinned ? 'ring-2 ring-primary/50 glow-primary' : ''
+                }`}
               >
-                <div className="relative">
-                  <OptimizedAvatar
-                    src={conversation.otherUser?.avatar_url}
-                    alt={conversation.otherUser?.username || 'User'}
-                    fallback={conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
-                    userId={conversation.otherUser?.id}
-                    className="w-14 h-14"
-                  />
+                <div
+                  className="p-4 flex items-start gap-3 cursor-pointer"
+                  onClick={() => navigate(`/messages/${conversation.id}`)}
+                >
+                  <div className="relative shrink-0">
+                    <OptimizedAvatar
+                      src={conversation.otherUser?.avatar_url}
+                      alt={conversation.otherUser?.username || 'User'}
+                      fallback={conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
+                      userId={conversation.otherUser?.id}
+                      className={`w-16 h-16 ${conversation.unreadCount! > 0 ? 'ring-2 ring-primary' : ''}`}
+                    />
+                    {conversation.isPinned && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                        <Pin className="w-3 h-3 text-primary-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <p className={`font-semibold truncate ${conversation.unreadCount! > 0 ? 'text-foreground' : ''}`}>
+                        {conversation.otherUser?.full_name || 'Unknown User'}
+                      </p>
+                      <p className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                    
+                    <p className="text-xs text-muted-foreground truncate mb-1">
+                      @{conversation.otherUser?.username || 'unknown'}
+                    </p>
+                    
+                    {conversation.lastMessage && (
+                      <p className={`text-sm truncate ${conversation.unreadCount! > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                        {conversation.lastMessage}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    {conversation.unreadCount! > 0 && (
+                      <Badge variant="default" className="bg-primary glow-primary">
+                        {conversation.unreadCount}
+                      </Badge>
+                    )}
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="glass backdrop-blur-xl">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); togglePin(conversation.id); }}>
+                          <Pin className="w-4 h-4 mr-2" />
+                          {conversation.isPinned ? 'Unpin' : 'Pin'}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleArchive(conversation.id); }}>
+                          <Archive className="w-4 h-4 mr-2" />
+                          {conversation.isArchived ? 'Unarchive' : 'Archive'}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold">
-                    {conversation.otherUser?.full_name || 'Unknown User'}
-                  </p>
-                  <p className="text-sm text-muted-foreground truncate">
-                    @{conversation.otherUser?.username || 'unknown'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {conversation.unreadCount! > 0 && (
-                    <Badge variant="default" className="bg-primary">
-                      {conversation.unreadCount}
-                    </Badge>
-                  )}
-                  <Send className="w-5 h-5 text-muted-foreground" />
-                </div>
+
+                {/* Gradient border effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
               </div>
             ))
           )}

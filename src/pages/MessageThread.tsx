@@ -129,30 +129,49 @@ const MessageThread = () => {
   return (
     <div className="fixed inset-0 bg-background flex flex-col">
       {/* Header */}
-      <div className="glass backdrop-blur-xl border-b border-primary/20 p-4 flex items-center gap-3 glow-primary">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} className="glass shrink-0">
+      <div className="relative glass backdrop-blur-xl border-b border-primary/20 p-4 flex items-center gap-3 overflow-hidden">
+        {/* Animated gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 animate-shimmer pointer-events-none" />
+        
+        <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} className="glass shrink-0 relative z-10">
           <ArrowLeft className="w-5 h-5" />
         </Button>
         
         {otherUser && (
           <>
-            <div className="relative cursor-pointer hover:scale-105 transition-transform shrink-0 pt-6" onClick={() => navigate(`/user/${otherUser.id}`)}>
-              <OptimizedAvatar
-                src={otherUser.avatar_url}
-                alt={otherUser.username}
-                fallback={otherUser.username[0].toUpperCase()}
-                userId={otherUser.id}
-                className="w-12 h-12 border-2 border-background avatar-glow"
-              />
-              {isOnline && <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full neon-green border-2 border-background animate-pulse"></div>}
+            <div className="relative cursor-pointer hover:scale-105 transition-transform shrink-0 z-10" onClick={() => navigate(`/user/${otherUser.id}`)}>
+              <div className="relative">
+                <OptimizedAvatar
+                  src={otherUser.avatar_url}
+                  alt={otherUser.username}
+                  fallback={otherUser.username[0].toUpperCase()}
+                  userId={otherUser.id}
+                  className="w-14 h-14 border-2 border-background avatar-glow"
+                />
+                {isOnline && (
+                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full neon-green border-2 border-background">
+                    <div className="w-full h-full rounded-full neon-green animate-pulse" />
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex-1 min-w-0 flex flex-col justify-center">
-              <p className="font-semibold truncate">{otherUser.full_name}</p>
+            <div className="flex-1 min-w-0 flex flex-col justify-center z-10">
+              <p className="font-bold text-lg truncate bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                {otherUser.full_name}
+              </p>
               {isTyping ? (
-                <p className="text-sm neon-green-text animate-pulse">typing...</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                  <p className="text-sm text-primary font-medium">typing</p>
+                </div>
               ) : (
-                <p className="text-sm text-muted-foreground truncate">
-                  {isOnline ? 'Online' : '@' + otherUser.username}
+                <p className={`text-sm truncate flex items-center gap-1 ${isOnline ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                  {isOnline && <span className="w-2 h-2 rounded-full bg-primary" />}
+                  {isOnline ? 'Active now' : '@' + otherUser.username}
                 </p>
               )}
             </div>
@@ -161,7 +180,7 @@ const MessageThread = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
         {messages.map((message) => {
           const isOwn = message.sender_id === currentUser?.id;
           const replyMessage = message.reply_to_id ? messages.find((m) => m.id === message.reply_to_id) : null;
