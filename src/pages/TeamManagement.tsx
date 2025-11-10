@@ -130,9 +130,19 @@ const TeamManagement = () => {
   };
 
   const handleCreateTeam = async () => {
-    if (!user || !teamName.trim()) return;
+    if (!user) {
+      toast.error("You must be logged in to create a team");
+      return;
+    }
+    
+    if (!teamName.trim()) {
+      toast.error("Please enter a team name");
+      return;
+    }
 
     try {
+      console.log("Creating team with user:", user.id);
+      
       const { data: teamData, error: teamError } = await supabase
         .from("teams")
         .insert({
@@ -143,7 +153,12 @@ const TeamManagement = () => {
         .select()
         .single();
 
-      if (teamError) throw teamError;
+      if (teamError) {
+        console.error("Team creation error:", teamError);
+        throw teamError;
+      }
+
+      console.log("Team created successfully:", teamData);
 
       // Add creator as owner
       const { error: memberError } = await supabase
@@ -155,7 +170,10 @@ const TeamManagement = () => {
           title: "Team Lead",
         });
 
-      if (memberError) throw memberError;
+      if (memberError) {
+        console.error("Member addition error:", memberError);
+        throw memberError;
+      }
 
       toast.success("Team created successfully!");
       setCreateDialogOpen(false);
@@ -163,7 +181,8 @@ const TeamManagement = () => {
       setTeamDescription("");
       fetchTeams();
     } catch (error: any) {
-      toast.error("Failed to create team");
+      console.error("Failed to create team:", error);
+      toast.error(error.message || "Failed to create team. Please check the console for details.");
     }
   };
 
