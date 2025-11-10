@@ -234,13 +234,25 @@ const Home = () => {
 
   // Check if it's someone's birthday
   const isBirthday = (dateOfBirth: string | null) => {
-    if (!dateOfBirth) return false;
+    if (!dateOfBirth) {
+      console.log('No date of birth provided');
+      return false;
+    }
     const today = new Date();
     const birthday = new Date(dateOfBirth);
-    return (
-      birthday.getMonth() === today.getMonth() &&
-      birthday.getDate() === today.getDate()
-    );
+    const isBday = birthday.getMonth() === today.getMonth() &&
+      birthday.getDate() === today.getDate();
+    console.log('Birthday check:', {
+      dateOfBirth,
+      today: today.toISOString(),
+      birthday: birthday.toISOString(),
+      isBirthday: isBday,
+      todayMonth: today.getMonth(),
+      todayDate: today.getDate(),
+      birthdayMonth: birthday.getMonth(),
+      birthdayDate: birthday.getDate()
+    });
+    return isBday;
   };
 
   const handleDeletePost = useCallback(async (postId: string) => {
@@ -307,7 +319,16 @@ const Home = () => {
         <div className="flex gap-4">
           {/* Your Story */}
           <div className="flex flex-col items-center gap-2 min-w-[80px]">
-            <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
+            <BirthdayFireworks isBirthday={(() => {
+              const isBday = currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false;
+              console.log('Current user birthday data:', {
+                hasDateOfBirth: !!currentUser?.date_of_birth,
+                dateOfBirth: currentUser?.date_of_birth,
+                username: currentUser?.username,
+                isBirthdayResult: isBday
+              });
+              return isBday;
+            })()}>
               <button
                 onClick={() => navigate("/story-options")}
                 className="relative group"
