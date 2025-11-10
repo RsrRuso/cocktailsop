@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Users, Plus, Settings, Trash2, UserPlus, Shield, Crown, User as UserIcon, Search, Mail, Send } from "lucide-react";
+import { Users, Plus, Settings, Trash2, UserPlus, Shield, Crown, User as UserIcon, Search, Mail, Send, Copy, Link } from "lucide-react";
 import { format } from "date-fns";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -397,6 +397,15 @@ const TeamManagement = () => {
     }
   };
 
+  const handleCopyInvitationLink = (invitationId: string, email: string) => {
+    const invitationLink = `${window.location.origin}/team-invitation?token=${invitationId}`;
+    navigator.clipboard.writeText(invitationLink).then(() => {
+      toast.success(`Invitation link copied for ${email}!`);
+    }).catch(() => {
+      toast.error("Failed to copy link");
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -602,33 +611,54 @@ const TeamManagement = () => {
                            <Mail className="w-5 h-5" />
                            Pending Invitations ({pendingInvitations.length})
                          </h3>
-                         {pendingInvitations.map((invitation) => (
-                           <Card key={invitation.id} className="border-2 border-dashed">
-                             <CardContent className="p-4">
-                               <div className="flex items-center justify-between">
-                                 <div className="flex-1">
-                                   <div className="font-medium">{invitation.invited_email}</div>
-                                   <div className="flex items-center gap-2 mt-1">
-                                     <Badge variant="outline" className="font-medium">
-                                       {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}
-                                     </Badge>
-                                     <span className="text-xs text-muted-foreground">
-                                       Sent {format(new Date(invitation.created_at), "MMM dd, yyyy")}
-                                     </span>
-                                   </div>
-                                 </div>
-                                 <Button
-                                   size="sm"
-                                   variant="outline"
-                                   onClick={() => handleResendInvitation(invitation.id, invitation.invited_email)}
-                                 >
-                                   <Send className="w-3 h-3 mr-1" />
-                                   Resend
-                                 </Button>
-                               </div>
-                             </CardContent>
-                           </Card>
-                         ))}
+                          {pendingInvitations.map((invitation) => {
+                            const invitationLink = `${window.location.origin}/team-invitation?token=${invitation.id}`;
+                            return (
+                              <Card key={invitation.id} className="border-2 border-dashed">
+                                <CardContent className="p-4">
+                                  <div className="flex flex-col gap-3">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1">
+                                        <div className="font-medium">{invitation.invited_email}</div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                          <Badge variant="outline" className="font-medium">
+                                            {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}
+                                          </Badge>
+                                          <span className="text-xs text-muted-foreground">
+                                            Sent {format(new Date(invitation.created_at), "MMM dd, yyyy")}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleResendInvitation(invitation.id, invitation.invited_email)}
+                                        >
+                                          <Send className="w-3 h-3 mr-1" />
+                                          Resend
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="secondary"
+                                          onClick={() => handleCopyInvitationLink(invitation.id, invitation.invited_email)}
+                                        >
+                                          <Copy className="w-3 h-3 mr-1" />
+                                          Copy Link
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    <div className="bg-muted/50 rounded-md p-2 flex items-center gap-2">
+                                      <Link className="w-3 h-3 text-muted-foreground" />
+                                      <code className="text-xs flex-1 truncate text-muted-foreground">
+                                        {invitationLink}
+                                      </code>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
                        </div>
                      </>
                    )}
