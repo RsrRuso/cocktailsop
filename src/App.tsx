@@ -48,6 +48,11 @@ const InventoryValuationReport = lazy(() => import("./pages/InventoryValuationRe
 const VarianceReport = lazy(() => import("./pages/VarianceReport"));
 const RecipeVault = lazy(() => import("./pages/RecipeVault"));
 const CocktailSpecs = lazy(() => import("./pages/CocktailSpecs"));
+const CRM = lazy(() => import("./pages/CRM"));
+const CRMLeads = lazy(() => import("./pages/CRMLeads"));
+const CRMContacts = lazy(() => import("./pages/CRMContacts"));
+const CRMDeals = lazy(() => import("./pages/CRMDeals"));
+const CRMActivities = lazy(() => import("./pages/CRMActivities"));
 const Explore = lazy(() => import("./pages/Explore"));
 const Create = lazy(() => import("./pages/Create"));
 const CreatePost = lazy(() => import("./pages/CreatePost"));
@@ -116,6 +121,11 @@ const App = () => (
           <Route path="/variance-report" element={<VarianceReport />} />
           <Route path="/recipe-vault" element={<RecipeVault />} />
           <Route path="/cocktail-specs" element={<CocktailSpecs />} />
+          <Route path="/crm" element={<CRM />} />
+          <Route path="/crm/leads" element={<CRMLeads />} />
+          <Route path="/crm/contacts" element={<CRMContacts />} />
+          <Route path="/crm/deals" element={<CRMDeals />} />
+          <Route path="/crm/activities" element={<CRMActivities />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/create" element={<Create />} />
           <Route path="/create/post" element={<CreatePost />} />

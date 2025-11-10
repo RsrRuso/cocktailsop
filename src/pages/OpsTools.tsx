@@ -340,6 +340,15 @@ const OpsTools = () => {
         path: "/task-manager",
       },
       {
+        name: "CRM System",
+        description: "Customer relationship management",
+        details: "Comprehensive CRM similar to Bitrix24. Manage leads, contacts, deals pipeline, and activities. Track sales and communication.",
+        icon: Users,
+        gradient: "from-blue-600 to-cyan-500",
+        premium: false,
+        path: "/crm",
+      },
+      {
         name: "Trend Forecasting",
         description: "Predict demand and optimize inventory",
         details: "AI-powered demand forecasting based on historical data, events, and trends. Plan inventory and staffing with confidence.",
