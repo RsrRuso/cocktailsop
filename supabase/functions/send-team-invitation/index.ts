@@ -36,17 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Get invitation details
     const { data: invitation, error: invitationError } = await supabase
       .from("team_invitations")
-      .select(`
-        *,
-        teams (
-          name,
-          description
-        ),
-        invited_by_profile:profiles!team_invitations_invited_by_fkey (
-          full_name,
-          username
-        )
-      `)
+      .select("*")
       .eq("id", invitationId)
       .single();
 
@@ -59,6 +49,20 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Invitation not found");
     }
 
+    // Get team details
+    const { data: team } = await supabase
+      .from("teams")
+      .select("name, description")
+      .eq("id", invitation.team_id)
+      .single();
+
+    // Get inviter profile
+    const { data: inviterProfile } = await supabase
+      .from("profiles")
+      .select("full_name, username")
+      .eq("id", invitation.invited_by)
+      .single();
+
     console.log("Invitation details:", invitation);
 
     // Create invitation link - use APP_URL env var or construct from Supabase URL
@@ -68,9 +72,12 @@ const handler = async (req: Request): Promise<Response> => {
     );
     const invitationLink = `${appUrl}/team-invitation?token=${invitation.token}`;
 
-    const inviterName = invitation.invited_by_profile?.full_name || 
-                       invitation.invited_by_profile?.username || 
+    const inviterName = inviterProfile?.full_name || 
+                       inviterProfile?.username || 
                        "A team member";
+
+    const teamName = team?.name || "a team";
+    const teamDescription = team?.description || "";
 
     // Send email using Resend API
     const emailHtml = `
@@ -98,8 +105,8 @@ const handler = async (req: Request): Promise<Response> => {
                 <p><strong>${inviterName}</strong> has invited you to join their team on our platform!</p>
                 
                 <div class="team-info">
-                  <h2 style="margin-top: 0; color: #667eea;">Team: ${invitation.teams.name}</h2>
-                  ${invitation.teams.description ? `<p>${invitation.teams.description}</p>` : ''}
+                  <h2 style="margin-top: 0; color: #667eea;">Team: ${teamName}</h2>
+                  ${teamDescription ? `<p>${teamDescription}</p>` : ''}
                   <p><strong>Role:</strong> ${invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}</p>
                 </div>
 
@@ -137,7 +144,7 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "Team Invitation <onboarding@resend.dev>",
         to: [invitation.invited_email],
-        subject: `You're invited to join ${invitation.teams.name}`,
+        subject: `You're invited to join ${teamName}`,
         html: emailHtml,
       }),
     });
