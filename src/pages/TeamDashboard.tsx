@@ -185,10 +185,10 @@ const TeamDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background">
       <TopNav />
 
-      <div className="container mx-auto p-4 max-w-7xl">
+      <div className="container mx-auto p-4 pt-20 pb-24 max-w-7xl">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold">Team Dashboard</h1>

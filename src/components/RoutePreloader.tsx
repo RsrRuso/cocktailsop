@@ -29,7 +29,10 @@ export const RoutePreloader = () => {
 
   useEffect(() => {
     const handleMouseEnter = (e: MouseEvent) => {
-      const link = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement;
+      // Check if target is an Element that has the closest method
+      if (!(e.target instanceof Element)) return;
+      
+      const link = e.target.closest('a[href]') as HTMLAnchorElement;
       if (link) prefetchRoute(link.getAttribute('href') || '');
     };
 
