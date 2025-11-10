@@ -23,6 +23,7 @@ import {
   Settings, Shield, Eye, EyeOff, GitBranch, Copy, Link2, PlayCircle, PauseCircle,
   CheckSquare, Square, Layers, GanttChart, Folder, PieChart
 } from "lucide-react";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -149,6 +150,7 @@ const CATEGORIES = [
 
 export default function TaskManager() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { showNotification } = useInAppNotifications();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
@@ -1171,11 +1173,21 @@ export default function TaskManager() {
                 New Team
               </Button>
               {selectedTeam && (
-                <Button variant="outline" onClick={() => setManageMembersOpen(true)}>
-                  <Settings className="w-4 h-4 mr-2" />
-                  Manage Members
-                </Button>
+                <>
+                  <Button variant="outline" onClick={() => setManageMembersOpen(true)}>
+                    <Settings className="w-4 h-4 mr-2" />
+                    Manage Members
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/team-dashboard")}>
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Team Dashboard
+                  </Button>
+                </>
               )}
+              <Button variant="outline" onClick={() => navigate("/team-management")}>
+                <Users className="w-4 h-4 mr-2" />
+                Team Management
+              </Button>
             </div>
           </CardContent>
         </Card>

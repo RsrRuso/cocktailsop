@@ -2373,21 +2373,27 @@ export type Database = {
           joined_at: string | null
           role: string
           team_id: string
+          title: string | null
           user_id: string
+          workload_capacity: number | null
         }
         Insert: {
           id?: string
           joined_at?: string | null
           role?: string
           team_id: string
+          title?: string | null
           user_id: string
+          workload_capacity?: number | null
         }
         Update: {
           id?: string
           joined_at?: string | null
           role?: string
           team_id?: string
+          title?: string | null
           user_id?: string
+          workload_capacity?: number | null
         }
         Relationships: [
           {
@@ -2751,12 +2757,27 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_member_workload: {
+        Args: { member_team_id: string; member_user_id: string }
+        Returns: number
+      }
       get_task_hierarchy: {
         Args: { task_id: string }
         Returns: {
           id: string
           level: number
           title: string
+        }[]
+      }
+      get_team_stats: {
+        Args: { team_uuid: string }
+        Returns: {
+          completed_tasks: number
+          in_progress_tasks: number
+          pending_tasks: number
+          total_hours_logged: number
+          total_members: number
+          total_tasks: number
         }[]
       }
       has_role: {

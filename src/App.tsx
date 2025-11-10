@@ -32,6 +32,8 @@ const Tools = lazy(() => import("./pages/Tools"));
 const BusinessHub = lazy(() => import("./pages/BusinessHub"));
 const OpsTools = lazy(() => import("./pages/OpsTools"));
 const TaskManager = lazy(() => import("./pages/TaskManager"));
+const TeamManagement = lazy(() => import("./pages/TeamManagement"));
+const TeamDashboard = lazy(() => import("./pages/TeamDashboard"));
 const InventoryManager = lazy(() => import("./pages/InventoryManager"));
 const TemperatureLog = lazy(() => import("./pages/TemperatureLog"));
 const BatchCalculator = lazy(() => import("./pages/BatchCalculator"));
@@ -105,6 +107,8 @@ const App = () => (
           <Route path="/business-hub" element={<BusinessHub />} />
           <Route path="/ops-tools" element={<OpsTools />} />
           <Route path="/task-manager" element={<TaskManager />} />
+          <Route path="/team-management" element={<TeamManagement />} />
+          <Route path="/team-dashboard" element={<TeamDashboard />} />
           <Route path="/inventory-manager" element={<InventoryManager />} />
           <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
