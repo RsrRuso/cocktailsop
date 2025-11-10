@@ -20,7 +20,8 @@ import {
   CheckCircle2, Circle, Clock, AlertCircle, Plus, Calendar, Trash2, Edit, 
   Filter, Search, BarChart3, TrendingUp, MessageSquare, Activity, Tag,
   Paperclip, Users, ChevronRight, Target, Timer, FolderOpen, Bell, UserPlus,
-  Settings, Shield
+  Settings, Shield, Eye, EyeOff, GitBranch, Copy, Link2, PlayCircle, PauseCircle,
+  CheckSquare, Square, Layers, GanttChart, Folder
 } from "lucide-react";
 import { format } from "date-fns";
 import TopNav from "@/components/TopNav";
@@ -44,6 +45,13 @@ interface Task {
   progress: number;
   estimated_hours: number | null;
   actual_hours: number | null;
+  parent_task_id: string | null;
+  task_number: string | null;
+  watchers: string[] | null;
+  deadline: string | null;
+  time_tracking: { spent: number; estimated: number } | null;
+  checklist: Array<{ id: string; text: string; completed: boolean }> | null;
+  dependencies: string[] | null;
 }
 
 interface Team {
@@ -271,7 +279,7 @@ export default function TaskManager() {
       const { data, error } = await query;
 
       if (error) throw error;
-      setTasks(data || []);
+      setTasks((data || []) as unknown as Task[]);
     } catch (error: any) {
       console.error("Error fetching tasks:", error);
       toast.error("Failed to load tasks");
