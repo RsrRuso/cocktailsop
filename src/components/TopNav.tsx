@@ -393,35 +393,6 @@ const TopNav = () => {
                 onClick={lightTap}
                 className="glass-hover p-2.5 rounded-2xl"
               >
-                <Palette className="w-5 h-5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="glass">
-              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('light'); }}>
-                <Sun className="w-4 h-4 mr-2" />
-                Light
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('grey'); }}>
-                <Palette className="w-4 h-4 mr-2" />
-                Grey
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('dark'); }}>
-                <Moon className="w-4 h-4 mr-2" />
-                Dark
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('black'); }}>
-                <Moon className="w-4 h-4 mr-2 fill-current" />
-                Black
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button 
-                onClick={lightTap}
-                className="glass-hover p-2.5 rounded-2xl"
-              >
                 <Menu className="w-5 h-5" />
               </button>
             </DropdownMenuTrigger>
@@ -455,6 +426,25 @@ const TopNav = () => {
               >
                 <BookOpen className="w-4 h-4 mr-2" />
                 Introduction
+              </DropdownMenuItem>
+              
+              <div className="my-1 h-px bg-border/50" />
+              
+              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('light'); }} className="cursor-pointer">
+                <Sun className="w-4 h-4 mr-2" />
+                Light Theme
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('grey'); }} className="cursor-pointer">
+                <Palette className="w-4 h-4 mr-2" />
+                Grey Theme
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('dark'); }} className="cursor-pointer">
+                <Moon className="w-4 h-4 mr-2" />
+                Dark Theme
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('black'); }} className="cursor-pointer">
+                <Moon className="w-4 h-4 mr-2 fill-current" />
+                Black Theme
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
