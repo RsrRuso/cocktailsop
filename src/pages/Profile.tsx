@@ -28,6 +28,9 @@ import { AddRecognitionDialog } from "@/components/AddRecognitionDialog";
 import { AddCompetitionDialog } from "@/components/AddCompetitionDialog";
 import { ExperienceTimeline } from "@/components/ExperienceTimeline";
 import { calculateCareerScore } from "@/lib/careerMetrics";
+import BirthdayConfetti from "@/components/BirthdayConfetti";
+import BirthdayBadge from "@/components/BirthdayBadge";
+import { useUserBirthday } from "@/hooks/useUserBirthday";
 
 interface Profile {
   id: string;
@@ -115,6 +118,7 @@ const Profile = () => {
   const [regionalData, setRegionalData] = useState<{ maxScore: number; userRank: number; totalUsers: number } | null>(null);
   
   const { data: userStatus, refetch: refetchStatus } = useUserStatus(user?.id || "");
+  const { data: birthdayData } = useUserBirthday(user?.id || null);
 
   useEffect(() => {
     if (!user) {
@@ -246,6 +250,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
+      <BirthdayConfetti isActive={birthdayData?.isBirthday || false} />
       <TopNav />
       <MusicTicker />
       
@@ -302,7 +307,10 @@ const Profile = () => {
                     </div>
                   )}
                 </div>
-                <p className="text-muted-foreground">@{profile.username}</p>
+                <p className="text-muted-foreground flex items-center gap-1.5">
+                  @{profile.username}
+                  <BirthdayBadge userId={user?.id} />
+                </p>
                 <p className="text-sm text-primary capitalize mt-1">
                   {profile.professional_title?.replace(/_/g, " ")}
                 </p>

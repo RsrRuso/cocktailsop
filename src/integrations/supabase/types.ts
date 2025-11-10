@@ -3338,6 +3338,7 @@ export type Database = {
         Returns: boolean
       }
       is_verified: { Args: { user_id: string }; Returns: boolean }
+      notify_friends_birthday: { Args: never; Returns: undefined }
       recalculate_follow_counts: { Args: never; Returns: undefined }
       update_business_analytics: { Args: never; Returns: undefined }
       update_expired_events: { Args: never; Returns: undefined }

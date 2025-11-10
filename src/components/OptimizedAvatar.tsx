@@ -5,6 +5,7 @@ import StatusRing from "./StatusRing";
 import { useUserStatus } from "@/hooks/useUserStatus";
 import BirthdayFireworks from "./BirthdayFireworks";
 import { useUserBirthday } from "@/hooks/useUserBirthday";
+import BirthdayBadge from "./BirthdayBadge";
 
 interface OptimizedAvatarProps {
   src: string | null | undefined;
@@ -15,6 +16,7 @@ interface OptimizedAvatarProps {
   showStatus?: boolean;
   showAddButton?: boolean;
   onAddStatusClick?: () => void;
+  showBirthdayBadge?: boolean;
 }
 
 const OptimizedAvatar = ({ 

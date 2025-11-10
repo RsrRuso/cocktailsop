@@ -19,6 +19,9 @@ import AvatarClickMenu from "@/components/AvatarClickMenu";
 import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore } from "@/lib/profileUtils";
 import { ExperienceTimeline } from "@/components/ExperienceTimeline";
 import { calculateCareerScore } from "@/lib/careerMetrics";
+import BirthdayConfetti from "@/components/BirthdayConfetti";
+import BirthdayBadge from "@/components/BirthdayBadge";
+import { useUserBirthday } from "@/hooks/useUserBirthday";
 
 interface Profile {
   username: string;
@@ -76,6 +79,7 @@ const UserProfile = () => {
   const [recognitions, setRecognitions] = useState<any[]>([]);
   const [competitions, setCompetitions] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const { data: birthdayData } = useUserBirthday(userId || null);
 
   useEffect(() => {
     const initUser = async () => {
@@ -314,6 +318,7 @@ const UserProfile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
+      <BirthdayConfetti isActive={birthdayData?.isBirthday || false} />
       <TopNav />
       <MusicTicker />
       
@@ -356,7 +361,10 @@ const UserProfile = () => {
               </AvatarClickMenu>
               <div>
                 <h2 className="text-2xl font-bold">{profile.full_name}</h2>
-                <p className="text-muted-foreground">@{profile.username}</p>
+                <p className="text-muted-foreground flex items-center gap-1.5">
+                  @{profile.username}
+                  <BirthdayBadge userId={userId} />
+                </p>
                 <p className="text-sm text-primary capitalize mt-1">
                   {profile.professional_title?.replace(/_/g, " ")}
                 </p>
