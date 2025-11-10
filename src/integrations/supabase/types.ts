@@ -2145,6 +2145,41 @@ export type Database = {
           },
         ]
       }
+      task_reminders: {
+        Row: {
+          created_at: string | null
+          id: string
+          remind_at: string
+          sent: boolean | null
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          remind_at: string
+          sent?: boolean | null
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          remind_at?: string
+          sent?: boolean | null
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_reminders_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           actual_hours: number | null
@@ -2161,6 +2196,7 @@ export type Database = {
           progress: number | null
           status: string | null
           tags: string[] | null
+          team_id: string | null
           title: string
           updated_at: string | null
           user_id: string
@@ -2180,6 +2216,7 @@ export type Database = {
           progress?: number | null
           status?: string | null
           tags?: string[] | null
+          team_id?: string | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -2199,9 +2236,77 @@ export type Database = {
           progress?: number | null
           status?: string | null
           tags?: string[] | null
+          team_id?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          id: string
+          joined_at: string | null
+          role: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string | null
+          role?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string | null
+          role?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -2499,6 +2604,10 @@ export type Database = {
         Returns: boolean
       }
       is_founder: { Args: { user_id: string }; Returns: boolean }
+      is_team_member: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_verified: { Args: { user_id: string }; Returns: boolean }
       recalculate_follow_counts: { Args: never; Returns: undefined }
       update_expired_events: { Args: never; Returns: undefined }

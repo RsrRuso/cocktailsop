@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { useInAppNotifications } from "@/hooks/useInAppNotifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +19,8 @@ import { toast } from "sonner";
 import { 
   CheckCircle2, Circle, Clock, AlertCircle, Plus, Calendar, Trash2, Edit, 
   Filter, Search, BarChart3, TrendingUp, MessageSquare, Activity, Tag,
-  Paperclip, Users, ChevronRight, Target, Timer, FolderOpen
+  Paperclip, Users, ChevronRight, Target, Timer, FolderOpen, Bell, UserPlus,
+  Settings, Shield
 } from "lucide-react";
 import { format } from "date-fns";
 import TopNav from "@/components/TopNav";
@@ -32,6 +35,7 @@ interface Task {
   status: string;
   due_date: string | null;
   assigned_to: string | null;
+  team_id: string | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -40,6 +44,33 @@ interface Task {
   progress: number;
   estimated_hours: number | null;
   actual_hours: number | null;
+}
+
+interface Team {
+  id: string;
+  name: string;
+  description: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+interface TeamMember {
+  id: string;
+  team_id: string;
+  user_id: string;
+  role: string;
+  profiles?: {
+    username: string;
+    avatar_url: string;
+  };
+}
+
+interface Reminder {
+  id: string;
+  task_id: string;
+  user_id: string;
+  remind_at: string;
+  sent: boolean;
 }
 
 interface TaskComment {
@@ -94,16 +125,21 @@ const CATEGORIES = [
 
 export default function TaskManager() {
   const { user } = useAuth();
+  const { showNotification } = useInAppNotifications();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [teamDialogOpen, setTeamDialogOpen] = useState(false);
+  const [manageMembersOpen, setManageMembersOpen] = useState(false);
+  const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [activities, setActivities] = useState<TaskActivity[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [newComment, setNewComment] = useState("");
   const [stats, setStats] = useState<Stats>({
     total: 0,
@@ -113,6 +149,19 @@ export default function TaskManager() {
     overdue: 0,
     completionRate: 0
   });
+
+  // Team state
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamName, setTeamName] = useState("");
+  const [teamDescription, setTeamDescription] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberRole, setMemberRole] = useState("member");
+  
+  // Reminder state
+  const [reminderDate, setReminderDate] = useState("");
+  const [reminderTime, setReminderTime] = useState("");
 
   // Form state
   const [title, setTitle] = useState("");
@@ -124,6 +173,8 @@ export default function TaskManager() {
   const [tags, setTags] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [estimatedHours, setEstimatedHours] = useState("");
+  const [assignedTo, setAssignedTo] = useState<string | null>(null);
+  const [taskTeamId, setTaskTeamId] = useState<string | null>(null);
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -135,8 +186,16 @@ export default function TaskManager() {
     if (user) {
       checkSubscriptionStatus();
       fetchTasks();
+      fetchTeams();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (selectedTeam) {
+      fetchTeamMembers(selectedTeam);
+      fetchTasks();
+    }
+  }, [selectedTeam]);
 
   useEffect(() => {
     applyFilters();
@@ -198,11 +257,18 @@ export default function TaskManager() {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from("tasks")
         .select("*")
-        .eq("user_id", user?.id)
         .order("created_at", { ascending: false });
+
+      if (selectedTeam) {
+        query = query.eq("team_id", selectedTeam);
+      } else {
+        query = query.eq("user_id", user?.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setTasks(data || []);
@@ -214,23 +280,85 @@ export default function TaskManager() {
     }
   };
 
+  const fetchTeams = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from("teams")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setTeams(data || []);
+    } catch (error: any) {
+      console.error("Error fetching teams:", error);
+    }
+  };
+
+  const fetchTeamMembers = async (teamId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("team_members")
+        .select("*")
+        .eq("team_id", teamId);
+
+      if (error) throw error;
+      
+      // Fetch profile data separately
+      if (data) {
+        const membersWithProfiles = await Promise.all(
+          data.map(async (member) => {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("username, avatar_url")
+              .eq("id", member.user_id)
+              .single();
+            
+            return { ...member, profiles: profile };
+          })
+        );
+        setTeamMembers(membersWithProfiles as any);
+      }
+    } catch (error: any) {
+      console.error("Error fetching team members:", error);
+    }
+  };
+
+  const fetchReminders = async (taskId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("task_reminders")
+        .select("*")
+        .eq("task_id", taskId)
+        .eq("user_id", user?.id)
+        .order("remind_at", { ascending: true });
+
+      if (error) throw error;
+      setReminders(data || []);
+    } catch (error: any) {
+      console.error("Error fetching reminders:", error);
+    }
+  };
+
   const fetchTaskDetails = async (taskId: string) => {
     try {
       const [commentsRes, activitiesRes] = await Promise.all([
         supabase
           .from("task_comments")
-          .select("*")
+          .select("*, profiles(username, avatar_url)")
           .eq("task_id", taskId)
           .order("created_at", { ascending: true }),
         supabase
           .from("task_activity")
-          .select("*")
+          .select("*, profiles(username)")
           .eq("task_id", taskId)
           .order("created_at", { ascending: false })
       ]);
 
       if (commentsRes.data) setComments(commentsRes.data as any);
       if (activitiesRes.data) setActivities(activitiesRes.data as any);
+      
+      fetchReminders(taskId);
     } catch (error: any) {
       console.error("Error fetching task details:", error);
     }
@@ -290,11 +418,14 @@ export default function TaskManager() {
         progress,
         estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
         status: "pending",
+        team_id: taskTeamId,
+        assigned_to: assignedTo,
       });
 
       if (error) throw error;
 
       toast.success("Task created successfully!");
+      showNotification("Task Created", `New task: ${title}`, "default");
       setDialogOpen(false);
       resetForm();
       fetchTasks();
@@ -319,6 +450,8 @@ export default function TaskManager() {
           tags,
           progress,
           estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
+          team_id: taskTeamId,
+          assigned_to: assignedTo,
         })
         .eq("id", editingTask.id);
 
@@ -432,6 +565,8 @@ export default function TaskManager() {
     setTagInput("");
     setProgress(0);
     setEstimatedHours("");
+    setAssignedTo(null);
+    setTaskTeamId(selectedTeam);
     setEditingTask(null);
   };
 
@@ -445,8 +580,176 @@ export default function TaskManager() {
     setTags(task.tags || []);
     setProgress(task.progress || 0);
     setEstimatedHours(task.estimated_hours?.toString() || "");
+    setAssignedTo(task.assigned_to);
+    setTaskTeamId(task.team_id);
     setDialogOpen(true);
   };
+
+  const handleCreateTeam = async () => {
+    if (!user || !teamName) {
+      toast.error("Please enter a team name");
+      return;
+    }
+
+    try {
+      const { data: team, error: teamError } = await supabase
+        .from("teams")
+        .insert({
+          name: teamName,
+          description: teamDescription,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (teamError) throw teamError;
+
+      // Add creator as owner
+      const { error: memberError } = await supabase
+        .from("team_members")
+        .insert({
+          team_id: team.id,
+          user_id: user.id,
+          role: "owner",
+        });
+
+      if (memberError) throw memberError;
+
+      toast.success("Team created successfully!");
+      setTeamDialogOpen(false);
+      setTeamName("");
+      setTeamDescription("");
+      fetchTeams();
+      setSelectedTeam(team.id);
+    } catch (error: any) {
+      console.error("Error creating team:", error);
+      toast.error("Failed to create team");
+    }
+  };
+
+  const handleAddTeamMember = async () => {
+    if (!selectedTeam || !memberEmail) {
+      toast.error("Please enter a user email");
+      return;
+    }
+
+    try {
+      // Find user by email
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .ilike("username", memberEmail)
+        .single();
+
+      if (profileError || !profile) {
+        toast.error("User not found");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("team_members")
+        .insert({
+          team_id: selectedTeam,
+          user_id: profile.id,
+          role: memberRole,
+        });
+
+      if (error) throw error;
+
+      toast.success("Team member added!");
+      setMemberEmail("");
+      setMemberRole("member");
+      fetchTeamMembers(selectedTeam);
+    } catch (error: any) {
+      console.error("Error adding team member:", error);
+      toast.error("Failed to add team member");
+    }
+  };
+
+  const handleRemoveTeamMember = async (memberId: string) => {
+    try {
+      const { error } = await supabase
+        .from("team_members")
+        .delete()
+        .eq("id", memberId);
+
+      if (error) throw error;
+
+      toast.success("Member removed from team");
+      if (selectedTeam) fetchTeamMembers(selectedTeam);
+    } catch (error: any) {
+      console.error("Error removing team member:", error);
+      toast.error("Failed to remove member");
+    }
+  };
+
+  const handleAddReminder = async () => {
+    if (!selectedTask || !reminderDate || !reminderTime) {
+      toast.error("Please select both date and time for reminder");
+      return;
+    }
+
+    try {
+      const remindAt = new Date(`${reminderDate}T${reminderTime}`);
+      
+      const { error } = await supabase
+        .from("task_reminders")
+        .insert({
+          task_id: selectedTask.id,
+          user_id: user!.id,
+          remind_at: remindAt.toISOString(),
+        });
+
+      if (error) throw error;
+
+      toast.success("Reminder set!");
+      setReminderDialogOpen(false);
+      setReminderDate("");
+      setReminderTime("");
+      if (selectedTask) fetchReminders(selectedTask.id);
+    } catch (error: any) {
+      console.error("Error adding reminder:", error);
+      toast.error("Failed to set reminder");
+    }
+  };
+
+  const handleDeleteReminder = async (reminderId: string) => {
+    try {
+      const { error } = await supabase
+        .from("task_reminders")
+        .delete()
+        .eq("id", reminderId);
+
+      if (error) throw error;
+
+      toast.success("Reminder deleted");
+      if (selectedTask) fetchReminders(selectedTask.id);
+    } catch (error: any) {
+      console.error("Error deleting reminder:", error);
+      toast.error("Failed to delete reminder");
+    }
+  };
+
+  // Realtime subscriptions for collaborative updates
+  useRealtimeSubscription({
+    channel: `tasks-${user?.id}`,
+    table: "tasks",
+    event: "*",
+    onUpdate: () => {
+      fetchTasks();
+      showNotification("Task Updated", "A task has been updated by a team member", "default");
+    },
+  });
+
+  useRealtimeSubscription({
+    channel: `task-comments-${selectedTask?.id}`,
+    table: "task_comments",
+    filter: `task_id=eq.${selectedTask?.id}`,
+    event: "*",
+    onUpdate: () => {
+      if (selectedTask) fetchTaskDetails(selectedTask.id);
+    },
+  });
 
   const openTaskDetails = (task: Task) => {
     setSelectedTask(task);
@@ -617,6 +920,41 @@ export default function TaskManager() {
             </CardHeader>
           </Card>
         </div>
+
+        {/* Team Selector */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-muted-foreground" />
+                <Label>Team Workspace:</Label>
+              </div>
+              <Select value={selectedTeam || "personal"} onValueChange={(val) => setSelectedTeam(val === "personal" ? null : val)}>
+                <SelectTrigger className="w-64">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="personal">Personal Tasks</SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={() => setTeamDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Team
+              </Button>
+              {selectedTeam && (
+                <Button variant="outline" onClick={() => setManageMembersOpen(true)}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Manage Members
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Header with Actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -814,6 +1152,26 @@ export default function TaskManager() {
                 />
               </div>
             </div>
+
+            {/* Team Assignment */}
+            {selectedTeam && teamMembers.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="assign_to">Assign To (Team Member)</Label>
+                <Select value={assignedTo || "unassigned"} onValueChange={(val) => setAssignedTo(val === "unassigned" ? null : val)}>
+                  <SelectTrigger id="assign_to">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {teamMembers.map((member) => (
+                      <SelectItem key={member.id} value={member.user_id}>
+                        {member.profiles?.username || "Unknown"} ({member.role})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="progress">Progress (%)</Label>
@@ -1035,6 +1393,48 @@ export default function TaskManager() {
 
                   <Separator />
 
+                  {/* Reminders */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold flex items-center gap-2">
+                        <Bell className="w-4 h-4" />
+                        Reminders
+                      </h4>
+                      <Button variant="outline" size="sm" onClick={() => setReminderDialogOpen(true)}>
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      {reminders.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No reminders set</p>
+                      ) : (
+                        reminders.map(reminder => (
+                          <div key={reminder.id} className="flex items-center justify-between p-2 rounded-lg border">
+                            <div className="flex items-center gap-2">
+                              <Bell className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm">
+                                {format(new Date(reminder.remind_at), "MMM dd, yyyy 'at' HH:mm")}
+                              </span>
+                              {reminder.sent && (
+                                <Badge variant="outline" className="text-xs">Sent</Badge>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteReminder(reminder.id)}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
                   {/* Comments */}
                   <div>
                     <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -1080,6 +1480,167 @@ export default function TaskManager() {
               </ScrollArea>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Team Dialog */}
+      <Dialog open={teamDialogOpen} onOpenChange={setTeamDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Team</DialogTitle>
+            <DialogDescription>
+              Create a team workspace to collaborate with others
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="team_name">Team Name *</Label>
+              <Input
+                id="team_name"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                placeholder="Enter team name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="team_description">Description</Label>
+              <Textarea
+                id="team_description"
+                value={teamDescription}
+                onChange={(e) => setTeamDescription(e.target.value)}
+                placeholder="Team description (optional)"
+                rows={3}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setTeamDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateTeam}>Create Team</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Members Dialog */}
+      <Dialog open={manageMembersOpen} onOpenChange={setManageMembersOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Manage Team Members</DialogTitle>
+            <DialogDescription>
+              Add or remove members from your team
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            {/* Add Member Section */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold">Add Member</h4>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter username"
+                  value={memberEmail}
+                  onChange={(e) => setMemberEmail(e.target.value)}
+                  className="flex-1"
+                />
+                <Select value={memberRole} onValueChange={setMemberRole}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleAddTeamMember}>
+                  <UserPlus className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Current Members */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold">Current Members ({teamMembers.length})</h4>
+              <ScrollArea className="h-64">
+                <div className="space-y-2">
+                  {teamMembers.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between p-3 rounded-lg border"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-sm font-medium">
+                            {member.profiles?.username?.[0]?.toUpperCase() || "U"}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {member.profiles?.username || "Unknown"}
+                          </p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Shield className="w-3 h-3" />
+                            {member.role}
+                          </p>
+                        </div>
+                      </div>
+                      {member.role !== "owner" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveTeamMember(member.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Reminder Dialog */}
+      <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Reminder</DialogTitle>
+            <DialogDescription>
+              Get notified about this task at a specific time
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reminder_date">Date *</Label>
+              <Input
+                id="reminder_date"
+                type="date"
+                value={reminderDate}
+                onChange={(e) => setReminderDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reminder_time">Time *</Label>
+              <Input
+                id="reminder_time"
+                type="time"
+                value={reminderTime}
+                onChange={(e) => setReminderTime(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setReminderDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddReminder}>
+              <Bell className="w-4 h-4 mr-2" />
+              Set Reminder
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
