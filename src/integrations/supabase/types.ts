@@ -3383,6 +3383,10 @@ export type Database = {
         Returns: boolean
       }
       is_founder: { Args: { user_id: string }; Returns: boolean }
+      is_group_admin: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_team_member: {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean
