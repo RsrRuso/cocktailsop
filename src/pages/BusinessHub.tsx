@@ -9,10 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Plus, Search, TrendingUp, Users, DollarSign, Eye, Heart } from "lucide-react";
+import { Plus, Search, TrendingUp, Users, DollarSign, Eye, Heart, Sparkles, Target } from "lucide-react";
 import { CreateBusinessIdeaDialog } from "@/components/CreateBusinessIdeaDialog";
 import { BusinessIdeaDetailDialog } from "@/components/BusinessIdeaDetailDialog";
 import { SetupInvestorProfileDialog } from "@/components/SetupInvestorProfileDialog";
+import { useBusinessIdeaMatching, getMatchLevel } from "@/hooks/useBusinessIdeaMatching";
 import { toast } from "sonner";
 
 const BusinessHub = () => {
@@ -84,6 +85,9 @@ const BusinessHub = () => {
     },
     enabled: !!user,
   });
+
+  // Apply matching algorithm for investors
+  const matchedIdeas = useBusinessIdeaMatching(ideas, investorProfile);
 
   const handleInterest = async (ideaId: string) => {
     if (!user) {
@@ -165,8 +169,122 @@ const BusinessHub = () => {
           </div>
         </div>
 
-        {/* Ideas Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Recommended Ideas for Investors */}
+        {investorProfile && matchedIdeas.some(idea => idea.matchScore > 0) && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-bold">Recommended For You</h2>
+              <Badge variant="secondary" className="ml-2">AI Matched</Badge>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {matchedIdeas
+                .filter(idea => idea.matchScore >= 30)
+                .slice(0, 6)
+                .map((idea) => {
+                  const matchInfo = getMatchLevel(idea.matchScore);
+                  return (
+                    <Card key={idea.id} className="hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden">
+                      {/* Match indicator banner */}
+                      <div className="absolute top-0 right-0 bg-gradient-to-l from-primary/20 to-transparent px-6 py-1 rounded-bl-lg">
+                        <div className="flex items-center gap-1">
+                          <Target className="w-3 h-3 text-primary" />
+                          <span className={`text-xs font-semibold ${matchInfo.color}`}>
+                            {idea.matchScore}% Match
+                          </span>
+                        </div>
+                      </div>
+
+                      <CardHeader className="pt-8">
+                        <div className="flex items-start justify-between mb-2">
+                          <Badge variant="secondary" className="capitalize">{idea.stage}</Badge>
+                          <Badge>{idea.category}</Badge>
+                        </div>
+                        <CardTitle className="line-clamp-2 group-hover:text-primary transition-colors">
+                          {idea.title}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground line-clamp-1">{idea.headline}</p>
+                      </CardHeader>
+
+                      <CardContent>
+                        <p className="text-sm line-clamp-3 mb-4">{idea.description}</p>
+                        
+                        {/* Match reasons */}
+                        {idea.matchReasons.length > 0 && (
+                          <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/10">
+                            <p className="text-xs font-semibold text-primary mb-1">Why this matches:</p>
+                            <ul className="text-xs space-y-1">
+                              {idea.matchReasons.map((reason, i) => (
+                                <li key={i} className="flex items-center gap-1">
+                                  <span className="w-1 h-1 bg-primary rounded-full"></span>
+                                  {reason}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {idea.hashtags?.slice(0, 3).map((tag: string, i: number) => (
+                            <Badge key={i} variant="outline" className="text-xs">
+                              #{tag}
+                            </Badge>
+                          ))}
+                        </div>
+
+                        {idea.funding_goal && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <DollarSign className="w-4 h-4 text-primary" />
+                            <span className="font-semibold">Goal: ${idea.funding_goal.toLocaleString()}</span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Eye className="w-4 h-4" />
+                            {idea.view_count}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Heart className="w-4 h-4" />
+                            {idea.interest_count}
+                          </div>
+                        </div>
+                      </CardContent>
+
+                      <CardFooter className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          className="flex-1"
+                          onClick={() => {
+                            setSelectedIdea(idea);
+                            setDetailDialogOpen(true);
+                          }}
+                        >
+                          View Details
+                        </Button>
+                        <Button
+                          variant={myInterests.includes(idea.id) ? "secondary" : "default"}
+                          onClick={() => handleInterest(idea.id)}
+                        >
+                          <Heart className={`w-4 h-4 ${myInterests.includes(idea.id) ? 'fill-current' : ''}`} />
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+
+        {/* All Ideas Section */}
+        <div>
+          <h2 className="text-xl font-bold mb-4">
+            {investorProfile && matchedIdeas.some(idea => idea.matchScore > 0) ? "All Business Ideas" : "Business Ideas"}
+          </h2>
+          
+          {/* Ideas Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {ideas.map((idea) => (
             <Card key={idea.id} className="hover:shadow-lg transition-all cursor-pointer group">
               <CardHeader>
@@ -239,6 +357,7 @@ const BusinessHub = () => {
             <p className="text-muted-foreground">Be the first to share your innovative idea!</p>
           </div>
         )}
+        </div>
       </div>
 
       <BottomNav />
