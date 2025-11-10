@@ -476,14 +476,14 @@ const StoryViewer = () => {
       {/* Header */}
       <div className="absolute top-8 left-4 right-4 flex items-center justify-between z-10 mt-6">
         <div className="flex items-center gap-3">
-          {currentStory.profiles.avatar_url && (
+          {currentStory.profiles?.avatar_url && (
             <img
               src={currentStory.profiles.avatar_url}
               alt={currentStory.profiles.username}
               className="w-10 h-10 rounded-full border-2 border-white"
             />
           )}
-          <span className="text-white font-semibold">{currentStory.profiles.username}</span>
+          <span className="text-white font-semibold">{currentStory.profiles?.username || 'Unknown'}</span>
         </div>
         <div className="flex items-center gap-2">
           {isOwnStory && (
