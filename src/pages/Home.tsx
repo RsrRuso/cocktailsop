@@ -16,6 +16,7 @@ import { useOptimisticLike } from "@/hooks/useOptimisticLike";
 import { useManagerRole } from "@/hooks/useManagerRole";
 import { EventsTicker } from "@/components/EventsTicker";
 import MusicTicker from "@/components/MusicTicker";
+import BirthdayFireworks from "@/components/BirthdayFireworks";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -306,44 +307,46 @@ const Home = () => {
         <div className="flex gap-4">
           {/* Your Story */}
           <div className="flex flex-col items-center gap-2 min-w-[80px]">
-            <button
-              onClick={() => navigate("/story-options")}
-              className="relative group"
-            >
-              {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) ? (
-                // Birthday - golden celebration ring
-                <>
-                  <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
-                  <div className="relative rounded-full bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-0.5 shadow-xl shadow-pink-500/50">
-                    <div className="bg-background rounded-full p-0.5">
-                      <Avatar className="w-16 h-16">
+            <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
+              <button
+                onClick={() => navigate("/story-options")}
+                className="relative group"
+              >
+                {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) ? (
+                  // Birthday - golden celebration ring
+                  <>
+                    <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+                    <div className="relative rounded-full bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-0.5 shadow-xl shadow-pink-500/50">
+                      <div className="bg-background rounded-full p-0.5">
+                        <Avatar className="w-16 h-16">
+                          <AvatarImage src={currentUser?.avatar_url || undefined} />
+                          <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                        </Avatar>
+                      </div>
+                    </div>
+                    {/* Birthday badge */}
+                    <div className="absolute -top-1 -right-1 text-2xl animate-bounce">🎂</div>
+                    {/* Add button */}
+                    <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary z-10">
+                      <span className="text-white text-lg font-bold">+</span>
+                    </div>
+                  </>
+                ) : (
+                  // Regular story ring
+                  <>
+                    <div className="w-16 h-16 rounded-full glass border-2 border-border flex items-center justify-center">
+                      <Avatar className="w-14 h-14">
                         <AvatarImage src={currentUser?.avatar_url || undefined} />
                         <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
                       </Avatar>
                     </div>
-                  </div>
-                  {/* Birthday badge */}
-                  <div className="absolute -top-1 -right-1 text-2xl animate-bounce">🎂</div>
-                  {/* Add button */}
-                  <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary z-10">
-                    <span className="text-white text-lg font-bold">+</span>
-                  </div>
-                </>
-              ) : (
-                // Regular story ring
-                <>
-                  <div className="w-16 h-16 rounded-full glass border-2 border-border flex items-center justify-center">
-                    <Avatar className="w-14 h-14">
-                      <AvatarImage src={currentUser?.avatar_url || undefined} />
-                      <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary">
-                    <span className="text-white text-lg font-bold">+</span>
-                  </div>
-                </>
-              )}
-            </button>
+                    <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary">
+                      <span className="text-white text-lg font-bold">+</span>
+                    </div>
+                  </>
+                )}
+              </button>
+            </BirthdayFireworks>
             <span className="text-xs text-muted-foreground">Your Story</span>
           </div>
 
@@ -354,56 +357,58 @@ const Home = () => {
             
             return (
               <div key={story.id} className="flex flex-col items-center gap-2 min-w-[80px]">
-                <button 
-                  onClick={() => {
-                    // Preload story images before navigation for instant display
-                    navigate(`/story/${story.user_id}`);
-                  }}
-                  className="relative group cursor-pointer"
-                >
-                  {hasBirthday ? (
-                    // Birthday story - golden celebration ring with confetti effect
-                    <>
-                      <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
-                      <div className="relative rounded-full bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-0.5 shadow-xl shadow-pink-500/50">
-                        <div className="bg-background rounded-full p-0.5">
-                          <Avatar className="w-16 h-16">
-                            <AvatarImage src={story.profiles.avatar_url || undefined} />
-                            <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
-                          </Avatar>
+                <BirthdayFireworks isBirthday={hasBirthday}>
+                  <button 
+                    onClick={() => {
+                      // Preload story images before navigation for instant display
+                      navigate(`/story/${story.user_id}`);
+                    }}
+                    className="relative group cursor-pointer"
+                  >
+                    {hasBirthday ? (
+                      // Birthday story - golden celebration ring with confetti effect
+                      <>
+                        <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+                        <div className="relative rounded-full bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-0.5 shadow-xl shadow-pink-500/50">
+                          <div className="bg-background rounded-full p-0.5">
+                            <Avatar className="w-16 h-16">
+                              <AvatarImage src={story.profiles.avatar_url || undefined} />
+                              <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
+                            </Avatar>
+                          </div>
                         </div>
-                      </div>
-                      {/* Birthday badge */}
-                      <div className="absolute -top-1 -right-1 text-2xl animate-bounce">🎂</div>
-                    </>
-                  ) : isViewed ? (
-                    // Viewed story - dark blue ring
-                    <>
-                      <div className="absolute -inset-1 rounded-full bg-blue-900 opacity-50 blur group-hover:opacity-75 transition-all duration-300"></div>
-                      <div className="relative rounded-full bg-blue-900 p-0.5 shadow-xl shadow-blue-900/50">
-                        <div className="bg-background rounded-full p-0.5">
-                          <Avatar className="w-16 h-16">
-                            <AvatarImage src={story.profiles.avatar_url || undefined} />
-                            <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
-                          </Avatar>
+                        {/* Birthday badge */}
+                        <div className="absolute -top-1 -right-1 text-2xl animate-bounce">🎂</div>
+                      </>
+                    ) : isViewed ? (
+                      // Viewed story - dark blue ring
+                      <>
+                        <div className="absolute -inset-1 rounded-full bg-blue-900 opacity-50 blur group-hover:opacity-75 transition-all duration-300"></div>
+                        <div className="relative rounded-full bg-blue-900 p-0.5 shadow-xl shadow-blue-900/50">
+                          <div className="bg-background rounded-full p-0.5">
+                            <Avatar className="w-16 h-16">
+                              <AvatarImage src={story.profiles.avatar_url || undefined} />
+                              <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
+                            </Avatar>
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  ) : (
-                    // Unviewed story - gradient ring
-                    <>
-                      <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
-                      <div className="relative rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-0.5 shadow-xl shadow-orange-500/50">
-                        <div className="bg-background rounded-full p-0.5">
-                          <Avatar className="w-16 h-16">
-                            <AvatarImage src={story.profiles.avatar_url || undefined} />
-                            <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
-                          </Avatar>
+                      </>
+                    ) : (
+                      // Unviewed story - gradient ring
+                      <>
+                        <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+                        <div className="relative rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-0.5 shadow-xl shadow-orange-500/50">
+                          <div className="bg-background rounded-full p-0.5">
+                            <Avatar className="w-16 h-16">
+                              <AvatarImage src={story.profiles.avatar_url || undefined} />
+                              <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
+                            </Avatar>
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  )}
-                </button>
+                      </>
+                    )}
+                  </button>
+                </BirthdayFireworks>
                 <span className="text-xs text-foreground font-medium truncate w-full text-center">
                   {story.profiles.username}
                 </span>
