@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield, DollarSign, Trash2, Target, ClipboardCheck, Percent, FileBarChart, Download } from "lucide-react";
+import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield, DollarSign, Trash2, Target, ClipboardCheck, Percent, FileBarChart, Download, BarChart3, PieChart, Users, Clock, AlertTriangle, CheckCircle2, Flame, Sparkles, TestTube, Timer, Thermometer, Container, BoxSelect, Tags, TrendingDown, Calendar, UserCheck, GraduationCap, Briefcase, LineChart, Activity } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
@@ -63,6 +63,30 @@ const OpsTools = () => {
         gradient: "from-cyan-600 to-blue-500",
         premium: true,
       },
+      {
+        name: "Labor Cost Analysis",
+        description: "Staff cost vs revenue tracking",
+        details: "Monitor labor costs as percentage of revenue. Optimize scheduling to maintain healthy labor ratios and profitability.",
+        icon: Users,
+        gradient: "from-indigo-600 to-purple-500",
+        premium: true,
+      },
+      {
+        name: "Performance Dashboard",
+        description: "Real-time KPI monitoring",
+        details: "Live dashboard showing key metrics: sales, costs, inventory levels, and staff performance. Make data-driven decisions instantly.",
+        icon: Activity,
+        gradient: "from-rose-600 to-orange-500",
+        premium: true,
+      },
+      {
+        name: "Profit & Loss Report",
+        description: "Complete P&L statements",
+        details: "Generate comprehensive profit and loss reports. Track revenue, COGS, operating expenses, and net profit over time.",
+        icon: PieChart,
+        gradient: "from-teal-600 to-green-500",
+        premium: true,
+      },
     ],
     mixing: [
       {
@@ -99,6 +123,38 @@ const OpsTools = () => {
         gradient: "from-green-600 to-teal-500",
         premium: false,
         path: "/scaling-tool",
+      },
+      {
+        name: "Syrup Calculator",
+        description: "Calculate syrup ratios and shelf life",
+        details: "Create perfect simple syrups and cordials. Calculate sugar-to-water ratios, batch sizes, and estimate shelf life based on sugar content.",
+        icon: TestTube,
+        gradient: "from-amber-600 to-yellow-500",
+        premium: true,
+      },
+      {
+        name: "Infusion Tracker",
+        description: "Track infusion timelines and recipes",
+        details: "Monitor spirit infusions with precise timing. Track flavor development, set alerts for tasting intervals, and store successful recipes.",
+        icon: Timer,
+        gradient: "from-violet-600 to-purple-500",
+        premium: true,
+      },
+      {
+        name: "Ice Calculator",
+        description: "Calculate ice needs for events",
+        details: "Determine exact ice quantities for parties and events. Factor in guest count, drink types, and event duration for perfect planning.",
+        icon: Sparkles,
+        gradient: "from-cyan-600 to-blue-500",
+        premium: true,
+      },
+      {
+        name: "Brix Converter",
+        description: "Convert between Brix, ABV, and gravity",
+        details: "Professional brewing and distilling calculations. Convert between Brix, specific gravity, and potential alcohol content.",
+        icon: Thermometer,
+        gradient: "from-orange-600 to-red-500",
+        premium: true,
       },
     ],
     inventory: [
@@ -173,6 +229,38 @@ const OpsTools = () => {
         premium: false,
         path: "/temperature-log",
       },
+      {
+        name: "Supplier Management",
+        description: "Track vendors and pricing",
+        details: "Manage supplier relationships, compare pricing, track delivery schedules, and maintain contact information for all vendors.",
+        icon: Briefcase,
+        gradient: "from-slate-600 to-gray-500",
+        premium: true,
+      },
+      {
+        name: "Reorder Alerts",
+        description: "Automated low-stock notifications",
+        details: "Set reorder points and receive automatic alerts when stock falls below thresholds. Never run out of essential items.",
+        icon: AlertTriangle,
+        gradient: "from-yellow-600 to-orange-500",
+        premium: true,
+      },
+      {
+        name: "Category Analysis",
+        description: "Inventory performance by category",
+        details: "Analyze inventory turnover, profit margins, and velocity by category. Identify fast and slow-moving items.",
+        icon: BarChart3,
+        gradient: "from-indigo-600 to-blue-500",
+        premium: true,
+      },
+      {
+        name: "Label Generator",
+        description: "Create professional inventory labels",
+        details: "Generate QR codes and labels for inventory items. Include expiration dates, batch numbers, and storage instructions.",
+        icon: Tags,
+        gradient: "from-pink-600 to-rose-500",
+        premium: true,
+      },
     ],
     management: [
       {
@@ -205,7 +293,7 @@ const OpsTools = () => {
         name: "Staff Schedule",
         description: "Manage team schedules and shifts",
         details: "Simplified scheduling. Create shifts, assign staff, track labor hours, and send automatic notifications. Export to calendar apps.",
-        icon: FileText,
+        icon: Calendar,
         gradient: "from-orange-600 to-red-500",
         premium: true,
       },
@@ -217,6 +305,46 @@ const OpsTools = () => {
         gradient: "from-pink-600 to-purple-500",
         premium: false,
         path: "/cocktail-specs",
+      },
+      {
+        name: "Training Log",
+        description: "Track staff training and certifications",
+        details: "Monitor employee training progress, certification renewals, and skill development. Ensure compliance and maintain competency records.",
+        icon: GraduationCap,
+        gradient: "from-blue-600 to-cyan-500",
+        premium: true,
+      },
+      {
+        name: "Performance Reviews",
+        description: "Employee evaluation system",
+        details: "Conduct structured performance reviews. Track goals, feedback, and development plans. Schedule regular check-ins automatically.",
+        icon: UserCheck,
+        gradient: "from-emerald-600 to-green-500",
+        premium: true,
+      },
+      {
+        name: "Shift Reports",
+        description: "End-of-shift reporting and handover",
+        details: "Document shift activities, issues, and notes. Create seamless handovers between shifts with structured digital reports.",
+        icon: FileText,
+        gradient: "from-slate-600 to-gray-500",
+        premium: true,
+      },
+      {
+        name: "Task Manager",
+        description: "Assign and track operational tasks",
+        details: "Create checklists, assign responsibilities, set deadlines, and monitor completion. Ensure nothing falls through the cracks.",
+        icon: CheckCircle2,
+        gradient: "from-violet-600 to-purple-500",
+        premium: true,
+      },
+      {
+        name: "Trend Forecasting",
+        description: "Predict demand and optimize inventory",
+        details: "AI-powered demand forecasting based on historical data, events, and trends. Plan inventory and staffing with confidence.",
+        icon: LineChart,
+        gradient: "from-rose-600 to-pink-500",
+        premium: true,
       },
     ],
   };
@@ -236,13 +364,59 @@ const OpsTools = () => {
       <TopNav />
 
       <div className="px-4 py-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gradient-primary mb-2">
-            Professional Ops Tools
-          </h1>
-          <p className="text-muted-foreground">
-            Advanced toolkits for beverage professionals
-          </p>
+        {/* Header with Stats */}
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent mb-2">
+              Professional Operations Suite
+            </h1>
+            <p className="text-muted-foreground">
+              Comprehensive tools for beverage industry professionals
+            </p>
+          </div>
+
+          {/* Quick Stats Dashboard */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="glass rounded-xl p-4 hover:shadow-lg transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center">
+                  <FileBarChart className="w-4 h-4 text-white" />
+                </div>
+                <p className="text-xs text-muted-foreground">Reports</p>
+              </div>
+              <p className="text-2xl font-bold">{tools.reports.length}</p>
+            </div>
+
+            <div className="glass rounded-xl p-4 hover:shadow-lg transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
+                  <Beaker className="w-4 h-4 text-white" />
+                </div>
+                <p className="text-xs text-muted-foreground">Mixing</p>
+              </div>
+              <p className="text-2xl font-bold">{tools.mixing.length}</p>
+            </div>
+
+            <div className="glass rounded-xl p-4 hover:shadow-lg transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-600 to-amber-700 flex items-center justify-center">
+                  <Package className="w-4 h-4 text-white" />
+                </div>
+                <p className="text-xs text-muted-foreground">Inventory</p>
+              </div>
+              <p className="text-2xl font-bold">{tools.inventory.length}</p>
+            </div>
+
+            <div className="glass rounded-xl p-4 hover:shadow-lg transition-all">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-500 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-white" />
+                </div>
+                <p className="text-xs text-muted-foreground">Management</p>
+              </div>
+              <p className="text-2xl font-bold">{tools.management.length}</p>
+            </div>
+          </div>
         </div>
 
         {/* Category Tabs */}
