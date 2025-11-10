@@ -26,6 +26,7 @@ import {
 import { format } from "date-fns";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import { BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface Task {
   id: string;
@@ -121,6 +122,21 @@ interface Stats {
   completionRate: number;
 }
 
+interface TimeLog {
+  id: string;
+  task_id: string;
+  user_id: string;
+  started_at: string;
+  ended_at: string | null;
+  duration_seconds: number | null;
+  description: string | null;
+  created_at: string;
+  profiles?: {
+    username: string;
+    avatar_url: string;
+  };
+}
+
 const CATEGORIES = [
   "Development",
   "Design",
@@ -149,6 +165,17 @@ export default function TaskManager() {
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [newComment, setNewComment] = useState("");
+  
+  // Time tracking state
+  const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
+  const [activeTimer, setActiveTimer] = useState<TimeLog | null>(null);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [timeTrackingDialogOpen, setTimeTrackingDialogOpen] = useState(false);
+  const [timeReportsDialogOpen, setTimeReportsDialogOpen] = useState(false);
+  const [manualTimeDescription, setManualTimeDescription] = useState("");
+  const [manualTimeHours, setManualTimeHours] = useState("");
+  const [manualTimeDate, setManualTimeDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  
   const [stats, setStats] = useState<Stats>({
     total: 0,
     pending: 0,
@@ -204,6 +231,22 @@ export default function TaskManager() {
       fetchTasks();
     }
   }, [selectedTeam]);
+
+  // Timer effect - increment every second when timer is active
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (activeTimer) {
+      interval = setInterval(() => {
+        const startTime = new Date(activeTimer.started_at).getTime();
+        const now = Date.now();
+        const seconds = Math.floor((now - startTime) / 1000);
+        setTimerSeconds(seconds);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activeTimer]);
 
   useEffect(() => {
     applyFilters();
@@ -367,6 +410,7 @@ export default function TaskManager() {
       if (activitiesRes.data) setActivities(activitiesRes.data as any);
       
       fetchReminders(taskId);
+      fetchTimeLogs(taskId);
     } catch (error: any) {
       console.error("Error fetching task details:", error);
     }
@@ -735,6 +779,178 @@ export default function TaskManager() {
     } catch (error: any) {
       console.error("Error deleting reminder:", error);
       toast.error("Failed to delete reminder");
+    }
+  };
+
+  // Time tracking functions
+  const fetchTimeLogs = async (taskId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("time_logs")
+        .select("*, profiles(username, avatar_url)")
+        .eq("task_id", taskId)
+        .order("started_at", { ascending: false });
+
+      if (error) throw error;
+      setTimeLogs((data || []) as any);
+
+      // Check for active timer
+      const active = data?.find(log => !log.ended_at);
+      if (active) {
+        setActiveTimer(active as any);
+        const startTime = new Date(active.started_at).getTime();
+        const now = Date.now();
+        setTimerSeconds(Math.floor((now - startTime) / 1000));
+      }
+    } catch (error: any) {
+      console.error("Error fetching time logs:", error);
+    }
+  };
+
+  const handleStartTimer = async (taskId: string) => {
+    if (!user) return;
+
+    try {
+      // Stop any existing timers for this user
+      const { data: existingTimers } = await supabase
+        .from("time_logs")
+        .select("*")
+        .eq("user_id", user.id)
+        .is("ended_at", null);
+
+      if (existingTimers && existingTimers.length > 0) {
+        for (const timer of existingTimers) {
+          await handleStopTimer(timer.id);
+        }
+      }
+
+      // Start new timer
+      const { data, error } = await supabase
+        .from("time_logs")
+        .insert({
+          task_id: taskId,
+          user_id: user.id,
+          started_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setActiveTimer(data as any);
+      setTimerSeconds(0);
+      toast.success("Timer started!");
+      fetchTimeLogs(taskId);
+    } catch (error: any) {
+      console.error("Error starting timer:", error);
+      toast.error("Failed to start timer");
+    }
+  };
+
+  const handleStopTimer = async (timeLogId: string) => {
+    try {
+      const endTime = new Date();
+      const log = timeLogs.find(l => l.id === timeLogId) || activeTimer;
+      
+      if (!log) return;
+
+      const startTime = new Date(log.started_at);
+      const durationSeconds = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+
+      const { error } = await supabase
+        .from("time_logs")
+        .update({
+          ended_at: endTime.toISOString(),
+          duration_seconds: durationSeconds,
+        })
+        .eq("id", timeLogId);
+
+      if (error) throw error;
+
+      if (activeTimer?.id === timeLogId) {
+        setActiveTimer(null);
+        setTimerSeconds(0);
+      }
+
+      toast.success(`Time logged: ${formatDuration(durationSeconds)}`);
+      if (selectedTask) {
+        fetchTimeLogs(selectedTask.id);
+        fetchTasks();
+      }
+    } catch (error: any) {
+      console.error("Error stopping timer:", error);
+      toast.error("Failed to stop timer");
+    }
+  };
+
+  const handleAddManualTime = async () => {
+    if (!selectedTask || !manualTimeHours) {
+      toast.error("Please enter time duration");
+      return;
+    }
+
+    try {
+      const hours = parseFloat(manualTimeHours);
+      const durationSeconds = Math.floor(hours * 3600);
+      const startTime = new Date(`${manualTimeDate}T09:00:00`);
+      const endTime = new Date(startTime.getTime() + durationSeconds * 1000);
+
+      const { error } = await supabase
+        .from("time_logs")
+        .insert({
+          task_id: selectedTask.id,
+          user_id: user!.id,
+          started_at: startTime.toISOString(),
+          ended_at: endTime.toISOString(),
+          duration_seconds: durationSeconds,
+          description: manualTimeDescription || null,
+        });
+
+      if (error) throw error;
+
+      toast.success("Time logged!");
+      setManualTimeHours("");
+      setManualTimeDescription("");
+      setManualTimeDate(format(new Date(), "yyyy-MM-dd"));
+      fetchTimeLogs(selectedTask.id);
+      fetchTasks();
+    } catch (error: any) {
+      console.error("Error adding manual time:", error);
+      toast.error("Failed to log time");
+    }
+  };
+
+  const handleDeleteTimeLog = async (timeLogId: string) => {
+    try {
+      const { error } = await supabase
+        .from("time_logs")
+        .delete()
+        .eq("id", timeLogId);
+
+      if (error) throw error;
+
+      toast.success("Time log deleted");
+      if (selectedTask) {
+        fetchTimeLogs(selectedTask.id);
+        fetchTasks();
+      }
+    } catch (error: any) {
+      console.error("Error deleting time log:", error);
+      toast.error("Failed to delete time log");
+    }
+  };
+
+  const formatDuration = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    } else {
+      return `${secs}s`;
     }
   };
 
@@ -1341,28 +1557,146 @@ export default function TaskManager() {
                   )}
 
                   {/* Time Tracking */}
-                  {(selectedTask.estimated_hours || selectedTask.actual_hours) && (
-                    <div>
-                      <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold flex items-center gap-2">
                         <Timer className="w-4 h-4" />
                         Time Tracking
                       </h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        {selectedTask.estimated_hours && (
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">Estimated:</span>{" "}
-                            <span className="font-medium">{selectedTask.estimated_hours}h</span>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setTimeTrackingDialogOpen(true)}
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Log Time
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setTimeReportsDialogOpen(true)}
+                        >
+                          <BarChart3 className="w-3 h-3 mr-1" />
+                          Reports
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Timer Controls */}
+                    <div className="p-4 rounded-lg border bg-card mb-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-2xl font-bold font-mono">
+                            {formatDuration(timerSeconds)}
                           </div>
-                        )}
-                        {selectedTask.actual_hours && (
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">Actual:</span>{" "}
-                            <span className="font-medium">{selectedTask.actual_hours}h</span>
+                          {activeTimer && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Started {format(new Date(activeTimer.started_at), "HH:mm")}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          {activeTimer ? (
+                            <Button
+                              variant="destructive"
+                              size="lg"
+                              onClick={() => handleStopTimer(activeTimer.id)}
+                            >
+                              <PauseCircle className="w-5 h-5 mr-2" />
+                              Stop
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="default"
+                              size="lg"
+                              onClick={() => handleStartTimer(selectedTask.id)}
+                            >
+                              <PlayCircle className="w-5 h-5 mr-2" />
+                              Start
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Time Summary */}
+                    {selectedTask.time_tracking && (
+                      <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-muted/50 mb-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Estimated</p>
+                          <p className="text-lg font-semibold">
+                            {selectedTask.time_tracking.estimated.toFixed(1)}h
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Spent</p>
+                          <p className="text-lg font-semibold">
+                            {selectedTask.time_tracking.spent.toFixed(1)}h
+                          </p>
+                        </div>
+                        {selectedTask.time_tracking.estimated > 0 && (
+                          <div className="col-span-2">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-xs text-muted-foreground">Progress</p>
+                              <p className="text-xs font-medium">
+                                {((selectedTask.time_tracking.spent / selectedTask.time_tracking.estimated) * 100).toFixed(0)}%
+                              </p>
+                            </div>
+                            <Progress 
+                              value={(selectedTask.time_tracking.spent / selectedTask.time_tracking.estimated) * 100} 
+                              className="h-2"
+                            />
                           </div>
                         )}
                       </div>
+                    )}
+
+                    {/* Time Logs */}
+                    <div className="space-y-2">
+                      <h5 className="text-xs font-semibold text-muted-foreground mb-2">Recent Logs</h5>
+                      {timeLogs.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No time logged yet</p>
+                      ) : (
+                        timeLogs.slice(0, 5).map(log => (
+                          <div key={log.id} className="flex items-center justify-between p-2 rounded-lg border">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <Timer className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium">
+                                    {log.duration_seconds ? formatDuration(log.duration_seconds) : "In progress..."}
+                                  </span>
+                                  {log.profiles?.username && (
+                                    <span className="text-xs text-muted-foreground">
+                                      by {log.profiles.username}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {format(new Date(log.started_at), "MMM dd, yyyy 'at' HH:mm")}
+                                </p>
+                                {log.description && (
+                                  <p className="text-xs text-muted-foreground mt-1">{log.description}</p>
+                                )}
+                              </div>
+                            </div>
+                            {log.ended_at && log.user_id === user?.id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteTimeLog(log.id)}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        ))
+                      )}
                     </div>
-                  )}
+                  </div>
 
                   <Separator />
 
@@ -1649,6 +1983,237 @@ export default function TaskManager() {
               Set Reminder
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Time Entry Dialog */}
+      <Dialog open={timeTrackingDialogOpen} onOpenChange={setTimeTrackingDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Log Time Manually</DialogTitle>
+            <DialogDescription>
+              Add time spent on this task manually
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="manual_time_date">Date *</Label>
+              <Input
+                id="manual_time_date"
+                type="date"
+                value={manualTimeDate}
+                onChange={(e) => setManualTimeDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="manual_time_hours">Hours *</Label>
+              <Input
+                id="manual_time_hours"
+                type="number"
+                step="0.25"
+                min="0"
+                placeholder="e.g., 2.5"
+                value={manualTimeHours}
+                onChange={(e) => setManualTimeHours(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="manual_time_description">Description (Optional)</Label>
+              <Textarea
+                id="manual_time_description"
+                placeholder="What did you work on?"
+                value={manualTimeDescription}
+                onChange={(e) => setManualTimeDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setTimeTrackingDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddManualTime}>
+              <Timer className="w-4 h-4 mr-2" />
+              Log Time
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Time Reports Dialog */}
+      <Dialog open={timeReportsDialogOpen} onOpenChange={setTimeReportsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Time Tracking Reports</DialogTitle>
+            <DialogDescription>
+              Visual reports of time spent across tasks and team members
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[70vh] pr-4">
+            <div className="space-y-6 py-4">
+              {/* Time Summary Cards */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardDescription>Total Logged</CardDescription>
+                    <CardTitle className="text-2xl">
+                      {(tasks.reduce((sum, task) => sum + (task.time_tracking?.spent || 0), 0)).toFixed(1)}h
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardDescription>Total Estimated</CardDescription>
+                    <CardTitle className="text-2xl">
+                      {(tasks.reduce((sum, task) => sum + (task.time_tracking?.estimated || 0), 0)).toFixed(1)}h
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardDescription>Efficiency</CardDescription>
+                    <CardTitle className="text-2xl">
+                      {(() => {
+                        const totalEstimated = tasks.reduce((sum, task) => sum + (task.time_tracking?.estimated || 0), 0);
+                        const totalSpent = tasks.reduce((sum, task) => sum + (task.time_tracking?.spent || 0), 0);
+                        if (totalEstimated === 0) return "N/A";
+                        return `${((totalEstimated / totalSpent) * 100).toFixed(0)}%`;
+                      })()}
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+              </div>
+
+              {/* Time by Task Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    Time by Task
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const taskTimeData = tasks
+                      .filter(task => task.time_tracking && (task.time_tracking.spent > 0 || task.time_tracking.estimated > 0))
+                      .map(task => ({
+                        name: task.title.substring(0, 20) + (task.title.length > 20 ? '...' : ''),
+                        estimated: task.time_tracking?.estimated || 0,
+                        spent: task.time_tracking?.spent || 0
+                      }))
+                      .slice(0, 10);
+
+                    return (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <RechartsBarChart data={taskTimeData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                          <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft' }} />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="estimated" fill="hsl(var(--primary))" name="Estimated" />
+                          <Bar dataKey="spent" fill="hsl(var(--accent))" name="Spent" />
+                        </RechartsBarChart>
+                      </ResponsiveContainer>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+
+              {/* Time by Category */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PieChart className="w-5 h-5" />
+                    Time by Category
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const categoryTime = tasks.reduce((acc, task) => {
+                      const category = task.category || 'General';
+                      const spent = task.time_tracking?.spent || 0;
+                      acc[category] = (acc[category] || 0) + spent;
+                      return acc;
+                    }, {} as Record<string, number>);
+
+                    const pieData = Object.entries(categoryTime)
+                      .filter(([_, value]) => value > 0)
+                      .map(([name, value]) => ({ name, value }));
+
+                    const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', '#8884d8', '#82ca9d', '#ffc658', '#ff8042'];
+
+                    return pieData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <RechartsPieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={(entry) => `${entry.name}: ${entry.value.toFixed(1)}h`}
+                            outerRadius={100}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </RechartsPieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        No time logged yet
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+
+              {/* Task List with Time Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Detailed Time Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {tasks
+                      .filter(task => task.time_tracking && task.time_tracking.spent > 0)
+                      .sort((a, b) => (b.time_tracking?.spent || 0) - (a.time_tracking?.spent || 0))
+                      .map(task => (
+                        <div key={task.id} className="flex items-center justify-between p-3 rounded-lg border">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{task.title}</p>
+                            <p className="text-xs text-muted-foreground">{task.category}</p>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm">
+                            <div className="text-right">
+                              <p className="font-medium">{task.time_tracking?.spent.toFixed(1)}h</p>
+                              <p className="text-xs text-muted-foreground">spent</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium">{task.time_tracking?.estimated.toFixed(1)}h</p>
+                              <p className="text-xs text-muted-foreground">estimated</p>
+                            </div>
+                            {task.time_tracking && task.time_tracking.estimated > 0 && (
+                              <div className="w-20">
+                                <Progress 
+                                  value={(task.time_tracking.spent / task.time_tracking.estimated) * 100} 
+                                  className="h-2"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
