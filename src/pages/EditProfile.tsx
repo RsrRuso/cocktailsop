@@ -37,6 +37,7 @@ const EditProfile = () => {
     phone: "",
     whatsapp: "",
     website: "",
+    date_of_birth: "",
     show_phone: true,
     show_whatsapp: true,
     show_website: true,
@@ -69,6 +70,7 @@ const EditProfile = () => {
         phone: data.phone || "",
         whatsapp: data.whatsapp || "",
         website: data.website || "",
+        date_of_birth: data.date_of_birth || "",
         show_phone: data.show_phone ?? true,
         show_whatsapp: data.show_whatsapp ?? true,
         show_website: data.show_website ?? true,
@@ -146,6 +148,7 @@ const EditProfile = () => {
         phone: profile.phone,
         whatsapp: profile.whatsapp,
         website: profile.website,
+        date_of_birth: profile.date_of_birth || null,
         show_phone: profile.show_phone,
         show_whatsapp: profile.show_whatsapp,
         show_website: profile.show_website,
@@ -375,6 +378,29 @@ const EditProfile = () => {
               placeholder="Tell us about yourself..."
               className="glass border-primary/20 min-h-[100px]"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Date of Birth</label>
+            <Input
+              type="date"
+              value={profile.date_of_birth}
+              onChange={(e) => {
+                const selectedDate = new Date(e.target.value);
+                const today = new Date();
+                const age = today.getFullYear() - selectedDate.getFullYear();
+                if (age < 18) {
+                  toast.error("You must be at least 18 years old");
+                  return;
+                }
+                setProfile({ ...profile, date_of_birth: e.target.value });
+              }}
+              max={new Date().toISOString().split('T')[0]}
+              className="glass border-primary/20"
+            />
+            <p className="text-xs text-muted-foreground">
+              Used to celebrate your birthday with fireworks on your profile
+            </p>
           </div>
 
           <div className="space-y-4 pt-4 border-t border-border/50">
