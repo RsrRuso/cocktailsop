@@ -31,6 +31,7 @@ interface Story {
   profiles: {
     username: string;
     avatar_url: string | null;
+    date_of_birth?: string | null;
   };
 }
 
@@ -169,17 +170,17 @@ const Home = () => {
 
       if (!data) return;
 
-      // Fetch profiles separately
+      // Fetch profiles separately with birthday info
       const userIds = [...new Set(data.map(s => s.user_id))];
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username, avatar_url, date_of_birth')
         .in('id', userIds);
 
       // Map profiles to stories
       const storiesWithProfiles = data.map(story => ({
         ...story,
-        profiles: profiles?.find(p => p.id === story.user_id) || { username: 'Unknown', avatar_url: null }
+        profiles: profiles?.find(p => p.id === story.user_id) || { username: 'Unknown', avatar_url: null, date_of_birth: null }
       }));
 
       setStories(storiesWithProfiles);
@@ -228,6 +229,17 @@ const Home = () => {
       platinum: "from-blue-400 to-purple-500",
     };
     return colors[level as keyof typeof colors] || colors.bronze;
+  };
+
+  // Check if it's someone's birthday
+  const isBirthday = (dateOfBirth: string | null) => {
+    if (!dateOfBirth) return false;
+    const today = new Date();
+    const birthday = new Date(dateOfBirth);
+    return (
+      birthday.getMonth() === today.getMonth() &&
+      birthday.getDate() === today.getDate()
+    );
   };
 
   const handleDeletePost = useCallback(async (postId: string) => {
@@ -314,6 +326,8 @@ const Home = () => {
           {/* Other Stories */}
           {stories.map((story) => {
             const isViewed = viewedStories.has(story.id);
+            const hasBirthday = isBirthday(story.profiles.date_of_birth);
+            
             return (
               <div key={story.id} className="flex flex-col items-center gap-2 min-w-[80px]">
                 <button 
@@ -323,7 +337,22 @@ const Home = () => {
                   }}
                   className="relative group cursor-pointer"
                 >
-                  {isViewed ? (
+                  {hasBirthday ? (
+                    // Birthday story - golden celebration ring with confetti effect
+                    <>
+                      <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+                      <div className="relative rounded-full bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-0.5 shadow-xl shadow-pink-500/50">
+                        <div className="bg-background rounded-full p-0.5">
+                          <Avatar className="w-16 h-16">
+                            <AvatarImage src={story.profiles.avatar_url || undefined} />
+                            <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
+                          </Avatar>
+                        </div>
+                      </div>
+                      {/* Birthday badge */}
+                      <div className="absolute -top-1 -right-1 text-2xl animate-bounce">🎂</div>
+                    </>
+                  ) : isViewed ? (
                     // Viewed story - dark blue ring
                     <>
                       <div className="absolute -inset-1 rounded-full bg-blue-900 opacity-50 blur group-hover:opacity-75 transition-all duration-300"></div>
