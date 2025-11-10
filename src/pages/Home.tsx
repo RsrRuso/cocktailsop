@@ -310,15 +310,39 @@ const Home = () => {
               onClick={() => navigate("/story-options")}
               className="relative group"
             >
-              <div className="w-16 h-16 rounded-full glass border-2 border-border flex items-center justify-center">
-                <Avatar className="w-14 h-14">
-                  <AvatarImage src={currentUser?.avatar_url || undefined} />
-                  <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
-                </Avatar>
-              </div>
-              <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary">
-                <span className="text-white text-lg font-bold">+</span>
-              </div>
+              {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) ? (
+                // Birthday - golden celebration ring
+                <>
+                  <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+                  <div className="relative rounded-full bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-0.5 shadow-xl shadow-pink-500/50">
+                    <div className="bg-background rounded-full p-0.5">
+                      <Avatar className="w-16 h-16">
+                        <AvatarImage src={currentUser?.avatar_url || undefined} />
+                        <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                      </Avatar>
+                    </div>
+                  </div>
+                  {/* Birthday badge */}
+                  <div className="absolute -top-1 -right-1 text-2xl animate-bounce">🎂</div>
+                  {/* Add button */}
+                  <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary z-10">
+                    <span className="text-white text-lg font-bold">+</span>
+                  </div>
+                </>
+              ) : (
+                // Regular story ring
+                <>
+                  <div className="w-16 h-16 rounded-full glass border-2 border-border flex items-center justify-center">
+                    <Avatar className="w-14 h-14">
+                      <AvatarImage src={currentUser?.avatar_url || undefined} />
+                      <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary">
+                    <span className="text-white text-lg font-bold">+</span>
+                  </div>
+                </>
+              )}
             </button>
             <span className="text-xs text-muted-foreground">Your Story</span>
           </div>
