@@ -21,7 +21,7 @@ import {
   Filter, Search, BarChart3, TrendingUp, MessageSquare, Activity, Tag,
   Paperclip, Users, ChevronRight, Target, Timer, FolderOpen, Bell, UserPlus,
   Settings, Shield, Eye, EyeOff, GitBranch, Copy, Link2, PlayCircle, PauseCircle,
-  CheckSquare, Square, Layers, GanttChart, Folder
+  CheckSquare, Square, Layers, GanttChart, Folder, PieChart
 } from "lucide-react";
 import { format } from "date-fns";
 import TopNav from "@/components/TopNav";
