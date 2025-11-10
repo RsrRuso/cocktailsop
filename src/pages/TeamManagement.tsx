@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Users, Plus, Settings, Trash2, UserPlus, Shield, Crown, User as UserIcon, Search } from "lucide-react";
+import { format } from "date-fns";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 
@@ -167,7 +168,10 @@ const TeamManagement = () => {
   };
 
   const handleSearchUsers = async () => {
-    if (!searchUsername.trim()) return;
+    if (!searchUsername.trim()) {
+      toast.error("Please enter a username to search");
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -177,14 +181,27 @@ const TeamManagement = () => {
         .limit(10);
 
       if (error) throw error;
-      setSearchResults(data || []);
+      
+      // Filter out users already in the team
+      const existingMemberIds = teamMembers.map(m => m.user_id);
+      const filteredResults = (data || []).filter(u => !existingMemberIds.includes(u.id));
+      
+      setSearchResults(filteredResults);
+      
+      if (filteredResults.length === 0) {
+        toast.info("No users found or all users are already team members");
+      }
     } catch (error: any) {
+      console.error("Search error:", error);
       toast.error("Failed to search users");
     }
   };
 
   const handleAddMember = async (userId: string) => {
-    if (!selectedTeam) return;
+    if (!selectedTeam) {
+      toast.error("No team selected");
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -196,7 +213,10 @@ const TeamManagement = () => {
           title: memberTitle,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Add member error:", error);
+        throw error;
+      }
 
       toast.success("Member added successfully!");
       setAddMemberDialogOpen(false);
@@ -206,7 +226,8 @@ const TeamManagement = () => {
       setMemberTitle("Member");
       fetchTeamMembers();
     } catch (error: any) {
-      toast.error("Failed to add member");
+      console.error("Failed to add member:", error);
+      toast.error(error.message || "Failed to add member");
     }
   };
 
@@ -386,88 +407,164 @@ const TeamManagement = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>{selectedTeam.name}</CardTitle>
-                    <CardDescription>{selectedTeam.description}</CardDescription>
+                    <CardTitle className="text-2xl">{selectedTeam.name}</CardTitle>
+                    <CardDescription className="mt-1">{selectedTeam.description || "No description"}</CardDescription>
+                    <div className="flex items-center gap-4 mt-3">
+                      <Badge variant="outline" className="text-sm">
+                        <Users className="w-3 h-3 mr-1" />
+                        {teamMembers.length} {teamMembers.length === 1 ? 'member' : 'members'}
+                      </Badge>
+                      <Badge variant="secondary" className="text-sm">
+                        Created {format(new Date(selectedTeam.created_at), "MMM dd, yyyy")}
+                      </Badge>
+                    </div>
                   </div>
                   <Dialog open={addMemberDialogOpen} onOpenChange={setAddMemberDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button>
+                      <Button size="lg">
                         <UserPlus className="w-4 h-4 mr-2" />
                         Add Member
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-w-2xl">
                       <DialogHeader>
                         <DialogTitle>Add Team Member</DialogTitle>
                         <DialogDescription>
-                          Search for users and add them to the team
+                          Search for users by username and add them to your team with specific roles and titles
                         </DialogDescription>
                       </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="search-user">Search Username</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              id="search-user"
-                              value={searchUsername}
-                              onChange={(e) => setSearchUsername(e.target.value)}
-                              placeholder="Enter username"
-                            />
-                            <Button onClick={handleSearchUsers}>
-                              <Search className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="member-role">Role</Label>
-                          <Select value={memberRole} onValueChange={setMemberRole}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="member">Member</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="member-title">Title</Label>
-                          <Input
-                            id="member-title"
-                            value={memberTitle}
-                            onChange={(e) => setMemberTitle(e.target.value)}
-                            placeholder="e.g., Senior Developer, Manager"
-                          />
-                        </div>
-
-                        {searchResults.length > 0 && (
+                      <div className="space-y-6">
+                        {/* Search Section */}
+                        <div className="space-y-3">
                           <div>
-                            <Label>Search Results</Label>
-                            <ScrollArea className="h-[200px] border rounded-lg p-2">
-                              {searchResults.map((user) => (
-                                <div
-                                  key={user.id}
-                                  className="flex items-center justify-between p-2 hover:bg-muted rounded-lg"
-                                >
-                                  <div>
-                                    <div className="font-medium">{user.full_name}</div>
-                                    <div className="text-sm text-muted-foreground">
-                                      @{user.username}
-                                    </div>
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleAddMember(user.id)}
-                                  >
-                                    Add
-                                  </Button>
-                                </div>
-                              ))}
-                            </ScrollArea>
+                            <Label htmlFor="search-user" className="text-base font-semibold">
+                              Search User
+                            </Label>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Enter username to find users to add to your team
+                            </p>
+                            <div className="flex gap-2">
+                              <Input
+                                id="search-user"
+                                value={searchUsername}
+                                onChange={(e) => setSearchUsername(e.target.value)}
+                                onKeyPress={(e) => e.key === "Enter" && handleSearchUsers()}
+                                placeholder="Enter username (e.g., john_doe)"
+                                className="flex-1"
+                              />
+                              <Button onClick={handleSearchUsers} size="lg">
+                                <Search className="w-4 h-4 mr-2" />
+                                Search
+                              </Button>
+                            </div>
                           </div>
-                        )}
+
+                          {searchResults.length > 0 && (
+                            <div>
+                              <Label className="text-base font-semibold">Search Results</Label>
+                              <ScrollArea className="h-[180px] border rounded-lg p-2 mt-2">
+                                <div className="space-y-2">
+                                  {searchResults.map((user) => (
+                                    <div
+                                      key={user.id}
+                                      className="flex items-center justify-between p-3 hover:bg-muted rounded-lg transition-colors"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                          {user.avatar_url ? (
+                                            <img 
+                                              src={user.avatar_url} 
+                                              alt={user.full_name}
+                                              className="w-10 h-10 rounded-full object-cover"
+                                            />
+                                          ) : (
+                                            <UserIcon className="w-5 h-5 text-primary" />
+                                          )}
+                                        </div>
+                                        <div>
+                                          <div className="font-medium">{user.full_name}</div>
+                                          <div className="text-sm text-muted-foreground">
+                                            @{user.username}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleAddMember(user.id)}
+                                      >
+                                        <UserPlus className="w-3 h-3 mr-1" />
+                                        Add
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                          )}
+                        </div>
+
+                        <Separator />
+
+                        {/* Role and Title Configuration */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="member-role" className="text-base font-semibold">
+                              Member Role
+                            </Label>
+                            <Select value={memberRole} onValueChange={setMemberRole}>
+                              <SelectTrigger id="member-role">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="member">
+                                  <div className="flex items-center gap-2">
+                                    <UserIcon className="w-4 h-4" />
+                                    <span>Member - Basic access</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="admin">
+                                  <div className="flex items-center gap-2">
+                                    <Shield className="w-4 h-4" />
+                                    <span>Admin - Full management</span>
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                              {memberRole === "admin" 
+                                ? "Can manage team and members" 
+                                : "Can view and work on tasks"}
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="member-title" className="text-base font-semibold">
+                              Job Title
+                            </Label>
+                            <Input
+                              id="member-title"
+                              value={memberTitle}
+                              onChange={(e) => setMemberTitle(e.target.value)}
+                              placeholder="e.g., Senior Developer"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Their position in the team
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Info Box */}
+                        <div className="bg-muted p-4 rounded-lg">
+                          <div className="flex gap-2">
+                            <Users className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                            <div className="text-sm">
+                              <p className="font-medium mb-1">Current Team Size: {teamMembers.length} members</p>
+                              <p className="text-muted-foreground">
+                                Search and add users to collaborate on tasks together
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </DialogContent>
                   </Dialog>
@@ -475,53 +572,72 @@ const TeamManagement = () => {
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[600px]">
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {teamMembers.map((member) => (
-                      <div key={member.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <div className="font-medium">{member.profiles.full_name}</div>
-                            {getRoleIcon(member.role)}
+                      <Card key={member.id} className="border-2 hover:border-primary/50 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center font-semibold text-lg">
+                              {member.profiles.full_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="font-semibold text-lg">{member.profiles.full_name}</div>
+                                {getRoleIcon(member.role)}
+                              </div>
+                              <div className="text-sm text-muted-foreground mb-2">
+                                @{member.profiles.username}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={getRoleBadgeVariant(member.role)} className="font-medium">
+                                  {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                                </Badge>
+                                <Badge variant="outline">{member.title}</Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  Joined {format(new Date(member.joined_at), "MMM dd")}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <Select
+                                value={member.role}
+                                onValueChange={(value) =>
+                                  handleUpdateMemberRole(member.id, value)
+                                }
+                              >
+                                <SelectTrigger className="w-[140px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="member">Member</SelectItem>
+                                  <SelectItem value="admin">Admin</SelectItem>
+                                  <SelectItem value="owner">Owner</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleRemoveMember(member.id)}
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                Remove
+                              </Button>
+                            </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            @{member.profiles.username}
-                          </div>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant={getRoleBadgeVariant(member.role)}>
-                              {member.role}
-                            </Badge>
-                            <Badge variant="outline">{member.title}</Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Select
-                            value={member.role}
-                            onValueChange={(value) =>
-                              handleUpdateMemberRole(member.id, value)
-                            }
-                          >
-                            <SelectTrigger className="w-[120px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="member">Member</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="owner">Owner</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => handleRemoveMember(member.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
+                        </CardContent>
+                      </Card>
                     ))}
                     {teamMembers.length === 0 && (
-                      <div className="text-center text-muted-foreground py-8">
-                        No members yet. Add some to get started!
+                      <div className="text-center py-12">
+                        <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">No team members yet</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Add members to start collaborating on tasks together
+                        </p>
+                        <Button onClick={() => setAddMemberDialogOpen(true)}>
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Add Your First Member
+                        </Button>
                       </div>
                     )}
                   </div>
