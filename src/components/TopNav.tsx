@@ -425,6 +425,17 @@ const TopNav = () => {
           >
             OPS
           </button>
+
+          <button
+            onClick={() => {
+              lightTap();
+              navigate("/business-hub");
+            }}
+            className="glass-hover p-2 rounded-2xl font-semibold text-[10px] flex items-center gap-1"
+          >
+            <Users className="w-3 h-3" />
+            HUB
+          </button>
           
           <button
             onClick={() => {
