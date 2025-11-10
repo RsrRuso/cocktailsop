@@ -2367,6 +2367,56 @@ export type Database = {
           },
         ]
       }
+      team_invitations: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          invited_by: string
+          invited_email: string
+          invited_user_id: string | null
+          role: string
+          status: string
+          team_id: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          invited_email: string
+          invited_user_id?: string | null
+          role?: string
+          status?: string
+          team_id: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          invited_email?: string
+          invited_user_id?: string | null
+          role?: string
+          status?: string
+          team_id?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_invitations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           id: string
@@ -2757,6 +2807,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      expire_team_invitations: { Args: never; Returns: undefined }
       get_member_workload: {
         Args: { member_team_id: string; member_user_id: string }
         Returns: number

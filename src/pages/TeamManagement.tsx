@@ -12,10 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Users, Plus, Settings, Trash2, UserPlus, Shield, Crown, User as UserIcon, Search } from "lucide-react";
+import { Users, Plus, Settings, Trash2, UserPlus, Shield, Crown, User as UserIcon, Search, Mail } from "lucide-react";
 import { format } from "date-fns";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import { InviteTeamMemberDialog } from "@/components/InviteTeamMemberDialog";
 
 interface Team {
   id: string;
@@ -47,7 +48,7 @@ const TeamManagement = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [teamName, setTeamName] = useState("");
   const [teamDescription, setTeamDescription] = useState("");
   const [searchUsername, setSearchUsername] = useState("");
@@ -259,7 +260,6 @@ const TeamManagement = () => {
       }
 
       toast.success("Member added successfully!");
-      setAddMemberDialogOpen(false);
       setSearchUsername("");
       setSearchResults([]);
       setMemberRole("member");
@@ -459,155 +459,10 @@ const TeamManagement = () => {
                       </Badge>
                     </div>
                   </div>
-                  <Dialog open={addMemberDialogOpen} onOpenChange={setAddMemberDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="lg">
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Add Member
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>Add Team Member</DialogTitle>
-                        <DialogDescription>
-                          Search for users by username and add them to your team with specific roles and titles
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-6">
-                        {/* Search Section */}
-                        <div className="space-y-3">
-                          <div>
-                            <Label htmlFor="search-user" className="text-base font-semibold">
-                              Search User
-                            </Label>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              Enter username to find users to add to your team
-                            </p>
-                            <div className="flex gap-2">
-                              <Input
-                                id="search-user"
-                                value={searchUsername}
-                                onChange={(e) => setSearchUsername(e.target.value)}
-                                onKeyPress={(e) => e.key === "Enter" && handleSearchUsers()}
-                                placeholder="Enter username (e.g., john_doe)"
-                                className="flex-1"
-                              />
-                              <Button onClick={handleSearchUsers} size="lg">
-                                <Search className="w-4 h-4 mr-2" />
-                                Search
-                              </Button>
-                            </div>
-                          </div>
-
-                          {searchResults.length > 0 && (
-                            <div>
-                              <Label className="text-base font-semibold">Search Results</Label>
-                              <ScrollArea className="h-[180px] border rounded-lg p-2 mt-2">
-                                <div className="space-y-2">
-                                  {searchResults.map((user) => (
-                                    <div
-                                      key={user.id}
-                                      className="flex items-center justify-between p-3 hover:bg-muted rounded-lg transition-colors"
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                          {user.avatar_url ? (
-                                            <img 
-                                              src={user.avatar_url} 
-                                              alt={user.full_name}
-                                              className="w-10 h-10 rounded-full object-cover"
-                                            />
-                                          ) : (
-                                            <UserIcon className="w-5 h-5 text-primary" />
-                                          )}
-                                        </div>
-                                        <div>
-                                          <div className="font-medium">{user.full_name}</div>
-                                          <div className="text-sm text-muted-foreground">
-                                            @{user.username}
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <Button
-                                        size="sm"
-                                        onClick={() => handleAddMember(user.id)}
-                                      >
-                                        <UserPlus className="w-3 h-3 mr-1" />
-                                        Add
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </ScrollArea>
-                            </div>
-                          )}
-                        </div>
-
-                        <Separator />
-
-                        {/* Role and Title Configuration */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="member-role" className="text-base font-semibold">
-                              Member Role
-                            </Label>
-                            <Select value={memberRole} onValueChange={setMemberRole}>
-                              <SelectTrigger id="member-role">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="member">
-                                  <div className="flex items-center gap-2">
-                                    <UserIcon className="w-4 h-4" />
-                                    <span>Member - Basic access</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="admin">
-                                  <div className="flex items-center gap-2">
-                                    <Shield className="w-4 h-4" />
-                                    <span>Admin - Full management</span>
-                                  </div>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <p className="text-xs text-muted-foreground">
-                              {memberRole === "admin" 
-                                ? "Can manage team and members" 
-                                : "Can view and work on tasks"}
-                            </p>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="member-title" className="text-base font-semibold">
-                              Job Title
-                            </Label>
-                            <Input
-                              id="member-title"
-                              value={memberTitle}
-                              onChange={(e) => setMemberTitle(e.target.value)}
-                              placeholder="e.g., Senior Developer"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Their position in the team
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Info Box */}
-                        <div className="bg-muted p-4 rounded-lg">
-                          <div className="flex gap-2">
-                            <Users className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                            <div className="text-sm">
-                              <p className="font-medium mb-1">Current Team Size: {teamMembers.length} members</p>
-                              <p className="text-muted-foreground">
-                                Search and add users to collaborate on tasks together
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <Button size="lg" onClick={() => setInviteDialogOpen(true)}>
+                    <Mail className="w-4 h-4 mr-2" />
+                    Invite Member
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -672,11 +527,11 @@ const TeamManagement = () => {
                         <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
                         <h3 className="text-lg font-semibold mb-2">No team members yet</h3>
                         <p className="text-muted-foreground mb-4">
-                          Add members to start collaborating on tasks together
+                          Invite members to start collaborating on tasks together
                         </p>
-                        <Button onClick={() => setAddMemberDialogOpen(true)}>
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Add Your First Member
+                        <Button onClick={() => setInviteDialogOpen(true)}>
+                          <Mail className="w-4 h-4 mr-2" />
+                          Send Invitation
                         </Button>
                       </div>
                     )}
