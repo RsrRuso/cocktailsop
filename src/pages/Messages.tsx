@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Send, Search, Pin, Archive, MoreVertical, Clock } from "lucide-react";
+import { MessageCircle, Send, Search, Pin, Archive, MoreVertical, Clock, Users, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -12,6 +12,7 @@ import BottomNav from "@/components/BottomNav";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
+import { CreateGroupDialog } from "@/components/CreateGroupDialog";
 
 interface Profile {
   id: string;
@@ -29,6 +30,10 @@ interface Conversation {
   lastMessage?: string;
   isPinned?: boolean;
   isArchived?: boolean;
+  is_group?: boolean;
+  group_name?: string;
+  group_avatar_url?: string;
+  memberCount?: number;
 }
 
 const Messages = () => {
@@ -39,9 +44,19 @@ const Messages = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [pinnedChats, setPinnedChats] = useState<Set<string>>(new Set());
   const [archivedChats, setArchivedChats] = useState<Set<string>>(new Set());
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const { showNotification } = useInAppNotificationContext();
 
   useEffect(() => {
+    const initUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUser(user);
+      }
+    };
+    initUser();
+    
     fetchConversations().finally(() => setIsLoading(false));
 
     // Set up realtime subscription for new messages
@@ -101,9 +116,10 @@ const Messages = () => {
       .limit(20);
 
     if (data && data.length > 0) {
-      const otherUserIds = data.map(conv => 
-        conv.participant_ids.find((id: string) => id !== user.id)
-      ).filter(Boolean);
+      const otherUserIds = data
+        .filter(conv => !conv.is_group)
+        .map(conv => conv.participant_ids.find((id: string) => id !== user.id))
+        .filter(Boolean);
 
       const { data: profilesData } = await supabase
         .from("profiles")
@@ -150,11 +166,12 @@ const Messages = () => {
         const otherUserId = conv.participant_ids.find((id: string) => id !== user.id);
         return {
           ...conv,
-          otherUser: profilesMap.get(otherUserId),
+          otherUser: conv.is_group ? undefined : profilesMap.get(otherUserId),
           unreadCount: unreadCountsMap.get(conv.id) || 0,
           lastMessage: lastMessagesMap.get(conv.id),
           isPinned: pinnedChats.has(conv.id),
-          isArchived: archivedChats.has(conv.id)
+          isArchived: archivedChats.has(conv.id),
+          memberCount: conv.participant_ids.length,
         };
       });
 
@@ -227,14 +244,24 @@ const Messages = () => {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
             Messages
           </h1>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => setShowArchived(!showArchived)}
-            className="glass"
-          >
-            {showArchived ? 'Active' : 'Archived'}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowCreateGroup(true)}
+              size="sm"
+              className="glass bg-primary/20 hover:bg-primary/30"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              New Group
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowArchived(!showArchived)}
+              className="glass"
+            >
+              {showArchived ? 'Active' : 'Archived'}
+            </Button>
+          </div>
         </div>
 
         {/* Search */}
@@ -304,7 +331,12 @@ const Messages = () => {
                   className="p-4 flex items-start gap-3 cursor-pointer"
                   onClick={() => navigate(`/messages/${conversation.id}`)}
                 >
-                  <div className="relative shrink-0">
+                <div className="relative shrink-0">
+                  {conversation.is_group ? (
+                    <div className="relative w-16 h-16 rounded-full glass flex items-center justify-center bg-primary/10">
+                      <Users className="w-8 h-8 text-primary" />
+                    </div>
+                  ) : (
                     <OptimizedAvatar
                       src={conversation.otherUser?.avatar_url}
                       alt={conversation.otherUser?.username || 'User'}
@@ -312,17 +344,20 @@ const Messages = () => {
                       userId={conversation.otherUser?.id}
                       className={`w-16 h-16 ${conversation.unreadCount! > 0 ? 'ring-2 ring-primary' : ''}`}
                     />
-                    {conversation.isPinned && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                        <Pin className="w-3 h-3 text-primary-foreground" />
-                      </div>
-                    )}
-                  </div>
+                  )}
+                  {conversation.isPinned && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                      <Pin className="w-3 h-3 text-primary-foreground" />
+                    </div>
+                  )}
+                </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <p className={`font-semibold truncate ${conversation.unreadCount! > 0 ? 'text-foreground' : ''}`}>
-                        {conversation.otherUser?.full_name || 'Unknown User'}
+                        {conversation.is_group 
+                          ? conversation.group_name 
+                          : (conversation.otherUser?.full_name || 'Unknown User')}
                       </p>
                       <p className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
@@ -331,7 +366,9 @@ const Messages = () => {
                     </div>
                     
                     <p className="text-xs text-muted-foreground truncate mb-1">
-                      @{conversation.otherUser?.username || 'unknown'}
+                      {conversation.is_group 
+                        ? `${conversation.memberCount} members`
+                        : `@${conversation.otherUser?.username || 'unknown'}`}
                     </p>
                     
                     {conversation.lastMessage && (
@@ -375,6 +412,12 @@ const Messages = () => {
           )}
         </div>
       </div>
+
+      <CreateGroupDialog 
+        open={showCreateGroup}
+        onOpenChange={setShowCreateGroup}
+        currentUserId={currentUser?.id || ''}
+      />
 
       <BottomNav />
     </div>

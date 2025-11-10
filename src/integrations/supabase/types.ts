@@ -418,19 +418,34 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string | null
+          created_by: string | null
+          group_avatar_url: string | null
+          group_description: string | null
+          group_name: string | null
           id: string
+          is_group: boolean | null
           last_message_at: string | null
           participant_ids: string[]
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
+          group_avatar_url?: string | null
+          group_description?: string | null
+          group_name?: string | null
           id?: string
+          is_group?: boolean | null
           last_message_at?: string | null
           participant_ids: string[]
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
+          group_avatar_url?: string | null
+          group_description?: string | null
+          group_name?: string | null
           id?: string
+          is_group?: boolean | null
           last_message_at?: string | null
           participant_ids?: string[]
         }
@@ -1234,6 +1249,38 @@ export type Database = {
             columns: ["following_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_members: {
+        Row: {
+          conversation_id: string
+          id: string
+          joined_at: string | null
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          joined_at?: string | null
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          joined_at?: string | null
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]

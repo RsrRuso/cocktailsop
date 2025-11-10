@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Smile } from "lucide-react";
+import { ArrowLeft, Smile, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -12,6 +12,7 @@ import { MessageActions } from "@/components/MessageActions";
 import { MessageInput } from "@/components/MessageInput";
 import { MediaRecorder } from "@/components/MediaRecorder";
 import { ForwardMessageDialog } from "@/components/ForwardMessageDialog";
+import { GroupSettingsDialog } from "@/components/GroupSettingsDialog";
 
 const MessageThread = () => {
   const { conversationId } = useParams();
@@ -24,6 +25,10 @@ const MessageThread = () => {
   const [showAllEmojis, setShowAllEmojis] = useState(false);
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
   const [showForwardDialog, setShowForwardDialog] = useState(false);
+  const [showGroupSettings, setShowGroupSettings] = useState(false);
+  const [isGroup, setIsGroup] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -58,6 +63,21 @@ const MessageThread = () => {
         return;
       }
       setCurrentUser(user);
+
+      // Fetch conversation info to check if it's a group
+      if (conversationId) {
+        const { data: conv } = await supabase
+          .from('conversations')
+          .select('is_group, group_name, created_by')
+          .eq('id', conversationId)
+          .single();
+
+        if (conv) {
+          setIsGroup(conv.is_group || false);
+          setGroupName(conv.group_name || '');
+          setIsAdmin(conv.created_by === user.id);
+        }
+      }
     };
     init();
 
@@ -140,7 +160,33 @@ const MessageThread = () => {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         
-        {otherUser && (
+        {isGroup ? (
+          <>
+            <div className="relative cursor-pointer hover:scale-105 transition-transform shrink-0 z-10" onClick={() => setShowGroupSettings(true)}>
+              <div className="w-14 h-14 rounded-full glass flex items-center justify-center bg-primary/10 avatar-glow">
+                <Settings className="w-7 h-7 text-primary" />
+              </div>
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col justify-center z-10">
+              <p className="font-bold text-lg truncate bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                {groupName}
+              </p>
+              <p className="text-sm text-muted-foreground truncate">
+                Group • {messages.length > 0 ? `${messages.length} messages` : 'No messages yet'}
+              </p>
+            </div>
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowGroupSettings(true)}
+                className="glass shrink-0 relative z-10"
+              >
+                <Settings className="w-5 h-5" />
+              </Button>
+            )}
+          </>
+        ) : otherUser && (
           <>
             <div className="relative cursor-pointer hover:scale-105 transition-transform shrink-0 z-10" onClick={() => navigate(`/user/${otherUser.id}`)}>
               <div className="relative">
@@ -294,6 +340,14 @@ const MessageThread = () => {
         onOpenChange={setShowForwardDialog}
         message={forwardingMessage}
         currentUserId={currentUser?.id}
+      />
+
+      <GroupSettingsDialog
+        open={showGroupSettings}
+        onOpenChange={setShowGroupSettings}
+        conversationId={conversationId || ''}
+        currentUserId={currentUser?.id || ''}
+        isAdmin={isAdmin}
       />
     </div>
   );
