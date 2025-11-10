@@ -28,7 +28,15 @@ const signUpSchema = z.object({
     .trim()
     .min(1, 'Name is required')
     .max(100, 'Name too long')
-    .regex(/^[a-zA-Z\s'-]+$/, 'Invalid characters in name')
+    .regex(/^[a-zA-Z\s'-]+$/, 'Invalid characters in name'),
+  dateOfBirth: z.string()
+    .min(1, 'Date of birth is required')
+    .refine((date) => {
+      const birthDate = new Date(date);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      return age >= 18 && age <= 120;
+    }, 'You must be at least 18 years old')
 });
 
 const signInSchema = z.object({
@@ -56,6 +64,7 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Check if user is coming from password reset link
@@ -105,7 +114,8 @@ const Auth = () => {
           email,
           password,
           username,
-          fullName
+          fullName,
+          dateOfBirth
         });
 
         const { error } = await supabase.auth.signUp({
@@ -115,6 +125,7 @@ const Auth = () => {
             data: {
               full_name: validated.fullName,
               username: validated.username,
+              date_of_birth: validated.dateOfBirth,
             },
           },
         });
@@ -213,6 +224,18 @@ const Auth = () => {
                       onChange={(e) => setUsername(e.target.value)}
                       required
                       className="glass"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Input
+                      id="dateOfBirth"
+                      type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                      required
+                      className="glass"
+                      max={new Date().toISOString().split('T')[0]}
                     />
                   </div>
                 </>
