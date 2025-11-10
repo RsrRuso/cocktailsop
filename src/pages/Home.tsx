@@ -235,23 +235,28 @@ const Home = () => {
   // Check if it's someone's birthday
   const isBirthday = (dateOfBirth: string | null) => {
     if (!dateOfBirth) {
-      console.log('No date of birth provided');
       return false;
     }
     const today = new Date();
     const birthday = new Date(dateOfBirth);
-    const isBday = birthday.getMonth() === today.getMonth() &&
-      birthday.getDate() === today.getDate();
-    console.log('Birthday check:', {
+    
+    // Use UTC to avoid timezone issues
+    const todayMonth = today.getUTCMonth();
+    const todayDate = today.getUTCDate();
+    const birthdayMonth = birthday.getUTCMonth();
+    const birthdayDate = birthday.getUTCDate();
+    
+    const isBday = birthdayMonth === todayMonth && birthdayDate === todayDate;
+    
+    console.log('Birthday check (UTC):', {
       dateOfBirth,
-      today: today.toISOString(),
-      birthday: birthday.toISOString(),
       isBirthday: isBday,
-      todayMonth: today.getMonth(),
-      todayDate: today.getDate(),
-      birthdayMonth: birthday.getMonth(),
-      birthdayDate: birthday.getDate()
+      todayMonth,
+      todayDate,
+      birthdayMonth,
+      birthdayDate
     });
+    
     return isBday;
   };
 
