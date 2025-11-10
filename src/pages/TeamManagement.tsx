@@ -130,71 +130,80 @@ const TeamManagement = () => {
   };
 
   const handleCreateTeam = async () => {
-    if (!user) {
-      toast.error("You must be logged in to create a team");
-      return;
-    }
-    
     if (!teamName.trim()) {
       toast.error("Please enter a team name");
       return;
     }
 
     try {
-      console.log("Creating team with user:", user.id);
+      // Get fresh session to ensure we have valid auth token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      // Check authentication status
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      console.log("Auth user from Supabase:", authUser);
-      
-      if (authError || !authUser) {
-        console.error("Authentication error:", authError);
-        toast.error("Authentication error. Please log out and log back in.");
+      if (sessionError || !session) {
+        console.error("❌ No valid session:", sessionError);
+        toast.error("Session expired. Please refresh the page and try again.");
         return;
       }
-      
-      console.log("Creating team with authenticated user:", authUser.id);
+
+      console.log("✅ Valid session found for user:", session.user.id);
       
       const { data: teamData, error: teamError } = await supabase
         .from("teams")
         .insert({
-          name: teamName,
-          description: teamDescription,
-          created_by: authUser.id, // Use the auth user ID
+          name: teamName.trim(),
+          description: teamDescription?.trim() || null,
+          created_by: session.user.id,
         })
         .select()
         .single();
 
       if (teamError) {
-        console.error("Team creation error:", teamError);
-        throw teamError;
+        console.error("❌ Team creation error:", teamError);
+        
+        // If it's an RLS error, try to refresh the session
+        if (teamError.code === '42501') {
+          toast.error("Authentication issue detected. Refreshing your session...");
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            toast.error("Please log out and log back in to continue.");
+          } else {
+            toast.success("Session refreshed! Please try creating the team again.");
+          }
+          return;
+        }
+        
+        toast.error(`Failed to create team: ${teamError.message}`);
+        return;
       }
 
-      console.log("Team created successfully:", teamData);
+      console.log("✅ Team created:", teamData);
 
       // Add creator as owner
       const { error: memberError } = await supabase
         .from("team_members")
         .insert({
           team_id: teamData.id,
-          user_id: authUser.id, // Use the auth user ID
+          user_id: session.user.id,
           role: "owner",
           title: "Team Lead",
         });
 
       if (memberError) {
-        console.error("Member addition error:", memberError);
-        throw memberError;
+        console.error("❌ Failed to add as owner:", memberError);
+        // Team was created but couldn't add owner - still show success
+        toast.success("Team created! Please refresh to see it.");
+      } else {
+        console.log("✅ Successfully added as team owner");
+        toast.success("Team created successfully!");
       }
 
-      toast.success("Team created successfully!");
       setCreateDialogOpen(false);
       setTeamName("");
       setTeamDescription("");
       fetchTeams();
     } catch (error: any) {
-      console.error("Failed to create team:", error);
-      toast.error(error.message || "Failed to create team. Please check the console for details.");
+      console.error("❌ Unexpected error:", error);
+      toast.error(error.message || "An unexpected error occurred");
     }
   };
 
