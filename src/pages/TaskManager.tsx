@@ -510,7 +510,7 @@ export default function TaskManager() {
     return (
       <div className="min-h-screen bg-background pb-20">
         <TopNav />
-        <div className="flex items-center justify-center min-h-[80vh] px-4">
+        <div className="flex items-center justify-center min-h-[80vh] px-4 pt-20">
           <Card className="w-full max-w-lg">
             <CardHeader className="text-center">
               <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
@@ -567,7 +567,7 @@ export default function TaskManager() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="container mx-auto px-4 pt-20 pb-6 max-w-7xl">
         {/* Stats Dashboard */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
           <Card>
