@@ -143,12 +143,24 @@ const TeamManagement = () => {
     try {
       console.log("Creating team with user:", user.id);
       
+      // Check authentication status
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      console.log("Auth user from Supabase:", authUser);
+      
+      if (authError || !authUser) {
+        console.error("Authentication error:", authError);
+        toast.error("Authentication error. Please log out and log back in.");
+        return;
+      }
+      
+      console.log("Creating team with authenticated user:", authUser.id);
+      
       const { data: teamData, error: teamError } = await supabase
         .from("teams")
         .insert({
           name: teamName,
           description: teamDescription,
-          created_by: user.id,
+          created_by: authUser.id, // Use the auth user ID
         })
         .select()
         .single();
@@ -165,7 +177,7 @@ const TeamManagement = () => {
         .from("team_members")
         .insert({
           team_id: teamData.id,
-          user_id: user.id,
+          user_id: authUser.id, // Use the auth user ID
           role: "owner",
           title: "Team Lead",
         });
