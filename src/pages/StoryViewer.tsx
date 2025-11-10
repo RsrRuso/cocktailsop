@@ -14,6 +14,7 @@ import {
 import StoryViewersDialog from "@/components/StoryViewersDialog";
 import StoryLikesDialog from "@/components/StoryLikesDialog";
 import StoryCommentsDialog from "@/components/StoryCommentsDialog";
+import BirthdayFireworks from "@/components/BirthdayFireworks";
 
 interface Story {
   id: string;
@@ -27,6 +28,7 @@ interface Story {
   profiles: {
     username: string;
     avatar_url: string | null;
+    date_of_birth?: string | null;
   };
 }
 
@@ -110,6 +112,21 @@ const StoryViewer = () => {
     if (user) {
       setCurrentUserId(user.id);
     }
+  };
+
+  // Check if it's someone's birthday
+  const isBirthday = (dateOfBirth: string | null | undefined) => {
+    if (!dateOfBirth) return false;
+    const today = new Date();
+    const birthday = new Date(dateOfBirth);
+    
+    // Use UTC to avoid timezone issues
+    const todayMonth = today.getUTCMonth();
+    const todayDate = today.getUTCDate();
+    const birthdayMonth = birthday.getUTCMonth();
+    const birthdayDate = birthday.getUTCDate();
+    
+    return birthdayMonth === todayMonth && birthdayDate === todayDate;
   };
 
   const trackView = async () => {
@@ -332,7 +349,7 @@ const StoryViewer = () => {
       .from("stories")
       .select(`
         *,
-        profiles (username, avatar_url)
+        profiles (username, avatar_url, date_of_birth)
       `)
       .eq("user_id", userId)
       .gt("expires_at", new Date().toISOString())
@@ -476,13 +493,30 @@ const StoryViewer = () => {
       {/* Header */}
       <div className="absolute top-8 left-4 right-4 flex items-center justify-between z-10 mt-6">
         <div className="flex items-center gap-3">
-          {currentStory.profiles?.avatar_url && (
-            <img
-              src={currentStory.profiles.avatar_url}
-              alt={currentStory.profiles.username}
-              className="w-10 h-10 rounded-full border-2 border-white"
-            />
-          )}
+          <BirthdayFireworks isBirthday={isBirthday(currentStory.profiles?.date_of_birth)}>
+            {currentStory.profiles?.avatar_url && isBirthday(currentStory.profiles.date_of_birth) ? (
+              // Birthday avatar with celebration ring
+              <div className="relative">
+                <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur animate-pulse"></div>
+                <div className="relative rounded-full bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-0.5 shadow-xl shadow-pink-500/50">
+                  <img
+                    src={currentStory.profiles.avatar_url}
+                    alt={currentStory.profiles.username}
+                    className="w-10 h-10 rounded-full"
+                  />
+                </div>
+                {/* Birthday badge */}
+                <div className="absolute -top-1 -right-1 text-lg animate-bounce">🎂</div>
+              </div>
+            ) : currentStory.profiles?.avatar_url ? (
+              // Regular avatar
+              <img
+                src={currentStory.profiles.avatar_url}
+                alt={currentStory.profiles.username}
+                className="w-10 h-10 rounded-full border-2 border-white"
+              />
+            ) : null}
+          </BirthdayFireworks>
           <span className="text-white font-semibold">{currentStory.profiles?.username || 'Unknown'}</span>
         </div>
         <div className="flex items-center gap-2">

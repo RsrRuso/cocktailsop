@@ -234,9 +234,7 @@ const Home = () => {
 
   // Check if it's someone's birthday
   const isBirthday = (dateOfBirth: string | null) => {
-    if (!dateOfBirth) {
-      return false;
-    }
+    if (!dateOfBirth) return false;
     const today = new Date();
     const birthday = new Date(dateOfBirth);
     
@@ -246,18 +244,7 @@ const Home = () => {
     const birthdayMonth = birthday.getUTCMonth();
     const birthdayDate = birthday.getUTCDate();
     
-    const isBday = birthdayMonth === todayMonth && birthdayDate === todayDate;
-    
-    console.log('Birthday check (UTC):', {
-      dateOfBirth,
-      isBirthday: isBday,
-      todayMonth,
-      todayDate,
-      birthdayMonth,
-      birthdayDate
-    });
-    
-    return isBday;
+    return birthdayMonth === todayMonth && birthdayDate === todayDate;
   };
 
   const handleDeletePost = useCallback(async (postId: string) => {
@@ -324,16 +311,7 @@ const Home = () => {
         <div className="flex gap-4">
           {/* Your Story */}
           <div className="flex flex-col items-center gap-2 min-w-[80px]">
-            <BirthdayFireworks isBirthday={(() => {
-              const isBday = currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false;
-              console.log('Current user birthday data:', {
-                hasDateOfBirth: !!currentUser?.date_of_birth,
-                dateOfBirth: currentUser?.date_of_birth,
-                username: currentUser?.username,
-                isBirthdayResult: isBday
-              });
-              return isBday;
-            })()}>
+            <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
               <button
                 onClick={() => navigate("/story-options")}
                 className="relative group"
