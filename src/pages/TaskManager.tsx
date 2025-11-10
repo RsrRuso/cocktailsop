@@ -62,6 +62,25 @@ export default function TaskManager() {
     if (!user) return;
 
     try {
+      // Check if user is a founder - founders bypass subscription checks
+      const { data: founderRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "founder")
+        .maybeSingle();
+
+      if (founderRole) {
+        // Founder gets full access, no subscription required
+        setSubscriptionStatus({
+          hasAccess: true,
+          isTrialActive: false,
+          trialEndsAt: null,
+          isSubscribed: true,
+        });
+        return;
+      }
+
       const { data, error } = await supabase
         .from("subscriptions")
         .select("*")
