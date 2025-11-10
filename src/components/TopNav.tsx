@@ -416,36 +416,48 @@ const TopNav = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <button
-            onClick={() => {
-              lightTap();
-              navigate("/ops-tools");
-            }}
-            className="glass-hover p-2 rounded-2xl font-semibold text-[10px]"
-          >
-            OPS
-          </button>
-
-          <button
-            onClick={() => {
-              lightTap();
-              navigate("/business-hub");
-            }}
-            className="glass-hover p-2 rounded-2xl font-semibold text-[10px] flex items-center gap-1"
-          >
-            <Users className="w-3 h-3" />
-            HUB
-          </button>
-          
-          <button
-            onClick={() => {
-              lightTap();
-              navigate("/introduction");
-            }}
-            className="glass-hover p-2 rounded-2xl font-semibold text-[10px]"
-          >
-            INFO
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button 
+                onClick={lightTap}
+                className="glass-hover p-2.5 rounded-2xl"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="glass z-[60] bg-background/95 backdrop-blur-xl border border-border/50">
+              <DropdownMenuItem 
+                onClick={() => { 
+                  lightTap(); 
+                  navigate("/ops-tools"); 
+                }}
+                className="cursor-pointer"
+              >
+                <Wrench className="w-4 h-4 mr-2" />
+                Operations Tools
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => { 
+                  lightTap(); 
+                  navigate("/business-hub"); 
+                }}
+                className="cursor-pointer"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Business Hub
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => { 
+                  lightTap(); 
+                  navigate("/introduction"); 
+                }}
+                className="cursor-pointer"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Introduction
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           </div>
         </div>
       </div>
