@@ -152,7 +152,7 @@ const TeamManagement = () => {
         .insert({
           name: teamName.trim(),
           description: teamDescription?.trim() || null,
-          created_by: session.user.id,
+          // created_by is auto-set by database default + trigger
         })
         .select()
         .single();
