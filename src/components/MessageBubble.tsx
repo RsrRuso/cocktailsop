@@ -1,12 +1,15 @@
 import { Message } from '@/hooks/useMessageThread';
-import { Check, CheckCheck } from 'lucide-react';
+import { Check, CheckCheck, Reply, Trash2, Forward } from 'lucide-react';
 import { LazyImage } from './LazyImage';
+import { useState, useRef, useEffect } from 'react';
 
 interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
   replyMessage?: Message | null;
   onReply: (message: Message) => void;
+  onDelete?: () => void;
+  onForward?: () => void;
   children?: React.ReactNode;
 }
 
@@ -15,17 +18,130 @@ export const MessageBubble = ({
   isOwn,
   replyMessage,
   onReply,
+  onDelete,
+  onForward,
   children,
 }: MessageBubbleProps) => {
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const bubbleRef = useRef<HTMLDivElement>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    setIsSwiping(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isSwiping) return;
+
+    const touchX = e.touches[0].clientX;
+    const touchY = e.touches[0].clientY;
+    const deltaX = touchX - touchStartX.current;
+    const deltaY = touchY - touchStartY.current;
+
+    // Only allow horizontal swipe if it's more horizontal than vertical
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      e.preventDefault();
+      
+      // Limit swipe distance
+      const maxSwipe = isOwn ? -120 : 120;
+      const newOffset = Math.max(Math.min(deltaX, Math.abs(maxSwipe)), -Math.abs(maxSwipe));
+      
+      // Only allow swipe in the correct direction
+      if ((isOwn && newOffset < 0) || (!isOwn && newOffset > 0)) {
+        setSwipeOffset(newOffset);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsSwiping(false);
+    
+    // If swiped enough, trigger action
+    if (Math.abs(swipeOffset) > 60) {
+      // Keep it open for a moment to show the action
+      setTimeout(() => {
+        setSwipeOffset(0);
+      }, 300);
+    } else {
+      setSwipeOffset(0);
+    }
+  };
+
+  useEffect(() => {
+    // Reset swipe when message changes
+    setSwipeOffset(0);
+  }, [message.id]);
+
+  const shouldShowActions = Math.abs(swipeOffset) > 30;
+
   return (
-    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} relative`}>
+      {/* Action buttons for left swipe (own messages) */}
+      {isOwn && shouldShowActions && (
+        <div className="absolute right-0 top-0 h-full flex items-center gap-2 pr-2 z-0">
+          <button
+            onClick={() => {
+              onForward?.();
+              setSwipeOffset(0);
+            }}
+            className="w-10 h-10 rounded-full bg-accent/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
+          >
+            <Forward className="w-5 h-5 text-accent-foreground" />
+          </button>
+          <button
+            onClick={() => {
+              onDelete?.();
+              setSwipeOffset(0);
+            }}
+            className="w-10 h-10 rounded-full bg-destructive/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
+          >
+            <Trash2 className="w-5 h-5 text-destructive-foreground" />
+          </button>
+        </div>
+      )}
+
+      {/* Action buttons for right swipe (other's messages) */}
+      {!isOwn && shouldShowActions && (
+        <div className="absolute left-0 top-0 h-full flex items-center gap-2 pl-2 z-0">
+          <button
+            onClick={() => {
+              onReply(message);
+              setSwipeOffset(0);
+            }}
+            className="w-10 h-10 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
+          >
+            <Reply className="w-5 h-5 text-primary-foreground" />
+          </button>
+          <button
+            onClick={() => {
+              onForward?.();
+              setSwipeOffset(0);
+            }}
+            className="w-10 h-10 rounded-full bg-accent/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
+          >
+            <Forward className="w-5 h-5 text-accent-foreground" />
+          </button>
+        </div>
+      )}
       <div
+        ref={bubbleRef}
         id={`message-${message.id}`}
-        className={`relative group max-w-[75%] ${
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          transform: `translateX(${swipeOffset}px)`,
+          transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+        className={`relative group max-w-[75%] z-10 ${
           message.media_url && (message.media_type === 'image' || message.media_type === 'video')
             ? ''
             : 'glass backdrop-blur-xl px-4 py-2'
-        } rounded-2xl ${isOwn ? 'glow-primary' : ''}`}
+        } rounded-2xl ${isOwn ? 'glow-primary' : ''} touch-pan-y`}
       >
         {message.reply_to_id && replyMessage && (
           <div

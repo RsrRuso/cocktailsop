@@ -192,8 +192,14 @@ const MessageThread = () => {
               isOwn={isOwn}
               replyMessage={replyMessage}
               onReply={(msg) => {
+                setReplyingTo(msg);
                 const element = document.getElementById(`message-${msg.id}`);
                 element?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              onDelete={isOwn ? () => handleDelete(message.id) : undefined}
+              onForward={() => {
+                // TODO: Implement forward functionality
+                console.log('Forward message:', message.id);
               }}
             >
               <MessageActions
