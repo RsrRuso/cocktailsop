@@ -1,6 +1,7 @@
 import { Message } from '@/hooks/useMessageThread';
 import { Check, CheckCheck, Reply, Trash2, Forward } from 'lucide-react';
 import { LazyImage } from './LazyImage';
+import { VoiceWaveform } from './VoiceWaveform';
 import { useState, useRef, useEffect } from 'react';
 
 interface MessageBubbleProps {
@@ -170,8 +171,8 @@ export const MessageBubble = ({
         )}
 
         {message.media_url && message.media_type === 'voice' && (
-          <div className="flex items-center gap-2">
-            <audio src={message.media_url} controls className="w-full" />
+          <div className="px-2 py-2">
+            <VoiceWaveform audioUrl={message.media_url} />
           </div>
         )}
 
