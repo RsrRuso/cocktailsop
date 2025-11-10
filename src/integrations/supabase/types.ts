@@ -1755,42 +1755,130 @@ export type Database = {
           },
         ]
       }
+      task_activity: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_activity_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          task_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          task_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          task_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
+          actual_hours: number | null
           assigned_to: string | null
+          attachments: Json | null
+          category: string | null
           completed_at: string | null
           created_at: string | null
           description: string | null
           due_date: string | null
+          estimated_hours: number | null
           id: string
           priority: string | null
+          progress: number | null
           status: string | null
+          tags: string[] | null
           title: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          actual_hours?: number | null
           assigned_to?: string | null
+          attachments?: Json | null
+          category?: string | null
           completed_at?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
+          estimated_hours?: number | null
           id?: string
           priority?: string | null
+          progress?: number | null
           status?: string | null
+          tags?: string[] | null
           title: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          actual_hours?: number | null
           assigned_to?: string | null
+          attachments?: Json | null
+          category?: string | null
           completed_at?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
+          estimated_hours?: number | null
           id?: string
           priority?: string | null
+          progress?: number | null
           status?: string | null
+          tags?: string[] | null
           title?: string
           updated_at?: string | null
           user_id?: string
