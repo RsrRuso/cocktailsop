@@ -1857,6 +1857,7 @@ export type Database = {
           career_score: number | null
           cover_url: string | null
           created_at: string | null
+          date_of_birth: string | null
           follower_count: number | null
           following_count: number | null
           full_name: string
@@ -1885,6 +1886,7 @@ export type Database = {
           career_score?: number | null
           cover_url?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           follower_count?: number | null
           following_count?: number | null
           full_name: string
@@ -1913,6 +1915,7 @@ export type Database = {
           career_score?: number | null
           cover_url?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           follower_count?: number | null
           following_count?: number | null
           full_name?: string

@@ -3,6 +3,8 @@ import { User } from "lucide-react";
 import { useState } from "react";
 import StatusRing from "./StatusRing";
 import { useUserStatus } from "@/hooks/useUserStatus";
+import BirthdayFireworks from "./BirthdayFireworks";
+import { useUserBirthday } from "@/hooks/useUserBirthday";
 
 interface OptimizedAvatarProps {
   src: string | null | undefined;
@@ -27,6 +29,7 @@ const OptimizedAvatar = ({
 }: OptimizedAvatarProps) => {
   const [imageError, setImageError] = useState(false);
   const { data: status } = useUserStatus(showStatus ? userId : null);
+  const { data: birthdayData } = useUserBirthday(userId);
 
   // Only render image if src exists and no error
   const shouldShowImage = src && !imageError;
@@ -48,15 +51,17 @@ const OptimizedAvatar = ({
   );
 
   return (
-    <StatusRing 
-      hasStatus={!!status}
-      statusText={status?.status_text}
-      emoji={status?.emoji}
-      showAddButton={showAddButton}
-      onAddClick={onAddStatusClick}
-    >
-      {avatar}
-    </StatusRing>
+    <BirthdayFireworks isBirthday={birthdayData?.isBirthday || false}>
+      <StatusRing 
+        hasStatus={!!status}
+        statusText={status?.status_text}
+        emoji={status?.emoji}
+        showAddButton={showAddButton}
+        onAddClick={onAddStatusClick}
+      >
+        {avatar}
+      </StatusRing>
+    </BirthdayFireworks>
   );
 };
 
