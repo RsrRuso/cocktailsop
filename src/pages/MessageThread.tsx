@@ -11,6 +11,7 @@ import { MessageBubble } from "@/components/MessageBubble";
 import { MessageActions } from "@/components/MessageActions";
 import { MessageInput } from "@/components/MessageInput";
 import { MediaRecorder } from "@/components/MediaRecorder";
+import { ForwardMessageDialog } from "@/components/ForwardMessageDialog";
 
 const MessageThread = () => {
   const { conversationId } = useParams();
@@ -21,6 +22,8 @@ const MessageThread = () => {
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [showAllEmojis, setShowAllEmojis] = useState(false);
+  const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
+  const [showForwardDialog, setShowForwardDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -198,8 +201,8 @@ const MessageThread = () => {
               }}
               onDelete={isOwn ? () => handleDelete(message.id) : undefined}
               onForward={() => {
-                // TODO: Implement forward functionality
-                console.log('Forward message:', message.id);
+                setForwardingMessage(message);
+                setShowForwardDialog(true);
               }}
             >
               <MessageActions
@@ -284,6 +287,13 @@ const MessageThread = () => {
         videoStream={videoStream}
         onStop={stopVideoRecording}
         onCancel={() => { stopVideoRecording(); }}
+      />
+
+      <ForwardMessageDialog
+        open={showForwardDialog}
+        onOpenChange={setShowForwardDialog}
+        message={forwardingMessage}
+        currentUserId={currentUser?.id}
       />
     </div>
   );

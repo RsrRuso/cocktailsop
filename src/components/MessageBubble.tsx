@@ -188,6 +188,17 @@ export const MessageBubble = ({
           </div>
         )}
 
+        {(message as any).forwarded && (
+          <div className={`${
+            message.media_url && (message.media_type === 'image' || message.media_type === 'video')
+              ? 'px-4 pt-2'
+              : ''
+          } flex items-center gap-1 text-xs text-muted-foreground mb-1`}>
+            <Forward className="w-3 h-3" />
+            <span>Forwarded</span>
+          </div>
+        )}
+
         <p
           className={`${
             message.media_url && (message.media_type === 'image' || message.media_type === 'video')
