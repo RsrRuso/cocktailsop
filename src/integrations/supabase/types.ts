@@ -1434,6 +1434,7 @@ export type Database = {
           delivered: boolean | null
           edited: boolean | null
           edited_at: string | null
+          forwarded: boolean | null
           id: string
           media_type: string | null
           media_url: string | null
@@ -1449,6 +1450,7 @@ export type Database = {
           delivered?: boolean | null
           edited?: boolean | null
           edited_at?: string | null
+          forwarded?: boolean | null
           id?: string
           media_type?: string | null
           media_url?: string | null
@@ -1464,6 +1466,7 @@ export type Database = {
           delivered?: boolean | null
           edited?: boolean | null
           edited_at?: string | null
+          forwarded?: boolean | null
           id?: string
           media_type?: string | null
           media_url?: string | null
