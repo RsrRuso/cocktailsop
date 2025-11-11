@@ -490,8 +490,31 @@ const SellerDashboard = () => {
                 value={formData.image_url}
                 onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                 required
-                placeholder="https://..."
+                placeholder="https://example.com/image.jpg"
               />
+              <p className="text-xs text-muted-foreground">
+                Must be a direct link to an image file (.jpg, .png, .webp)
+              </p>
+              {formData.image_url && (
+                <div className="mt-2 rounded-lg border border-border overflow-hidden">
+                  <img
+                    src={formData.image_url}
+                    alt="Preview"
+                    className="w-full h-40 object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                    onLoad={(e) => {
+                      e.currentTarget.style.display = 'block';
+                      e.currentTarget.nextElementSibling?.classList.add('hidden');
+                    }}
+                  />
+                  <div className="hidden p-4 text-center text-sm text-destructive bg-destructive/10">
+                    ⚠️ Invalid image URL. Please use a direct link to an image file.
+                  </div>
+                </div>
+              )}
             </div>
             <Button type="submit" className="w-full">
               {editingProduct ? "Update Product" : "Add Product"}
