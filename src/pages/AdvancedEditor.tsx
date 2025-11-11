@@ -6,12 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Search, Filter, ArrowUpDown, Copy, Trash2, Edit3, 
-  Download, Upload, Save, History, Grid3x3, List,
-  ChevronDown, Star, Archive, Tag, Share2, MoreHorizontal,
-  Undo2, Redo2, Command, Eye, EyeOff, Lock, Unlock
+  Download, Upload, History, Grid3x3, List,
+  Star, Archive, Tag, Share2, MoreHorizontal,
+  Undo2, Redo2, Command, Lock
 } from "lucide-react";
 import {
   DropdownMenu,
