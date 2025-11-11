@@ -214,9 +214,9 @@ const ReelEditor = () => {
         </Button>
       </div>
 
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-73px)]">
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-185px)] lg:h-[calc(100vh-73px)]">
         {/* Video Preview */}
-        <div className="flex-1 flex items-center justify-center bg-black relative p-4">
+        <div className="flex-1 flex items-center justify-center bg-black relative p-4 lg:p-8">
           <div className="relative max-w-[400px] w-full aspect-[9/16] bg-black rounded-xl overflow-hidden shadow-2xl">
             <video
               ref={videoRef}
@@ -263,10 +263,10 @@ const ReelEditor = () => {
           </div>
         </div>
 
-        {/* Editing Tools */}
-        <div className="w-full lg:w-96 bg-black/50 backdrop-blur-lg border-t lg:border-l border-white/10 overflow-y-auto">
+        {/* Editing Tools - Fixed on mobile, sidebar on desktop */}
+        <div className="fixed lg:relative bottom-[72px] lg:bottom-0 left-0 right-0 lg:w-96 bg-black/95 lg:bg-black/50 backdrop-blur-lg border-t lg:border-l border-white/10 overflow-y-auto max-h-[40vh] lg:max-h-none z-40">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full grid grid-cols-4 bg-white/5">
+            <TabsList className="w-full grid grid-cols-4 bg-white/5 sticky top-0 z-10">
               <TabsTrigger value="trim" className="flex flex-col gap-1">
                 <Scissors className="w-4 h-4" />
                 <span className="text-xs">Trim</span>
