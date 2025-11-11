@@ -2019,13 +2019,17 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
           badge_level: Database["public"]["Enums"]["badge_level"] | null
           bio: string | null
           career_score: number | null
+          city: string | null
+          country: string | null
           cover_url: string | null
           created_at: string | null
           date_of_birth: string | null
+          email_verified: boolean | null
           follower_count: number | null
           following_count: number | null
           full_name: string
@@ -2033,7 +2037,9 @@ export type Database = {
           interests: string[] | null
           is_bot: boolean | null
           phone: string | null
+          phone_verified: boolean | null
           post_count: number | null
+          postal_code: string | null
           professional_title:
             | Database["public"]["Enums"]["professional_title"]
             | null
@@ -2048,13 +2054,17 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
           badge_level?: Database["public"]["Enums"]["badge_level"] | null
           bio?: string | null
           career_score?: number | null
+          city?: string | null
+          country?: string | null
           cover_url?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          email_verified?: boolean | null
           follower_count?: number | null
           following_count?: number | null
           full_name: string
@@ -2062,7 +2072,9 @@ export type Database = {
           interests?: string[] | null
           is_bot?: boolean | null
           phone?: string | null
+          phone_verified?: boolean | null
           post_count?: number | null
+          postal_code?: string | null
           professional_title?:
             | Database["public"]["Enums"]["professional_title"]
             | null
@@ -2077,13 +2089,17 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
           badge_level?: Database["public"]["Enums"]["badge_level"] | null
           bio?: string | null
           career_score?: number | null
+          city?: string | null
+          country?: string | null
           cover_url?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          email_verified?: boolean | null
           follower_count?: number | null
           following_count?: number | null
           full_name?: string
@@ -2091,7 +2107,9 @@ export type Database = {
           interests?: string[] | null
           is_bot?: boolean | null
           phone?: string | null
+          phone_verified?: boolean | null
           post_count?: number | null
+          postal_code?: string | null
           professional_title?:
             | Database["public"]["Enums"]["professional_title"]
             | null
