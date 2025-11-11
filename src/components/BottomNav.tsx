@@ -1,4 +1,4 @@
-import { Home, PlusSquare, Search, Video } from "lucide-react";
+import { Home, PlusSquare, Search, Video, Music } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,6 +43,17 @@ const BottomNav = () => {
             <div className="w-12 h-12 rounded-xl border-2 border-foreground/20 hover:border-foreground/40 transition-all flex items-center justify-center bg-background">
               <PlusSquare className="w-7 h-7 text-foreground" />
             </div>
+          </button>
+
+          <button
+            onClick={() => navigate("/music")}
+            className={`flex items-center justify-center w-12 h-12 transition-all ${
+              isActive("/music") 
+                ? "text-foreground scale-110" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Music className={`w-7 h-7 ${isActive("/music") ? "fill-current" : ""}`} />
           </button>
 
           <button
