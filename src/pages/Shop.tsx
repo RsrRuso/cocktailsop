@@ -156,7 +156,7 @@ const Shop = () => {
           <h1 className="text-xl font-bold">Shop</h1>
           
           <div className="flex items-center gap-2">
-            {!currentUser && (
+            {!currentUser ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -165,10 +165,18 @@ const Shop = () => {
               >
                 Sign In
               </Button>
-            )}
-            
-            {currentUser && (
+            ) : (
               <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/seller-dashboard")}
+                  className="text-xs"
+                >
+                  <Store className="w-3 h-3 mr-1.5" />
+                  Sell
+                </Button>
+                
                 <button
                   onClick={() => navigate("/orders")}
                   className="glass-hover p-2.5 rounded-2xl"
@@ -202,27 +210,25 @@ const Shop = () => {
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">{currentUser?.email}</p>
-                        <Badge variant="outline" className="w-fit capitalize">
-                          {userRole === "seller" && <Store className="w-3 h-3 mr-1" />}
-                          {userRole === "buyer" && <User className="w-3 h-3 mr-1" />}
-                          {userRole || "Loading..."}
-                        </Badge>
+                        <p className="text-sm font-medium truncate">{currentUser?.email}</p>
+                        {userRole && (
+                          <Badge variant="outline" className="w-fit capitalize">
+                            {userRole === "seller" && <Store className="w-3 h-3 mr-1" />}
+                            {userRole === "buyer" && <User className="w-3 h-3 mr-1" />}
+                            {userRole}
+                          </Badge>
+                        )}
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {userRole === "seller" && (
-                      <DropdownMenuItem onClick={() => navigate("/seller-dashboard")}>
-                        <Store className="w-4 h-4 mr-2" />
-                        Seller Dashboard
-                      </DropdownMenuItem>
-                    )}
-                    {userRole === "buyer" && (
-                      <DropdownMenuItem onClick={() => navigate("/orders")}>
-                        <Package className="w-4 h-4 mr-2" />
-                        My Orders
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem onClick={() => navigate("/seller-dashboard")}>
+                      <Store className="w-4 h-4 mr-2" />
+                      Seller Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/orders")}>
+                      <Package className="w-4 h-4 mr-2" />
+                      My Orders
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                       <LogOut className="w-4 h-4 mr-2" />
