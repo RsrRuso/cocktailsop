@@ -15,7 +15,6 @@ import { useFeedData } from "@/hooks/useFeedData";
 import { useOptimisticLike } from "@/hooks/useOptimisticLike";
 import { useManagerRole } from "@/hooks/useManagerRole";
 import { EventsTicker } from "@/components/EventsTicker";
-import MusicTicker from "@/components/MusicTicker";
 import BirthdayFireworks from "@/components/BirthdayFireworks";
 import {
   DropdownMenu,
@@ -421,9 +420,6 @@ const Home = () => {
           })}
         </div>
       </div>
-
-      {/* Music Ticker */}
-      <MusicTicker />
 
       {/* Events Ticker */}
       {selectedRegion && (

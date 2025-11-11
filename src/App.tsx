@@ -66,6 +66,7 @@ const Reels = lazy(() => import("./pages/Reels"));
 const Reposted = lazy(() => import("./pages/Reposted"));
 const StoryViewer = lazy(() => import("./pages/StoryViewer"));
 const UpdateMusicLibrary = lazy(() => import("./pages/UpdateMusicLibrary"));
+const Music = lazy(() => import("./pages/Music"));
 const Introduction = lazy(() => import("./pages/Introduction"));
 const Chat = lazy(() => import("./pages/Chat"));
 const Calendar = lazy(() => import("./pages/Calendar"));
@@ -149,6 +150,7 @@ const App = () => (
           <Route path="/reels" element={<Reels />} />
           <Route path="/reposted" element={<Reposted />} />
           <Route path="/update-music-library" element={<UpdateMusicLibrary />} />
+          <Route path="/music" element={<Music />} />
           <Route path="/introduction" element={<Introduction />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/calendar" element={<Calendar />} />
