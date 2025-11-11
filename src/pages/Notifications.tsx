@@ -29,65 +29,74 @@ const Notifications = () => {
   const { showNotification } = useInAppNotificationContext();
 
   useEffect(() => {
-    // Request notification permissions
-    const requestPermissions = async () => {
+    let channel: any;
+    
+    const setupSubscription = async () => {
+      // Request notification permissions
       try {
         await LocalNotifications.requestPermissions();
       } catch (error) {
         // Notification permissions not available on web
       }
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      fetchNotifications();
+      
+      // Set up realtime subscription for new notifications - ONLY for current user
+      channel = supabase
+        .channel(`notifications-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}` // Only listen to notifications for current user
+          },
+          async (payload) => {
+            fetchNotifications();
+            
+            const newNotification = payload.new as Notification;
+            
+            // Send in-app notification for ALL types
+            showNotification(
+              'New Notification',
+              newNotification.content,
+              newNotification.type as any
+            );
+            
+            // Send mobile push notification
+            try {
+              await LocalNotifications.schedule({
+                notifications: [
+                  {
+                    title: 'New Notification',
+                    body: newNotification.content,
+                    id: Math.floor(Math.random() * 1000000),
+                    schedule: { at: new Date(Date.now() + 100) },
+                    sound: 'default',
+                    attachments: undefined,
+                    actionTypeId: '',
+                    extra: { type: newNotification.type }
+                  }
+                ]
+              });
+            } catch (error) {
+              // Local notifications not available
+            }
+          }
+        )
+        .subscribe();
     };
     
-    requestPermissions();
-    fetchNotifications();
-    
-    // Set up realtime subscription for new notifications
-    const channel = supabase
-      .channel(`notifications-${Date.now()}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications'
-        },
-        async (payload) => {
-          fetchNotifications();
-          
-          const newNotification = payload.new as Notification;
-          
-          // Send in-app notification for ALL types
-          showNotification(
-            'New Notification',
-            newNotification.content,
-            newNotification.type as any
-          );
-          
-          // Send mobile push notification
-          try {
-            await LocalNotifications.schedule({
-              notifications: [
-                {
-                  title: 'New Notification',
-                  body: newNotification.content,
-                  id: Math.floor(Math.random() * 1000000),
-                  schedule: { at: new Date(Date.now() + 100) },
-                  sound: 'default',
-                  attachments: undefined,
-                  actionTypeId: '',
-                  extra: { type: newNotification.type }
-                }
-              ]
-            });
-          } catch (error) {
-            // Local notifications not available
-          }
-        }
-      )
-      .subscribe();
+    setupSubscription();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, []);
 
