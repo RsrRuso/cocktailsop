@@ -278,11 +278,11 @@ const TopNav = () => {
               </div>
             )}
 
-            {/* Music Button */}
+            {/* Music Navigation */}
             <button
               onClick={() => {
                 lightTap();
-                setMusicDialogOpen(true);
+                navigate("/music");
               }}
               className="glass-hover p-2.5 rounded-2xl"
             >
