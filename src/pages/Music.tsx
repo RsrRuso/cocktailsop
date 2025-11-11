@@ -76,18 +76,34 @@ const Music = () => {
       const followingIds = followingData?.map(f => f.following_id) || [];
       const userIds = [user.id, ...followingIds];
 
-      const { data, error } = await supabase
+      const { data: sharesData, error } = await supabase
         .from('music_shares')
-        .select(`
-          *,
-          profiles!music_shares_user_id_fkey (username, avatar_url)
-        `)
+        .select('*')
         .in('user_id', userIds)
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setMusicShares(data || []);
+
+      if (!sharesData || sharesData.length === 0) {
+        setMusicShares([]);
+        return;
+      }
+
+      // Fetch profiles separately
+      const userIdsToFetch = [...new Set(sharesData.map(s => s.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIdsToFetch);
+
+      // Map profiles to shares
+      const sharesWithProfiles = sharesData.map(share => ({
+        ...share,
+        profiles: profiles?.find(p => p.id === share.user_id) || { username: 'Unknown', avatar_url: null }
+      }));
+
+      setMusicShares(sharesWithProfiles);
     } catch (error) {
       console.error('Error fetching music shares:', error);
     }
