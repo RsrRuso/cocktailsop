@@ -135,8 +135,7 @@ export const FeedItem = memo(({
                   <LazyVideo
                     src={url}
                     muted={!mutedVideos.has(item.id + url)}
-                    onClick={onFullscreen}
-                    className="w-full h-auto max-h-96 object-cover cursor-pointer"
+                    className="w-full h-auto min-h-[400px] max-h-[600px] object-cover rounded-xl"
                   />
                   
                   <button
