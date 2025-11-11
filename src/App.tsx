@@ -34,6 +34,7 @@ const OpsTools = lazy(() => import("./pages/OpsTools"));
 const TaskManager = lazy(() => import("./pages/TaskManager"));
 const TeamManagement = lazy(() => import("./pages/TeamManagement"));
 const TeamDashboard = lazy(() => import("./pages/TeamDashboard"));
+const AdvancedEditor = lazy(() => import("./pages/AdvancedEditor"));
 const TeamInvitation = lazy(() => import("./pages/TeamInvitation"));
 const InventoryManager = lazy(() => import("./pages/InventoryManager"));
 const TemperatureLog = lazy(() => import("./pages/TemperatureLog"));
@@ -118,6 +119,7 @@ const App = () => (
           <Route path="/task-manager" element={<TaskManager />} />
           <Route path="/team-management" element={<TeamManagement />} />
           <Route path="/team-dashboard" element={<TeamDashboard />} />
+          <Route path="/advanced-editor" element={<AdvancedEditor />} />
           <Route path="/team-invitation" element={<TeamInvitation />} />
           <Route path="/inventory-manager" element={<InventoryManager />} />
           <Route path="/temperature-log" element={<TemperatureLog />} />
