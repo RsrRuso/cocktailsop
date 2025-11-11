@@ -78,6 +78,10 @@ const TimeOff = lazy(() => import("./pages/TimeOff"));
 const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Shop = lazy(() => import("./pages/Shop"));
+const Cart = lazy(() => import("./pages/Cart"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const PaymentOptions = lazy(() => import("./pages/PaymentOptions"));
+const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -165,6 +169,10 @@ const App = () => (
           <Route path="/knowledge-base" element={<KnowledgeBase />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/shop" element={<Shop />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/payment-options" element={<PaymentOptions />} />
+          <Route path="/order-confirmation" element={<OrderConfirmation />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
               </Routes>

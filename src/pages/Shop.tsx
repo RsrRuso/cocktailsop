@@ -148,6 +148,10 @@ const Shop = () => {
     });
   };
 
+  const handleProductClick = (product: Product) => {
+    navigate("/product/" + product.id, { state: { product } });
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
@@ -163,7 +167,7 @@ const Shop = () => {
           <h1 className="text-xl font-bold">Shop</h1>
           
           <button
-            onClick={() => toast({ title: "Cart", description: `${cartCount} items in cart` })}
+            onClick={() => navigate("/cart")}
             className="glass-hover p-2.5 rounded-2xl relative"
           >
             <ShoppingCart className="w-5 h-5" />
@@ -224,7 +228,11 @@ const Shop = () => {
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden group hover:shadow-lg transition-shadow">
+            <Card 
+              key={product.id} 
+              className="overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleProductClick(product)}
+            >
               <div className="relative aspect-square overflow-hidden">
                 <img
                   src={product.image}
@@ -256,7 +264,10 @@ const Shop = () => {
                   </span>
                   <Button
                     size="sm"
-                    onClick={() => handleAddToCart(product)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddToCart(product);
+                    }}
                     disabled={!product.inStock}
                   >
                     <ShoppingCart className="w-4 h-4 mr-2" />
