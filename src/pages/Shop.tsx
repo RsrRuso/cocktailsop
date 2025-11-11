@@ -60,11 +60,12 @@ const Shop = () => {
         const { data: roles } = await supabase
           .from("user_roles")
           .select("role")
-          .eq("user_id", user.id)
-          .single();
+          .eq("user_id", user.id);
         
-        if (roles) {
-          setUserRole(roles.role);
+        if (roles && roles.length > 0) {
+          // Prioritize seller role if user has multiple roles
+          const isSeller = roles.some(r => r.role === "seller");
+          setUserRole(isSeller ? "seller" : roles[0].role);
         }
       }
     } catch (error) {
