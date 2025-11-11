@@ -115,54 +115,66 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
   const handleLike = async () => {
     if (!event || !user) return;
 
-    if (hasLiked) {
-      const { error } = await supabase
-        .from('event_likes')
-        .delete()
-        .eq('event_id', event.id)
-        .eq('user_id', user.id);
+    const wasLiked = hasLiked;
+    
+    // Optimistic update
+    setHasLiked(!wasLiked);
+    setLikeCount(prev => wasLiked ? Math.max(0, prev - 1) : prev + 1);
 
-      if (!error) {
-        setHasLiked(false);
-        setLikeCount(prev => Math.max(0, prev - 1));
+    try {
+      if (wasLiked) {
+        const { error } = await supabase
+          .from('event_likes')
+          .delete()
+          .eq('event_id', event.id)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
         toast.success('Like removed');
-      }
-    } else {
-      const { error } = await supabase
-        .from('event_likes')
-        .insert({ event_id: event.id, user_id: user.id });
+      } else {
+        const { error } = await supabase
+          .from('event_likes')
+          .insert({ event_id: event.id, user_id: user.id });
 
-      if (!error) {
-        setHasLiked(true);
-        setLikeCount(prev => prev + 1);
+        // Ignore duplicate key errors - already liked
+        if (error && error.code !== '23505') throw error;
         toast.success('Event liked!');
       }
+    } catch (error: any) {
+      console.error('Error toggling event like:', error);
+      // Revert on error
+      setHasLiked(wasLiked);
+      setLikeCount(prev => wasLiked ? prev + 1 : Math.max(0, prev - 1));
+      toast.error('Failed to update like');
     }
   };
 
   const handleAttendance = async () => {
     if (!event || !user) return;
 
-    if (isAttending) {
-      const { error } = await supabase
-        .from('event_attendees')
-        .delete()
-        .eq('event_id', event.id)
-        .eq('user_id', user.id);
+    const wasAttending = isAttending;
+    
+    // Optimistic update
+    setIsAttending(!wasAttending);
+    setAttendeeCount(prev => wasAttending ? Math.max(0, prev - 1) : prev + 1);
 
-      if (!error) {
-        setIsAttending(false);
-        setAttendeeCount(prev => Math.max(0, prev - 1));
+    try {
+      if (wasAttending) {
+        const { error } = await supabase
+          .from('event_attendees')
+          .delete()
+          .eq('event_id', event.id)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
         toast.success('Removed from attendees');
-      }
-    } else {
-      const { error } = await supabase
-        .from('event_attendees')
-        .insert({ event_id: event.id, user_id: user.id });
+      } else {
+        const { error } = await supabase
+          .from('event_attendees')
+          .insert({ event_id: event.id, user_id: user.id });
 
-      if (!error) {
-        setIsAttending(true);
-        setAttendeeCount(prev => prev + 1);
+        // Ignore duplicate key errors - already attending
+        if (error && error.code !== '23505') throw error;
         
         // Schedule reminder
         await scheduleEventReminder(event.title, event.event_date);
@@ -176,6 +188,12 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
           toast.success("You're going!");
         }
       }
+    } catch (error: any) {
+      console.error('Error toggling attendance:', error);
+      // Revert on error
+      setIsAttending(wasAttending);
+      setAttendeeCount(prev => wasAttending ? prev + 1 : Math.max(0, prev - 1));
+      toast.error('Failed to update attendance');
     }
   };
 

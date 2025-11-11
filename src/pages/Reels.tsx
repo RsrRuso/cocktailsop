@@ -176,25 +176,32 @@ const Reels = () => {
     }
 
     // Background API call
-    if (isLiked) {
-      const { error } = await supabase
-        .from("reel_likes")
-        .delete()
-        .eq("reel_id", reelId)
-        .eq("user_id", user.id);
+    try {
+      if (isLiked) {
+        const { error } = await supabase
+          .from("reel_likes")
+          .delete()
+          .eq("reel_id", reelId)
+          .eq("user_id", user.id);
 
-      if (error) {
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("reel_likes")
+          .insert({ reel_id: reelId, user_id: user.id });
+
+        // Ignore duplicate key errors - already liked
+        if (error && error.code !== '23505') throw error;
+      }
+    } catch (error: any) {
+      console.error('Error toggling reel like:', error);
+      // Revert on error
+      if (isLiked) {
         setLikedReels(prev => new Set(prev).add(reelId));
         setReels(prev => prev.map(r => 
           r.id === reelId ? { ...r, like_count: r.like_count + 1 } : r
         ));
-      }
-    } else {
-      const { error } = await supabase
-        .from("reel_likes")
-        .insert({ reel_id: reelId, user_id: user.id });
-
-      if (error) {
+      } else {
         setLikedReels(prev => {
           const newSet = new Set(prev);
           newSet.delete(reelId);

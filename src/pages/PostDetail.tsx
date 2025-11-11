@@ -78,22 +78,41 @@ const PostDetail = () => {
       return;
     }
 
-    if (isLiked) {
-      await supabase
-        .from("post_likes")
-        .delete()
-        .eq("post_id", id)
-        .eq("user_id", user.id);
-      
-      setIsLiked(false);
-      setPost((prev: any) => ({ ...prev, like_count: prev.like_count - 1 }));
-    } else {
-      await supabase
-        .from("post_likes")
-        .insert({ post_id: id, user_id: user.id });
-      
-      setIsLiked(true);
-      setPost((prev: any) => ({ ...prev, like_count: prev.like_count + 1 }));
+    const wasLiked = isLiked;
+    
+    // Optimistic update
+    setIsLiked(!wasLiked);
+    setPost((prev: any) => ({ 
+      ...prev, 
+      like_count: wasLiked ? Math.max(0, prev.like_count - 1) : prev.like_count + 1
+    }));
+
+    try {
+      if (wasLiked) {
+        const { error } = await supabase
+          .from("post_likes")
+          .delete()
+          .eq("post_id", id)
+          .eq("user_id", user.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("post_likes")
+          .insert({ post_id: id, user_id: user.id });
+        
+        // Ignore duplicate key errors - already liked
+        if (error && error.code !== '23505') throw error;
+      }
+    } catch (error: any) {
+      console.error('Error toggling like:', error);
+      // Revert on error
+      setIsLiked(wasLiked);
+      setPost((prev: any) => ({ 
+        ...prev, 
+        like_count: wasLiked ? prev.like_count + 1 : Math.max(0, prev.like_count - 1)
+      }));
+      toast.error('Failed to update like');
     }
   };
 

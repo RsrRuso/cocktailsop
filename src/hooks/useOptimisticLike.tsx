@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -7,6 +7,7 @@ export const useOptimisticLike = (
   currentUserId: string | undefined
 ) => {
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
+  const processingRef = useRef<Set<string>>(new Set());
 
   const fetchLikedItems = useCallback(async () => {
     if (!currentUserId) return;
@@ -39,8 +40,16 @@ export const useOptimisticLike = (
         return;
       }
 
+      // Prevent duplicate requests
+      if (processingRef.current.has(itemId)) {
+        return;
+      }
+
       const isLiked = likedItems.has(itemId);
       const increment = isLiked ? -1 : 1;
+
+      // Mark as processing
+      processingRef.current.add(itemId);
 
       // Optimistic updates - instant feedback
       setLikedItems((prev) => {
@@ -70,7 +79,8 @@ export const useOptimisticLike = (
             const { error } = await supabase
               .from('post_likes')
               .insert({ post_id: itemId, user_id: currentUserId });
-            if (error) throw error;
+            // Ignore duplicate key errors (23505) - already liked
+            if (error && error.code !== '23505') throw error;
           }
         } else {
           if (isLiked) {
@@ -84,7 +94,8 @@ export const useOptimisticLike = (
             const { error } = await supabase
               .from('reel_likes')
               .insert({ reel_id: itemId, user_id: currentUserId });
-            if (error) throw error;
+            // Ignore duplicate key errors (23505) - already liked
+            if (error && error.code !== '23505') throw error;
           }
         }
       } catch (error: any) {
@@ -102,6 +113,9 @@ export const useOptimisticLike = (
           return newSet;
         });
         updateCount?.(-increment);
+      } finally {
+        // Remove from processing
+        processingRef.current.delete(itemId);
       }
     },
     [currentUserId, itemType, likedItems]

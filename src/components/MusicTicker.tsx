@@ -213,49 +213,44 @@ const MusicTicker = () => {
     });
 
     // Database update
-    if (isLiked) {
-      const { error } = await supabase
-        .from("music_share_likes")
-        .delete()
-        .eq("music_share_id", shareId)
-        .eq("user_id", user.id);
-      
-      if (error) {
-        console.error("Error unliking:", error);
-        // Revert on error
-        setMusicShares(prev => prev.map(share => 
-          share.id === shareId 
-            ? { ...share, like_count: share.like_count + 1 }
-            : share
-        ));
-        setLikedShares(prev => {
-          const next = new Set(prev);
+    try {
+      if (isLiked) {
+        const { error } = await supabase
+          .from("music_share_likes")
+          .delete()
+          .eq("music_share_id", shareId)
+          .eq("user_id", user.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("music_share_likes")
+          .insert({
+            music_share_id: shareId,
+            user_id: user.id,
+          });
+        
+        // Ignore duplicate key errors - already liked
+        if (error && error.code !== '23505') throw error;
+      }
+    } catch (error: any) {
+      console.error("Error toggling like:", error);
+      toast.error('Failed to update like');
+      // Revert on error
+      setMusicShares(prev => prev.map(share => 
+        share.id === shareId 
+          ? { ...share, like_count: share.like_count + (isLiked ? 1 : -1) }
+          : share
+      ));
+      setLikedShares(prev => {
+        const next = new Set(prev);
+        if (isLiked) {
           next.add(shareId);
-          return next;
-        });
-      }
-    } else {
-      const { error } = await supabase
-        .from("music_share_likes")
-        .insert({
-          music_share_id: shareId,
-          user_id: user.id,
-        });
-      
-      if (error) {
-        console.error("Error liking:", error);
-        // Revert on error
-        setMusicShares(prev => prev.map(share => 
-          share.id === shareId 
-            ? { ...share, like_count: share.like_count - 1 }
-            : share
-        ));
-        setLikedShares(prev => {
-          const next = new Set(prev);
+        } else {
           next.delete(shareId);
-          return next;
-        });
-      }
+        }
+        return next;
+      });
     }
   };
 

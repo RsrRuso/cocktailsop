@@ -195,7 +195,8 @@ const StoryViewer = () => {
             story_id: storyId,
             user_id: currentUserId,
           });
-        if (error) throw error;
+        // Ignore duplicate key errors - already liked
+        if (error && error.code !== '23505') throw error;
       }
     } catch (error) {
       // Revert on error

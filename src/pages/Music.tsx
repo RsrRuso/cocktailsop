@@ -154,18 +154,23 @@ const Music = () => {
 
     try {
       if (isLiked) {
-        await supabase
+        const { error } = await supabase
           .from('music_share_likes')
           .delete()
           .eq('music_share_id', shareId)
           .eq('user_id', user.id);
+        if (error) throw error;
       } else {
-        await supabase
+        const { error } = await supabase
           .from('music_share_likes')
           .insert({ music_share_id: shareId, user_id: user.id });
+        // Ignore duplicate key errors - already liked
+        if (error && error.code !== '23505') throw error;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling like:', error);
+      toast.error('Failed to update like');
+      // Revert on error
       setLikedShares(likedShares);
       setMusicShares(prev => prev.map(share => 
         share.id === shareId 

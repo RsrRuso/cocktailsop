@@ -183,13 +183,25 @@ const StatusReactionsDialog = ({
     );
 
     if (existingReaction) {
+      // Optimistic update
+      setReactions(reactions.filter(r => r.id !== existingReaction.id));
+      
       // Remove reaction
-      await supabase
+      const { error } = await supabase
         .from("status_reactions")
         .delete()
         .eq("id", existingReaction.id);
       
-      setReactions(reactions.filter(r => r.id !== existingReaction.id));
+      if (error) {
+        console.error("Error removing reaction:", error);
+        // Revert on error
+        setReactions([...reactions]);
+        toast({
+          title: "Error",
+          description: "Failed to remove reaction",
+          variant: "destructive",
+        });
+      }
     } else {
       // Add reaction
       const { data, error } = await supabase
@@ -213,7 +225,8 @@ const StatusReactionsDialog = ({
         `)
         .single();
 
-      if (error) {
+      // Ignore duplicate key errors - already reacted
+      if (error && error.code !== '23505') {
         console.error("Error adding reaction:", error);
         toast({
           title: "Error",
@@ -225,6 +238,9 @@ const StatusReactionsDialog = ({
 
       if (data) {
         setReactions([data as any, ...reactions]);
+      } else if (!error || error.code === '23505') {
+        // Duplicate key - refetch to get correct state
+        fetchReactions();
       }
     }
   };
