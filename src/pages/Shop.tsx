@@ -111,6 +111,15 @@ const Shop = () => {
           <h1 className="text-xl font-bold">Shop</h1>
           
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/shop-auth")}
+              className="text-xs"
+            >
+              Sell
+            </Button>
+            
             <button
               onClick={() => navigate("/orders")}
               className="glass-hover p-2.5 rounded-2xl"
