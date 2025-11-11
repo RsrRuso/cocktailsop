@@ -3537,6 +3537,8 @@ export type Database = {
         | "founder"
         | "verified"
         | "manager"
+        | "seller"
+        | "buyer"
       badge_level: "bronze" | "silver" | "gold" | "platinum"
       equipment_type:
         | "fridge"
@@ -3695,6 +3697,8 @@ export const Constants = {
         "founder",
         "verified",
         "manager",
+        "seller",
+        "buyer",
       ],
       badge_level: ["bronze", "silver", "gold", "platinum"],
       equipment_type: [
