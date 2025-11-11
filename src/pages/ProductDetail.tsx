@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 import BottomNav from "@/components/BottomNav";
 
 const ProductDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { addToCart } = useCart();
   const product = location.state?.product;
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -28,40 +30,31 @@ const ProductDetail = () => {
   }
 
   const handleAddToCart = () => {
-    const cartItem = {
+    addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
-      quantity: quantity,
       image: product.image || product.image_url,
-      seller_id: product.seller_id,
-    };
-    
-    navigate("/cart", { 
-      state: { 
-        cartItems: [cartItem] 
-      } 
-    });
+    }, quantity);
     
     toast({
       title: "Added to Cart",
       description: `${quantity}x ${product.name} added to cart`,
     });
+    
+    navigate("/cart");
   };
 
   const handleBuyNow = () => {
-    const cartItem = {
+    addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
-      quantity: quantity,
       image: product.image || product.image_url,
-      seller_id: product.seller_id,
-    };
+    }, quantity);
     
     navigate("/payment-options", { 
       state: { 
-        cartItems: [cartItem],
         total: product.price * quantity
       } 
     });

@@ -9,6 +9,7 @@ import { InAppNotificationProvider } from "@/contexts/InAppNotificationContext";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CartProvider } from "@/contexts/CartContext";
 import { RoutePreloader } from "@/components/RoutePreloader";
 
 // Eager load ONLY index/landing/auth (no user data)
@@ -103,11 +104,12 @@ const App = () => (
       <InAppNotificationProvider>
         <BrowserRouter>
           <AuthProvider>
-            <RoutePreloader />
-            <Toaster />
-            <Sonner />
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
+            <CartProvider>
+              <RoutePreloader />
+              <Toaster />
+              <Sonner />
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/landing" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
@@ -181,8 +183,9 @@ const App = () => (
           <Route path="/seller-dashboard" element={<SellerDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
+                </Routes>
+              </Suspense>
+            </CartProvider>
           </AuthProvider>
         </BrowserRouter>
       </InAppNotificationProvider>

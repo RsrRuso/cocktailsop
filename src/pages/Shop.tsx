@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 import BottomNav from "@/components/BottomNav";
 import {
   Select,
@@ -38,9 +39,9 @@ interface Product {
 const Shop = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { addToCart, cartCount } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [cartCount, setCartCount] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -130,7 +131,12 @@ const Shop = () => {
       });
       return;
     }
-    setCartCount(prev => prev + 1);
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image_url,
+    });
     toast({
       title: "Added to Cart",
       description: `${product.name} has been added to your cart`,

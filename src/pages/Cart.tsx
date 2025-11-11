@@ -1,39 +1,18 @@
-import { useState } from "react";
 import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 import BottomNav from "@/components/BottomNav";
-
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
 
 const Cart = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
-  const [cartItems, setCartItems] = useState<CartItem[]>(
-    location.state?.cartItems || []
-  );
+  const { cartItems, removeFromCart, updateQuantity } = useCart();
 
-  const updateQuantity = (id: string, change: number) => {
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, item.quantity + change) }
-          : item
-      )
-    );
-  };
-
-  const removeItem = (id: string) => {
-    setCartItems(items => items.filter(item => item.id !== id));
+  const handleRemoveItem = (id: string) => {
+    removeFromCart(id);
     toast({
       title: "Item Removed",
       description: "Item has been removed from your cart",
@@ -126,7 +105,7 @@ const Cart = () => {
                     </div>
                     
                     <button
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => handleRemoveItem(item.id)}
                       className="glass-hover p-2 rounded-lg h-fit"
                     >
                       <Trash2 className="w-4 h-4 text-destructive" />
