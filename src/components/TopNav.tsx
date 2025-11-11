@@ -278,6 +278,17 @@ const TopNav = () => {
               </div>
             )}
 
+            {/* Shop Navigation */}
+            <button
+              onClick={() => {
+                lightTap();
+                navigate("/shop");
+              }}
+              className="glass-hover p-2.5 rounded-2xl"
+            >
+              <ShoppingCart className="w-5 h-5" />
+            </button>
+
             {/* Music Navigation */}
             <button
               onClick={() => {

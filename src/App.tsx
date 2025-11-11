@@ -77,6 +77,7 @@ const Company = lazy(() => import("./pages/Company"));
 const TimeOff = lazy(() => import("./pages/TimeOff"));
 const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
 const Analytics = lazy(() => import("./pages/Analytics"));
+const Shop = lazy(() => import("./pages/Shop"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -163,6 +164,7 @@ const App = () => (
           <Route path="/time-off" element={<TimeOff />} />
           <Route path="/knowledge-base" element={<KnowledgeBase />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/shop" element={<Shop />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
               </Routes>
