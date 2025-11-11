@@ -21,8 +21,8 @@ export const LazyVideo = ({ src, className, muted = true, onClick }: LazyVideoPr
       (entries) => {
         entries.forEach((entry) => {
           setIsInView(entry.isIntersecting);
-          // Play when >25% visible for better feed experience
-          if (entry.isIntersecting && entry.intersectionRatio > 0.25) {
+          // Play when any part is visible
+          if (entry.isIntersecting) {
             setShouldPlay(true);
           } else {
             setShouldPlay(false);
@@ -30,8 +30,8 @@ export const LazyVideo = ({ src, className, muted = true, onClick }: LazyVideoPr
         });
       },
       { 
-        rootMargin: '50px',
-        threshold: [0, 0.25, 0.5, 1]
+        rootMargin: '0px',
+        threshold: 0.1
       }
     );
 
@@ -44,11 +44,16 @@ export const LazyVideo = ({ src, className, muted = true, onClick }: LazyVideoPr
     if (!videoRef.current) return;
     
     if (shouldPlay && isLoaded) {
-      videoRef.current.play().catch(() => {
-        // Autoplay failed, likely due to browser policy
-      });
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.log('Autoplay prevented:', error);
+          // Autoplay was prevented, video will play when user interacts
+        });
+      }
     } else {
       videoRef.current.pause();
+      videoRef.current.currentTime = 0; // Reset to start when out of view
     }
   }, [shouldPlay, isLoaded]);
 
@@ -61,7 +66,8 @@ export const LazyVideo = ({ src, className, muted = true, onClick }: LazyVideoPr
         loop
         playsInline
         muted={muted}
-        preload="metadata"
+        autoPlay
+        preload="auto"
         className={`${className} ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
         onLoadedData={() => setIsLoaded(true)}
         onClick={onClick}
