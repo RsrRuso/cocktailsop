@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, CreditCard, Smartphone, DollarSign, CheckCircle2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -55,21 +56,84 @@ const PaymentOptions = () => {
 
     setProcessing(true);
     
-    // Simulate payment processing
-    setTimeout(() => {
-      setProcessing(false);
+    try {
+      // Check if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to complete your purchase",
+          variant: "destructive",
+        });
+        navigate("/shop-auth");
+        return;
+      }
+
+      // Get billing address from form
+      const addressInput = document.getElementById("address") as HTMLInputElement;
+      const cityInput = document.getElementById("city") as HTMLInputElement;
+      const zipInput = document.getElementById("zip") as HTMLInputElement;
+
+      const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
+
+      // Create order in database
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          user_id: user.id,
+          order_number: orderNumber,
+          total_amount: total,
+          status: "pending",
+          payment_method: selectedMethod,
+          shipping_address: addressInput?.value || "N/A",
+          shipping_city: cityInput?.value || "N/A",
+          shipping_postal_code: zipInput?.value || "",
+          shipping_country: "N/A",
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Create order items
+      const orderItems = cartItems.map((item: any) => ({
+        order_id: order.id,
+        product_id: item.id,
+        product_name: item.name,
+        product_image: item.image,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
       toast({
         title: "Payment Successful!",
         description: "Your order has been placed successfully",
       });
+      
       navigate("/order-confirmation", { 
         state: { 
           cartItems, 
           total,
-          paymentMethod: selectedMethod 
+          paymentMethod: selectedMethod,
+          orderNumber 
         } 
       });
-    }, 2000);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process payment",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (

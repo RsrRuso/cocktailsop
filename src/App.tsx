@@ -82,6 +82,8 @@ const Cart = lazy(() => import("./pages/Cart"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const PaymentOptions = lazy(() => import("./pages/PaymentOptions"));
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
+const ShopAuth = lazy(() => import("./pages/ShopAuth"));
+const Orders = lazy(() => import("./pages/Orders"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -173,6 +175,8 @@ const App = () => (
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/payment-options" element={<PaymentOptions />} />
           <Route path="/order-confirmation" element={<OrderConfirmation />} />
+          <Route path="/shop-auth" element={<ShopAuth />} />
+          <Route path="/orders" element={<Orders />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
               </Routes>

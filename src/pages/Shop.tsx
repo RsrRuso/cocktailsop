@@ -166,17 +166,26 @@ const Shop = () => {
           
           <h1 className="text-xl font-bold">Shop</h1>
           
-          <button
-            onClick={() => navigate("/cart")}
-            className="glass-hover p-2.5 rounded-2xl relative"
-          >
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate("/orders")}
+              className="glass-hover p-2.5 rounded-2xl"
+            >
+              <Package className="w-5 h-5" />
+            </button>
+            
+            <button
+              onClick={() => navigate("/cart")}
+              className="glass-hover p-2.5 rounded-2xl relative"
+            >
             <ShoppingCart className="w-5 h-5" />
             {cartCount > 0 && (
               <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-xs font-bold">
                 {cartCount}
               </div>
-            )}
-          </button>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

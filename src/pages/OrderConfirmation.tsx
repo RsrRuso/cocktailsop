@@ -7,9 +7,8 @@ import BottomNav from "@/components/BottomNav";
 const OrderConfirmation = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { cartItems, total, paymentMethod } = location.state || {};
-  const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
-
+  const { cartItems, total, paymentMethod, orderNumber } = location.state || {};
+  
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="pt-20 px-4 space-y-6">
@@ -30,7 +29,7 @@ const OrderConfirmation = () => {
         <Card className="p-4 space-y-3">
           <div className="flex items-center justify-between pb-3 border-b border-border/50">
             <span className="text-muted-foreground">Order Number</span>
-            <span className="font-mono font-semibold">{orderNumber}</span>
+            <span className="font-mono font-semibold">{orderNumber || `ORD-${Date.now().toString().slice(-8)}`}</span>
           </div>
           
           <div className="flex items-center justify-between pb-3 border-b border-border/50">
@@ -101,12 +100,20 @@ const OrderConfirmation = () => {
 
         {/* Actions */}
         <div className="space-y-3 pt-4">
-          <Button onClick={() => navigate("/shop")} className="w-full" size="lg">
+          <Button onClick={() => navigate("/orders")} className="w-full" size="lg">
+            View My Orders
+          </Button>
+          <Button
+            onClick={() => navigate("/shop")}
+            variant="outline"
+            className="w-full"
+            size="lg"
+          >
             Continue Shopping
           </Button>
           <Button
             onClick={() => navigate("/home")}
-            variant="outline"
+            variant="ghost"
             className="w-full"
             size="lg"
           >
