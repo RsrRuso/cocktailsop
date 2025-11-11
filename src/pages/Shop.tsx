@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, ShoppingCart, Search, Filter, Package, BookOpen, Sparkles, Cpu, Shirt, Star } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Search, Filter, Package, BookOpen, Sparkles, Cpu, Shirt, Star, User, Store, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Product {
   id: string;
@@ -34,10 +43,45 @@ const Shop = () => {
   const [cartCount, setCartCount] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
     fetchProducts();
+    fetchUserRole();
   }, []);
+
+  const fetchUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUser(user);
+        
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .single();
+        
+        if (roles) {
+          setUserRole(roles.role);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUserRole(null);
+    setCurrentUser(null);
+    toast({
+      title: "Logged out",
+      description: "You have been logged out successfully",
+    });
+    navigate("/shop");
+  };
 
   const fetchProducts = async () => {
     try {
@@ -111,33 +155,82 @@ const Shop = () => {
           <h1 className="text-xl font-bold">Shop</h1>
           
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/shop-auth")}
-              className="text-xs"
-            >
-              Sell
-            </Button>
+            {!currentUser && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/shop-auth")}
+                className="text-xs"
+              >
+                Sign In
+              </Button>
+            )}
             
-            <button
-              onClick={() => navigate("/orders")}
-              className="glass-hover p-2.5 rounded-2xl"
-            >
-              <Package className="w-5 h-5" />
-            </button>
-            
-            <button
-              onClick={() => navigate("/cart")}
-              className="glass-hover p-2.5 rounded-2xl relative"
-            >
-            <ShoppingCart className="w-5 h-5" />
-            {cartCount > 0 && (
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-xs font-bold">
-                {cartCount}
-              </div>
-              )}
-            </button>
+            {currentUser && (
+              <>
+                <button
+                  onClick={() => navigate("/orders")}
+                  className="glass-hover p-2.5 rounded-2xl"
+                >
+                  <Package className="w-5 h-5" />
+                </button>
+                
+                <button
+                  onClick={() => navigate("/cart")}
+                  className="glass-hover p-2.5 rounded-2xl relative"
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  {cartCount > 0 && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-xs font-bold">
+                      {cartCount}
+                    </div>
+                  )}
+                </button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="glass-hover p-2 rounded-2xl">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={currentUser?.user_metadata?.avatar_url} />
+                        <AvatarFallback>
+                          {currentUser?.email?.[0]?.toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">{currentUser?.email}</p>
+                        <Badge variant="outline" className="w-fit capitalize">
+                          {userRole === "seller" && <Store className="w-3 h-3 mr-1" />}
+                          {userRole === "buyer" && <User className="w-3 h-3 mr-1" />}
+                          {userRole || "Loading..."}
+                        </Badge>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {userRole === "seller" && (
+                      <DropdownMenuItem onClick={() => navigate("/seller-dashboard")}>
+                        <Store className="w-4 h-4 mr-2" />
+                        Seller Dashboard
+                      </DropdownMenuItem>
+                    )}
+                    {userRole === "buyer" && (
+                      <DropdownMenuItem onClick={() => navigate("/orders")}>
+                        <Package className="w-4 h-4 mr-2" />
+                        My Orders
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
           </div>
         </div>
       </div>
