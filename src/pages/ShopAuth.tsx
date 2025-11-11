@@ -44,12 +44,12 @@ const ShopAuth = () => {
           toast({ title: "Error", description: "Full name is required", variant: "destructive" });
           return false;
         }
-        if (!formData.phone.trim()) {
-          toast({ title: "Error", description: "Phone number is required", variant: "destructive" });
-          return false;
-        }
         
         if (accountType === "buyer") {
+          if (!formData.phone.trim()) {
+            toast({ title: "Error", description: "Phone number is required", variant: "destructive" });
+            return false;
+          }
           if (!formData.address.trim()) {
             toast({ title: "Error", description: "Address is required", variant: "destructive" });
             return false;
