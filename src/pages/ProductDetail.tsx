@@ -33,7 +33,8 @@ const ProductDetail = () => {
       name: product.name,
       price: product.price,
       quantity: quantity,
-      image: product.image,
+      image: product.image || product.image_url,
+      seller_id: product.seller_id,
     };
     
     navigate("/cart", { 
@@ -54,7 +55,8 @@ const ProductDetail = () => {
       name: product.name,
       price: product.price,
       quantity: quantity,
-      image: product.image,
+      image: product.image || product.image_url,
+      seller_id: product.seller_id,
     };
     
     navigate("/payment-options", { 
@@ -98,11 +100,11 @@ const ProductDetail = () => {
         {/* Product Image */}
         <div className="relative aspect-square w-full overflow-hidden">
           <img
-            src={product.image}
+            src={product.image || product.image_url}
             alt={product.name}
             className="w-full h-full object-cover"
           />
-          {!product.inStock && (
+          {(product.inStock === false || (product.stock_quantity !== undefined && product.stock_quantity === 0)) && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <Badge variant="destructive" className="text-lg px-4 py-2">Out of Stock</Badge>
             </div>
@@ -116,7 +118,7 @@ const ProductDetail = () => {
               <h1 className="text-2xl font-bold flex-1">{product.name}</h1>
               <div className="glass px-3 py-1.5 rounded-full flex items-center gap-1">
                 <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                <span className="font-medium">{product.rating}</span>
+                <span className="font-medium">{product.rating || 4.8}</span>
               </div>
             </div>
             
@@ -165,7 +167,7 @@ const ProductDetail = () => {
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   className="glass-hover px-3 py-1.5 rounded-lg"
-                  disabled={!product.inStock}
+                  disabled={product.inStock === false || (product.stock_quantity !== undefined && product.stock_quantity === 0)}
                 >
                   -
                 </button>
@@ -175,7 +177,7 @@ const ProductDetail = () => {
                 <button
                   onClick={() => setQuantity(quantity + 1)}
                   className="glass-hover px-3 py-1.5 rounded-lg"
-                  disabled={!product.inStock}
+                  disabled={product.inStock === false || (product.stock_quantity !== undefined && product.stock_quantity === 0)}
                 >
                   +
                 </button>
@@ -204,7 +206,7 @@ const ProductDetail = () => {
             variant="outline"
             className="flex-1"
             size="lg"
-            disabled={!product.inStock}
+            disabled={product.inStock === false || (product.stock_quantity !== undefined && product.stock_quantity === 0)}
           >
             <ShoppingCart className="w-4 h-4 mr-2" />
             Add to Cart
@@ -213,7 +215,7 @@ const ProductDetail = () => {
             onClick={handleBuyNow}
             className="flex-1"
             size="lg"
-            disabled={!product.inStock}
+            disabled={product.inStock === false || (product.stock_quantity !== undefined && product.stock_quantity === 0)}
           >
             Buy Now
           </Button>

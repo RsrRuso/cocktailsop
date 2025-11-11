@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, ShoppingCart, Search, Filter, Package, BookOpen, Sparkles, Cpu, Shirt, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -20,9 +21,8 @@ interface Product {
   name: string;
   category: string;
   price: number;
-  image: string;
-  rating: number;
-  inStock: boolean;
+  image_url: string;
+  stock_quantity: number;
   description: string;
 }
 
@@ -32,6 +32,33 @@ const Shop = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [cartCount, setCartCount] = useState(0);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const categories = [
     { value: "all", label: "All Products", icon: Package },
@@ -42,89 +69,6 @@ const Shop = () => {
     { value: "apparel", label: "Apparel & Merch", icon: Shirt },
   ];
 
-  const products: Product[] = [
-    {
-      id: "1",
-      name: "Professional Boston Shaker Set",
-      category: "bar-equipment",
-      price: 49.99,
-      image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400",
-      rating: 4.8,
-      inStock: true,
-      description: "Premium weighted stainless steel shaker set"
-    },
-    {
-      id: "2",
-      name: "Mixology Masterclass Guide",
-      category: "books",
-      price: 29.99,
-      image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400",
-      rating: 4.9,
-      inStock: true,
-      description: "Complete guide to advanced cocktail techniques"
-    },
-    {
-      id: "3",
-      name: "Organic Agave Syrup 500ml",
-      category: "ingredients",
-      price: 19.99,
-      image: "https://images.unsplash.com/photo-1587495191920-2e2b60f69e6b?w=400",
-      rating: 4.7,
-      inStock: true,
-      description: "100% organic blue agave from Mexico"
-    },
-    {
-      id: "4",
-      name: "Smart Bar Inventory System",
-      category: "tech",
-      price: 299.99,
-      image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400",
-      rating: 4.6,
-      inStock: true,
-      description: "IoT-enabled inventory tracking system"
-    },
-    {
-      id: "5",
-      name: "Professional Bartender Apron",
-      category: "apparel",
-      price: 39.99,
-      image: "https://images.unsplash.com/photo-1590986232706-7817d1b51160?w=400",
-      rating: 4.5,
-      inStock: true,
-      description: "Premium canvas with leather straps"
-    },
-    {
-      id: "6",
-      name: "Japanese Jigger Set",
-      category: "bar-equipment",
-      price: 34.99,
-      image: "https://images.unsplash.com/photo-1536935338788-846bb9981813?w=400",
-      rating: 4.9,
-      inStock: true,
-      description: "Precision-measured stainless steel jiggers"
-    },
-    {
-      id: "7",
-      name: "Cocktail Recipe Management App",
-      category: "tech",
-      price: 9.99,
-      image: "https://images.unsplash.com/photo-1551650975-87deedd944c3?w=400",
-      rating: 4.4,
-      inStock: true,
-      description: "Monthly subscription for recipe database access"
-    },
-    {
-      id: "8",
-      name: "Artisan Bitters Collection",
-      category: "ingredients",
-      price: 54.99,
-      image: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=400",
-      rating: 4.8,
-      inStock: false,
-      description: "Curated set of 6 premium bitters"
-    },
-  ];
-
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -133,7 +77,7 @@ const Shop = () => {
   });
 
   const handleAddToCart = (product: Product) => {
-    if (!product.inStock) {
+    if (product.stock_quantity === 0) {
       toast({
         title: "Out of Stock",
         description: "This item is currently unavailable",
@@ -149,7 +93,7 @@ const Shop = () => {
   };
 
   const handleProductClick = (product: Product) => {
-    navigate("/product/" + product.id, { state: { product } });
+    navigate("/product/" + product.id, { state: { product: { ...product, image: product.image_url, inStock: product.stock_quantity > 0, rating: 4.8 } } });
   };
 
   return (
@@ -236,7 +180,21 @@ const Shop = () => {
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredProducts.map((product) => (
+          {loading ? (
+            <Card className="p-8 col-span-full text-center">
+              <Package className="w-12 h-12 mx-auto mb-3 text-muted-foreground animate-pulse" />
+              <p className="text-muted-foreground">Loading products...</p>
+            </Card>
+          ) : filteredProducts.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <Package className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No products found</h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search or filters
+              </p>
+            </div>
+          ) : (
+            filteredProducts.map((product) => (
             <Card 
               key={product.id} 
               className="overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer"
@@ -244,18 +202,18 @@ const Shop = () => {
             >
               <div className="relative aspect-square overflow-hidden">
                 <img
-                  src={product.image}
+                  src={product.image_url}
                   alt={product.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                {!product.inStock && (
+                {product.stock_quantity === 0 && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <Badge variant="destructive">Out of Stock</Badge>
                   </div>
                 )}
                 <div className="absolute top-2 right-2 glass px-2 py-1 rounded-full flex items-center gap-1">
                   <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                  <span className="text-xs font-medium">{product.rating}</span>
+                  <span className="text-xs font-medium">4.8</span>
                 </div>
               </div>
               
@@ -277,26 +235,17 @@ const Shop = () => {
                       e.stopPropagation();
                       handleAddToCart(product);
                     }}
-                    disabled={!product.inStock}
+                    disabled={product.stock_quantity === 0}
                   >
                     <ShoppingCart className="w-4 h-4 mr-2" />
                     Add
                   </Button>
                 </div>
               </div>
-            </Card>
-          ))}
+              </Card>
+            ))
+          )}
         </div>
-
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-12">
-            <Package className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No products found</h3>
-            <p className="text-muted-foreground">
-              Try adjusting your search or filters
-            </p>
-          </div>
-        )}
       </div>
 
       <BottomNav />

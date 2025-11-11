@@ -90,6 +90,7 @@ const PaymentOptions = () => {
           shipping_city: cityInput?.value || "N/A",
           shipping_postal_code: zipInput?.value || "",
           shipping_country: "N/A",
+          seller_id: cartItems[0]?.seller_id || null,
         })
         .select()
         .single();

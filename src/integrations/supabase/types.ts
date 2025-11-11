@@ -1780,6 +1780,7 @@ export type Database = {
           id: string
           order_number: string
           payment_method: string
+          seller_id: string | null
           shipping_address: string
           shipping_city: string
           shipping_country: string
@@ -1794,6 +1795,7 @@ export type Database = {
           id?: string
           order_number: string
           payment_method: string
+          seller_id?: string | null
           shipping_address: string
           shipping_city: string
           shipping_country: string
@@ -1808,6 +1810,7 @@ export type Database = {
           id?: string
           order_number?: string
           payment_method?: string
+          seller_id?: string | null
           shipping_address?: string
           shipping_city?: string
           shipping_country?: string
@@ -1995,6 +1998,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      products: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string
+          id: string
+          image_url: string
+          is_active: boolean | null
+          name: string
+          price: number
+          seller_id: string
+          stock_quantity: number
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description: string
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          name: string
+          price: number
+          seller_id: string
+          stock_quantity?: number
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          seller_id?: string
+          stock_quantity?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       profile_views: {
         Row: {
@@ -2388,6 +2433,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      seller_profiles: {
+        Row: {
+          business_address: string | null
+          business_description: string | null
+          business_name: string
+          business_phone: string | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_address?: string | null
+          business_description?: string | null
+          business_name: string
+          business_phone?: string | null
+          created_at?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_address?: string | null
+          business_description?: string | null
+          business_name?: string
+          business_phone?: string | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       spotify_connections: {
         Row: {
