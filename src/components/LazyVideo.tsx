@@ -21,8 +21,8 @@ export const LazyVideo = ({ src, className, muted = true, onClick }: LazyVideoPr
       (entries) => {
         entries.forEach((entry) => {
           setIsInView(entry.isIntersecting);
-          // Only play when >50% visible
-          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+          // Play when >25% visible for better feed experience
+          if (entry.isIntersecting && entry.intersectionRatio > 0.25) {
             setShouldPlay(true);
           } else {
             setShouldPlay(false);
@@ -30,8 +30,8 @@ export const LazyVideo = ({ src, className, muted = true, onClick }: LazyVideoPr
         });
       },
       { 
-        rootMargin: '100px',
-        threshold: [0, 0.5, 1]
+        rootMargin: '50px',
+        threshold: [0, 0.25, 0.5, 1]
       }
     );
 
