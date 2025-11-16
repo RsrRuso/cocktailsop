@@ -5,103 +5,78 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar } from '@/components/ui/calendar';
 import { toast } from 'sonner';
-import { Calendar as CalendarIcon, Download, Users, Plus, Trash2, RefreshCw } from 'lucide-react';
+import { Download, Plus, Trash2 } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { format, startOfWeek, endOfWeek, addWeeks, getWeek } from 'date-fns';
+import { format } from 'date-fns';
 
 interface StaffMember {
   id: string;
   name: string;
-  title: 'head_bartender' | 'senior_bartender' | 'bartender' | 'bar_back' | 'support';
-  is_active: boolean;
+  title: 'head_bartender' | 'bartender' | 'bar_back' | 'support';
 }
 
-interface Schedule {
+interface ScheduleCell {
+  staffId: string;
+  eventId: string;
+  timeRange: string;
+  type: 'opening' | 'closing' | 'pickup' | 'brunch' | 'off' | 'regular';
+}
+
+interface Event {
   id: string;
-  staff_member_id: string;
-  schedule_date: string;
-  shift_type: 'opening' | 'closing' | 'misa_place' | 'pickup' | 'brunch';
-  station_type: string;
-  notes?: string;
-  week_number: number;
+  name: string;
+  date: string;
+  details: string;
 }
 
-interface Allocation {
-  id: string;
-  staff_member_id: string;
-  allocation_date: string;
-  station_assignment: string;
-  shift_type: string;
-  responsibilities: string[];
-  notes?: string;
-}
-
-interface ScheduleEvent {
-  id: string;
-  event_date: string;
-  event_name: string;
-  description?: string;
-}
-
-const SHIFT_COLORS = {
-  opening: 'bg-blue-500/20 border-blue-500',
-  closing: 'bg-purple-500/20 border-purple-500',
-  misa_place: 'bg-green-500/20 border-green-500',
-  pickup: 'bg-orange-500/20 border-orange-500',
-  brunch: 'bg-pink-500/20 border-pink-500',
+const CELL_COLORS = {
+  opening: 'bg-green-500/20',
+  closing: 'bg-red-500/20',
+  pickup: 'bg-yellow-500/20',
+  brunch: 'bg-orange-500/20',
+  off: 'bg-muted',
+  regular: 'bg-background',
 };
 
-const TITLE_LABELS = {
-  head_bartender: 'Head Bartender',
-  senior_bartender: 'Senior Bartender',
-  bartender: 'Bartender',
-  bar_back: 'Bar Back',
-  support: 'Support',
-};
-
-const STATIONS = {
-  indoor: ['indoor_station_1', 'indoor_station_2', 'indoor_station_3', 'tickets_segregator'],
-  outdoor: ['outdoor_station_1', 'outdoor_station_2'],
+const ROLE_RESPONSIBILITIES = {
+  head_bartender: 'Segregation & Support',
+  bartender: 'Station Service',
+  bar_back: 'Refill fridges, batches, premixes, pickups, glassware, stations, opening/closing',
+  support: 'Help if on duty',
 };
 
 export default function StaffScheduling() {
   const { user } = useAuth();
+  const [venueName, setVenueName] = useState('');
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [allocations, setAllocations] = useState<Allocation[]>([]);
-  const [events, setEvents] = useState<ScheduleEvent[]>([]);
-  const [selectedWeek, setSelectedWeek] = useState<Date>(new Date());
+  const [events, setEvents] = useState<Event[]>([]);
+  const [schedule, setSchedule] = useState<Record<string, ScheduleCell>>({});
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   
   const [newStaff, setNewStaff] = useState({
     name: '',
-    title: 'bartender' as const,
+    title: 'bartender' as StaffMember['title'],
   });
 
   const [newEvent, setNewEvent] = useState({
-    event_date: format(new Date(), 'yyyy-MM-dd'),
-    event_name: '',
-    description: '',
+    name: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    details: '',
   });
 
   useEffect(() => {
     if (user) {
       fetchStaffMembers();
-      fetchSchedules();
-      fetchAllocations();
       fetchEvents();
     }
-  }, [user, selectedWeek]);
+  }, [user]);
 
   const fetchStaffMembers = async () => {
     const { data, error } = await supabase
@@ -111,60 +86,21 @@ export default function StaffScheduling() {
       .eq('is_active', true)
       .order('title', { ascending: true });
 
-    if (error) {
-      toast.error('Failed to fetch staff members');
-      return;
+    if (!error && data) {
+      setStaffMembers(data as StaffMember[]);
     }
-    setStaffMembers((data || []) as StaffMember[]);
-  };
-
-  const fetchSchedules = async () => {
-    const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 });
-
-    const { data, error } = await supabase
-      .from('staff_schedules')
-      .select('*')
-      .eq('user_id', user?.id)
-      .gte('schedule_date', format(weekStart, 'yyyy-MM-dd'))
-      .lte('schedule_date', format(weekEnd, 'yyyy-MM-dd'));
-
-    if (error) {
-      toast.error('Failed to fetch schedules');
-      return;
-    }
-    setSchedules((data || []) as Schedule[]);
-  };
-
-  const fetchAllocations = async () => {
-    const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 });
-
-    const { data, error } = await supabase
-      .from('staff_allocations')
-      .select('*')
-      .eq('user_id', user?.id)
-      .gte('allocation_date', format(weekStart, 'yyyy-MM-dd'))
-      .lte('allocation_date', format(weekEnd, 'yyyy-MM-dd'));
-
-    if (error) {
-      toast.error('Failed to fetch allocations');
-      return;
-    }
-    setAllocations((data || []) as Allocation[]);
   };
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
       .from('schedule_events')
       .select('*')
-      .eq('user_id', user?.id);
+      .eq('user_id', user?.id)
+      .order('event_date', { ascending: true });
 
-    if (error) {
-      toast.error('Failed to fetch events');
-      return;
+    if (!error && data) {
+      setEvents(data.map(e => ({ id: e.id, name: e.event_name, date: e.event_date, details: e.description || '' })));
     }
-    setEvents((data || []) as ScheduleEvent[]);
   };
 
   const addStaffMember = async () => {
@@ -208,7 +144,7 @@ export default function StaffScheduling() {
   };
 
   const addEvent = async () => {
-    if (!newEvent.event_name) {
+    if (!newEvent.name) {
       toast.error('Please enter event name');
       return;
     }
@@ -217,7 +153,9 @@ export default function StaffScheduling() {
       .from('schedule_events')
       .insert({
         user_id: user?.id,
-        ...newEvent,
+        event_name: newEvent.name,
+        event_date: newEvent.date,
+        description: newEvent.details,
       });
 
     if (error) {
@@ -226,255 +164,92 @@ export default function StaffScheduling() {
     }
 
     toast.success('Event added');
-    setNewEvent({ event_date: format(new Date(), 'yyyy-MM-dd'), event_name: '', description: '' });
+    setNewEvent({ name: '', date: format(new Date(), 'yyyy-MM-dd'), details: '' });
     setIsAddEventOpen(false);
     fetchEvents();
   };
 
-  const generateSchedule = async () => {
-    if (staffMembers.length === 0) {
-      toast.error('Please add staff members first');
-      return;
-    }
-
-    const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
-    const weekNumber = getWeek(weekStart);
-    const daysOffPattern = weekNumber % 2 === 0 ? 2 : 1; // Alternating 1 and 2 days off
-
-    // Separate staff by title
-    const heads = staffMembers.filter(s => s.title === 'head_bartender');
-    const seniors = staffMembers.filter(s => s.title === 'senior_bartender');
-    const bartenders = staffMembers.filter(s => s.title === 'bartender');
-    const barBacks = staffMembers.filter(s => s.title === 'bar_back');
-    const support = staffMembers.filter(s => s.title === 'support');
-
-    const allStaff = [...heads, ...seniors, ...bartenders, ...barBacks, ...support];
-    const scheduleData: any[] = [];
-
-    // Rotate outdoor positions based on week number
-    const outdoorRotationOffset = weekNumber % allStaff.length;
-
-    for (let day = 0; day < 7; day++) {
-      const currentDate = new Date(weekStart);
-      currentDate.setDate(weekStart.getDate() + day);
-      const dateStr = format(currentDate, 'yyyy-MM-dd');
-
-      // Assign stations with rotation logic
-      let stationIndex = 0;
-      const usedStaff = new Set();
-
-      // Always separate heads
-      heads.forEach((head, idx) => {
-        if (!usedStaff.has(head.id)) {
-          const isOutdoor = (idx + outdoorRotationOffset) % 2 === 0;
-          const stationType = isOutdoor 
-            ? STATIONS.outdoor[idx % STATIONS.outdoor.length]
-            : STATIONS.indoor[stationIndex++ % STATIONS.indoor.length];
-
-          scheduleData.push({
-            user_id: user?.id,
-            staff_member_id: head.id,
-            schedule_date: dateStr,
-            shift_type: 'opening',
-            station_type: stationType,
-            week_number: weekNumber,
-          });
-          usedStaff.add(head.id);
-        }
-      });
-
-      // Assign other staff with rotation
-      [...seniors, ...bartenders, ...barBacks, ...support].forEach((staff, idx) => {
-        if (!usedStaff.has(staff.id) && stationIndex < 6) {
-          const adjustedIdx = (idx + outdoorRotationOffset) % allStaff.length;
-          const isOutdoor = adjustedIdx < 2;
-          const stationType = isOutdoor
-            ? STATIONS.outdoor[adjustedIdx % STATIONS.outdoor.length]
-            : STATIONS.indoor[stationIndex++ % STATIONS.indoor.length];
-
-          // Assign days off based on pattern
-          const shouldHaveDayOff = idx % (7 / daysOffPattern) < 1;
-          if (!shouldHaveDayOff) {
-            scheduleData.push({
-              user_id: user?.id,
-              staff_member_id: staff.id,
-              schedule_date: dateStr,
-              shift_type: idx % 5 === 0 ? 'brunch' : idx % 5 === 1 ? 'opening' : idx % 5 === 2 ? 'misa_place' : idx % 5 === 3 ? 'pickup' : 'closing',
-              station_type: stationType,
-              week_number: weekNumber,
-            });
-            usedStaff.add(staff.id);
-          }
-        }
-      });
-    }
-
-    // Delete existing schedules for the week
-    await supabase
-      .from('staff_schedules')
-      .delete()
-      .eq('user_id', user?.id)
-      .eq('week_number', weekNumber);
-
-    // Insert new schedules
-    const { error } = await supabase
-      .from('staff_schedules')
-      .insert(scheduleData);
-
-    if (error) {
-      toast.error('Failed to generate schedule');
-      return;
-    }
-
-    toast.success('Schedule generated successfully');
-    fetchSchedules();
-    generateAllocations();
+  const updateScheduleCell = (staffId: string, eventId: string, timeRange: string, type: ScheduleCell['type']) => {
+    const key = `${staffId}-${eventId}`;
+    setSchedule(prev => ({
+      ...prev,
+      [key]: { staffId, eventId, timeRange, type }
+    }));
   };
 
-  const generateAllocations = async () => {
-    const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
-    const allocationData: any[] = [];
-
-    for (let day = 0; day < 7; day++) {
-      const currentDate = new Date(weekStart);
-      currentDate.setDate(weekStart.getDate() + day);
-      const dateStr = format(currentDate, 'yyyy-MM-dd');
-
-      const daySchedules = schedules.filter(s => s.schedule_date === dateStr);
-
-      daySchedules.forEach(schedule => {
-        const staff = staffMembers.find(s => s.id === schedule.staff_member_id);
-        if (staff) {
-          allocationData.push({
-            user_id: user?.id,
-            staff_member_id: schedule.staff_member_id,
-            allocation_date: dateStr,
-            station_assignment: schedule.station_type.replace(/_/g, ' ').toUpperCase(),
-            shift_type: schedule.shift_type.replace(/_/g, ' ').toUpperCase(),
-            responsibilities: getResponsibilities(staff.title, schedule.station_type),
-          });
-        }
-      });
-    }
-
-    // Delete existing allocations
-    await supabase
-      .from('staff_allocations')
-      .delete()
-      .eq('user_id', user?.id)
-      .gte('allocation_date', format(weekStart, 'yyyy-MM-dd'))
-      .lte('allocation_date', format(endOfWeek(selectedWeek, { weekStartsOn: 1 }), 'yyyy-MM-dd'));
-
-    // Insert new allocations
-    const { error } = await supabase
-      .from('staff_allocations')
-      .insert(allocationData);
-
-    if (error) {
-      toast.error('Failed to generate allocations');
-      return;
-    }
-
-    fetchAllocations();
+  const getScheduleCell = (staffId: string, eventId: string): ScheduleCell | undefined => {
+    const key = `${staffId}-${eventId}`;
+    return schedule[key];
   };
 
-  const getResponsibilities = (title: string, station: string): string[] => {
-    const base = ['Maintain cleanliness', 'Follow safety protocols'];
+  const exportToPDF = () => {
+    const doc = new jsPDF('landscape');
     
-    if (title === 'head_bartender') {
-      return [...base, 'Lead team', 'Manage operations', 'Quality control'];
-    }
-    if (title === 'senior_bartender') {
-      return [...base, 'Train junior staff', 'Handle complex orders', 'Supervise station'];
-    }
-    if (station.includes('outdoor')) {
-      return [...base, 'Manage outdoor service', 'Handle weather conditions'];
-    }
-    if (station === 'tickets_segregator') {
-      return [...base, 'Organize tickets', 'Coordinate orders'];
-    }
-    return [...base, 'Prepare drinks', 'Serve customers'];
-  };
-
-  const exportSchedulePDF = () => {
-    const doc = new jsPDF();
-    const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
+    doc.setFontSize(20);
+    doc.text(venueName || 'Staff Schedule', 14, 20);
     
-    doc.setFontSize(18);
-    doc.text('Staff Schedule', 14, 20);
-    doc.setFontSize(12);
-    doc.text(`Week: ${format(weekStart, 'MMM dd, yyyy')} - ${format(endOfWeek(selectedWeek, { weekStartsOn: 1 }), 'MMM dd, yyyy')}`, 14, 30);
-
-    const tableData = schedules.map(schedule => {
-      const staff = staffMembers.find(s => s.id === schedule.staff_member_id);
-      return [
-        format(new Date(schedule.schedule_date), 'EEE, MMM dd'),
-        staff?.name || 'Unknown',
-        TITLE_LABELS[staff?.title as keyof typeof TITLE_LABELS] || '',
-        schedule.shift_type.replace(/_/g, ' ').toUpperCase(),
-        schedule.station_type.replace(/_/g, ' ').toUpperCase(),
-        schedule.notes || '',
+    const headers = ['Staff Name', ...events.map(e => `${e.name}\n${format(new Date(e.date), 'dd-MMM-yy')}`)];
+    const rows = staffMembers.map(staff => {
+      const row = [
+        `${staff.name}\n(${staff.title.replace('_', ' ')})`,
+        ...events.map(event => {
+          const cell = getScheduleCell(staff.id, event.id);
+          return cell ? (cell.timeRange === 'OFF' ? 'OFF' : cell.timeRange) : '';
+        })
       ];
+      return row;
     });
 
     autoTable(doc, {
-      startY: 40,
-      head: [['Date', 'Name', 'Title', 'Shift', 'Station', 'Notes']],
-      body: tableData,
+      head: [headers],
+      body: rows,
+      startY: 30,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [71, 85, 105] },
     });
 
-    doc.save(`schedule-${format(weekStart, 'yyyy-MM-dd')}.pdf`);
-    toast.success('Schedule PDF downloaded');
+    doc.save(`schedule-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    toast.success('Schedule exported to PDF');
   };
 
-  const exportAllocationPDF = () => {
-    const doc = new jsPDF();
-    const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
-    
-    doc.setFontSize(18);
-    doc.text('Staff Allocations', 14, 20);
-    doc.setFontSize(12);
-    doc.text(`Week: ${format(weekStart, 'MMM dd, yyyy')} - ${format(endOfWeek(selectedWeek, { weekStartsOn: 1 }), 'MMM dd, yyyy')}`, 14, 30);
-
-    const tableData = allocations.map(allocation => {
-      const staff = staffMembers.find(s => s.id === allocation.staff_member_id);
-      return [
-        format(new Date(allocation.allocation_date), 'EEE, MMM dd'),
-        staff?.name || 'Unknown',
-        allocation.station_assignment,
-        allocation.shift_type,
-        allocation.responsibilities.join(', '),
-      ];
-    });
-
-    autoTable(doc, {
-      startY: 40,
-      head: [['Date', 'Name', 'Station', 'Shift', 'Responsibilities']],
-      body: tableData,
-    });
-
-    doc.save(`allocations-${format(weekStart, 'yyyy-MM-dd')}.pdf`);
-    toast.success('Allocations PDF downloaded');
-  };
-
-  const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 });
-  const weekEvents = events.filter(e => {
-    const eventDate = new Date(e.event_date);
-    return eventDate >= weekStart && eventDate <= weekEnd;
-  });
+  const groupedStaff = staffMembers.reduce((acc, staff) => {
+    if (!acc[staff.title]) acc[staff.title] = [];
+    acc[staff.title].push(staff);
+    return acc;
+  }, {} as Record<string, StaffMember[]>);
 
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
-
-      <div className="container mx-auto p-4 max-w-7xl">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Staff Scheduling</h1>
+      
+      <div className="container mx-auto p-4 space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex-1 max-w-md">
+            <Label htmlFor="venue-name">Venue Name</Label>
+            <Input
+              id="venue-name"
+              value={venueName}
+              onChange={(e) => setVenueName(e.target.value)}
+              placeholder="Enter venue name..."
+              className="text-lg font-semibold"
+            />
+          </div>
+          
           <div className="flex gap-2">
+            <Button onClick={exportToPDF} variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Export PDF
+            </Button>
+          </div>
+        </div>
+
+        {/* Staff Management */}
+        <Card className="p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Staff Members</h3>
             <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline">
+                <Button size="sm">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Staff
                 </Button>
@@ -485,99 +260,105 @@ export default function StaffScheduling() {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-base font-semibold">Staff Name</Label>
+                    <Label>Name</Label>
                     <Input
                       value={newStaff.name}
                       onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
-                      placeholder="Enter full name"
-                      className="mt-1.5"
+                      placeholder="Staff name"
                     />
                   </div>
                   <div>
-                    <Label className="text-base font-semibold">Position/Title</Label>
+                    <Label>Title/Role</Label>
                     <Select
                       value={newStaff.title}
-                      onValueChange={(value: any) => setNewStaff({ ...newStaff, title: value })}
+                      onValueChange={(value) => setNewStaff({ ...newStaff, title: value as StaffMember['title'] })}
                     >
-                      <SelectTrigger className="mt-1.5">
+                      <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="head_bartender">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-purple-500" />
-                            Head Bartender
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="senior_bartender">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-blue-500" />
-                            Senior Bartender
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="bartender">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-green-500" />
-                            Bartender
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="bar_back">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-orange-500" />
-                            Bar Back
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="support">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                            Support
-                          </div>
-                        </SelectItem>
+                        <SelectItem value="head_bartender">Head Bartender</SelectItem>
+                        <SelectItem value="bartender">Bartender</SelectItem>
+                        <SelectItem value="bar_back">Bar Back</SelectItem>
+                        <SelectItem value="support">Support</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {ROLE_RESPONSIBILITIES[newStaff.title]}
+                    </p>
                   </div>
-                  <Button onClick={addStaffMember} className="w-full" size="lg">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Staff Member
-                  </Button>
+                  <Button onClick={addStaffMember} className="w-full">Add Staff Member</Button>
                 </div>
               </DialogContent>
             </Dialog>
+          </div>
 
+          <div className="space-y-3">
+            {Object.entries(groupedStaff).map(([title, members]) => (
+              <div key={title} className="space-y-2">
+                <h4 className="text-sm font-medium text-muted-foreground uppercase">
+                  {title.replace('_', ' ')} ({members.length})
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {members.map(staff => (
+                    <div key={staff.id} className="flex items-center justify-between p-2 border rounded-lg bg-card">
+                      <span className="font-medium">{staff.name}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteStaffMember(staff.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {staffMembers.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">No staff members added yet</p>
+            )}
+          </div>
+        </Card>
+
+        {/* Events Management */}
+        <Card className="p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Events/Shifts</h3>
             <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline">
-                  <CalendarIcon className="w-4 h-4 mr-2" />
+                <Button size="sm">
+                  <Plus className="w-4 h-4 mr-2" />
                   Add Event
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Add Event/Note</DialogTitle>
+                  <DialogTitle>Add Event/Shift</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
+                  <div>
+                    <Label>Event Name</Label>
+                    <Input
+                      value={newEvent.name}
+                      onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
+                      placeholder="e.g., Fridge/Station, Brunch, etc."
+                    />
+                  </div>
                   <div>
                     <Label>Date</Label>
                     <Input
                       type="date"
-                      value={newEvent.event_date}
-                      onChange={(e) => setNewEvent({ ...newEvent, event_date: e.target.value })}
+                      value={newEvent.date}
+                      onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
                     />
                   </div>
                   <div>
-                    <Label>Event Name</Label>
+                    <Label>Details</Label>
                     <Input
-                      value={newEvent.event_name}
-                      onChange={(e) => setNewEvent({ ...newEvent, event_name: e.target.value })}
-                      placeholder="e.g., Live Music Night"
-                    />
-                  </div>
-                  <div>
-                    <Label>Description</Label>
-                    <Textarea
-                      value={newEvent.description}
-                      onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                      placeholder="Event details..."
+                      value={newEvent.details}
+                      onChange={(e) => setNewEvent({ ...newEvent, details: e.target.value })}
+                      placeholder="Store pick-up, 200 PAX, etc."
                     />
                   </div>
                   <Button onClick={addEvent} className="w-full">Add Event</Button>
@@ -585,235 +366,151 @@ export default function StaffScheduling() {
               </DialogContent>
             </Dialog>
           </div>
-        </div>
 
-        <Tabs defaultValue="schedule" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="schedule">Schedule</TabsTrigger>
-            <TabsTrigger value="allocations">Allocations</TabsTrigger>
-            <TabsTrigger value="staff">Staff Management</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="schedule" className="space-y-4">
-            <Card className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedWeek(addWeeks(selectedWeek, -1))}
-                  >
-                    Previous Week
-                  </Button>
-                  <div className="text-lg font-semibold">
-                    {format(weekStart, 'MMM dd')} - {format(weekEnd, 'MMM dd, yyyy')}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedWeek(addWeeks(selectedWeek, 1))}
-                  >
-                    Next Week
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={generateSchedule}>
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Generate Schedule
-                  </Button>
-                  <Button onClick={exportSchedulePDF} variant="outline">
-                    <Download className="w-4 h-4 mr-2" />
-                    Export PDF
-                  </Button>
-                </div>
+          <div className="flex gap-2 flex-wrap">
+            {events.map(event => (
+              <div key={event.id} className="p-2 border rounded-lg bg-card">
+                <div className="font-medium">{event.name}</div>
+                <div className="text-xs text-muted-foreground">{format(new Date(event.date), 'MMM dd, yyyy')}</div>
+                {event.details && <div className="text-xs text-muted-foreground">{event.details}</div>}
               </div>
+            ))}
+            {events.length === 0 && (
+              <p className="text-center text-muted-foreground py-4 w-full">No events added yet</p>
+            )}
+          </div>
+        </Card>
 
-              {weekEvents.length > 0 && (
-                <div className="mb-4 p-3 bg-accent rounded-lg">
-                  <h3 className="font-semibold mb-2">Events This Week:</h3>
-                  {weekEvents.map(event => (
-                    <div key={event.id} className="text-sm mb-1">
-                      <span className="font-medium">{format(new Date(event.event_date), 'EEE, MMM dd')}:</span> {event.event_name}
-                      {event.description && <span className="text-muted-foreground"> - {event.description}</span>}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <div className="flex gap-2 mb-4 flex-wrap">
-                  {Object.entries(SHIFT_COLORS).map(([shift, color]) => (
-                    <div key={shift} className={`px-3 py-1 rounded-md border ${color} text-sm`}>
-                      {shift.replace(/_/g, ' ').toUpperCase()}
-                    </div>
-                  ))}
-                </div>
-
-                {schedules.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No schedule generated. Click "Generate Schedule" to create one.
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {Array.from({ length: 7 }).map((_, dayIndex) => {
-                      const currentDate = new Date(weekStart);
-                      currentDate.setDate(weekStart.getDate() + dayIndex);
-                      const dateStr = format(currentDate, 'yyyy-MM-dd');
-                      const daySchedules = schedules.filter(s => s.schedule_date === dateStr);
-
-                      return (
-                        <div key={dayIndex} className="border rounded-lg p-4">
-                          <h3 className="font-semibold mb-3">{format(currentDate, 'EEEE, MMMM dd')}</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {daySchedules.map(schedule => {
-                              const staff = staffMembers.find(s => s.id === schedule.staff_member_id);
-                              return (
-                                <div
-                                  key={schedule.id}
-                                  className={`p-3 rounded-md border ${SHIFT_COLORS[schedule.shift_type]}`}
-                                >
-                                  <div className="font-medium">{staff?.name}</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {TITLE_LABELS[staff?.title as keyof typeof TITLE_LABELS]}
-                                  </div>
-                                  <div className="text-xs mt-1">
-                                    {schedule.station_type.replace(/_/g, ' ').toUpperCase()}
-                                  </div>
-                                  {schedule.notes && (
-                                    <div className="text-xs mt-1 italic">{schedule.notes}</div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
+        {/* Schedule Table */}
+        {staffMembers.length > 0 && events.length > 0 && (
+          <Card className="p-4 overflow-x-auto">
+            <h3 className="text-lg font-semibold mb-4">Schedule</h3>
+            <div className="min-w-max">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th className="border border-border p-2 bg-muted font-semibold text-left min-w-[150px]">
+                      NAME / ID
+                    </th>
+                    {events.map(event => (
+                      <th key={event.id} className="border border-border p-2 bg-muted font-semibold text-center min-w-[180px]">
+                        <div>{event.name}</div>
+                        <div className="text-xs font-normal">{event.details}</div>
+                        <div className="text-xs font-normal">{format(new Date(event.date), 'dd-MMM-yy')}</div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {staffMembers.map(staff => (
+                    <tr key={staff.id}>
+                      <td className="border border-border p-2 font-medium">
+                        <div>{staff.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {staff.title.replace('_', ' ')}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="allocations" className="space-y-4">
-            <Card className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Daily Allocations</h2>
-                <Button onClick={exportAllocationPDF} variant="outline">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export PDF
-                </Button>
-              </div>
-
-              {allocations.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No allocations generated. Generate a schedule first.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {Array.from({ length: 7 }).map((_, dayIndex) => {
-                    const currentDate = new Date(weekStart);
-                    currentDate.setDate(weekStart.getDate() + dayIndex);
-                    const dateStr = format(currentDate, 'yyyy-MM-dd');
-                    const dayAllocations = allocations.filter(a => a.allocation_date === dateStr);
-
-                    return (
-                      <div key={dayIndex} className="border rounded-lg p-4">
-                        <h3 className="font-semibold mb-3">{format(currentDate, 'EEEE, MMMM dd')}</h3>
-                        <div className="space-y-2">
-                          {dayAllocations.map(allocation => {
-                            const staff = staffMembers.find(s => s.id === allocation.staff_member_id);
-                            return (
-                              <div key={allocation.id} className="border rounded-md p-3 bg-card">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <div className="font-medium">{staff?.name}</div>
-                                    <div className="text-sm text-muted-foreground">
-                                      {TITLE_LABELS[staff?.title as keyof typeof TITLE_LABELS]}
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="text-sm font-medium">{allocation.shift_type}</div>
-                                    <div className="text-xs text-muted-foreground">{allocation.station_assignment}</div>
-                                  </div>
-                                </div>
-                                <div className="mt-2 text-sm">
-                                  <span className="font-medium">Responsibilities:</span>
-                                  <ul className="list-disc list-inside text-muted-foreground">
-                                    {allocation.responsibilities.map((resp, idx) => (
-                                      <li key={idx}>{resp}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="staff" className="space-y-4">
-            <Card className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Staff Members</h2>
-                <Button onClick={() => setIsAddStaffOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Staff
-                </Button>
-              </div>
-              
-              {/* Group by Title */}
-              {Object.entries(TITLE_LABELS).map(([titleKey, titleLabel]) => {
-                const staffByTitle = staffMembers.filter(s => s.title === titleKey);
-                if (staffByTitle.length === 0) return null;
-                
-                return (
-                  <div key={titleKey} className="mb-6">
-                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                      {titleLabel}
-                      <span className="text-sm font-normal text-muted-foreground">
-                        ({staffByTitle.length})
-                      </span>
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {staffByTitle.map(staff => (
-                        <div key={staff.id} className="border rounded-lg p-4 flex justify-between items-center bg-card hover:bg-accent transition-colors">
-                          <div>
-                            <div className="font-medium text-base">{staff.name}</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {titleLabel}
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteStaffMember(staff.id)}
-                            className="hover:bg-destructive/10"
+                      </td>
+                      {events.map(event => {
+                        const cell = getScheduleCell(staff.id, event.id);
+                        return (
+                          <td
+                            key={event.id}
+                            className={`border border-border p-1 ${cell ? CELL_COLORS[cell.type] : ''}`}
                           >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {staffMembers.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-lg mb-2">No staff members added yet</p>
-                  <p className="text-sm">Click "Add Staff" to get started</p>
-                </div>
-              )}
-            </Card>
-          </TabsContent>
-        </Tabs>
+                            <Input
+                              value={cell?.timeRange || ''}
+                              onChange={(e) => {
+                                const value = e.target.value.toUpperCase();
+                                let type: ScheduleCell['type'] = 'regular';
+                                if (value === 'OFF') type = 'off';
+                                else if (value.includes('OPENING')) type = 'opening';
+                                else if (value.includes('CLOSING')) type = 'closing';
+                                else if (value.includes('PICKUP')) type = 'pickup';
+                                else if (value.includes('BRUNCH')) type = 'brunch';
+                                updateScheduleCell(staff.id, event.id, value, type);
+                              }}
+                              placeholder="OFF or 5:00 PM - 3:00 AM"
+                              className="text-xs h-8 text-center"
+                            />
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
+        {/* Legend */}
+        <Card className="p-4">
+          <h3 className="text-lg font-semibold mb-4">Schedule Legend & Notes</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="border rounded p-2 bg-green-500/20">
+              <div className="font-medium text-sm">Opening</div>
+              <div className="text-xs text-muted-foreground">Morning shift</div>
+            </div>
+            <div className="border rounded p-2 bg-red-500/20">
+              <div className="font-medium text-sm">Closing</div>
+              <div className="text-xs text-muted-foreground">Night shift</div>
+            </div>
+            <div className="border rounded p-2 bg-yellow-500/20">
+              <div className="font-medium text-sm">Store Pick-up</div>
+              <div className="text-xs text-muted-foreground">3 days a week</div>
+            </div>
+            <div className="border rounded p-2 bg-orange-500/20">
+              <div className="font-medium text-sm">Brunch</div>
+              <div className="text-xs text-muted-foreground">11 AM shift</div>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2 text-sm">
+            <div className="p-2 border rounded bg-blue-500/10">
+              <strong>Break Time Frame:</strong> 5:00 PM - 6:00 PM
+            </div>
+            <div className="p-2 border rounded bg-purple-500/10">
+              <strong>Bar Outside Open:</strong> Special events
+            </div>
+            <div className="p-2 border rounded bg-cyan-500/10">
+              <strong>Ending Back & Front:</strong> 6:45 PM - Mandatory
+            </div>
+            <div className="p-2 border rounded bg-green-500/10">
+              <strong>Casual for Support:</strong> When on duty
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+            <div className="p-2 border rounded bg-orange-500/10">
+              <strong>LN - 8 PM</strong> Responsible
+            </div>
+            <div className="p-2 border rounded bg-orange-500/10">
+              <strong>Brunch - 11 AM</strong> Responsible
+            </div>
+            <div className="p-2 border rounded bg-muted">
+              <strong>OFF / Half</strong>
+            </div>
+            <div className="p-2 border rounded bg-muted">
+              <strong>Stand By Day OFF</strong>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2 text-sm">
+            <h4 className="font-semibold">Role Responsibilities:</h4>
+            <div className="p-2 border rounded bg-card">
+              <strong>Head Bartender:</strong> {ROLE_RESPONSIBILITIES.head_bartender}
+            </div>
+            <div className="p-2 border rounded bg-card">
+              <strong>Bartender:</strong> {ROLE_RESPONSIBILITIES.bartender}
+            </div>
+            <div className="p-2 border rounded bg-card">
+              <strong>Bar Back:</strong> {ROLE_RESPONSIBILITIES.bar_back}
+            </div>
+            <div className="p-2 border rounded bg-card">
+              <strong>Support:</strong> {ROLE_RESPONSIBILITIES.support}
+            </div>
+          </div>
+        </Card>
       </div>
 
       <BottomNav />
