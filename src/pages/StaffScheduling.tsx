@@ -512,6 +512,40 @@ export default function StaffScheduling() {
           </div>
         </Card>
 
+        {/* Daily Summary */}
+        {staffMembers.length > 0 && Object.keys(schedule).length > 0 && (
+          <Card className="p-4">
+            <h3 className="text-lg font-semibold mb-4">Daily Summary</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {DAYS_OF_WEEK.map(day => {
+                const daySchedule = Object.values(schedule).filter(s => s.day === day && s.timeRange !== 'OFF');
+                const totalEmployees = daySchedule.length;
+                const positions = daySchedule.map(s => s.station).filter(Boolean);
+                const uniquePositions = [...new Set(positions)];
+
+                return (
+                  <div key={day} className="border rounded-lg p-3 bg-card">
+                    <div className="font-semibold text-sm mb-2">{day}</div>
+                    <div className="text-2xl font-bold text-primary mb-2">{totalEmployees} Staff</div>
+                    <div className="space-y-1">
+                      <div className="text-xs font-medium text-muted-foreground">Positions:</div>
+                      {uniquePositions.length > 0 ? (
+                        <ul className="text-xs space-y-0.5">
+                          {uniquePositions.map((pos, idx) => (
+                            <li key={idx} className="truncate">• {pos}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-xs text-muted-foreground">No assignments</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
+
         {/* Schedule Table */}
         {staffMembers.length > 0 && (
           <Card className="p-4 overflow-x-auto">
