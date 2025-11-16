@@ -35,6 +35,7 @@ const ProductDetail = () => {
       name: product.name,
       price: product.price,
       image: product.image || product.image_url,
+      seller_id: product.seller_id,
     }, quantity);
     
     toast({
@@ -51,13 +52,10 @@ const ProductDetail = () => {
       name: product.name,
       price: product.price,
       image: product.image || product.image_url,
+      seller_id: product.seller_id,
     }, quantity);
     
-    navigate("/payment-options", { 
-      state: { 
-        total: product.price * quantity
-      } 
-    });
+    navigate("/payment-options");
   };
 
   return (
