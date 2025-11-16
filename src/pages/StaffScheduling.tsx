@@ -475,7 +475,7 @@ export default function StaffScheduling() {
             <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">
-                  <Users className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4 mr-2" />
                   Add Staff
                 </Button>
               </DialogTrigger>
@@ -485,32 +485,61 @@ export default function StaffScheduling() {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label>Name</Label>
+                    <Label className="text-base font-semibold">Staff Name</Label>
                     <Input
                       value={newStaff.name}
                       onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
-                      placeholder="Enter name"
+                      placeholder="Enter full name"
+                      className="mt-1.5"
                     />
                   </div>
                   <div>
-                    <Label>Title</Label>
+                    <Label className="text-base font-semibold">Position/Title</Label>
                     <Select
                       value={newStaff.title}
                       onValueChange={(value: any) => setNewStaff({ ...newStaff, title: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1.5">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="head_bartender">Head Bartender</SelectItem>
-                        <SelectItem value="senior_bartender">Senior Bartender</SelectItem>
-                        <SelectItem value="bartender">Bartender</SelectItem>
-                        <SelectItem value="bar_back">Bar Back</SelectItem>
-                        <SelectItem value="support">Support</SelectItem>
+                        <SelectItem value="head_bartender">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-purple-500" />
+                            Head Bartender
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="senior_bartender">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                            Senior Bartender
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="bartender">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                            Bartender
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="bar_back">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-orange-500" />
+                            Bar Back
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="support">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                            Support
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={addStaffMember} className="w-full">Add Staff Member</Button>
+                  <Button onClick={addStaffMember} className="w-full" size="lg">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Staff Member
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -730,29 +759,56 @@ export default function StaffScheduling() {
 
           <TabsContent value="staff" className="space-y-4">
             <Card className="p-4">
-              <h2 className="text-xl font-semibold mb-4">Staff Members</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {staffMembers.map(staff => (
-                  <div key={staff.id} className="border rounded-lg p-4 flex justify-between items-start">
-                    <div>
-                      <div className="font-medium">{staff.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {TITLE_LABELS[staff.title]}
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteStaffMember(staff.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Staff Members</h2>
+                <Button onClick={() => setIsAddStaffOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Staff
+                </Button>
               </div>
+              
+              {/* Group by Title */}
+              {Object.entries(TITLE_LABELS).map(([titleKey, titleLabel]) => {
+                const staffByTitle = staffMembers.filter(s => s.title === titleKey);
+                if (staffByTitle.length === 0) return null;
+                
+                return (
+                  <div key={titleKey} className="mb-6">
+                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      {titleLabel}
+                      <span className="text-sm font-normal text-muted-foreground">
+                        ({staffByTitle.length})
+                      </span>
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {staffByTitle.map(staff => (
+                        <div key={staff.id} className="border rounded-lg p-4 flex justify-between items-center bg-card hover:bg-accent transition-colors">
+                          <div>
+                            <div className="font-medium text-base">{staff.name}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {titleLabel}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteStaffMember(staff.id)}
+                            className="hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              
               {staffMembers.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No staff members added. Click "Add Staff" to get started.
+                <div className="text-center py-12 text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p className="text-lg mb-2">No staff members added yet</p>
+                  <p className="text-sm">Click "Add Staff" to get started</p>
                 </div>
               )}
             </Card>
