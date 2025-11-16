@@ -295,7 +295,8 @@ const OpsTools = () => {
         details: "Simplified scheduling. Create shifts, assign staff, track labor hours, and send automatic notifications. Export to calendar apps.",
         icon: Calendar,
         gradient: "from-orange-600 to-red-500",
-        premium: true,
+        premium: false,
+        path: "/staff-scheduling",
       },
       {
         name: "Cocktail Specs",
