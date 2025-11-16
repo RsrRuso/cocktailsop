@@ -2434,6 +2434,36 @@ export type Database = {
           },
         ]
       }
+      schedule_events: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_date: string
+          event_name: string
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_date: string
+          event_name: string
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_date?: string
+          event_name?: string
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       seller_profiles: {
         Row: {
           business_address: string | null
@@ -2496,6 +2526,130 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      staff_allocations: {
+        Row: {
+          allocation_date: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          responsibilities: string[] | null
+          shift_type: string
+          staff_member_id: string
+          station_assignment: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          allocation_date: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          responsibilities?: string[] | null
+          shift_type: string
+          staff_member_id: string
+          station_assignment: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          allocation_date?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          responsibilities?: string[] | null
+          shift_type?: string
+          staff_member_id?: string
+          station_assignment?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_allocations_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      staff_schedules: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          schedule_date: string
+          shift_type: string
+          staff_member_id: string
+          station_type: string
+          updated_at: string | null
+          user_id: string
+          week_number: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          schedule_date: string
+          shift_type: string
+          staff_member_id: string
+          station_type: string
+          updated_at?: string | null
+          user_id: string
+          week_number: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          schedule_date?: string
+          shift_type?: string
+          staff_member_id?: string
+          station_type?: string
+          updated_at?: string | null
+          user_id?: string
+          week_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_schedules_staff_member_id_fkey"
+            columns: ["staff_member_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       status_reactions: {
         Row: {

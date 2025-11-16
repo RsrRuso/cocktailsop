@@ -86,6 +86,7 @@ const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 const ShopAuth = lazy(() => import("./pages/ShopAuth"));
 const Orders = lazy(() => import("./pages/Orders"));
 const SellerDashboard = lazy(() => import("./pages/SellerDashboard"));
+const StaffScheduling = lazy(() => import("./pages/StaffScheduling"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -181,6 +182,7 @@ const App = () => (
           <Route path="/shop-auth" element={<ShopAuth />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/seller-dashboard" element={<SellerDashboard />} />
+          <Route path="/staff-scheduling" element={<StaffScheduling />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
                 </Routes>
