@@ -1,21 +1,26 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ArrowLeft, CreditCard, Smartphone, DollarSign, CheckCircle2 } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 import BottomNav from "@/components/BottomNav";
 
 const PaymentOptions = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
-  const { cartItems, total } = location.state || { cartItems: [], total: 0 };
+  const { cartItems, clearCart } = useCart();
   const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [processing, setProcessing] = useState(false);
+  
+  // Calculate total from cart items
+  const total = useMemo(() => {
+    return cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }, [cartItems]);
 
   const paymentMethods = [
     {
@@ -45,6 +50,16 @@ const PaymentOptions = () => {
   ];
 
   const handlePayment = async () => {
+    if (cartItems.length === 0) {
+      toast({
+        title: "Empty Cart",
+        description: "Your cart is empty. Add items before checkout.",
+        variant: "destructive",
+      });
+      navigate("/shop");
+      return;
+    }
+
     if (!selectedMethod) {
       toast({
         title: "Select Payment Method",
@@ -117,6 +132,9 @@ const PaymentOptions = () => {
         title: "Payment Successful!",
         description: "Your order has been placed successfully",
       });
+      
+      // Clear the cart after successful order
+      clearCart();
       
       navigate("/order-confirmation", { 
         state: { 

@@ -34,6 +34,7 @@ interface Product {
   image_url: string;
   stock_quantity: number;
   description: string;
+  seller_id?: string;
 }
 
 const Shop = () => {
@@ -136,6 +137,7 @@ const Shop = () => {
       name: product.name,
       price: product.price,
       image: product.image_url,
+      seller_id: product.seller_id,
     });
     toast({
       title: "Added to Cart",
