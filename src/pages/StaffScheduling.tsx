@@ -135,6 +135,11 @@ export default function StaffScheduling() {
   };
 
   const autoGenerateSchedule = () => {
+    if (staffMembers.length === 0) {
+      toast.error('Please add staff members first');
+      return;
+    }
+
     const newSchedule: Record<string, ScheduleCell> = {};
     
     // Get staff by role
@@ -143,114 +148,145 @@ export default function StaffScheduling() {
     const barBacks = staffMembers.filter(s => s.title === 'bar_back');
     const support = staffMembers.filter(s => s.title === 'support');
 
+    if (headBartenders.length === 0 && bartenders.length === 0) {
+      toast.error('Please add at least some bartenders or head bartenders');
+      return;
+    }
+
+    // Generate schedule for entire week
     DAYS_OF_WEEK.forEach((day, dayIndex) => {
-      const isWeekday = dayIndex < 5; // Mon-Fri
+      const isWeekday = dayIndex < 5; // Mon-Fri (0=Mon, 4=Fri)
+      const isWeekend = dayIndex >= 5; // Sat-Sun
       const isPickupDay = day === 'Monday' || day === 'Wednesday' || day === 'Friday';
 
-      // Indoor bar: 4 people (1 head for segregation, 2 bartenders for stations, 1 bar back)
-      if (headBartenders[0]) {
-        const key = `${headBartenders[0].id}-${day}`;
+      // === INDOOR BAR: 4 people ===
+      // 1 Head Bartender - Ticket Segregator
+      if (headBartenders.length > 0) {
+        const headIndex = dayIndex % headBartenders.length;
+        const key = `${headBartenders[headIndex].id}-${day}`;
         newSchedule[key] = {
-          staffId: headBartenders[0].id,
+          staffId: headBartenders[headIndex].id,
           day,
           timeRange: '5:00 PM - 3:00 AM',
           type: 'regular',
-          station: 'Ticket Segregator'
+          station: 'Indoor - Ticket Segregator'
         };
       }
 
-      if (bartenders[0]) {
-        const key = `${bartenders[0].id}-${day}`;
+      // 3 Bartenders - Station 1, Station 2, Garnishing Station 3
+      const stations = ['Indoor - Station 1', 'Indoor - Station 2', 'Indoor - Garnishing Station 3'];
+      for (let i = 0; i < 3 && i < bartenders.length; i++) {
+        const bartenderIndex = (dayIndex + i) % bartenders.length;
+        const key = `${bartenders[bartenderIndex].id}-${day}`;
         newSchedule[key] = {
-          staffId: bartenders[0].id,
+          staffId: bartenders[bartenderIndex].id,
           day,
           timeRange: '5:00 PM - 3:00 AM',
           type: 'regular',
-          station: 'Station 1'
+          station: stations[i]
         };
       }
 
-      if (bartenders[1]) {
-        const key = `${bartenders[1].id}-${day}`;
+      // === BAR BACK - Refill, Batches, Premixes ===
+      if (barBacks.length > 0) {
+        const barBackIndex = dayIndex % barBacks.length;
+        const key = `${barBacks[barBackIndex].id}-${day}`;
+        const timeRange = isPickupDay ? 'PICKUP 12:00 PM - 3:00 AM' : '2:00 PM - 3:00 AM';
         newSchedule[key] = {
-          staffId: bartenders[1].id,
-          day,
-          timeRange: '5:00 PM - 3:00 AM',
-          type: 'regular',
-          station: 'Station 2'
-        };
-      }
-
-      if (bartenders[2]) {
-        const key = `${bartenders[2].id}-${day}`;
-        newSchedule[key] = {
-          staffId: bartenders[2].id,
-          day,
-          timeRange: '5:00 PM - 3:00 AM',
-          type: 'regular',
-          station: 'Garnishing Station 3'
-        };
-      }
-
-      // Bar back - opening/closing duties
-      if (barBacks[0]) {
-        const key = `${barBacks[0].id}-${day}`;
-        const timeRange = isPickupDay ? '12:00 PM - 3:00 AM' : '2:00 PM - 3:00 AM';
-        newSchedule[key] = {
-          staffId: barBacks[0].id,
+          staffId: barBacks[barBackIndex].id,
           day,
           timeRange,
           type: isPickupDay ? 'pickup' : 'opening',
-          station: 'Refill, Batches, Premixes'
+          station: 'Refill Fridges, Batches, Premixes, Glassware'
         };
       }
 
-      // Outdoor - weekdays: 1 head + 1 bartender
-      if (isWeekday && headBartenders[1]) {
-        const key = `${headBartenders[1].id}-${day}`;
+      // === OUTDOOR BAR - Weekdays: 1 Head + 1 Bartender ===
+      if (isWeekday) {
+        // Outdoor Head Bartender
+        if (headBartenders.length > 1) {
+          const outdoorHeadIndex = (dayIndex + 1) % headBartenders.length;
+          const key = `${headBartenders[outdoorHeadIndex].id}-${day}`;
+          newSchedule[key] = {
+            staffId: headBartenders[outdoorHeadIndex].id,
+            day,
+            timeRange: '4:00 PM - 1:00 AM',
+            type: 'regular',
+            station: 'Outdoor Bar - Head'
+          };
+        }
+
+        // Outdoor Bartender
+        if (bartenders.length > 3) {
+          const outdoorBartenderIndex = (dayIndex + 3) % bartenders.length;
+          const key = `${bartenders[outdoorBartenderIndex].id}-${day}`;
+          newSchedule[key] = {
+            staffId: bartenders[outdoorBartenderIndex].id,
+            day,
+            timeRange: '4:00 PM - 1:00 AM',
+            type: 'regular',
+            station: 'Outdoor Bar - Bartender'
+          };
+        }
+      }
+
+      // === WEEKEND OUTDOOR (if needed) ===
+      if (isWeekend && headBartenders.length > 1 && bartenders.length > 3) {
+        // Reduced outdoor staff on weekends
+        const outdoorHeadIndex = (dayIndex + 1) % headBartenders.length;
+        const key = `${headBartenders[outdoorHeadIndex].id}-${day}`;
         newSchedule[key] = {
-          staffId: headBartenders[1].id,
+          staffId: headBartenders[outdoorHeadIndex].id,
           day,
-          timeRange: '4:00 PM - 1:00 AM',
+          timeRange: '5:00 PM - 2:00 AM',
           type: 'regular',
-          station: 'Outdoor Bar'
+          station: 'Outdoor Bar - Head'
         };
       }
 
-      if (isWeekday && bartenders[3]) {
-        const key = `${bartenders[3].id}-${day}`;
-        newSchedule[key] = {
-          staffId: bartenders[3].id,
-          day,
-          timeRange: '4:00 PM - 1:00 AM',
-          type: 'regular',
-          station: 'Outdoor Bar'
-        };
+      // === SUPPORT - On duty if available ===
+      if (support.length > 0) {
+        const supportIndex = dayIndex % support.length;
+        const key = `${support[supportIndex].id}-${day}`;
+        // Support works 5 days, 2 days off (rotating)
+        const workDays = [0, 1, 2, 3, 4]; // Mon-Fri typically
+        const isOnDuty = workDays.includes((dayIndex + supportIndex) % 7);
+        
+        if (isOnDuty) {
+          newSchedule[key] = {
+            staffId: support[supportIndex].id,
+            day,
+            timeRange: '3:00 PM - 1:00 AM',
+            type: 'regular',
+            station: 'Support - Help as needed'
+          };
+        } else {
+          newSchedule[key] = {
+            staffId: support[supportIndex].id,
+            day,
+            timeRange: 'OFF',
+            type: 'off'
+          };
+        }
       }
 
-      // Support - if on duty (3pm - 1am)
-      if (support[0] && Math.random() > 0.3) { // 70% chance of being on duty
-        const key = `${support[0].id}-${day}`;
-        newSchedule[key] = {
-          staffId: support[0].id,
-          day,
-          timeRange: '3:00 PM - 1:00 AM',
-          type: 'regular',
-          station: 'Support'
-        };
-      } else if (support[0]) {
-        const key = `${support[0].id}-${day}`;
-        newSchedule[key] = {
-          staffId: support[0].id,
-          day,
-          timeRange: 'OFF',
-          type: 'off'
-        };
-      }
+      // Give days off to some staff for rotation
+      staffMembers.forEach((staff, idx) => {
+        const key = `${staff.id}-${day}`;
+        if (!newSchedule[key]) {
+          // Staff member not assigned - give them OFF day
+          newSchedule[key] = {
+            staffId: staff.id,
+            day,
+            timeRange: 'OFF',
+            type: 'off'
+          };
+        }
+      });
     });
 
     setSchedule(newSchedule);
-    toast.success('Schedule auto-generated successfully');
+    toast.success('Full week schedule generated with station assignments!');
   };
 
   const exportToPDF = () => {
