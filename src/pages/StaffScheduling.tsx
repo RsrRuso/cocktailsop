@@ -162,21 +162,37 @@ export default function StaffScheduling() {
       return;
     }
 
-    // Recommend sufficient staff for optimal coverage
+    // PRE-VALIDATION: Check if minimum staffing is achievable
     const totalBartenders = headBartenders.length + seniorBartenders.length + bartenders.length;
+    
+    // Need at least 3 bartenders to ensure 2 per shift (1 can be off)
+    if (totalBartenders < 3) {
+      toast.error(`❌ Need at least 3 bartenders total to ensure 2 per shift. Currently have ${totalBartenders}. Add ${3 - totalBartenders} more bartender(s).`, {
+        duration: 6000
+      });
+      return;
+    }
+    
+    // Need at least 2 bar backs to ensure 1 per shift (1 can be off)
+    if (barBacks.length < 2) {
+      toast.error(`❌ Need at least 2 bar backs total to ensure 1 per shift. Currently have ${barBacks.length}. Add ${2 - barBacks.length} more bar back(s).`, {
+        duration: 6000
+      });
+      return;
+    }
+    
+    // Need at least 2 support to ensure 1 per shift (1 can be off)
+    if (support.length < 2) {
+      toast.error(`❌ Need at least 2 support staff total to ensure 1 per shift. Currently have ${support.length}. Add ${2 - support.length} more support staff.`, {
+        duration: 6000
+      });
+      return;
+    }
+
+    // Recommend sufficient staff for optimal coverage
     if (totalBartenders < 4) {
-      toast.warning('⚠️ Recommendation: Add more bartenders for optimal station coverage (Need 4+ for all stations)', {
-        duration: 5000
-      });
-    }
-    if (barBacks.length < 1) {
-      toast.warning('⚠️ PRIORITY: Add at least 1 bar back (PRIORITY ROLE - pickups, refilling, batching, garnish cutting, etc.)', {
-        duration: 5000
-      });
-    }
-    if (support.length < 1) {
-      toast.warning('⚠️ Recommendation: Add at least 1 support staff (glassware polishing, general support - 10h shifts)', {
-        duration: 5000
+      toast.warning('⚠️ Recommendation: Add more bartenders for optimal station coverage (4+ recommended)', {
+        duration: 4000
       });
     }
 
@@ -225,7 +241,8 @@ export default function StaffScheduling() {
         
         // If no days available (all allowed days are busy), force at least 1 off from allowed days
         if (finalDaysOff.length === 0 && allowedOffDays.length > 0) {
-          const leastUsedDay = allowedOffDays.sort((a, b) => offsPerDay[a] - offsPerDay[b])[0];
+          const sortedAllowedDays = [...allowedOffDays].sort((a, b) => offsPerDay[a] - offsPerDay[b]);
+          const leastUsedDay = sortedAllowedDays[0];
           finalDaysOff.push(leastUsedDay);
           offsPerDay[leastUsedDay]++;
         }
@@ -547,7 +564,9 @@ export default function StaffScheduling() {
     }
 
     setSchedule(newSchedule);
-    toast.success(`✅ Schedule generated! Minimum 2 bartenders, 1 bar back, 1 support per shift. Everyone gets at least 1 day off. Same titles alternate weekly.`);
+    toast.success(`✅ Schedule generated! Off days: Mon/Wed/Thu/Sun. Everyone gets 1-2 days off. Same titles alternate weekly.`, {
+      duration: 5000
+    });
   };
 
   const exportToPDF = () => {
