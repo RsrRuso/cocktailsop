@@ -189,81 +189,45 @@ export default function StaffScheduling() {
     const isOddWeek = weekNumber % 2 === 1;
     
     // FAIR OFFS DISTRIBUTION - CRITICAL RULES:
-    // 1. Everyone gets AT LEAST 1 day off per week (can't be 0)
+    // 1. Everyone gets AT LEAST 1 day off per week (can't be 0, max 2)
     // 2. For same title: alternate 1 day / 2 days between weeks
     //    - Person A: Week 1 = 1 day, Week 2 = 2 days
     //    - Person B: Week 1 = 2 days, Week 2 = 1 day
     // 3. If off day is busy event day, find alternative day
+    // 4. SPREAD EVENLY: Don't give same day off to too many people
+    
+    // Track how many offs per day to ensure even distribution
+    const offsPerDay: number[] = [0, 0, 0, 0, 0, 0, 0];
+    
     const divideIntoGroups = (staffList: StaffMember[]) => {
-      // 1-day off patterns (spread across week)
-      const oneDayPatterns = [
-        [0],      // Monday
-        [3],      // Thursday
-        [2],      // Wednesday
-        [6],      // Sunday
-      ];
-      
-      // 2-day off patterns (non-consecutive for better coverage)
-      const twoDayPatterns = [
-        [0, 3],   // Monday + Thursday
-        [0, 6],   // Monday + Sunday
-        [2, 6],   // Wednesday + Sunday
-        [3, 6],   // Thursday + Sunday
-      ];
+      // Available days for rotation (avoid clustering)
+      const allDays = [0, 1, 2, 3, 4, 5, 6]; // Mon-Sun
       
       return staffList.map((staff, index) => {
         // Alternating logic for same titles:
         // Odd week: index 0,2,4... get 1 day | index 1,3,5... get 2 days
         // Even week: index 0,2,4... get 2 days | index 1,3,5... get 1 day
         const shouldGetTwoDays = isOddWeek ? (index % 2 === 1) : (index % 2 === 0);
+        const targetDaysOff = shouldGetTwoDays ? 2 : 1;
         
-        let assignedDaysOff;
-        if (shouldGetTwoDays) {
-          assignedDaysOff = twoDayPatterns[index % twoDayPatterns.length];
-        } else {
-          assignedDaysOff = oneDayPatterns[index % oneDayPatterns.length];
-        }
+        // Find days with LEAST offs assigned (exclude busy days)
+        const availableDays = allDays
+          .filter(day => !busyDays.includes(day))
+          .sort((a, b) => offsPerDay[a] - offsPerDay[b]);
         
-        // CRITICAL: Filter out busy days but ensure at least 1 off day, max 2 off days
-        let finalDaysOff = assignedDaysOff.filter(day => !busyDays.includes(day));
+        // Assign the least-used days
+        const finalDaysOff = availableDays.slice(0, targetDaysOff);
         
-        // Cap at maximum 2 days off
-        if (finalDaysOff.length > 2) {
-          finalDaysOff = finalDaysOff.slice(0, 2);
-        }
+        // Update the counter
+        finalDaysOff.forEach(day => {
+          offsPerDay[day]++;
+        });
         
-        // If all assigned days are busy OR no days off, find alternative
-        if (finalDaysOff.length === 0) {
-          // Find first available non-busy day
-          for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
-            if (!busyDays.includes(dayIdx)) {
-              finalDaysOff.push(dayIdx);
-              // If they were supposed to get 2 days, try to find a second day
-              if (shouldGetTwoDays && finalDaysOff.length === 1) {
-                for (let dayIdx2 = dayIdx + 1; dayIdx2 < 7; dayIdx2++) {
-                  if (!busyDays.includes(dayIdx2)) {
-                    finalDaysOff.push(dayIdx2);
-                    break;
-                  }
-                }
-              }
-              break;
-            }
-          }
-        }
-        // If they should get 2 days but only have 1 (because one was busy), try to add another
-        else if (shouldGetTwoDays && finalDaysOff.length === 1) {
-          for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
-            if (!busyDays.includes(dayIdx) && !finalDaysOff.includes(dayIdx)) {
-              finalDaysOff.push(dayIdx);
-              break;
-            }
-          }
-        }
-        
-        // Final cap: never more than 2 days off
-        if (finalDaysOff.length > 2) {
-          finalDaysOff = finalDaysOff.slice(0, 2);
+        // If no days available (all are busy), force at least 1 off
+        if (finalDaysOff.length === 0 && allDays.length > 0) {
+          const leastUsedDay = allDays.sort((a, b) => offsPerDay[a] - offsPerDay[b])[0];
+          finalDaysOff.push(leastUsedDay);
+          offsPerDay[leastUsedDay]++;
         }
         
         return {
