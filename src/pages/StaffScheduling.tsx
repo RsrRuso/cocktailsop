@@ -186,34 +186,15 @@ export default function StaffScheduling() {
     
     console.log('📆 Week info:', { weekNumber, isOddWeek });
     
-    // FAIR OFFS DISTRIBUTION - CRITICAL RULES:
-    // 1. Everyone gets AT LEAST 1 day off per week (can't be 0, max 2)
-    // 2. For same title: alternate 1 day / 2 days between weeks
-    //    - Person A: Week 1 = 1 day, Week 2 = 2 days
-    //    - Person B: Week 1 = 2 days, Week 2 = 1 day
-    // 3. If off day is busy event day, find alternative day
-    // 4. OFF DAYS ONLY ON: Monday(0), Wednesday(2), Thursday(3), Sunday(6)
-    // 5. ROTATE through ALL 4 days systematically
+    // NEW RULE: 1 day off every 2 weeks
+    // - Week 1 (odd): Person gets 1 day off
+    // - Week 2 (even): Person gets 0 days off (works full week)
+    // Alternate which week each person gets their day off based on their index
     
-    // Available off days - ONLY these days: Monday, Wednesday, Thursday, Sunday
+    // Available off days - ONLY these days: Monday(0), Wednesday(2), Thursday(3), Sunday(6)
     const allowedOffDays = [0, 2, 3, 6];
     console.log('✅ Allowed off days:', allowedOffDays.map(d => DAYS_OF_WEEK[d]));
     console.log('📅 Busy event days:', busyDays.map(d => DAYS_OF_WEEK[d]));
-    
-    // Patterns for systematic rotation through all 4 days
-    const oneDayOffPatterns = [
-      [0],  // Monday
-      [2],  // Wednesday
-      [3],  // Thursday
-      [6],  // Sunday
-    ];
-    
-    const twoDayOffPatterns = [
-      [0, 3],  // Monday + Thursday
-      [2, 6],  // Wednesday + Sunday
-      [0, 6],  // Monday + Sunday
-      [2, 3],  // Wednesday + Thursday
-    ];
     
     // Track how many offs per day
     const offsPerDay: number[] = [0, 0, 0, 0, 0, 0, 0];
@@ -366,7 +347,7 @@ export default function StaffScheduling() {
       });
 
       // === PRIORITY 1: HEAD BARTENDERS - SUPERVISING (Observe indoor/outdoor, support where needed) ===
-      // Working hours: 9 hours (5:00 PM - 2:00 AM)
+      // Working hours: 9 hours (4:00 PM - 1:00 AM)
       // Division logic: 2+ heads → divide into indoor/outdoor supervisors
       
       const shouldDivideHeads = workingHeads.length >= 2;
@@ -389,7 +370,7 @@ export default function StaffScheduling() {
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
-          timeRange: '5:00 PM - 2:00 AM',
+          timeRange: '4:00 PM - 1:00 AM',
           type: 'regular',
           station: shouldDivideHeads 
             ? `Head - ${area} Supervisor: Observe ${area.toLowerCase()} operations, support where needed`
@@ -399,7 +380,7 @@ export default function StaffScheduling() {
       });
 
       // === PRIORITY 2: BARTENDERS (Senior + Regular) - OPERATE STATIONS ===
-      // Working hours: 9 hours (5:00 PM - 2:00 AM)
+      // Working hours: 9 hours (4:00 PM - 1:00 AM)
       
       // Mark off days
       [...offSeniorBartenders, ...offBartenders].forEach(schedule => {
@@ -426,7 +407,7 @@ export default function StaffScheduling() {
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
-            timeRange: '5:00 PM - 2:00 AM',
+            timeRange: '4:00 PM - 1:00 AM',
             type: 'regular',
             station: stations[idx]
           };
@@ -436,7 +417,7 @@ export default function StaffScheduling() {
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
-            timeRange: '5:00 PM - 2:00 AM',
+            timeRange: '4:00 PM - 1:00 AM',
             type: 'regular',
             station: 'Floating Support'
           };
@@ -465,18 +446,18 @@ export default function StaffScheduling() {
         let timeRange, type;
         if (idx === 0) {
           if (isPickupDay) {
-            timeRange = '12:00 PM - 9:00 PM'; // 9 hours, early start for pickups
+            timeRange = '12:00 PM - 9:00 PM'; // 9 hours, early for pickups
             type = 'pickup';
           } else if (isBrunchDay) {
-            timeRange = '11:00 AM - 8:00 PM'; // 9 hours, early start for brunch setup
+            timeRange = '11:00 AM - 8:00 PM'; // 9 hours, early for brunch
             type = 'brunch';
           } else {
-            timeRange = '2:00 PM - 11:00 PM'; // 9 hours, setup before venue opens
+            timeRange = '3:00 PM - 12:00 AM'; // 9 hours, setup before venue opens
             type = 'opening';
           }
         } else {
-          // Additional bar backs work full venue hours (9 hours)
-          timeRange = '5:00 PM - 2:00 AM';
+          // Additional bar backs work full service (9 hours)
+          timeRange = '4:00 PM - 1:00 AM';
           type = 'regular';
         }
         
@@ -517,40 +498,34 @@ export default function StaffScheduling() {
       });
     });
 
-    // VALIDATION: Check if schedule meets minimum requirements (but allow flexibility)
+    // VALIDATION: Check weekday staffing requirements
     const validationWarnings: string[] = [];
+    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
     DAYS_OF_WEEK.forEach((name, dayIndex) => {
-      const allBartenderRoles = [...headBartenders, ...seniorBartenders, ...bartenders];
+      const isWeekday = weekdays.includes(name);
       
-      // Count working staff by role
-      const workingBartendersCount = allBartenderRoles.filter(staff => {
+      // Count all working staff with station responsibilities
+      const workingWithResponsibilities = [...headBartenders, ...seniorBartenders, ...bartenders, ...barBacks, ...support].filter(staff => {
         const key = `${staff.id}-${name}`;
         const cell = newSchedule[key];
         return cell && cell.timeRange !== 'OFF';
       }).length;
 
-      const workingBarBacksCount = barBacks.filter(staff => {
+      // CRITICAL VALIDATION: Weekdays must have at least 3 people with station responsibilities
+      if (isWeekday && workingWithResponsibilities < 3) {
+        validationWarnings.push(`❌ CRITICAL ${name}: Only ${workingWithResponsibilities} staff with station responsibilities - MINIMUM 3 REQUIRED for weekdays`);
+      }
+      
+      // Additional warnings for optimal staffing
+      const workingBartendersCount = [...headBartenders, ...seniorBartenders, ...bartenders].filter(staff => {
         const key = `${staff.id}-${name}`;
         const cell = newSchedule[key];
         return cell && cell.timeRange !== 'OFF';
       }).length;
 
-      const workingSupportCount = support.filter(staff => {
-        const key = `${staff.id}-${name}`;
-        const cell = newSchedule[key];
-        return cell && cell.timeRange !== 'OFF';
-      }).length;
-
-      // Warn if below ideal (but don't block)
       if (workingBartendersCount < 2) {
-        validationWarnings.push(`${name}: ${workingBartendersCount} bartender(s) - 2+ recommended`);
-      }
-      if (workingBarBacksCount < 1) {
-        validationWarnings.push(`${name}: No bar back - 1+ recommended`);
-      }
-      if (workingSupportCount < 1) {
-        validationWarnings.push(`${name}: No support - 1+ recommended`);
+        validationWarnings.push(`⚠️ ${name}: ${workingBartendersCount} bartender(s) - 2+ recommended`);
       }
     });
 
@@ -815,19 +790,19 @@ export default function StaffScheduling() {
   }, {} as Record<string, StaffMember[]>);
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-gray-950 pb-20">
       <TopNav />
       
       <div className="container mx-auto p-4 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex-1 max-w-md">
-            <Label htmlFor="venue-name">Venue Name</Label>
+            <Label htmlFor="venue-name" className="text-gray-200">Venue Name</Label>
             <Input
               id="venue-name"
               value={venueName}
               onChange={(e) => setVenueName(e.target.value)}
               placeholder="Enter venue name..."
-              className="text-lg font-semibold"
+              className="text-lg font-semibold bg-gray-900 border-gray-800 text-gray-100"
             />
           </div>
           
@@ -836,7 +811,7 @@ export default function StaffScheduling() {
               <Wand2 className="w-4 h-4 mr-2" />
               Auto Generate
             </Button>
-            <Button onClick={exportToPDF} variant="outline">
+            <Button onClick={exportToPDF} variant="outline" className="border-gray-700 hover:bg-gray-800">
               <Download className="w-4 h-4 mr-2" />
               Export PDF
             </Button>
@@ -844,13 +819,14 @@ export default function StaffScheduling() {
         </div>
 
         {/* Daily Events Management */}
-        <Card className="p-4">
+        <Card className="p-4 bg-gray-900 border-gray-800">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Daily Events (No Offs on Event Days)</h3>
+            <h3 className="text-lg font-semibold text-gray-100">Daily Events (No Offs on Event Days)</h3>
             <Button 
               size="sm" 
               variant="outline"
               onClick={() => setIsEditingEvents(!isEditingEvents)}
+              className="border-gray-700 hover:bg-gray-800"
             >
               {isEditingEvents ? 'Done' : 'Edit Events'}
             </Button>
@@ -859,7 +835,7 @@ export default function StaffScheduling() {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             {DAYS_OF_WEEK.map((day) => (
               <div key={day} className="space-y-2">
-                <Label className="text-sm font-medium">{day}</Label>
+                <Label className="text-sm font-medium text-gray-200">{day}</Label>
                 {isEditingEvents ? (
                   <Input
                     value={dailyEvents[day] || ''}
@@ -868,13 +844,13 @@ export default function StaffScheduling() {
                       [day]: e.target.value
                     }))}
                     placeholder="Event name"
-                    className="text-sm"
+                    className="text-sm bg-gray-800 border-gray-700 text-gray-100"
                   />
                 ) : (
                   <div className={`p-2 rounded border text-sm min-h-[40px] flex items-center justify-center ${
                     dailyEvents[day] 
-                      ? 'bg-primary/10 border-primary text-primary font-medium' 
-                      : 'bg-muted text-muted-foreground'
+                      ? 'bg-primary/20 border-primary text-primary font-medium' 
+                      : 'bg-gray-800 text-gray-400 border-gray-700'
                   }`}>
                     {dailyEvents[day] || 'No event'}
                   </div>
@@ -883,15 +859,15 @@ export default function StaffScheduling() {
             ))}
           </div>
           
-          <p className="text-sm text-muted-foreground mt-3">
+          <p className="text-sm text-gray-400 mt-3">
             ℹ️ Days with events are considered busy - no offs will be scheduled on these days
           </p>
         </Card>
 
         {/* Staff Management */}
-        <Card className="p-4">
+        <Card className="p-4 bg-gray-900 border-gray-800">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Staff Members</h3>
+            <h3 className="text-lg font-semibold text-gray-100">Staff Members</h3>
             <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">
@@ -942,17 +918,18 @@ export default function StaffScheduling() {
           <div className="space-y-3">
             {Object.entries(groupedStaff).map(([title, members]) => (
               <div key={title} className="space-y-2">
-                <h4 className="text-sm font-medium text-muted-foreground uppercase">
+                <h4 className="text-sm font-medium text-gray-400 uppercase">
                   {title.replace('_', ' ')} ({members.length})
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {members.map(staff => (
-                    <div key={staff.id} className="flex items-center justify-between p-2 border rounded-lg bg-card">
-                      <span className="font-medium">{staff.name}</span>
+                    <div key={staff.id} className="flex items-center justify-between p-2 border border-gray-800 rounded-lg bg-gray-800">
+                      <span className="font-medium text-gray-100">{staff.name}</span>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => deleteStaffMember(staff.id)}
+                        className="hover:bg-gray-700"
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
@@ -962,24 +939,24 @@ export default function StaffScheduling() {
               </div>
             ))}
             {staffMembers.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">No staff members added yet</p>
+              <p className="text-center text-gray-400 py-8">No staff members added yet</p>
             )}
           </div>
         </Card>
 
         {/* Week Selector */}
-        <Card className="p-4">
+        <Card className="p-4 bg-gray-900 border-gray-800">
           <div className="flex items-center justify-between">
             <div>
-              <Label>Week Starting</Label>
+              <Label className="text-gray-200">Week Starting</Label>
               <Input
                 type="date"
                 value={weekStartDate}
                 onChange={(e) => setWeekStartDate(e.target.value)}
-                className="mt-1"
+                className="mt-1 bg-gray-800 border-gray-700 text-gray-100"
               />
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-gray-400">
               {format(new Date(weekStartDate), 'MMM dd')} - {format(addDays(new Date(weekStartDate), 6), 'MMM dd, yyyy')}
             </div>
           </div>
@@ -987,8 +964,8 @@ export default function StaffScheduling() {
 
         {/* Weekly Off Days Summary */}
         {staffMembers.length > 0 && Object.keys(schedule).length > 0 && (
-          <Card className="p-4">
-            <h3 className="text-lg font-semibold mb-4">
+          <Card className="p-4 bg-gray-900 border-gray-800">
+            <h3 className="text-lg font-semibold mb-4 text-gray-100">
               Weekly Off Days Summary
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -998,11 +975,11 @@ export default function StaffScheduling() {
                 const offDaysList = offDays.map(s => s.day).join(', ');
                 
                 return (
-                  <div key={staff.id} className="border rounded-lg p-3 bg-card">
+                  <div key={staff.id} className="border border-gray-800 rounded-lg p-3 bg-gray-800">
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <div className="font-semibold">{staff.name}</div>
-                        <div className="text-xs text-muted-foreground capitalize">
+                        <div className="font-semibold text-gray-100">{staff.name}</div>
+                        <div className="text-xs text-gray-400 capitalize">
                           {staff.title.replace('_', ' ')}
                         </div>
                       </div>
@@ -1010,16 +987,16 @@ export default function StaffScheduling() {
                         <div className={`text-2xl font-bold ${offDays.length === 0 ? 'text-red-500' : offDays.length >= 2 ? 'text-green-500' : 'text-yellow-500'}`}>
                           {offDays.length}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">days off</div>
+                        <div className="text-[10px] text-gray-400">days off</div>
                       </div>
                     </div>
                     {offDaysList && (
-                      <div className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                      <div className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-700">
                         Off: {offDaysList}
                       </div>
                     )}
                     {offDays.length === 0 && (
-                      <div className="text-xs text-red-500 mt-2 pt-2 border-t">
+                      <div className="text-xs text-red-500 mt-2 pt-2 border-t border-gray-700">
                         ⚠️ No days off this week
                       </div>
                     )}
@@ -1032,8 +1009,8 @@ export default function StaffScheduling() {
 
         {/* Daily Summary */}
         {staffMembers.length > 0 && Object.keys(schedule).length > 0 && (
-          <Card className="p-4">
-            <h3 className="text-lg font-semibold mb-4">
+          <Card className="p-4 bg-gray-900 border-gray-800">
+            <h3 className="text-lg font-semibold mb-4 text-gray-100">
               Daily Breakdown
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
@@ -1080,41 +1057,41 @@ export default function StaffScheduling() {
                 const dayLabel = dailyEvents[day] || '';
 
                 return (
-                  <div key={day} className={`border rounded-lg p-3 ${isBusyDay ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/10' : 'bg-card'}`}>
-                    <div className="font-semibold text-sm mb-1">{day}</div>
+                  <div key={day} className={`border rounded-lg p-3 ${isBusyDay ? 'border-orange-500 bg-orange-900/20' : 'bg-gray-800 border-gray-700'}`}>
+                    <div className="font-semibold text-sm mb-1 text-gray-100">{day}</div>
                     {dayLabel && (
-                      <div className="text-xs text-orange-600 dark:text-orange-400 mb-2">
+                      <div className="text-xs text-orange-400 mb-2">
                         {dayLabel}
                       </div>
                     )}
                     
                     {/* Summary Numbers */}
                     <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="text-center p-2 bg-green-50 dark:bg-green-950/20 rounded">
-                        <div className="text-xl font-bold text-green-600 dark:text-green-400">{working.length}</div>
-                        <div className="text-[10px] text-muted-foreground">Working</div>
+                      <div className="text-center p-2 bg-green-950/30 rounded">
+                        <div className="text-xl font-bold text-green-400">{working.length}</div>
+                        <div className="text-[10px] text-gray-400">Working</div>
                       </div>
-                      <div className="text-center p-2 bg-red-50 dark:bg-red-950/20 rounded">
-                        <div className="text-xl font-bold text-red-600 dark:text-red-400">{off.length}</div>
-                        <div className="text-[10px] text-muted-foreground">Off</div>
+                      <div className="text-center p-2 bg-red-950/30 rounded">
+                        <div className="text-xl font-bold text-red-400">{off.length}</div>
+                        <div className="text-[10px] text-gray-400">Off</div>
                       </div>
-                      <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded">
-                        <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{indoor.length}</div>
-                        <div className="text-[10px] text-muted-foreground">Indoor</div>
+                      <div className="text-center p-2 bg-blue-950/30 rounded">
+                        <div className="text-lg font-bold text-blue-400">{indoor.length}</div>
+                        <div className="text-[10px] text-gray-400">Indoor</div>
                       </div>
-                      <div className="text-center p-2 bg-purple-50 dark:bg-purple-950/20 rounded">
-                        <div className="text-lg font-bold text-purple-600 dark:text-purple-400">{outdoor.length}</div>
-                        <div className="text-[10px] text-muted-foreground">Outdoor</div>
+                      <div className="text-center p-2 bg-purple-950/30 rounded">
+                        <div className="text-lg font-bold text-purple-400">{outdoor.length}</div>
+                        <div className="text-[10px] text-gray-400">Outdoor</div>
                       </div>
                     </div>
                     
                     {/* Indoor Staff */}
                     {indoorStaff.length > 0 && (
                       <div className="space-y-1 mb-2">
-                        <div className="text-xs font-semibold text-blue-600 dark:text-blue-400">Indoor Stations:</div>
+                        <div className="text-xs font-semibold text-blue-400">Indoor Stations:</div>
                         <div className="max-h-20 overflow-y-auto space-y-1 text-xs">
                           {indoorStaff.map((s, idx) => (
-                            <div key={idx} className="text-muted-foreground">
+                            <div key={idx} className="text-gray-400">
                               • {s.name} - {s.station}
                             </div>
                           ))}
@@ -1125,10 +1102,10 @@ export default function StaffScheduling() {
                     {/* Outdoor Staff */}
                     {outdoorStaff.length > 0 && (
                       <div className="space-y-1 mb-2">
-                        <div className="text-xs font-semibold text-purple-600 dark:text-purple-400">Outdoor Stations:</div>
+                        <div className="text-xs font-semibold text-purple-400">Outdoor Stations:</div>
                         <div className="max-h-20 overflow-y-auto space-y-1 text-xs">
                           {outdoorStaff.map((s, idx) => (
-                            <div key={idx} className="text-muted-foreground">
+                            <div key={idx} className="text-gray-400">
                               • {s.name} - {s.station}
                             </div>
                           ))}
@@ -1139,10 +1116,10 @@ export default function StaffScheduling() {
                     {/* Floating/Support Staff */}
                     {floatingStaff.length > 0 && (
                       <div className="space-y-1 mb-2">
-                        <div className="text-xs font-semibold">Bar Back/Support:</div>
+                        <div className="text-xs font-semibold text-gray-200">Bar Back/Support:</div>
                         <div className="max-h-16 overflow-y-auto space-y-1 text-xs">
                           {floatingStaff.map((s, idx) => (
-                            <div key={idx} className="text-muted-foreground">
+                            <div key={idx} className="text-gray-400">
                               • {s.name} - {s.station}
                             </div>
                           ))}
@@ -1152,11 +1129,11 @@ export default function StaffScheduling() {
 
                     {/* Off Staff */}
                     {offStaff.length > 0 && (
-                      <div className="space-y-1 pt-2 border-t">
-                        <div className="text-xs font-medium">Off:</div>
+                      <div className="space-y-1 pt-2 border-t border-gray-700">
+                        <div className="text-xs font-medium text-gray-200">Off:</div>
                         <div className="max-h-16 overflow-y-auto space-y-1 text-xs">
                           {offStaff.map((name, idx) => (
-                            <div key={idx} className="text-muted-foreground">
+                            <div key={idx} className="text-gray-400">
                               • {name}
                             </div>
                           ))}
@@ -1172,22 +1149,22 @@ export default function StaffScheduling() {
 
         {/* Schedule Table */}
         {staffMembers.length > 0 && (
-          <Card className="p-4 overflow-x-auto">
-            <h3 className="text-lg font-semibold mb-4">Weekly Schedule</h3>
+          <Card className="p-4 overflow-x-auto bg-gray-900 border-gray-800">
+            <h3 className="text-lg font-semibold mb-4 text-gray-100">Weekly Schedule</h3>
             <div className="min-w-max">
               <table className="w-full border-collapse">
                 <thead>
                   <tr>
-                    <th className="border border-border p-2 bg-muted font-semibold text-left min-w-[140px] sticky left-0 z-10">
+                    <th className="border border-gray-700 p-2 bg-gray-800 font-semibold text-left min-w-[140px] sticky left-0 z-10 text-gray-100">
                       Staff / Role
                     </th>
                     {DAYS_OF_WEEK.map((day, dayIndex) => {
                       const isBusyDay = !!dailyEvents[day];
                       const dayLabel = dailyEvents[day] || '';
                       return (
-                        <th key={day} className={`border border-border p-2 font-semibold text-center min-w-[180px] ${isBusyDay ? 'bg-orange-100 dark:bg-orange-900/20' : 'bg-muted'}`}>
+                        <th key={day} className={`border border-gray-700 p-2 font-semibold text-center min-w-[180px] ${isBusyDay ? 'bg-orange-900/30' : 'bg-gray-800'} text-gray-100`}>
                           <div>{day}</div>
-                          {dayLabel && <div className="text-xs font-normal text-muted-foreground">{dayLabel}</div>}
+                          {dayLabel && <div className="text-xs font-normal text-gray-400">{dayLabel}</div>}
                         </th>
                       );
                     })}
@@ -1208,9 +1185,9 @@ export default function StaffScheduling() {
                     })
                     .map(staff => (
                     <tr key={staff.id}>
-                      <td className="border border-border p-2 font-medium bg-card sticky left-0 z-10">
-                        <div className="text-sm">{staff.name}</div>
-                        <div className="text-xs text-muted-foreground capitalize">
+                      <td className="border border-gray-700 p-2 font-medium bg-gray-800 sticky left-0 z-10">
+                        <div className="text-sm text-gray-100">{staff.name}</div>
+                        <div className="text-xs text-gray-400 capitalize">
                           {staff.title.replace('_', ' ')}
                         </div>
                       </td>
@@ -1219,7 +1196,7 @@ export default function StaffScheduling() {
                         return (
                           <td
                             key={day}
-                            className={`border border-border p-2 ${cell ? CELL_COLORS[cell.type] : 'bg-card'}`}
+                            className={`border border-gray-700 p-2 ${cell ? CELL_COLORS[cell.type] : 'bg-gray-850'}`}
                           >
                             <Input
                               value={cell?.timeRange || ''}
@@ -1234,10 +1211,10 @@ export default function StaffScheduling() {
                                 updateScheduleCell(staff.id, day, value, type, cell?.station);
                               }}
                               placeholder="OFF or Time"
-                              className="text-xs h-8 text-center border-0 bg-transparent"
+                              className="text-xs h-8 text-center border-0 bg-transparent text-gray-100"
                             />
                             {cell?.station && (
-                              <div className="text-[10px] text-muted-foreground text-center mt-1">
+                              <div className="text-[10px] text-gray-400 text-center mt-1">
                                 {cell.station}
                               </div>
                             )}
@@ -1253,28 +1230,28 @@ export default function StaffScheduling() {
         )}
 
         {/* Legend - Enhanced */}
-        <Card className="p-6 bg-gradient-to-br from-secondary/5 to-primary/5">
-          <h3 className="text-xl font-bold mb-4">📖 Schedule Legend & Important Notes</h3>
+        <Card className="p-6 bg-gray-900 border-gray-800">
+          <h3 className="text-xl font-bold mb-4 text-gray-100">📖 Schedule Legend & Important Notes</h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <div className="border-2 rounded-lg p-3 bg-green-500/20 border-green-500/50">
-              <div className="font-bold text-sm">🟢 Opening</div>
-              <div className="text-xs text-muted-foreground mt-1">Morning shift</div>
+              <div className="font-bold text-sm text-gray-100">🟢 Opening</div>
+              <div className="text-xs text-gray-400 mt-1">Morning shift</div>
             </div>
             <div className="border-2 rounded-lg p-3 bg-red-500/20 border-red-500/50">
-              <div className="font-bold text-sm">🔴 Closing</div>
-              <div className="text-xs text-muted-foreground mt-1">Night shift</div>
+              <div className="font-bold text-sm text-gray-100">🔴 Closing</div>
+              <div className="text-xs text-gray-400 mt-1">Night shift</div>
             </div>
             <div className="border-2 rounded-lg p-3 bg-yellow-500/20 border-yellow-500/50">
-              <div className="font-bold text-sm">🟡 Store Pick-up</div>
-              <div className="text-xs text-muted-foreground mt-1">Mon/Wed/Fri</div>
+              <div className="font-bold text-sm text-gray-100">🟡 Store Pick-up</div>
+              <div className="text-xs text-gray-400 mt-1">Mon/Wed/Fri</div>
             </div>
             <div className="border-2 rounded-lg p-3 bg-orange-500/20 border-orange-500/50">
-              <div className="font-bold text-sm">🟠 Brunch</div>
-              <div className="text-xs text-muted-foreground mt-1">11 AM Saturday</div>
+              <div className="font-bold text-sm text-gray-100">🟠 Brunch</div>
+              <div className="text-xs text-gray-400 mt-1">11 AM Saturday</div>
             </div>
-            <div className="border-2 rounded-lg p-3 bg-muted border-border">
-              <div className="font-bold text-sm">⚪ OFF</div>
-              <div className="text-xs text-muted-foreground mt-1">Day off</div>
+            <div className="border-2 rounded-lg p-3 bg-gray-800 border-gray-700">
+              <div className="font-bold text-sm text-gray-100">⚪ OFF</div>
+              <div className="text-xs text-gray-400 mt-1">Day off</div>
             </div>
           </div>
 
