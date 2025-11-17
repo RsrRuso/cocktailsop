@@ -194,15 +194,15 @@ export default function StaffScheduling() {
     //    - Person A: Week 1 = 1 day, Week 2 = 2 days
     //    - Person B: Week 1 = 2 days, Week 2 = 1 day
     // 3. If off day is busy event day, find alternative day
-    // 4. SPREAD EVENLY: Don't give same day off to too many people
+    // 4. OFF DAYS ONLY ON: Monday(0), Wednesday(2), Thursday(3), Sunday(6)
+    
+    // Available off days - ONLY these days
+    const allowedOffDays = [0, 2, 3, 6]; // Monday, Wednesday, Thursday, Sunday
     
     // Track how many offs per day to ensure even distribution
     const offsPerDay: number[] = [0, 0, 0, 0, 0, 0, 0];
     
     const divideIntoGroups = (staffList: StaffMember[]) => {
-      // Available days for rotation (avoid clustering)
-      const allDays = [0, 1, 2, 3, 4, 5, 6]; // Mon-Sun
-      
       return staffList.map((staff, index) => {
         // Alternating logic for same titles:
         // Odd week: index 0,2,4... get 1 day | index 1,3,5... get 2 days
@@ -210,8 +210,8 @@ export default function StaffScheduling() {
         const shouldGetTwoDays = isOddWeek ? (index % 2 === 1) : (index % 2 === 0);
         const targetDaysOff = shouldGetTwoDays ? 2 : 1;
         
-        // Find days with LEAST offs assigned (exclude busy days)
-        const availableDays = allDays
+        // Find days with LEAST offs assigned (only from allowed days, exclude busy days)
+        const availableDays = allowedOffDays
           .filter(day => !busyDays.includes(day))
           .sort((a, b) => offsPerDay[a] - offsPerDay[b]);
         
@@ -223,9 +223,9 @@ export default function StaffScheduling() {
           offsPerDay[day]++;
         });
         
-        // If no days available (all are busy), force at least 1 off
-        if (finalDaysOff.length === 0 && allDays.length > 0) {
-          const leastUsedDay = allDays.sort((a, b) => offsPerDay[a] - offsPerDay[b])[0];
+        // If no days available (all allowed days are busy), force at least 1 off from allowed days
+        if (finalDaysOff.length === 0 && allowedOffDays.length > 0) {
+          const leastUsedDay = allowedOffDays.sort((a, b) => offsPerDay[a] - offsPerDay[b])[0];
           finalDaysOff.push(leastUsedDay);
           offsPerDay[leastUsedDay]++;
         }
