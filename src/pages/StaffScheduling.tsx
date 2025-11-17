@@ -605,6 +605,12 @@ export default function StaffScheduling() {
       workingBarBacks.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
+        // Allocate bar backs to Indoor or Outdoor
+        const barBackStations = [
+          'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
+          'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish'
+        ];
+        
         // First bar back gets early start for pickup/opening duties (9 hours)
         let timeRange, type;
         if (idx === 0) {
@@ -624,12 +630,15 @@ export default function StaffScheduling() {
           type = 'regular';
         }
         
+        // Assign station (alternate between outdoor and indoor)
+        const station = idx < barBackStations.length ? barBackStations[idx] : barBackStations[idx % barBackStations.length];
+        
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
           timeRange,
           type,
-          station: `Bar Back: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish`
+          station
         };
       });
 
@@ -650,13 +659,21 @@ export default function StaffScheduling() {
       workingSupport.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
-        // Support works 10 hours: starts early for setup, leaves before close
+        // Allocate support to Indoor or Outdoor (10 hours)
+        const supportStations = [
+          'Support - Outdoor: Glassware Polishing, General Support',
+          'Support - Indoor: Glassware Polishing, General Support'
+        ];
+        
+        // Assign station (alternate between outdoor and indoor)
+        const station = idx < supportStations.length ? supportStations[idx] : supportStations[idx % supportStations.length];
+        
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
           timeRange: '3:00 PM - 1:00 AM',
           type: 'regular',
-          station: `Support: Glassware Polishing, General Support`
+          station
         };
       });
     });
@@ -801,22 +818,22 @@ export default function StaffScheduling() {
       // Categorize by area - ENSURE NO DOUBLE COUNTING (each person in ONE area only)
       const indoor = working.filter(s => {
         const station = s.station || '';
-        const staff = staffMembers.find(sm => sm.id === s.staffId);
-        // Only include if station explicitly says Indoor (not head supervising)
-        return (station.includes('Indoor - Station') || station.includes('Bar Back - Indoor'));
+        // Include indoor stations, bar backs, and support assigned to indoor
+        return (station.includes('Indoor - Station') || 
+                station.includes('Bar Back - Indoor') ||
+                station.includes('Support - Indoor'));
       });
       const outdoor = working.filter(s => {
         const station = s.station || '';
-        const staff = staffMembers.find(sm => sm.id === s.staffId);
-        // Only include if station explicitly says Outdoor (not head supervising)
-        return (station.includes('Outdoor - Station') || station.includes('Bar Back - Outdoor'));
+        // Include outdoor stations, bar backs, and support assigned to outdoor
+        return (station.includes('Outdoor - Station') || 
+                station.includes('Bar Back - Outdoor') ||
+                station.includes('Support - Outdoor'));
       });
       const floating = working.filter(s => {
         const station = s.station || '';
-        const staff = staffMembers.find(sm => sm.id === s.staffId);
-        // Include supervising heads, support, and bar backs not assigned to specific areas
-        return (station.includes('Supervising') || station.includes('Support:') || station.includes('Bar Back: Pickups') ||
-                station.includes('Floating') || station.includes('General'));
+        // Include supervising heads and floating support only
+        return (station.includes('Supervising') || station.includes('Floating'));
       });
       
       const eventLabel = dailyEvents[day] ? ` (${dailyEvents[day]})` : '';
