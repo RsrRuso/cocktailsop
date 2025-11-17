@@ -42,11 +42,11 @@ const CELL_COLORS = {
 };
 
 const ROLE_RESPONSIBILITIES = {
-  head_bartender: 'SUPERVISING: Observe indoor/outdoor areas, support where needed (Divided between areas if 2+ heads)',
-  senior_bartender: 'Operate Stations & Training',
-  bartender: 'IN CHARGE OF STATIONS: Operate assigned bar stations, supervise bar backs, manage station closing procedures, refresh and maintain stations based on operational needs during service',
-  bar_back: 'PRIORITY ROLE: Pickups, refilling, glassware polishing, batching, station opening/closing, refill fridges/freezers, stock refilling, garnish cutting (Divided between indoor/outdoor if 2+)',
-  support: 'Glassware polishing, general support (Divided between indoor/outdoor if 2+)',
+  head_bartender: 'SUPERVISING: Observe indoor/outdoor areas, support where needed (Divided between areas if 2+ heads). HYGIENE & SAFETY: Monitor food safety, update labeling, check expirations',
+  senior_bartender: 'Operate Stations & Training. HYGIENE & SAFETY: Ensure food safety compliance, maintain labeling standards, monitor product expirations',
+  bartender: 'IN CHARGE OF STATIONS: Operate assigned bar stations, supervise bar backs, manage station closing procedures, refresh and maintain stations based on operational needs during service. HYGIENE & SAFETY: Maintain hygiene standards, proper labeling, check product expirations',
+  bar_back: 'PRIORITY ROLE: Pickups, refilling, glassware polishing, batching, station opening/closing, refill fridges/freezers, stock refilling, garnish cutting (Divided between indoor/outdoor if 2+). HYGIENE & SAFETY: Food safety compliance, labeling updates, expiration monitoring',
+  support: 'Glassware polishing, general support (Divided between indoor/outdoor if 2+). HYGIENE & SAFETY: Maintain hygiene standards, assist with labeling, monitor expirations',
 };
 
 export default function StaffScheduling() {
