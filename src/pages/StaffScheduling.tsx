@@ -689,8 +689,8 @@ export default function StaffScheduling() {
           timeRange = idx === 0 ? '4:00 PM - 1:00 AM' : '5:00 PM - 3:00 AM'; // Mixed on Wednesday
           type = idx === 0 ? 'early_shift' : 'late_shift';
         } else if (day === 'Saturday') {
-          timeRange = '4:00 PM - 2:00 AM'; // 10 hours different end time for Saturday
-          type = 'early_shift';
+          timeRange = '4:00 PM - 3:00 AM'; // 11 hours for Saturday closing
+          type = 'late_shift';
         } else {
           timeRange = '5:00 PM - 3:00 AM'; // 10 hours standard
           type = 'late_shift';
@@ -771,10 +771,10 @@ export default function StaffScheduling() {
             type = 'opening';
           }
         } else {
-          // Additional bar backs work full service (9 hours)
+          // Additional bar backs work full service
           if (day === 'Wednesday') {
-            timeRange = '3:00 PM - 12:00 AM'; // Special time for Wednesday
-            type = 'opening';
+            timeRange = '3:00 PM - 3:00 AM'; // Closing shift for Wednesday
+            type = 'late_shift' as ScheduleCell['type'];
           } else {
             timeRange = '5:00 PM - 3:00 AM'; // Match bartender hours
             type = 'late_shift' as ScheduleCell['type'];
@@ -794,7 +794,7 @@ export default function StaffScheduling() {
       });
 
       // === PRIORITY 4: SUPPORT - General Support & Glassware Polishing ===
-      // Working hours: 10 hours (3:00 PM - 1:00 AM)
+      // Working hours: 12 hours (3:00 PM - 3:00 AM)
       
       // Mark off days
       offSupport.forEach(schedule => {
@@ -816,7 +816,7 @@ export default function StaffScheduling() {
           return;
         }
         
-        // Allocate support to Indoor or Outdoor (10 hours: 3:00 PM - 1:00 AM)
+        // Allocate support to Indoor or Outdoor (12 hours: 3:00 PM - 3:00 AM)
         const supportStations = [
           'Support - Outdoor: Glassware Polishing, General Support',
           'Support - Indoor: Glassware Polishing, General Support'
@@ -825,11 +825,11 @@ export default function StaffScheduling() {
         // Assign station (alternate between outdoor and indoor)
         const station = idx < supportStations.length ? supportStations[idx] : supportStations[idx % supportStations.length];
         
-        // Support works 10 hours: 3:00 PM - 1:00 AM
+        // Support works 12 hours: 3:00 PM - 3:00 AM (closing team)
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
-          timeRange: '3:00 PM - 1:00 AM',
+          timeRange: '3:00 PM - 3:00 AM',
           type: 'regular',
           station
         };
