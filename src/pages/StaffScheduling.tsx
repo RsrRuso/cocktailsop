@@ -884,7 +884,11 @@ export default function StaffScheduling() {
     toast.success('Schedule exported to PDF');
   };
 
-  const groupedStaff = staffMembers.reduce((acc, staff) => {
+  // Separate head bartender from other staff
+  const headBartenders = staffMembers.filter(s => s.title === 'head_bartender');
+  const otherStaff = staffMembers.filter(s => s.title !== 'head_bartender');
+  
+  const groupedStaff = otherStaff.reduce((acc, staff) => {
     if (!acc[staff.title]) acc[staff.title] = [];
     acc[staff.title].push(staff);
     return acc;
@@ -1017,6 +1021,31 @@ export default function StaffScheduling() {
           </div>
 
           <div className="space-y-3">
+            {/* Head Bartender section at the top */}
+            {headBartenders.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-400 uppercase">
+                  Head Bartender ({headBartenders.length})
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {headBartenders.map(staff => (
+                    <div key={staff.id} className="flex items-center justify-between p-2 border border-gray-800 rounded-lg bg-gray-800">
+                      <span className="font-medium text-gray-100">{staff.name}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteStaffMember(staff.id)}
+                        className="hover:bg-gray-700"
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Other staff grouped by title */}
             {Object.entries(groupedStaff).map(([title, members]) => (
               <div key={title} className="space-y-2">
                 <h4 className="text-sm font-medium text-gray-400 uppercase">
