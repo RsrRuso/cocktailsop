@@ -817,26 +817,21 @@ export default function StaffScheduling() {
       const off = daySchedule.filter(s => s.timeRange === 'OFF');
       
       // Categorize by area - ENSURE NO DOUBLE COUNTING (each person in ONE area only)
-      // EXCLUDE bar backs and support from breakdown
       const indoor = working.filter(s => {
         const station = s.station || '';
-        const staff = staffMembers.find(sm => sm.id === s.staffId);
-        const isBarBackOrSupport = staff?.title === 'bar_back' || staff?.title === 'support';
-        // Include indoor stations and heads supervising indoor, but exclude bar backs and support
-        return !isBarBackOrSupport && (
-          station.includes('Indoor - Station') || 
-          (station.includes('Supervising') && station.includes('Indoor'))
-        );
+        return (station.includes('Indoor - ') || 
+                station.includes('Bar Back - Indoor') || 
+                station.includes('Support - Indoor') || 
+                station.includes('Head - Indoor') ||
+                (station.includes('Supervising') && station.includes('Indoor')));
       });
       const outdoor = working.filter(s => {
         const station = s.station || '';
-        const staff = staffMembers.find(sm => sm.id === s.staffId);
-        const isBarBackOrSupport = staff?.title === 'bar_back' || staff?.title === 'support';
-        // Include outdoor stations and heads supervising outdoor, but exclude bar backs and support
-        return !isBarBackOrSupport && (
-          station.includes('Outdoor - Station') || 
-          (station.includes('Supervising') && station.includes('Outdoor'))
-        );
+        return (station.includes('Outdoor - ') || 
+                station.includes('Bar Back - Outdoor') || 
+                station.includes('Support - Outdoor') || 
+                station.includes('Head - Outdoor') ||
+                (station.includes('Supervising') && station.includes('Outdoor')));
       });
       
       // For heads supervising both or not allocated to specific area, add to both counts
@@ -1026,21 +1021,19 @@ export default function StaffScheduling() {
     
     const indoor = working.filter(s => {
       const station = s.station || '';
-      const staff = staffMembers.find(sm => sm.id === s.staffId);
-      const isBarBackOrSupport = staff?.title === 'bar_back' || staff?.title === 'support';
-      return !isBarBackOrSupport && (
-        station.includes('Indoor - Station') || 
-        (station.includes('Supervising') && station.includes('Indoor'))
-      );
+      return (station.includes('Indoor - ') || 
+              station.includes('Bar Back - Indoor') || 
+              station.includes('Support - Indoor') || 
+              station.includes('Head - Indoor') ||
+              (station.includes('Supervising') && station.includes('Indoor')));
     });
     const outdoor = working.filter(s => {
       const station = s.station || '';
-      const staff = staffMembers.find(sm => sm.id === s.staffId);
-      const isBarBackOrSupport = staff?.title === 'bar_back' || staff?.title === 'support';
-      return !isBarBackOrSupport && (
-        station.includes('Outdoor - Station') || 
-        (station.includes('Supervising') && station.includes('Outdoor'))
-      );
+      return (station.includes('Outdoor - ') || 
+              station.includes('Bar Back - Outdoor') || 
+              station.includes('Support - Outdoor') || 
+              station.includes('Head - Outdoor') ||
+              (station.includes('Supervising') && station.includes('Outdoor')));
     });
     
     const eventLabel = dailyEvents[day] ? ` - ${dailyEvents[day]}` : '';
@@ -1158,7 +1151,7 @@ export default function StaffScheduling() {
   }, {} as Record<string, StaffMember[]>);
 
   return (
-    <div className="min-h-screen bg-gray-950 pb-20">
+    <div className="min-h-screen bg-gray-950 pb-20 pt-16">
       <TopNav />
       
       <div className="container mx-auto p-4 space-y-6">
