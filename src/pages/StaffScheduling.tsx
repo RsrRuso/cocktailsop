@@ -1188,36 +1188,47 @@ export default function StaffScheduling() {
     const element = document.getElementById(`day-${day}`);
     
     if (!element) {
-      toast.error('Section not found');
+      console.error(`Element not found: day-${day}`);
+      toast.error(`Cannot find ${day} section`);
       return;
     }
 
-    toast.info(`Capturing ${day}...`);
+    const toastId = toast.info(`Capturing ${day}...`);
     
     try {
+      // Small delay to ensure all styles are applied
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const canvas = await html2canvas(element, {
         backgroundColor: '#111827',
         scale: 2,
         logging: false,
         useCORS: true,
+        allowTaint: true,
       });
       
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          toast.success(`${day} downloaded!`);
-        }
-      }, 'image/png');
+      // Convert to blob and download
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, 'image/png', 1.0);
+      });
+      
+      if (!blob) {
+        throw new Error('Failed to create image blob');
+      }
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`${day} downloaded!`);
     } catch (error) {
-      console.error('Download failed:', error);
-      toast.error('Download failed');
+      console.error('Download failed for', day, ':', error);
+      toast.error(`Failed to download ${day}`);
     }
   };
 
