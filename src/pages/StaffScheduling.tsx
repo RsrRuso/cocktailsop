@@ -41,11 +41,11 @@ const CELL_COLORS = {
 };
 
 const ROLE_RESPONSIBILITIES = {
-  head_bartender: 'Operate Stations & Floating Supervision (ONLY heads can supervise)',
-  senior_bartender: 'Operate Stations & Training (Cannot supervise)',
-  bartender: 'Operate Stations (Cannot supervise)',
-  bar_back: 'Indoor/Outdoor Support: Refill fridges, batches, premixes, pickups, glassware (Divided between areas)',
-  support: 'Indoor/Outdoor Floating Help: General assistance (Divided between areas)',
+  head_bartender: 'SUPERVISING: Observe indoor/outdoor areas, support where needed (Divided between areas if 2+ heads)',
+  senior_bartender: 'Operate Stations & Training',
+  bartender: 'OPERATE STATIONS: Assigned to specific bar stations',
+  bar_back: 'PRIORITY ROLE: Pickups, refilling, glassware polishing, batching, station opening/closing, refill fridges/freezers, stock refilling, garnish cutting (Divided between indoor/outdoor if 2+)',
+  support: 'Glassware polishing, general support (Divided between indoor/outdoor if 2+)',
 };
 
 export default function StaffScheduling() {
@@ -155,15 +155,20 @@ export default function StaffScheduling() {
       return;
     }
 
-    // Recommend sufficient staff for weekday outdoor coverage
+    // Recommend sufficient staff for optimal coverage
     const totalBartenders = headBartenders.length + seniorBartenders.length + bartenders.length;
-    if (totalBartenders < 5) {
-      toast.warning('⚠️ Recommendation: Add more bartenders for optimal coverage (Need 5+ bartenders who can operate stations)', {
+    if (totalBartenders < 4) {
+      toast.warning('⚠️ Recommendation: Add more bartenders for optimal station coverage (Need 4+ for all stations)', {
+        duration: 5000
+      });
+    }
+    if (barBacks.length < 1) {
+      toast.warning('⚠️ PRIORITY: Add at least 1 bar back (PRIORITY ROLE - pickups, refilling, batching, garnish cutting, etc.)', {
         duration: 5000
       });
     }
     if (support.length < 1) {
-      toast.warning('⚠️ Recommendation: Add at least 1 support staff for outdoor assistance (Support assists but does not operate stations)', {
+      toast.warning('⚠️ Recommendation: Add at least 1 support staff (glassware polishing, general support - 10h shifts)', {
         duration: 5000
       });
     }
@@ -204,142 +209,94 @@ export default function StaffScheduling() {
       const isSaturday = dayIndex === 5; // Brunch + Weekend
       const isBusyDay = busyDays.includes(dayIndex);
 
-      // === FLEXIBLE STATION ASSIGNMENT: Prioritize Coverage ===
-      const availableOperators: Array<{ staff: StaffMember; daysOff: number[]; role: string }> = [];
+      // === FLEXIBLE STATION ASSIGNMENT WITH CLEAR ROLE RESPONSIBILITIES ===
       const assignedStaffIds = new Set<string>();
       
-      // Collect all operators who are working this day
-      headSchedules.forEach(s => {
-        const shouldBeOff = s.daysOff.includes(dayIndex) && !isBusyDay;
-        if (!shouldBeOff) {
-          availableOperators.push({ staff: s.staff, daysOff: s.daysOff, role: 'head' });
-        } else {
-          newSchedule[`${s.staff.id}-${day}`] = {
-            staffId: s.staff.id,
+      // Separate operators by role for clear assignment
+      const workingHeads = headSchedules.filter(s => !s.daysOff.includes(dayIndex) || isBusyDay);
+      const workingSeniors = seniorBartenderSchedules.filter(s => !s.daysOff.includes(dayIndex) || isBusyDay);
+      const workingBartenders = bartenderSchedules.filter(s => !s.daysOff.includes(dayIndex) || isBusyDay);
+      const workingBarBacks = barBackSchedules.filter(s => !s.daysOff.includes(dayIndex) || isBusyDay);
+      const workingSupport = supportSchedules.filter(s => !s.daysOff.includes(dayIndex) || isBusyDay);
+      
+      // Mark OFF days for all roles
+      [...headSchedules, ...seniorBartenderSchedules, ...bartenderSchedules].forEach(schedule => {
+        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
+        if (shouldBeOff) {
+          newSchedule[`${schedule.staff.id}-${day}`] = {
+            staffId: schedule.staff.id,
             day,
             timeRange: 'OFF',
             type: 'off'
           };
-          assignedStaffIds.add(s.staff.id);
-        }
-      });
-      
-      seniorBartenderSchedules.forEach(s => {
-        const shouldBeOff = s.daysOff.includes(dayIndex) && !isBusyDay;
-        if (!shouldBeOff) {
-          availableOperators.push({ staff: s.staff, daysOff: s.daysOff, role: 'senior' });
-        } else {
-          newSchedule[`${s.staff.id}-${day}`] = {
-            staffId: s.staff.id,
-            day,
-            timeRange: 'OFF',
-            type: 'off'
-          };
-          assignedStaffIds.add(s.staff.id);
-        }
-      });
-      
-      bartenderSchedules.forEach(s => {
-        const shouldBeOff = s.daysOff.includes(dayIndex) && !isBusyDay;
-        if (!shouldBeOff) {
-          availableOperators.push({ staff: s.staff, daysOff: s.daysOff, role: 'bartender' });
-        } else {
-          newSchedule[`${s.staff.id}-${day}`] = {
-            staffId: s.staff.id,
-            day,
-            timeRange: 'OFF',
-            type: 'off'
-          };
-          assignedStaffIds.add(s.staff.id);
+          assignedStaffIds.add(schedule.staff.id);
         }
       });
 
-      // FLEXIBLE PRIORITY ASSIGNMENT WITH SUPERVISION RESERVED FOR HEAD BARTENDERS
-      const stations = ['Indoor - Station 1', 'Indoor - Station 2', 'Indoor - Garnishing Station 3'];
-      
-      // Reserve a head bartender for supervision if we have 4+ operators and at least 1 head bartender
-      let reservedSupervisor: { staff: StaffMember; daysOff: number[]; role: string } | null = null;
-      if (availableOperators.length >= 4) {
-        const headBartenderForSupervisor = availableOperators.find(op => op.role === 'head' && !assignedStaffIds.has(op.staff.id));
-        if (headBartenderForSupervisor) {
-          reservedSupervisor = headBartenderForSupervisor;
-          assignedStaffIds.add(headBartenderForSupervisor.staff.id);
-        }
-      }
-
-      // PRIORITY 1: Outdoor Station 1 (MUST have coverage) - 9 hours
-      const outdoorOperator = availableOperators.find(op => !assignedStaffIds.has(op.staff.id));
-      if (outdoorOperator) {
-        newSchedule[`${outdoorOperator.staff.id}-${day}`] = {
-          staffId: outdoorOperator.staff.id,
-          day,
-          timeRange: isWeekday ? '4:00 PM - 1:00 AM' : '5:00 PM - 2:00 AM',
-          type: 'regular',
-          station: 'Outdoor - Station 1'
-        };
-        assignedStaffIds.add(outdoorOperator.staff.id);
-      }
-
-      // PRIORITY 2: Indoor Stations (Fill as many as possible) - 9 hours
-      for (let i = 0; i < stations.length; i++) {
-        const stationOperator = availableOperators.find(op => !assignedStaffIds.has(op.staff.id));
-        if (stationOperator) {
-          newSchedule[`${stationOperator.staff.id}-${day}`] = {
-            staffId: stationOperator.staff.id,
+      // === PRIORITY 1: HEAD BARTENDERS - SUPERVISING ROLE (Divided between indoor/outdoor if 2+) ===
+      if (workingHeads.length >= 2) {
+        // Divide heads between indoor and outdoor supervision
+        workingHeads.forEach((schedule, idx) => {
+          const area = idx === 0 ? 'Indoor' : 'Outdoor';
+          newSchedule[`${schedule.staff.id}-${day}`] = {
+            staffId: schedule.staff.id,
             day,
             timeRange: '6:00 PM - 3:00 AM',
             type: 'regular',
-            station: stations[i]
+            station: `${area} Supervisor: Observe & Support`
           };
-          assignedStaffIds.add(stationOperator.staff.id);
-        }
-      }
-
-      // PRIORITY 3: Assign Reserved Head Bartender as Floating Supervisor - 9 hours
-      if (reservedSupervisor) {
-        newSchedule[`${reservedSupervisor.staff.id}-${day}`] = {
-          staffId: reservedSupervisor.staff.id,
+          assignedStaffIds.add(schedule.staff.id);
+        });
+      } else if (workingHeads.length === 1) {
+        // Single head supervises both areas
+        newSchedule[`${workingHeads[0].staff.id}-${day}`] = {
+          staffId: workingHeads[0].staff.id,
           day,
           timeRange: '6:00 PM - 3:00 AM',
           type: 'regular',
           station: 'Floating Supervisor: Observe Indoor/Outdoor, Support Where Needed'
         };
+        assignedStaffIds.add(workingHeads[0].staff.id);
       }
 
-      // PRIORITY 4: Ticket Segregator (only if 5+ operators) - 9 hours
-      if (availableOperators.length >= 5) {
-        const ticketOperator = availableOperators.find(op => !assignedStaffIds.has(op.staff.id));
-        if (ticketOperator) {
-          newSchedule[`${ticketOperator.staff.id}-${day}`] = {
-            staffId: ticketOperator.staff.id,
+      // === PRIORITY 2: BARTENDERS & SENIORS - ASSIGNED TO STATIONS ===
+      const stations = ['Outdoor - Station 1', 'Indoor - Station 1', 'Indoor - Station 2', 'Indoor - Garnishing Station 3'];
+      const allStationOperators = [...workingSeniors, ...workingBartenders].filter(s => !assignedStaffIds.has(s.staff.id));
+      
+      // Assign operators to stations
+      allStationOperators.forEach((schedule, idx) => {
+        if (idx < stations.length) {
+          const timeRange = stations[idx].includes('Outdoor') 
+            ? (isWeekday ? '4:00 PM - 1:00 AM' : '5:00 PM - 2:00 AM')
+            : '6:00 PM - 3:00 AM';
+          
+          newSchedule[`${schedule.staff.id}-${day}`] = {
+            staffId: schedule.staff.id,
             day,
-            timeRange: '6:00 PM - 3:00 AM',
+            timeRange,
             type: 'regular',
-            station: 'Indoor - Ticket Segregator'
+            station: stations[idx]
           };
-          assignedStaffIds.add(ticketOperator.staff.id);
-        }
-      }
-
-      // PRIORITY 5: Extra Support for remaining operators - 9 hours
-      availableOperators.forEach(operator => {
-        if (!assignedStaffIds.has(operator.staff.id)) {
-          newSchedule[`${operator.staff.id}-${day}`] = {
-            staffId: operator.staff.id,
+          assignedStaffIds.add(schedule.staff.id);
+        } else {
+          // Extra operators
+          newSchedule[`${schedule.staff.id}-${day}`] = {
+            staffId: schedule.staff.id,
             day,
             timeRange: isBusyDay ? '6:00 PM - 3:00 AM' : 'OFF',
             type: isBusyDay ? 'regular' : 'off',
-            station: isBusyDay ? 'Extra Support' : undefined
+            station: isBusyDay ? 'Extra Station Support' : undefined
           };
-          assignedStaffIds.add(operator.staff.id);
+          assignedStaffIds.add(schedule.staff.id);
         }
       });
 
-      // === BAR BACKS - Divided between Indoor & Outdoor Support (9 hours) ===
-      barBackSchedules.forEach((schedule, idx) => {
+      // === PRIORITY 3: BAR BACKS - PRIORITY ROLE (Pickups, refilling, glassware, batching, opening/closing, fridges/freezers, stock, garnish) ===
+      // Division logic: 2+ bar backs → divide indoor/outdoor, 1 bar back + 1 support → also divide
+      const shouldDivideBarBacks = workingBarBacks.length >= 2 || (workingBarBacks.length === 1 && workingSupport.length >= 1);
+      
+      workingBarBacks.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
-
-        // No offs on busy days
         const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
 
         if (shouldBeOff) {
@@ -350,26 +307,33 @@ export default function StaffScheduling() {
             type: 'off'
           };
         } else {
-          // Alternate between indoor and outdoor areas
-          const area = idx % 2 === 0 ? 'Indoor' : 'Outdoor';
-          const timeRange = isPickupDay && idx === 0 ? 'PICKUP 12:00 PM - 9:00 PM' : isSaturday && idx === 0 ? 'BRUNCH 11:00 AM - 8:00 PM' : idx === 0 ? '3:00 PM - 12:00 AM' : '5:00 PM - 2:00 AM';
-          const type = isPickupDay && idx === 0 ? 'pickup' : isSaturday && idx === 0 ? 'brunch' : idx === 0 ? 'opening' : 'regular';
+          // Determine area assignment
+          const area = shouldDivideBarBacks ? (idx % 2 === 0 ? 'Indoor' : 'Outdoor') : 'Indoor/Outdoor';
+          
+          // First bar back gets pickup/opening duties
+          const timeRange = idx === 0 
+            ? (isPickupDay ? 'PICKUP 12:00 PM - 9:00 PM' : isSaturday ? 'BRUNCH 11:00 AM - 8:00 PM' : '3:00 PM - 12:00 AM')
+            : '5:00 PM - 2:00 AM';
+          const type = idx === 0
+            ? (isPickupDay ? 'pickup' : isSaturday ? 'brunch' : 'opening')
+            : 'regular';
           
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange,
             type,
-            station: `Bar Back: ${area} Support (Refill, Batches, Premixes, Glassware)`
+            station: `Bar Back ${area}: Pickups, Refilling, Glassware Polishing, Batching, Opening/Closing, Fridges/Freezers, Stock, Garnish Cutting`
           };
         }
       });
 
-      // === SUPPORT - Divided between Indoor & Outdoor Areas (10 hours) ===
-      supportSchedules.forEach((schedule, idx) => {
+      // === PRIORITY 4: SUPPORT - General Support & Glassware Polishing (10 hours) ===
+      // Division logic: 2+ support → divide indoor/outdoor, 1 bar back + 1 support → divide
+      const shouldDivideSupport = workingSupport.length >= 2 || (workingBarBacks.length >= 1 && workingSupport.length === 1);
+      
+      workingSupport.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
-
-        // No offs on busy days
         const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
 
         if (shouldBeOff) {
@@ -380,14 +344,26 @@ export default function StaffScheduling() {
             type: 'off'
           };
         } else {
-          // Alternate between indoor and outdoor areas (10 hours)
-          const area = idx % 2 === 0 ? 'Indoor' : 'Outdoor';
+          // Determine area assignment - if dividing with 1 bar back, support takes the opposite area
+          let area;
+          if (shouldDivideSupport) {
+            if (workingBarBacks.length === 1 && workingSupport.length === 1) {
+              // 1 bar back at indoor (idx 0), support goes outdoor
+              area = 'Outdoor';
+            } else {
+              // Multiple supports: alternate
+              area = idx % 2 === 0 ? 'Indoor' : 'Outdoor';
+            }
+          } else {
+            area = 'Indoor/Outdoor';
+          }
+          
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange: '3:00 PM - 1:00 AM',
             type: 'regular',
-            station: `Support: ${area} Floating Help`
+            station: `Support ${area}: Glassware Polishing, General Support`
           };
         }
       });
@@ -426,7 +402,7 @@ export default function StaffScheduling() {
     }
 
     setSchedule(newSchedule);
-    toast.success('✅ Schedule generated! CRITICAL: Only head bartenders supervise (reserved first). Bartenders like Samukele operate stations only.');
+    toast.success('✅ Schedule generated! Clear roles: Heads supervise, Bartenders at stations, Bar backs (PRIORITY) pickups/refilling/batching, Support glassware/general.');
   };
 
   const exportToPDF = () => {
@@ -583,25 +559,31 @@ export default function StaffScheduling() {
     finalY += 3;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('FLEXIBLE ASSIGNMENT PRIORITIES', 14, finalY);
+    doc.text('ROLE RESPONSIBILITIES & PRIORITIES', 14, finalY);
     finalY += 4;
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text('PRIORITY 1: OUTDOOR STATION 1 (MUST have at least 1 bartender/senior/head)', 14, finalY);
+    doc.text('PRIORITY 1 - HEAD BARTENDERS: SUPERVISING (Divided between indoor/outdoor if 2+ heads)', 14, finalY);
     finalY += 3;
-    doc.text('PRIORITY 2: INDOOR STATIONS (Filled with remaining bartenders/senior/head)', 14, finalY);
+    doc.text('PRIORITY 2 - BARTENDERS & SENIORS: ASSIGNED TO STATIONS (Outdoor Station 1, Indoor Stations 1-3)', 14, finalY);
     finalY += 3;
-    doc.text('PRIORITY 3: FLOATING SUPERVISOR (Head bartender observes indoor/outdoor, supports where needed - if 4+ staff)', 14, finalY);
+    doc.text('PRIORITY 3 - BAR BACKS (PRIORITY ROLE): Pickups, refilling, glassware polishing, batching,', 14, finalY);
     finalY += 3;
-    doc.text('PRIORITY 4: TICKET SEGREGATOR (Only if 5+ bartenders available)', 14, finalY);
+    doc.text('  opening/closing, fridges/freezers refill, stock refilling, garnish cutting (Divided if 2+)', 14, finalY);
+    finalY += 3;
+    doc.text('PRIORITY 4 - SUPPORT: Glassware polishing, general support (10h shifts, divided if 2+)', 14, finalY);
     finalY += 4;
     doc.setFont('helvetica', 'bold');
-    doc.text('FLEXIBLE RULE: Second outdoor station removed - ONLY Head Bartenders can be floating supervisors', 14, finalY);
+    doc.text('DIVISION RULES:', 14, finalY);
     finalY += 3;
     doc.setFont('helvetica', 'normal');
-    doc.text('• ONLY Head bartender can supervise - observes all areas and fills gaps (Senior/Bartenders cannot supervise)', 14, finalY);
+    doc.text('• 2+ Heads → Divided between indoor/outdoor supervision', 14, finalY);
     finalY += 3;
-    doc.text('• Bar Backs & Support: Divided between Indoor and Outdoor areas (Assist only, not operate stations)', 14, finalY);
+    doc.text('• 2+ Bar backs → Divided between indoor/outdoor areas', 14, finalY);
+    finalY += 3;
+    doc.text('• 1 Bar back + 1 Support → Also divided between areas', 14, finalY);
+    finalY += 3;
+    doc.text('• 2+ Support → Divided between indoor/outdoor areas', 14, finalY);
     
     // Legend & Notes
     finalY += 5;
@@ -613,13 +595,15 @@ export default function StaffScheduling() {
     doc.setFont('helvetica', 'normal');
     doc.text('• Stations require: Head Bartender OR Senior Bartender OR Bartender', 14, finalY);
     finalY += 3;
+    doc.text('• Working hours: Bartenders/Bar backs 9h, Support 10h', 14, finalY);
+    finalY += 3;
     doc.text('• No offs allowed on busy days: Tuesday (Ladies Night), Friday (Weekend), Saturday (Brunch)', 14, finalY);
     finalY += 3;
     doc.text('• Break Time: 5:00 PM - 6:00 PM | Ending Back & Front: 6:45 PM (Mandatory)', 14, finalY);
     finalY += 3;
-    doc.text('• Store Pick-up: Monday, Wednesday, Friday', 14, finalY);
+    doc.text('• Store Pick-up: Monday, Wednesday, Friday (Bar backs handle)', 14, finalY);
     finalY += 3;
-    doc.text('• Weekdays: Minimum 1 bartender per outdoor station', 14, finalY);
+    doc.text('• Bar backs are PRIORITY ROLE with most responsibilities', 14, finalY);
 
     doc.save(`${venueName || 'schedule'}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     toast.success('Schedule exported to PDF');
