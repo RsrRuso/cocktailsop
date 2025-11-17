@@ -41,11 +41,11 @@ const CELL_COLORS = {
 };
 
 const ROLE_RESPONSIBILITIES = {
-  head_bartender: 'Segregation & Support',
-  senior_bartender: 'Station Service & Training',
-  bartender: 'Station Service',
-  bar_back: 'Refill fridges, batches, premixes, pickups, glassware, stations, opening/closing',
-  support: 'Help if on duty',
+  head_bartender: 'Operate Stations & Segregation Support',
+  senior_bartender: 'Operate Stations & Training',
+  bartender: 'Operate Stations',
+  bar_back: 'Assist Only: Refill fridges, batches, premixes, pickups, glassware, stations, opening/closing',
+  support: 'Assist Only: Help when on duty (Cannot operate stations)',
 };
 
 export default function StaffScheduling() {
@@ -158,12 +158,12 @@ export default function StaffScheduling() {
     // Recommend sufficient staff for weekday outdoor coverage
     const totalBartenders = headBartenders.length + seniorBartenders.length + bartenders.length;
     if (totalBartenders < 5) {
-      toast.warning('Recommendation: For optimal weekday outdoor coverage, add at least 5 bartenders (2 Head + 3+ Bartenders/Senior)', {
+      toast.warning('⚠️ Recommendation: Add more bartenders for optimal coverage (Need 5+ bartenders who can operate stations)', {
         duration: 5000
       });
     }
     if (support.length < 1) {
-      toast.warning('Recommendation: Add at least 1 support staff for outdoor assistance on weekdays', {
+      toast.warning('⚠️ Recommendation: Add at least 1 support staff for outdoor assistance (Support assists but does not operate stations)', {
         duration: 5000
       });
     }
@@ -356,7 +356,7 @@ export default function StaffScheduling() {
             type: 'off'
           };
         } else if (idx === 0) {
-          // Primary bar back - Indoor focus
+          // Primary bar back - Indoor focus (Assist Only, No Station Operation)
           const timeRange = isPickupDay ? 'PICKUP 12:00 PM - 3:00 AM' : isSaturday ? 'BRUNCH 11:00 AM - 3:00 AM' : '2:00 PM - 3:00 AM';
           const type = isPickupDay ? 'pickup' : isSaturday ? 'brunch' : 'opening';
           newSchedule[key] = {
@@ -364,33 +364,33 @@ export default function StaffScheduling() {
             day,
             timeRange,
             type,
-            station: 'Indoor - Refill Fridges, Batches, Premixes, Glassware'
+            station: 'Indoor - Assist: Refill, Batches, Premixes, Glassware'
           };
         } else if (idx === 1) {
-          // Second bar back - Outdoor focus
+          // Second bar back - Outdoor focus (Assist Only, No Station Operation)
           const timeRange = isSaturday ? 'BRUNCH 11:00 AM - 2:00 AM' : '4:00 PM - 2:00 AM';
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange,
             type: isSaturday ? 'brunch' : 'regular',
-            station: 'Outdoor - Bar Back Support & Setup'
+            station: 'Outdoor - Assist: Setup, Refill, Support'
           };
         } else {
-          // Additional bar back - General/Floating
+          // Additional bar back - General/Floating (Assist Only)
           const timeRange = isSaturday ? 'BRUNCH 11:00 AM - 2:00 AM' : '4:00 PM - 2:00 AM';
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange,
             type: isSaturday ? 'brunch' : 'regular',
-            station: 'Floating - General Bar Back Support'
+            station: 'Floating - General Bar Back Assist'
           };
         }
       });
 
-      // === SUPPORT - Schedule based on rotation ===
-      // Ensure at least one support for outdoor on weekdays
+      // === SUPPORT - Assist Only, Cannot Operate Stations ===
+      // Support staff help but do not stand at stations
       let outdoorSupportAssigned = false;
       supportSchedules.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
@@ -413,17 +413,17 @@ export default function StaffScheduling() {
               day,
               timeRange: '3:00 PM - 1:00 AM',
               type: 'regular',
-              station: 'Outdoor - Support Help'
+              station: 'Outdoor - Assist/Support (Not Operating Station)'
             };
             outdoorSupportAssigned = true;
           } else {
-            // Other support staff - floating or indoor
+            // Other support staff - floating assistance
             newSchedule[key] = {
               staffId: schedule.staff.id,
               day,
               timeRange: '3:00 PM - 1:00 AM',
               type: 'regular',
-              station: idx === 1 ? 'Indoor - Floating Support' : 'Floating Support - Help as needed'
+              station: idx === 1 ? 'Indoor - Assist/Support' : 'Floating - General Assist/Support'
             };
           }
         }
@@ -431,7 +431,7 @@ export default function StaffScheduling() {
     });
 
     setSchedule(newSchedule);
-    toast.success('Schedule generated! Weekdays: Outdoor has 1+ bartender & 1 support. Day-offs on less busy days.');
+    toast.success('✅ Schedule generated! Only bartenders operate stations. Support/bar backs assist only. Outdoor has 1+ bartender on weekdays.');
   };
 
   const exportToPDF = () => {
@@ -595,6 +595,12 @@ export default function StaffScheduling() {
     doc.text('INDOOR: Ticket Segregator, Station 1, Station 2, Garnishing Station 3', 14, finalY);
     finalY += 3;
     doc.text('OUTDOOR: Station 1, Station 2', 14, finalY);
+    finalY += 3;
+    doc.setFont('helvetica', 'bold');
+    doc.text('IMPORTANT: Only Bartenders/Senior/Head Bartenders can OPERATE stations', 14, finalY);
+    finalY += 3;
+    doc.setFont('helvetica', 'normal');
+    doc.text('Bar Backs & Support staff can only ASSIST - they cannot stand at or operate stations', 14, finalY);
     
     // Legend & Notes
     finalY += 5;
@@ -609,6 +615,8 @@ export default function StaffScheduling() {
     doc.text('• Break Time: 5:00 PM - 6:00 PM | Ending Back & Front: 6:45 PM (Mandatory)', 14, finalY);
     finalY += 3;
     doc.text('• Store Pick-up: Monday, Wednesday, Friday', 14, finalY);
+    finalY += 3;
+    doc.text('• Weekdays: Minimum 1 bartender + 1 support for outdoor bar', 14, finalY);
 
     doc.save(`${venueName || 'schedule'}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     toast.success('Schedule exported to PDF');
