@@ -568,11 +568,12 @@ export default function StaffScheduling() {
       
       const allStationBartenders = [...workingSeniorBartenders, ...workingBartenders];
       // PRIORITY: Indoor bar is always busier - allocate indoor stations FIRST before outdoor
+      // When full team: 2 outdoor, rest indoor
       const stations = [
         'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Indoor - Garnishing Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Outdoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
       ];
 
       allStationBartenders.forEach((schedule, idx) => {
@@ -631,11 +632,11 @@ export default function StaffScheduling() {
       workingBarBacks.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
-        // Allocate bar backs - First one outdoor, rest indoor
+        // Allocate bar backs - Support strategy when full team: 1 flexible support for indoor/outdoor
         const barBackStations = [
-          'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
           'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
-          'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish'
+          'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
+          'Bar Back - Support (Indoor/Outdoor): Flexible support, help where needed, pickups, refilling, stock'
         ];
         
         // First bar back gets early start for pickup/opening duties (9 hours)
