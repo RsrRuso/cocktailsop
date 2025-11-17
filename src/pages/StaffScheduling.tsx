@@ -1180,34 +1180,25 @@ export default function StaffScheduling() {
       return;
     }
 
-    toast.info(`Capturing ${day}...`);
+    console.log(`Starting download for ${day}...`);
+    toast.info(`Preparing ${day} for download...`);
     
     try {
-      // Ensure element is visible by temporarily expanding if needed
-      const parentAccordion = element.closest('[data-state]');
-      const wasCollapsed = parentAccordion?.getAttribute('data-state') === 'closed';
+      // Wait a bit to ensure all rendering is complete
+      await new Promise(resolve => setTimeout(resolve, 100));
       
-      if (wasCollapsed && parentAccordion) {
-        // Trigger accordion open
-        const trigger = parentAccordion.querySelector('[data-accordion-trigger]');
-        if (trigger instanceof HTMLElement) {
-          trigger.click();
-          // Wait for expansion animation
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-      }
-      
-      // Small delay to ensure all styles are applied
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
+      console.log(`Capturing ${day} with html2canvas...`);
       const canvas = await html2canvas(element, {
         backgroundColor: '#111827',
-        scale: 3,
-        logging: false,
+        scale: 2,
+        logging: true,
         useCORS: true,
         allowTaint: false,
-        foreignObjectRendering: true,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
       });
+      
+      console.log(`Canvas created for ${day}, converting to blob...`);
       
       // Convert to blob as JPEG
       const blob = await new Promise<Blob | null>((resolve) => {
@@ -1215,30 +1206,38 @@ export default function StaffScheduling() {
       });
       
       if (!blob) {
+        console.error('Failed to create blob');
         throw new Error('Failed to create image blob');
       }
       
+      console.log(`Blob created, size: ${blob.size} bytes`);
+      
+      // Create download link
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
+      const filename = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+      
       link.href = url;
-      link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+      link.download = filename;
+      link.style.display = 'none';
+      
+      console.log(`Triggering download for: ${filename}`);
+      
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
       
-      toast.success(`${day} downloaded as JPG!`);
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        console.log(`Download completed and cleaned up for ${day}`);
+      }, 100);
       
-      // Restore accordion state if needed
-      if (wasCollapsed && parentAccordion) {
-        const trigger = parentAccordion.querySelector('[data-accordion-trigger]');
-        if (trigger instanceof HTMLElement) {
-          trigger.click();
-        }
-      }
+      toast.success(`${day} downloaded successfully!`);
+      
     } catch (error) {
       console.error('Download failed for', day, ':', error);
-      toast.error(`Failed to download ${day}. Please try again.`);
+      toast.error(`Failed to download ${day}. Check console for details.`);
     }
   };
 
