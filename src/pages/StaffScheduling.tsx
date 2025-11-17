@@ -241,49 +241,113 @@ export default function StaffScheduling() {
       const isBrunchDay = day === 'Saturday';
       const isBusyDay = busyDays.includes(dayIndex);
 
-      // Get working staff for this day (filter out those who should be off)
-      const workingHeads = headSchedules.filter(hs => !(hs.daysOff.includes(dayIndex) && !isBusyDay));
-      const workingSeniorBartenders = seniorBartenderSchedules.filter(sb => !(sb.daysOff.includes(dayIndex) && !isBusyDay));
-      const workingBartenders = bartenderSchedules.filter(bs => !(bs.daysOff.includes(dayIndex) && !isBusyDay));
-      const workingBarBacks = barBackSchedules.filter(bb => !(bb.daysOff.includes(dayIndex) && !isBusyDay));
-      const workingSupport = supportSchedules.filter(ss => !(ss.daysOff.includes(dayIndex) && !isBusyDay));
-
       // Track which staff have been scheduled to avoid duplicates
       const assignedStaffIds = new Set<string>();
+
+      // First, separate ALL staff into off vs working arrays
+      const offHeads: typeof headSchedules = [];
+      const workingHeads: typeof headSchedules = [];
+      const offSeniorBartenders: typeof seniorBartenderSchedules = [];
+      const workingSeniorBartenders: typeof seniorBartenderSchedules = [];
+      const offBartenders: typeof bartenderSchedules = [];
+      const workingBartenders: typeof bartenderSchedules = [];
+      const offBarBacks: typeof barBackSchedules = [];
+      const workingBarBacks: typeof barBackSchedules = [];
+      const offSupport: typeof supportSchedules = [];
+      const workingSupport: typeof supportSchedules = [];
+      
+      headSchedules.forEach(schedule => {
+        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
+        if (shouldBeOff) {
+          offHeads.push(schedule);
+        } else {
+          workingHeads.push(schedule);
+        }
+      });
+      
+      seniorBartenderSchedules.forEach(schedule => {
+        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
+        if (shouldBeOff) {
+          offSeniorBartenders.push(schedule);
+        } else {
+          workingSeniorBartenders.push(schedule);
+        }
+      });
+      
+      bartenderSchedules.forEach(schedule => {
+        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
+        if (shouldBeOff) {
+          offBartenders.push(schedule);
+        } else {
+          workingBartenders.push(schedule);
+        }
+      });
+      
+      barBackSchedules.forEach(schedule => {
+        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
+        if (shouldBeOff) {
+          offBarBacks.push(schedule);
+        } else {
+          workingBarBacks.push(schedule);
+        }
+      });
+      
+      supportSchedules.forEach(schedule => {
+        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
+        if (shouldBeOff) {
+          offSupport.push(schedule);
+        } else {
+          workingSupport.push(schedule);
+        }
+      });
 
       // === PRIORITY 1: HEAD BARTENDERS - SUPERVISING (Observe indoor/outdoor, support where needed) ===
       // Working hours: 9 hours (5:00 PM - 2:00 AM)
       // Division logic: 2+ heads → divide into indoor/outdoor supervisors
+      
       const shouldDivideHeads = workingHeads.length >= 2;
       
+      // Mark off days
+      offHeads.forEach(schedule => {
+        const key = `${schedule.staff.id}-${day}`;
+        newSchedule[key] = {
+          staffId: schedule.staff.id,
+          day,
+          timeRange: 'OFF',
+          type: 'off'
+        };
+      });
+      
+      // Schedule working heads
       workingHeads.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
-        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
-
-        if (shouldBeOff) {
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange: 'OFF',
-            type: 'off'
-          };
-        } else {
-          const area = shouldDivideHeads ? (idx % 2 === 0 ? 'Indoor' : 'Outdoor') : 'Supervising';
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange: '5:00 PM - 2:00 AM',
-            type: 'regular',
-            station: shouldDivideHeads 
-              ? `Head - ${area} Supervisor: Observe ${area.toLowerCase()} operations, support where needed`
-              : `Head - Supervising: Observe all operations, support where needed`
-          };
-          assignedStaffIds.add(schedule.staff.id);
-        }
+        const area = shouldDivideHeads ? (idx % 2 === 0 ? 'Indoor' : 'Outdoor') : 'Supervising';
+        newSchedule[key] = {
+          staffId: schedule.staff.id,
+          day,
+          timeRange: '5:00 PM - 2:00 AM',
+          type: 'regular',
+          station: shouldDivideHeads 
+            ? `Head - ${area} Supervisor: Observe ${area.toLowerCase()} operations, support where needed`
+            : `Head - Supervising: Observe all operations, support where needed`
+        };
+        assignedStaffIds.add(schedule.staff.id);
       });
 
       // === PRIORITY 2: BARTENDERS (Senior + Regular) - OPERATE STATIONS ===
       // Working hours: 9 hours (5:00 PM - 2:00 AM)
+      
+      // Mark off days
+      [...offSeniorBartenders, ...offBartenders].forEach(schedule => {
+        const key = `${schedule.staff.id}-${day}`;
+        newSchedule[key] = {
+          staffId: schedule.staff.id,
+          day,
+          timeRange: 'OFF',
+          type: 'off'
+        };
+      });
+      
       const allStationBartenders = [...workingSeniorBartenders, ...workingBartenders];
       const stations = [
         'Outdoor - Station 1',
@@ -294,16 +358,7 @@ export default function StaffScheduling() {
 
       allStationBartenders.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
-        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
-
-        if (shouldBeOff) {
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange: 'OFF',
-            type: 'off'
-          };
-        } else if (idx < stations.length) {
+        if (idx < stations.length) {
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
@@ -327,108 +382,95 @@ export default function StaffScheduling() {
 
       // === PRIORITY 3: BAR BACKS - PRIORITY ROLE ===
       // Working hours: 9 hours
+      
+      // Mark off days
+      offBarBacks.forEach(schedule => {
+        const key = `${schedule.staff.id}-${day}`;
+        newSchedule[key] = {
+          staffId: schedule.staff.id,
+          day,
+          timeRange: 'OFF',
+          type: 'off'
+        };
+      });
+      
       // Division logic: 2+ bar backs → ASSIGN to indoor OR outdoor (not both)
       const shouldDivideBarBacks = workingBarBacks.length >= 2 || (workingBarBacks.length === 1 && workingSupport.length >= 1);
       
       workingBarBacks.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
-        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
-
-        if (shouldBeOff) {
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange: 'OFF',
-            type: 'off'
-          };
-        } else {
-          // ASSIGN to ONE area only - no double counting
-          const area = shouldDivideBarBacks ? (idx % 2 === 0 ? 'Indoor' : 'Outdoor') : 'General';
-          
-          // First bar back gets early start for pickup/opening duties (9 hours)
-          let timeRange, type;
-          if (idx === 0) {
-            if (isPickupDay) {
-              timeRange = '12:00 PM - 9:00 PM'; // 9 hours, early start for pickups
-              type = 'pickup';
-            } else if (isBrunchDay) {
-              timeRange = '11:00 AM - 8:00 PM'; // 9 hours, early start for brunch setup
-              type = 'brunch';
-            } else {
-              timeRange = '2:00 PM - 11:00 PM'; // 9 hours, setup before venue opens
-              type = 'opening';
-            }
+        // ASSIGN to ONE area only - no double counting
+        const area = shouldDivideBarBacks ? (idx % 2 === 0 ? 'Indoor' : 'Outdoor') : 'General';
+        
+        // First bar back gets early start for pickup/opening duties (9 hours)
+        let timeRange, type;
+        if (idx === 0) {
+          if (isPickupDay) {
+            timeRange = '12:00 PM - 9:00 PM'; // 9 hours, early start for pickups
+            type = 'pickup';
+          } else if (isBrunchDay) {
+            timeRange = '11:00 AM - 8:00 PM'; // 9 hours, early start for brunch setup
+            type = 'brunch';
           } else {
-            // Additional bar backs work full venue hours (9 hours)
-            timeRange = '5:00 PM - 2:00 AM';
-            type = 'regular';
+            timeRange = '2:00 PM - 11:00 PM'; // 9 hours, setup before venue opens
+            type = 'opening';
           }
-          
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange,
-            type,
-            station: `Bar Back - ${area}: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish`
-          };
+        } else {
+          // Additional bar backs work full venue hours (9 hours)
+          timeRange = '5:00 PM - 2:00 AM';
+          type = 'regular';
         }
+        
+        newSchedule[key] = {
+          staffId: schedule.staff.id,
+          day,
+          timeRange,
+          type,
+          station: `Bar Back - ${area}: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish`
+        };
       });
 
       // === PRIORITY 4: SUPPORT - General Support & Glassware Polishing ===
       // Working hours: 10 hours (3:00 PM - 1:00 AM)
+      
+      // Mark off days
+      offSupport.forEach(schedule => {
+        const key = `${schedule.staff.id}-${day}`;
+        newSchedule[key] = {
+          staffId: schedule.staff.id,
+          day,
+          timeRange: 'OFF',
+          type: 'off'
+        };
+      });
+      
       // Division logic: 2+ support → ASSIGN to indoor OR outdoor (not both)
       const shouldDivideSupport = workingSupport.length >= 2 || (workingBarBacks.length >= 1 && workingSupport.length === 1);
       
       workingSupport.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
-        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
-
-        if (shouldBeOff) {
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange: 'OFF',
-            type: 'off'
-          };
-        } else {
-          // ASSIGN to ONE area only - no double counting
-          let area;
-          if (shouldDivideSupport) {
-            if (workingBarBacks.length === 1 && workingSupport.length === 1) {
-              // 1 bar back at indoor (idx 0), support goes outdoor
-              area = 'Outdoor';
-            } else {
-              // Multiple supports: alternate
-              area = idx % 2 === 0 ? 'Indoor' : 'Outdoor';
-            }
+        // ASSIGN to ONE area only - no double counting
+        let area;
+        if (shouldDivideSupport) {
+          if (workingBarBacks.length === 1 && workingSupport.length === 1) {
+            // 1 bar back at indoor (idx 0), support goes outdoor
+            area = 'Outdoor';
           } else {
-            area = 'General';
+            // Multiple supports: alternate
+            area = idx % 2 === 0 ? 'Indoor' : 'Outdoor';
           }
-          
-          // Support works 10 hours: starts early for setup, leaves before close
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange: '3:00 PM - 1:00 AM',
-            type: 'regular',
-            station: `Support - ${area}: Glassware Polishing, General Support`
-          };
+        } else {
+          area = 'General';
         }
-      });
-      
-      // === FILL IN MISSING DAYS - ENSURE ALL STAFF HAVE ALL DAYS ===
-      // For staff not scheduled yet this day, mark them as OFF
-      [...headSchedules, ...seniorBartenderSchedules, ...bartenderSchedules, ...barBackSchedules, ...supportSchedules].forEach(schedule => {
-        const key = `${schedule.staff.id}-${day}`;
-        if (!newSchedule[key]) {
-          // This staff member doesn't have a schedule for this day yet - mark as OFF
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange: 'OFF',
-            type: 'off'
-          };
-        }
+        
+        // Support works 10 hours: starts early for setup, leaves before close
+        newSchedule[key] = {
+          staffId: schedule.staff.id,
+          day,
+          timeRange: '3:00 PM - 1:00 AM',
+          type: 'regular',
+          station: `Support - ${area}: Glassware Polishing, General Support`
+        };
       });
     });
 
