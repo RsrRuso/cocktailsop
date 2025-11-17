@@ -199,10 +199,14 @@ export default function StaffScheduling() {
     // Track how many offs per day
     const offsPerDay: number[] = [0, 0, 0, 0, 0, 0, 0];
     
-    // CRITICAL: Track bartender assignments per day to enforce minimum 3 bartenders rule
+    // CRITICAL: Track bartender assignments per day to enforce rules:
+    // 1. Minimum 3 bartenders working each day
+    // 2. Maximum 2 bartenders off on the same day
     const bartendersPerDay: Record<number, number> = {};
+    const bartendersOffPerDay: Record<number, number> = {};
     DAYS_OF_WEEK.forEach((_, idx) => {
       bartendersPerDay[idx] = headBartenders.length + seniorBartenders.length + bartenders.length;
+      bartendersOffPerDay[idx] = 0;
     });
     
     const divideIntoGroups = (staffList: StaffMember[], roleOffset: number, isBartenderRole: boolean = false) => {
@@ -230,14 +234,29 @@ export default function StaffScheduling() {
         // Get available days (not busy)
         let availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
         
-        // CRITICAL VALIDATION: If this is a bartender role, exclude days where giving them off would drop count below 3
+        // CRITICAL VALIDATIONS for bartender roles:
         if (isBartenderRole) {
           availableDays = availableDays.filter(dayNum => {
             const wouldHaveAfterOff = bartendersPerDay[dayNum] - 1;
-            const canGiveOff = wouldHaveAfterOff >= 3;
+            const offsOnThisDay = bartendersOffPerDay[dayNum];
+            
+            // Rule 1: Must maintain minimum 3 working
+            const meetsMinimum = wouldHaveAfterOff >= 3;
+            
+            // Rule 2: Maximum 2 bartenders off on same day
+            const meetsMaxOff = offsOnThisDay < 2;
+            
+            const canGiveOff = meetsMinimum && meetsMaxOff;
+            
             if (!canGiveOff) {
-              console.log(`  ⚠️ Cannot give ${DAYS_OF_WEEK[dayNum]} off - would drop to ${wouldHaveAfterOff} bartenders (min 3)`);
+              if (!meetsMinimum) {
+                console.log(`  ⚠️ Cannot give ${DAYS_OF_WEEK[dayNum]} off - would drop to ${wouldHaveAfterOff} bartenders (min 3)`);
+              }
+              if (!meetsMaxOff) {
+                console.log(`  ⚠️ Cannot give ${DAYS_OF_WEEK[dayNum]} off - already ${offsOnThisDay} bartenders off (max 2)`);
+              }
             }
+            
             return canGiveOff;
           });
         }
@@ -263,10 +282,11 @@ export default function StaffScheduling() {
           dayOffDistribution[selectedDay].push(staff.name);
           offsPerDay[selectedDay]++;
           
-          // Update bartender count if this is a bartender role
+          // Update bartender counts if this is a bartender role
           if (isBartenderRole) {
             bartendersPerDay[selectedDay]--;
-            console.log(`  📊 ${DAYS_OF_WEEK[selectedDay]}: Now ${bartendersPerDay[selectedDay]} bartenders working`);
+            bartendersOffPerDay[selectedDay]++;
+            console.log(`  📊 ${DAYS_OF_WEEK[selectedDay]}: Now ${bartendersPerDay[selectedDay]} working, ${bartendersOffPerDay[selectedDay]} off`);
           }
           
           console.log(`  ✅ 1 day: ${DAYS_OF_WEEK[selectedDay]}`);
@@ -285,10 +305,11 @@ export default function StaffScheduling() {
               dayOffDistribution[candidateDay].push(staff.name);
               offsPerDay[candidateDay]++;
               
-              // Update bartender count if this is a bartender role
+              // Update bartender counts if this is a bartender role
               if (isBartenderRole) {
                 bartendersPerDay[candidateDay]--;
-                console.log(`  📊 ${DAYS_OF_WEEK[candidateDay]}: Now ${bartendersPerDay[candidateDay]} bartenders working`);
+                bartendersOffPerDay[candidateDay]++;
+                console.log(`  📊 ${DAYS_OF_WEEK[candidateDay]}: Now ${bartendersPerDay[candidateDay]} working, ${bartendersOffPerDay[candidateDay]} off`);
               }
             }
             
@@ -296,8 +317,8 @@ export default function StaffScheduling() {
           }
           
           // If we couldn't get 2 days (due to constraints), that's ok - at least 1 day off
-          if (finalDaysOff.length < 2 && finalDaysOff.length === 0) {
-            console.warn(`  ⚠️ Could only get ${finalDaysOff.length} days off due to minimum staffing requirements`);
+          if (finalDaysOff.length < 2 && finalDaysOff.length > 0) {
+            console.warn(`  ⚠️ Could only assign ${finalDaysOff.length} day(s) off due to staffing constraints (max 2 bartenders off per day)`);
           }
           
           console.log(`  ✅ ${finalDaysOff.length} days: ${finalDaysOff.map(d => DAYS_OF_WEEK[d]).join(', ')}`);
@@ -618,7 +639,7 @@ export default function StaffScheduling() {
     console.log(finalDistribution);
     
     setSchedule(newSchedule);
-    toast.success(`✅ Schedule generated! Minimum 3 bartenders per day maintained. Everyone gets 1-2 days off. Bar backs & support as additional staff.`, {
+    toast.success(`✅ Schedule generated! Min 3 bartenders working daily (max 2 off same day). Bar backs & support additional. Everyone gets 1-2 days off.`, {
       duration: 6000
     });
   };
