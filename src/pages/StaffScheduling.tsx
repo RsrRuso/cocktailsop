@@ -613,8 +613,8 @@ export default function StaffScheduling() {
         let timeRange;
         let type: ScheduleCell['type'] = 'regular';
         if (isBrunchDay || isPickupDay) {
-          timeRange = '4:00 PM - 1:00 AM'; // 9 hours for special events
-          type = 'early_shift';
+          timeRange = '4:00 PM - 3:00 AM'; // 11 hours for special events, closing at 3 AM
+          type = 'late_shift';
         } else {
           timeRange = '5:00 PM - 3:00 AM'; // 10 hours for regular days
           type = 'late_shift';
