@@ -730,10 +730,22 @@ export default function StaffScheduling() {
                 const daySchedule = Object.values(schedule).filter(s => s.day === day);
                 const working = daySchedule.filter(s => s.timeRange !== 'OFF');
                 const off = daySchedule.filter(s => s.timeRange === 'OFF');
-                const totalWorking = working.length;
                 
-                // Get staff names
-                const workingStaff = working.map(s => {
+                // Categorize by area
+                const indoor = working.filter(s => s.station?.includes('Indoor') || s.station?.includes('Ticket') || s.station?.includes('Segregator'));
+                const outdoor = working.filter(s => s.station?.includes('Outdoor'));
+                const floating = working.filter(s => !s.station?.includes('Indoor') && !s.station?.includes('Outdoor') && !s.station?.includes('Ticket') && !s.station?.includes('Segregator'));
+                
+                // Get staff details
+                const indoorStaff = indoor.map(s => {
+                  const staff = staffMembers.find(sm => sm.id === s.staffId);
+                  return { name: staff?.name || 'Unknown', station: s.station };
+                });
+                const outdoorStaff = outdoor.map(s => {
+                  const staff = staffMembers.find(sm => sm.id === s.staffId);
+                  return { name: staff?.name || 'Unknown', station: s.station };
+                });
+                const floatingStaff = floating.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
                   return { name: staff?.name || 'Unknown', station: s.station };
                 });
@@ -753,26 +765,74 @@ export default function StaffScheduling() {
                         {dayLabel}
                       </div>
                     )}
-                    <div className="text-2xl font-bold text-primary mb-2">{totalWorking}</div>
-                    <div className="text-xs text-muted-foreground mb-2">Working</div>
                     
-                    {/* Working Staff */}
-                    <div className="space-y-1 mb-2">
-                      <div className="text-xs font-medium">Working:</div>
-                      <div className="max-h-24 overflow-y-auto space-y-1 text-xs">
-                        {workingStaff.map((s, idx) => (
-                          <div key={idx} className="text-muted-foreground">
-                            • {s.name} {s.station && `(${s.station})`}
-                          </div>
-                        ))}
+                    {/* Summary Numbers */}
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="text-center p-2 bg-green-50 dark:bg-green-950/20 rounded">
+                        <div className="text-xl font-bold text-green-600 dark:text-green-400">{working.length}</div>
+                        <div className="text-[10px] text-muted-foreground">Working</div>
+                      </div>
+                      <div className="text-center p-2 bg-red-50 dark:bg-red-950/20 rounded">
+                        <div className="text-xl font-bold text-red-600 dark:text-red-400">{off.length}</div>
+                        <div className="text-[10px] text-muted-foreground">Off</div>
+                      </div>
+                      <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded">
+                        <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{indoor.length}</div>
+                        <div className="text-[10px] text-muted-foreground">Indoor</div>
+                      </div>
+                      <div className="text-center p-2 bg-purple-50 dark:bg-purple-950/20 rounded">
+                        <div className="text-lg font-bold text-purple-600 dark:text-purple-400">{outdoor.length}</div>
+                        <div className="text-[10px] text-muted-foreground">Outdoor</div>
                       </div>
                     </div>
+                    
+                    {/* Indoor Staff */}
+                    {indoorStaff.length > 0 && (
+                      <div className="space-y-1 mb-2">
+                        <div className="text-xs font-semibold text-blue-600 dark:text-blue-400">Indoor:</div>
+                        <div className="max-h-20 overflow-y-auto space-y-1 text-xs">
+                          {indoorStaff.map((s, idx) => (
+                            <div key={idx} className="text-muted-foreground">
+                              • {s.name}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Outdoor Staff */}
+                    {outdoorStaff.length > 0 && (
+                      <div className="space-y-1 mb-2">
+                        <div className="text-xs font-semibold text-purple-600 dark:text-purple-400">Outdoor:</div>
+                        <div className="max-h-20 overflow-y-auto space-y-1 text-xs">
+                          {outdoorStaff.map((s, idx) => (
+                            <div key={idx} className="text-muted-foreground">
+                              • {s.name}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Floating/Support Staff */}
+                    {floatingStaff.length > 0 && (
+                      <div className="space-y-1 mb-2">
+                        <div className="text-xs font-semibold">Support:</div>
+                        <div className="max-h-16 overflow-y-auto space-y-1 text-xs">
+                          {floatingStaff.map((s, idx) => (
+                            <div key={idx} className="text-muted-foreground">
+                              • {s.name}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Off Staff */}
                     {offStaff.length > 0 && (
                       <div className="space-y-1 pt-2 border-t">
                         <div className="text-xs font-medium">Off:</div>
-                        <div className="max-h-20 overflow-y-auto space-y-1 text-xs">
+                        <div className="max-h-16 overflow-y-auto space-y-1 text-xs">
                           {offStaff.map((name, idx) => (
                             <div key={idx} className="text-muted-foreground">
                               • {name}
