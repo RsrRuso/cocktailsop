@@ -790,21 +790,29 @@ export default function StaffScheduling() {
       body: rows,
       startY: 45,
       styles: { 
-        fontSize: 7, 
-        cellPadding: 2, 
+        fontSize: 6.5, 
+        cellPadding: 1.5, 
         lineWidth: 0.2, 
         lineColor: [148, 163, 184],
-        textColor: [15, 23, 42]
+        textColor: [15, 23, 42],
+        valign: 'middle',
+        halign: 'center'
       },
       headStyles: { 
         fillColor: [51, 65, 85], 
         fontStyle: 'bold', 
-        fontSize: 9,
+        fontSize: 8,
         textColor: [255, 255, 255],
-        halign: 'center'
+        halign: 'center',
+        cellPadding: 2
       },
       columnStyles: {
-        0: { cellWidth: 35, fontStyle: 'bold', fillColor: [248, 250, 252] }
+        0: { 
+          cellWidth: 28, 
+          fontStyle: 'bold', 
+          fillColor: [248, 250, 252],
+          halign: 'left'
+        }
       },
       alternateRowStyles: {
         fillColor: [248, 250, 252]
@@ -1514,22 +1522,22 @@ export default function StaffScheduling() {
 
         {/* Schedule Table */}
         {staffMembers.length > 0 && (
-          <Card className="p-4 overflow-x-auto bg-gray-900 border-gray-800">
-            <h3 className="text-lg font-semibold mb-4 text-gray-100">Weekly Schedule</h3>
+          <Card className="p-3 overflow-x-auto bg-gray-900 border-gray-800">
+            <h3 className="text-base font-semibold mb-3 text-gray-100">Weekly Schedule</h3>
             <div className="min-w-max">
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse text-xs">
                 <thead>
                   <tr>
-                    <th className="border border-gray-700 p-2 bg-gray-800 font-semibold text-left min-w-[140px] sticky left-0 z-10 text-gray-100">
-                      Staff / Role
+                    <th className="border border-gray-700 p-1.5 bg-gray-800 font-semibold text-left min-w-[120px] sticky left-0 z-10 text-gray-100">
+                      STAFF
                     </th>
                     {DAYS_OF_WEEK.map((day, dayIndex) => {
                       const isBusyDay = !!dailyEvents[day];
                       const dayLabel = dailyEvents[day] || '';
                       return (
-                        <th key={day} className={`border border-gray-700 p-2 font-semibold text-center min-w-[180px] ${isBusyDay ? 'bg-orange-900/30' : 'bg-gray-800'} text-gray-100`}>
-                          <div>{day}</div>
-                          {dayLabel && <div className="text-xs font-normal text-gray-400">{dayLabel}</div>}
+                        <th key={day} className={`border border-gray-700 p-1.5 font-semibold text-center min-w-[140px] ${isBusyDay ? 'bg-orange-900/30' : 'bg-gray-800'} text-gray-100`}>
+                          <div className="text-sm">{day}</div>
+                          {dayLabel && <div className="text-[10px] font-normal text-gray-400">{dayLabel}</div>}
                         </th>
                       );
                     })}
@@ -1550,9 +1558,9 @@ export default function StaffScheduling() {
                     })
                     .map(staff => (
                     <tr key={staff.id}>
-                      <td className="border border-gray-700 p-2 font-medium bg-gray-800 sticky left-0 z-10">
-                        <div className="text-sm text-gray-100">{staff.name}</div>
-                        <div className="text-xs text-gray-400 capitalize">
+                      <td className="border border-gray-700 p-1.5 font-medium bg-gray-800 sticky left-0 z-10 min-w-[120px]">
+                        <div className="text-xs text-gray-100">{staff.name}</div>
+                        <div className="text-[10px] text-gray-400 capitalize">
                           {staff.title.replace('_', ' ')}
                         </div>
                       </td>
@@ -1561,7 +1569,7 @@ export default function StaffScheduling() {
                         return (
                           <td
                             key={day}
-                            className={`border border-gray-700 p-2 ${cell ? CELL_COLORS[cell.type] : 'bg-gray-850'}`}
+                            className={`border border-gray-700 p-1 ${cell ? CELL_COLORS[cell.type] : 'bg-gray-850'}`}
                           >
                             <Select
                               value={cell?.timeRange || ''}
@@ -1575,21 +1583,21 @@ export default function StaffScheduling() {
                                 updateScheduleCell(staff.id, day, value, type, cell?.station);
                               }}
                             >
-                              <SelectTrigger className="text-xs h-8 bg-gray-900 border-gray-700 text-gray-100">
-                                <SelectValue placeholder="Select time" />
+                              <SelectTrigger className="text-[10px] h-7 bg-gray-900 border-gray-700 text-gray-100">
+                                <SelectValue placeholder="Select" />
                               </SelectTrigger>
                               <SelectContent className="bg-gray-900 border-gray-700 z-50">
-                                <SelectItem value="OFF" className="text-gray-100">OFF</SelectItem>
-                                <SelectItem value="11:00 AM - 8:00 PM" className="text-gray-100">11:00 AM - 8:00 PM (9h)</SelectItem>
-                                <SelectItem value="12:00 PM - 9:00 PM" className="text-gray-100">12:00 PM - 9:00 PM (9h)</SelectItem>
-                                <SelectItem value="2:00 PM - 11:00 PM" className="text-gray-100">2:00 PM - 11:00 PM (9h)</SelectItem>
-                                <SelectItem value="3:00 PM - 12:00 AM" className="text-gray-100">3:00 PM - 12:00 AM (9h)</SelectItem>
-                                <SelectItem value="4:00 PM - 1:00 AM" className="text-gray-100">4:00 PM - 1:00 AM (9h)</SelectItem>
-                                <SelectItem value="5:00 PM - 2:00 AM" className="text-gray-100">5:00 PM - 2:00 AM (9h)</SelectItem>
+                                <SelectItem value="OFF" className="text-gray-100 text-xs">OFF</SelectItem>
+                                <SelectItem value="11:00 AM - 8:00 PM" className="text-gray-100 text-xs">11:00 AM - 8:00 PM (9h)</SelectItem>
+                                <SelectItem value="12:00 PM - 9:00 PM" className="text-gray-100 text-xs">12:00 PM - 9:00 PM (9h)</SelectItem>
+                                <SelectItem value="2:00 PM - 11:00 PM" className="text-gray-100 text-xs">2:00 PM - 11:00 PM (9h)</SelectItem>
+                                <SelectItem value="3:00 PM - 12:00 AM" className="text-gray-100 text-xs">3:00 PM - 12:00 AM (9h)</SelectItem>
+                                <SelectItem value="4:00 PM - 1:00 AM" className="text-gray-100 text-xs">4:00 PM - 1:00 AM (9h)</SelectItem>
+                                <SelectItem value="5:00 PM - 2:00 AM" className="text-gray-100 text-xs">5:00 PM - 2:00 AM (9h)</SelectItem>
                               </SelectContent>
                             </Select>
                             {cell?.station && (
-                              <div className="text-[10px] text-gray-400 text-center mt-1">
+                              <div className="text-[9px] text-gray-400 text-center mt-0.5 leading-tight truncate">
                                 {cell.station}
                               </div>
                             )}
