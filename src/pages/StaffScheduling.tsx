@@ -1214,6 +1214,9 @@ export default function StaffScheduling() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6);
     doc.text('MIN 2 / MAX 3 - Rotate every 2h', 180, finalY + 2.5);
+    
+    // Add spacing at the bottom for readability
+    finalY += 15;
 
     doc.save(`${(venueName || 'schedule').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     toast.success('Schedule exported to PDF');
