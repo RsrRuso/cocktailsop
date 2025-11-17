@@ -502,8 +502,8 @@ export default function StaffScheduling() {
       });
     });
 
-    // CRITICAL VALIDATION: Each day MUST have minimum staff per role
-    const validationErrors: string[] = [];
+    // VALIDATION: Check if schedule meets minimum requirements (but allow flexibility)
+    const validationWarnings: string[] = [];
 
     DAYS_OF_WEEK.forEach((name, dayIndex) => {
       const allBartenderRoles = [...headBartenders, ...seniorBartenders, ...bartenders];
@@ -527,40 +527,23 @@ export default function StaffScheduling() {
         return cell && cell.timeRange !== 'OFF';
       }).length;
 
-      // Count total working staff (all roles)
-      const allStaff = [...headBartenders, ...seniorBartenders, ...bartenders, ...barBacks, ...support];
-      const totalWorkingStaff = allStaff.filter(staff => {
-        const key = `${staff.id}-${name}`;
-        const cell = newSchedule[key];
-        return cell && cell.timeRange !== 'OFF';
-      }).length;
-
-      // Validate: Need at least 2 bartenders
+      // Warn if below ideal (but don't block)
       if (workingBartendersCount < 2) {
-        validationErrors.push(`${name}: Only ${workingBartendersCount} bartender(s) - need at least 2`);
+        validationWarnings.push(`${name}: ${workingBartendersCount} bartender(s) - 2+ recommended`);
       }
-
-      // Validate: Need at least 1 bar back
       if (workingBarBacksCount < 1) {
-        validationErrors.push(`${name}: No bar back scheduled - need at least 1`);
+        validationWarnings.push(`${name}: No bar back - 1+ recommended`);
       }
-
-      // Validate: Need at least 1 support
       if (workingSupportCount < 1) {
-        validationErrors.push(`${name}: No support scheduled - need at least 1`);
-      }
-
-      // Validate: Need at least 4 total staff
-      if (totalWorkingStaff < 4) {
-        validationErrors.push(`${name}: Only ${totalWorkingStaff} total staff - need at least 4`);
+        validationWarnings.push(`${name}: No support - 1+ recommended`);
       }
     });
 
-    if (validationErrors.length > 0) {
-      toast.error(`❌ Cannot generate schedule:\n${validationErrors.join('\n')}\n\nAdd more staff or adjust off days.`, {
-        duration: 8000
+    // Show warnings but allow generation
+    if (validationWarnings.length > 0) {
+      toast.warning(`⚠️ Schedule generated with warnings:\n${validationWarnings.slice(0, 3).join('\n')}${validationWarnings.length > 3 ? '\n...' : ''}`, {
+        duration: 6000
       });
-      return;
     }
 
     setSchedule(newSchedule);
