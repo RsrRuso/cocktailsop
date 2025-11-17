@@ -1113,13 +1113,15 @@ export default function StaffScheduling() {
     
     // Hygiene & Safety Tips - Light blue background with dark text
     const hygieneTips = [
-      '✓ Hair tied, clean attire, gloves for food handling',
-      '✓ Wash hands: before shifts, after breaks, after face/hair contact',
-      '✓ Clean workstations every 2h, sanitize surfaces & equipment',
-      '✓ Separate cutting boards for garnishes, no food mixing',
-      '✓ Store garnishes in covered containers, check expiry dates',
-      '✓ Ice scoops only - never use glassware to scoop ice',
-      '✓ Report illness immediately, do not work if unwell'
+      '✓ Keep hair tied back, wear clean attire, use gloves when handling food',
+      '✓ Wash hands regularly: before shifts, after breaks, after touching face or hair',
+      '✓ Clean and sanitize workstations, surfaces & equipment every 2 hours',
+      '✓ Use separate cutting boards for garnishes - never mix with food prep',
+      '✓ Store garnishes in covered containers, always check expiration dates',
+      '✓ Label all containers with contents and date - check daily for spoilage',
+      '✓ Check fridge temperatures twice daily (morning & evening) - report issues immediately',
+      '✓ Always use ice scoops - never use glassware to scoop ice',
+      '✓ Report any illness immediately - do not work when feeling unwell'
     ];
     
     const boxHeight = hygieneTips.length * 4 + 8;
