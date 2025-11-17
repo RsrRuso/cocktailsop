@@ -26,7 +26,7 @@ interface ScheduleCell {
   staffId: string;
   day: string;
   timeRange: string;
-  type: 'opening' | 'closing' | 'pickup' | 'brunch' | 'off' | 'regular';
+  type: 'opening' | 'closing' | 'pickup' | 'brunch' | 'off' | 'regular' | 'early_shift' | 'late_shift';
   station?: string;
 }
 
@@ -35,8 +35,10 @@ const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'S
 const CELL_COLORS = {
   opening: 'bg-green-500/20',
   closing: 'bg-red-500/20',
-  pickup: 'bg-yellow-500/20',
+  pickup: 'bg-amber-500/25',
   brunch: 'bg-orange-500/20',
+  early_shift: 'bg-indigo-500/25',  // 4 PM shifts - nice purple/blue
+  late_shift: 'bg-cyan-500/20',     // 5 PM shifts - appealing cyan
   off: 'bg-muted',
   regular: 'bg-background',
 };
@@ -527,7 +529,7 @@ export default function StaffScheduling() {
         };
       });
       
-      // Schedule working heads - MAX 1 OUTDOOR, rest indoor
+      // Schedule working heads - MAX 1 OUTDOOR (part of max 3 outdoor total), rest indoor
       workingHeads.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
@@ -537,22 +539,25 @@ export default function StaffScheduling() {
           return;
         }
         
-        // Only first head goes outdoor if dividing, rest are indoor
+        // Only first head goes outdoor (if dividing and we need max 3 outdoor), rest are indoor
         const area = shouldDivideHeads && idx === 0 ? 'Outdoor' : 'Indoor';
         
         // Determine time range based on day type
         let timeRange;
+        let type: ScheduleCell['type'] = 'regular';
         if (isBrunchDay || isPickupDay) {
           timeRange = '4:00 PM - 1:00 AM'; // 9 hours for special events
+          type = 'early_shift';
         } else {
           timeRange = '5:00 PM - 3:00 AM'; // 10 hours for regular days
+          type = 'late_shift';
         }
         
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
           timeRange,
-          type: 'regular',
+          type,
           station: shouldDivideHeads 
             ? `Head - ${area} Supervisor: Observe ${area.toLowerCase()} operations, support where needed`
             : `Head - Supervising: Observe all operations, support where needed`
@@ -575,20 +580,21 @@ export default function StaffScheduling() {
       });
       
       const allStationBartenders = [...workingSeniorBartenders, ...workingBartenders];
-      // MAX 1 OUTDOOR bartender, rest indoor
+      // OUTDOOR ALLOCATION: Always 1 bartender outdoor (minimum 2 total outdoor with barback)
+      // This ensures min 2 outdoor (1 bartender + 1 barback), max 3 outdoor (+ 1 head)
       const numBartenders = allStationBartenders.length;
       const stations = numBartenders >= 4 ? [
+        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Garnishing Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
       ] : numBartenders === 3 ? [
+        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Garnishing Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
       ] : [
-        'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
       ];
 
       allStationBartenders.forEach((schedule, idx) => {
@@ -602,16 +608,22 @@ export default function StaffScheduling() {
         
         // Determine time range based on day type and position
         let timeRange;
+        let type: ScheduleCell['type'] = 'regular';
         if (isBrunchDay) {
           timeRange = '4:00 PM - 1:00 AM'; // 9 hours for brunch days
+          type = 'early_shift';
         } else if (isPickupDay && idx === 0) {
           timeRange = '4:00 PM - 1:00 AM'; // First bartender on pickup days
+          type = 'early_shift';
         } else if (day === 'Wednesday') {
           timeRange = idx === 0 ? '4:00 PM - 1:00 AM' : '5:00 PM - 3:00 AM'; // Mixed on Wednesday
+          type = idx === 0 ? 'early_shift' : 'late_shift';
         } else if (day === 'Saturday') {
           timeRange = '4:00 PM - 2:00 AM'; // 10 hours different end time for Saturday
+          type = 'early_shift';
         } else {
           timeRange = '5:00 PM - 3:00 AM'; // 10 hours standard
+          type = 'late_shift';
         }
         
         if (idx < stations.length) {
@@ -619,7 +631,7 @@ export default function StaffScheduling() {
             staffId: schedule.staff.id,
             day,
             timeRange,
-            type: 'regular',
+            type,
             station: stations[idx]
           };
           assignedStaffIds.add(schedule.staff.id);
@@ -629,7 +641,7 @@ export default function StaffScheduling() {
             staffId: schedule.staff.id,
             day,
             timeRange,
-            type: 'regular',
+            type,
             station: 'Indoor - Floating Support: Assist all indoor stations as needed'
           };
           assignedStaffIds.add(schedule.staff.id);
@@ -659,7 +671,8 @@ export default function StaffScheduling() {
           return;
         }
         
-        // MAX 1 OUTDOOR barback (first one), rest indoor
+        // OUTDOOR ALLOCATION: Always 1 barback outdoor (ensures min 2 total outdoor with bartender)
+        // First barback always outdoor to meet minimum 2 outdoor requirement
         const barBackStations = workingBarBacks.length >= 3 ? [
           'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
           'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
@@ -691,10 +704,10 @@ export default function StaffScheduling() {
           // Additional bar backs work full service (9 hours)
           if (day === 'Wednesday') {
             timeRange = '3:00 PM - 12:00 AM'; // Special time for Wednesday
-            type = 'regular';
+            type = 'opening';
           } else {
             timeRange = '5:00 PM - 3:00 AM'; // Match bartender hours
-            type = 'regular';
+            type = 'late_shift' as ScheduleCell['type'];
           }
         }
         
@@ -908,8 +921,12 @@ export default function StaffScheduling() {
           if (staff) {
             const cell = getScheduleCell(staff.id, day);
             if (cell) {
-              if (cell.type === 'pickup') {
-                data.cell.styles.fillColor = [255, 237, 213];
+              if (cell.type === 'early_shift') {
+                data.cell.styles.fillColor = [199, 210, 254]; // Indigo
+                data.cell.styles.fontStyle = 'bold';
+              }
+              if (cell.type === 'late_shift') {
+                data.cell.styles.fillColor = [207, 250, 254]; // Cyan
                 data.cell.styles.fontStyle = 'bold';
               }
               if (cell.type === 'opening') {
@@ -934,10 +951,50 @@ export default function StaffScheduling() {
       }
     });
 
-    // Role Responsibilities Section
+    // Event Info Section (if events exist)
     let finalY = (doc as any).lastAutoTable.finalY + 12;
+    const hasEvents = Object.values(dailyEvents).some(event => event && event.trim() !== '');
     
-    // Section header with modern design
+    if (hasEvents) {
+      doc.setFillColor(...colors.accent);
+      doc.roundedRect(14, finalY - 3, 270, 12, 2, 2, 'F');
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text('SPECIAL EVENTS & OPENING RESPONSIBILITIES', 18, finalY + 4);
+      
+      finalY += 14;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...colors.foreground);
+      
+      DAYS_OF_WEEK.forEach(day => {
+        const event = dailyEvents[day];
+        if (event && event.trim() !== '') {
+          // Find opening bartender for this day
+          const openingStaff = staffMembers.find(staff => {
+            const cell = getScheduleCell(staff.id, day);
+            return cell && (cell.type === 'opening' || cell.type === 'brunch' || cell.type === 'pickup');
+          });
+          
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${day}: ${event}`, 18, finalY);
+          finalY += 4;
+          
+          if (openingStaff) {
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(...colors.mutedText);
+            doc.text(`→ Opening Bartender: ${openingStaff.name} (${openingStaff.title.replace('_', ' ')})`, 22, finalY);
+            finalY += 5;
+          }
+          doc.setTextColor(...colors.foreground);
+        }
+      });
+      
+      finalY += 6;
+    }
+    
+    // Role Responsibilities Section
     doc.setFillColor(...colors.primary);
     doc.roundedRect(14, finalY - 3, 270, 12, 2, 2, 'F');
     doc.setFontSize(12);
@@ -1092,6 +1149,36 @@ export default function StaffScheduling() {
     doc.text('• BREAK TIME: 5:00 PM - 6:00 PM | ENDING BACK & FRONT: 6:45 PM (Mandatory)', 18, finalY);
     finalY += 3.5;
     doc.text('• STORE PICKUP: Monday, Wednesday, Friday (Handled by bar backs with early start)', 18, finalY);
+    finalY += 8;
+    
+    // Hygiene & Safety Section
+    doc.setFillColor(220, 220, 220);
+    doc.roundedRect(14, finalY - 3, 270, 10, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(60, 60, 60);
+    doc.text('HYGIENE & SAFETY (ALL ROLES)', 18, finalY + 3);
+    finalY += 12;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...colors.foreground);
+    doc.text('All staff must maintain food safety compliance, update product labeling, and monitor expirations', 18, finalY);
+    finalY += 8;
+    
+    // Outdoor Allocation Note
+    doc.setFillColor(...colors.secondary);
+    doc.roundedRect(14, finalY - 3, 270, 10, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text('OUTDOOR ALLOCATION POLICY', 18, finalY + 3);
+    finalY += 12;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...colors.foreground);
+    doc.text('MINIMUM 2 outdoor staff (1 bartender + 1 support/barback) | MAXIMUM 3 outdoor (1 head + 1 bartender + 1 support)', 18, finalY);
+    finalY += 3.5;
+    doc.text('All remaining staff allocated indoors for optimal service distribution', 18, finalY);
 
     doc.save(`${(venueName || 'schedule').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     toast.success('Schedule exported to PDF');
@@ -1647,7 +1734,8 @@ export default function StaffScheduling() {
                                 else if (value.includes('11:00 AM')) type = 'brunch';
                                 else if (value.includes('12:00 PM')) type = 'pickup';
                                 else if (value.includes('2:00 PM') || value.includes('3:00 PM')) type = 'opening';
-                                else if (value.includes('4:00 PM') || value.includes('5:00 PM')) type = 'regular';
+                                else if (value.includes('4:00 PM')) type = 'early_shift';
+                                else if (value.includes('5:00 PM')) type = 'late_shift';
                                 updateScheduleCell(staff.id, day, value, type, cell?.station);
                               }}
                             >
