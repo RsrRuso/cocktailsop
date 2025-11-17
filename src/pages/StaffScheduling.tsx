@@ -1189,8 +1189,8 @@ export default function StaffScheduling() {
       console.log(`Using html-to-image to capture ${day}...`);
       
       const dataUrl = await toJpeg(element, {
-        quality: 0.75,
-        pixelRatio: 0.5,
+        quality: 0.9,
+        pixelRatio: 1.5,
         width: 428,
         cacheBust: true,
       });
@@ -1222,8 +1222,8 @@ export default function StaffScheduling() {
 
     try {
       const dataUrl = await toJpeg(element, {
-        quality: 0.75,
-        pixelRatio: 0.5,
+        quality: 0.9,
+        pixelRatio: 1.5,
         width: 428,
         cacheBust: true,
       });
