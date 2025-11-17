@@ -1189,8 +1189,7 @@ export default function StaffScheduling() {
       console.log(`Using html-to-image to capture ${day}...`);
       
       const dataUrl = await toPng(element, {
-        pixelRatio: 1.5,
-        width: 320,
+        pixelRatio: 3,
         cacheBust: true,
       });
       
@@ -1221,8 +1220,7 @@ export default function StaffScheduling() {
 
     try {
       const dataUrl = await toPng(element, {
-        pixelRatio: 1.5,
-        width: 320,
+        pixelRatio: 3,
         cacheBust: true,
       });
       
