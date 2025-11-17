@@ -224,8 +224,13 @@ export default function StaffScheduling() {
           assignedDaysOff = oneDayPatterns[index % oneDayPatterns.length];
         }
         
-        // CRITICAL: Filter out busy days but ensure at least 1 off day
+        // CRITICAL: Filter out busy days but ensure at least 1 off day, max 2 off days
         let finalDaysOff = assignedDaysOff.filter(day => !busyDays.includes(day));
+        
+        // Cap at maximum 2 days off
+        if (finalDaysOff.length > 2) {
+          finalDaysOff = finalDaysOff.slice(0, 2);
+        }
         
         // If all assigned days are busy OR no days off, find alternative
         if (finalDaysOff.length === 0) {
@@ -254,6 +259,11 @@ export default function StaffScheduling() {
               break;
             }
           }
+        }
+        
+        // Final cap: never more than 2 days off
+        if (finalDaysOff.length > 2) {
+          finalDaysOff = finalDaysOff.slice(0, 2);
         }
         
         return {
