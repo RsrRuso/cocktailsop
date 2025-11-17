@@ -1191,7 +1191,7 @@ export default function StaffScheduling() {
       const dataUrl = await toJpeg(element, {
         quality: 0.95,
         pixelRatio: 1.5,
-        width: 375,
+        width: 320,
         cacheBust: true,
       });
       
@@ -1224,7 +1224,7 @@ export default function StaffScheduling() {
       const dataUrl = await toJpeg(element, {
         quality: 0.95,
         pixelRatio: 1.5,
-        width: 375,
+        width: 320,
         cacheBust: true,
       });
       
