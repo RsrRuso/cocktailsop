@@ -1021,9 +1021,11 @@ export default function StaffScheduling() {
 
   const exportDayToJPG = async (day: string) => {
     try {
+      console.log('Starting export for day:', day);
       const element = document.getElementById(`day-${day}`);
       
       if (!element) {
+        console.error('Element not found for day:', day);
         toast.error('Section not found');
         return;
       }
@@ -1040,6 +1042,7 @@ export default function StaffScheduling() {
       wrapper.appendChild(clone);
       document.body.appendChild(wrapper);
       
+      console.log('Rendering canvas...');
       const canvas = await html2canvas(wrapper, {
         backgroundColor: '#111827',
         scale: 3,
@@ -1051,53 +1054,74 @@ export default function StaffScheduling() {
       });
       
       document.body.removeChild(wrapper);
+      console.log('Canvas rendered successfully');
       
       // Convert to PNG for better quality with dark backgrounds
       const dataUrl = canvas.toDataURL('image/png', 1.0);
       const link = document.createElement('a');
       link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.png`;
       link.href = dataUrl;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
       
+      console.log('Download triggered successfully');
       toast.success(`${day} screenshot downloaded!`);
     } catch (error) {
       console.error('Download failed:', error);
-      toast.error(`Failed to download ${day}`);
+      toast.error(`Failed to download ${day}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   const exportWeeklySummaryToJPG = async () => {
-    const element = document.getElementById('Weekly Off Days Summary');
-    if (!element) {
-      toast.error('Summary section not found');
-      return;
-    }
-
     try {
-      const canvas = await html2canvas(element, {
-        backgroundColor: '#111827',
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-      });
+      console.log('Starting weekly summary export');
+      const element = document.getElementById('Weekly Off Days Summary');
+      if (!element) {
+        console.error('Weekly summary element not found');
+        toast.error('Summary section not found');
+        return;
+      }
+
+      toast.info('Capturing weekly summary...');
+
+      // Add padding wrapper
+      const wrapper = document.createElement('div');
+      wrapper.style.padding = '20px';
+      wrapper.style.backgroundColor = '#111827';
+      wrapper.style.display = 'inline-block';
       
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `${venueName || 'schedule'}-weekly-summary-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          toast.success('Weekly summary exported to JPG');
-        }
-      }, 'image/jpeg', 0.95);
+      const clone = element.cloneNode(true) as HTMLElement;
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+
+      console.log('Rendering weekly summary canvas...');
+      const canvas = await html2canvas(wrapper, {
+        backgroundColor: '#111827',
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        windowWidth: wrapper.scrollWidth,
+        windowHeight: wrapper.scrollHeight
+      });
+
+      document.body.removeChild(wrapper);
+      console.log('Weekly summary canvas rendered successfully');
+
+      const dataUrl = canvas.toDataURL('image/png', 1.0);
+      const link = document.createElement('a');
+      link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-weekly-summary-${format(new Date(), 'yyyy-MM-dd')}.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log('Weekly summary download triggered');
+      toast.success('Weekly summary downloaded!');
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export image');
+      console.error('Failed to export weekly summary:', error);
+      toast.error(`Failed to download: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
