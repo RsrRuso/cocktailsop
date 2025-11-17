@@ -987,13 +987,20 @@ export default function StaffScheduling() {
   };
 
   const exportDayToJPG = async (day: string) => {
+    console.log('Export started for:', day);
     const element = document.getElementById(`day-${day}`);
+    console.log('Element found:', element);
+    
     if (!element) {
+      console.error('Element not found for day:', day);
       toast.error('Day section not found');
       return;
     }
 
+    toast.info('Capturing screenshot...');
+    
     try {
+      console.log('Starting html2canvas...');
       const canvas = await html2canvas(element, {
         backgroundColor: '#111827',
         scale: 2,
@@ -1002,8 +1009,11 @@ export default function StaffScheduling() {
         allowTaint: true,
       });
       
+      console.log('Canvas created, converting to blob...');
+      
       canvas.toBlob((blob) => {
         if (blob) {
+          console.log('Blob created, downloading...');
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
@@ -1012,7 +1022,11 @@ export default function StaffScheduling() {
           link.click();
           document.body.removeChild(link);
           URL.revokeObjectURL(url);
-          toast.success(`${day} schedule exported to JPG`);
+          console.log('Download complete');
+          toast.success(`${day} schedule downloaded!`);
+        } else {
+          console.error('Failed to create blob');
+          toast.error('Failed to create image');
         }
       }, 'image/jpeg', 0.95);
     } catch (error) {
