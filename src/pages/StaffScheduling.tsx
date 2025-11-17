@@ -224,37 +224,41 @@ export default function StaffScheduling() {
         const shouldGetTwoDays = isOddWeek ? (index % 2 === 1) : (index % 2 === 0);
         const targetDaysOff = shouldGetTwoDays ? 2 : 1;
         
-        // Get pattern based on index (cycles through all patterns)
-        let assignedPattern;
-        if (shouldGetTwoDays) {
-          assignedPattern = twoDayOffPatterns[index % twoDayOffPatterns.length];
-        } else {
-          assignedPattern = oneDayOffPatterns[index % oneDayOffPatterns.length];
+        // Get the available days (not busy)
+        const availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
+        console.log(`🎯 ${staff.name} (index ${index}): Available days:`, availableDays.map(d => DAYS_OF_WEEK[d]));
+        
+        if (availableDays.length === 0) {
+          console.warn('⚠️ All allowed off days are busy, forcing Monday');
+          return {
+            staff,
+            daysOff: [0],
+            groupType: shouldGetTwoDays ? '2-day' : '1-day',
+            actualDaysOff: 1
+          };
         }
         
-        console.log(`🎯 ${staff.name} (index ${index}): Pattern before filter:`, assignedPattern.map(d => DAYS_OF_WEEK[d]));
+        // Assign days by systematically cycling through available days
+        let finalDaysOff: number[] = [];
         
-        // Filter out busy days
-        let finalDaysOff = assignedPattern.filter(day => !busyDays.includes(day));
-        
-        console.log(`   After busy filter:`, finalDaysOff.map(d => DAYS_OF_WEEK[d]));
-        
-        // If pattern days are busy, find alternatives from allowed days
-        if (finalDaysOff.length === 0) {
-          const availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
-          if (availableDays.length > 0) {
-            finalDaysOff = availableDays.slice(0, targetDaysOff);
-          } else {
-            // All days busy - force Monday
-            finalDaysOff = [0];
-          }
-        } else if (shouldGetTwoDays && finalDaysOff.length === 1) {
-          // Need 2 days but only got 1 - find another from allowed days
-          const availableDays = allowedOffDays.filter(day => 
-            !busyDays.includes(day) && !finalDaysOff.includes(day)
-          );
-          if (availableDays.length > 0) {
-            finalDaysOff.push(availableDays[0]);
+        if (targetDaysOff === 1) {
+          // Cycle through available days: person 0 gets first, person 1 gets second, etc.
+          const dayIndex = index % availableDays.length;
+          finalDaysOff.push(availableDays[dayIndex]);
+        } else {
+          // For 2 days, pick first day by index, second day by index+2 (spread them out)
+          const firstDayIndex = index % availableDays.length;
+          finalDaysOff.push(availableDays[firstDayIndex]);
+          
+          if (availableDays.length >= 2) {
+            const secondDayIndex = (index + 2) % availableDays.length;
+            if (availableDays[secondDayIndex] !== finalDaysOff[0]) {
+              finalDaysOff.push(availableDays[secondDayIndex]);
+            } else {
+              // If same, just take next
+              const nextIndex = (firstDayIndex + 1) % availableDays.length;
+              finalDaysOff.push(availableDays[nextIndex]);
+            }
           }
         }
         
@@ -263,7 +267,7 @@ export default function StaffScheduling() {
           offsPerDay[day]++;
         });
         
-        console.log(`👤 ${staff.name}: ${finalDaysOff.length} days off on`, finalDaysOff.map(d => DAYS_OF_WEEK[d]));
+        console.log(`   ✅ Final days off:`, finalDaysOff.map(d => DAYS_OF_WEEK[d]));
         
         return {
           staff,
