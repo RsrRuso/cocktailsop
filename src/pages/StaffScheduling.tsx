@@ -91,7 +91,33 @@ export default function StaffScheduling() {
       .order('title', { ascending: true });
 
     if (!error && data) {
-      setStaffMembers(data as StaffMember[]);
+      // Load break timings from database or use defaults
+      const staffWithBreaks = data.map(staff => {
+        const breakTimings = staff.break_timings as any;
+        return {
+          id: staff.id,
+          name: staff.name,
+          title: staff.title as StaffMember['title'],
+          breakTimings: breakTimings || {
+            firstWaveStart: '5:30 PM',
+            firstWaveEnd: '6:30 PM',
+            secondWaveStart: '6:30 PM'
+          }
+        };
+      });
+      setStaffMembers(staffWithBreaks);
+    }
+  };
+
+  const saveBreakTimings = async (staffId: string, breakTimings: any) => {
+    const { error } = await supabase
+      .from('staff_members')
+      .update({ break_timings: breakTimings })
+      .eq('id', staffId);
+
+    if (error) {
+      console.error('Error saving break timings:', error);
+      toast.error('Failed to save break timings');
     }
   };
 
@@ -1148,7 +1174,7 @@ export default function StaffScheduling() {
       return;
     }
 
-    const toastId = toast.info(`Capturing ${day}...`);
+    toast.info(`Capturing ${day}...`);
     
     try {
       // Small delay to ensure all styles are applied
@@ -1162,9 +1188,9 @@ export default function StaffScheduling() {
         allowTaint: true,
       });
       
-      // Convert to blob and download
+      // Convert to blob as JPEG
       const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, 'image/png', 1.0);
+        canvas.toBlob(resolve, 'image/jpeg', 0.95);
       });
       
       if (!blob) {
@@ -1174,13 +1200,13 @@ export default function StaffScheduling() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.png`;
+      link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      toast.success(`${day} downloaded!`);
+      toast.success(`${day} downloaded as JPG!`);
     } catch (error) {
       console.error('Download failed for', day, ':', error);
       toast.error(`Failed to download ${day}`);
@@ -1833,12 +1859,19 @@ export default function StaffScheduling() {
                               const hour = parseInt(hours);
                               const ampm = hour >= 12 ? 'PM' : 'AM';
                               const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                              const newBreakTimings = { 
+                                ...(staff.breakTimings || {}), 
+                                firstWaveStart: `${displayHour}:${minutes} ${ampm}`, 
+                                firstWaveEnd: staff.breakTimings?.firstWaveEnd || '6:30 PM', 
+                                secondWaveStart: staff.breakTimings?.secondWaveStart || '6:30 PM' 
+                              };
                               const updated = staffMembers.map(s => 
                                 s.id === staff.id 
-                                  ? { ...s, breakTimings: { ...(s.breakTimings || {}), firstWaveStart: `${displayHour}:${minutes} ${ampm}`, firstWaveEnd: s.breakTimings?.firstWaveEnd || '6:30 PM', secondWaveStart: s.breakTimings?.secondWaveStart || '6:30 PM' } }
+                                  ? { ...s, breakTimings: newBreakTimings }
                                   : s
                               );
                               setStaffMembers(updated);
+                              saveBreakTimings(staff.id, newBreakTimings);
                             }}
                             className="h-5 w-14 text-[8px] bg-gray-900 border-gray-700 text-gray-100 font-mono p-0.5"
                             title="First Wave Start"
@@ -1861,12 +1894,18 @@ export default function StaffScheduling() {
                               const hour = parseInt(hours);
                               const ampm = hour >= 12 ? 'PM' : 'AM';
                               const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                              const newBreakTimings = { 
+                                firstWaveStart: staff.breakTimings?.firstWaveStart || '5:30 PM', 
+                                firstWaveEnd: `${displayHour}:${minutes} ${ampm}`, 
+                                secondWaveStart: `${displayHour}:${minutes} ${ampm}` 
+                              };
                               const updated = staffMembers.map(s => 
                                 s.id === staff.id 
-                                  ? { ...s, breakTimings: { firstWaveStart: s.breakTimings?.firstWaveStart || '5:30 PM', firstWaveEnd: `${displayHour}:${minutes} ${ampm}`, secondWaveStart: `${displayHour}:${minutes} ${ampm}` } }
+                                  ? { ...s, breakTimings: newBreakTimings }
                                   : s
                               );
                               setStaffMembers(updated);
+                              saveBreakTimings(staff.id, newBreakTimings);
                             }}
                             className="h-5 w-14 text-[8px] bg-gray-900 border-gray-700 text-gray-100 font-mono p-0.5"
                             title="First Wave End / Second Wave Start"
