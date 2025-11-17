@@ -1008,11 +1008,12 @@ export default function StaffScheduling() {
     const container = document.createElement('div');
     container.style.position = 'absolute';
     container.style.left = '-9999px';
-    container.style.width = '800px';
+    container.style.width = '900px';
     container.style.padding = '40px';
     container.style.backgroundColor = '#1f2937';
     container.style.color = '#f3f4f6';
     container.style.fontFamily = 'Arial, sans-serif';
+    container.style.minHeight = 'auto';
     document.body.appendChild(container);
     
     const daySchedule = Object.values(schedule).filter(s => s.day === day);
@@ -1040,33 +1041,33 @@ export default function StaffScheduling() {
     
     // Build HTML content
     let html = `
-      <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="font-size: 28px; margin: 0; font-weight: bold;">${venueName || 'Staff Schedule'}</h1>
-        <h2 style="font-size: 22px; margin: 10px 0; font-weight: bold;">${day}</h2>
-        <p style="font-size: 14px; margin: 5px 0; color: #9ca3af;">Week: ${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}</p>
-        ${eventLabel ? `<p style="font-size: 16px; color: #fb923c; font-weight: bold;">${eventLabel}</p>` : ''}
+      <div style="text-align: center; margin-bottom: 25px;">
+        <h1 style="font-size: 32px; margin: 0; font-weight: bold; color: #f9fafb;">${venueName || 'Staff Schedule'}</h1>
+        <h2 style="font-size: 26px; margin: 12px 0; font-weight: bold; color: #e5e7eb;">${day}</h2>
+        <p style="font-size: 15px; margin: 5px 0; color: #9ca3af;">Week: ${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}</p>
+        ${eventLabel ? `<p style="font-size: 18px; color: #fb923c; font-weight: bold; margin-top: 8px;">${eventLabel}</p>` : ''}
       </div>
       
-      <div style="background: #374151; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-        <h3 style="font-size: 16px; margin: 0 0 10px 0; font-weight: bold;">SUMMARY</h3>
-        <p style="margin: 5px 0;">Total Working: ${working.length} | Total Off: ${off.length}</p>
-        <p style="margin: 5px 0;">Indoor Staff: ${indoor.length} | Outdoor Staff: ${outdoor.length}</p>
+      <div style="background: #374151; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h3 style="font-size: 18px; margin: 0 0 12px 0; font-weight: bold; color: #f9fafb;">SUMMARY</h3>
+        <p style="margin: 6px 0; font-size: 15px;">Total Working: <strong>${working.length}</strong> | Total Off: <strong>${off.length}</strong></p>
+        <p style="margin: 6px 0; font-size: 15px;">Indoor Staff: <strong>${indoor.length}</strong> | Outdoor Staff: <strong>${outdoor.length}</strong></p>
       </div>
     `;
     
     if (indoor.length > 0) {
       html += `
         <div style="margin-bottom: 20px;">
-          <h3 style="font-size: 16px; color: #60a5fa; margin-bottom: 10px; font-weight: bold;">INDOOR STATIONS</h3>
+          <h3 style="font-size: 18px; color: #60a5fa; margin-bottom: 12px; font-weight: bold;">INDOOR STATIONS</h3>
           ${indoor.map(s => {
             const staff = staffMembers.find(sm => sm.id === s.staffId);
             if (!staff) return '';
-            const title = staff.title.replace('_', ' ');
+            const title = staff.title.replace('_', ' ').toUpperCase();
             return `
-              <div style="margin: 8px 0; padding: 10px; background: #4b5563; border-radius: 4px;">
-                <div style="font-weight: bold;">• ${staff.name} (${title})</div>
-                <div style="font-size: 12px; color: #d1d5db; margin-top: 4px;">${s.timeRange || ''}</div>
-                <div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">${s.station || ''}</div>
+              <div style="margin: 10px 0; padding: 14px; background: #4b5563; border-radius: 6px;">
+                <div style="font-weight: bold; font-size: 15px; color: #f9fafb;">• ${staff.name} (${title})</div>
+                <div style="font-size: 13px; color: #d1d5db; margin-top: 6px;">${s.timeRange || ''}</div>
+                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px; line-height: 1.4;">${s.station || ''}</div>
               </div>
             `;
           }).join('')}
@@ -1077,16 +1078,16 @@ export default function StaffScheduling() {
     if (outdoor.length > 0) {
       html += `
         <div style="margin-bottom: 20px;">
-          <h3 style="font-size: 16px; color: #c084fc; margin-bottom: 10px; font-weight: bold;">OUTDOOR STATIONS</h3>
+          <h3 style="font-size: 18px; color: #c084fc; margin-bottom: 12px; font-weight: bold;">OUTDOOR STATIONS</h3>
           ${outdoor.map(s => {
             const staff = staffMembers.find(sm => sm.id === s.staffId);
             if (!staff) return '';
-            const title = staff.title.replace('_', ' ');
+            const title = staff.title.replace('_', ' ').toUpperCase();
             return `
-              <div style="margin: 8px 0; padding: 10px; background: #4b5563; border-radius: 4px;">
-                <div style="font-weight: bold;">• ${staff.name} (${title})</div>
-                <div style="font-size: 12px; color: #d1d5db; margin-top: 4px;">${s.timeRange || ''}</div>
-                <div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">${s.station || ''}</div>
+              <div style="margin: 10px 0; padding: 14px; background: #4b5563; border-radius: 6px;">
+                <div style="font-weight: bold; font-size: 15px; color: #f9fafb;">• ${staff.name} (${title})</div>
+                <div style="font-size: 13px; color: #d1d5db; margin-top: 6px;">${s.timeRange || ''}</div>
+                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px; line-height: 1.4;">${s.station || ''}</div>
               </div>
             `;
           }).join('')}
@@ -1097,14 +1098,14 @@ export default function StaffScheduling() {
     if (off.length > 0) {
       html += `
         <div style="margin-bottom: 20px;">
-          <h3 style="font-size: 16px; color: #f87171; margin-bottom: 10px; font-weight: bold;">OFF</h3>
+          <h3 style="font-size: 18px; color: #f87171; margin-bottom: 12px; font-weight: bold;">OFF</h3>
           ${off.map(s => {
             const staff = staffMembers.find(sm => sm.id === s.staffId);
             if (!staff) return '';
-            const title = staff.title.replace('_', ' ');
+            const title = staff.title.replace('_', ' ').toUpperCase();
             return `
-              <div style="margin: 8px 0; padding: 8px; background: #4b5563; border-radius: 4px;">
-                • ${staff.name} (${title})
+              <div style="margin: 10px 0; padding: 12px; background: #4b5563; border-radius: 6px;">
+                <div style="font-weight: bold; font-size: 15px; color: #f9fafb;">• ${staff.name} (${title})</div>
               </div>
             `;
           }).join('')}
@@ -1117,7 +1118,12 @@ export default function StaffScheduling() {
     try {
       const canvas = await html2canvas(container, {
         backgroundColor: '#1f2937',
-        scale: 2
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        width: 900,
+        height: container.scrollHeight + 80
       });
       
       // Convert to JPG
@@ -1484,7 +1490,7 @@ export default function StaffScheduling() {
                     {indoorStaff.length > 0 && (
                       <div className="space-y-1 mb-2">
                         <div className="text-xs font-semibold text-blue-400">Indoor Stations:</div>
-                        <div className="max-h-20 overflow-y-auto space-y-1 text-xs">
+                        <div className="space-y-1 text-xs">
                           {indoorStaff.map((s, idx) => (
                             <div key={idx} className="text-gray-400">
                               • {s.name} - {s.station}
@@ -1498,7 +1504,7 @@ export default function StaffScheduling() {
                     {outdoorStaff.length > 0 && (
                       <div className="space-y-1 mb-2">
                         <div className="text-xs font-semibold text-purple-400">Outdoor Stations:</div>
-                        <div className="max-h-20 overflow-y-auto space-y-1 text-xs">
+                        <div className="space-y-1 text-xs">
                           {outdoorStaff.map((s, idx) => (
                             <div key={idx} className="text-gray-400">
                               • {s.name} - {s.station}
@@ -1512,7 +1518,7 @@ export default function StaffScheduling() {
                     {offStaff.length > 0 && (
                       <div className="space-y-1 pt-2 border-t border-gray-700">
                         <div className="text-xs font-medium text-gray-200">Off:</div>
-                        <div className="max-h-16 overflow-y-auto space-y-1 text-xs">
+                        <div className="space-y-1 text-xs">
                           {offStaff.map((name, idx) => (
                             <div key={idx} className="text-gray-400">
                               • {name}
