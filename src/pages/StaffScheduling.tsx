@@ -14,6 +14,7 @@ import BottomNav from '@/components/BottomNav';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, startOfWeek, addDays } from 'date-fns';
+import html2canvas from 'html2canvas';
 
 interface StaffMember {
   id: string;
@@ -1004,38 +1005,25 @@ export default function StaffScheduling() {
     toast.success('Schedule exported to PDF');
   };
 
-  const exportDayToPDF = (day: string) => {
-    const doc = new jsPDF('portrait');
+  const exportDayToJPG = async (day: string) => {
     const weekStart = new Date(weekStartDate);
     const weekEnd = addDays(weekStart, 6);
     
-    // Title
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text(venueName || 'Staff Schedule', 105, 20, { align: 'center' });
-    
-    // Day and Week
-    doc.setFontSize(14);
-    doc.text(day, 105, 30, { align: 'center' });
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Week: ${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}`, 105, 38, { align: 'center' });
-    
-    const eventLabel = dailyEvents[day] ? ` - ${dailyEvents[day]}` : '';
-    if (eventLabel) {
-      doc.setFontSize(12);
-      doc.setTextColor(255, 165, 0);
-      doc.text(eventLabel, 105, 46, { align: 'center' });
-      doc.setTextColor(0, 0, 0);
-    }
-    
-    let yPos = eventLabel ? 55 : 48;
+    // Create a temporary container for the content
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.width = '800px';
+    container.style.padding = '40px';
+    container.style.backgroundColor = '#1f2937';
+    container.style.color = '#f3f4f6';
+    container.style.fontFamily = 'Arial, sans-serif';
+    document.body.appendChild(container);
     
     const daySchedule = Object.values(schedule).filter(s => s.day === day);
     const working = daySchedule.filter(s => s.timeRange !== 'OFF');
     const off = daySchedule.filter(s => s.timeRange === 'OFF');
     
-    // Categorize staff
     const indoor = working.filter(s => {
       const station = s.station || '';
       const staff = staffMembers.find(sm => sm.id === s.staffId);
@@ -1055,94 +1043,108 @@ export default function StaffScheduling() {
       );
     });
     
-    // Summary
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('SUMMARY', 14, yPos);
-    yPos += 5;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Total Working: ${working.length} | Total Off: ${off.length}`, 14, yPos);
-    yPos += 4;
-    doc.text(`Indoor Staff: ${indoor.length} | Outdoor Staff: ${outdoor.length}`, 14, yPos);
-    yPos += 8;
+    const eventLabel = dailyEvents[day] ? ` - ${dailyEvents[day]}` : '';
     
-    // Indoor Staff
+    // Build HTML content
+    let html = `
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="font-size: 28px; margin: 0; font-weight: bold;">${venueName || 'Staff Schedule'}</h1>
+        <h2 style="font-size: 22px; margin: 10px 0; font-weight: bold;">${day}</h2>
+        <p style="font-size: 14px; margin: 5px 0; color: #9ca3af;">Week: ${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}</p>
+        ${eventLabel ? `<p style="font-size: 16px; color: #fb923c; font-weight: bold;">${eventLabel}</p>` : ''}
+      </div>
+      
+      <div style="background: #374151; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="font-size: 16px; margin: 0 0 10px 0; font-weight: bold;">SUMMARY</h3>
+        <p style="margin: 5px 0;">Total Working: ${working.length} | Total Off: ${off.length}</p>
+        <p style="margin: 5px 0;">Indoor Staff: ${indoor.length} | Outdoor Staff: ${outdoor.length}</p>
+      </div>
+    `;
+    
     if (indoor.length > 0) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 100, 200);
-      doc.text('INDOOR STATIONS', 14, yPos);
-      doc.setTextColor(0, 0, 0);
-      yPos += 5;
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      indoor.forEach(s => {
-        const staff = staffMembers.find(sm => sm.id === s.staffId);
-        if (staff) {
-          const title = staff.title.replace('_', ' ');
-          const timeRange = s.timeRange || '';
-          const station = s.station || '';
-          doc.text(`• ${staff.name} (${title})`, 16, yPos);
-          yPos += 4;
-          doc.setFontSize(7);
-          doc.text(`  ${timeRange} - ${station}`, 18, yPos);
-          yPos += 4;
-          doc.setFontSize(8);
-        }
-      });
-      yPos += 3;
+      html += `
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 16px; color: #60a5fa; margin-bottom: 10px; font-weight: bold;">INDOOR STATIONS</h3>
+          ${indoor.map(s => {
+            const staff = staffMembers.find(sm => sm.id === s.staffId);
+            if (!staff) return '';
+            const title = staff.title.replace('_', ' ');
+            return `
+              <div style="margin: 8px 0; padding: 10px; background: #4b5563; border-radius: 4px;">
+                <div style="font-weight: bold;">• ${staff.name} (${title})</div>
+                <div style="font-size: 12px; color: #d1d5db; margin-top: 4px;">${s.timeRange || ''}</div>
+                <div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">${s.station || ''}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
     }
     
-    // Outdoor Staff
     if (outdoor.length > 0) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(128, 0, 128);
-      doc.text('OUTDOOR STATIONS', 14, yPos);
-      doc.setTextColor(0, 0, 0);
-      yPos += 5;
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      outdoor.forEach(s => {
-        const staff = staffMembers.find(sm => sm.id === s.staffId);
-        if (staff) {
-          const title = staff.title.replace('_', ' ');
-          const timeRange = s.timeRange || '';
-          const station = s.station || '';
-          doc.text(`• ${staff.name} (${title})`, 16, yPos);
-          yPos += 4;
-          doc.setFontSize(7);
-          doc.text(`  ${timeRange} - ${station}`, 18, yPos);
-          yPos += 4;
-          doc.setFontSize(8);
-        }
-      });
-      yPos += 3;
+      html += `
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 16px; color: #c084fc; margin-bottom: 10px; font-weight: bold;">OUTDOOR STATIONS</h3>
+          ${outdoor.map(s => {
+            const staff = staffMembers.find(sm => sm.id === s.staffId);
+            if (!staff) return '';
+            const title = staff.title.replace('_', ' ');
+            return `
+              <div style="margin: 8px 0; padding: 10px; background: #4b5563; border-radius: 4px;">
+                <div style="font-weight: bold;">• ${staff.name} (${title})</div>
+                <div style="font-size: 12px; color: #d1d5db; margin-top: 4px;">${s.timeRange || ''}</div>
+                <div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">${s.station || ''}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
     }
     
-    // Off Staff
     if (off.length > 0) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(200, 0, 0);
-      doc.text('OFF', 14, yPos);
-      doc.setTextColor(0, 0, 0);
-      yPos += 5;
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      off.forEach(s => {
-        const staff = staffMembers.find(sm => sm.id === s.staffId);
-        if (staff) {
-          const title = staff.title.replace('_', ' ');
-          doc.text(`• ${staff.name} (${title})`, 16, yPos);
-          yPos += 4;
-        }
-      });
+      html += `
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 16px; color: #f87171; margin-bottom: 10px; font-weight: bold;">OFF</h3>
+          ${off.map(s => {
+            const staff = staffMembers.find(sm => sm.id === s.staffId);
+            if (!staff) return '';
+            const title = staff.title.replace('_', ' ');
+            return `
+              <div style="margin: 8px 0; padding: 8px; background: #4b5563; border-radius: 4px;">
+                • ${staff.name} (${title})
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
     }
     
-    doc.save(`${venueName || 'schedule'}-${day}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-    toast.success(`${day} schedule exported to PDF`);
+    container.innerHTML = html;
+    
+    try {
+      const canvas = await html2canvas(container, {
+        backgroundColor: '#1f2937',
+        scale: 2
+      });
+      
+      // Convert to JPG
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${venueName || 'schedule'}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+          link.click();
+          URL.revokeObjectURL(url);
+          toast.success(`${day} schedule exported to JPG`);
+        }
+      }, 'image/jpeg', 0.95);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export image');
+    } finally {
+      document.body.removeChild(container);
+    }
   };
 
   // Separate head bartender from other staff
@@ -1453,7 +1455,7 @@ export default function StaffScheduling() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => exportDayToPDF(day)}
+                        onClick={() => exportDayToJPG(day)}
                         className="h-6 px-2 text-xs hover:bg-gray-700"
                       >
                         <Download className="h-3 w-3" />
