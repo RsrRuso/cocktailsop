@@ -1130,40 +1130,6 @@ export default function StaffScheduling() {
       }
     });
     
-    // Division Rules - Compact
-    doc.setFillColor(...colors.muted);
-    doc.roundedRect(14, finalY - 2, 270, 12, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...colors.foreground);
-    doc.setFontSize(6.5);
-    doc.text('DIVISION:', 18, finalY + 2.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6);
-    doc.text('2+ Heads/Bar Backs → Indoor/Outdoor | 1 Bar Back + 1 Support → Areas | Default: Indoor', 48, finalY + 2);
-    finalY += 5;
-
-    // Operational Notes - Compact
-    doc.setFillColor(...colors.secondary);
-    doc.roundedRect(14, finalY - 2, 270, 7, 2, 2, 'F');
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text('OPERATIONS', 18, finalY + 2);
-    
-    finalY += 8;
-    doc.setTextColor(...colors.foreground);
-    doc.setFontSize(5.5);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Hours: Venue 5PM-2AM | Bartenders/Backs: 9h | Support: 10h (3PM-1AM) | Break: Individual per staff | Ending: 6:45PM`, 18, finalY);
-    finalY += 3;
-    
-    // Off Days - inline
-    doc.setFont('helvetica', 'bold');
-    doc.text('Off Days:', 18, finalY);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Bartenders alt. 1-2/week | Support: 2/month | No offs on event days', 45, finalY);
-    finalY += 3;
-    
     // Hygiene & Outdoor - Compact side by side
     doc.setFillColor(220, 220, 220);
     doc.roundedRect(14, finalY - 2, 128, 6, 2, 2, 'F');
