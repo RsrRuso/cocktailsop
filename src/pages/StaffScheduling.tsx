@@ -988,52 +988,32 @@ export default function StaffScheduling() {
 
   const exportDayToJPG = async (day: string) => {
     try {
-      toast.info(`Capturing ${day}...`);
-      
       const element = document.getElementById(`day-${day}`);
       
       if (!element) {
-        toast.error(`Could not find ${day} section`);
+        toast.error(`Section not found`);
         return;
       }
 
-      // Wait for DOM to be stable
-      await new Promise(resolve => setTimeout(resolve, 100));
+      toast.info(`Capturing ${day}...`);
       
       const canvas = await html2canvas(element, {
         backgroundColor: '#111827',
         scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: false
+        useCORS: true
       });
       
-      // Create blob and download immediately (synchronous)
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          toast.error('Failed to create image');
-          return;
-        }
-        
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
-        
-        // Must click immediately, not in timeout
-        link.click();
-        
-        // Cleanup after a delay
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-        }, 100);
-        
-        toast.success(`${day} saved!`);
-      }, 'image/jpeg', 0.95);
+      // Use dataURL approach - most reliable
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      const link = document.createElement('a');
+      link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+      link.href = dataUrl;
+      link.click();
       
+      toast.success(`${day} downloaded!`);
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error(`Download failed`);
+      console.error('Download failed:', error);
+      toast.error(`Failed to download ${day}`);
     }
   };
 
