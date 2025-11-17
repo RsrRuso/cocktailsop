@@ -1590,6 +1590,28 @@ export default function StaffScheduling() {
                       </div>
                     )}
 
+                    {/* Break Schedule */}
+                    {working.length > 0 && (
+                      <div className="space-y-1.5 mb-2 bg-gradient-to-r from-orange-950/30 to-amber-950/20 rounded-lg p-2 border border-orange-800/40">
+                        <div className="text-xs font-bold text-orange-300 flex items-center gap-1">
+                          ☕ Break Schedule
+                        </div>
+                        <div className="space-y-1.5 text-[10px] pl-2">
+                          <div className="bg-orange-950/20 rounded p-1.5 border border-orange-900/30">
+                            <span className="font-semibold text-orange-400">First Wave: 5:30-6:30 PM</span>
+                            <div className="text-gray-400 mt-0.5">Opening shifts (12 PM, 3 PM, 4 PM)</div>
+                            <div className="text-amber-400/80 mt-1 text-[9px]">
+                              ⚠️ Coverage: 2 Indoor + 1 Support remain
+                            </div>
+                          </div>
+                          <div className="bg-teal-950/20 rounded p-1.5 border border-teal-900/30">
+                            <span className="font-semibold text-teal-400">Second Wave: After 6:30 PM</span>
+                            <div className="text-gray-400 mt-0.5">First wave returns to relieve</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Off Staff */}
                     {offStaff.length > 0 && (
                       <div className="space-y-1.5 pt-2 border-t border-gray-700/50 bg-gray-900/30 rounded-lg p-2 mt-2">
