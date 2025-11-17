@@ -794,7 +794,7 @@ export default function StaffScheduling() {
       });
 
       // === PRIORITY 4: SUPPORT - General Support & Glassware Polishing ===
-      // Working hours: 12 hours (3:00 PM - 3:00 AM)
+      // Working hours: 10 hours (3:00 PM - 1:00 AM)
       
       // Mark off days
       offSupport.forEach(schedule => {
@@ -816,7 +816,7 @@ export default function StaffScheduling() {
           return;
         }
         
-        // Allocate support to Indoor or Outdoor (12 hours: 3:00 PM - 3:00 AM)
+        // Allocate support to Indoor or Outdoor (10 hours: 3:00 PM - 1:00 AM)
         const supportStations = [
           'Support - Outdoor: Glassware Polishing, General Support',
           'Support - Indoor: Glassware Polishing, General Support'
@@ -825,11 +825,11 @@ export default function StaffScheduling() {
         // Assign station (alternate between outdoor and indoor)
         const station = idx < supportStations.length ? supportStations[idx] : supportStations[idx % supportStations.length];
         
-        // Support works 12 hours: 3:00 PM - 3:00 AM (closing team)
+        // Support works 10 hours: 3:00 PM - 1:00 AM
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
-          timeRange: '3:00 PM - 3:00 AM',
+          timeRange: '3:00 PM - 1:00 AM',
           type: 'regular',
           station
         };
