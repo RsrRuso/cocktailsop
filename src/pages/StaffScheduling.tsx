@@ -1658,11 +1658,11 @@ export default function StaffScheduling() {
                         <div className="text-[10px] text-gray-400 uppercase tracking-wide">Off</div>
                       </div>
                       <div className="text-center p-2 bg-gradient-to-br from-blue-950/40 to-blue-900/20 rounded-lg border border-blue-800/30">
-                        <div className="text-xl font-bold text-blue-400">{indoor.length}</div>
+                        <div className="text-xl font-bold text-blue-400">{indoorStaff.length}</div>
                         <div className="text-[10px] text-gray-400 uppercase tracking-wide">Indoor</div>
                       </div>
                       <div className="text-center p-2 bg-gradient-to-br from-purple-950/40 to-purple-900/20 rounded-lg border border-purple-800/30">
-                        <div className="text-xl font-bold text-purple-400">{outdoor.length}</div>
+                        <div className="text-xl font-bold text-purple-400">{outdoorStaff.length}</div>
                         <div className="text-[10px] text-gray-400 uppercase tracking-wide">Outdoor</div>
                       </div>
                     </div>
