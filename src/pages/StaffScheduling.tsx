@@ -1387,11 +1387,11 @@ export default function StaffScheduling() {
                 // Get staff details
                 const indoorStaff = [...indoor, ...uncategorized].map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
-                  return { name: staff?.name || 'Unknown', station: s.station || 'General Support' };
+                  return { name: staff?.name || 'Unknown', station: s.station || 'General Support', timeRange: s.timeRange };
                 });
                 const outdoorStaff = outdoor.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
-                  return { name: staff?.name || 'Unknown', station: s.station };
+                  return { name: staff?.name || 'Unknown', station: s.station, timeRange: s.timeRange };
                 });
                 const offStaff = off.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
@@ -1457,7 +1457,8 @@ export default function StaffScheduling() {
                         <div className="space-y-1 text-xs pl-3">
                           {indoorStaff.map((s, idx) => (
                             <div key={idx} className="text-gray-300">
-                              • {s.name} <span className="text-gray-500">-</span> <span className="text-blue-400/80">{s.station}</span>
+                              • {s.name} <span className="text-gray-500">({s.timeRange})</span>
+                              <div className="text-[10px] text-blue-400/80 pl-3">{s.station}</div>
                             </div>
                           ))}
                         </div>
@@ -1474,7 +1475,8 @@ export default function StaffScheduling() {
                         <div className="space-y-1 text-xs pl-3">
                           {outdoorStaff.map((s, idx) => (
                             <div key={idx} className="text-gray-300">
-                              • {s.name} <span className="text-gray-500">-</span> <span className="text-purple-400/80">{s.station}</span>
+                              • {s.name} <span className="text-gray-500">({s.timeRange})</span>
+                              <div className="text-[10px] text-purple-400/80 pl-3">{s.station}</div>
                             </div>
                           ))}
                         </div>
