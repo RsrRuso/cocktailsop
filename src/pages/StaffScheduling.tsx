@@ -430,13 +430,8 @@ export default function StaffScheduling() {
         };
       });
       
-      // Division logic: 2+ bar backs → ASSIGN to indoor OR outdoor (not both)
-      const shouldDivideBarBacks = workingBarBacks.length >= 2 || (workingBarBacks.length === 1 && workingSupport.length >= 1);
-      
       workingBarBacks.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
-        // ASSIGN to ONE area only - no double counting
-        const area = shouldDivideBarBacks ? (idx % 2 === 0 ? 'Indoor' : 'Outdoor') : 'General';
         
         // First bar back gets early start for pickup/opening duties (9 hours)
         let timeRange, type;
@@ -462,7 +457,7 @@ export default function StaffScheduling() {
           day,
           timeRange,
           type,
-          station: `Bar Back - ${area}: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish`
+          station: `Bar Back: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish`
         };
       });
 
@@ -480,24 +475,8 @@ export default function StaffScheduling() {
         };
       });
       
-      // Division logic: 2+ support → ASSIGN to indoor OR outdoor (not both)
-      const shouldDivideSupport = workingSupport.length >= 2 || (workingBarBacks.length >= 1 && workingSupport.length === 1);
-      
       workingSupport.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
-        // ASSIGN to ONE area only - no double counting
-        let area;
-        if (shouldDivideSupport) {
-          if (workingBarBacks.length === 1 && workingSupport.length === 1) {
-            // 1 bar back at indoor (idx 0), support goes outdoor
-            area = 'Outdoor';
-          } else {
-            // Multiple supports: alternate
-            area = idx % 2 === 0 ? 'Indoor' : 'Outdoor';
-          }
-        } else {
-          area = 'General';
-        }
         
         // Support works 10 hours: starts early for setup, leaves before close
         newSchedule[key] = {
@@ -505,7 +484,7 @@ export default function StaffScheduling() {
           day,
           timeRange: '3:00 PM - 1:00 AM',
           type: 'regular',
-          station: `Support - ${area}: Glassware Polishing, General Support`
+          station: `Support: Glassware Polishing, General Support`
         };
       });
     });
@@ -1187,7 +1166,19 @@ export default function StaffScheduling() {
                   </tr>
                 </thead>
                 <tbody>
-                  {staffMembers.map(staff => (
+                  {staffMembers
+                    .sort((a, b) => {
+                      // Sort order: head_bartender -> senior_bartender -> bartender -> bar_back -> support
+                      const order = {
+                        head_bartender: 1,
+                        senior_bartender: 2,
+                        bartender: 3,
+                        bar_back: 4,
+                        support: 5
+                      };
+                      return order[a.title] - order[b.title];
+                    })
+                    .map(staff => (
                     <tr key={staff.id}>
                       <td className="border border-border p-2 font-medium bg-card sticky left-0 z-10">
                         <div className="text-sm">{staff.name}</div>
