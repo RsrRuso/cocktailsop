@@ -1138,8 +1138,9 @@ export default function StaffScheduling() {
       console.log(`Using html-to-image to capture ${day}...`);
       
       const dataUrl = await toPng(element, {
-        pixelRatio: 3,
+        pixelRatio: 5,
         cacheBust: true,
+        quality: 1.0,
       });
       
       console.log(`Image captured successfully for ${day}, creating PDF...`);
