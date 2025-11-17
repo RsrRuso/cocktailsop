@@ -907,30 +907,31 @@ export default function StaffScheduling() {
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
     
-    // Design System Colors - Natural dark grey and white theme
+    // Attractive color palette: dark grey, white, and light blue
     const colors = {
-      primary: [60, 60, 60] as [number, number, number], // Dark grey
-      secondary: [80, 80, 80] as [number, number, number], // Medium grey
-      accent: [120, 80, 160] as [number, number, number], // Softer purple accent
-      foreground: [40, 40, 40] as [number, number, number], // Very dark gray
+      primary: [45, 45, 55] as [number, number, number], // Dark grey
+      lightBlue: [173, 216, 230] as [number, number, number], // Light blue
+      darkBlue: [100, 149, 237] as [number, number, number], // Darker blue for accents
+      white: [255, 255, 255] as [number, number, number], // White
+      foreground: [30, 30, 40] as [number, number, number], // Very dark text
       muted: [200, 200, 200] as [number, number, number], // Light grey
       mutedText: [100, 100, 100] as [number, number, number] // Medium grey text
     };
     
-    // Modern header background - dark grey, thinner
-    doc.setFillColor(...colors.primary);
+    // Modern header background - light blue
+    doc.setFillColor(...colors.lightBlue);
     doc.rect(0, 0, 297, 28, 'F');
     
     // Title with professional styling
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(...colors.foreground);
     doc.text((venueName || 'STAFF SCHEDULE').toUpperCase(), 148, 14, { align: 'center' });
     
     // Subtitle with accent
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(...colors.foreground);
     const weekStart = new Date(weekStartDate);
     const weekEnd = addDays(weekStart, 6);
     doc.text(`WEEK: ${format(weekStart, 'MMM dd').toUpperCase()} - ${format(weekEnd, 'MMM dd, yyyy').toUpperCase()}`, 148, 22, { align: 'center' });
@@ -969,7 +970,7 @@ export default function StaffScheduling() {
         fillColor: colors.primary,
         fontStyle: 'bold', 
         fontSize: 8,
-        textColor: [255, 255, 255],
+        textColor: colors.white,
         halign: 'center',
         cellPadding: 2
       },
@@ -1032,11 +1033,11 @@ export default function StaffScheduling() {
     const hasEvents = Object.values(dailyEvents).some(event => event && event.trim() !== '');
     
     if (hasEvents) {
-      doc.setFillColor(...colors.accent);
+      doc.setFillColor(...colors.darkBlue);
       doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(...colors.white);
       doc.text('SPECIAL EVENTS THIS WEEK', 18, finalY + 3);
       
       finalY += 10;
@@ -1054,7 +1055,7 @@ export default function StaffScheduling() {
           
           const staffInfo = openingStaff ? ` | Opening: ${openingStaff.name}` : '';
           doc.setFont('helvetica', 'bold');
-          doc.setTextColor(...colors.accent);
+          doc.setTextColor(...colors.darkBlue);
           doc.text(`${day}:`, 18, finalY);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(...colors.foreground);
@@ -1067,16 +1068,16 @@ export default function StaffScheduling() {
     }
     
     // Role Responsibilities Section - Based on titles only
-    doc.setFillColor(...colors.primary);
+    doc.setFillColor(...colors.darkBlue);
     doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(...colors.white);
     doc.text('ROLE RESPONSIBILITIES', 18, finalY + 3);
     
     finalY += 10;
     doc.setFontSize(7);
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(...colors.foreground);
     
     // Get unique titles from staff members
     const uniqueTitles = Array.from(new Set(staffMembers.map(s => s.title)))
@@ -1093,13 +1094,13 @@ export default function StaffScheduling() {
       
       const description = ROLE_RESPONSIBILITIES[title];
       
-      // Dark grey box for each role
-      doc.setFillColor(60, 60, 60);
+      // Light blue box for each role
+      doc.setFillColor(...colors.lightBlue);
       doc.roundedRect(18, finalY - 2, 260, 7, 1, 1, 'F');
       
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7);
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(...colors.foreground);
       doc.text(`${roleTitle.toUpperCase()}:`, 22, finalY + 2);
       
       doc.setFont('helvetica', 'normal');
@@ -1110,18 +1111,18 @@ export default function StaffScheduling() {
     });
     
     
-    // Hygiene & Outdoor - Dark grey background with white text
-    doc.setFillColor(60, 60, 60);
+    // Hygiene & Outdoor - Light blue background with dark text
+    doc.setFillColor(...colors.lightBlue);
     doc.roundedRect(14, finalY - 2, 128, 7, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7);
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(...colors.foreground);
     doc.text('HYGIENE:', 18, finalY + 2);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6);
     doc.text('Hair tied, clean attire, gloves required', 45, finalY + 2);
     
-    doc.setFillColor(60, 60, 60);
+    doc.setFillColor(...colors.lightBlue);
     doc.roundedRect(146, finalY - 2, 138, 7, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7);
