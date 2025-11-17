@@ -1111,25 +1111,34 @@ export default function StaffScheduling() {
     });
     
     
-    // Hygiene & Outdoor - Light blue background with dark text
-    doc.setFillColor(...colors.lightBlue);
-    doc.roundedRect(14, finalY - 2, 128, 7, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(...colors.foreground);
-    doc.text('HYGIENE:', 18, finalY + 2);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6);
-    doc.text('Hair tied, clean attire, gloves required', 45, finalY + 2);
+    // Hygiene & Safety Tips - Light blue background with dark text
+    const hygieneTips = [
+      '✓ Hair tied back, clean attire, gloves required when handling food',
+      '✓ Wash hands frequently - before shifts, after breaks, after touching face/hair',
+      '✓ Clean workstations every 2 hours, sanitize all surfaces and equipment',
+      '✓ Use separate cutting boards for garnishes, never mix with food prep',
+      '✓ Store garnishes properly in covered containers, check expiration dates',
+      '✓ Ice scoops only - never use glassware to scoop ice',
+      '✓ Report any illness immediately, do not work if unwell'
+    ];
     
+    const boxHeight = hygieneTips.length * 5 + 6;
     doc.setFillColor(...colors.lightBlue);
-    doc.roundedRect(146, finalY - 2, 138, 7, 2, 2, 'F');
+    doc.roundedRect(14, finalY - 2, 270, boxHeight, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.text('OUTDOOR:', 150, finalY + 2);
+    doc.setFontSize(8);
+    doc.setTextColor(...colors.foreground);
+    doc.text('HYGIENE & SAFETY - BAR TEAM GUIDELINES', 18, finalY + 3);
+    
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6);
-    doc.text('MIN 2 / MAX 3 - Rotate every 2h', 180, finalY + 2);
+    doc.setFontSize(6.5);
+    let tipY = finalY + 8;
+    hygieneTips.forEach(tip => {
+      doc.text(tip, 18, tipY);
+      tipY += 5;
+    });
+    
+    finalY += boxHeight + 2;
     
     // Add spacing at the bottom for readability
     finalY += 20;
