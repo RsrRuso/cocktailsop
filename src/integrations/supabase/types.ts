@@ -2576,6 +2576,7 @@ export type Database = {
       }
       staff_members: {
         Row: {
+          break_timings: Json | null
           created_at: string | null
           id: string
           is_active: boolean | null
@@ -2585,6 +2586,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          break_timings?: Json | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
@@ -2594,6 +2596,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          break_timings?: Json | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
