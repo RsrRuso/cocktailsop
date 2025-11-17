@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card } from '@/components/ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { toast } from 'sonner';
 import { Download, Plus, Trash2, Wand2, Calendar, Users } from 'lucide-react';
 import TopNav from '@/components/TopNav';
@@ -1301,52 +1302,62 @@ export default function StaffScheduling() {
         <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl" />
           <div className="relative">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-accent/20 rounded-lg">
-                  <Calendar className="w-5 h-5 text-accent" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-100">Daily Events</h3>
-                  <p className="text-xs text-gray-500">No offs scheduled on event days</p>
-                </div>
-              </div>
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={() => setIsEditingEvents(!isEditingEvents)}
-                className="border-gray-700 hover:bg-gray-800 h-9 px-4 font-medium"
-              >
-                {isEditingEvents ? '✓ Done' : '✏️ Edit'}
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
-              {DAYS_OF_WEEK.map((day) => (
-                <div key={day} className="space-y-1.5">
-                  <Label className="text-xs font-bold text-gray-300 uppercase tracking-wide">{day.slice(0, 3)}</Label>
-                  {isEditingEvents ? (
-                    <Input
-                      value={dailyEvents[day] || ''}
-                      onChange={(e) => setDailyEvents(prev => ({
-                        ...prev,
-                        [day]: e.target.value
-                      }))}
-                      placeholder="Event"
-                      className="text-xs bg-gray-800 border-gray-700 text-gray-100 h-9"
-                    />
-                  ) : (
-                    <div className={`p-2 rounded-lg border text-xs min-h-[36px] flex items-center justify-center transition-all ${
-                      dailyEvents[day] 
-                        ? 'bg-gradient-to-br from-primary/20 to-accent/10 border-primary/40 text-primary font-semibold shadow-sm' 
-                        : 'bg-gray-800/50 text-gray-500 border-gray-700/50'
-                    }`}>
-                      {dailyEvents[day] || '—'}
+            <Accordion type="single" collapsible defaultValue="daily-events">
+              <AccordionItem value="daily-events" className="border-none">
+                <AccordionTrigger className="hover:no-underline pb-4">
+                  <div className="flex items-center justify-between w-full pr-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-accent/20 rounded-lg">
+                        <Calendar className="w-5 h-5 text-accent" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-100">Daily Events</h3>
+                        <p className="text-xs text-gray-500">No offs scheduled on event days</p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditingEvents(!isEditingEvents);
+                      }}
+                      className="border-gray-700 hover:bg-gray-800 h-9 px-4 font-medium"
+                    >
+                      {isEditingEvents ? '✓ Done' : '✏️ Edit'}
+                    </Button>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <div key={day} className="space-y-1.5">
+                        <Label className="text-xs font-bold text-gray-300 uppercase tracking-wide">{day.slice(0, 3)}</Label>
+                        {isEditingEvents ? (
+                          <Input
+                            value={dailyEvents[day] || ''}
+                            onChange={(e) => setDailyEvents(prev => ({
+                              ...prev,
+                              [day]: e.target.value
+                            }))}
+                            placeholder="Event"
+                            className="text-xs bg-gray-800 border-gray-700 text-gray-100 h-9"
+                          />
+                        ) : (
+                          <div className={`p-2 rounded-lg border text-xs min-h-[36px] flex items-center justify-center transition-all ${
+                            dailyEvents[day] 
+                              ? 'bg-gradient-to-br from-primary/20 to-accent/10 border-primary/40 text-primary font-semibold shadow-sm' 
+                              : 'bg-gray-800/50 text-gray-500 border-gray-700/50'
+                          }`}>
+                            {dailyEvents[day] || '—'}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         </Card>
 
@@ -1469,28 +1480,42 @@ export default function StaffScheduling() {
 
         {/* Week Selector */}
         <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-secondary/20 rounded-lg">
-                <Calendar className="w-5 h-5 text-secondary" />
-              </div>
-              <div>
-                <Label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1.5">Week Starting</Label>
-                <Input
-                  type="date"
-                  value={weekStartDate}
-                  onChange={(e) => setWeekStartDate(e.target.value)}
-                  className="bg-gray-800/50 border-gray-700/50 text-gray-100 h-10 font-mono"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-2 text-sm bg-gray-800/50 rounded-lg px-4 py-2.5 border border-gray-700/50">
-              <span className="text-gray-400">Period:</span>
-              <span className="font-semibold text-gray-100">
-                {format(new Date(weekStartDate), 'MMM dd')} - {format(addDays(new Date(weekStartDate), 6), 'MMM dd, yyyy')}
-              </span>
-            </div>
-          </div>
+          <Accordion type="single" collapsible defaultValue="week-starting">
+            <AccordionItem value="week-starting" className="border-none">
+              <AccordionTrigger className="hover:no-underline pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-secondary/20 rounded-lg">
+                    <Calendar className="w-5 h-5 text-secondary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-100">Week Starting</h3>
+                    <p className="text-xs text-gray-500">Select schedule week</p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <Label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1.5">Week Starting</Label>
+                      <Input
+                        type="date"
+                        value={weekStartDate}
+                        onChange={(e) => setWeekStartDate(e.target.value)}
+                        className="bg-gray-800/50 border-gray-700/50 text-gray-100 h-10 font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm bg-gray-800/50 rounded-lg px-4 py-2.5 border border-gray-700/50">
+                    <span className="text-gray-400">Period:</span>
+                    <span className="font-semibold text-gray-100">
+                      {format(new Date(weekStartDate), 'MMM dd')} - {format(addDays(new Date(weekStartDate), 6), 'MMM dd, yyyy')}
+                    </span>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </Card>
 
         {/* Weekly Off Days Summary */}
@@ -1498,63 +1523,74 @@ export default function StaffScheduling() {
           <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
             <div className="absolute top-0 left-0 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
             <div className="relative">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/20 rounded-lg">
-                    <Calendar className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-100">Weekly Off Days</h3>
-                    <p className="text-xs text-gray-500">Staff rest day overview</p>
-                  </div>
-                </div>
-                <Button 
-                  onClick={exportWeeklySummaryToJPG} 
-                  variant="outline" 
-                  size="sm"
-                  className="border-gray-600 hover:bg-gray-800 hover:border-primary/50 transition-all h-9 px-4"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
-                </Button>
-              </div>
-              <div id="Weekly Off Days Summary" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {staffMembers.map(staff => {
-                  const staffSchedule = Object.values(schedule).filter(s => s.staffId === staff.id);
-                  const offDays = staffSchedule.filter(s => s.timeRange === 'OFF');
-                  const offDaysList = offDays.map(s => s.day).join(', ');
-                  
-                  return (
-                    <div key={staff.id} className="border border-gray-700/50 rounded-lg p-3.5 bg-gradient-to-br from-gray-800/80 to-gray-850/80 shadow-md hover:shadow-lg transition-all hover:border-primary/40 hover:scale-[1.02] backdrop-blur-sm">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <div>
-                          <div className="font-bold text-gray-100 text-sm">{staff.name}</div>
-                          <div className="text-xs text-gray-400 capitalize mt-1 flex items-center gap-1.5">
-                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/70"></span>
-                            {staff.title.replace('_', ' ')}
-                          </div>
+              <Accordion type="single" collapsible defaultValue="weekly-off">
+                <AccordionItem value="weekly-off" className="border-none">
+                  <AccordionTrigger className="hover:no-underline pb-4">
+                    <div className="flex items-center justify-between w-full pr-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/20 rounded-lg">
+                          <Calendar className="w-5 h-5 text-primary" />
                         </div>
-                        <div className="text-center">
-                          <div className={`text-2xl font-extrabold ${offDays.length === 0 ? 'text-red-400' : offDays.length >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
-                            {offDays.length}
-                          </div>
-                          <div className="text-[9px] text-gray-500 uppercase tracking-wider font-medium">days off</div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-100">Weekly Off Days</h3>
+                          <p className="text-xs text-gray-500">Staff rest day overview</p>
                         </div>
                       </div>
-                      {offDaysList && (
-                        <div className="text-xs text-gray-300 mt-2.5 pt-2.5 border-t border-gray-700/30 bg-gray-900/40 rounded px-2.5 py-2">
-                          <span className="text-gray-500 font-semibold">📅</span> {offDaysList}
-                        </div>
-                      )}
-                      {offDays.length === 0 && (
-                        <div className="text-xs text-red-400 mt-2.5 pt-2.5 border-t border-red-900/30 bg-red-950/20 rounded px-2.5 py-1.5 flex items-center gap-1.5">
-                          <span className="text-red-500">⚠️</span> No days off
-                        </div>
-                      )}
+                      <Button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          exportWeeklySummaryToJPG();
+                        }} 
+                        variant="outline" 
+                        size="sm"
+                        className="border-gray-600 hover:bg-gray-800 hover:border-primary/50 transition-all h-9 px-4"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
                     </div>
-                  );
-                })}
-              </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div id="Weekly Off Days Summary" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {staffMembers.map(staff => {
+                        const staffSchedule = Object.values(schedule).filter(s => s.staffId === staff.id);
+                        const offDays = staffSchedule.filter(s => s.timeRange === 'OFF');
+                        const offDaysList = offDays.map(s => s.day).join(', ');
+                        
+                        return (
+                          <div key={staff.id} className="border border-gray-700/50 rounded-lg p-3.5 bg-gradient-to-br from-gray-800/80 to-gray-850/80 shadow-md hover:shadow-lg transition-all hover:border-primary/40 hover:scale-[1.02] backdrop-blur-sm">
+                            <div className="flex items-center justify-between mb-2.5">
+                              <div>
+                                <div className="font-bold text-gray-100 text-sm">{staff.name}</div>
+                                <div className="text-xs text-gray-400 capitalize mt-1 flex items-center gap-1.5">
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/70"></span>
+                                  {staff.title.replace('_', ' ')}
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className={`text-2xl font-extrabold ${offDays.length === 0 ? 'text-red-400' : offDays.length >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+                                  {offDays.length}
+                                </div>
+                                <div className="text-[9px] text-gray-500 uppercase tracking-wider font-medium">days off</div>
+                              </div>
+                            </div>
+                            {offDaysList && (
+                              <div className="text-xs text-gray-300 mt-2.5 pt-2.5 border-t border-gray-700/30 bg-gray-900/40 rounded px-2.5 py-2">
+                                <span className="text-gray-500 font-semibold">📅</span> {offDaysList}
+                              </div>
+                            )}
+                            {offDays.length === 0 && (
+                              <div className="text-xs text-red-400 mt-2.5 pt-2.5 border-t border-red-900/30 bg-red-950/20 rounded px-2.5 py-1.5 flex items-center gap-1.5">
+                                <span className="text-red-500">⚠️</span> No days off
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           </Card>
         )}
@@ -1564,22 +1600,27 @@ export default function StaffScheduling() {
           <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
             <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/3 rounded-full blur-3xl" />
             <div className="relative">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-secondary/20 rounded-lg">
-                    <Users className="w-5 h-5 text-secondary" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-100">Daily Breakdown</h3>
-                    <p className="text-xs text-gray-500">Staff schedule by day</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                  <span className="text-xs text-orange-400 font-semibold">☕ Individual break times per staff</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
-              {DAYS_OF_WEEK.map((day, dayIndex) => {
+              <Accordion type="single" collapsible defaultValue="daily-breakdown">
+                <AccordionItem value="daily-breakdown" className="border-none">
+                  <AccordionTrigger className="hover:no-underline pb-4">
+                    <div className="flex items-center justify-between w-full pr-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-secondary/20 rounded-lg">
+                          <Users className="w-5 h-5 text-secondary" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-100">Daily Breakdown</h3>
+                          <p className="text-xs text-gray-500">Staff schedule by day</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                        <span className="text-xs text-orange-400 font-semibold">☕ Individual break times per staff</span>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
+                    {DAYS_OF_WEEK.map((day, dayIndex) => {
                 const daySchedule = Object.values(schedule).filter(s => s.day === day);
                 const working = daySchedule.filter(s => s.timeRange !== 'OFF');
                 const off = daySchedule.filter(s => s.timeRange === 'OFF');
@@ -1845,6 +1886,9 @@ export default function StaffScheduling() {
                 );
               })}
             </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           </Card>
         )}
