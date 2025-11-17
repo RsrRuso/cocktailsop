@@ -511,7 +511,7 @@ export default function StaffScheduling() {
       });
 
       // === PRIORITY 1: HEAD BARTENDERS - SUPERVISING (Observe indoor/outdoor, support where needed) ===
-      // Working hours: 9 hours (4:00 PM - 1:00 AM)
+      // Working hours: 10 hours (5:00 PM - 3:00 AM) or 9 hours (4:00 PM - 1:00 AM) for special events
       // Division logic: 2+ heads → divide into indoor/outdoor supervisors
       
       const shouldDivideHeads = workingHeads.length >= 2;
@@ -531,10 +531,19 @@ export default function StaffScheduling() {
       workingHeads.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         const area = shouldDivideHeads ? (idx % 2 === 0 ? 'Indoor' : 'Outdoor') : 'Supervising';
+        
+        // Determine time range based on day type
+        let timeRange;
+        if (isBrunchDay || isPickupDay) {
+          timeRange = '4:00 PM - 1:00 AM'; // 9 hours for special events
+        } else {
+          timeRange = '5:00 PM - 3:00 AM'; // 10 hours for regular days
+        }
+        
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
-          timeRange: '4:00 PM - 1:00 AM',
+          timeRange,
           type: 'regular',
           station: shouldDivideHeads 
             ? `Head - ${area} Supervisor: Observe ${area.toLowerCase()} operations, support where needed`
@@ -544,7 +553,7 @@ export default function StaffScheduling() {
       });
 
       // === PRIORITY 2: BARTENDERS (Senior + Regular) - OPERATE STATIONS ===
-      // Working hours: 9 hours (4:00 PM - 1:00 AM)
+      // Working hours: 10 hours (5:00 PM - 3:00 AM) or varied for special days
       
       // Mark off days
       [...offSeniorBartenders, ...offBartenders].forEach(schedule => {
@@ -567,11 +576,26 @@ export default function StaffScheduling() {
 
       allStationBartenders.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
+        
+        // Determine time range based on day type and position
+        let timeRange;
+        if (isBrunchDay) {
+          timeRange = '4:00 PM - 1:00 AM'; // 9 hours for brunch days
+        } else if (isPickupDay && idx === 0) {
+          timeRange = '4:00 PM - 1:00 AM'; // First bartender on pickup days
+        } else if (day === 'Wednesday') {
+          timeRange = idx === 0 ? '4:00 PM - 1:00 AM' : '5:00 PM - 3:00 AM'; // Mixed on Wednesday
+        } else if (day === 'Saturday') {
+          timeRange = '4:00 PM - 2:00 AM'; // 10 hours different end time for Saturday
+        } else {
+          timeRange = '5:00 PM - 3:00 AM'; // 10 hours standard
+        }
+        
         if (idx < stations.length) {
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
-            timeRange: '4:00 PM - 1:00 AM',
+            timeRange,
             type: 'regular',
             station: stations[idx]
           };
@@ -581,7 +605,7 @@ export default function StaffScheduling() {
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
-            timeRange: '4:00 PM - 1:00 AM',
+            timeRange,
             type: 'regular',
             station: 'Indoor - Floating Support: Assist all indoor stations as needed'
           };
@@ -620,16 +644,24 @@ export default function StaffScheduling() {
             timeRange = '12:00 PM - 9:00 PM'; // 9 hours, early for pickups
             type = 'pickup';
           } else if (isBrunchDay) {
-            timeRange = '11:00 AM - 8:00 PM'; // 9 hours, early for brunch
+            timeRange = 'Opening - BRUNCH - 11 AM'; // Special brunch opening
             type = 'brunch';
+          } else if (day === 'Monday') {
+            timeRange = '2:00 PM - 11:00 PM'; // 9 hours for Monday
+            type = 'opening';
           } else {
             timeRange = '3:00 PM - 12:00 AM'; // 9 hours, setup before venue opens
             type = 'opening';
           }
         } else {
           // Additional bar backs work full service (9 hours)
-          timeRange = '4:00 PM - 1:00 AM';
-          type = 'regular';
+          if (day === 'Wednesday') {
+            timeRange = '3:00 PM - 12:00 AM'; // Special time for Wednesday
+            type = 'regular';
+          } else {
+            timeRange = '5:00 PM - 3:00 AM'; // Match bartender hours
+            type = 'regular';
+          }
         }
         
         // Assign station - prioritize indoor after first outdoor
@@ -670,10 +702,11 @@ export default function StaffScheduling() {
         // Assign station (alternate between outdoor and indoor)
         const station = idx < supportStations.length ? supportStations[idx] : supportStations[idx % supportStations.length];
         
+        // Support typically works IN - 3 PM (starts at 3 PM, no specific end time in schedule)
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
-          timeRange: '3:00 PM - 1:00 AM',
+          timeRange: 'IN - 3 PM',
           type: 'regular',
           station
         };
