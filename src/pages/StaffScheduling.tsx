@@ -188,42 +188,57 @@ export default function StaffScheduling() {
     const weekNumber = Math.floor((weekDate.getTime() - new Date(weekDate.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
     const isOddWeek = weekNumber % 2 === 1;
     
-    // FAIR OFFS DISTRIBUTION - Alternate between 1 day off and 2 days off per week
-    // For same titles: stagger so one gets 1 day, another gets 2 days in the same week
+    // FAIR OFFS DISTRIBUTION - Everyone gets offs based on pattern
+    // Week 1: Person A gets 1 day, Person B gets 2 days
+    // Week 2: Person A gets 2 days, Person B gets 1 day
     const divideIntoGroups = (staffList: StaffMember[]) => {
-      // 1-day off patterns
+      // 1-day off patterns (non-busy days preferred)
       const oneDayPatterns = [
         [0],      // Monday
-        [2],      // Wednesday
         [3],      // Thursday
+        [2],      // Wednesday
         [6],      // Sunday
       ];
       
-      // 2-day off patterns
+      // 2-day off patterns (non-busy days preferred)
       const twoDayPatterns = [
         [0, 3],   // Monday + Thursday
-        [2, 6],   // Wednesday + Sunday
         [0, 6],   // Monday + Sunday
+        [2, 3],   // Wednesday + Thursday
         [3, 6],   // Thursday + Sunday
       ];
       
       return staffList.map((staff, index) => {
-        // Alternate between 1 day and 2 days based on week number and position
-        // If odd week: even-indexed staff get 1 day, odd-indexed get 2 days
-        // If even week: reverse the pattern
-        const shouldGetOneDay = isOddWeek ? (index % 2 === 0) : (index % 2 === 1);
+        // Alternate: odd week even-index gets 1 day, odd-index gets 2 days
+        // Even week: reverse
+        const shouldGetTwoDays = isOddWeek ? (index % 2 === 1) : (index % 2 === 0);
         
         let daysOff;
-        if (shouldGetOneDay) {
-          daysOff = oneDayPatterns[index % oneDayPatterns.length];
-        } else {
+        if (shouldGetTwoDays) {
           daysOff = twoDayPatterns[index % twoDayPatterns.length];
+        } else {
+          daysOff = oneDayPatterns[index % oneDayPatterns.length];
+        }
+        
+        // IMPORTANT: Filter out busy days, if all off days are busy, assign alternative
+        const availableOffDays = daysOff.filter(day => !busyDays.includes(day));
+        
+        // If all assigned off days are busy, give them the first non-busy day
+        if (availableOffDays.length === 0 && busyDays.length < 7) {
+          // Find first non-busy day
+          for (let i = 0; i < 7; i++) {
+            if (!busyDays.includes(i)) {
+              availableOffDays.push(i);
+              break;
+            }
+          }
         }
         
         return {
           staff,
-          daysOff,
-          groupType: daysOff.length === 1 ? '1-day' : '2-day'
+          daysOff: availableOffDays.length > 0 ? availableOffDays : daysOff, // Fallback to original if all days busy
+          originalDaysOff: daysOff,
+          groupType: shouldGetTwoDays ? '2-day' : '1-day'
         };
       });
     };
@@ -257,7 +272,7 @@ export default function StaffScheduling() {
       const workingSupport: typeof supportSchedules = [];
       
       headSchedules.forEach(schedule => {
-        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
+        const shouldBeOff = schedule.daysOff.includes(dayIndex);
         if (shouldBeOff) {
           offHeads.push(schedule);
         } else {
@@ -266,7 +281,7 @@ export default function StaffScheduling() {
       });
       
       seniorBartenderSchedules.forEach(schedule => {
-        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
+        const shouldBeOff = schedule.daysOff.includes(dayIndex);
         if (shouldBeOff) {
           offSeniorBartenders.push(schedule);
         } else {
@@ -275,7 +290,7 @@ export default function StaffScheduling() {
       });
       
       bartenderSchedules.forEach(schedule => {
-        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
+        const shouldBeOff = schedule.daysOff.includes(dayIndex);
         if (shouldBeOff) {
           offBartenders.push(schedule);
         } else {
@@ -284,7 +299,7 @@ export default function StaffScheduling() {
       });
       
       barBackSchedules.forEach(schedule => {
-        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
+        const shouldBeOff = schedule.daysOff.includes(dayIndex);
         if (shouldBeOff) {
           offBarBacks.push(schedule);
         } else {
@@ -293,7 +308,7 @@ export default function StaffScheduling() {
       });
       
       supportSchedules.forEach(schedule => {
-        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
+        const shouldBeOff = schedule.daysOff.includes(dayIndex);
         if (shouldBeOff) {
           offSupport.push(schedule);
         } else {
