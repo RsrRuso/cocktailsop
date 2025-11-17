@@ -907,14 +907,14 @@ export default function StaffScheduling() {
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
     
-    // Design System Colors (HSL converted to RGB) - defined once at the top
+    // Design System Colors (HSL converted to RGB) - Darker version
     const colors = {
-      primary: [46, 115, 237] as [number, number, number], // hsl(220 90% 56%) - Blue
-      secondary: [38, 168, 212] as [number, number, number], // hsl(200 70% 50%) - Cyan
-      accent: [229, 56, 201] as [number, number, number], // hsl(320 80% 55%) - Magenta
-      foreground: [26, 26, 26] as [number, number, number], // hsl(0 0% 10%)
-      muted: [245, 245, 245] as [number, number, number], // hsl(0 0% 96%)
-      mutedText: [115, 115, 115] as [number, number, number] // hsl(0 0% 45%)
+      primary: [25, 70, 180] as [number, number, number], // Darker Blue
+      secondary: [20, 100, 150] as [number, number, number], // Darker Cyan
+      accent: [180, 30, 150] as [number, number, number], // Darker Magenta
+      foreground: [15, 15, 15] as [number, number, number], // Very dark gray
+      muted: [200, 200, 200] as [number, number, number], // Darker muted gray
+      mutedText: [80, 80, 80] as [number, number, number] // Darker text
     };
     
     // Modern gradient header background
@@ -982,7 +982,7 @@ export default function StaffScheduling() {
         }
       },
       alternateRowStyles: {
-        fillColor: [250, 250, 250]
+        fillColor: [230, 230, 230]
       },
       didParseCell: (data) => {
         if (data.row.section === 'body' && data.column.index > 0) {
@@ -992,30 +992,32 @@ export default function StaffScheduling() {
             const cell = getScheduleCell(staff.id, day);
             if (cell) {
               if (cell.type === 'early_shift') {
-                data.cell.styles.fillColor = [196, 181, 253]; // Vibrant Violet
+                data.cell.styles.fillColor = [167, 139, 250]; // Darker Violet
                 data.cell.styles.fontStyle = 'bold';
-                data.cell.styles.textColor = [88, 28, 135];
+                data.cell.styles.textColor = [60, 20, 100];
               }
               if (cell.type === 'late_shift') {
-                data.cell.styles.fillColor = [153, 246, 228]; // Vibrant Teal
+                data.cell.styles.fillColor = [94, 234, 212]; // Darker Teal
                 data.cell.styles.fontStyle = 'bold';
-                data.cell.styles.textColor = [19, 78, 74];
+                data.cell.styles.textColor = [13, 60, 55];
               }
               if (cell.type === 'opening') {
-                data.cell.styles.fillColor = [220, 252, 231];
+                data.cell.styles.fillColor = [187, 247, 208]; // Darker Green
                 data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.textColor = [20, 83, 45];
               }
               if (cell.type === 'closing') {
-                data.cell.styles.fillColor = [254, 226, 226];
+                data.cell.styles.fillColor = [252, 165, 165]; // Darker Red
                 data.cell.styles.fontStyle = 'bold';
               }
               if (cell.type === 'brunch') {
-                data.cell.styles.fillColor = [254, 243, 199];
+                data.cell.styles.fillColor = [253, 224, 71]; // Darker Yellow
                 data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.textColor = [113, 63, 18];
               }
               if (cell.type === 'off') {
-                data.cell.styles.fillColor = [226, 232, 240];
-                data.cell.styles.textColor = [100, 116, 139];
+                data.cell.styles.fillColor = [203, 213, 225]; // Darker Gray
+                data.cell.styles.textColor = [71, 85, 105];
               }
             }
           }
