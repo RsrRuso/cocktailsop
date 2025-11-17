@@ -1184,25 +1184,32 @@ export default function StaffScheduling() {
     toast.info(`Preparing ${day} for download...`);
     
     try {
-      // Wait a bit to ensure all rendering is complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Short delay for UI to settle
+      await new Promise(resolve => setTimeout(resolve, 50));
       
       console.log(`Capturing ${day} with html2canvas...`);
+      
+      // Use simpler html2canvas options that are more reliable
       const canvas = await html2canvas(element, {
         backgroundColor: '#111827',
-        scale: 2,
+        scale: 1.5, // Lower scale for reliability
         logging: true,
         useCORS: true,
-        allowTaint: false,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
+        allowTaint: true, // Allow tainted canvas for compatibility
+        imageTimeout: 0, // Don't wait for images
+        removeContainer: true,
       });
       
-      console.log(`Canvas created for ${day}, converting to blob...`);
+      console.log(`Canvas created for ${day}, size: ${canvas.width}x${canvas.height}`);
       
-      // Convert to blob as JPEG
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, 'image/jpeg', 0.95);
+      // Convert to blob as JPEG with lower quality for faster processing
+      console.log('Converting to blob...');
+      const blob = await new Promise<Blob | null>((resolve, reject) => {
+        try {
+          canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.9);
+        } catch (err) {
+          reject(err);
+        }
       });
       
       if (!blob) {
@@ -1212,32 +1219,32 @@ export default function StaffScheduling() {
       
       console.log(`Blob created, size: ${blob.size} bytes`);
       
-      // Create download link
+      // Create and trigger download
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       const filename = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
       
       link.href = url;
       link.download = filename;
-      link.style.display = 'none';
       
-      console.log(`Triggering download for: ${filename}`);
+      console.log(`Triggering download: ${filename}`);
       
+      // Different approach for triggering download
       document.body.appendChild(link);
       link.click();
       
-      // Clean up
+      // Cleanup after a brief delay
       setTimeout(() => {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        console.log(`Download completed and cleaned up for ${day}`);
+        console.log(`Download cleanup completed for ${day}`);
       }, 100);
       
-      toast.success(`${day} downloaded successfully!`);
+      toast.success(`${day} downloaded!`);
       
     } catch (error) {
-      console.error('Download failed for', day, ':', error);
-      toast.error(`Failed to download ${day}. Check console for details.`);
+      console.error('Download error for', day, ':', error);
+      toast.error(`Download failed for ${day}. Please try again.`);
     }
   };
 
