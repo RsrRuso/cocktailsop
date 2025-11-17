@@ -565,12 +565,25 @@ export default function StaffScheduling() {
           workingSupport.push(schedule);
         }
       });
+      
+      // SHUFFLE working arrays for randomized station assignments
+      const shuffledWorkingHeads = shuffleArray(workingHeads);
+      const shuffledWorkingSeniorBartenders = shuffleArray(workingSeniorBartenders);
+      const shuffledWorkingBartenders = shuffleArray(workingBartenders);
+      const shuffledWorkingBarBacks = shuffleArray(workingBarBacks);
+      const shuffledWorkingSupport = shuffleArray(workingSupport);
+      
+      console.log(`\n🎲 ${day} - Shuffled Working Staff:`);
+      console.log('  Heads:', shuffledWorkingHeads.map(s => s.staff.name).join(', '));
+      console.log('  Bartenders:', [...shuffledWorkingSeniorBartenders, ...shuffledWorkingBartenders].map(s => s.staff.name).join(', '));
+      console.log('  Bar Backs:', shuffledWorkingBarBacks.map(s => s.staff.name).join(', '));
+      console.log('  Support:', shuffledWorkingSupport.map(s => s.staff.name).join(', '));
 
       // === PRIORITY 1: HEAD BARTENDERS - SUPERVISING (Observe indoor/outdoor, support where needed) ===
       // Working hours: 10 hours (5:00 PM - 3:00 AM) or 9 hours (4:00 PM - 1:00 AM) for special events
       // Division logic: 2+ heads → divide into indoor/outdoor supervisors
       
-      const shouldDivideHeads = workingHeads.length >= 2;
+      const shouldDivideHeads = shuffledWorkingHeads.length >= 2;
       
       // Mark off days
       offHeads.forEach(schedule => {
@@ -584,7 +597,7 @@ export default function StaffScheduling() {
       });
       
       // Schedule working heads - MAX 1 OUTDOOR (part of max 3 outdoor total), rest indoor
-      workingHeads.forEach((schedule, idx) => {
+      shuffledWorkingHeads.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
         // Skip if already assigned to avoid duplicates
@@ -633,7 +646,7 @@ export default function StaffScheduling() {
         };
       });
       
-      const allStationBartenders = [...workingSeniorBartenders, ...workingBartenders];
+      const allStationBartenders = [...shuffledWorkingSeniorBartenders, ...shuffledWorkingBartenders];
       // OUTDOOR ALLOCATION: Always 1 bartender outdoor (minimum 2 total outdoor with barback)
       // This ensures min 2 outdoor (1 bartender + 1 barback), max 3 outdoor (+ 1 head)
       const numBartenders = allStationBartenders.length;
@@ -650,6 +663,9 @@ export default function StaffScheduling() {
         'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
       ];
+
+      // SHUFFLE stations to randomize assignments each time
+      const shuffledStations = shuffleArray(stations);
 
       allStationBartenders.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
@@ -680,13 +696,13 @@ export default function StaffScheduling() {
           type = 'late_shift';
         }
         
-        if (idx < stations.length) {
+        if (idx < shuffledStations.length) {
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange,
             type,
-            station: stations[idx]
+            station: shuffledStations[idx]
           };
           assignedStaffIds.add(schedule.staff.id);
         } else {
@@ -716,7 +732,7 @@ export default function StaffScheduling() {
         };
       });
       
-      workingBarBacks.forEach((schedule, idx) => {
+      shuffledWorkingBarBacks.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
         // Skip if already assigned to avoid duplicates
@@ -727,11 +743,11 @@ export default function StaffScheduling() {
         
         // OUTDOOR ALLOCATION: Always 1 barback outdoor (ensures min 2 total outdoor with bartender)
         // First barback always outdoor to meet minimum 2 outdoor requirement
-        const barBackStations = workingBarBacks.length >= 3 ? [
+        const barBackStations = shuffledWorkingBarBacks.length >= 3 ? [
           'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
           'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
           'Bar Back - Indoor Support: Pickups, Refilling, Glassware, Batching, help where needed, stock'
-        ] : workingBarBacks.length === 2 ? [
+        ] : shuffledWorkingBarBacks.length === 2 ? [
           'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
           'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish'
         ] : [
@@ -791,7 +807,7 @@ export default function StaffScheduling() {
         };
       });
       
-      workingSupport.forEach((schedule, idx) => {
+      shuffledWorkingSupport.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
         // Skip if already assigned to avoid duplicates
