@@ -907,11 +907,11 @@ export default function StaffScheduling() {
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
     
-    // Attractive color palette: dark grey, white, and light blue
+    // Professional color palette: dark grey, white, and professional blue
     const colors = {
       primary: [45, 45, 55] as [number, number, number], // Dark grey
-      lightBlue: [173, 216, 230] as [number, number, number], // Light blue
-      darkBlue: [100, 149, 237] as [number, number, number], // Darker blue for accents
+      lightBlue: [70, 120, 180] as [number, number, number], // Professional steel blue
+      darkBlue: [25, 55, 95] as [number, number, number], // Navy blue
       white: [255, 255, 255] as [number, number, number], // White
       foreground: [30, 30, 40] as [number, number, number], // Very dark text
       muted: [200, 200, 200] as [number, number, number], // Light grey
