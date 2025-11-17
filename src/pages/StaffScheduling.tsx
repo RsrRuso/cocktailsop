@@ -1338,7 +1338,14 @@ export default function StaffScheduling() {
                 <Label className="text-xs font-semibold text-gray-400 mb-2 block uppercase tracking-wide">First Wave Start</Label>
                 <Input
                   type="time"
-                  value={breakTimings.firstWaveStart.replace(' PM', '').replace(' AM', '')}
+                  value={(() => {
+                    const [time, period] = breakTimings.firstWaveStart.split(' ');
+                    const [hours, minutes] = time.split(':');
+                    let hour = parseInt(hours);
+                    if (period === 'PM' && hour !== 12) hour += 12;
+                    if (period === 'AM' && hour === 12) hour = 0;
+                    return `${hour.toString().padStart(2, '0')}:${minutes}`;
+                  })()}
                   onChange={(e) => {
                     const time = e.target.value;
                     const [hours, minutes] = time.split(':');
@@ -1359,7 +1366,14 @@ export default function StaffScheduling() {
                 <Label className="text-xs font-semibold text-gray-400 mb-2 block uppercase tracking-wide">First Wave End</Label>
                 <Input
                   type="time"
-                  value={breakTimings.firstWaveEnd.replace(' PM', '').replace(' AM', '')}
+                  value={(() => {
+                    const [time, period] = breakTimings.firstWaveEnd.split(' ');
+                    const [hours, minutes] = time.split(':');
+                    let hour = parseInt(hours);
+                    if (period === 'PM' && hour !== 12) hour += 12;
+                    if (period === 'AM' && hour === 12) hour = 0;
+                    return `${hour.toString().padStart(2, '0')}:${minutes}`;
+                  })()}
                   onChange={(e) => {
                     const time = e.target.value;
                     const [hours, minutes] = time.split(':');
@@ -1381,7 +1395,14 @@ export default function StaffScheduling() {
                 <Label className="text-xs font-semibold text-gray-400 mb-2 block uppercase tracking-wide">Second Wave Start</Label>
                 <Input
                   type="time"
-                  value={breakTimings.secondWaveStart.replace(' PM', '').replace(' AM', '')}
+                  value={(() => {
+                    const [time, period] = breakTimings.secondWaveStart.split(' ');
+                    const [hours, minutes] = time.split(':');
+                    let hour = parseInt(hours);
+                    if (period === 'PM' && hour !== 12) hour += 12;
+                    if (period === 'AM' && hour === 12) hour = 0;
+                    return `${hour.toString().padStart(2, '0')}:${minutes}`;
+                  })()}
                   onChange={(e) => {
                     const time = e.target.value;
                     const [hours, minutes] = time.split(':');
