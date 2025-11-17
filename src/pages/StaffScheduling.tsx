@@ -218,15 +218,20 @@ export default function StaffScheduling() {
     // Track how many offs per day
     const offsPerDay: number[] = [0, 0, 0, 0, 0, 0, 0];
     
+    // Global staff counter for fair rotation across all roles
+    let globalStaffIndex = 0;
+    
     const divideIntoGroups = (staffList: StaffMember[]) => {
       return staffList.map((staff, index) => {
+        const actualIndex = globalStaffIndex++;  // Use global index, then increment
+        
         // Alternating logic for same titles:
-        const shouldGetTwoDays = isOddWeek ? (index % 2 === 1) : (index % 2 === 0);
+        const shouldGetTwoDays = isOddWeek ? (actualIndex % 2 === 1) : (actualIndex % 2 === 0);
         const targetDaysOff = shouldGetTwoDays ? 2 : 1;
         
         // Get the available days (not busy)
         const availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
-        console.log(`🎯 ${staff.name} (index ${index}): Available days:`, availableDays.map(d => DAYS_OF_WEEK[d]));
+        console.log(`🎯 ${staff.name} (global index ${actualIndex}): Available days:`, availableDays.map(d => DAYS_OF_WEEK[d]));
         
         if (availableDays.length === 0) {
           console.warn('⚠️ All allowed off days are busy, forcing Monday');
@@ -243,15 +248,15 @@ export default function StaffScheduling() {
         
         if (targetDaysOff === 1) {
           // Cycle through available days: person 0 gets first, person 1 gets second, etc.
-          const dayIndex = index % availableDays.length;
+          const dayIndex = actualIndex % availableDays.length;
           finalDaysOff.push(availableDays[dayIndex]);
         } else {
           // For 2 days, pick first day by index, second day by index+2 (spread them out)
-          const firstDayIndex = index % availableDays.length;
+          const firstDayIndex = actualIndex % availableDays.length;
           finalDaysOff.push(availableDays[firstDayIndex]);
           
           if (availableDays.length >= 2) {
-            const secondDayIndex = (index + 2) % availableDays.length;
+            const secondDayIndex = (actualIndex + 2) % availableDays.length;
             if (availableDays[secondDayIndex] !== finalDaysOff[0]) {
               finalDaysOff.push(availableDays[secondDayIndex]);
             } else {
