@@ -1273,16 +1273,19 @@ export default function StaffScheduling() {
                 const indoor = working.filter(s => {
                   const station = s.station || '';
                   // Match "Indoor" but NOT "Indoor/Outdoor" or when Outdoor appears first
-                  return (station.includes('Indoor - ') || station.includes('Bar Back - Indoor') || station.includes('Support - Indoor') || station.includes('Head - Indoor'));
+                  return (station.includes('Indoor - ') || 
+                          station.includes('Bar Back - Indoor') || 
+                          station.includes('Support - Indoor') || 
+                          station.includes('Head - Indoor') ||
+                          (station.includes('Supervising') && station.includes('Indoor')));
                 });
                 const outdoor = working.filter(s => {
                   const station = s.station || '';
-                  return (station.includes('Outdoor - ') || station.includes('Bar Back - Outdoor') || station.includes('Support - Outdoor') || station.includes('Head - Outdoor'));
-                });
-                const floating = working.filter(s => {
-                  const station = s.station || '';
-                  return (station.includes('Supervising') || station.includes('Floating') || station.includes('General') || 
-                          (!station.includes('Indoor') && !station.includes('Outdoor')));
+                  return (station.includes('Outdoor - ') || 
+                          station.includes('Bar Back - Outdoor') || 
+                          station.includes('Support - Outdoor') || 
+                          station.includes('Head - Outdoor') ||
+                          (station.includes('Supervising') && station.includes('Outdoor')));
                 });
                 
                 // Get staff details
@@ -1291,10 +1294,6 @@ export default function StaffScheduling() {
                   return { name: staff?.name || 'Unknown', station: s.station };
                 });
                 const outdoorStaff = outdoor.map(s => {
-                  const staff = staffMembers.find(sm => sm.id === s.staffId);
-                  return { name: staff?.name || 'Unknown', station: s.station };
-                });
-                const floatingStaff = floating.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
                   return { name: staff?.name || 'Unknown', station: s.station };
                 });
@@ -1355,20 +1354,6 @@ export default function StaffScheduling() {
                         <div className="text-xs font-semibold text-purple-400">Outdoor Stations:</div>
                         <div className="max-h-20 overflow-y-auto space-y-1 text-xs">
                           {outdoorStaff.map((s, idx) => (
-                            <div key={idx} className="text-gray-400">
-                              • {s.name} - {s.station}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Floating/Support Staff */}
-                    {floatingStaff.length > 0 && (
-                      <div className="space-y-1 mb-2">
-                        <div className="text-xs font-semibold text-gray-200">Bar Back/Support:</div>
-                        <div className="max-h-16 overflow-y-auto space-y-1 text-xs">
-                          {floatingStaff.map((s, idx) => (
                             <div key={idx} className="text-gray-400">
                               • {s.name} - {s.station}
                             </div>
