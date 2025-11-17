@@ -987,67 +987,55 @@ export default function StaffScheduling() {
   };
 
   const exportDayToJPG = async (day: string) => {
-    console.log('Export function called for:', day);
-    
-    const element = document.getElementById(`day-${day}`);
-    console.log('Looking for element with ID:', `day-${day}`);
-    console.log('Element found:', element);
-    
-    if (!element) {
-      console.error('Element not found for day:', day);
-      toast.error(`Day section not found: ${day}`);
-      return;
-    }
-
-    toast.info('Capturing screenshot...');
-    
     try {
-      console.log('Starting html2canvas for:', day);
+      toast.info(`Preparing ${day} breakdown...`);
+      
+      const element = document.getElementById(`day-${day}`);
+      
+      if (!element) {
+        console.error('Element not found for day:', day);
+        toast.error(`Could not find ${day} section`);
+        return;
+      }
+
+      // Wait a bit to ensure DOM is fully rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const canvas = await html2canvas(element, {
         backgroundColor: '#111827',
         scale: 2,
-        logging: true,
+        logging: false,
         useCORS: true,
         allowTaint: true,
       });
       
-      console.log('Canvas created successfully');
+      // Convert to blob and trigger download
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, 'image/jpeg', 0.95);
+      });
       
-      // Convert canvas to blob and download
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          console.error('Failed to create blob');
-          toast.error('Failed to create image');
-          return;
-        }
-        
-        console.log('Blob created, size:', blob.size);
-        
-        // Create download link
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.style.display = 'none';
-        link.href = url;
-        link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
-        
-        // Append to body, click, and remove
-        document.body.appendChild(link);
-        console.log('Link created and appended, triggering download...');
-        link.click();
-        
-        // Cleanup
-        setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          console.log('Download cleanup complete');
-        }, 100);
-        
-        toast.success(`${day} downloaded!`);
-      }, 'image/jpeg', 0.95);
+      if (!blob) {
+        throw new Error('Failed to create image blob');
+      }
       
+      // Create and trigger download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      toast.success(`${day} downloaded!`);
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error(`Failed to export: ${error}`);
+      console.error('Export error for', day, ':', error);
+      toast.error(`Failed to export ${day}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
