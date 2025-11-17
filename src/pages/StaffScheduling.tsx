@@ -993,14 +993,14 @@ export default function StaffScheduling() {
             const cell = getScheduleCell(staff.id, day);
             if (cell) {
               if (cell.type === 'early_shift') {
-                data.cell.styles.fillColor = [167, 139, 250]; // Darker Violet
+                data.cell.styles.fillColor = [255, 159, 64]; // Vibrant Coral Orange
                 data.cell.styles.fontStyle = 'bold';
-                data.cell.styles.textColor = [60, 20, 100];
+                data.cell.styles.textColor = [120, 53, 15];
               }
               if (cell.type === 'late_shift') {
-                data.cell.styles.fillColor = [94, 234, 212]; // Darker Teal
+                data.cell.styles.fillColor = [135, 206, 250]; // Vibrant Sky Blue
                 data.cell.styles.fontStyle = 'bold';
-                data.cell.styles.textColor = [13, 60, 55];
+                data.cell.styles.textColor = [25, 55, 95];
               }
               if (cell.type === 'opening') {
                 data.cell.styles.fillColor = [187, 247, 208]; // Darker Green
