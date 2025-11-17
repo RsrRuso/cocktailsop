@@ -332,14 +332,20 @@ export default function StaffScheduling() {
           });
         }
         
+        // CRITICAL: If no available days after constraints, must give at least 1 day off anyway
         if (availableDays.length === 0) {
-          console.warn(`  ⚠️ ${staff.name}: No valid days available, must work full week to maintain minimums`);
-          return {
-            staff,
-            daysOff: [],
-            groupType: 'forced-full',
-            actualDaysOff: 0
-          };
+          console.warn(`  ⚠️ ${staff.name}: No valid days pass all constraints - forcing at least 1 day off`);
+          // Fall back to all allowed off days (ignore bartender minimum constraint for this person)
+          availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
+          
+          if (availableDays.length === 0) {
+            // Even busy days - give them the least busy day
+            availableDays = allowedOffDays;
+          }
+          
+          // Force them to get only 1 day off (minimum required)
+          targetDaysOff = 1;
+          console.warn(`  ⚠️ Forcing ${staff.name} to get ${targetDaysOff} day off despite constraints`);
         }
         
         // Distribute days evenly using round-robin
