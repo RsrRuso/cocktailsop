@@ -577,13 +577,14 @@ export default function StaffScheduling() {
           };
           assignedStaffIds.add(schedule.staff.id);
         } else {
-          // Extra bartenders float or support
+          // Extra bartenders alternate between indoor/outdoor floating support
+          const area = (idx - stations.length) % 2 === 0 ? 'Indoor' : 'Outdoor';
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange: '4:00 PM - 1:00 AM',
             type: 'regular',
-            station: 'Floating Support: Assist all stations as needed'
+            station: `${area} - Floating Support: Assist all ${area.toLowerCase()} stations as needed`
           };
           assignedStaffIds.add(schedule.staff.id);
         }
@@ -1368,40 +1369,29 @@ export default function StaffScheduling() {
                 // Categorize by area - ENSURE NO DOUBLE COUNTING (each person in ONE area only)
                 const indoor = working.filter(s => {
                   const station = s.station || '';
-                  // Match "Indoor" but NOT "Indoor/Outdoor" or when Outdoor appears first
-                  return (station.includes('Indoor - ') || 
-                          station.includes('Bar Back - Indoor') || 
-                          station.includes('Support - Indoor') || 
-                          station.includes('Head - Indoor') ||
-                          (station.includes('Supervising') && station.includes('Indoor')));
+                  // Match "Indoor" in station name
+                  return station.toLowerCase().includes('indoor');
                 });
                 const outdoor = working.filter(s => {
                   const station = s.station || '';
-                  return (station.includes('Outdoor - ') || 
-                          station.includes('Bar Back - Outdoor') || 
-                          station.includes('Support - Outdoor') || 
-                          station.includes('Head - Outdoor') ||
-                          (station.includes('Supervising') && station.includes('Outdoor')));
+                  // Match "Outdoor" in station name
+                  return station.toLowerCase().includes('outdoor');
                 });
                 
                 // Get IDs that are already categorized
                 const categorizedIds = new Set([...indoor, ...outdoor].map(s => s.staffId));
                 
-                // Catch any working staff not categorized as indoor/outdoor
+                // Catch any working staff not categorized - assign to indoor by default
                 const uncategorized = working.filter(s => !categorizedIds.has(s.staffId));
                 
                 // Get staff details
-                const indoorStaff = indoor.map(s => {
+                const indoorStaff = [...indoor, ...uncategorized].map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
-                  return { name: staff?.name || 'Unknown', station: s.station };
+                  return { name: staff?.name || 'Unknown', station: s.station || 'General Support' };
                 });
                 const outdoorStaff = outdoor.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
                   return { name: staff?.name || 'Unknown', station: s.station };
-                });
-                const uncategorizedStaff = uncategorized.map(s => {
-                  const staff = staffMembers.find(sm => sm.id === s.staffId);
-                  return { name: staff?.name || 'Unknown', station: s.station || 'No station assigned' };
                 });
                 const offStaff = off.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
@@ -1485,23 +1475,6 @@ export default function StaffScheduling() {
                           {outdoorStaff.map((s, idx) => (
                             <div key={idx} className="text-gray-300">
                               • {s.name} <span className="text-gray-500">-</span> <span className="text-purple-400/80">{s.station}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Uncategorized Staff (Working but no clear area assignment) */}
-                    {uncategorizedStaff.length > 0 && (
-                      <div className="space-y-1.5 mb-2 bg-yellow-950/20 rounded-lg p-2 border border-yellow-900/30">
-                        <div className="text-xs font-bold text-yellow-300 flex items-center gap-1">
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
-                          Working
-                        </div>
-                        <div className="space-y-1 text-xs pl-3">
-                          {uncategorizedStaff.map((s, idx) => (
-                            <div key={idx} className="text-gray-300">
-                              • {s.name} <span className="text-gray-500">-</span> <span className="text-yellow-400/80">{s.station}</span>
                             </div>
                           ))}
                         </div>
