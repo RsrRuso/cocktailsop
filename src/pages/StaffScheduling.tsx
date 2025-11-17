@@ -1216,21 +1216,31 @@ export default function StaffScheduling() {
                             key={day}
                             className={`border border-gray-700 p-2 ${cell ? CELL_COLORS[cell.type] : 'bg-gray-850'}`}
                           >
-                            <Input
+                            <Select
                               value={cell?.timeRange || ''}
-                              onChange={(e) => {
-                                const value = e.target.value.toUpperCase();
+                              onValueChange={(value) => {
                                 let type: ScheduleCell['type'] = 'regular';
                                 if (value === 'OFF') type = 'off';
-                                else if (value.includes('OPENING')) type = 'opening';
-                                else if (value.includes('CLOSING')) type = 'closing';
-                                else if (value.includes('PICKUP')) type = 'pickup';
-                                else if (value.includes('BRUNCH')) type = 'brunch';
+                                else if (value.includes('11:00 AM')) type = 'brunch';
+                                else if (value.includes('12:00 PM')) type = 'pickup';
+                                else if (value.includes('2:00 PM') || value.includes('3:00 PM')) type = 'opening';
+                                else if (value.includes('4:00 PM') || value.includes('5:00 PM')) type = 'regular';
                                 updateScheduleCell(staff.id, day, value, type, cell?.station);
                               }}
-                              placeholder="OFF or Time"
-                              className="text-xs h-8 text-center border-0 bg-transparent text-gray-100"
-                            />
+                            >
+                              <SelectTrigger className="text-xs h-8 bg-gray-900 border-gray-700 text-gray-100">
+                                <SelectValue placeholder="Select time" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-gray-900 border-gray-700 z-50">
+                                <SelectItem value="OFF" className="text-gray-100">OFF</SelectItem>
+                                <SelectItem value="11:00 AM - 8:00 PM" className="text-gray-100">11:00 AM - 8:00 PM (9h)</SelectItem>
+                                <SelectItem value="12:00 PM - 9:00 PM" className="text-gray-100">12:00 PM - 9:00 PM (9h)</SelectItem>
+                                <SelectItem value="2:00 PM - 11:00 PM" className="text-gray-100">2:00 PM - 11:00 PM (9h)</SelectItem>
+                                <SelectItem value="3:00 PM - 12:00 AM" className="text-gray-100">3:00 PM - 12:00 AM (9h)</SelectItem>
+                                <SelectItem value="4:00 PM - 1:00 AM" className="text-gray-100">4:00 PM - 1:00 AM (9h)</SelectItem>
+                                <SelectItem value="5:00 PM - 2:00 AM" className="text-gray-100">5:00 PM - 2:00 AM (9h)</SelectItem>
+                              </SelectContent>
+                            </Select>
                             {cell?.station && (
                               <div className="text-[10px] text-gray-400 text-center mt-1">
                                 {cell.station}
