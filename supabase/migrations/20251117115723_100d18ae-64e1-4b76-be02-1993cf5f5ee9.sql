@@ -1,0 +1,2 @@
+-- Add break_timings column to staff_members table
+ALTER TABLE public.staff_members ADD COLUMN IF NOT EXISTS break_timings JSONB DEFAULT '{"firstWaveStart": "5:30 PM", "firstWaveEnd": "6:30 PM", "secondWaveStart": "6:30 PM"}'::jsonb;
