@@ -420,10 +420,10 @@ export default function StaffScheduling() {
       
       const allStationBartenders = [...workingSeniorBartenders, ...workingBartenders];
       const stations = [
-        'Outdoor - Station 1',
-        'Indoor - Station 1',
-        'Indoor - Station 2',
-        'Indoor - Garnishing Station 3',
+        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain',
       ];
 
       allStationBartenders.forEach((schedule, idx) => {
@@ -444,7 +444,7 @@ export default function StaffScheduling() {
             day,
             timeRange: '4:00 PM - 1:00 AM',
             type: 'regular',
-            station: 'Floating Support'
+            station: 'Floating Support: Assist all stations as needed'
           };
           assignedStaffIds.add(schedule.staff.id);
         }
