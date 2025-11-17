@@ -15,7 +15,7 @@ import BottomNav from '@/components/BottomNav';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, startOfWeek, addDays } from 'date-fns';
-import { toJpeg } from 'html-to-image';
+import { toPng } from 'html-to-image';
 
 interface StaffMember {
   id: string;
@@ -1171,7 +1171,7 @@ export default function StaffScheduling() {
     toast.success('Schedule exported to PDF');
   };
 
-  const exportDayToJPG = async (day: string) => {
+  const exportDayToPNG = async (day: string) => {
     const element = document.getElementById(`day-${day}`);
     
     if (!element) {
@@ -1184,12 +1184,11 @@ export default function StaffScheduling() {
     toast.info(`Capturing ${day}...`);
     
     try {
-      const filename = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+      const filename = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.png`;
       
       console.log(`Using html-to-image to capture ${day}...`);
       
-      const dataUrl = await toJpeg(element, {
-        quality: 0.95,
+      const dataUrl = await toPng(element, {
         pixelRatio: 1.5,
         width: 320,
         cacheBust: true,
@@ -1211,7 +1210,7 @@ export default function StaffScheduling() {
     }
   };
 
-  const exportWeeklySummaryToJPG = async () => {
+  const exportWeeklySummaryToPNG = async () => {
     const element = document.getElementById('Weekly Off Days Summary');
     if (!element) {
       toast.error('Summary section not found');
@@ -1221,15 +1220,14 @@ export default function StaffScheduling() {
     toast.info('Capturing weekly summary...');
 
     try {
-      const dataUrl = await toJpeg(element, {
-        quality: 0.95,
+      const dataUrl = await toPng(element, {
         pixelRatio: 1.5,
         width: 320,
         cacheBust: true,
       });
       
       const link = document.createElement('a');
-      link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-weekly-summary-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+      link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-weekly-summary-${format(new Date(), 'yyyy-MM-dd')}.png`;
       link.href = dataUrl;
       link.click();
       
@@ -1531,7 +1529,7 @@ export default function StaffScheduling() {
                       <Button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          exportWeeklySummaryToJPG();
+                          exportWeeklySummaryToPNG();
                         }} 
                         variant="outline" 
                         size="sm"
@@ -1695,7 +1693,7 @@ export default function StaffScheduling() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => exportDayToJPG(day)}
+                        onClick={() => exportDayToPNG(day)}
                         className="h-7 px-2 text-xs hover:bg-gray-700 transition-colors"
                         title="Download Screenshot"
                       >
