@@ -1138,9 +1138,10 @@ export default function StaffScheduling() {
       console.log(`Using html-to-image to capture ${day}...`);
       
       const dataUrl = await toPng(element, {
-        pixelRatio: 5,
+        pixelRatio: 6,
         cacheBust: true,
         quality: 1.0,
+        backgroundColor: '#1a1a1a',
       });
       
       console.log(`Image captured successfully for ${day}, creating PDF...`);
@@ -1149,6 +1150,10 @@ export default function StaffScheduling() {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      // Add dark background
+      pdf.setFillColor(26, 26, 26);
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
       
       // Calculate dimensions to fit on one page with padding
       const padding = 10;
