@@ -199,9 +199,16 @@ export default function StaffScheduling() {
     // Track how many offs per day
     const offsPerDay: number[] = [0, 0, 0, 0, 0, 0, 0];
     
-    const divideIntoGroups = (staffList: StaffMember[], roleOffset: number) => {
+    // CRITICAL: Track bartender assignments per day to enforce minimum 3 bartenders rule
+    const bartendersPerDay: Record<number, number> = {};
+    DAYS_OF_WEEK.forEach((_, idx) => {
+      bartendersPerDay[idx] = headBartenders.length + seniorBartenders.length + bartenders.length;
+    });
+    
+    const divideIntoGroups = (staffList: StaffMember[], roleOffset: number, isBartenderRole: boolean = false) => {
       console.log(`\n🎯 Dividing ${staffList.length} staff members (ALWAYS 1-2 days off per week)...`);
       console.log(`📅 Available off days: ${allowedOffDays.map(d => DAYS_OF_WEEK[d]).join(', ')}`);
+      console.log(`⚠️ Bartender role: ${isBartenderRole}`);
       
       // Track distribution to ensure ALL 4 days are used
       const dayOffDistribution: Record<number, string[]> = {};
@@ -221,17 +228,27 @@ export default function StaffScheduling() {
         console.log(`\n  🎯 ${staff.name} (idx ${globalIndex}): Target = ${targetDaysOff} day(s) off`);
         
         // Get available days (not busy)
-        const availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
+        let availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
+        
+        // CRITICAL VALIDATION: If this is a bartender role, exclude days where giving them off would drop count below 3
+        if (isBartenderRole) {
+          availableDays = availableDays.filter(dayNum => {
+            const wouldHaveAfterOff = bartendersPerDay[dayNum] - 1;
+            const canGiveOff = wouldHaveAfterOff >= 3;
+            if (!canGiveOff) {
+              console.log(`  ⚠️ Cannot give ${DAYS_OF_WEEK[dayNum]} off - would drop to ${wouldHaveAfterOff} bartenders (min 3)`);
+            }
+            return canGiveOff;
+          });
+        }
         
         if (availableDays.length === 0) {
-          console.warn(`  ⚠️ ${staff.name}: All 4 days busy, forcing Monday off`);
-          dayOffDistribution[0].push(staff.name);
-          offsPerDay[0]++;
+          console.warn(`  ⚠️ ${staff.name}: No valid days available, must work full week to maintain minimums`);
           return {
             staff,
-            daysOff: [0],
-            groupType: 'forced',
-            actualDaysOff: 1
+            daysOff: [],
+            groupType: 'forced-full',
+            actualDaysOff: 0
           };
         }
         
@@ -245,29 +262,45 @@ export default function StaffScheduling() {
           finalDaysOff.push(selectedDay);
           dayOffDistribution[selectedDay].push(staff.name);
           offsPerDay[selectedDay]++;
-          console.log(`  ✅ 1 day: ${DAYS_OF_WEEK[selectedDay]}`);
-        } else {
-          // 2 days off: pick 2 different days
-          const day1Index = globalIndex % availableDays.length;
-          const day2Index = (globalIndex + 1) % availableDays.length;
           
-          finalDaysOff.push(availableDays[day1Index]);
-          dayOffDistribution[availableDays[day1Index]].push(staff.name);
-          offsPerDay[availableDays[day1Index]]++;
-          
-          if (availableDays[day2Index] !== availableDays[day1Index]) {
-            finalDaysOff.push(availableDays[day2Index]);
-            dayOffDistribution[availableDays[day2Index]].push(staff.name);
-            offsPerDay[availableDays[day2Index]]++;
-          } else if (availableDays.length > 1) {
-            // If same day, pick next different one
-            const day3Index = (globalIndex + 2) % availableDays.length;
-            finalDaysOff.push(availableDays[day3Index]);
-            dayOffDistribution[availableDays[day3Index]].push(staff.name);
-            offsPerDay[availableDays[day3Index]]++;
+          // Update bartender count if this is a bartender role
+          if (isBartenderRole) {
+            bartendersPerDay[selectedDay]--;
+            console.log(`  📊 ${DAYS_OF_WEEK[selectedDay]}: Now ${bartendersPerDay[selectedDay]} bartenders working`);
           }
           
-          console.log(`  ✅ 2 days: ${finalDaysOff.map(d => DAYS_OF_WEEK[d]).join(', ')}`);
+          console.log(`  ✅ 1 day: ${DAYS_OF_WEEK[selectedDay]}`);
+        } else {
+          // 2 days off: pick 2 different days (with validation)
+          let attempts = 0;
+          const maxAttempts = availableDays.length * 2;
+          
+          while (finalDaysOff.length < 2 && attempts < maxAttempts) {
+            const dayIndex = (globalIndex + attempts) % availableDays.length;
+            const candidateDay = availableDays[dayIndex];
+            
+            // Check if we already picked this day
+            if (!finalDaysOff.includes(candidateDay)) {
+              finalDaysOff.push(candidateDay);
+              dayOffDistribution[candidateDay].push(staff.name);
+              offsPerDay[candidateDay]++;
+              
+              // Update bartender count if this is a bartender role
+              if (isBartenderRole) {
+                bartendersPerDay[candidateDay]--;
+                console.log(`  📊 ${DAYS_OF_WEEK[candidateDay]}: Now ${bartendersPerDay[candidateDay]} bartenders working`);
+              }
+            }
+            
+            attempts++;
+          }
+          
+          // If we couldn't get 2 days (due to constraints), that's ok - at least 1 day off
+          if (finalDaysOff.length < 2 && finalDaysOff.length === 0) {
+            console.warn(`  ⚠️ Could only get ${finalDaysOff.length} days off due to minimum staffing requirements`);
+          }
+          
+          console.log(`  ✅ ${finalDaysOff.length} days: ${finalDaysOff.map(d => DAYS_OF_WEEK[d]).join(', ')}`);
         }
         
         return {
@@ -290,11 +323,11 @@ export default function StaffScheduling() {
       return results;
     };
 
-    const headSchedules = divideIntoGroups(headBartenders, 0);
-    const seniorBartenderSchedules = divideIntoGroups(seniorBartenders, headBartenders.length);
-    const bartenderSchedules = divideIntoGroups(bartenders, headBartenders.length + seniorBartenders.length);
-    const barBackSchedules = divideIntoGroups(barBacks, headBartenders.length + seniorBartenders.length + bartenders.length);
-    const supportSchedules = divideIntoGroups(support, headBartenders.length + seniorBartenders.length + bartenders.length + barBacks.length);
+    const headSchedules = divideIntoGroups(headBartenders, 0, true);
+    const seniorBartenderSchedules = divideIntoGroups(seniorBartenders, headBartenders.length, true);
+    const bartenderSchedules = divideIntoGroups(bartenders, headBartenders.length + seniorBartenders.length, true);
+    const barBackSchedules = divideIntoGroups(barBacks, headBartenders.length + seniorBartenders.length + bartenders.length, false);
+    const supportSchedules = divideIntoGroups(support, headBartenders.length + seniorBartenders.length + bartenders.length + barBacks.length, false);
     
     // Log final distribution
     console.log('📊 Final off day distribution:', {
@@ -523,34 +556,44 @@ export default function StaffScheduling() {
       });
     });
 
-    // VALIDATION: Check weekday staffing requirements
+    // VALIDATION: Ensure minimum bartender staffing on ALL days
     const validationWarnings: string[] = [];
-    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
     DAYS_OF_WEEK.forEach((name, dayIndex) => {
-      const isWeekday = weekdays.includes(name);
-      
-      // Count all working staff with station responsibilities
-      const workingWithResponsibilities = [...headBartenders, ...seniorBartenders, ...bartenders, ...barBacks, ...support].filter(staff => {
-        const key = `${staff.id}-${name}`;
-        const cell = newSchedule[key];
-        return cell && cell.timeRange !== 'OFF';
-      }).length;
-
-      // CRITICAL VALIDATION: Weekdays must have at least 3 people with station responsibilities
-      if (isWeekday && workingWithResponsibilities < 3) {
-        validationWarnings.push(`❌ CRITICAL ${name}: Only ${workingWithResponsibilities} staff with station responsibilities - MINIMUM 3 REQUIRED for weekdays`);
-      }
-      
-      // Additional warnings for optimal staffing
+      // Count BARTENDERS ONLY (head + senior + regular bartenders)
       const workingBartendersCount = [...headBartenders, ...seniorBartenders, ...bartenders].filter(staff => {
         const key = `${staff.id}-${name}`;
         const cell = newSchedule[key];
         return cell && cell.timeRange !== 'OFF';
       }).length;
+      
+      // Count bar backs
+      const workingBarBacksCount = barBacks.filter(staff => {
+        const key = `${staff.id}-${name}`;
+        const cell = newSchedule[key];
+        return cell && cell.timeRange !== 'OFF';
+      }).length;
+      
+      // Count support
+      const workingSupportCount = support.filter(staff => {
+        const key = `${staff.id}-${name}`;
+        const cell = newSchedule[key];
+        return cell && cell.timeRange !== 'OFF';
+      }).length;
 
-      if (workingBartendersCount < 2) {
-        validationWarnings.push(`⚠️ ${name}: ${workingBartendersCount} bartender(s) - 2+ recommended`);
+      // CRITICAL: Must have at least 3 BARTENDERS (head/senior/regular)
+      if (workingBartendersCount < 3) {
+        validationWarnings.push(`❌ CRITICAL ${name}: Only ${workingBartendersCount} BARTENDERS working - MINIMUM 3 REQUIRED`);
+      }
+      
+      // Additional staffing info
+      console.log(`📊 ${name}: ${workingBartendersCount} bartenders, ${workingBarBacksCount} bar backs, ${workingSupportCount} support`);
+      
+      if (workingBarBacksCount < 1) {
+        validationWarnings.push(`⚠️ ${name}: No bar back - 1+ recommended`);
+      }
+      if (workingSupportCount < 1) {
+        validationWarnings.push(`⚠️ ${name}: No support - 1+ recommended`);
       }
     });
 
@@ -575,8 +618,8 @@ export default function StaffScheduling() {
     console.log(finalDistribution);
     
     setSchedule(newSchedule);
-    toast.success(`✅ Schedule generated! Everyone gets 1-2 days off per week. Days distributed across Mon/Wed/Thu/Sun.`, {
-      duration: 5000
+    toast.success(`✅ Schedule generated! Minimum 3 bartenders per day maintained. Everyone gets 1-2 days off. Bar backs & support as additional staff.`, {
+      duration: 6000
     });
   };
 
