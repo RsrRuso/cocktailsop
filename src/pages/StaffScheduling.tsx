@@ -55,6 +55,13 @@ export default function StaffScheduling() {
   const [schedule, setSchedule] = useState<Record<string, ScheduleCell>>({});
   const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
   const [weekStartDate, setWeekStartDate] = useState(format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'));
+  const [dailyEvents, setDailyEvents] = useState<Record<string, string>>({
+    // Default events
+    'Tuesday': 'Ladies Night',
+    'Friday': 'Weekend',
+    'Saturday': 'Brunch'
+  });
+  const [isEditingEvents, setIsEditingEvents] = useState(false);
   
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -173,18 +180,22 @@ export default function StaffScheduling() {
       });
     }
 
-    // BUSY DAYS - No offs allowed: Tuesday (Ladies Night), Friday (Weekend), Saturday (Brunch/Weekend)
-    const busyDays = [1, 4, 5]; // Tuesday=1, Friday=4, Saturday=5
-
-    // Within the same week, alternate who gets 1 day off vs 2 days off
-    // Offs distributed on less busy days: Monday, Wednesday, Thursday, Sunday
+    // BUSY DAYS - Determine from dailyEvents (days with events get no offs)
+    const busyDays = DAYS_OF_WEEK.map((day, idx) => dailyEvents[day] ? idx : -1).filter(idx => idx !== -1);
+    
+    // FAIR OFFS DISTRIBUTION - Ensure everyone gets equal offs over time
+    // Rotate fairly: Each person gets different patterns to ensure fairness
     const divideIntoGroups = (staffList: StaffMember[]) => {
-      // Rotate through different day-off combinations for better distribution
+      // More varied patterns for better fairness across all staff
       const dayOffPatterns = [
+        [0],      // Monday - 1 day off
         [2],      // Wednesday - 1 day off
-        [0, 3],   // Monday + Thursday - 2 days off  
+        [3],      // Thursday - 1 day off
         [6],      // Sunday - 1 day off
+        [0, 3],   // Monday + Thursday - 2 days off  
         [2, 6],   // Wednesday + Sunday - 2 days off
+        [0, 6],   // Monday + Sunday - 2 days off
+        [3, 6],   // Thursday + Sunday - 2 days off
       ];
       
       return staffList.map((staff, index) => ({
@@ -204,10 +215,11 @@ export default function StaffScheduling() {
     DAYS_OF_WEEK.forEach((day, dayIndex) => {
       const isWeekday = dayIndex < 5; // Mon-Fri (0=Mon, 4=Fri)
       const isPickupDay = day === 'Monday' || day === 'Wednesday' || day === 'Friday';
-      const isTuesday = dayIndex === 1; // Ladies Night
-      const isFriday = dayIndex === 4; // Weekend
-      const isSaturday = dayIndex === 5; // Brunch + Weekend
+      const hasEvent = !!dailyEvents[day];
+      const eventName = dailyEvents[day] || '';
       const isBusyDay = busyDays.includes(dayIndex);
+      const isSaturday = day === 'Saturday';
+      const isBrunchDay = eventName.toLowerCase().includes('brunch');
 
       // === FLEXIBLE STATION ASSIGNMENT WITH CLEAR ROLE RESPONSIBILITIES ===
       const assignedStaffIds = new Set<string>();
@@ -316,7 +328,7 @@ export default function StaffScheduling() {
             if (isPickupDay) {
               timeRange = '12:00 PM - 9:00 PM'; // 9 hours, early start for pickups
               type = 'pickup';
-            } else if (isSaturday) {
+            } else if (isBrunchDay) {
               timeRange = '11:00 AM - 8:00 PM'; // 9 hours, early start for brunch setup
               type = 'brunch';
             } else {
@@ -415,7 +427,7 @@ export default function StaffScheduling() {
     }
 
     setSchedule(newSchedule);
-    toast.success('✅ Schedule generated! All 9-hour shifts (Support 10h). Venue: 5 PM - 2 AM. Clear roles: Heads supervise, Bartenders at stations, Bar backs priority.');
+    toast.success('✅ Schedule generated! Fair offs distribution (8 patterns). Event days respect custom events. All 9h shifts (Support 10h).');
   };
 
   const exportToPDF = () => {
@@ -493,11 +505,10 @@ export default function StaffScheduling() {
       const outdoor = working.filter(s => s.station?.includes('Outdoor'));
       const floating = working.filter(s => !s.station?.includes('Indoor') && !s.station?.includes('Outdoor') && !s.station?.includes('Ticket') && !s.station?.includes('Segregator'));
       
-      const isBusyDay = dayIndex === 1 || dayIndex === 4 || dayIndex === 5;
-      const busyLabel = isBusyDay ? (dayIndex === 1 ? ' (Ladies Night)' : dayIndex === 4 ? ' (Weekend)' : ' (Brunch/Weekend)') : '';
+      const eventLabel = dailyEvents[day] ? ` (${dailyEvents[day]})` : '';
       
       doc.setFont('helvetica', 'bold');
-      doc.text(`${day}${busyLabel}`, 14, finalY);
+      doc.text(`${day}${eventLabel}`, 14, finalY);
       finalY += 3;
       doc.setFont('helvetica', 'normal');
       doc.text(`Total Working: ${working.length} | Total Off: ${off.length} | Indoor: ${indoor.length} | Outdoor: ${outdoor.length}`, 16, finalY);
@@ -618,8 +629,18 @@ export default function StaffScheduling() {
     finalY += 3;
     doc.text('• Support: 3:00 PM - 1:00 AM (10h, early setup to near closing)', 14, finalY);
     finalY += 3;
-    doc.text('• No offs allowed on busy days: Tuesday (Ladies Night), Friday (Weekend), Saturday (Brunch)', 14, finalY);
-    finalY += 3;
+    
+    // Show event days
+    const eventDays = Object.entries(dailyEvents)
+      .filter(([_, event]) => event)
+      .map(([day, event]) => `${day} (${event})`)
+      .join(', ');
+    
+    if (eventDays) {
+      doc.text(`• No offs allowed on event days: ${eventDays}`, 14, finalY);
+      finalY += 3;
+    }
+    
     doc.text('• Break Time: 5:00 PM - 6:00 PM | Ending Back & Front: 6:45 PM (Mandatory)', 14, finalY);
     finalY += 3;
     doc.text('• Store Pick-up: Monday, Wednesday, Friday (Bar backs handle with early start)', 14, finalY);
@@ -664,6 +685,51 @@ export default function StaffScheduling() {
             </Button>
           </div>
         </div>
+
+        {/* Daily Events Management */}
+        <Card className="p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Daily Events (No Offs on Event Days)</h3>
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => setIsEditingEvents(!isEditingEvents)}
+            >
+              {isEditingEvents ? 'Done' : 'Edit Events'}
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            {DAYS_OF_WEEK.map((day) => (
+              <div key={day} className="space-y-2">
+                <Label className="text-sm font-medium">{day}</Label>
+                {isEditingEvents ? (
+                  <Input
+                    value={dailyEvents[day] || ''}
+                    onChange={(e) => setDailyEvents(prev => ({
+                      ...prev,
+                      [day]: e.target.value
+                    }))}
+                    placeholder="Event name"
+                    className="text-sm"
+                  />
+                ) : (
+                  <div className={`p-2 rounded border text-sm min-h-[40px] flex items-center justify-center ${
+                    dailyEvents[day] 
+                      ? 'bg-primary/10 border-primary text-primary font-medium' 
+                      : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {dailyEvents[day] || 'No event'}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          <p className="text-sm text-muted-foreground mt-3">
+            ℹ️ Days with events are considered busy - no offs will be scheduled on these days
+          </p>
+        </Card>
 
         {/* Staff Management */}
         <Card className="p-4">
@@ -797,8 +863,8 @@ export default function StaffScheduling() {
                   return staff?.name || 'Unknown';
                 });
 
-                const isBusyDay = dayIndex === 1 || dayIndex === 4 || dayIndex === 5; // Tue/Fri/Sat
-                const dayLabel = dayIndex === 1 ? 'Ladies Night' : dayIndex === 4 ? 'Weekend' : dayIndex === 5 ? 'Brunch/Weekend' : '';
+                const isBusyDay = !!dailyEvents[day];
+                const dayLabel = dailyEvents[day] || '';
 
                 return (
                   <div key={day} className={`border rounded-lg p-3 ${isBusyDay ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/10' : 'bg-card'}`}>
@@ -903,8 +969,8 @@ export default function StaffScheduling() {
                       Staff / Role
                     </th>
                     {DAYS_OF_WEEK.map((day, dayIndex) => {
-                      const isBusyDay = dayIndex === 1 || dayIndex === 4 || dayIndex === 5;
-                      const dayLabel = dayIndex === 1 ? 'Ladies Night' : dayIndex === 4 ? 'Weekend' : dayIndex === 5 ? 'Brunch' : '';
+                      const isBusyDay = !!dailyEvents[day];
+                      const dayLabel = dailyEvents[day] || '';
                       return (
                         <th key={day} className={`border border-border p-2 font-semibold text-center min-w-[180px] ${isBusyDay ? 'bg-orange-100 dark:bg-orange-900/20' : 'bg-muted'}`}>
                           <div>{day}</div>
@@ -1004,14 +1070,24 @@ export default function StaffScheduling() {
             </div>
             
             <div className="space-y-2">
-              <div className="p-3 border-2 rounded-lg bg-orange-500/10 border-orange-500/30">
-                <strong className="text-sm">🔥 BUSY DAYS (No Offs):</strong>
-                <div className="text-sm mt-1">
-                  • Tuesday - Ladies Night<br/>
-                  • Friday - Weekend Start<br/>
-                  • Saturday - Brunch + Weekend
+              {Object.entries(dailyEvents).filter(([_, event]) => event).length > 0 ? (
+                <div className="p-3 border-2 rounded-lg bg-orange-500/10 border-orange-500/30">
+                  <strong className="text-sm">🔥 EVENT DAYS (No Offs):</strong>
+                  <div className="text-sm mt-1">
+                    {Object.entries(dailyEvents)
+                      .filter(([_, event]) => event)
+                      .map(([day, event]) => (
+                        <div key={day}>• {day} - {event}</div>
+                      ))
+                    }
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="p-3 border-2 rounded-lg bg-muted/50 border-border">
+                  <strong className="text-sm">ℹ️ No event days configured</strong>
+                  <div className="text-sm mt-1">Add events in the Daily Events section above</div>
+                </div>
+              )}
               <div className="p-3 border-2 rounded-lg bg-green-500/10 border-green-500/30">
                 <strong className="text-sm">📦 Store Pick-up Days:</strong>
                 <div className="text-sm mt-1">Monday, Wednesday, Friday</div>
