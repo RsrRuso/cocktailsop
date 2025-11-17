@@ -907,14 +907,14 @@ export default function StaffScheduling() {
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
     
-    // Design System Colors (HSL converted to RGB) - Dark grey theme
+    // Design System Colors - Natural dark grey and white theme
     const colors = {
-      primary: [50, 50, 50] as [number, number, number], // Dark grey
-      secondary: [70, 70, 70] as [number, number, number], // Medium grey
-      accent: [180, 30, 150] as [number, number, number], // Darker Magenta
-      foreground: [15, 15, 15] as [number, number, number], // Very dark gray
-      muted: [200, 200, 200] as [number, number, number], // Darker muted gray
-      mutedText: [80, 80, 80] as [number, number, number] // Darker text
+      primary: [60, 60, 60] as [number, number, number], // Dark grey
+      secondary: [80, 80, 80] as [number, number, number], // Medium grey
+      accent: [120, 80, 160] as [number, number, number], // Softer purple accent
+      foreground: [40, 40, 40] as [number, number, number], // Very dark gray
+      muted: [200, 200, 200] as [number, number, number], // Light grey
+      mutedText: [100, 100, 100] as [number, number, number] // Medium grey text
     };
     
     // Modern header background - dark grey, thinner
@@ -1066,79 +1066,68 @@ export default function StaffScheduling() {
       finalY += 3;
     }
     
-    // Staff Responsibilities Section - Compact
+    // Role Responsibilities Section - Based on titles only
     doc.setFillColor(...colors.primary);
     doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
-    doc.text('STAFF RESPONSIBILITIES & STATIONS', 18, finalY + 3);
+    doc.text('ROLE RESPONSIBILITIES', 18, finalY + 3);
     
     finalY += 10;
-    doc.setFontSize(6);
-    doc.setTextColor(...colors.foreground);
+    doc.setFontSize(7);
+    doc.setTextColor(255, 255, 255);
     
-    // Group staff by role for responsibilities
-    const roleGroups = {
-      'Head Bartender': staffMembers.filter(s => s.title.toLowerCase().includes('head')),
-      'Senior Bartender': staffMembers.filter(s => s.title.toLowerCase().includes('senior')),
-      'Bartender': staffMembers.filter(s => s.title.toLowerCase().includes('bartender') && !s.title.toLowerCase().includes('head') && !s.title.toLowerCase().includes('senior')),
-      'Bar Back': staffMembers.filter(s => s.title.toLowerCase().includes('bar back')),
-      'Support': staffMembers.filter(s => s.title.toLowerCase().includes('support'))
-    };
+    // Get unique titles from staff members
+    const uniqueTitles = Array.from(new Set(staffMembers.map(s => s.title)))
+      .sort((a, b) => {
+        const order = ['head_bartender', 'senior_bartender', 'bartender', 'bar_back', 'support'];
+        return order.indexOf(a) - order.indexOf(b);
+      });
     
-    Object.entries(roleGroups).forEach(([role, members]) => {
-      if (members.length > 0) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.5);
-        doc.text(`${role.toUpperCase()}:`, 18, finalY);
-        finalY += 3;
-        
-        members.forEach(member => {
-          // Get this week's stations for the member
-          const memberStations = new Set<string>();
-          DAYS_OF_WEEK.forEach(day => {
-            const cell = getScheduleCell(member.id, day);
-            if (cell && cell.station) {
-              memberStations.add(cell.station);
-            }
-          });
-          
-          const stationsList = Array.from(memberStations).join(', ') || 'Various stations';
-          
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(6);
-          doc.text(`- ${member.name}:`, 22, finalY);
-          
-          // Wrap long text to prevent overflow
-          const maxWidth = 215;
-          const lines = doc.splitTextToSize(stationsList, maxWidth);
-          doc.text(lines, 55, finalY);
-          finalY += (lines.length * 2.5);
-        });
-        
-        finalY += 1.5;
-      }
+    uniqueTitles.forEach(title => {
+      const roleTitle = title === 'head_bartender' ? 'Head Bartender' :
+                        title === 'senior_bartender' ? 'Senior Bartender' :
+                        title === 'bartender' ? 'Bartender' :
+                        title === 'bar_back' ? 'Bar Back' : 'Support';
+      
+      const description = ROLE_RESPONSIBILITIES[title];
+      
+      // Dark grey box for each role
+      doc.setFillColor(60, 60, 60);
+      doc.roundedRect(18, finalY - 2, 260, 7, 1, 1, 'F');
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(255, 255, 255);
+      doc.text(`${roleTitle.toUpperCase()}:`, 22, finalY + 2);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.text(description, 70, finalY + 2);
+      
+      finalY += 9;
     });
     
-    // Hygiene & Outdoor - Compact side by side
-    doc.setFillColor(220, 220, 220);
-    doc.roundedRect(14, finalY - 2, 128, 6, 2, 2, 'F');
+    
+    // Hygiene & Outdoor - Dark grey background with white text
+    doc.setFillColor(60, 60, 60);
+    doc.roundedRect(14, finalY - 2, 128, 7, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6);
-    doc.setTextColor(60, 60, 60);
+    doc.setFontSize(7);
+    doc.setTextColor(255, 255, 255);
     doc.text('HYGIENE:', 18, finalY + 2);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(5.5);
+    doc.setFontSize(6);
     doc.text('Hair tied, clean attire, gloves required', 45, finalY + 2);
     
-    doc.setFillColor(220, 220, 220);
-    doc.roundedRect(146, finalY - 2, 138, 6, 2, 2, 'F');
+    doc.setFillColor(60, 60, 60);
+    doc.roundedRect(146, finalY - 2, 138, 7, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6);
+    doc.setFontSize(7);
     doc.text('OUTDOOR:', 150, finalY + 2);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(5.5);
+    doc.setFontSize(6);
     doc.text('MIN 2 / MAX 3 - Rotate every 2h', 180, finalY + 2);
     
     // Add spacing at the bottom for readability
