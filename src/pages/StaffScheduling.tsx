@@ -50,11 +50,11 @@ const CELL_COLORS = {
 };
 
 const ROLE_RESPONSIBILITIES = {
-  head_bartender: 'Supervise operations, support teams, monitor safety',
-  senior_bartender: 'Operate stations, train staff, ensure compliance',
-  bartender: 'Run bar stations, supervise backs, maintain hygiene',
-  bar_back: 'Pickups, refills, polish glassware, stock & garnish',
-  support: '10h shifts (3PM-1AM), glassware & general support',
+  head_bartender: 'Supervise bar operations, support and coordinate teams, monitor safety and quality standards',
+  senior_bartender: 'Operate bar stations efficiently, train junior staff members, ensure health and safety compliance',
+  bartender: 'Run assigned bar stations, supervise bar backs, maintain hygiene and service standards',
+  bar_back: 'Handle pickups and refills, polish glassware, stock supplies and prepare garnishes',
+  support: 'Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance',
 };
 
 export default function StaffScheduling() {
@@ -1094,9 +1094,9 @@ export default function StaffScheduling() {
       
       const description = ROLE_RESPONSIBILITIES[title];
       
-      // Light blue box for each role
+      // Light blue box for each role with increased height for longer text
       doc.setFillColor(...colors.lightBlue);
-      doc.roundedRect(18, finalY - 2, 260, 7, 1, 1, 'F');
+      doc.roundedRect(18, finalY - 2, 260, 10, 1, 1, 'F');
       
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7);
@@ -1104,10 +1104,12 @@ export default function StaffScheduling() {
       doc.text(`${roleTitle.toUpperCase()}:`, 22, finalY + 2);
       
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.5);
-      doc.text(description, 70, finalY + 2);
+      doc.setFontSize(6.2);
+      // Split long text into multiple lines if needed
+      const splitText = doc.splitTextToSize(description, 185);
+      doc.text(splitText, 70, finalY + 2);
       
-      finalY += 9;
+      finalY += 12;
     });
     
     
