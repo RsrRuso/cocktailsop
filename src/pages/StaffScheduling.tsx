@@ -1036,9 +1036,17 @@ export default function StaffScheduling() {
 
     // Event Info Section - Enhanced with full details
     let finalY = (doc as any).lastAutoTable.finalY + 8;
+    const pageHeight = 200; // Landscape page height limit
+    
     const hasEvents = Object.values(dailyEvents).some(event => event && event.trim() !== '');
     
     if (hasEvents) {
+      // Check if we need a new page
+      if (finalY > pageHeight - 40) {
+        doc.addPage();
+        finalY = 20;
+      }
+      
       doc.setFillColor(...colors.accent);
       doc.roundedRect(14, finalY - 2, 270, 10, 2, 2, 'F');
       doc.setFontSize(10);
@@ -1072,6 +1080,12 @@ export default function StaffScheduling() {
       });
       
       finalY += 5;
+    }
+    
+    // Check if we need a new page before staff responsibilities
+    if (finalY > pageHeight - 50) {
+      doc.addPage();
+      finalY = 20;
     }
     
     // Staff Responsibilities Section - New detailed section
@@ -1129,6 +1143,12 @@ export default function StaffScheduling() {
       }
     });
     
+    // Check if we need a new page before role priorities
+    if (finalY > pageHeight - 40) {
+      doc.addPage();
+      finalY = 20;
+    }
+    
     // Role Responsibilities Section - More compact
     doc.setFillColor(...colors.secondary);
     doc.roundedRect(14, finalY - 2, 270, 9, 2, 2, 'F');
@@ -1160,6 +1180,12 @@ export default function StaffScheduling() {
     doc.setFont('helvetica', 'normal');
     doc.text('10h shifts, glassware, 2 days off/month', 155, finalY);
     finalY += 5;
+    
+    // Check if we need a new page before division rules
+    if (finalY > pageHeight - 30) {
+      doc.addPage();
+      finalY = 20;
+    }
     
     // Division Rules - More compact
     doc.setFillColor(...colors.muted);
