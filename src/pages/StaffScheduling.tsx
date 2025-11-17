@@ -41,9 +41,9 @@ const CELL_COLORS = {
 };
 
 const ROLE_RESPONSIBILITIES = {
-  head_bartender: 'Operate Stations & Floating Supervision',
-  senior_bartender: 'Operate Stations & Training',
-  bartender: 'Operate Stations',
+  head_bartender: 'Operate Stations & Floating Supervision (ONLY heads can supervise)',
+  senior_bartender: 'Operate Stations & Training (Cannot supervise)',
+  bartender: 'Operate Stations (Cannot supervise)',
   bar_back: 'Indoor/Outdoor Support: Refill fridges, batches, premixes, pickups, glassware (Divided between areas)',
   support: 'Indoor/Outdoor Floating Help: General assistance (Divided between areas)',
 };
@@ -282,21 +282,23 @@ export default function StaffScheduling() {
         stationIdx++;
       }
 
-      // PRIORITY 3: Head Bartender as Floating Supervisor (if we have 4+ operators) - 9 hours
+      // PRIORITY 3: Head Bartender as Floating Supervisor (ONLY head bartenders can supervise, if we have 4+ operators) - 9 hours
       if (operatorIndex < availableOperators.length && availableOperators.length >= 4) {
-        const operator = availableOperators[operatorIndex];
-        // Prefer head bartender for this role
-        const headIndex = availableOperators.findIndex((op, idx) => idx >= operatorIndex && op.role === 'head');
-        const supervisorOperator = headIndex !== -1 ? availableOperators[headIndex] : operator;
+        // Find the first available head bartender for supervisor role
+        const headBartenderIndex = availableOperators.findIndex((op, idx) => idx >= operatorIndex && op.role === 'head');
         
-        newSchedule[`${supervisorOperator.staff.id}-${day}`] = {
-          staffId: supervisorOperator.staff.id,
-          day,
-          timeRange: '6:00 PM - 3:00 AM',
-          type: 'regular',
-          station: 'Floating Supervisor: Observe Indoor/Outdoor, Support Where Needed'
-        };
-        operatorIndex++;
+        if (headBartenderIndex !== -1) {
+          const supervisorOperator = availableOperators[headBartenderIndex];
+          
+          newSchedule[`${supervisorOperator.staff.id}-${day}`] = {
+            staffId: supervisorOperator.staff.id,
+            day,
+            timeRange: '6:00 PM - 3:00 AM',
+            type: 'regular',
+            station: 'Floating Supervisor: Observe Indoor/Outdoor, Support Where Needed'
+          };
+          operatorIndex++;
+        }
       }
 
       // PRIORITY 4: Ticket Segregator or Second Outdoor (only if 5+ operators) - 9 hours
@@ -416,7 +418,7 @@ export default function StaffScheduling() {
     }
 
     setSchedule(newSchedule);
-    toast.success('✅ Schedule generated! Working hours: Bartenders 9h, Support 10h. Bar backs & support divided between indoor/outdoor.');
+    toast.success('✅ Schedule generated! ONLY head bartenders can supervise. Working hours: Bartenders 9h, Support 10h.');
   };
 
   const exportToPDF = () => {
@@ -586,10 +588,10 @@ export default function StaffScheduling() {
     doc.text('PRIORITY 4: TICKET SEGREGATOR (Only if 5+ bartenders available)', 14, finalY);
     finalY += 4;
     doc.setFont('helvetica', 'bold');
-    doc.text('FLEXIBLE RULE: Second outdoor station removed - Head acts as floating supervisor instead', 14, finalY);
+    doc.text('FLEXIBLE RULE: Second outdoor station removed - ONLY Head Bartenders can be floating supervisors', 14, finalY);
     finalY += 3;
     doc.setFont('helvetica', 'normal');
-    doc.text('• Head bartender observes all areas and fills gaps rather than being station-locked', 14, finalY);
+    doc.text('• ONLY Head bartender can supervise - observes all areas and fills gaps (Senior/Bartenders cannot supervise)', 14, finalY);
     finalY += 3;
     doc.text('• Bar Backs & Support: Divided between Indoor and Outdoor areas (Assist only, not operate stations)', 14, finalY);
     
