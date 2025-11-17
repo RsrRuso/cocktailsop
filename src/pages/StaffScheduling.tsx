@@ -41,11 +41,11 @@ const CELL_COLORS = {
 };
 
 const ROLE_RESPONSIBILITIES = {
-  head_bartender: 'Operate Stations & Segregation Support',
+  head_bartender: 'Operate Stations & Floating Supervision',
   senior_bartender: 'Operate Stations & Training',
   bartender: 'Operate Stations',
-  bar_back: 'Assist Only: Refill fridges, batches, premixes, pickups, glassware (NOT assigned to stations)',
-  support: 'Floating Help: General assistance (NOT assigned to stations)',
+  bar_back: 'Indoor/Outdoor Support: Refill fridges, batches, premixes, pickups, glassware (Divided between areas)',
+  support: 'Indoor/Outdoor Floating Help: General assistance (Divided between areas)',
 };
 
 export default function StaffScheduling() {
@@ -325,7 +325,7 @@ export default function StaffScheduling() {
         operatorIndex++;
       }
 
-      // === BAR BACKS - Refill, Batches, Premixes (NOT assigned to Indoor/Outdoor stations) ===
+      // === BAR BACKS - Divided between Indoor & Outdoor Support ===
       barBackSchedules.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
 
@@ -339,31 +339,23 @@ export default function StaffScheduling() {
             timeRange: 'OFF',
             type: 'off'
           };
-        } else if (idx === 0) {
-          // Primary bar back - Refill/Batches (NO station assignment)
-          const timeRange = isPickupDay ? 'PICKUP 12:00 PM - 3:00 AM' : isSaturday ? 'BRUNCH 11:00 AM - 3:00 AM' : '2:00 PM - 3:00 AM';
-          const type = isPickupDay ? 'pickup' : isSaturday ? 'brunch' : 'opening';
+        } else {
+          // Alternate between indoor and outdoor areas
+          const area = idx % 2 === 0 ? 'Indoor' : 'Outdoor';
+          const timeRange = isPickupDay && idx === 0 ? 'PICKUP 12:00 PM - 3:00 AM' : isSaturday && idx === 0 ? 'BRUNCH 11:00 AM - 3:00 AM' : idx === 0 ? '2:00 PM - 3:00 AM' : '4:00 PM - 2:00 AM';
+          const type = isPickupDay && idx === 0 ? 'pickup' : isSaturday && idx === 0 ? 'brunch' : idx === 0 ? 'opening' : 'regular';
+          
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange,
             type,
-            station: 'Bar Back: Refill Fridges, Batches, Premixes, Glassware'
-          };
-        } else {
-          // Additional bar back - General support (NO station assignment)
-          const timeRange = isSaturday ? 'BRUNCH 11:00 AM - 2:00 AM' : '4:00 PM - 2:00 AM';
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange,
-            type: isSaturday ? 'brunch' : 'regular',
-            station: 'Bar Back: General Refill & Setup Support'
+            station: `Bar Back: ${area} Support (Refill, Batches, Premixes, Glassware)`
           };
         }
       });
 
-      // === SUPPORT - Floating Help (NOT assigned to Indoor/Outdoor stations) ===
+      // === SUPPORT - Divided between Indoor & Outdoor Areas ===
       supportSchedules.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
 
@@ -378,13 +370,14 @@ export default function StaffScheduling() {
             type: 'off'
           };
         } else {
-          // Support staff - Floating help (NO station assignment)
+          // Alternate between indoor and outdoor areas
+          const area = idx % 2 === 0 ? 'Indoor' : 'Outdoor';
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange: '3:00 PM - 1:00 AM',
             type: 'regular',
-            station: 'Support: Floating Help (No Station Assignment)'
+            station: `Support: ${area} Floating Help`
           };
         }
       });
@@ -423,7 +416,7 @@ export default function StaffScheduling() {
     }
 
     setSchedule(newSchedule);
-    toast.success('✅ Schedule generated! Outdoor prioritized, head bartenders act as floating supervisors when 4+ staff available.');
+    toast.success('✅ Schedule generated! Bar backs & support divided between indoor/outdoor areas. Heads act as floating supervisors.');
   };
 
   const exportToPDF = () => {
@@ -598,7 +591,7 @@ export default function StaffScheduling() {
     doc.setFont('helvetica', 'normal');
     doc.text('• Head bartender observes all areas and fills gaps rather than being station-locked', 14, finalY);
     finalY += 3;
-    doc.text('• Bar Backs & Support: NOT assigned to indoor/outdoor stations (Assist only)', 14, finalY);
+    doc.text('• Bar Backs & Support: Divided between Indoor and Outdoor areas (Assist only, not operate stations)', 14, finalY);
     
     // Legend & Notes
     finalY += 5;
