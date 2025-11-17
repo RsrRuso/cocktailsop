@@ -580,7 +580,7 @@ export default function StaffScheduling() {
       console.log('  Support:', shuffledWorkingSupport.map(s => s.staff.name).join(', '));
 
       // === PRIORITY 1: HEAD BARTENDERS - SUPERVISING (Observe indoor/outdoor, support where needed) ===
-      // Working hours: 10 hours (5:00 PM - 3:00 AM) or 9 hours (4:00 PM - 1:00 AM) for special events
+      // Working hours: 9 hours (4:00 PM - 1:00 AM) for special events or 10 hours (5:00 PM - 3:00 AM) for regular days
       // Division logic: 2+ heads → divide into indoor/outdoor supervisors
       
       const shouldDivideHeads = shuffledWorkingHeads.length >= 2;
@@ -613,8 +613,8 @@ export default function StaffScheduling() {
         let timeRange;
         let type: ScheduleCell['type'] = 'regular';
         if (isBrunchDay || isPickupDay) {
-          timeRange = '4:00 PM - 3:00 AM'; // 11 hours for special events, closing at 3 AM
-          type = 'late_shift';
+          timeRange = '4:00 PM - 1:00 AM'; // 9 hours for special events
+          type = 'early_shift';
         } else {
           timeRange = '5:00 PM - 3:00 AM'; // 10 hours for regular days
           type = 'late_shift';
@@ -689,8 +689,8 @@ export default function StaffScheduling() {
           timeRange = idx === 0 ? '4:00 PM - 1:00 AM' : '5:00 PM - 3:00 AM'; // Mixed on Wednesday
           type = idx === 0 ? 'early_shift' : 'late_shift';
         } else if (day === 'Saturday') {
-          timeRange = '4:00 PM - 3:00 AM'; // 11 hours for Saturday closing
-          type = 'late_shift';
+          timeRange = '4:00 PM - 1:00 AM'; // 9 hours for Saturday
+          type = 'early_shift';
         } else {
           timeRange = '5:00 PM - 3:00 AM'; // 10 hours standard
           type = 'late_shift';
