@@ -176,7 +176,8 @@ export default function StaffScheduling() {
 
     // BUSY DAYS - Determine from dailyEvents (days with events get no offs)
     const busyDays = DAYS_OF_WEEK.map((day, idx) => dailyEvents[day] ? idx : -1).filter(idx => idx !== -1);
-    console.log('📅 Busy days:', busyDays, dailyEvents);
+    console.log('📅 Busy days:', busyDays, 'Events:', dailyEvents);
+    console.log('🔍 Monday (index 0) is busy?', busyDays.includes(0), 'Monday event:', dailyEvents['Monday']);
     
     // Calculate week number to alternate between 1-day and 2-day off patterns
     const weekDate = new Date(weekStartDate);
@@ -231,8 +232,12 @@ export default function StaffScheduling() {
           assignedPattern = oneDayOffPatterns[index % oneDayOffPatterns.length];
         }
         
+        console.log(`🎯 ${staff.name} (index ${index}): Pattern before filter:`, assignedPattern.map(d => DAYS_OF_WEEK[d]));
+        
         // Filter out busy days
         let finalDaysOff = assignedPattern.filter(day => !busyDays.includes(day));
+        
+        console.log(`   After busy filter:`, finalDaysOff.map(d => DAYS_OF_WEEK[d]));
         
         // If pattern days are busy, find alternatives from allowed days
         if (finalDaysOff.length === 0) {
