@@ -406,8 +406,40 @@ export default function StaffScheduling() {
       });
     });
 
+    // CRITICAL VALIDATION: Monday, Wednesday, Thursday, Sunday MUST have at least one bartender/senior/head
+    const criticalDays = [
+      { name: 'Monday', index: 0 },
+      { name: 'Wednesday', index: 2 },
+      { name: 'Thursday', index: 3 },
+      { name: 'Sunday', index: 6 }
+    ];
+
+    const missingCoverageDays: string[] = [];
+
+    criticalDays.forEach(({ name, index }) => {
+      const allOperators = [...headBartenders, ...seniorBartenders, ...bartenders];
+      
+      // Check if at least one operator (bartender/senior/head) is NOT off on this day
+      const hasOperatorWorking = allOperators.some(staff => {
+        const key = `${staff.id}-${name}`;
+        const cell = newSchedule[key];
+        return cell && cell.timeRange !== 'OFF';
+      });
+
+      if (!hasOperatorWorking) {
+        missingCoverageDays.push(name);
+      }
+    });
+
+    if (missingCoverageDays.length > 0) {
+      toast.error(`❌ Cannot generate schedule: ${missingCoverageDays.join(', ')} must have at least one bartender (or senior/head) scheduled. Add more bartenders or adjust days off.`, {
+        duration: 7000
+      });
+      return;
+    }
+
     setSchedule(newSchedule);
-    toast.success('✅ Schedule generated! Only bartenders at stations. Bar backs/support NOT assigned to indoor/outdoor stations.');
+    toast.success('✅ Schedule generated! Mon/Wed/Thu/Sun have minimum bartender coverage. Only bartenders at stations.');
   };
 
   const exportToPDF = () => {
