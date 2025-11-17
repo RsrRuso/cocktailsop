@@ -206,6 +206,7 @@ export default function StaffScheduling() {
 
       // === FLEXIBLE STATION ASSIGNMENT: Prioritize Coverage ===
       const availableOperators: Array<{ staff: StaffMember; daysOff: number[]; role: string }> = [];
+      const assignedStaffIds = new Set<string>();
       
       // Collect all operators who are working this day
       headSchedules.forEach(s => {
@@ -219,6 +220,7 @@ export default function StaffScheduling() {
             timeRange: 'OFF',
             type: 'off'
           };
+          assignedStaffIds.add(s.staff.id);
         }
       });
       
@@ -233,6 +235,7 @@ export default function StaffScheduling() {
             timeRange: 'OFF',
             type: 'off'
           };
+          assignedStaffIds.add(s.staff.id);
         }
       });
       
@@ -247,85 +250,90 @@ export default function StaffScheduling() {
             timeRange: 'OFF',
             type: 'off'
           };
+          assignedStaffIds.add(s.staff.id);
         }
       });
 
-      // FLEXIBLE PRIORITY ASSIGNMENT
+      // FLEXIBLE PRIORITY ASSIGNMENT WITH SUPERVISION RESERVED FOR HEAD BARTENDERS
       const stations = ['Indoor - Station 1', 'Indoor - Station 2', 'Indoor - Garnishing Station 3'];
-      let operatorIndex = 0;
+      
+      // Reserve a head bartender for supervision if we have 4+ operators and at least 1 head bartender
+      let reservedSupervisor: { staff: StaffMember; daysOff: number[]; role: string } | null = null;
+      if (availableOperators.length >= 4) {
+        const headBartenderForSupervisor = availableOperators.find(op => op.role === 'head' && !assignedStaffIds.has(op.staff.id));
+        if (headBartenderForSupervisor) {
+          reservedSupervisor = headBartenderForSupervisor;
+          assignedStaffIds.add(headBartenderForSupervisor.staff.id);
+        }
+      }
 
       // PRIORITY 1: Outdoor Station 1 (MUST have coverage) - 9 hours
-      if (operatorIndex < availableOperators.length) {
-        const operator = availableOperators[operatorIndex];
-        newSchedule[`${operator.staff.id}-${day}`] = {
-          staffId: operator.staff.id,
+      const outdoorOperator = availableOperators.find(op => !assignedStaffIds.has(op.staff.id));
+      if (outdoorOperator) {
+        newSchedule[`${outdoorOperator.staff.id}-${day}`] = {
+          staffId: outdoorOperator.staff.id,
           day,
           timeRange: isWeekday ? '4:00 PM - 1:00 AM' : '5:00 PM - 2:00 AM',
           type: 'regular',
           station: 'Outdoor - Station 1'
         };
-        operatorIndex++;
+        assignedStaffIds.add(outdoorOperator.staff.id);
       }
 
       // PRIORITY 2: Indoor Stations (Fill as many as possible) - 9 hours
-      let stationIdx = 0;
-      while (operatorIndex < availableOperators.length && stationIdx < stations.length) {
-        const operator = availableOperators[operatorIndex];
-        newSchedule[`${operator.staff.id}-${day}`] = {
-          staffId: operator.staff.id,
-          day,
-          timeRange: '6:00 PM - 3:00 AM',
-          type: 'regular',
-          station: stations[stationIdx]
-        };
-        operatorIndex++;
-        stationIdx++;
-      }
-
-      // PRIORITY 3: Head Bartender as Floating Supervisor (ONLY head bartenders can supervise, if we have 4+ operators) - 9 hours
-      if (operatorIndex < availableOperators.length && availableOperators.length >= 4) {
-        // Find the first available head bartender for supervisor role
-        const headBartenderIndex = availableOperators.findIndex((op, idx) => idx >= operatorIndex && op.role === 'head');
-        
-        if (headBartenderIndex !== -1) {
-          const supervisorOperator = availableOperators[headBartenderIndex];
-          
-          newSchedule[`${supervisorOperator.staff.id}-${day}`] = {
-            staffId: supervisorOperator.staff.id,
+      for (let i = 0; i < stations.length; i++) {
+        const stationOperator = availableOperators.find(op => !assignedStaffIds.has(op.staff.id));
+        if (stationOperator) {
+          newSchedule[`${stationOperator.staff.id}-${day}`] = {
+            staffId: stationOperator.staff.id,
             day,
             timeRange: '6:00 PM - 3:00 AM',
             type: 'regular',
-            station: 'Floating Supervisor: Observe Indoor/Outdoor, Support Where Needed'
+            station: stations[i]
           };
-          operatorIndex++;
+          assignedStaffIds.add(stationOperator.staff.id);
         }
       }
 
-      // PRIORITY 4: Ticket Segregator or Second Outdoor (only if 5+ operators) - 9 hours
-      if (operatorIndex < availableOperators.length && availableOperators.length >= 5) {
-        const operator = availableOperators[operatorIndex];
-        newSchedule[`${operator.staff.id}-${day}`] = {
-          staffId: operator.staff.id,
+      // PRIORITY 3: Assign Reserved Head Bartender as Floating Supervisor - 9 hours
+      if (reservedSupervisor) {
+        newSchedule[`${reservedSupervisor.staff.id}-${day}`] = {
+          staffId: reservedSupervisor.staff.id,
           day,
           timeRange: '6:00 PM - 3:00 AM',
           type: 'regular',
-          station: 'Indoor - Ticket Segregator'
+          station: 'Floating Supervisor: Observe Indoor/Outdoor, Support Where Needed'
         };
-        operatorIndex++;
       }
 
-      // PRIORITY 5: Extra Support - 9 hours
-      while (operatorIndex < availableOperators.length) {
-        const operator = availableOperators[operatorIndex];
-        newSchedule[`${operator.staff.id}-${day}`] = {
-          staffId: operator.staff.id,
-          day,
-          timeRange: isBusyDay ? '6:00 PM - 3:00 AM' : 'OFF',
-          type: isBusyDay ? 'regular' : 'off',
-          station: isBusyDay ? 'Extra Support' : undefined
-        };
-        operatorIndex++;
+      // PRIORITY 4: Ticket Segregator (only if 5+ operators) - 9 hours
+      if (availableOperators.length >= 5) {
+        const ticketOperator = availableOperators.find(op => !assignedStaffIds.has(op.staff.id));
+        if (ticketOperator) {
+          newSchedule[`${ticketOperator.staff.id}-${day}`] = {
+            staffId: ticketOperator.staff.id,
+            day,
+            timeRange: '6:00 PM - 3:00 AM',
+            type: 'regular',
+            station: 'Indoor - Ticket Segregator'
+          };
+          assignedStaffIds.add(ticketOperator.staff.id);
+        }
       }
+
+      // PRIORITY 5: Extra Support for remaining operators - 9 hours
+      availableOperators.forEach(operator => {
+        if (!assignedStaffIds.has(operator.staff.id)) {
+          newSchedule[`${operator.staff.id}-${day}`] = {
+            staffId: operator.staff.id,
+            day,
+            timeRange: isBusyDay ? '6:00 PM - 3:00 AM' : 'OFF',
+            type: isBusyDay ? 'regular' : 'off',
+            station: isBusyDay ? 'Extra Support' : undefined
+          };
+          assignedStaffIds.add(operator.staff.id);
+        }
+      });
 
       // === BAR BACKS - Divided between Indoor & Outdoor Support (9 hours) ===
       barBackSchedules.forEach((schedule, idx) => {
@@ -418,7 +426,7 @@ export default function StaffScheduling() {
     }
 
     setSchedule(newSchedule);
-    toast.success('✅ Schedule generated! ONLY head bartenders can supervise. Working hours: Bartenders 9h, Support 10h.');
+    toast.success('✅ Schedule generated! CRITICAL: Only head bartenders supervise (reserved first). Bartenders like Samukele operate stations only.');
   };
 
   const exportToPDF = () => {
