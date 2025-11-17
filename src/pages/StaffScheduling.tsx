@@ -1579,6 +1579,41 @@ export default function StaffScheduling() {
                                 <SelectItem value="5:00 PM - 2:00 AM" className="text-gray-100 text-[10px]">5:00 PM - 2:00 AM</SelectItem>
                               </SelectContent>
                             </Select>
+                            {cell?.timeRange && cell.timeRange !== 'OFF' && (
+                              <Select
+                                value={cell?.station?.toLowerCase().includes('outdoor') ? 'outdoor' : cell?.station?.toLowerCase().includes('indoor') ? 'indoor' : 'indoor'}
+                                onValueChange={(area) => {
+                                  const currentStation = cell?.station || '';
+                                  let newStation = '';
+                                  
+                                  // Generate appropriate station based on staff role and selected area
+                                  if (staff.title === 'head_bartender') {
+                                    newStation = `Head - ${area === 'outdoor' ? 'Outdoor' : 'Indoor'} Supervisor: Observe ${area} operations, support where needed`;
+                                  } else if (staff.title === 'senior_bartender' || staff.title === 'bartender') {
+                                    if (currentStation.includes('Station 1') || currentStation.includes('Station 2') || currentStation.includes('Station 3')) {
+                                      const stationNum = currentStation.match(/Station (\d)/)?.[1] || '1';
+                                      newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+                                    } else {
+                                      newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Floating Support: Assist all ${area} stations as needed`;
+                                    }
+                                  } else if (staff.title === 'bar_back') {
+                                    newStation = `Bar Back - ${area === 'outdoor' ? 'Outdoor' : 'Indoor'}: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish`;
+                                  } else if (staff.title === 'support') {
+                                    newStation = `Support - ${area === 'outdoor' ? 'Outdoor' : 'Indoor'}: Glassware Polishing, General Support`;
+                                  }
+                                  
+                                  updateScheduleCell(staff.id, day, cell.timeRange, cell.type, newStation);
+                                }}
+                              >
+                                <SelectTrigger className="text-[8px] h-5 bg-gray-800 border-gray-600 text-gray-100 px-1 mt-0.5">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-gray-900 border-gray-700 z-50">
+                                  <SelectItem value="indoor" className="text-gray-100 text-[9px]">🏠 Indoor</SelectItem>
+                                  <SelectItem value="outdoor" className="text-gray-100 text-[9px]">🌳 Outdoor</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
                             {cell?.station && (
                               <div className="text-[8px] text-gray-400 text-center mt-0.5 leading-none truncate px-0.5">
                                 {cell.station}
