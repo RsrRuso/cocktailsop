@@ -18,7 +18,7 @@ import { format, startOfWeek, addDays } from 'date-fns';
 interface StaffMember {
   id: string;
   name: string;
-  title: 'head_bartender' | 'bartender' | 'bar_back' | 'support';
+  title: 'head_bartender' | 'senior_bartender' | 'bartender' | 'bar_back' | 'support';
 }
 
 interface ScheduleCell {
@@ -42,6 +42,7 @@ const CELL_COLORS = {
 
 const ROLE_RESPONSIBILITIES = {
   head_bartender: 'Segregation & Support',
+  senior_bartender: 'Station Service & Training',
   bartender: 'Station Service',
   bar_back: 'Refill fridges, batches, premixes, pickups, glassware, stations, opening/closing',
   support: 'Help if on duty',
@@ -144,12 +145,13 @@ export default function StaffScheduling() {
     
     // Get staff by role
     const headBartenders = staffMembers.filter(s => s.title === 'head_bartender');
+    const seniorBartenders = staffMembers.filter(s => s.title === 'senior_bartender');
     const bartenders = staffMembers.filter(s => s.title === 'bartender');
     const barBacks = staffMembers.filter(s => s.title === 'bar_back');
     const support = staffMembers.filter(s => s.title === 'support');
 
-    if (headBartenders.length === 0 && bartenders.length === 0) {
-      toast.error('Please add at least some bartenders or head bartenders');
+    if (headBartenders.length === 0 && seniorBartenders.length === 0 && bartenders.length === 0) {
+      toast.error('Please add at least some bartenders');
       return;
     }
 
@@ -170,8 +172,10 @@ export default function StaffScheduling() {
     };
 
     const headSchedules = divideIntoGroups(headBartenders);
+    const seniorBartenderSchedules = divideIntoGroups(seniorBartenders);
     const bartenderSchedules = divideIntoGroups(bartenders);
     const barBackSchedules = divideIntoGroups(barBacks);
+    const supportSchedules = divideIntoGroups(support);
 
     // Generate schedule for entire week
     DAYS_OF_WEEK.forEach((day, dayIndex) => {
@@ -228,12 +232,15 @@ export default function StaffScheduling() {
         }
       });
 
-      // === BARTENDERS - Stations 1, 2, 3 and Outdoor ===
+      // === SENIOR BARTENDERS & BARTENDERS - Stations 1, 2, 3 and Outdoor ===
       const stations = ['Indoor - Station 1', 'Indoor - Station 2', 'Indoor - Garnishing Station 3'];
       let stationIndex = 0;
       let outdoorBartenderAssigned = false;
 
-      bartenderSchedules.forEach((schedule) => {
+      // Senior bartenders get priority for stations
+      const allBartenderSchedules = [...seniorBartenderSchedules, ...bartenderSchedules];
+
+      allBartenderSchedules.forEach((schedule) => {
         const key = `${schedule.staff.id}-${day}`;
 
         // No offs on busy days
@@ -325,15 +332,30 @@ export default function StaffScheduling() {
         }
       });
 
-      // === SUPPORT - Manual (give OFF by default, can be edited) ===
-      support.forEach((staff) => {
-        const key = `${staff.id}-${day}`;
-        newSchedule[key] = {
-          staffId: staff.id,
-          day,
-          timeRange: 'OFF',
-          type: 'off'
-        };
+      // === SUPPORT - Schedule based on rotation ===
+      supportSchedules.forEach((schedule, idx) => {
+        const key = `${schedule.staff.id}-${day}`;
+
+        // No offs on busy days
+        const shouldBeOff = schedule.daysOff.includes(dayIndex) && !isBusyDay;
+
+        if (shouldBeOff) {
+          newSchedule[key] = {
+            staffId: schedule.staff.id,
+            day,
+            timeRange: 'OFF',
+            type: 'off'
+          };
+        } else {
+          // Support works when on duty
+          newSchedule[key] = {
+            staffId: schedule.staff.id,
+            day,
+            timeRange: '3:00 PM - 1:00 AM',
+            type: 'regular',
+            station: 'Floating Support - Help as needed'
+          };
+        }
       });
     });
 
@@ -503,6 +525,7 @@ export default function StaffScheduling() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="head_bartender">Head Bartender</SelectItem>
+                        <SelectItem value="senior_bartender">Senior Bartender</SelectItem>
                         <SelectItem value="bartender">Bartender</SelectItem>
                         <SelectItem value="bar_back">Bar Back</SelectItem>
                         <SelectItem value="support">Support</SelectItem>
@@ -769,6 +792,10 @@ export default function StaffScheduling() {
               <div className="p-3 border-2 rounded-lg bg-card border-border">
                 <strong className="text-sm">Head Bartender:</strong>
                 <div className="text-xs mt-1">{ROLE_RESPONSIBILITIES.head_bartender}</div>
+              </div>
+              <div className="p-3 border-2 rounded-lg bg-card border-border">
+                <strong className="text-sm">Senior Bartender:</strong>
+                <div className="text-xs mt-1">{ROLE_RESPONSIBILITIES.senior_bartender}</div>
               </div>
               <div className="p-3 border-2 rounded-lg bg-card border-border">
                 <strong className="text-sm">Bartender:</strong>
