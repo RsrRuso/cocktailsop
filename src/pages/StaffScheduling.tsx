@@ -188,11 +188,14 @@ export default function StaffScheduling() {
     const weekNumber = Math.floor((weekDate.getTime() - new Date(weekDate.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
     const isOddWeek = weekNumber % 2 === 1;
     
-    // FAIR OFFS DISTRIBUTION - Everyone gets offs based on pattern
-    // Week 1: Person A gets 1 day, Person B gets 2 days
-    // Week 2: Person A gets 2 days, Person B gets 1 day
+    // FAIR OFFS DISTRIBUTION - CRITICAL RULES:
+    // 1. Everyone gets AT LEAST 1 day off per week (can't be 0)
+    // 2. For same title: alternate 1 day / 2 days between weeks
+    //    - Person A: Week 1 = 1 day, Week 2 = 2 days
+    //    - Person B: Week 1 = 2 days, Week 2 = 1 day
+    // 3. If off day is busy event day, find alternative day
     const divideIntoGroups = (staffList: StaffMember[]) => {
-      // 1-day off patterns (non-busy days preferred)
+      // 1-day off patterns (spread across week)
       const oneDayPatterns = [
         [0],      // Monday
         [3],      // Thursday
@@ -200,35 +203,54 @@ export default function StaffScheduling() {
         [6],      // Sunday
       ];
       
-      // 2-day off patterns (non-busy days preferred)
+      // 2-day off patterns (non-consecutive for better coverage)
       const twoDayPatterns = [
         [0, 3],   // Monday + Thursday
         [0, 6],   // Monday + Sunday
-        [2, 3],   // Wednesday + Thursday
+        [2, 6],   // Wednesday + Sunday
         [3, 6],   // Thursday + Sunday
       ];
       
       return staffList.map((staff, index) => {
-        // Alternate: odd week even-index gets 1 day, odd-index gets 2 days
-        // Even week: reverse
+        // Alternating logic for same titles:
+        // Odd week: index 0,2,4... get 1 day | index 1,3,5... get 2 days
+        // Even week: index 0,2,4... get 2 days | index 1,3,5... get 1 day
         const shouldGetTwoDays = isOddWeek ? (index % 2 === 1) : (index % 2 === 0);
         
-        let daysOff;
+        let assignedDaysOff;
         if (shouldGetTwoDays) {
-          daysOff = twoDayPatterns[index % twoDayPatterns.length];
+          assignedDaysOff = twoDayPatterns[index % twoDayPatterns.length];
         } else {
-          daysOff = oneDayPatterns[index % oneDayPatterns.length];
+          assignedDaysOff = oneDayPatterns[index % oneDayPatterns.length];
         }
         
-        // IMPORTANT: Filter out busy days, if all off days are busy, assign alternative
-        const availableOffDays = daysOff.filter(day => !busyDays.includes(day));
+        // CRITICAL: Filter out busy days but ensure at least 1 off day
+        let finalDaysOff = assignedDaysOff.filter(day => !busyDays.includes(day));
         
-        // If all assigned off days are busy, give them the first non-busy day
-        if (availableOffDays.length === 0 && busyDays.length < 7) {
-          // Find first non-busy day
-          for (let i = 0; i < 7; i++) {
-            if (!busyDays.includes(i)) {
-              availableOffDays.push(i);
+        // If all assigned days are busy OR no days off, find alternative
+        if (finalDaysOff.length === 0) {
+          // Find first available non-busy day
+          for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+            if (!busyDays.includes(dayIdx)) {
+              finalDaysOff.push(dayIdx);
+              // If they were supposed to get 2 days, try to find a second day
+              if (shouldGetTwoDays && finalDaysOff.length === 1) {
+                for (let dayIdx2 = dayIdx + 1; dayIdx2 < 7; dayIdx2++) {
+                  if (!busyDays.includes(dayIdx2)) {
+                    finalDaysOff.push(dayIdx2);
+                    break;
+                  }
+                }
+              }
+              break;
+            }
+          }
+        }
+        // If they should get 2 days but only have 1 (because one was busy), try to add another
+        else if (shouldGetTwoDays && finalDaysOff.length === 1) {
+          for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+            if (!busyDays.includes(dayIdx) && !finalDaysOff.includes(dayIdx)) {
+              finalDaysOff.push(dayIdx);
               break;
             }
           }
@@ -236,9 +258,9 @@ export default function StaffScheduling() {
         
         return {
           staff,
-          daysOff: availableOffDays.length > 0 ? availableOffDays : daysOff, // Fallback to original if all days busy
-          originalDaysOff: daysOff,
-          groupType: shouldGetTwoDays ? '2-day' : '1-day'
+          daysOff: finalDaysOff,
+          groupType: shouldGetTwoDays ? '2-day' : '1-day',
+          actualDaysOff: finalDaysOff.length
         };
       });
     };
@@ -522,7 +544,7 @@ export default function StaffScheduling() {
     }
 
     setSchedule(newSchedule);
-    toast.success(`✅ Schedule generated! Week ${weekNumber}: Alternating 1-day/2-day offs (same titles staggered). Event days respect custom events. All 9h shifts (Support 10h).`);
+    toast.success(`✅ Schedule generated! Everyone gets at least 1 day off. Same titles alternate: Week ${weekNumber % 2 === 1 ? '(Odd)' : '(Even)'} pattern. Event days respected. All 9h shifts (Support 10h).`);
   };
 
   const exportToPDF = () => {
@@ -737,9 +759,11 @@ export default function StaffScheduling() {
     finalY += 3;
     doc.text('• Support: 3:00 PM - 1:00 AM (10h, early setup to near closing)', 14, finalY);
     finalY += 3;
-    doc.text('• OFF DAYS: Alternating pattern - Week 1: some get 1 day off, others 2 days. Week 2: pattern reverses', 14, finalY);
+    doc.text('• OFF DAYS LOGIC: Everyone gets AT LEAST 1 day off per week (can\'t be 0)', 14, finalY);
     finalY += 3;
-    doc.text('• For same titles: Staggered so not everyone gets 2 days off in the same week', 14, finalY);
+    doc.text('• For same titles: Alternate pattern - Person A: Week 1=1 day, Week 2=2 days | Person B: Week 1=2 days, Week 2=1 day', 14, finalY);
+    finalY += 3;
+    doc.text('• If off day falls on event day, alternative day is automatically assigned', 14, finalY);
     finalY += 3;
     
     // Show event days
