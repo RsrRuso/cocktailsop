@@ -1050,6 +1050,153 @@ export default function StaffScheduling() {
     }
   };
 
+  const exportDayToPDF = (day: string) => {
+    // Calculate day schedule data
+    const daySchedule = Object.values(schedule).filter(s => s.day === day);
+    const working = daySchedule.filter(s => s.timeRange !== 'OFF');
+    const off = daySchedule.filter(s => s.timeRange === 'OFF');
+    
+    // Categorize by area
+    const indoor = working.filter(s => {
+      const station = s.station || '';
+      return station.toLowerCase().includes('indoor');
+    });
+    const outdoor = working.filter(s => {
+      const station = s.station || '';
+      return station.toLowerCase().includes('outdoor');
+    });
+    
+    const categorizedIds = new Set([...indoor, ...outdoor].map(s => s.staffId));
+    const uncategorized = working.filter(s => !categorizedIds.has(s.staffId));
+    
+    // Get staff details
+    const indoorStaff = [...indoor, ...uncategorized].map(s => {
+      const staff = staffMembers.find(sm => sm.id === s.staffId);
+      return { name: staff?.name || 'Unknown', station: s.station || 'General Support', timeRange: s.timeRange };
+    });
+    const outdoorStaff = outdoor.map(s => {
+      const staff = staffMembers.find(sm => sm.id === s.staffId);
+      return { name: staff?.name || 'Unknown', station: s.station, timeRange: s.timeRange };
+    });
+    const offStaff = off.map(s => {
+      const staff = staffMembers.find(sm => sm.id === s.staffId);
+      return staff?.name || 'Unknown';
+    });
+
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFillColor(31, 41, 55);
+    doc.rect(0, 0, 210, 35, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text(venueName || 'Staff Schedule', 105, 15, { align: 'center' });
+    doc.setFontSize(14);
+    doc.text(day, 105, 25, { align: 'center' });
+    
+    // Event label if exists
+    const eventLabel = dailyEvents[day];
+    if (eventLabel) {
+      doc.setFontSize(12);
+      doc.setTextColor(251, 146, 60);
+      doc.text(`📅 ${eventLabel}`, 105, 32, { align: 'center' });
+    }
+
+    let yPos = 45;
+    doc.setTextColor(0, 0, 0);
+
+    // Summary stats
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Working: ${working.length} | Off: ${off.length} | Indoor: ${indoor.length} | Outdoor: ${outdoor.length}`, 15, yPos);
+    yPos += 10;
+
+    // Indoor Staff
+    if (indoorStaff.length > 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(59, 130, 246);
+      doc.text('🔵 Indoor Stations', 15, yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      
+      indoorStaff.forEach(s => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        doc.text(`• ${s.name} (${s.timeRange})`, 20, yPos);
+        yPos += 4;
+        doc.setTextColor(100, 100, 100);
+        doc.text(`  ${s.station}`, 22, yPos);
+        yPos += 5;
+        doc.setTextColor(0, 0, 0);
+      });
+      yPos += 3;
+    }
+
+    // Outdoor Staff
+    if (outdoorStaff.length > 0) {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(168, 85, 247);
+      doc.text('🟣 Outdoor Stations', 15, yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      
+      outdoorStaff.forEach(s => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        doc.text(`• ${s.name} (${s.timeRange})`, 20, yPos);
+        yPos += 4;
+        doc.setTextColor(100, 100, 100);
+        doc.text(`  ${s.station}`, 22, yPos);
+        yPos += 5;
+        doc.setTextColor(0, 0, 0);
+      });
+      yPos += 3;
+    }
+
+    // Off Staff
+    if (offStaff.length > 0) {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(239, 68, 68);
+      doc.text('🔴 Off Duty', 15, yPos);
+      yPos += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      
+      offStaff.forEach(s => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        doc.text(`• ${s}`, 20, yPos);
+        yPos += 5;
+      });
+    }
+
+    doc.save(`${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    toast.success(`${day} PDF downloaded!`);
+  };
+
   const exportWeeklySummaryToJPG = async () => {
     const element = document.getElementById('Weekly Off Days Summary');
     if (!element) {
@@ -1410,14 +1557,28 @@ export default function StaffScheduling() {
                         {isBusyDay && <span className="inline-block w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>}
                         {day}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => exportDayToJPG(day)}
-                        className="h-7 px-2 text-xs hover:bg-gray-700 transition-colors"
-                      >
-                        <Download className="h-3 w-3" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => exportDayToPDF(day)}
+                          className="h-7 px-2 text-xs hover:bg-gray-700 transition-colors"
+                          title="Download as PDF"
+                        >
+                          <Download className="h-3 w-3 mr-1" />
+                          PDF
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => exportDayToJPG(day)}
+                          className="h-7 px-2 text-xs hover:bg-gray-700 transition-colors"
+                          title="Download as JPG"
+                        >
+                          <Download className="h-3 w-3 mr-1" />
+                          JPG
+                        </Button>
+                      </div>
                     </div>
                     {dayLabel && (
                       <div className="text-xs text-orange-300 mb-3 bg-orange-950/30 rounded px-2 py-1 font-medium">
