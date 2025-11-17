@@ -37,8 +37,8 @@ const CELL_COLORS = {
   closing: 'bg-red-500/20',
   pickup: 'bg-amber-500/25',
   brunch: 'bg-orange-500/20',
-  early_shift: 'bg-indigo-500/25',  // 4 PM shifts - nice purple/blue
-  late_shift: 'bg-cyan-500/20',     // 5 PM shifts - appealing cyan
+  early_shift: 'bg-violet-500/35',  // 4 PM shifts - vibrant violet/purple
+  late_shift: 'bg-teal-500/35',     // 5 PM shifts - vibrant teal
   off: 'bg-muted',
   regular: 'bg-background',
 };
@@ -887,8 +887,8 @@ export default function StaffScheduling() {
       body: rows,
       startY: 45,
       styles: { 
-        fontSize: 6.5, 
-        cellPadding: 1.5, 
+        fontSize: 6, 
+        cellPadding: 1.2, 
         lineWidth: 0.2, 
         lineColor: colors.muted,
         textColor: colors.foreground,
@@ -922,12 +922,14 @@ export default function StaffScheduling() {
             const cell = getScheduleCell(staff.id, day);
             if (cell) {
               if (cell.type === 'early_shift') {
-                data.cell.styles.fillColor = [199, 210, 254]; // Indigo
+                data.cell.styles.fillColor = [196, 181, 253]; // Vibrant Violet
                 data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.textColor = [88, 28, 135];
               }
               if (cell.type === 'late_shift') {
-                data.cell.styles.fillColor = [207, 250, 254]; // Cyan
+                data.cell.styles.fillColor = [153, 246, 228]; // Vibrant Teal
                 data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.textColor = [19, 78, 74];
               }
               if (cell.type === 'opening') {
                 data.cell.styles.fillColor = [220, 252, 231];
@@ -951,20 +953,20 @@ export default function StaffScheduling() {
       }
     });
 
-    // Event Info Section (if events exist)
-    let finalY = (doc as any).lastAutoTable.finalY + 12;
+    // Event Info Section (if events exist) - Compact version
+    let finalY = (doc as any).lastAutoTable.finalY + 8;
     const hasEvents = Object.values(dailyEvents).some(event => event && event.trim() !== '');
     
     if (hasEvents) {
       doc.setFillColor(...colors.accent);
-      doc.roundedRect(14, finalY - 3, 270, 12, 2, 2, 'F');
-      doc.setFontSize(11);
+      doc.roundedRect(14, finalY - 2, 270, 9, 2, 2, 'F');
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(255, 255, 255);
-      doc.text('SPECIAL EVENTS & OPENING RESPONSIBILITIES', 18, finalY + 4);
+      doc.text('SPECIAL EVENTS & OPENING RESPONSIBILITIES', 18, finalY + 3.5);
       
-      finalY += 14;
-      doc.setFontSize(8);
+      finalY += 11;
+      doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...colors.foreground);
       
@@ -977,161 +979,96 @@ export default function StaffScheduling() {
             return cell && (cell.type === 'opening' || cell.type === 'brunch' || cell.type === 'pickup');
           });
           
+          const staffInfo = openingStaff ? ` → ${openingStaff.name}` : '';
           doc.setFont('helvetica', 'bold');
-          doc.text(`${day}: ${event}`, 18, finalY);
-          finalY += 4;
-          
-          if (openingStaff) {
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(...colors.mutedText);
-            doc.text(`→ Opening Bartender: ${openingStaff.name} (${openingStaff.title.replace('_', ' ')})`, 22, finalY);
-            finalY += 5;
-          }
+          doc.text(`${day}: ${event}${staffInfo}`, 18, finalY);
+          finalY += 3.5;
           doc.setTextColor(...colors.foreground);
         }
       });
       
-      finalY += 6;
+      finalY += 4;
     }
     
-    // Role Responsibilities Section
+    // Role Responsibilities Section - Compact
     doc.setFillColor(...colors.primary);
-    doc.roundedRect(14, finalY - 3, 270, 12, 2, 2, 'F');
-    doc.setFontSize(12);
+    doc.roundedRect(14, finalY - 2, 270, 9, 2, 2, 'F');
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
-    doc.text('ROLE RESPONSIBILITIES & PRIORITIES', 18, finalY + 4);
+    doc.text('ROLE RESPONSIBILITIES & PRIORITIES', 18, finalY + 3.5);
     
-    finalY += 16;
+    finalY += 12;
     doc.setTextColor(...colors.foreground);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    
+    // Priority 1 - Compact
+    doc.text('P1 - HEAD BARTENDERS:', 18, finalY);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Supervise indoor/outdoor areas (divided if 2+)', 75, finalY);
+    finalY += 4;
+    
+    // Priority 2 - Compact
+    doc.setFont('helvetica', 'bold');
+    doc.text('P2 - BARTENDERS:', 18, finalY);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Operate stations, supervise bar backs, manage station procedures', 60, finalY);
+    finalY += 4;
+    
+    // Priority 3 - Compact
+    doc.setFont('helvetica', 'bold');
+    doc.text('P3 - BAR BACKS:', 18, finalY);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Pickups, refilling, batching, opening/closing (divided if 2+)', 58, finalY);
+    finalY += 4;
+    
+    // Priority 4 - Compact
+    doc.setFont('helvetica', 'bold');
+    doc.text('P4 - SUPPORT:', 18, finalY);
+    doc.setFont('helvetica', 'normal');
+    doc.text('10h shifts (3PM-1AM), glassware, general support, 2 days off/month', 52, finalY);
+    finalY += 6;
+    
+    // Division Rules - Compact
+    doc.setFillColor(...colors.muted);
+    doc.roundedRect(14, finalY - 2, 270, 17, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...colors.foreground);
+    doc.setFontSize(7.5);
+    doc.text('DIVISION RULES:', 18, finalY + 3);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.text('2+ Heads/Bar Backs → Indoor/Outdoor split | 1 Bar Back + 1 Support → Divided areas', 62, finalY + 3);
+    finalY += 4;
+    doc.text('2+ Support → Area division | Default → Indoor unless specified', 18, finalY);
+    finalY += 7;
+
+    // Operational Notes & Break Times - Compact
+    doc.setFillColor(...colors.secondary);
+    doc.roundedRect(14, finalY - 2, 270, 9, 2, 2, 'F');
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    
-    // Priority 1 - Modern Card Style
-    doc.setFillColor(...colors.primary);
-    doc.roundedRect(14, finalY - 3, 270, 12, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
     doc.setTextColor(255, 255, 255);
-    doc.text('PRIORITY 1 - HEAD BARTENDERS', 18, finalY + 3);
-    finalY += 14;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...colors.foreground);
-    doc.text('Supervising operations - Observe indoor/outdoor areas, provide support where needed', 18, finalY);
-    finalY += 3.5;
-    doc.setTextColor(...colors.mutedText);
-    doc.text('(Divided between indoor/outdoor supervision if 2+ heads)', 18, finalY);
-    finalY += 8;
+    doc.text('OPERATIONAL NOTES & TIMES', 18, finalY + 3.5);
     
-    // Priority 2
-    doc.setFillColor(...colors.secondary);
-    doc.roundedRect(14, finalY - 3, 270, 12, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(255, 255, 255);
-    doc.text('PRIORITY 2 - BARTENDERS & SENIOR BARTENDERS', 18, finalY + 3);
-    finalY += 14;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
+    finalY += 11;
     doc.setTextColor(...colors.foreground);
-    doc.text('Station Operations - Operate assigned stations, supervise bar backs, manage station closing', 18, finalY);
-    finalY += 3.5;
-    doc.text('procedures, refresh and maintain stations based on operational needs during service', 18, finalY);
-    finalY += 8;
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Venue: 5PM-2AM | Bartenders/Bar Backs: 9h | Support: 10h (3PM-1AM) | Break: 5-6PM | Ending: 6:45PM', 18, finalY);
+    finalY += 6;
     
-    // Priority 3
-    doc.setFillColor(...colors.accent);
-    doc.roundedRect(14, finalY - 3, 270, 12, 2, 2, 'F');
+    // Off Days Policy - Compact
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(255, 255, 255);
-    doc.text('PRIORITY 3 - BAR BACKS (CRITICAL PRIORITY ROLE)', 18, finalY + 3);
-    finalY += 14;
+    doc.setFontSize(7);
+    doc.text('OFF DAYS:', 18, finalY);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...colors.foreground);
-    doc.text('Essential Support - Pickups, refilling, glassware polishing, batching, opening/closing procedures,', 18, finalY);
-    finalY += 3.5;
-    doc.text('fridges/freezers refill, stock management, garnish cutting (Divided between indoor/outdoor if 2+)', 18, finalY);
-    finalY += 8;
-    
-    // Priority 4
-    doc.setFillColor(...colors.primary);
-    doc.setDrawColor(...colors.primary);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(14, finalY - 3, 270, 12, 2, 2, 'S');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(...colors.primary);
-    doc.text('PRIORITY 4 - SUPPORT', 18, finalY + 3);
-    finalY += 14;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...colors.foreground);
-    doc.text('General Support - Glassware polishing, general assistance (10-hour shifts: 3PM-1AM, 2 days off per month, divided between areas if 2+)', 18, finalY);
-    finalY += 10;
-    
-    // Division Rules - Modern Card
-    doc.setFillColor(...colors.muted);
-    doc.roundedRect(14, finalY - 3, 270, 24, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...colors.foreground);
-    doc.setFontSize(9);
-    doc.text('DIVISION RULES', 18, finalY + 3);
-    finalY += 8;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...colors.foreground);
-    doc.text('• 2+ Head Bartenders → Divided between indoor/outdoor supervision', 20, finalY);
-    finalY += 3.5;
-    doc.text('• 2+ Bar Backs → Divided between indoor/outdoor operational areas', 20, finalY);
-    finalY += 3.5;
-    doc.text('• 1 Bar Back + 1 Support → Also divided between indoor/outdoor areas', 20, finalY);
-    finalY += 3.5;
-    doc.text('• 2+ Support Staff → Divided between indoor/outdoor areas', 20, finalY);
-    finalY += 10;
-
-    // Operational Notes - Gradient-style header
-    doc.setFillColor(...colors.primary);
-    doc.roundedRect(14, finalY - 3, 270, 12, 2, 2, 'F');
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text('OPERATIONAL NOTES & GUIDELINES', 18, finalY + 4);
-    
-    finalY += 14;
-    doc.setTextColor(...colors.foreground);
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'normal');
-    doc.text('• VENUE HOURS: 5:00 PM - 2:00 AM (9-hour operation)', 18, finalY);
-    finalY += 3.5;
-    doc.text('• WORKING HOURS: All staff 9 hours (Support staff 10 hours)', 18, finalY);
-    finalY += 3.5;
-    doc.text('• HEAD BARTENDERS & BARTENDERS: 5:00 PM - 2:00 AM (9h, full venue coverage)', 18, finalY);
-    finalY += 3.5;
-    doc.text('• BAR BACKS (Primary): Early start for pickups and setup duties (9h total)', 18, finalY);
-    finalY += 3.5;
-    doc.text('• BAR BACKS (Additional): 5:00 PM - 2:00 AM (9h, full venue coverage)', 18, finalY);
-    finalY += 3.5;
-    doc.text('• SUPPORT STAFF: 3:00 PM - 1:00 AM (10h, early setup through near closing)', 18, finalY);
-    finalY += 5;
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...colors.primary);
-    doc.text('OFF DAYS POLICY:', 18, finalY);
-    finalY += 3.5;
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...colors.foreground);
-    doc.text('• Minimum 1 day off per week guaranteed for all staff', 18, finalY);
-    finalY += 3.5;
-    doc.text('• Alternating pattern for bartenders: Week 1 (1 day off) / Week 2 (2 days off) rotation', 18, finalY);
-    finalY += 3.5;
-    doc.text('• Support staff: 2 days off per MONTH (1 day off every 2 weeks)', 18, finalY);
-    finalY += 3.5;
-    doc.text('• Automatic alternative day assignment if off day conflicts with event day', 18, finalY);
+    doc.setFontSize(6.5);
+    doc.text('Bartenders alt. 1-2 days/week | Support: 2 days/month | Auto-adjust on event days', 48, finalY);
     finalY += 5;
     
-    // Show event days with accent color
+    // Show event days if any - Compact
     const eventDays = Object.entries(dailyEvents)
       .filter(([_, event]) => event)
       .map(([day, event]) => `${day.toUpperCase()} (${event})`)
@@ -1139,46 +1076,33 @@ export default function StaffScheduling() {
     
     if (eventDays) {
       doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.5);
       doc.setTextColor(...colors.accent);
-      doc.text(`• EVENT DAYS (No offs allowed): ${eventDays}`, 18, finalY);
-      finalY += 4;
-      doc.setFont('helvetica', 'normal');
+      doc.text(`EVENT DAYS (No offs): ${eventDays}`, 18, finalY);
+      finalY += 5;
       doc.setTextColor(...colors.foreground);
     }
     
-    doc.text('• BREAK TIME: 5:00 PM - 6:00 PM | ENDING BACK & FRONT: 6:45 PM (Mandatory)', 18, finalY);
-    finalY += 3.5;
-    doc.text('• STORE PICKUP: Monday, Wednesday, Friday (Handled by bar backs with early start)', 18, finalY);
-    finalY += 8;
-    
-    // Hygiene & Safety Section
+    // Hygiene & Safety + Outdoor Allocation - Side by Side
     doc.setFillColor(220, 220, 220);
-    doc.roundedRect(14, finalY - 3, 270, 10, 2, 2, 'F');
+    doc.roundedRect(14, finalY - 2, 130, 8, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
+    doc.setFontSize(7);
     doc.setTextColor(60, 60, 60);
-    doc.text('HYGIENE & SAFETY (ALL ROLES)', 18, finalY + 3);
-    finalY += 12;
+    doc.text('HYGIENE & SAFETY:', 18, finalY + 3);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...colors.foreground);
-    doc.text('All staff must maintain food safety compliance, update product labeling, and monitor expirations', 18, finalY);
-    finalY += 8;
+    doc.setFontSize(6);
+    doc.text('All roles - compliance required', 70, finalY + 3);
     
-    // Outdoor Allocation Note
     doc.setFillColor(...colors.secondary);
-    doc.roundedRect(14, finalY - 3, 270, 10, 2, 2, 'F');
+    doc.roundedRect(154, finalY - 2, 130, 8, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
+    doc.setFontSize(7);
     doc.setTextColor(255, 255, 255);
-    doc.text('OUTDOOR ALLOCATION POLICY', 18, finalY + 3);
-    finalY += 12;
+    doc.text('OUTDOOR:', 158, finalY + 3);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...colors.foreground);
-    doc.text('MINIMUM 2 outdoor staff (1 bartender + 1 support/barback) | MAXIMUM 3 outdoor (1 head + 1 bartender + 1 support)', 18, finalY);
-    finalY += 3.5;
-    doc.text('All remaining staff allocated indoors for optimal service distribution', 18, finalY);
+    doc.setFontSize(6);
+    doc.text('MIN 2 / MAX 3 - Rest indoors', 190, finalY + 3);
 
     doc.save(`${(venueName || 'schedule').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     toast.success('Schedule exported to PDF');
