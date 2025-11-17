@@ -818,23 +818,31 @@ export default function StaffScheduling() {
       // Categorize by area - ENSURE NO DOUBLE COUNTING (each person in ONE area only)
       const indoor = working.filter(s => {
         const station = s.station || '';
-        // Include indoor stations, bar backs, and support assigned to indoor
+        // Include indoor stations, bar backs, support, and heads supervising indoor
         return (station.includes('Indoor - Station') || 
                 station.includes('Bar Back - Indoor') ||
-                station.includes('Support - Indoor'));
+                station.includes('Support - Indoor') ||
+                (station.includes('Supervising') && station.includes('Indoor')));
       });
       const outdoor = working.filter(s => {
         const station = s.station || '';
-        // Include outdoor stations, bar backs, and support assigned to outdoor
+        // Include outdoor stations, bar backs, support, and heads supervising outdoor
         return (station.includes('Outdoor - Station') || 
                 station.includes('Bar Back - Outdoor') ||
-                station.includes('Support - Outdoor'));
+                station.includes('Support - Outdoor') ||
+                (station.includes('Supervising') && station.includes('Outdoor')));
       });
-      const floating = working.filter(s => {
+      
+      // For heads supervising both or not allocated to specific area, add to both counts
+      const floatingToIndoor = working.filter(s => {
         const station = s.station || '';
-        // Include supervising heads and floating support only
-        return (station.includes('Supervising') || station.includes('Floating'));
+        return (station.includes('Supervising') && !station.includes('Indoor') && !station.includes('Outdoor')) ||
+               station.includes('Floating');
       });
+      
+      // Split floating between indoor and outdoor for counting
+      const indoorWithFloating = [...indoor, ...floatingToIndoor.slice(0, Math.ceil(floatingToIndoor.length / 2))];
+      const outdoorWithFloating = [...outdoor, ...floatingToIndoor.slice(Math.ceil(floatingToIndoor.length / 2))];
       
       const eventLabel = dailyEvents[day] ? ` (${dailyEvents[day]})` : '';
       
@@ -842,53 +850,54 @@ export default function StaffScheduling() {
       doc.text(`${day}${eventLabel}`, 14, finalY);
       finalY += 3;
       doc.setFont('helvetica', 'normal');
-      doc.text(`Total Working: ${working.length} | Total Off: ${off.length} | Indoor: ${indoor.length} | Outdoor: ${outdoor.length}`, 16, finalY);
+      doc.text(`Total Working: ${working.length} | Total Off: ${off.length}`, 16, finalY);
       finalY += 4;
       
       // Indoor Staff
-      if (indoor.length > 0) {
+      if (indoorWithFloating.length > 0) {
         doc.setFont('helvetica', 'bold');
         doc.text('INDOOR:', 18, finalY);
         finalY += 3;
         doc.setFont('helvetica', 'normal');
-        indoor.forEach(s => {
+        indoorWithFloating.forEach(s => {
           const staff = staffMembers.find(sm => sm.id === s.staffId);
           if (staff) {
             const title = staff.title.replace('_', ' ');
-            doc.text(`  • ${staff.name} (${title}) - ${s.station}`, 20, finalY);
+            const timeRange = s.timeRange || '';
+            doc.text(`  • ${staff.name} (${title}) - ${timeRange}`, 20, finalY);
             finalY += 3;
           }
         });
       }
       
       // Outdoor Staff
-      if (outdoor.length > 0) {
+      if (outdoorWithFloating.length > 0) {
         doc.setFont('helvetica', 'bold');
         doc.text('OUTDOOR:', 18, finalY);
         finalY += 3;
         doc.setFont('helvetica', 'normal');
-        outdoor.forEach(s => {
+        outdoorWithFloating.forEach(s => {
           const staff = staffMembers.find(sm => sm.id === s.staffId);
           if (staff) {
             const title = staff.title.replace('_', ' ');
-            doc.text(`  • ${staff.name} (${title}) - ${s.station}`, 20, finalY);
+            const timeRange = s.timeRange || '';
+            doc.text(`  • ${staff.name} (${title}) - ${timeRange}`, 20, finalY);
             finalY += 3;
           }
         });
       }
       
-      // Floating/Support Staff
-      if (floating.length > 0) {
+      // Off Staff
+      if (off.length > 0) {
         doc.setFont('helvetica', 'bold');
-        doc.text('SUPPORT/FLOATING:', 18, finalY);
+        doc.text('OFF:', 18, finalY);
         finalY += 3;
         doc.setFont('helvetica', 'normal');
-        floating.forEach(s => {
+        off.forEach(s => {
           const staff = staffMembers.find(sm => sm.id === s.staffId);
           if (staff) {
             const title = staff.title.replace('_', ' ');
-            const stationText = s.station ? ` - ${s.station}` : '';
-            doc.text(`  • ${staff.name} (${title})${stationText}`, 20, finalY);
+            doc.text(`  • ${staff.name} (${title})`, 20, finalY);
             finalY += 3;
           }
         });
