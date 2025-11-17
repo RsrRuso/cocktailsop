@@ -234,6 +234,7 @@ export default function StaffScheduling() {
       });
 
       // === PRIORITY 1: HEAD BARTENDERS - SUPERVISING ROLE (Divided between indoor/outdoor if 2+) ===
+      // Working hours: 9 hours (5:00 PM - 2:00 AM covers full venue operation)
       if (workingHeads.length >= 2) {
         // Divide heads between indoor and outdoor supervision
         workingHeads.forEach((schedule, idx) => {
@@ -241,7 +242,7 @@ export default function StaffScheduling() {
           newSchedule[`${schedule.staff.id}-${day}`] = {
             staffId: schedule.staff.id,
             day,
-            timeRange: '6:00 PM - 3:00 AM',
+            timeRange: '5:00 PM - 2:00 AM',
             type: 'regular',
             station: `${area} Supervisor: Observe & Support`
           };
@@ -252,7 +253,7 @@ export default function StaffScheduling() {
         newSchedule[`${workingHeads[0].staff.id}-${day}`] = {
           staffId: workingHeads[0].staff.id,
           day,
-          timeRange: '6:00 PM - 3:00 AM',
+          timeRange: '5:00 PM - 2:00 AM',
           type: 'regular',
           station: 'Floating Supervisor: Observe Indoor/Outdoor, Support Where Needed'
         };
@@ -260,20 +261,18 @@ export default function StaffScheduling() {
       }
 
       // === PRIORITY 2: BARTENDERS & SENIORS - ASSIGNED TO STATIONS ===
+      // Working hours: 9 hours (5:00 PM - 2:00 AM for main venue hours)
       const stations = ['Outdoor - Station 1', 'Indoor - Station 1', 'Indoor - Station 2', 'Indoor - Garnishing Station 3'];
       const allStationOperators = [...workingSeniors, ...workingBartenders].filter(s => !assignedStaffIds.has(s.staff.id));
       
       // Assign operators to stations
       allStationOperators.forEach((schedule, idx) => {
         if (idx < stations.length) {
-          const timeRange = stations[idx].includes('Outdoor') 
-            ? (isWeekday ? '4:00 PM - 1:00 AM' : '5:00 PM - 2:00 AM')
-            : '6:00 PM - 3:00 AM';
-          
+          // All stations: 9-hour shifts covering full venue operation
           newSchedule[`${schedule.staff.id}-${day}`] = {
             staffId: schedule.staff.id,
             day,
-            timeRange,
+            timeRange: '5:00 PM - 2:00 AM',
             type: 'regular',
             station: stations[idx]
           };
@@ -283,7 +282,7 @@ export default function StaffScheduling() {
           newSchedule[`${schedule.staff.id}-${day}`] = {
             staffId: schedule.staff.id,
             day,
-            timeRange: isBusyDay ? '6:00 PM - 3:00 AM' : 'OFF',
+            timeRange: isBusyDay ? '5:00 PM - 2:00 AM' : 'OFF',
             type: isBusyDay ? 'regular' : 'off',
             station: isBusyDay ? 'Extra Station Support' : undefined
           };
@@ -292,6 +291,7 @@ export default function StaffScheduling() {
       });
 
       // === PRIORITY 3: BAR BACKS - PRIORITY ROLE (Pickups, refilling, glassware, batching, opening/closing, fridges/freezers, stock, garnish) ===
+      // Working hours: 9 hours
       // Division logic: 2+ bar backs → divide indoor/outdoor, 1 bar back + 1 support → also divide
       const shouldDivideBarBacks = workingBarBacks.length >= 2 || (workingBarBacks.length === 1 && workingSupport.length >= 1);
       
@@ -310,13 +310,24 @@ export default function StaffScheduling() {
           // Determine area assignment
           const area = shouldDivideBarBacks ? (idx % 2 === 0 ? 'Indoor' : 'Outdoor') : 'Indoor/Outdoor';
           
-          // First bar back gets pickup/opening duties
-          const timeRange = idx === 0 
-            ? (isPickupDay ? 'PICKUP 12:00 PM - 9:00 PM' : isSaturday ? 'BRUNCH 11:00 AM - 8:00 PM' : '3:00 PM - 12:00 AM')
-            : '5:00 PM - 2:00 AM';
-          const type = idx === 0
-            ? (isPickupDay ? 'pickup' : isSaturday ? 'brunch' : 'opening')
-            : 'regular';
+          // First bar back gets early start for pickup/opening duties (9 hours)
+          let timeRange, type;
+          if (idx === 0) {
+            if (isPickupDay) {
+              timeRange = '12:00 PM - 9:00 PM'; // 9 hours, early start for pickups
+              type = 'pickup';
+            } else if (isSaturday) {
+              timeRange = '11:00 AM - 8:00 PM'; // 9 hours, early start for brunch setup
+              type = 'brunch';
+            } else {
+              timeRange = '2:00 PM - 11:00 PM'; // 9 hours, setup before venue opens
+              type = 'opening';
+            }
+          } else {
+            // Additional bar backs work full venue hours (9 hours)
+            timeRange = '5:00 PM - 2:00 AM';
+            type = 'regular';
+          }
           
           newSchedule[key] = {
             staffId: schedule.staff.id,
@@ -328,7 +339,8 @@ export default function StaffScheduling() {
         }
       });
 
-      // === PRIORITY 4: SUPPORT - General Support & Glassware Polishing (10 hours) ===
+      // === PRIORITY 4: SUPPORT - General Support & Glassware Polishing ===
+      // Working hours: 10 hours (3:00 PM - 1:00 AM)
       // Division logic: 2+ support → divide indoor/outdoor, 1 bar back + 1 support → divide
       const shouldDivideSupport = workingSupport.length >= 2 || (workingBarBacks.length >= 1 && workingSupport.length === 1);
       
@@ -358,6 +370,7 @@ export default function StaffScheduling() {
             area = 'Indoor/Outdoor';
           }
           
+          // Support works 10 hours: starts early for setup, leaves before close
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
@@ -402,7 +415,7 @@ export default function StaffScheduling() {
     }
 
     setSchedule(newSchedule);
-    toast.success('✅ Schedule generated! Clear roles: Heads supervise, Bartenders at stations, Bar backs (PRIORITY) pickups/refilling/batching, Support glassware/general.');
+    toast.success('✅ Schedule generated! All 9-hour shifts (Support 10h). Venue: 5 PM - 2 AM. Clear roles: Heads supervise, Bartenders at stations, Bar backs priority.');
   };
 
   const exportToPDF = () => {
@@ -593,15 +606,23 @@ export default function StaffScheduling() {
     finalY += 4;
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text('• Stations require: Head Bartender OR Senior Bartender OR Bartender', 14, finalY);
+    doc.text('• Venue hours: 5:00 PM - 2:00 AM (9 hours operation)', 14, finalY);
     finalY += 3;
-    doc.text('• Working hours: Bartenders/Bar backs 9h, Support 10h', 14, finalY);
+    doc.text('• Working hours: All staff 9h (Support 10h)', 14, finalY);
+    finalY += 3;
+    doc.text('• Head bartenders & Bartenders: 5:00 PM - 2:00 AM (9h, covers full venue)', 14, finalY);
+    finalY += 3;
+    doc.text('• Bar backs (1st): Early start for pickups/setup (9h)', 14, finalY);
+    finalY += 3;
+    doc.text('• Bar backs (additional): 5:00 PM - 2:00 AM (9h, covers full venue)', 14, finalY);
+    finalY += 3;
+    doc.text('• Support: 3:00 PM - 1:00 AM (10h, early setup to near closing)', 14, finalY);
     finalY += 3;
     doc.text('• No offs allowed on busy days: Tuesday (Ladies Night), Friday (Weekend), Saturday (Brunch)', 14, finalY);
     finalY += 3;
     doc.text('• Break Time: 5:00 PM - 6:00 PM | Ending Back & Front: 6:45 PM (Mandatory)', 14, finalY);
     finalY += 3;
-    doc.text('• Store Pick-up: Monday, Wednesday, Friday (Bar backs handle)', 14, finalY);
+    doc.text('• Store Pick-up: Monday, Wednesday, Friday (Bar backs handle with early start)', 14, finalY);
     finalY += 3;
     doc.text('• Bar backs are PRIORITY ROLE with most responsibilities', 14, finalY);
 
