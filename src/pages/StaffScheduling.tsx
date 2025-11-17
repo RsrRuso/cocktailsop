@@ -1133,7 +1133,7 @@ export default function StaffScheduling() {
     toast.info(`Capturing ${day}...`);
     
     try {
-      const filename = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.png`;
+      const filename = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
       
       console.log(`Using html-to-image to capture ${day}...`);
       
@@ -1142,15 +1142,46 @@ export default function StaffScheduling() {
         cacheBust: true,
       });
       
-      console.log(`Image captured successfully for ${day}, downloading...`);
+      console.log(`Image captured successfully for ${day}, creating PDF...`);
       
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = dataUrl;
-      link.click();
+      // Create PDF and add image
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
       
-      console.log(`Download triggered for ${day}`);
-      toast.success(`${day} downloaded!`);
+      // Calculate dimensions to fit on one page with padding
+      const padding = 10;
+      const maxWidth = pageWidth - (padding * 2);
+      const maxHeight = pageHeight - (padding * 2);
+      
+      // Get image dimensions
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((resolve) => { img.onload = resolve; });
+      
+      const imgRatio = img.width / img.height;
+      const pageRatio = maxWidth / maxHeight;
+      
+      let finalWidth, finalHeight;
+      if (imgRatio > pageRatio) {
+        // Image is wider - fit to width
+        finalWidth = maxWidth;
+        finalHeight = maxWidth / imgRatio;
+      } else {
+        // Image is taller - fit to height
+        finalHeight = maxHeight;
+        finalWidth = maxHeight * imgRatio;
+      }
+      
+      // Center the image
+      const xPos = (pageWidth - finalWidth) / 2;
+      const yPos = (pageHeight - finalHeight) / 2;
+      
+      pdf.addImage(dataUrl, 'PNG', xPos, yPos, finalWidth, finalHeight);
+      pdf.save(filename);
+      
+      console.log(`PDF downloaded for ${day}`);
+      toast.success(`${day} downloaded as PDF!`);
       
     } catch (error) {
       console.error('Download error for', day, ':', error);
