@@ -987,132 +987,21 @@ export default function StaffScheduling() {
   };
 
   const exportDayToJPG = async (day: string) => {
-    const weekStart = new Date(weekStartDate);
-    const weekEnd = addDays(weekStart, 6);
-    
-    // Create a temporary container for the content
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
-    container.style.width = '900px';
-    container.style.padding = '40px';
-    container.style.backgroundColor = '#1f2937';
-    container.style.color = '#f3f4f6';
-    container.style.fontFamily = 'Arial, sans-serif';
-    container.style.minHeight = 'auto';
-    document.body.appendChild(container);
-    
-    const daySchedule = Object.values(schedule).filter(s => s.day === day);
-    const working = daySchedule.filter(s => s.timeRange !== 'OFF');
-    const off = daySchedule.filter(s => s.timeRange === 'OFF');
-    
-    const indoor = working.filter(s => {
-      const station = s.station || '';
-      return (station.includes('Indoor - ') || 
-              station.includes('Bar Back - Indoor') || 
-              station.includes('Support - Indoor') || 
-              station.includes('Head - Indoor') ||
-              (station.includes('Supervising') && station.includes('Indoor')));
-    });
-    const outdoor = working.filter(s => {
-      const station = s.station || '';
-      return (station.includes('Outdoor - ') || 
-              station.includes('Bar Back - Outdoor') || 
-              station.includes('Support - Outdoor') || 
-              station.includes('Head - Outdoor') ||
-              (station.includes('Supervising') && station.includes('Outdoor')));
-    });
-    
-    const eventLabel = dailyEvents[day] ? ` - ${dailyEvents[day]}` : '';
-    
-    // Build HTML content
-    let html = `
-      <div style="text-align: center; margin-bottom: 25px;">
-        <h1 style="font-size: 32px; margin: 0; font-weight: bold; color: #f9fafb;">${venueName || 'Staff Schedule'}</h1>
-        <h2 style="font-size: 26px; margin: 12px 0; font-weight: bold; color: #e5e7eb;">${day}</h2>
-        <p style="font-size: 15px; margin: 5px 0; color: #9ca3af;">Week: ${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}</p>
-        ${eventLabel ? `<p style="font-size: 18px; color: #fb923c; font-weight: bold; margin-top: 8px;">${eventLabel}</p>` : ''}
-      </div>
-      
-      <div style="background: #374151; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-        <h3 style="font-size: 18px; margin: 0 0 12px 0; font-weight: bold; color: #f9fafb;">SUMMARY</h3>
-        <p style="margin: 6px 0; font-size: 15px;">Total Working: <strong>${working.length}</strong> | Total Off: <strong>${off.length}</strong></p>
-        <p style="margin: 6px 0; font-size: 15px;">Indoor Staff: <strong>${indoor.length}</strong> | Outdoor Staff: <strong>${outdoor.length}</strong></p>
-      </div>
-    `;
-    
-    if (indoor.length > 0) {
-      html += `
-        <div style="margin-bottom: 20px;">
-          <h3 style="font-size: 18px; color: #60a5fa; margin-bottom: 12px; font-weight: bold;">INDOOR STATIONS</h3>
-          ${indoor.map(s => {
-            const staff = staffMembers.find(sm => sm.id === s.staffId);
-            if (!staff) return '';
-            const title = staff.title.replace('_', ' ').toUpperCase();
-            return `
-              <div style="margin: 10px 0; padding: 14px; background: #4b5563; border-radius: 6px;">
-                <div style="font-weight: bold; font-size: 15px; color: #f9fafb;">• ${staff.name} (${title})</div>
-                <div style="font-size: 13px; color: #d1d5db; margin-top: 6px;">${s.timeRange || ''}</div>
-                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px; line-height: 1.4;">${s.station || ''}</div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      `;
+    const element = document.getElementById(`day-${day}`);
+    if (!element) {
+      toast.error('Day section not found');
+      return;
     }
-    
-    if (outdoor.length > 0) {
-      html += `
-        <div style="margin-bottom: 20px;">
-          <h3 style="font-size: 18px; color: #c084fc; margin-bottom: 12px; font-weight: bold;">OUTDOOR STATIONS</h3>
-          ${outdoor.map(s => {
-            const staff = staffMembers.find(sm => sm.id === s.staffId);
-            if (!staff) return '';
-            const title = staff.title.replace('_', ' ').toUpperCase();
-            return `
-              <div style="margin: 10px 0; padding: 14px; background: #4b5563; border-radius: 6px;">
-                <div style="font-weight: bold; font-size: 15px; color: #f9fafb;">• ${staff.name} (${title})</div>
-                <div style="font-size: 13px; color: #d1d5db; margin-top: 6px;">${s.timeRange || ''}</div>
-                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px; line-height: 1.4;">${s.station || ''}</div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      `;
-    }
-    
-    if (off.length > 0) {
-      html += `
-        <div style="margin-bottom: 20px;">
-          <h3 style="font-size: 18px; color: #f87171; margin-bottom: 12px; font-weight: bold;">OFF</h3>
-          ${off.map(s => {
-            const staff = staffMembers.find(sm => sm.id === s.staffId);
-            if (!staff) return '';
-            const title = staff.title.replace('_', ' ').toUpperCase();
-            return `
-              <div style="margin: 10px 0; padding: 12px; background: #4b5563; border-radius: 6px;">
-                <div style="font-weight: bold; font-size: 15px; color: #f9fafb;">• ${staff.name} (${title})</div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      `;
-    }
-    
-    container.innerHTML = html;
-    
+
     try {
-      const canvas = await html2canvas(container, {
-        backgroundColor: '#1f2937',
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#111827',
         scale: 2,
         logging: false,
         useCORS: true,
         allowTaint: true,
-        width: 900,
-        height: container.scrollHeight + 80
       });
       
-      // Convert to JPG
       canvas.toBlob((blob) => {
         if (blob) {
           const url = URL.createObjectURL(blob);
@@ -1129,8 +1018,6 @@ export default function StaffScheduling() {
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Failed to export image');
-    } finally {
-      document.body.removeChild(container);
     }
   };
 
@@ -1485,7 +1372,11 @@ export default function StaffScheduling() {
                 const dayLabel = dailyEvents[day] || '';
 
                 return (
-                  <div key={day} className={`border rounded-xl p-4 shadow-lg hover:shadow-xl transition-all ${isBusyDay ? 'border-orange-400 bg-gradient-to-br from-orange-900/30 to-orange-950/20' : 'bg-gradient-to-br from-gray-800 to-gray-850 border-gray-700 hover:border-primary/50'}`}>
+                  <div 
+                    key={day} 
+                    id={`day-${day}`}
+                    className={`border rounded-xl p-4 shadow-lg hover:shadow-xl transition-all ${isBusyDay ? 'border-orange-400 bg-gradient-to-br from-orange-900/30 to-orange-950/20' : 'bg-gradient-to-br from-gray-800 to-gray-850 border-gray-700 hover:border-primary/50'}`}
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div className="font-bold text-sm text-gray-100 flex items-center gap-1">
                         {isBusyDay && <span className="inline-block w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>}
