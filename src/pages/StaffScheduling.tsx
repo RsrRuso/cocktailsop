@@ -1443,6 +1443,50 @@ export default function StaffScheduling() {
           </div>
         </Card>
 
+        {/* Role Responsibilities */}
+        {staffMembers.length > 0 && (
+          <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl">
+            <Accordion type="single" collapsible defaultValue="role-responsibilities">
+              <AccordionItem value="role-responsibilities" className="border-none">
+                <AccordionTrigger className="hover:no-underline pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/20 rounded-lg">
+                      <Users className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-100">Role Responsibilities</h3>
+                      <p className="text-xs text-gray-500">Staff role descriptions</p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-3">
+                    {Array.from(new Set(staffMembers.map(s => s.title)))
+                      .sort((a, b) => {
+                        const order = ['head_bartender', 'senior_bartender', 'bartender', 'bar_back', 'support'];
+                        return order.indexOf(a) - order.indexOf(b);
+                      })
+                      .map(title => (
+                        <div key={title} className="p-4 bg-gray-800/50 border border-gray-700/50 rounded-lg">
+                          <h4 className="text-base font-bold text-gray-100 mb-2">
+                            {title === 'head_bartender' && 'Head Bartender:'}
+                            {title === 'senior_bartender' && 'Senior Bartender:'}
+                            {title === 'bartender' && 'Bartender:'}
+                            {title === 'bar_back' && 'Bar Back:'}
+                            {title === 'support' && 'Support:'}
+                          </h4>
+                          <p className="text-sm text-gray-300">
+                            {ROLE_RESPONSIBILITIES[title]}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </Card>
+        )}
+
         {/* Week Selector */}
         <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl">
           <Accordion type="single" collapsible defaultValue="week-starting">
