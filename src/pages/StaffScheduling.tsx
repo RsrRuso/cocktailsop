@@ -1183,15 +1183,30 @@ export default function StaffScheduling() {
     toast.info(`Capturing ${day}...`);
     
     try {
+      // Ensure element is visible by temporarily expanding if needed
+      const parentAccordion = element.closest('[data-state]');
+      const wasCollapsed = parentAccordion?.getAttribute('data-state') === 'closed';
+      
+      if (wasCollapsed && parentAccordion) {
+        // Trigger accordion open
+        const trigger = parentAccordion.querySelector('[data-accordion-trigger]');
+        if (trigger instanceof HTMLElement) {
+          trigger.click();
+          // Wait for expansion animation
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+      
       // Small delay to ensure all styles are applied
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       const canvas = await html2canvas(element, {
         backgroundColor: '#111827',
-        scale: 2,
+        scale: 3,
         logging: false,
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
+        foreignObjectRendering: true,
       });
       
       // Convert to blob as JPEG
@@ -1213,9 +1228,17 @@ export default function StaffScheduling() {
       URL.revokeObjectURL(url);
       
       toast.success(`${day} downloaded as JPG!`);
+      
+      // Restore accordion state if needed
+      if (wasCollapsed && parentAccordion) {
+        const trigger = parentAccordion.querySelector('[data-accordion-trigger]');
+        if (trigger instanceof HTMLElement) {
+          trigger.click();
+        }
+      }
     } catch (error) {
       console.error('Download failed for', day, ':', error);
-      toast.error(`Failed to download ${day}`);
+      toast.error(`Failed to download ${day}. Please try again.`);
     }
   };
 
@@ -2031,7 +2054,8 @@ export default function StaffScheduling() {
                                 if (value === 'OFF') type = 'off';
                                 else if (value.includes('11:00 AM')) type = 'brunch';
                                 else if (value.includes('12:00 PM')) type = 'pickup';
-                                else if (value.includes('2:00 PM') || value.includes('3:00 PM')) type = 'opening';
+                                else if (value.includes('2:00 PM') || value === '3:00 PM - 12:00 AM') type = 'opening';
+                                else if (value === '3:00 PM - 1:00 AM') type = 'regular'; // Support 10h shift
                                 else if (value.includes('4:00 PM')) type = 'early_shift';
                                 else if (value.includes('5:00 PM')) type = 'late_shift';
                                 updateScheduleCell(staff.id, day, value, type, cell?.station);
@@ -2045,9 +2069,10 @@ export default function StaffScheduling() {
                                 <SelectItem value="11:00 AM - 8:00 PM" className="text-gray-100 text-[10px]">11:00 AM - 8:00 PM</SelectItem>
                                 <SelectItem value="12:00 PM - 9:00 PM" className="text-gray-100 text-[10px]">12:00 PM - 9:00 PM</SelectItem>
                                 <SelectItem value="2:00 PM - 11:00 PM" className="text-gray-100 text-[10px]">2:00 PM - 11:00 PM</SelectItem>
-                                <SelectItem value="3:00 PM - 12:00 AM" className="text-gray-100 text-[10px]">3:00 PM - 12:00 AM</SelectItem>
-                                <SelectItem value="4:00 PM - 1:00 AM" className="text-gray-100 text-[10px]">4:00 PM - 1:00 AM</SelectItem>
-                                <SelectItem value="5:00 PM - 2:00 AM" className="text-gray-100 text-[10px]">5:00 PM - 2:00 AM</SelectItem>
+                                <SelectItem value="3:00 PM - 12:00 AM" className="text-gray-100 text-[10px]">3:00 PM - 12:00 AM (9h)</SelectItem>
+                                <SelectItem value="3:00 PM - 1:00 AM" className="text-gray-100 text-[10px]">3:00 PM - 1:00 AM (10h Support)</SelectItem>
+                                <SelectItem value="4:00 PM - 1:00 AM" className="text-gray-100 text-[10px]">4:00 PM - 1:00 AM (9h)</SelectItem>
+                                <SelectItem value="5:00 PM - 2:00 AM" className="text-gray-100 text-[10px]">5:00 PM - 2:00 AM (9h)</SelectItem>
                               </SelectContent>
                             </Select>
                             {cell?.timeRange && cell.timeRange !== 'OFF' && (
