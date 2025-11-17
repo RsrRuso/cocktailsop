@@ -65,6 +65,11 @@ export default function StaffScheduling() {
     'Saturday': 'Brunch'
   });
   const [isEditingEvents, setIsEditingEvents] = useState(false);
+  const [breakTimings, setBreakTimings] = useState({
+    firstWaveStart: '5:30 PM',
+    firstWaveEnd: '6:30 PM',
+    secondWaveStart: '6:30 PM'
+  });
   
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -1100,7 +1105,7 @@ export default function StaffScheduling() {
     doc.setTextColor(...colors.foreground);
     doc.setFontSize(6);
     doc.setFont('helvetica', 'normal');
-    doc.text('Hours: Venue 5PM-2AM | Bartenders/Backs: 9h | Support: 10h (3PM-1AM) | Break: 5-6PM | Ending: 6:45PM', 18, finalY);
+    doc.text(`Hours: Venue 5PM-2AM | Bartenders/Backs: 9h | Support: 10h (3PM-1AM) | Break: ${breakTimings.firstWaveStart}-${breakTimings.firstWaveEnd} (Wave 1), After ${breakTimings.secondWaveStart} (Wave 2) | Ending: 6:45PM`, 18, finalY);
     finalY += 3.5;
     
     // Off Days - inline
@@ -1301,6 +1306,86 @@ export default function StaffScheduling() {
           <p className="text-sm text-gray-400 mt-3">
             ℹ️ Days with events are considered busy - no offs will be scheduled on these days
           </p>
+        </Card>
+
+        {/* Break Timings Configuration */}
+        <Card className="p-4 bg-gray-900 border-gray-800">
+          <div className="flex items-center gap-2 mb-4">
+            <Calendar className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold text-gray-100">Break Schedule</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label className="text-gray-300 mb-2">First Wave Start</Label>
+              <Input
+                type="time"
+                value={breakTimings.firstWaveStart.replace(' PM', '').replace(' AM', '')}
+                onChange={(e) => {
+                  const time = e.target.value;
+                  const [hours, minutes] = time.split(':');
+                  const hour = parseInt(hours);
+                  const ampm = hour >= 12 ? 'PM' : 'AM';
+                  const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                  setBreakTimings({
+                    ...breakTimings,
+                    firstWaveStart: `${displayHour}:${minutes} ${ampm}`
+                  });
+                }}
+                className="bg-gray-800 border-gray-700 text-gray-100"
+              />
+              <p className="text-xs text-gray-500 mt-1">Opening shifts (12PM, 3PM, 4PM)</p>
+            </div>
+
+            <div>
+              <Label className="text-gray-300 mb-2">First Wave End</Label>
+              <Input
+                type="time"
+                value={breakTimings.firstWaveEnd.replace(' PM', '').replace(' AM', '')}
+                onChange={(e) => {
+                  const time = e.target.value;
+                  const [hours, minutes] = time.split(':');
+                  const hour = parseInt(hours);
+                  const ampm = hour >= 12 ? 'PM' : 'AM';
+                  const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                  setBreakTimings({
+                    ...breakTimings,
+                    firstWaveEnd: `${displayHour}:${minutes} ${ampm}`,
+                    secondWaveStart: `${displayHour}:${minutes} ${ampm}`
+                  });
+                }}
+                className="bg-gray-800 border-gray-700 text-gray-100"
+              />
+              <p className="text-xs text-gray-500 mt-1">When first wave returns</p>
+            </div>
+
+            <div>
+              <Label className="text-gray-300 mb-2">Second Wave Start</Label>
+              <Input
+                type="time"
+                value={breakTimings.secondWaveStart.replace(' PM', '').replace(' AM', '')}
+                onChange={(e) => {
+                  const time = e.target.value;
+                  const [hours, minutes] = time.split(':');
+                  const hour = parseInt(hours);
+                  const ampm = hour >= 12 ? 'PM' : 'AM';
+                  const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                  setBreakTimings({
+                    ...breakTimings,
+                    secondWaveStart: `${displayHour}:${minutes} ${ampm}`
+                  });
+                }}
+                className="bg-gray-800 border-gray-700 text-gray-100"
+              />
+              <p className="text-xs text-gray-500 mt-1">Late shifts (5PM)</p>
+            </div>
+          </div>
+
+          <div className="mt-3 p-3 bg-orange-950/20 rounded-lg border border-orange-800/40">
+            <p className="text-xs text-orange-300">
+              ⚠️ Coverage during first wave: 2 Indoor staff + 1 Support remain working
+            </p>
+          </div>
         </Card>
 
         {/* Staff Management */}
@@ -1644,7 +1729,7 @@ export default function StaffScheduling() {
                           <div className="space-y-1.5 text-[10px] pl-2">
                             {firstWaveStaff.length > 0 && (
                               <div className="bg-orange-950/20 rounded p-1.5 border border-orange-900/30">
-                                <span className="font-semibold text-orange-400">First Wave: 5:30-6:30 PM</span>
+                                <span className="font-semibold text-orange-400">First Wave: {breakTimings.firstWaveStart}-{breakTimings.firstWaveEnd}</span>
                                 <div className="text-gray-300 mt-1 space-y-0.5">
                                   {firstWaveStaff.map((s, idx) => (
                                     <div key={idx} className="pl-2">
@@ -1659,7 +1744,7 @@ export default function StaffScheduling() {
                             )}
                             {secondWaveStaff.length > 0 && (
                               <div className="bg-teal-950/20 rounded p-1.5 border border-teal-900/30">
-                                <span className="font-semibold text-teal-400">Second Wave: After 6:30 PM</span>
+                                <span className="font-semibold text-teal-400">Second Wave: After {breakTimings.secondWaveStart}</span>
                                 <div className="text-gray-300 mt-1 space-y-0.5">
                                   {secondWaveStaff.map((s, idx) => (
                                     <div key={idx} className="pl-2">
