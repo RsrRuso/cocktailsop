@@ -1030,20 +1030,36 @@ export default function StaffScheduling() {
 
       toast.info(`Capturing ${day}...`);
       
-      const canvas = await html2canvas(element, {
+      // Add padding wrapper for better screenshot
+      const wrapper = document.createElement('div');
+      wrapper.style.padding = '20px';
+      wrapper.style.backgroundColor = '#111827';
+      wrapper.style.display = 'inline-block';
+      
+      const clone = element.cloneNode(true) as HTMLElement;
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+      
+      const canvas = await html2canvas(wrapper, {
         backgroundColor: '#111827',
-        scale: 2,
-        useCORS: true
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        windowWidth: wrapper.scrollWidth,
+        windowHeight: wrapper.scrollHeight
       });
       
-      // Use dataURL approach - most reliable
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      document.body.removeChild(wrapper);
+      
+      // Convert to PNG for better quality with dark backgrounds
+      const dataUrl = canvas.toDataURL('image/png', 1.0);
       const link = document.createElement('a');
-      link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+      link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.png`;
       link.href = dataUrl;
       link.click();
       
-      toast.success(`${day} downloaded!`);
+      toast.success(`${day} screenshot downloaded!`);
     } catch (error) {
       console.error('Download failed:', error);
       toast.error(`Failed to download ${day}`);
@@ -1664,10 +1680,10 @@ export default function StaffScheduling() {
                           variant="ghost"
                           onClick={() => exportDayToJPG(day)}
                           className="h-7 px-2 text-xs hover:bg-gray-700 transition-colors"
-                          title="Download as JPG"
+                          title="Download as Screenshot"
                         >
                           <Download className="h-3 w-3 mr-1" />
-                          JPG
+                          IMG
                         </Button>
                       </div>
                     </div>
