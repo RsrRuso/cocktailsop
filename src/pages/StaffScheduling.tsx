@@ -247,6 +247,12 @@ export default function StaffScheduling() {
         dayOffDistribution[day] = [];
       });
       
+      // NEW: Track off days per role to prevent 2-person roles from having same day off
+      const roleOffsPerDay: Record<number, number> = {};
+      allowedOffDays.forEach(day => {
+        roleOffsPerDay[day] = 0;
+      });
+      
       const results = staffList.map((staff, index) => {
         const globalIndex = roleOffset + index;
         
@@ -312,6 +318,20 @@ export default function StaffScheduling() {
           });
         }
         
+        // NEW: For 2-person roles, prevent both from having same day off
+        if (staffList.length === 2) {
+          availableDays = availableDays.filter(dayNum => {
+            const roleOffsThisDay = roleOffsPerDay[dayNum];
+            const canGiveOff = roleOffsThisDay < 1; // Only 1 person from 2-person role can be off
+            
+            if (!canGiveOff) {
+              console.log(`  ⚠️ Cannot give ${DAYS_OF_WEEK[dayNum]} off - other member of 2-person role already off this day`);
+            }
+            
+            return canGiveOff;
+          });
+        }
+        
         if (availableDays.length === 0) {
           console.warn(`  ⚠️ ${staff.name}: No valid days available, must work full week to maintain minimums`);
           return {
@@ -332,6 +352,7 @@ export default function StaffScheduling() {
           finalDaysOff.push(selectedDay);
           dayOffDistribution[selectedDay].push(staff.name);
           offsPerDay[selectedDay]++;
+          roleOffsPerDay[selectedDay]++; // Track for 2-person role constraint
           
           // Update bartender counts if this is a bartender role
           if (isBartenderRole) {
@@ -355,6 +376,7 @@ export default function StaffScheduling() {
               finalDaysOff.push(candidateDay);
               dayOffDistribution[candidateDay].push(staff.name);
               offsPerDay[candidateDay]++;
+              roleOffsPerDay[candidateDay]++; // Track for 2-person role constraint
               
               // Update bartender counts if this is a bartender role
               if (isBartenderRole) {
@@ -768,17 +790,22 @@ export default function StaffScheduling() {
       // Categorize by area - ENSURE NO DOUBLE COUNTING (each person in ONE area only)
       const indoor = working.filter(s => {
         const station = s.station || '';
-        // Match "Indoor" but NOT "Indoor/Outdoor" or when Outdoor appears first
-        return (station.includes('Indoor - ') || station.includes('Bar Back - Indoor') || station.includes('Support - Indoor') || station.includes('Head - Indoor'));
+        const staff = staffMembers.find(sm => sm.id === s.staffId);
+        // Only include if station explicitly says Indoor (not head supervising)
+        return (station.includes('Indoor - Station') || station.includes('Bar Back - Indoor'));
       });
       const outdoor = working.filter(s => {
         const station = s.station || '';
-        return (station.includes('Outdoor - ') || station.includes('Bar Back - Outdoor') || station.includes('Support - Outdoor') || station.includes('Head - Outdoor'));
+        const staff = staffMembers.find(sm => sm.id === s.staffId);
+        // Only include if station explicitly says Outdoor (not head supervising)
+        return (station.includes('Outdoor - Station') || station.includes('Bar Back - Outdoor'));
       });
       const floating = working.filter(s => {
         const station = s.station || '';
-        return (station.includes('Supervising') || station.includes('Floating') || station.includes('General') || 
-                (!station.includes('Indoor') && !station.includes('Outdoor')));
+        const staff = staffMembers.find(sm => sm.id === s.staffId);
+        // Include supervising heads, support, and bar backs not assigned to specific areas
+        return (station.includes('Supervising') || station.includes('Support:') || station.includes('Bar Back: Pickups') ||
+                station.includes('Floating') || station.includes('General'));
       });
       
       const eventLabel = dailyEvents[day] ? ` (${dailyEvents[day]})` : '';
