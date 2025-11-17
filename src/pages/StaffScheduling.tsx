@@ -1522,22 +1522,22 @@ export default function StaffScheduling() {
 
         {/* Schedule Table */}
         {staffMembers.length > 0 && (
-          <Card className="p-3 overflow-x-auto bg-gray-900 border-gray-800">
-            <h3 className="text-base font-semibold mb-3 text-gray-100">Weekly Schedule</h3>
+          <Card className="p-2 overflow-x-auto bg-gray-900 border-gray-800">
+            <h3 className="text-sm font-semibold mb-2 text-gray-100">Weekly Schedule</h3>
             <div className="min-w-max">
-              <table className="w-full border-collapse text-xs">
+              <table className="w-full border-collapse text-[10px]">
                 <thead>
                   <tr>
-                    <th className="border border-gray-700 p-1.5 bg-gray-800 font-semibold text-left min-w-[120px] sticky left-0 z-10 text-gray-100">
+                    <th className="border border-gray-700 p-1 bg-gray-800 font-semibold text-left min-w-[100px] sticky left-0 z-10 text-gray-100">
                       STAFF
                     </th>
                     {DAYS_OF_WEEK.map((day, dayIndex) => {
                       const isBusyDay = !!dailyEvents[day];
                       const dayLabel = dailyEvents[day] || '';
                       return (
-                        <th key={day} className={`border border-gray-700 p-1.5 font-semibold text-center min-w-[140px] ${isBusyDay ? 'bg-orange-900/30' : 'bg-gray-800'} text-gray-100`}>
-                          <div className="text-sm">{day}</div>
-                          {dayLabel && <div className="text-[10px] font-normal text-gray-400">{dayLabel}</div>}
+                        <th key={day} className={`border border-gray-700 p-1 font-semibold text-center min-w-[110px] ${isBusyDay ? 'bg-orange-900/30' : 'bg-gray-800'} text-gray-100`}>
+                          <div className="text-[11px]">{day}</div>
+                          {dayLabel && <div className="text-[9px] font-normal text-gray-400">{dayLabel}</div>}
                         </th>
                       );
                     })}
@@ -1558,9 +1558,9 @@ export default function StaffScheduling() {
                     })
                     .map(staff => (
                     <tr key={staff.id}>
-                      <td className="border border-gray-700 p-1.5 font-medium bg-gray-800 sticky left-0 z-10 min-w-[120px]">
-                        <div className="text-xs text-gray-100">{staff.name}</div>
-                        <div className="text-[10px] text-gray-400 capitalize">
+                      <td className="border border-gray-700 p-1 font-medium bg-gray-800 sticky left-0 z-10 min-w-[100px]">
+                        <div className="text-[10px] text-gray-100 leading-tight">{staff.name}</div>
+                        <div className="text-[8px] text-gray-400 capitalize leading-tight">
                           {staff.title.replace('_', ' ')}
                         </div>
                       </td>
@@ -1569,7 +1569,7 @@ export default function StaffScheduling() {
                         return (
                           <td
                             key={day}
-                            className={`border border-gray-700 p-1 ${cell ? CELL_COLORS[cell.type] : 'bg-gray-850'}`}
+                            className={`border border-gray-700 p-0.5 ${cell ? CELL_COLORS[cell.type] : 'bg-gray-850'}`}
                           >
                             <Select
                               value={cell?.timeRange || ''}
@@ -1583,21 +1583,21 @@ export default function StaffScheduling() {
                                 updateScheduleCell(staff.id, day, value, type, cell?.station);
                               }}
                             >
-                              <SelectTrigger className="text-[10px] h-7 bg-gray-900 border-gray-700 text-gray-100">
-                                <SelectValue placeholder="Select" />
+                              <SelectTrigger className="text-[9px] h-6 bg-gray-900 border-gray-700 text-gray-100 px-1">
+                                <SelectValue placeholder="Time" />
                               </SelectTrigger>
                               <SelectContent className="bg-gray-900 border-gray-700 z-50">
-                                <SelectItem value="OFF" className="text-gray-100 text-xs">OFF</SelectItem>
-                                <SelectItem value="11:00 AM - 8:00 PM" className="text-gray-100 text-xs">11:00 AM - 8:00 PM (9h)</SelectItem>
-                                <SelectItem value="12:00 PM - 9:00 PM" className="text-gray-100 text-xs">12:00 PM - 9:00 PM (9h)</SelectItem>
-                                <SelectItem value="2:00 PM - 11:00 PM" className="text-gray-100 text-xs">2:00 PM - 11:00 PM (9h)</SelectItem>
-                                <SelectItem value="3:00 PM - 12:00 AM" className="text-gray-100 text-xs">3:00 PM - 12:00 AM (9h)</SelectItem>
-                                <SelectItem value="4:00 PM - 1:00 AM" className="text-gray-100 text-xs">4:00 PM - 1:00 AM (9h)</SelectItem>
-                                <SelectItem value="5:00 PM - 2:00 AM" className="text-gray-100 text-xs">5:00 PM - 2:00 AM (9h)</SelectItem>
+                                <SelectItem value="OFF" className="text-gray-100 text-[10px]">OFF</SelectItem>
+                                <SelectItem value="11:00 AM - 8:00 PM" className="text-gray-100 text-[10px]">11:00 AM - 8:00 PM</SelectItem>
+                                <SelectItem value="12:00 PM - 9:00 PM" className="text-gray-100 text-[10px]">12:00 PM - 9:00 PM</SelectItem>
+                                <SelectItem value="2:00 PM - 11:00 PM" className="text-gray-100 text-[10px]">2:00 PM - 11:00 PM</SelectItem>
+                                <SelectItem value="3:00 PM - 12:00 AM" className="text-gray-100 text-[10px]">3:00 PM - 12:00 AM</SelectItem>
+                                <SelectItem value="4:00 PM - 1:00 AM" className="text-gray-100 text-[10px]">4:00 PM - 1:00 AM</SelectItem>
+                                <SelectItem value="5:00 PM - 2:00 AM" className="text-gray-100 text-[10px]">5:00 PM - 2:00 AM</SelectItem>
                               </SelectContent>
                             </Select>
                             {cell?.station && (
-                              <div className="text-[9px] text-gray-400 text-center mt-0.5 leading-tight truncate">
+                              <div className="text-[8px] text-gray-400 text-center mt-0.5 leading-none truncate px-0.5">
                                 {cell.station}
                               </div>
                             )}
