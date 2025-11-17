@@ -461,23 +461,72 @@ export default function StaffScheduling() {
     DAYS_OF_WEEK.forEach((day, dayIndex) => {
       const daySchedule = Object.values(schedule).filter(s => s.day === day);
       const working = daySchedule.filter(s => s.timeRange !== 'OFF');
+      const off = daySchedule.filter(s => s.timeRange === 'OFF');
+      
+      // Categorize by area
+      const indoor = working.filter(s => s.station?.includes('Indoor') || s.station?.includes('Ticket') || s.station?.includes('Segregator'));
+      const outdoor = working.filter(s => s.station?.includes('Outdoor'));
+      const floating = working.filter(s => !s.station?.includes('Indoor') && !s.station?.includes('Outdoor') && !s.station?.includes('Ticket') && !s.station?.includes('Segregator'));
+      
       const isBusyDay = dayIndex === 1 || dayIndex === 4 || dayIndex === 5;
       const busyLabel = isBusyDay ? (dayIndex === 1 ? ' (Ladies Night)' : dayIndex === 4 ? ' (Weekend)' : ' (Brunch/Weekend)') : '';
       
       doc.setFont('helvetica', 'bold');
-      doc.text(`${day}${busyLabel}: ${working.length} Staff`, 14, finalY);
+      doc.text(`${day}${busyLabel}`, 14, finalY);
       finalY += 3;
-      
       doc.setFont('helvetica', 'normal');
-      working.forEach(s => {
-        const staff = staffMembers.find(sm => sm.id === s.staffId);
-        if (staff) {
-          const title = staff.title.replace('_', ' ');
-          const stationText = s.station ? ` - ${s.station}` : '';
-          doc.text(`  • ${staff.name} (${title})${stationText}`, 16, finalY);
-          finalY += 3;
-        }
-      });
+      doc.text(`Total Working: ${working.length} | Total Off: ${off.length} | Indoor: ${indoor.length} | Outdoor: ${outdoor.length}`, 16, finalY);
+      finalY += 4;
+      
+      // Indoor Staff
+      if (indoor.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('INDOOR:', 18, finalY);
+        finalY += 3;
+        doc.setFont('helvetica', 'normal');
+        indoor.forEach(s => {
+          const staff = staffMembers.find(sm => sm.id === s.staffId);
+          if (staff) {
+            const title = staff.title.replace('_', ' ');
+            doc.text(`  • ${staff.name} (${title}) - ${s.station}`, 20, finalY);
+            finalY += 3;
+          }
+        });
+      }
+      
+      // Outdoor Staff
+      if (outdoor.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('OUTDOOR:', 18, finalY);
+        finalY += 3;
+        doc.setFont('helvetica', 'normal');
+        outdoor.forEach(s => {
+          const staff = staffMembers.find(sm => sm.id === s.staffId);
+          if (staff) {
+            const title = staff.title.replace('_', ' ');
+            doc.text(`  • ${staff.name} (${title}) - ${s.station}`, 20, finalY);
+            finalY += 3;
+          }
+        });
+      }
+      
+      // Floating/Support Staff
+      if (floating.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('SUPPORT/FLOATING:', 18, finalY);
+        finalY += 3;
+        doc.setFont('helvetica', 'normal');
+        floating.forEach(s => {
+          const staff = staffMembers.find(sm => sm.id === s.staffId);
+          if (staff) {
+            const title = staff.title.replace('_', ' ');
+            const stationText = s.station ? ` - ${s.station}` : '';
+            doc.text(`  • ${staff.name} (${title})${stationText}`, 20, finalY);
+            finalY += 3;
+          }
+        });
+      }
+      
       finalY += 2;
     });
 
