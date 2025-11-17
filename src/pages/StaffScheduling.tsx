@@ -159,15 +159,20 @@ export default function StaffScheduling() {
     const busyDays = [1, 4, 5]; // Tuesday=1, Friday=4, Saturday=5
 
     // Within the same week, alternate who gets 1 day off vs 2 days off
-    // Offs can only be on: Monday, Wednesday, Thursday, Sunday
+    // Offs distributed on less busy days: Monday, Wednesday, Thursday, Sunday
     const divideIntoGroups = (staffList: StaffMember[]) => {
-      const group1DaysOff = [3]; // Thursday - 1 day off
-      const group2DaysOff = [0, 6]; // Monday + Sunday - 2 days off
+      // Rotate through different day-off combinations for better distribution
+      const dayOffPatterns = [
+        [2],      // Wednesday - 1 day off
+        [0, 3],   // Monday + Thursday - 2 days off  
+        [6],      // Sunday - 1 day off
+        [2, 6],   // Wednesday + Sunday - 2 days off
+      ];
       
       return staffList.map((staff, index) => ({
         staff,
-        daysOff: index % 2 === 0 ? group1DaysOff : group2DaysOff,
-        groupType: index % 2 === 0 ? '1-day' : '2-day'
+        daysOff: dayOffPatterns[index % dayOffPatterns.length],
+        groupType: dayOffPatterns[index % dayOffPatterns.length].length === 1 ? '1-day' : '2-day'
       }));
     };
 
@@ -212,22 +217,22 @@ export default function StaffScheduling() {
           };
           indoorHeadAssigned = true;
         } else if (isWeekday) {
-          // Second head covers outdoor on weekdays
+          // Second head covers outdoor station 1 on weekdays
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange: '4:00 PM - 1:00 AM',
             type: 'regular',
-            station: 'Outdoor Bar - Head'
+            station: 'Outdoor - Station 1'
           };
         } else {
-          // Weekend outdoor or backup
+          // Weekend outdoor station 1 or backup
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange: '5:00 PM - 2:00 AM',
             type: 'regular',
-            station: 'Outdoor Bar - Head'
+            station: 'Outdoor - Station 1'
           };
         }
       });
@@ -264,7 +269,7 @@ export default function StaffScheduling() {
             day,
             timeRange: '4:00 PM - 1:00 AM',
             type: 'regular',
-            station: 'Outdoor Bar - Senior'
+            station: 'Outdoor - Station 2'
           };
           outdoorBartenderAssigned = true;
         } else {
@@ -305,7 +310,7 @@ export default function StaffScheduling() {
             day,
             timeRange: '4:00 PM - 1:00 AM',
             type: 'regular',
-            station: 'Outdoor Bar - Bartender'
+            station: 'Outdoor - Station 2'
           };
           outdoorBartenderAssigned = true;
         } else {
@@ -385,7 +390,7 @@ export default function StaffScheduling() {
     });
 
     setSchedule(newSchedule);
-    toast.success('Schedule generated! No offs on busy days (Tue/Fri/Sat)');
+    toast.success('Schedule generated! Day-offs distributed on less busy days (Mon/Wed/Thu/Sun). No offs on Tue/Fri/Sat.');
   };
 
   const exportToPDF = () => {
@@ -445,36 +450,75 @@ export default function StaffScheduling() {
       }
     });
 
-    // Legend
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
-    doc.setFontSize(10);
+    // Daily Breakdown Section
+    let finalY = (doc as any).lastAutoTable.finalY + 8;
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('LEGEND & NOTES:', 14, finalY);
+    doc.text('DAILY BREAKDOWN - WHO\'S WORKING', 14, finalY);
     
-    let currentY = finalY + 6;
-    const legendItems = [
-      { text: 'Opening', color: [129, 199, 132] },
-      { text: 'Closing', color: [239, 83, 80] },
-      { text: 'Store Pick-up', color: [255, 235, 59] },
-      { text: 'Brunch - 11 AM', color: [255, 167, 38] }
-    ];
-
-    legendItems.forEach((item, i) => {
-      const x = 14 + (i * 60);
-      doc.setFillColor(item.color[0], item.color[1], item.color[2]);
-      doc.rect(x, currentY - 3, 8, 5, 'F');
+    finalY += 5;
+    doc.setFontSize(7);
+    DAYS_OF_WEEK.forEach((day, dayIndex) => {
+      const daySchedule = Object.values(schedule).filter(s => s.day === day);
+      const working = daySchedule.filter(s => s.timeRange !== 'OFF');
+      const isBusyDay = dayIndex === 1 || dayIndex === 4 || dayIndex === 5;
+      const busyLabel = isBusyDay ? (dayIndex === 1 ? ' (Ladies Night)' : dayIndex === 4 ? ' (Weekend)' : ' (Brunch/Weekend)') : '';
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${day}${busyLabel}: ${working.length} Staff`, 14, finalY);
+      finalY += 3;
+      
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.text(item.text, x + 10, currentY);
+      working.forEach(s => {
+        const staff = staffMembers.find(sm => sm.id === s.staffId);
+        if (staff) {
+          const title = staff.title.replace('_', ' ');
+          const stationText = s.station ? ` - ${s.station}` : '';
+          doc.text(`  • ${staff.name} (${title})${stationText}`, 16, finalY);
+          finalY += 3;
+        }
+      });
+      finalY += 2;
     });
 
-    currentY += 8;
-    doc.setFontSize(8);
-    doc.text('Break Time Frame: 5:00 PM - 6:00 PM', 14, currentY);
-    doc.text('Ending Back & Front: 6:45 PM - Mandatory', 100, currentY);
-    currentY += 5;
-    doc.text('Store Pick-up: Monday, Wednesday, Friday', 14, currentY);
-    doc.text('Casual for Support: When on duty', 100, currentY);
+    // Role Responsibilities
+    finalY += 3;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ROLE RESPONSIBILITIES', 14, finalY);
+    finalY += 4;
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    Object.entries(ROLE_RESPONSIBILITIES).forEach(([role, responsibility]) => {
+      doc.text(`${role.replace('_', ' ').toUpperCase()}: ${responsibility}`, 14, finalY);
+      finalY += 3;
+    });
+
+    // Stations Overview
+    finalY += 3;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('STATION OVERVIEW', 14, finalY);
+    finalY += 4;
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('INDOOR: Ticket Segregator, Station 1, Station 2, Garnishing Station 3', 14, finalY);
+    finalY += 3;
+    doc.text('OUTDOOR: Station 1, Station 2', 14, finalY);
+    
+    // Legend & Notes
+    finalY += 5;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('NOTES', 14, finalY);
+    finalY += 4;
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('• No offs allowed on busy days: Tuesday (Ladies Night), Friday (Weekend), Saturday (Brunch)', 14, finalY);
+    finalY += 3;
+    doc.text('• Break Time: 5:00 PM - 6:00 PM | Ending Back & Front: 6:45 PM (Mandatory)', 14, finalY);
+    finalY += 3;
+    doc.text('• Store Pick-up: Monday, Wednesday, Friday', 14, finalY);
 
     doc.save(`${venueName || 'schedule'}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     toast.success('Schedule exported to PDF');
