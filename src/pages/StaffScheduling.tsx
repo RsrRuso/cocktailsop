@@ -816,21 +816,26 @@ export default function StaffScheduling() {
       const off = daySchedule.filter(s => s.timeRange === 'OFF');
       
       // Categorize by area - ENSURE NO DOUBLE COUNTING (each person in ONE area only)
+      // EXCLUDE bar backs and support from breakdown
       const indoor = working.filter(s => {
         const station = s.station || '';
-        // Include indoor stations, bar backs, support, and heads supervising indoor
-        return (station.includes('Indoor - Station') || 
-                station.includes('Bar Back - Indoor') ||
-                station.includes('Support - Indoor') ||
-                (station.includes('Supervising') && station.includes('Indoor')));
+        const staff = staffMembers.find(sm => sm.id === s.staffId);
+        const isBarBackOrSupport = staff?.title === 'bar_back' || staff?.title === 'support';
+        // Include indoor stations and heads supervising indoor, but exclude bar backs and support
+        return !isBarBackOrSupport && (
+          station.includes('Indoor - Station') || 
+          (station.includes('Supervising') && station.includes('Indoor'))
+        );
       });
       const outdoor = working.filter(s => {
         const station = s.station || '';
-        // Include outdoor stations, bar backs, support, and heads supervising outdoor
-        return (station.includes('Outdoor - Station') || 
-                station.includes('Bar Back - Outdoor') ||
-                station.includes('Support - Outdoor') ||
-                (station.includes('Supervising') && station.includes('Outdoor')));
+        const staff = staffMembers.find(sm => sm.id === s.staffId);
+        const isBarBackOrSupport = staff?.title === 'bar_back' || staff?.title === 'support';
+        // Include outdoor stations and heads supervising outdoor, but exclude bar backs and support
+        return !isBarBackOrSupport && (
+          station.includes('Outdoor - Station') || 
+          (station.includes('Supervising') && station.includes('Outdoor'))
+        );
       });
       
       // For heads supervising both or not allocated to specific area, add to both counts
