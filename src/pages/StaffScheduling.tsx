@@ -1113,29 +1113,29 @@ export default function StaffScheduling() {
     
     // Hygiene & Safety Tips - Light blue background with dark text
     const hygieneTips = [
-      '✓ Hair tied back, clean attire, gloves required when handling food',
-      '✓ Wash hands frequently - before shifts, after breaks, after touching face/hair',
-      '✓ Clean workstations every 2 hours, sanitize all surfaces and equipment',
-      '✓ Use separate cutting boards for garnishes, never mix with food prep',
-      '✓ Store garnishes properly in covered containers, check expiration dates',
+      '✓ Hair tied, clean attire, gloves for food handling',
+      '✓ Wash hands: before shifts, after breaks, after face/hair contact',
+      '✓ Clean workstations every 2h, sanitize surfaces & equipment',
+      '✓ Separate cutting boards for garnishes, no food mixing',
+      '✓ Store garnishes in covered containers, check expiry dates',
       '✓ Ice scoops only - never use glassware to scoop ice',
-      '✓ Report any illness immediately, do not work if unwell'
+      '✓ Report illness immediately, do not work if unwell'
     ];
     
-    const boxHeight = hygieneTips.length * 5 + 6;
+    const boxHeight = hygieneTips.length * 4 + 8;
     doc.setFillColor(...colors.lightBlue);
     doc.roundedRect(14, finalY - 2, 270, boxHeight, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setTextColor(...colors.foreground);
     doc.text('HYGIENE & SAFETY - BAR TEAM GUIDELINES', 18, finalY + 3);
     
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    let tipY = finalY + 8;
+    doc.setFontSize(6);
+    let tipY = finalY + 7.5;
     hygieneTips.forEach(tip => {
       doc.text(tip, 18, tipY);
-      tipY += 5;
+      tipY += 4;
     });
     
     finalY += boxHeight + 2;
