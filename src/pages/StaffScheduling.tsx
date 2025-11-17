@@ -284,10 +284,26 @@ export default function StaffScheduling() {
     };
 
     const headSchedules = divideIntoGroups(headBartenders);
+    console.log('📋 After heads, globalStaffIndex is:', globalStaffIndex);
     const seniorBartenderSchedules = divideIntoGroups(seniorBartenders);
+    console.log('📋 After seniors, globalStaffIndex is:', globalStaffIndex);
     const bartenderSchedules = divideIntoGroups(bartenders);
+    console.log('📋 After bartenders, globalStaffIndex is:', globalStaffIndex);
     const barBackSchedules = divideIntoGroups(barBacks);
+    console.log('📋 After barbacks, globalStaffIndex is:', globalStaffIndex);
     const supportSchedules = divideIntoGroups(support);
+    console.log('📋 After support, globalStaffIndex is:', globalStaffIndex);
+    
+    // Log final distribution
+    console.log('📊 Final off day distribution:', {
+      Monday: offsPerDay[0],
+      Tuesday: offsPerDay[1],
+      Wednesday: offsPerDay[2],
+      Thursday: offsPerDay[3],
+      Friday: offsPerDay[4],
+      Saturday: offsPerDay[5],
+      Sunday: offsPerDay[6]
+    });
 
     // Generate schedule for entire week - ENSURE ALL STAFF GET ALL DAYS
     DAYS_OF_WEEK.forEach((day, dayIndex) => {
