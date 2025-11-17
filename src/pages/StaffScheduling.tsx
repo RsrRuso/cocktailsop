@@ -218,20 +218,16 @@ export default function StaffScheduling() {
     // Track how many offs per day
     const offsPerDay: number[] = [0, 0, 0, 0, 0, 0, 0];
     
-    // Global staff counter for fair rotation across all roles
-    let globalStaffIndex = 0;
-    
-    const divideIntoGroups = (staffList: StaffMember[]) => {
+    const divideIntoGroups = (staffList: StaffMember[], roleOffset: number) => {
       return staffList.map((staff, index) => {
-        const actualIndex = globalStaffIndex++;  // Use global index, then increment
+        const globalIndex = roleOffset + index;
         
-        // Alternating logic for same titles:
-        const shouldGetTwoDays = isOddWeek ? (actualIndex % 2 === 1) : (actualIndex % 2 === 0);
+        // Alternating logic: odd global index gets 2 days, even gets 1 day
+        const shouldGetTwoDays = isOddWeek ? (globalIndex % 2 === 1) : (globalIndex % 2 === 0);
         const targetDaysOff = shouldGetTwoDays ? 2 : 1;
         
-        // Get the available days (not busy)
+        // Get available days (not busy)
         const availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
-        console.log(`🎯 ${staff.name} (global index ${actualIndex}): Available days:`, availableDays.map(d => DAYS_OF_WEEK[d]));
         
         if (availableDays.length === 0) {
           console.warn('⚠️ All allowed off days are busy, forcing Monday');
@@ -243,36 +239,18 @@ export default function StaffScheduling() {
           };
         }
         
-        // Assign days by systematically cycling through available days
-        let finalDaysOff: number[] = [];
+        // Sort available days by current usage (least used first)
+        const sortedByUsage = [...availableDays].sort((a, b) => offsPerDay[a] - offsPerDay[b]);
         
-        if (targetDaysOff === 1) {
-          // Cycle through available days: person 0 gets first, person 1 gets second, etc.
-          const dayIndex = actualIndex % availableDays.length;
-          finalDaysOff.push(availableDays[dayIndex]);
-        } else {
-          // For 2 days, pick first day by index, second day by index+2 (spread them out)
-          const firstDayIndex = actualIndex % availableDays.length;
-          finalDaysOff.push(availableDays[firstDayIndex]);
-          
-          if (availableDays.length >= 2) {
-            const secondDayIndex = (actualIndex + 2) % availableDays.length;
-            if (availableDays[secondDayIndex] !== finalDaysOff[0]) {
-              finalDaysOff.push(availableDays[secondDayIndex]);
-            } else {
-              // If same, just take next
-              const nextIndex = (firstDayIndex + 1) % availableDays.length;
-              finalDaysOff.push(availableDays[nextIndex]);
-            }
-          }
-        }
+        // Take the least-used days
+        const finalDaysOff = sortedByUsage.slice(0, targetDaysOff);
         
         // Update counter
         finalDaysOff.forEach(day => {
           offsPerDay[day]++;
         });
         
-        console.log(`   ✅ Final days off:`, finalDaysOff.map(d => DAYS_OF_WEEK[d]));
+        console.log(`👤 ${staff.name} (index ${globalIndex}): ${finalDaysOff.length} days off on`, finalDaysOff.map(d => DAYS_OF_WEEK[d]), 'Usage after:', offsPerDay.filter((_, i) => allowedOffDays.includes(i)));
         
         return {
           staff,
@@ -283,25 +261,17 @@ export default function StaffScheduling() {
       });
     };
 
-    const headSchedules = divideIntoGroups(headBartenders);
-    console.log('📋 After heads, globalStaffIndex is:', globalStaffIndex);
-    const seniorBartenderSchedules = divideIntoGroups(seniorBartenders);
-    console.log('📋 After seniors, globalStaffIndex is:', globalStaffIndex);
-    const bartenderSchedules = divideIntoGroups(bartenders);
-    console.log('📋 After bartenders, globalStaffIndex is:', globalStaffIndex);
-    const barBackSchedules = divideIntoGroups(barBacks);
-    console.log('📋 After barbacks, globalStaffIndex is:', globalStaffIndex);
-    const supportSchedules = divideIntoGroups(support);
-    console.log('📋 After support, globalStaffIndex is:', globalStaffIndex);
+    const headSchedules = divideIntoGroups(headBartenders, 0);
+    const seniorBartenderSchedules = divideIntoGroups(seniorBartenders, headBartenders.length);
+    const bartenderSchedules = divideIntoGroups(bartenders, headBartenders.length + seniorBartenders.length);
+    const barBackSchedules = divideIntoGroups(barBacks, headBartenders.length + seniorBartenders.length + bartenders.length);
+    const supportSchedules = divideIntoGroups(support, headBartenders.length + seniorBartenders.length + bartenders.length + barBacks.length);
     
     // Log final distribution
     console.log('📊 Final off day distribution:', {
       Monday: offsPerDay[0],
-      Tuesday: offsPerDay[1],
       Wednesday: offsPerDay[2],
       Thursday: offsPerDay[3],
-      Friday: offsPerDay[4],
-      Saturday: offsPerDay[5],
       Sunday: offsPerDay[6]
     });
 
