@@ -779,8 +779,7 @@ export default function StaffScheduling() {
         ...DAYS_OF_WEEK.map(day => {
           const cell = getScheduleCell(staff.id, day);
           if (!cell || !cell.timeRange) return '';
-          const stationText = cell.station ? `\n${cell.station}` : '';
-          return cell.timeRange === 'OFF' ? 'OFF' : `${cell.timeRange}${stationText}`;
+          return cell.timeRange === 'OFF' ? 'OFF' : cell.timeRange;
         })
       ];
       return row;
