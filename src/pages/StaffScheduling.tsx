@@ -987,51 +987,67 @@ export default function StaffScheduling() {
   };
 
   const exportDayToJPG = async (day: string) => {
-    console.log('Export started for:', day);
+    console.log('Export function called for:', day);
+    
     const element = document.getElementById(`day-${day}`);
+    console.log('Looking for element with ID:', `day-${day}`);
     console.log('Element found:', element);
     
     if (!element) {
       console.error('Element not found for day:', day);
-      toast.error('Day section not found');
+      toast.error(`Day section not found: ${day}`);
       return;
     }
 
     toast.info('Capturing screenshot...');
     
     try {
-      console.log('Starting html2canvas...');
+      console.log('Starting html2canvas for:', day);
       const canvas = await html2canvas(element, {
         backgroundColor: '#111827',
         scale: 2,
-        logging: false,
+        logging: true,
         useCORS: true,
         allowTaint: true,
       });
       
-      console.log('Canvas created, converting to blob...');
+      console.log('Canvas created successfully');
       
+      // Convert canvas to blob and download
       canvas.toBlob((blob) => {
-        if (blob) {
-          console.log('Blob created, downloading...');
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `${venueName || 'schedule'}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          console.log('Download complete');
-          toast.success(`${day} schedule downloaded!`);
-        } else {
+        if (!blob) {
           console.error('Failed to create blob');
           toast.error('Failed to create image');
+          return;
         }
+        
+        console.log('Blob created, size:', blob.size);
+        
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        link.href = url;
+        link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+        
+        // Append to body, click, and remove
+        document.body.appendChild(link);
+        console.log('Link created and appended, triggering download...');
+        link.click();
+        
+        // Cleanup
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          console.log('Download cleanup complete');
+        }, 100);
+        
+        toast.success(`${day} downloaded!`);
       }, 'image/jpeg', 0.95);
+      
     } catch (error) {
       console.error('Export error:', error);
-      toast.error('Failed to export image');
+      toast.error(`Failed to export: ${error}`);
     }
   };
 
