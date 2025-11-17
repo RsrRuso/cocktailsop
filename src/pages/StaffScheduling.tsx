@@ -183,26 +183,49 @@ export default function StaffScheduling() {
     // BUSY DAYS - Determine from dailyEvents (days with events get no offs)
     const busyDays = DAYS_OF_WEEK.map((day, idx) => dailyEvents[day] ? idx : -1).filter(idx => idx !== -1);
     
-    // FAIR OFFS DISTRIBUTION - Ensure everyone gets equal offs over time
-    // Rotate fairly: Each person gets different patterns to ensure fairness
+    // Calculate week number to alternate between 1-day and 2-day off patterns
+    const weekDate = new Date(weekStartDate);
+    const weekNumber = Math.floor((weekDate.getTime() - new Date(weekDate.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
+    const isOddWeek = weekNumber % 2 === 1;
+    
+    // FAIR OFFS DISTRIBUTION - Alternate between 1 day off and 2 days off per week
+    // For same titles: stagger so one gets 1 day, another gets 2 days in the same week
     const divideIntoGroups = (staffList: StaffMember[]) => {
-      // More varied patterns for better fairness across all staff
-      const dayOffPatterns = [
-        [0],      // Monday - 1 day off
-        [2],      // Wednesday - 1 day off
-        [3],      // Thursday - 1 day off
-        [6],      // Sunday - 1 day off
-        [0, 3],   // Monday + Thursday - 2 days off  
-        [2, 6],   // Wednesday + Sunday - 2 days off
-        [0, 6],   // Monday + Sunday - 2 days off
-        [3, 6],   // Thursday + Sunday - 2 days off
+      // 1-day off patterns
+      const oneDayPatterns = [
+        [0],      // Monday
+        [2],      // Wednesday
+        [3],      // Thursday
+        [6],      // Sunday
       ];
       
-      return staffList.map((staff, index) => ({
-        staff,
-        daysOff: dayOffPatterns[index % dayOffPatterns.length],
-        groupType: dayOffPatterns[index % dayOffPatterns.length].length === 1 ? '1-day' : '2-day'
-      }));
+      // 2-day off patterns
+      const twoDayPatterns = [
+        [0, 3],   // Monday + Thursday
+        [2, 6],   // Wednesday + Sunday
+        [0, 6],   // Monday + Sunday
+        [3, 6],   // Thursday + Sunday
+      ];
+      
+      return staffList.map((staff, index) => {
+        // Alternate between 1 day and 2 days based on week number and position
+        // If odd week: even-indexed staff get 1 day, odd-indexed get 2 days
+        // If even week: reverse the pattern
+        const shouldGetOneDay = isOddWeek ? (index % 2 === 0) : (index % 2 === 1);
+        
+        let daysOff;
+        if (shouldGetOneDay) {
+          daysOff = oneDayPatterns[index % oneDayPatterns.length];
+        } else {
+          daysOff = twoDayPatterns[index % twoDayPatterns.length];
+        }
+        
+        return {
+          staff,
+          daysOff,
+          groupType: daysOff.length === 1 ? '1-day' : '2-day'
+        };
+      });
     };
 
     const headSchedules = divideIntoGroups(headBartenders);
@@ -442,7 +465,7 @@ export default function StaffScheduling() {
     }
 
     setSchedule(newSchedule);
-    toast.success('✅ Schedule generated! Fair offs distribution (8 patterns). Event days respect custom events. All 9h shifts (Support 10h).');
+    toast.success(`✅ Schedule generated! Week ${weekNumber}: Alternating 1-day/2-day offs (same titles staggered). Event days respect custom events. All 9h shifts (Support 10h).`);
   };
 
   const exportToPDF = () => {
@@ -654,6 +677,10 @@ export default function StaffScheduling() {
     doc.text('• Bar backs (additional): 5:00 PM - 2:00 AM (9h, covers full venue)', 14, finalY);
     finalY += 3;
     doc.text('• Support: 3:00 PM - 1:00 AM (10h, early setup to near closing)', 14, finalY);
+    finalY += 3;
+    doc.text('• OFF DAYS: Alternating pattern - Week 1: some get 1 day off, others 2 days. Week 2: pattern reverses', 14, finalY);
+    finalY += 3;
+    doc.text('• For same titles: Staggered so not everyone gets 2 days off in the same week', 14, finalY);
     finalY += 3;
     
     // Show event days
