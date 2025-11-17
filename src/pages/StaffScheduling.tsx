@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Card } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { toast } from 'sonner';
@@ -71,6 +72,7 @@ export default function StaffScheduling() {
     'Saturday': 'Brunch'
   });
   const [isEditingEvents, setIsEditingEvents] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState<string | null>(null);
   
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -148,11 +150,13 @@ export default function StaffScheduling() {
     fetchStaffMembers();
   };
 
-  const deleteStaffMember = async (id: string) => {
+  const confirmDeleteStaffMember = async () => {
+    if (!staffToDelete) return;
+    
     const { error } = await supabase
       .from('staff_members')
       .update({ is_active: false })
-      .eq('id', id);
+      .eq('id', staffToDelete);
 
     if (error) {
       toast.error('Failed to remove staff member');
@@ -160,6 +164,7 @@ export default function StaffScheduling() {
     }
 
     toast.success('Staff member removed');
+    setStaffToDelete(null);
     fetchStaffMembers();
   };
 
@@ -1408,7 +1413,7 @@ export default function StaffScheduling() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => deleteStaffMember(staff.id)}
+                                onClick={() => setStaffToDelete(staff.id)}
                                 className="hover:bg-gray-700"
                               >
                                 <Trash2 className="w-4 h-4 text-destructive" />
@@ -1432,7 +1437,7 @@ export default function StaffScheduling() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => deleteStaffMember(staff.id)}
+                                onClick={() => setStaffToDelete(staff.id)}
                                 className="hover:bg-gray-700"
                               >
                                 <Trash2 className="w-4 h-4 text-destructive" />
@@ -2216,6 +2221,23 @@ export default function StaffScheduling() {
           </div>
         </Card>
       </div>
+
+      <AlertDialog open={staffToDelete !== null} onOpenChange={(open) => !open && setStaffToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Staff Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this staff member? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteStaffMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav />
     </div>
