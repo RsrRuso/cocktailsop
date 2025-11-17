@@ -44,8 +44,8 @@ const ROLE_RESPONSIBILITIES = {
   head_bartender: 'Operate Stations & Segregation Support',
   senior_bartender: 'Operate Stations & Training',
   bartender: 'Operate Stations',
-  bar_back: 'Assist Only: Refill fridges, batches, premixes, pickups, glassware, stations, opening/closing',
-  support: 'Assist Only: Help when on duty (Cannot operate stations)',
+  bar_back: 'Assist Only: Refill fridges, batches, premixes, pickups, glassware (NOT assigned to stations)',
+  support: 'Floating Help: General assistance (NOT assigned to stations)',
 };
 
 export default function StaffScheduling() {
@@ -341,7 +341,7 @@ export default function StaffScheduling() {
         }
       });
 
-      // === BAR BACKS - Refill, Batches, Premixes ===
+      // === BAR BACKS - Refill, Batches, Premixes (NOT assigned to Indoor/Outdoor stations) ===
       barBackSchedules.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
 
@@ -356,7 +356,7 @@ export default function StaffScheduling() {
             type: 'off'
           };
         } else if (idx === 0) {
-          // Primary bar back - Indoor focus (Assist Only, No Station Operation)
+          // Primary bar back - Refill/Batches (NO station assignment)
           const timeRange = isPickupDay ? 'PICKUP 12:00 PM - 3:00 AM' : isSaturday ? 'BRUNCH 11:00 AM - 3:00 AM' : '2:00 PM - 3:00 AM';
           const type = isPickupDay ? 'pickup' : isSaturday ? 'brunch' : 'opening';
           newSchedule[key] = {
@@ -364,34 +364,22 @@ export default function StaffScheduling() {
             day,
             timeRange,
             type,
-            station: 'Indoor - Assist: Refill, Batches, Premixes, Glassware'
-          };
-        } else if (idx === 1) {
-          // Second bar back - Outdoor focus (Assist Only, No Station Operation)
-          const timeRange = isSaturday ? 'BRUNCH 11:00 AM - 2:00 AM' : '4:00 PM - 2:00 AM';
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange,
-            type: isSaturday ? 'brunch' : 'regular',
-            station: 'Outdoor - Assist: Setup, Refill, Support'
+            station: 'Bar Back: Refill Fridges, Batches, Premixes, Glassware'
           };
         } else {
-          // Additional bar back - General/Floating (Assist Only)
+          // Additional bar back - General support (NO station assignment)
           const timeRange = isSaturday ? 'BRUNCH 11:00 AM - 2:00 AM' : '4:00 PM - 2:00 AM';
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange,
             type: isSaturday ? 'brunch' : 'regular',
-            station: 'Floating - General Bar Back Assist'
+            station: 'Bar Back: General Refill & Setup Support'
           };
         }
       });
 
-      // === SUPPORT - Assist Only, Cannot Operate Stations ===
-      // Support staff help but do not stand at stations
-      let outdoorSupportAssigned = false;
+      // === SUPPORT - Floating Help (NOT assigned to Indoor/Outdoor stations) ===
       supportSchedules.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
 
@@ -406,32 +394,20 @@ export default function StaffScheduling() {
             type: 'off'
           };
         } else {
-          // On weekdays, prioritize outdoor support for first available support staff
-          if (isWeekday && !outdoorSupportAssigned && idx === 0) {
-            newSchedule[key] = {
-              staffId: schedule.staff.id,
-              day,
-              timeRange: '3:00 PM - 1:00 AM',
-              type: 'regular',
-              station: 'Outdoor - Assist/Support (Not Operating Station)'
-            };
-            outdoorSupportAssigned = true;
-          } else {
-            // Other support staff - floating assistance
-            newSchedule[key] = {
-              staffId: schedule.staff.id,
-              day,
-              timeRange: '3:00 PM - 1:00 AM',
-              type: 'regular',
-              station: idx === 1 ? 'Indoor - Assist/Support' : 'Floating - General Assist/Support'
-            };
-          }
+          // Support staff - Floating help (NO station assignment)
+          newSchedule[key] = {
+            staffId: schedule.staff.id,
+            day,
+            timeRange: '3:00 PM - 1:00 AM',
+            type: 'regular',
+            station: 'Support: Floating Help (No Station Assignment)'
+          };
         }
       });
     });
 
     setSchedule(newSchedule);
-    toast.success('✅ Schedule generated! Only bartenders operate stations. Support/bar backs assist only. Outdoor has 1+ bartender on weekdays.');
+    toast.success('✅ Schedule generated! Only bartenders at stations. Bar backs/support NOT assigned to indoor/outdoor stations.');
   };
 
   const exportToPDF = () => {
@@ -588,19 +564,21 @@ export default function StaffScheduling() {
     finalY += 3;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('STATION OVERVIEW', 14, finalY);
+    doc.text('STATION OVERVIEW & RULES', 14, finalY);
     finalY += 4;
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text('INDOOR: Ticket Segregator, Station 1, Station 2, Garnishing Station 3', 14, finalY);
+    doc.text('INDOOR STATIONS (Operated by Bartenders ONLY): Ticket Segregator, Station 1, Station 2, Garnishing Station 3', 14, finalY);
     finalY += 3;
-    doc.text('OUTDOOR: Station 1, Station 2', 14, finalY);
-    finalY += 3;
+    doc.text('OUTDOOR STATIONS (Operated by Bartenders ONLY): Station 1, Station 2', 14, finalY);
+    finalY += 4;
     doc.setFont('helvetica', 'bold');
-    doc.text('IMPORTANT: Only Bartenders/Senior/Head Bartenders can OPERATE stations', 14, finalY);
+    doc.text('CRITICAL RULE: Bar Backs & Support are NOT assigned to Indoor/Outdoor stations', 14, finalY);
     finalY += 3;
     doc.setFont('helvetica', 'normal');
-    doc.text('Bar Backs & Support staff can only ASSIST - they cannot stand at or operate stations', 14, finalY);
+    doc.text('• Bar Backs: Refill fridges, batches, premixes, glassware only (No station operation)', 14, finalY);
+    finalY += 3;
+    doc.text('• Support: Floating help and assistance only (No station assignment)', 14, finalY);
     
     // Legend & Notes
     finalY += 5;
@@ -610,13 +588,15 @@ export default function StaffScheduling() {
     finalY += 4;
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
+    doc.text('• Stations require: Head Bartender OR Senior Bartender OR Bartender', 14, finalY);
+    finalY += 3;
     doc.text('• No offs allowed on busy days: Tuesday (Ladies Night), Friday (Weekend), Saturday (Brunch)', 14, finalY);
     finalY += 3;
     doc.text('• Break Time: 5:00 PM - 6:00 PM | Ending Back & Front: 6:45 PM (Mandatory)', 14, finalY);
     finalY += 3;
     doc.text('• Store Pick-up: Monday, Wednesday, Friday', 14, finalY);
     finalY += 3;
-    doc.text('• Weekdays: Minimum 1 bartender + 1 support for outdoor bar', 14, finalY);
+    doc.text('• Weekdays: Minimum 1 bartender per outdoor station', 14, finalY);
 
     doc.save(`${venueName || 'schedule'}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     toast.success('Schedule exported to PDF');
@@ -824,11 +804,11 @@ export default function StaffScheduling() {
                     {/* Indoor Staff */}
                     {indoorStaff.length > 0 && (
                       <div className="space-y-1 mb-2">
-                        <div className="text-xs font-semibold text-blue-600 dark:text-blue-400">Indoor:</div>
+                        <div className="text-xs font-semibold text-blue-600 dark:text-blue-400">Indoor Stations:</div>
                         <div className="max-h-20 overflow-y-auto space-y-1 text-xs">
                           {indoorStaff.map((s, idx) => (
                             <div key={idx} className="text-muted-foreground">
-                              • {s.name}
+                              • {s.name} - {s.station}
                             </div>
                           ))}
                         </div>
@@ -838,11 +818,11 @@ export default function StaffScheduling() {
                     {/* Outdoor Staff */}
                     {outdoorStaff.length > 0 && (
                       <div className="space-y-1 mb-2">
-                        <div className="text-xs font-semibold text-purple-600 dark:text-purple-400">Outdoor:</div>
+                        <div className="text-xs font-semibold text-purple-600 dark:text-purple-400">Outdoor Stations:</div>
                         <div className="max-h-20 overflow-y-auto space-y-1 text-xs">
                           {outdoorStaff.map((s, idx) => (
                             <div key={idx} className="text-muted-foreground">
-                              • {s.name}
+                              • {s.name} - {s.station}
                             </div>
                           ))}
                         </div>
@@ -852,11 +832,11 @@ export default function StaffScheduling() {
                     {/* Floating/Support Staff */}
                     {floatingStaff.length > 0 && (
                       <div className="space-y-1 mb-2">
-                        <div className="text-xs font-semibold">Support:</div>
+                        <div className="text-xs font-semibold">Bar Back/Support:</div>
                         <div className="max-h-16 overflow-y-auto space-y-1 text-xs">
                           {floatingStaff.map((s, idx) => (
                             <div key={idx} className="text-muted-foreground">
-                              • {s.name}
+                              • {s.name} - {s.station}
                             </div>
                           ))}
                         </div>
