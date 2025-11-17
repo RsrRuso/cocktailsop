@@ -1602,14 +1602,43 @@ export default function StaffScheduling() {
                 // Catch any working staff not categorized - assign to indoor by default
                 const uncategorized = working.filter(s => !categorizedIds.has(s.staffId));
                 
-                // Get staff details
-                const indoorStaff = [...indoor, ...uncategorized].map(s => {
+                // Get staff details - SORT BY ROLE (Head first)
+                const sortStaffByRole = (staffList: any[]) => {
+                  const roleOrder = {
+                    head_bartender: 1,
+                    senior_bartender: 2,
+                    bartender: 3,
+                    bar_back: 4,
+                    support: 5
+                  };
+                  return staffList.sort((a, b) => {
+                    const staffA = staffMembers.find(sm => sm.id === a.staffId);
+                    const staffB = staffMembers.find(sm => sm.id === b.staffId);
+                    if (!staffA || !staffB) return 0;
+                    return (roleOrder[staffA.title] || 99) - (roleOrder[staffB.title] || 99);
+                  });
+                };
+
+                const sortedIndoor = sortStaffByRole([...indoor, ...uncategorized]);
+                const sortedOutdoor = sortStaffByRole([...outdoor]);
+
+                const indoorStaff = sortedIndoor.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
-                  return { name: staff?.name || 'Unknown', station: s.station || 'General Support', timeRange: s.timeRange };
+                  return { 
+                    name: staff?.name || 'Unknown', 
+                    station: s.station || 'General Support', 
+                    timeRange: s.timeRange,
+                    title: staff?.title 
+                  };
                 });
-                const outdoorStaff = outdoor.map(s => {
+                const outdoorStaff = sortedOutdoor.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
-                  return { name: staff?.name || 'Unknown', station: s.station, timeRange: s.timeRange };
+                  return { 
+                    name: staff?.name || 'Unknown', 
+                    station: s.station, 
+                    timeRange: s.timeRange,
+                    title: staff?.title 
+                  };
                 });
                 const offStaff = off.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
@@ -1677,7 +1706,10 @@ export default function StaffScheduling() {
                         <div className="space-y-1 text-xs pl-3">
                           {indoorStaff.map((s, idx) => (
                             <div key={idx} className="text-gray-300">
-                              • {s.name} <span className="text-gray-500">({s.timeRange})</span>
+                              • <span className={s.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
+                              {s.title === 'head_bartender' && <span className="text-[10px] text-yellow-500 ml-1">(HEAD)</span>}
+                              {s.title === 'senior_bartender' && <span className="text-[10px] text-blue-400 ml-1">(SENIOR)</span>}
+                              <span className="text-gray-500"> ({s.timeRange})</span>
                               <div className="text-[10px] text-blue-400/80 pl-3">{s.station}</div>
                             </div>
                           ))}
@@ -1695,7 +1727,10 @@ export default function StaffScheduling() {
                         <div className="space-y-1 text-xs pl-3">
                           {outdoorStaff.map((s, idx) => (
                             <div key={idx} className="text-gray-300">
-                              • {s.name} <span className="text-gray-500">({s.timeRange})</span>
+                              • <span className={s.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
+                              {s.title === 'head_bartender' && <span className="text-[10px] text-yellow-500 ml-1">(HEAD)</span>}
+                              {s.title === 'senior_bartender' && <span className="text-[10px] text-blue-400 ml-1">(SENIOR)</span>}
+                              <span className="text-gray-500"> ({s.timeRange})</span>
                               <div className="text-[10px] text-purple-400/80 pl-3">{s.station}</div>
                             </div>
                           ))}
@@ -1705,23 +1740,38 @@ export default function StaffScheduling() {
 
                     {/* Break Schedule */}
                     {working.length > 0 && (() => {
+                      const sortByRole = (list: any[]) => {
+                        const roleOrder = {
+                          head_bartender: 1,
+                          senior_bartender: 2,
+                          bartender: 3,
+                          bar_back: 4,
+                          support: 5
+                        };
+                        return list.sort((a, b) => {
+                          const roleA = a.staff?.title || 'support';
+                          const roleB = b.staff?.title || 'support';
+                          return (roleOrder[roleA] || 99) - (roleOrder[roleB] || 99);
+                        });
+                      };
+
                       // First Wave: 12 PM, 3 PM, 4 PM shifts
-                      const firstWaveStaff = working.filter(s => {
+                      const firstWaveStaff = sortByRole(working.filter(s => {
                         const time = s.timeRange;
                         return time.startsWith('12:00 PM') || time.startsWith('3:00 PM') || time.startsWith('4:00 PM');
                       }).map(s => {
                         const staff = staffMembers.find(sm => sm.id === s.staffId);
-                        return { name: staff?.name || 'Unknown', timeRange: s.timeRange };
-                      });
+                        return { name: staff?.name || 'Unknown', timeRange: s.timeRange, staff };
+                      }));
                       
                       // Second Wave: 5 PM shifts
-                      const secondWaveStaff = working.filter(s => {
+                      const secondWaveStaff = sortByRole(working.filter(s => {
                         const time = s.timeRange;
                         return time.startsWith('5:00 PM');
                       }).map(s => {
                         const staff = staffMembers.find(sm => sm.id === s.staffId);
-                        return { name: staff?.name || 'Unknown', timeRange: s.timeRange };
-                      });
+                        return { name: staff?.name || 'Unknown', timeRange: s.timeRange, staff };
+                      }));
                       
                       return (firstWaveStaff.length > 0 || secondWaveStaff.length > 0) && (
                         <div className="space-y-1.5 mb-2 bg-gradient-to-r from-orange-950/30 to-amber-950/20 rounded-lg p-2 border border-orange-800/40">
@@ -1738,7 +1788,10 @@ export default function StaffScheduling() {
                                     const breaks = staff?.breakTimings || { firstWaveStart: '5:30 PM', firstWaveEnd: '6:30 PM' };
                                     return (
                                       <div key={idx} className="pl-2">
-                                        • {s.name} <span className="text-gray-500 text-[9px]">({breaks.firstWaveStart}-{breaks.firstWaveEnd})</span>
+                                        • <span className={s.staff?.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
+                                        {s.staff?.title === 'head_bartender' && <span className="text-[8px] text-yellow-500 ml-1">(HEAD)</span>}
+                                        {s.staff?.title === 'senior_bartender' && <span className="text-[8px] text-blue-400 ml-1">(SENIOR)</span>}
+                                        <span className="text-gray-500 text-[9px]"> ({breaks.firstWaveStart}-{breaks.firstWaveEnd})</span>
                                       </div>
                                     );
                                   })}
@@ -1757,7 +1810,10 @@ export default function StaffScheduling() {
                                     const breaks = staff?.breakTimings || { secondWaveStart: '6:30 PM' };
                                     return (
                                       <div key={idx} className="pl-2">
-                                        • {s.name} <span className="text-gray-500 text-[9px]">(After {breaks.secondWaveStart})</span>
+                                        • <span className={s.staff?.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
+                                        {s.staff?.title === 'head_bartender' && <span className="text-[8px] text-yellow-500 ml-1">(HEAD)</span>}
+                                        {s.staff?.title === 'senior_bartender' && <span className="text-[8px] text-blue-400 ml-1">(SENIOR)</span>}
+                                        <span className="text-gray-500 text-[9px]"> (After {breaks.secondWaveStart})</span>
                                       </div>
                                     );
                                   })}
