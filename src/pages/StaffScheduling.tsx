@@ -559,10 +559,10 @@ export default function StaffScheduling() {
       
       const allStationBartenders = [...workingSeniorBartenders, ...workingBartenders];
       const stations = [
+        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
       ];
 
       allStationBartenders.forEach((schedule, idx) => {
