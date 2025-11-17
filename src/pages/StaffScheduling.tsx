@@ -43,7 +43,7 @@ const CELL_COLORS = {
 const ROLE_RESPONSIBILITIES = {
   head_bartender: 'SUPERVISING: Observe indoor/outdoor areas, support where needed (Divided between areas if 2+ heads)',
   senior_bartender: 'Operate Stations & Training',
-  bartender: 'OPERATE STATIONS: Assigned to specific bar stations',
+  bartender: 'IN CHARGE OF STATIONS: Operate assigned bar stations, supervise bar backs, manage station closing procedures, refresh and maintain stations based on operational needs during service',
   bar_back: 'PRIORITY ROLE: Pickups, refilling, glassware polishing, batching, station opening/closing, refill fridges/freezers, stock refilling, garnish cutting (Divided between indoor/outdoor if 2+)',
   support: 'Glassware polishing, general support (Divided between indoor/outdoor if 2+)',
 };
@@ -638,7 +638,9 @@ export default function StaffScheduling() {
     doc.setFont('helvetica', 'normal');
     doc.text('PRIORITY 1 - HEAD BARTENDERS: SUPERVISING (Divided between indoor/outdoor if 2+ heads)', 14, finalY);
     finalY += 3;
-    doc.text('PRIORITY 2 - BARTENDERS & SENIORS: ASSIGNED TO STATIONS (Outdoor Station 1, Indoor Stations 1-3)', 14, finalY);
+    doc.text('PRIORITY 2 - BARTENDERS & SENIORS: IN CHARGE OF STATIONS - Operate assigned stations, supervise bar backs,', 14, finalY);
+    finalY += 3;
+    doc.text('  manage station closing, refresh and maintain stations based on operational needs during service', 14, finalY);
     finalY += 3;
     doc.text('PRIORITY 3 - BAR BACKS (PRIORITY ROLE): Pickups, refilling, glassware polishing, batching,', 14, finalY);
     finalY += 3;
