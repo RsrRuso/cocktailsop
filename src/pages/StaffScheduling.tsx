@@ -226,11 +226,16 @@ export default function StaffScheduling() {
         const shouldGetTwoDays = isOddWeek ? (globalIndex % 2 === 1) : (globalIndex % 2 === 0);
         const targetDaysOff = shouldGetTwoDays ? 2 : 1;
         
+        console.log(`\n🎯 ASSIGNING: ${staff.name} (global index ${globalIndex}, should get ${targetDaysOff} days)`);
+        
         // Get available days (not busy)
         const availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
+        console.log(`   Available days (not busy):`, availableDays.map(d => `${DAYS_OF_WEEK[d]}(${d})`));
+        console.log(`   Current usage:`, availableDays.map(d => `${DAYS_OF_WEEK[d]}:${offsPerDay[d]}`).join(', '));
         
         if (availableDays.length === 0) {
-          console.warn('⚠️ All allowed off days are busy, forcing Monday');
+          console.error('❌ ALL DAYS BUSY - FORCING MONDAY');
+          offsPerDay[0]++;
           return {
             staff,
             daysOff: [0],
@@ -239,18 +244,36 @@ export default function StaffScheduling() {
           };
         }
         
-        // Sort available days by current usage (least used first)
-        const sortedByUsage = [...availableDays].sort((a, b) => offsPerDay[a] - offsPerDay[b]);
+        // FORCE ROUND ROBIN: Use strict cycling through available days
+        let finalDaysOff: number[] = [];
         
-        // Take the least-used days
-        const finalDaysOff = sortedByUsage.slice(0, targetDaysOff);
+        if (targetDaysOff === 1) {
+          // Simple round robin for 1 day
+          const pickIndex = globalIndex % availableDays.length;
+          finalDaysOff.push(availableDays[pickIndex]);
+          console.log(`   → Picked index ${pickIndex}: ${DAYS_OF_WEEK[availableDays[pickIndex]]}`);
+        } else {
+          // For 2 days: pick 2 different days using round robin
+          const pick1 = globalIndex % availableDays.length;
+          const pick2 = (globalIndex + 1) % availableDays.length;
+          finalDaysOff.push(availableDays[pick1]);
+          if (availableDays[pick2] !== availableDays[pick1]) {
+            finalDaysOff.push(availableDays[pick2]);
+          } else if (availableDays.length > 1) {
+            // Pick the next different day
+            const pick3 = (globalIndex + 2) % availableDays.length;
+            finalDaysOff.push(availableDays[pick3]);
+          }
+          console.log(`   → Picked: ${finalDaysOff.map(d => DAYS_OF_WEEK[d]).join(', ')}`);
+        }
         
         // Update counter
         finalDaysOff.forEach(day => {
           offsPerDay[day]++;
         });
         
-        console.log(`👤 ${staff.name} (index ${globalIndex}): ${finalDaysOff.length} days off on`, finalDaysOff.map(d => DAYS_OF_WEEK[d]), 'Usage after:', offsPerDay.filter((_, i) => allowedOffDays.includes(i)));
+        console.log(`   ✅ ASSIGNED: ${finalDaysOff.map(d => DAYS_OF_WEEK[d]).join(', ')}`);
+        console.log(`   📊 Usage now:`, availableDays.map(d => `${DAYS_OF_WEEK[d]}:${offsPerDay[d]}`).join(', '));
         
         return {
           staff,
