@@ -1234,171 +1234,201 @@ export default function StaffScheduling() {
   }, {} as Record<string, StaffMember[]>);
 
   return (
-    <div className="min-h-screen bg-gray-950 pb-20 pt-16">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 pb-20 pt-16">
       <TopNav />
       
-      <div className="container mx-auto p-4 space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex-1 max-w-md">
-            <Label htmlFor="venue-name" className="text-gray-200">Venue Name</Label>
-            <Input
-              id="venue-name"
-              value={venueName}
-              onChange={(e) => setVenueName(e.target.value)}
-              placeholder="Enter venue name..."
-              className="text-lg font-semibold bg-gray-900 border-gray-800 text-gray-100"
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <Button onClick={autoGenerateSchedule} variant="default">
-              <Wand2 className="w-4 h-4 mr-2" />
-              Auto Generate
-            </Button>
-            <Button onClick={exportToPDF} variant="outline" className="border-gray-700 hover:bg-gray-800">
-              <Download className="w-4 h-4 mr-2" />
-              Export PDF
-            </Button>
+      <div className="container mx-auto p-4 space-y-4">
+        {/* Header Section */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/20 via-accent/10 to-secondary/20 border border-primary/20 p-6 mb-6">
+          <div className="absolute inset-0 bg-grid-white/[0.02]" />
+          <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex-1 max-w-md">
+              <Label htmlFor="venue-name" className="text-xs uppercase tracking-wider text-gray-400 mb-2 block font-semibold">Venue Name</Label>
+              <Input
+                id="venue-name"
+                value={venueName}
+                onChange={(e) => setVenueName(e.target.value)}
+                placeholder="Enter venue name..."
+                className="text-xl font-bold bg-gray-900/50 border-gray-700/50 text-gray-100 h-12 backdrop-blur-sm"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <Button onClick={autoGenerateSchedule} variant="default" className="h-11 px-6 font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
+                <Wand2 className="w-4 h-4 mr-2" />
+                Generate Schedule
+              </Button>
+              <Button onClick={exportToPDF} variant="outline" className="h-11 px-6 border-gray-600 hover:bg-gray-800/80 hover:border-primary/50 transition-all">
+                <Download className="w-4 h-4 mr-2" />
+                Export PDF
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Daily Events Management */}
-        <Card className="p-4 bg-gray-900 border-gray-800">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-100">Daily Events (No Offs on Event Days)</h3>
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => setIsEditingEvents(!isEditingEvents)}
-              className="border-gray-700 hover:bg-gray-800"
-            >
-              {isEditingEvents ? 'Done' : 'Edit Events'}
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            {DAYS_OF_WEEK.map((day) => (
-              <div key={day} className="space-y-2">
-                <Label className="text-sm font-medium text-gray-200">{day}</Label>
-                {isEditingEvents ? (
-                  <Input
-                    value={dailyEvents[day] || ''}
-                    onChange={(e) => setDailyEvents(prev => ({
-                      ...prev,
-                      [day]: e.target.value
-                    }))}
-                    placeholder="Event name"
-                    className="text-sm bg-gray-800 border-gray-700 text-gray-100"
-                  />
-                ) : (
-                  <div className={`p-2 rounded border text-sm min-h-[40px] flex items-center justify-center ${
-                    dailyEvents[day] 
-                      ? 'bg-primary/20 border-primary text-primary font-medium' 
-                      : 'bg-gray-800 text-gray-400 border-gray-700'
-                  }`}>
-                    {dailyEvents[day] || 'No event'}
-                  </div>
-                )}
+        <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl" />
+          <div className="relative">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-accent/20 rounded-lg">
+                  <Calendar className="w-5 h-5 text-accent" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-100">Daily Events</h3>
+                  <p className="text-xs text-gray-500">No offs scheduled on event days</p>
+                </div>
               </div>
-            ))}
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => setIsEditingEvents(!isEditingEvents)}
+                className="border-gray-700 hover:bg-gray-800 h-9 px-4 font-medium"
+              >
+                {isEditingEvents ? '✓ Done' : '✏️ Edit'}
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
+              {DAYS_OF_WEEK.map((day) => (
+                <div key={day} className="space-y-1.5">
+                  <Label className="text-xs font-bold text-gray-300 uppercase tracking-wide">{day.slice(0, 3)}</Label>
+                  {isEditingEvents ? (
+                    <Input
+                      value={dailyEvents[day] || ''}
+                      onChange={(e) => setDailyEvents(prev => ({
+                        ...prev,
+                        [day]: e.target.value
+                      }))}
+                      placeholder="Event"
+                      className="text-xs bg-gray-800 border-gray-700 text-gray-100 h-9"
+                    />
+                  ) : (
+                    <div className={`p-2 rounded-lg border text-xs min-h-[36px] flex items-center justify-center transition-all ${
+                      dailyEvents[day] 
+                        ? 'bg-gradient-to-br from-primary/20 to-accent/10 border-primary/40 text-primary font-semibold shadow-sm' 
+                        : 'bg-gray-800/50 text-gray-500 border-gray-700/50'
+                    }`}>
+                      {dailyEvents[day] || '—'}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-          
-          <p className="text-sm text-gray-400 mt-3">
-            ℹ️ Days with events are considered busy - no offs will be scheduled on these days
-          </p>
         </Card>
 
         {/* Break Timings Configuration */}
-        <Card className="p-4 bg-gray-900 border-gray-800">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold text-gray-100">Break Schedule</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label className="text-gray-300 mb-2">First Wave Start</Label>
-              <Input
-                type="time"
-                value={breakTimings.firstWaveStart.replace(' PM', '').replace(' AM', '')}
-                onChange={(e) => {
-                  const time = e.target.value;
-                  const [hours, minutes] = time.split(':');
-                  const hour = parseInt(hours);
-                  const ampm = hour >= 12 ? 'PM' : 'AM';
-                  const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                  setBreakTimings({
-                    ...breakTimings,
-                    firstWaveStart: `${displayHour}:${minutes} ${ampm}`
-                  });
-                }}
-                className="bg-gray-800 border-gray-700 text-gray-100"
-              />
-              <p className="text-xs text-gray-500 mt-1">Opening shifts (12PM, 3PM, 4PM)</p>
+        <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
+          <div className="absolute top-0 left-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl" />
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-orange-500/20 rounded-lg">
+                <Calendar className="w-5 h-5 text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-100">Break Schedule</h3>
+                <p className="text-xs text-gray-500">Configure staff break timings</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-gray-400 mb-2 block uppercase tracking-wide">First Wave Start</Label>
+                <Input
+                  type="time"
+                  value={breakTimings.firstWaveStart.replace(' PM', '').replace(' AM', '')}
+                  onChange={(e) => {
+                    const time = e.target.value;
+                    const [hours, minutes] = time.split(':');
+                    const hour = parseInt(hours);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                    setBreakTimings({
+                      ...breakTimings,
+                      firstWaveStart: `${displayHour}:${minutes} ${ampm}`
+                    });
+                  }}
+                  className="bg-gray-800/50 border-gray-700/50 text-gray-100 h-10 font-mono"
+                />
+                <p className="text-[10px] text-gray-500 mt-1.5">Opening shifts (12PM, 3PM, 4PM)</p>
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold text-gray-400 mb-2 block uppercase tracking-wide">First Wave End</Label>
+                <Input
+                  type="time"
+                  value={breakTimings.firstWaveEnd.replace(' PM', '').replace(' AM', '')}
+                  onChange={(e) => {
+                    const time = e.target.value;
+                    const [hours, minutes] = time.split(':');
+                    const hour = parseInt(hours);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                    setBreakTimings({
+                      ...breakTimings,
+                      firstWaveEnd: `${displayHour}:${minutes} ${ampm}`,
+                      secondWaveStart: `${displayHour}:${minutes} ${ampm}`
+                    });
+                  }}
+                  className="bg-gray-800/50 border-gray-700/50 text-gray-100 h-10 font-mono"
+                />
+                <p className="text-[10px] text-gray-500 mt-1.5">When first wave returns</p>
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold text-gray-400 mb-2 block uppercase tracking-wide">Second Wave Start</Label>
+                <Input
+                  type="time"
+                  value={breakTimings.secondWaveStart.replace(' PM', '').replace(' AM', '')}
+                  onChange={(e) => {
+                    const time = e.target.value;
+                    const [hours, minutes] = time.split(':');
+                    const hour = parseInt(hours);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                    setBreakTimings({
+                      ...breakTimings,
+                      secondWaveStart: `${displayHour}:${minutes} ${ampm}`
+                    });
+                  }}
+                  className="bg-gray-800/50 border-gray-700/50 text-gray-100 h-10 font-mono"
+                />
+                <p className="text-[10px] text-gray-500 mt-1.5">Late shifts (5PM)</p>
+              </div>
             </div>
 
-            <div>
-              <Label className="text-gray-300 mb-2">First Wave End</Label>
-              <Input
-                type="time"
-                value={breakTimings.firstWaveEnd.replace(' PM', '').replace(' AM', '')}
-                onChange={(e) => {
-                  const time = e.target.value;
-                  const [hours, minutes] = time.split(':');
-                  const hour = parseInt(hours);
-                  const ampm = hour >= 12 ? 'PM' : 'AM';
-                  const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                  setBreakTimings({
-                    ...breakTimings,
-                    firstWaveEnd: `${displayHour}:${minutes} ${ampm}`,
-                    secondWaveStart: `${displayHour}:${minutes} ${ampm}`
-                  });
-                }}
-                className="bg-gray-800 border-gray-700 text-gray-100"
-              />
-              <p className="text-xs text-gray-500 mt-1">When first wave returns</p>
+            <div className="mt-3 p-2.5 bg-gradient-to-r from-orange-950/30 to-amber-950/20 rounded-lg border border-orange-800/30">
+              <p className="text-xs text-orange-300 flex items-center gap-2">
+                <span className="text-sm">⚠️</span>
+                <span>Coverage during first wave: 2 Indoor staff + 1 Support remain working</span>
+              </p>
             </div>
-
-            <div>
-              <Label className="text-gray-300 mb-2">Second Wave Start</Label>
-              <Input
-                type="time"
-                value={breakTimings.secondWaveStart.replace(' PM', '').replace(' AM', '')}
-                onChange={(e) => {
-                  const time = e.target.value;
-                  const [hours, minutes] = time.split(':');
-                  const hour = parseInt(hours);
-                  const ampm = hour >= 12 ? 'PM' : 'AM';
-                  const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                  setBreakTimings({
-                    ...breakTimings,
-                    secondWaveStart: `${displayHour}:${minutes} ${ampm}`
-                  });
-                }}
-                className="bg-gray-800 border-gray-700 text-gray-100"
-              />
-              <p className="text-xs text-gray-500 mt-1">Late shifts (5PM)</p>
-            </div>
-          </div>
-
-          <div className="mt-3 p-3 bg-orange-950/20 rounded-lg border border-orange-800/40">
-            <p className="text-xs text-orange-300">
-              ⚠️ Coverage during first wave: 2 Indoor staff + 1 Support remain working
-            </p>
           </div>
         </Card>
 
         {/* Staff Management */}
-        <Card className="p-4 bg-gray-900 border-gray-800">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-100">Staff Members</h3>
-            <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Staff
-                </Button>
-              </DialogTrigger>
+        <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
+          <div className="absolute bottom-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+          <div className="relative">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/20 rounded-lg">
+                  <Users className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-100">Staff Members</h3>
+                  <p className="text-xs text-gray-500">{staffMembers.length} active staff</p>
+                </div>
+              </div>
+              <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="h-9 px-4 font-medium shadow-lg shadow-primary/10">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Staff
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add Staff Member</DialogTitle>
@@ -1491,80 +1521,97 @@ export default function StaffScheduling() {
               <p className="text-center text-gray-400 py-8">No staff members added yet</p>
             )}
           </div>
+          </div>
         </Card>
 
         {/* Week Selector */}
-        <Card className="p-4 bg-gray-900 border-gray-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-gray-200">Week Starting</Label>
-              <Input
-                type="date"
-                value={weekStartDate}
-                onChange={(e) => setWeekStartDate(e.target.value)}
-                className="mt-1 bg-gray-800 border-gray-700 text-gray-100"
-              />
+        <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-secondary/20 rounded-lg">
+                <Calendar className="w-5 h-5 text-secondary" />
+              </div>
+              <div>
+                <Label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1.5">Week Starting</Label>
+                <Input
+                  type="date"
+                  value={weekStartDate}
+                  onChange={(e) => setWeekStartDate(e.target.value)}
+                  className="bg-gray-800/50 border-gray-700/50 text-gray-100 h-10 font-mono"
+                />
+              </div>
             </div>
-            <div className="text-sm text-gray-400">
-              {format(new Date(weekStartDate), 'MMM dd')} - {format(addDays(new Date(weekStartDate), 6), 'MMM dd, yyyy')}
+            <div className="flex items-center gap-2 text-sm bg-gray-800/50 rounded-lg px-4 py-2.5 border border-gray-700/50">
+              <span className="text-gray-400">Period:</span>
+              <span className="font-semibold text-gray-100">
+                {format(new Date(weekStartDate), 'MMM dd')} - {format(addDays(new Date(weekStartDate), 6), 'MMM dd, yyyy')}
+              </span>
             </div>
           </div>
         </Card>
 
         {/* Weekly Off Days Summary */}
         {staffMembers.length > 0 && Object.keys(schedule).length > 0 && (
-          <Card className="p-6 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 border-gray-700 shadow-xl">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-100 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                Weekly Off Days Summary
-              </h3>
-              <Button 
-                onClick={exportWeeklySummaryToJPG} 
-                variant="outline" 
-                size="sm"
-                className="border-gray-600 hover:bg-gray-800 hover:border-primary transition-all"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </Button>
-            </div>
-            <div id="Weekly Off Days Summary" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {staffMembers.map(staff => {
-                const staffSchedule = Object.values(schedule).filter(s => s.staffId === staff.id);
-                const offDays = staffSchedule.filter(s => s.timeRange === 'OFF');
-                const offDaysList = offDays.map(s => s.day).join(', ');
-                
-                return (
-                  <div key={staff.id} className="border border-gray-700 rounded-xl p-4 bg-gradient-to-br from-gray-800 to-gray-850 shadow-lg hover:shadow-xl transition-all hover:border-primary/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <div className="font-bold text-gray-100 text-sm">{staff.name}</div>
-                        <div className="text-xs text-gray-400 capitalize mt-1 flex items-center gap-1">
-                          <span className="inline-block w-2 h-2 rounded-full bg-primary/60"></span>
-                          {staff.title.replace('_', ' ')}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className={`text-3xl font-extrabold ${offDays.length === 0 ? 'text-red-400' : offDays.length >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
-                          {offDays.length}
-                        </div>
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wide">days off</div>
-                      </div>
-                    </div>
-                    {offDaysList && (
-                      <div className="text-xs text-gray-300 mt-3 pt-3 border-t border-gray-700/50 bg-gray-900/30 rounded px-2 py-2">
-                        <span className="text-gray-500 font-medium">Off Days:</span> {offDaysList}
-                      </div>
-                    )}
-                    {offDays.length === 0 && (
-                      <div className="text-xs text-red-400 mt-3 pt-3 border-t border-red-900/30 bg-red-950/20 rounded px-2 py-2 flex items-center gap-1">
-                        <span className="text-red-500">⚠️</span> No days off this week
-                      </div>
-                    )}
+          <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/20 rounded-lg">
+                    <Calendar className="w-5 h-5 text-primary" />
                   </div>
-                );
-              })}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-100">Weekly Off Days</h3>
+                    <p className="text-xs text-gray-500">Staff rest day overview</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={exportWeeklySummaryToJPG} 
+                  variant="outline" 
+                  size="sm"
+                  className="border-gray-600 hover:bg-gray-800 hover:border-primary/50 transition-all h-9 px-4"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+              </div>
+              <div id="Weekly Off Days Summary" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {staffMembers.map(staff => {
+                  const staffSchedule = Object.values(schedule).filter(s => s.staffId === staff.id);
+                  const offDays = staffSchedule.filter(s => s.timeRange === 'OFF');
+                  const offDaysList = offDays.map(s => s.day).join(', ');
+                  
+                  return (
+                    <div key={staff.id} className="border border-gray-700/50 rounded-lg p-3.5 bg-gradient-to-br from-gray-800/80 to-gray-850/80 shadow-md hover:shadow-lg transition-all hover:border-primary/40 hover:scale-[1.02] backdrop-blur-sm">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <div>
+                          <div className="font-bold text-gray-100 text-sm">{staff.name}</div>
+                          <div className="text-xs text-gray-400 capitalize mt-1 flex items-center gap-1.5">
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/70"></span>
+                            {staff.title.replace('_', ' ')}
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className={`text-2xl font-extrabold ${offDays.length === 0 ? 'text-red-400' : offDays.length >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+                            {offDays.length}
+                          </div>
+                          <div className="text-[9px] text-gray-500 uppercase tracking-wider font-medium">days off</div>
+                        </div>
+                      </div>
+                      {offDaysList && (
+                        <div className="text-xs text-gray-300 mt-2.5 pt-2.5 border-t border-gray-700/30 bg-gray-900/40 rounded px-2.5 py-2">
+                          <span className="text-gray-500 font-semibold">📅</span> {offDaysList}
+                        </div>
+                      )}
+                      {offDays.length === 0 && (
+                        <div className="text-xs text-red-400 mt-2.5 pt-2.5 border-t border-red-900/30 bg-red-950/20 rounded px-2.5 py-1.5 flex items-center gap-1.5">
+                          <span className="text-red-500">⚠️</span> No days off
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </Card>
         )}
