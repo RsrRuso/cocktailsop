@@ -1033,7 +1033,7 @@ export default function StaffScheduling() {
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(255, 255, 255);
-      doc.text('📅 SPECIAL EVENTS THIS WEEK', 18, finalY + 4);
+      doc.text('SPECIAL EVENTS THIS WEEK', 18, finalY + 4);
       
       finalY += 13;
       doc.setFontSize(7.5);
@@ -1069,7 +1069,7 @@ export default function StaffScheduling() {
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
-    doc.text('👤 STAFF RESPONSIBILITIES & STATIONS', 18, finalY + 4);
+    doc.text('STAFF RESPONSIBILITIES & STATIONS', 18, finalY + 4);
     
     finalY += 13;
     doc.setFontSize(6.5);
@@ -1105,9 +1105,13 @@ export default function StaffScheduling() {
           
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(6.5);
-          doc.text(`  • ${member.name}:`, 22, finalY);
-          doc.text(stationsList, 55, finalY);
-          finalY += 3;
+          doc.text(`- ${member.name}:`, 22, finalY);
+          
+          // Wrap long text to prevent overflow
+          const maxWidth = 215; // Maximum width for text
+          const lines = doc.splitTextToSize(stationsList, maxWidth);
+          doc.text(lines, 55, finalY);
+          finalY += (lines.length * 3);
         });
         
         finalY += 2;
