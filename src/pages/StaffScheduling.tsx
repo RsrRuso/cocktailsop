@@ -916,33 +916,33 @@ export default function StaffScheduling() {
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
     
-    // Design System Colors (HSL converted to RGB) - Darker version
+    // Design System Colors (HSL converted to RGB) - Dark grey theme
     const colors = {
-      primary: [25, 70, 180] as [number, number, number], // Darker Blue
-      secondary: [20, 100, 150] as [number, number, number], // Darker Cyan
+      primary: [50, 50, 50] as [number, number, number], // Dark grey
+      secondary: [70, 70, 70] as [number, number, number], // Medium grey
       accent: [180, 30, 150] as [number, number, number], // Darker Magenta
       foreground: [15, 15, 15] as [number, number, number], // Very dark gray
       muted: [200, 200, 200] as [number, number, number], // Darker muted gray
       mutedText: [80, 80, 80] as [number, number, number] // Darker text
     };
     
-    // Modern gradient header background
+    // Modern header background - dark grey, thinner
     doc.setFillColor(...colors.primary);
-    doc.rect(0, 0, 297, 40, 'F');
+    doc.rect(0, 0, 297, 28, 'F');
     
     // Title with professional styling
-    doc.setFontSize(28);
+    doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
-    doc.text((venueName || 'STAFF SCHEDULE').toUpperCase(), 148, 18, { align: 'center' });
+    doc.text((venueName || 'STAFF SCHEDULE').toUpperCase(), 148, 14, { align: 'center' });
     
     // Subtitle with accent
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(255, 255, 255);
     const weekStart = new Date(weekStartDate);
     const weekEnd = addDays(weekStart, 6);
-    doc.text(`WEEK: ${format(weekStart, 'MMM dd').toUpperCase()} - ${format(weekEnd, 'MMM dd, yyyy').toUpperCase()}`, 148, 28, { align: 'center' });
+    doc.text(`WEEK: ${format(weekStart, 'MMM dd').toUpperCase()} - ${format(weekEnd, 'MMM dd, yyyy').toUpperCase()}`, 148, 22, { align: 'center' });
     
     // Reset text color for table
     doc.setTextColor(0, 0, 0);
@@ -964,7 +964,7 @@ export default function StaffScheduling() {
     autoTable(doc, {
       head: headers,
       body: rows,
-      startY: 45,
+      startY: 32,
       styles: { 
         fontSize: 6, 
         cellPadding: 1.2, 
@@ -1035,34 +1035,27 @@ export default function StaffScheduling() {
     });
 
     // Event Info Section - Enhanced with full details
-    let finalY = (doc as any).lastAutoTable.finalY + 8;
+    let finalY = (doc as any).lastAutoTable.finalY + 5;
     const pageHeight = 200; // Landscape page height limit
     
     const hasEvents = Object.values(dailyEvents).some(event => event && event.trim() !== '');
     
     if (hasEvents) {
-      // Check if we need a new page
-      if (finalY > pageHeight - 40) {
-        doc.addPage();
-        finalY = 20;
-      }
-      
       doc.setFillColor(...colors.accent);
-      doc.roundedRect(14, finalY - 2, 270, 10, 2, 2, 'F');
-      doc.setFontSize(10);
+      doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(255, 255, 255);
-      doc.text('SPECIAL EVENTS THIS WEEK', 18, finalY + 4);
+      doc.text('SPECIAL EVENTS THIS WEEK', 18, finalY + 3);
       
-      finalY += 13;
-      doc.setFontSize(7.5);
+      finalY += 10;
+      doc.setFontSize(6.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...colors.foreground);
       
       DAYS_OF_WEEK.forEach(day => {
         const event = dailyEvents[day];
         if (event && event.trim() !== '') {
-          // Find opening bartender for this day
           const openingStaff = staffMembers.find(staff => {
             const cell = getScheduleCell(staff.id, day);
             return cell && (cell.type === 'opening' || cell.type === 'brunch' || cell.type === 'pickup');
@@ -1075,29 +1068,23 @@ export default function StaffScheduling() {
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(...colors.foreground);
           doc.text(`${event}${staffInfo}`, 40, finalY);
-          finalY += 4;
+          finalY += 3.5;
         }
       });
       
-      finalY += 5;
+      finalY += 3;
     }
     
-    // Check if we need a new page before staff responsibilities
-    if (finalY > pageHeight - 50) {
-      doc.addPage();
-      finalY = 20;
-    }
-    
-    // Staff Responsibilities Section - New detailed section
+    // Staff Responsibilities Section - Compact
     doc.setFillColor(...colors.primary);
-    doc.roundedRect(14, finalY - 2, 270, 12, 2, 2, 'F');
-    doc.setFontSize(10);
+    doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
-    doc.text('STAFF RESPONSIBILITIES & STATIONS', 18, finalY + 5);
+    doc.text('STAFF RESPONSIBILITIES & STATIONS', 18, finalY + 3);
     
-    finalY += 14;
-    doc.setFontSize(6.5);
+    finalY += 10;
+    doc.setFontSize(6);
     doc.setTextColor(...colors.foreground);
     
     // Group staff by role for responsibilities
@@ -1112,9 +1099,9 @@ export default function StaffScheduling() {
     Object.entries(roleGroups).forEach(([role, members]) => {
       if (members.length > 0) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7);
+        doc.setFontSize(6.5);
         doc.text(`${role.toUpperCase()}:`, 18, finalY);
-        finalY += 3.5;
+        finalY += 3;
         
         members.forEach(member => {
           // Get this week's stations for the member
@@ -1129,65 +1116,21 @@ export default function StaffScheduling() {
           const stationsList = Array.from(memberStations).join(', ') || 'Various stations';
           
           doc.setFont('helvetica', 'normal');
-          doc.setFontSize(6.5);
+          doc.setFontSize(6);
           doc.text(`- ${member.name}:`, 22, finalY);
           
           // Wrap long text to prevent overflow
-          const maxWidth = 215; // Maximum width for text
+          const maxWidth = 215;
           const lines = doc.splitTextToSize(stationsList, maxWidth);
           doc.text(lines, 55, finalY);
-          finalY += (lines.length * 3);
+          finalY += (lines.length * 2.5);
         });
         
-        finalY += 2;
+        finalY += 1.5;
       }
     });
     
-    // Check if we need a new page before role priorities
-    if (finalY > pageHeight - 40) {
-      doc.addPage();
-      finalY = 20;
-    }
-    
-    // Role Responsibilities Section - More compact
-    doc.setFillColor(...colors.secondary);
-    doc.roundedRect(14, finalY - 2, 270, 9, 2, 2, 'F');
-    doc.setFontSize(8.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text('ROLE PRIORITIES', 18, finalY + 3.5);
-    
-    finalY += 11;
-    doc.setTextColor(...colors.foreground);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6.5);
-    
-    // Compact priority list
-    doc.text('P1-HEADS:', 18, finalY);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Supervise indoor/outdoor | ', 50, finalY);
-    doc.setFont('helvetica', 'bold');
-    doc.text('P2-BARTENDERS:', 100, finalY);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Stations & bar backs | ', 145, finalY);
-    finalY += 3.5;
-    doc.setFont('helvetica', 'bold');
-    doc.text('P3-BAR BACKS:', 18, finalY);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Pickups, refills, batching | ', 55, finalY);
-    doc.setFont('helvetica', 'bold');
-    doc.text('P4-SUPPORT:', 120, finalY);
-    doc.setFont('helvetica', 'normal');
-    doc.text('10h shifts, glassware, 2 days off/month', 155, finalY);
-    finalY += 5;
-    
-    // Check if we need a new page before division rules
-    if (finalY > pageHeight - 30) {
-      doc.addPage();
-      finalY = 20;
-    }
-    
-    // Division Rules - More compact
+    // Division Rules - Compact
     doc.setFillColor(...colors.muted);
     doc.roundedRect(14, finalY - 2, 270, 12, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
@@ -1196,53 +1139,53 @@ export default function StaffScheduling() {
     doc.text('DIVISION:', 18, finalY + 2.5);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6);
-    doc.text('2+ Heads/Bar Backs → Indoor/Outdoor | 1 Bar Back + 1 Support → Areas | Default: Indoor', 48, finalY + 2.5);
-    finalY += 7;
+    doc.text('2+ Heads/Bar Backs → Indoor/Outdoor | 1 Bar Back + 1 Support → Areas | Default: Indoor', 48, finalY + 2);
+    finalY += 5;
 
-    // Operational Notes - Very compact
+    // Operational Notes - Compact
     doc.setFillColor(...colors.secondary);
-    doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
-    doc.setFontSize(7.5);
+    doc.roundedRect(14, finalY - 2, 270, 7, 2, 2, 'F');
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
-    doc.text('OPERATIONS', 18, finalY + 2.5);
+    doc.text('OPERATIONS', 18, finalY + 2);
     
-    finalY += 9;
+    finalY += 8;
     doc.setTextColor(...colors.foreground);
-    doc.setFontSize(6);
+    doc.setFontSize(5.5);
     doc.setFont('helvetica', 'normal');
     doc.text(`Hours: Venue 5PM-2AM | Bartenders/Backs: 9h | Support: 10h (3PM-1AM) | Break: Individual per staff | Ending: 6:45PM`, 18, finalY);
-    finalY += 3.5;
+    finalY += 3;
     
     // Off Days - inline
     doc.setFont('helvetica', 'bold');
     doc.text('Off Days:', 18, finalY);
     doc.setFont('helvetica', 'normal');
     doc.text('Bartenders alt. 1-2/week | Support: 2/month | No offs on event days', 45, finalY);
-    finalY += 4;
+    finalY += 3;
     
-    // Hygiene & Outdoor - Very compact side by side
+    // Hygiene & Outdoor - Compact side by side
     doc.setFillColor(220, 220, 220);
-    doc.roundedRect(14, finalY - 2, 128, 7, 2, 2, 'F');
+    doc.roundedRect(14, finalY - 2, 128, 6, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6.5);
+    doc.setFontSize(6);
     doc.setTextColor(60, 60, 60);
-    doc.text('HYGIENE:', 18, finalY + 2.5);
+    doc.text('HYGIENE:', 18, finalY + 2);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6);
-    doc.text('Hair tied, clean attire, gloves required', 45, finalY + 2.5);
+    doc.setFontSize(5.5);
+    doc.text('Hair tied, clean attire, gloves required', 45, finalY + 2);
     
     doc.setFillColor(220, 220, 220);
-    doc.roundedRect(146, finalY - 2, 138, 7, 2, 2, 'F');
+    doc.roundedRect(146, finalY - 2, 138, 6, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6.5);
-    doc.text('OUTDOOR:', 150, finalY + 2.5);
-    doc.setFont('helvetica', 'normal');
     doc.setFontSize(6);
-    doc.text('MIN 2 / MAX 3 - Rotate every 2h', 180, finalY + 2.5);
+    doc.text('OUTDOOR:', 150, finalY + 2);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(5.5);
+    doc.text('MIN 2 / MAX 3 - Rotate every 2h', 180, finalY + 2);
     
-    // Add significant spacing at the bottom for clear white background gap
-    finalY += 30;
+    // Add spacing at the bottom for readability
+    finalY += 20;
 
     doc.save(`${(venueName || 'schedule').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     toast.success('Schedule exported to PDF');
