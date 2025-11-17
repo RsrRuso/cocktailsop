@@ -997,57 +997,43 @@ export default function StaffScheduling() {
         return;
       }
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Wait for DOM to be stable
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       const canvas = await html2canvas(element, {
         backgroundColor: '#111827',
         scale: 2,
         logging: false,
         useCORS: true,
-        allowTaint: false,
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.getElementById(`day-${day}`);
-          if (clonedElement) {
-            clonedElement.style.display = 'block';
-          }
+        allowTaint: false
+      });
+      
+      // Create blob and download immediately (synchronous)
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error('Failed to create image');
+          return;
         }
-      });
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+        
+        // Must click immediately, not in timeout
+        link.click();
+        
+        // Cleanup after a delay
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 100);
+        
+        toast.success(`${day} saved!`);
+      }, 'image/jpeg', 0.95);
       
-      // Convert to blob using promise
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((b) => {
-          if (b) resolve(b);
-          else reject(new Error('Blob creation failed'));
-        }, 'image/jpeg', 0.95);
-      });
-      
-      // Create download
-      const fileName = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      link.style.display = 'none';
-      
-      document.body.appendChild(link);
-      
-      // Immediate click
-      link.dispatchEvent(new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        view: window
-      }));
-      
-      // Cleanup after delay
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 300);
-      
-      toast.success(`${day} saved!`);
     } catch (error) {
       console.error('Export error:', error);
-      toast.error(`Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(`Download failed`);
     }
   };
 
