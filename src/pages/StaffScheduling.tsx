@@ -511,14 +511,26 @@ export default function StaffScheduling() {
       });
     });
 
-    // CRITICAL VALIDATION: Each day MUST have at least 2 bartenders AND 4 total staff
+    // CRITICAL VALIDATION: Each day MUST have minimum staff per role
     const validationErrors: string[] = [];
 
     DAYS_OF_WEEK.forEach((name, dayIndex) => {
       const allBartenderRoles = [...headBartenders, ...seniorBartenders, ...bartenders];
       
-      // Count working bartenders (head, senior, or bartender)
+      // Count working staff by role
       const workingBartendersCount = allBartenderRoles.filter(staff => {
+        const key = `${staff.id}-${name}`;
+        const cell = newSchedule[key];
+        return cell && cell.timeRange !== 'OFF';
+      }).length;
+
+      const workingBarBacksCount = barBacks.filter(staff => {
+        const key = `${staff.id}-${name}`;
+        const cell = newSchedule[key];
+        return cell && cell.timeRange !== 'OFF';
+      }).length;
+
+      const workingSupportCount = support.filter(staff => {
         const key = `${staff.id}-${name}`;
         const cell = newSchedule[key];
         return cell && cell.timeRange !== 'OFF';
@@ -537,6 +549,16 @@ export default function StaffScheduling() {
         validationErrors.push(`${name}: Only ${workingBartendersCount} bartender(s) - need at least 2`);
       }
 
+      // Validate: Need at least 1 bar back
+      if (workingBarBacksCount < 1) {
+        validationErrors.push(`${name}: No bar back scheduled - need at least 1`);
+      }
+
+      // Validate: Need at least 1 support
+      if (workingSupportCount < 1) {
+        validationErrors.push(`${name}: No support scheduled - need at least 1`);
+      }
+
       // Validate: Need at least 4 total staff
       if (totalWorkingStaff < 4) {
         validationErrors.push(`${name}: Only ${totalWorkingStaff} total staff - need at least 4`);
@@ -551,7 +573,7 @@ export default function StaffScheduling() {
     }
 
     setSchedule(newSchedule);
-    toast.success(`✅ Schedule generated! Minimum 2 bartenders + 4 total staff per shift. Everyone gets at least 1 day off. Same titles alternate: Week ${weekNumber % 2 === 1 ? '(Odd)' : '(Even)'} pattern.`);
+    toast.success(`✅ Schedule generated! Minimum 2 bartenders, 1 bar back, 1 support per shift. Everyone gets at least 1 day off. Same titles alternate weekly.`);
   };
 
   const exportToPDF = () => {
