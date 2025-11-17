@@ -1569,33 +1569,11 @@ export default function StaffScheduling() {
                         return (
                           <td
                             key={day}
-                            className={`border border-gray-700 p-0.5 ${cell ? CELL_COLORS[cell.type] : 'bg-gray-850'}`}
+                            className={`border border-gray-700 p-1 ${cell ? CELL_COLORS[cell.type] : 'bg-gray-850'}`}
                           >
-                            <Select
-                              value={cell?.timeRange || ''}
-                              onValueChange={(value) => {
-                                let type: ScheduleCell['type'] = 'regular';
-                                if (value === 'OFF') type = 'off';
-                                else if (value.includes('11:00 AM')) type = 'brunch';
-                                else if (value.includes('12:00 PM')) type = 'pickup';
-                                else if (value.includes('2:00 PM') || value.includes('3:00 PM')) type = 'opening';
-                                else if (value.includes('4:00 PM') || value.includes('5:00 PM')) type = 'regular';
-                                updateScheduleCell(staff.id, day, value, type, cell?.station);
-                              }}
-                            >
-                              <SelectTrigger className="text-[9px] h-6 bg-gray-900 border-gray-700 text-gray-100 px-1">
-                                <SelectValue placeholder="Time" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-gray-900 border-gray-700 z-50">
-                                <SelectItem value="OFF" className="text-gray-100 text-[10px]">OFF</SelectItem>
-                                <SelectItem value="11:00 AM - 8:00 PM" className="text-gray-100 text-[10px]">11:00 AM - 8:00 PM</SelectItem>
-                                <SelectItem value="12:00 PM - 9:00 PM" className="text-gray-100 text-[10px]">12:00 PM - 9:00 PM</SelectItem>
-                                <SelectItem value="2:00 PM - 11:00 PM" className="text-gray-100 text-[10px]">2:00 PM - 11:00 PM</SelectItem>
-                                <SelectItem value="3:00 PM - 12:00 AM" className="text-gray-100 text-[10px]">3:00 PM - 12:00 AM</SelectItem>
-                                <SelectItem value="4:00 PM - 1:00 AM" className="text-gray-100 text-[10px]">4:00 PM - 1:00 AM</SelectItem>
-                                <SelectItem value="5:00 PM - 2:00 AM" className="text-gray-100 text-[10px]">5:00 PM - 2:00 AM</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <div className="text-[9px] text-gray-100 text-center leading-tight min-h-[20px] flex items-center justify-center">
+                              {cell?.timeRange || '-'}
+                            </div>
                             {cell?.station && (
                               <div className="text-[8px] text-gray-400 text-center mt-0.5 leading-none truncate px-0.5">
                                 {cell.station}
