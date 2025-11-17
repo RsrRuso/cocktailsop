@@ -993,13 +993,12 @@ export default function StaffScheduling() {
       const element = document.getElementById(`day-${day}`);
       
       if (!element) {
-        console.error('Element not found for day:', day);
         toast.error(`Could not find ${day} section`);
         return;
       }
 
-      // Wait a bit to ensure DOM is fully rendered
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Small delay to ensure DOM is stable
+      await new Promise(resolve => setTimeout(resolve, 150));
       
       const canvas = await html2canvas(element, {
         backgroundColor: '#111827',
@@ -1009,33 +1008,27 @@ export default function StaffScheduling() {
         allowTaint: true,
       });
       
-      // Convert to blob and trigger download
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, 'image/jpeg', 0.95);
-      });
-      
-      if (!blob) {
-        throw new Error('Failed to create image blob');
-      }
+      // Convert canvas directly to data URL
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
       
       // Create and trigger download
-      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = dataUrl;
       link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+      link.style.display = 'none';
+      
       document.body.appendChild(link);
       link.click();
       
       // Cleanup
       setTimeout(() => {
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
       }, 100);
       
-      toast.success(`${day} downloaded!`);
+      toast.success(`${day} downloaded successfully!`);
     } catch (error) {
       console.error('Export error for', day, ':', error);
-      toast.error(`Failed to export ${day}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(`Failed to export ${day}`);
     }
   };
 
