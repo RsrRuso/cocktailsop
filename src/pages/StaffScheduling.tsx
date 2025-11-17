@@ -749,23 +749,32 @@ export default function StaffScheduling() {
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
     
-    // Title
-    doc.setFontSize(24);
+    // Add decorative header background
+    doc.setFillColor(30, 41, 59); // Dark blue-gray
+    doc.rect(0, 0, 297, 40, 'F');
+    
+    // Title with professional styling
+    doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.text(venueName || 'Staff Schedule', 148, 20, { align: 'center' });
+    doc.setTextColor(255, 255, 255);
+    doc.text((venueName || 'STAFF SCHEDULE').toUpperCase(), 148, 18, { align: 'center' });
     
     // Subtitle
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(203, 213, 225);
     const weekStart = new Date(weekStartDate);
     const weekEnd = addDays(weekStart, 6);
-    doc.text(`Week: ${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}`, 148, 28, { align: 'center' });
+    doc.text(`WEEK: ${format(weekStart, 'MMM dd').toUpperCase()} - ${format(weekEnd, 'MMM dd, yyyy').toUpperCase()}`, 148, 28, { align: 'center' });
     
-    // Table headers
-    const headers = ['Staff Name', ...DAYS_OF_WEEK];
+    // Reset text color for table
+    doc.setTextColor(0, 0, 0);
+    
+    // Table headers - uppercase
+    const headers = [['STAFF NAME', ...DAYS_OF_WEEK.map(d => d.toUpperCase())]];
     const rows = staffMembers.map(staff => {
       const row = [
-        `${staff.name}\n${staff.title.replace('_', ' ')}`,
+        `${staff.name.toUpperCase()}\n${staff.title.replace('_', ' ').toUpperCase()}`,
         ...DAYS_OF_WEEK.map(day => {
           const cell = getScheduleCell(staff.id, day);
           if (!cell || !cell.timeRange) return '';
@@ -777,13 +786,28 @@ export default function StaffScheduling() {
     });
 
     autoTable(doc, {
-      head: [headers],
+      head: headers,
       body: rows,
-      startY: 35,
-      styles: { fontSize: 7, cellPadding: 1.5, lineWidth: 0.1, lineColor: [200, 200, 200] },
-      headStyles: { fillColor: [71, 85, 105], fontStyle: 'bold', fontSize: 8 },
+      startY: 45,
+      styles: { 
+        fontSize: 7, 
+        cellPadding: 2, 
+        lineWidth: 0.2, 
+        lineColor: [148, 163, 184],
+        textColor: [15, 23, 42]
+      },
+      headStyles: { 
+        fillColor: [51, 65, 85], 
+        fontStyle: 'bold', 
+        fontSize: 9,
+        textColor: [255, 255, 255],
+        halign: 'center'
+      },
       columnStyles: {
-        0: { cellWidth: 30, fontStyle: 'bold' }
+        0: { cellWidth: 35, fontStyle: 'bold', fillColor: [248, 250, 252] }
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252]
       },
       didParseCell: (data) => {
         if (data.row.section === 'body' && data.column.index > 0) {
@@ -792,211 +816,165 @@ export default function StaffScheduling() {
           if (staff) {
             const cell = getScheduleCell(staff.id, day);
             if (cell) {
-              if (cell.type === 'pickup') data.cell.styles.fillColor = [255, 235, 59];
-              if (cell.type === 'opening') data.cell.styles.fillColor = [129, 199, 132];
-              if (cell.type === 'closing') data.cell.styles.fillColor = [239, 83, 80];
-              if (cell.type === 'brunch') data.cell.styles.fillColor = [255, 167, 38];
-              if (cell.type === 'off') data.cell.styles.fillColor = [224, 224, 224];
+              if (cell.type === 'pickup') {
+                data.cell.styles.fillColor = [255, 237, 213];
+                data.cell.styles.fontStyle = 'bold';
+              }
+              if (cell.type === 'opening') {
+                data.cell.styles.fillColor = [220, 252, 231];
+                data.cell.styles.fontStyle = 'bold';
+              }
+              if (cell.type === 'closing') {
+                data.cell.styles.fillColor = [254, 226, 226];
+                data.cell.styles.fontStyle = 'bold';
+              }
+              if (cell.type === 'brunch') {
+                data.cell.styles.fillColor = [254, 243, 199];
+                data.cell.styles.fontStyle = 'bold';
+              }
+              if (cell.type === 'off') {
+                data.cell.styles.fillColor = [226, 232, 240];
+                data.cell.styles.textColor = [100, 116, 139];
+              }
             }
           }
         }
       }
     });
 
-    // Daily Breakdown Section
-    let finalY = (doc as any).lastAutoTable.finalY + 8;
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('DAILY BREAKDOWN - WHO\'S WORKING', 14, finalY);
+    // Role Responsibilities Section
+    let finalY = (doc as any).lastAutoTable.finalY + 12;
     
-    finalY += 5;
-    doc.setFontSize(7);
-    DAYS_OF_WEEK.forEach((day, dayIndex) => {
-      const daySchedule = Object.values(schedule).filter(s => s.day === day);
-      const working = daySchedule.filter(s => s.timeRange !== 'OFF');
-      const off = daySchedule.filter(s => s.timeRange === 'OFF');
-      
-      // Categorize by area - ENSURE NO DOUBLE COUNTING (each person in ONE area only)
-      const indoor = working.filter(s => {
-        const station = s.station || '';
-        return (station.includes('Indoor - ') || 
-                station.includes('Bar Back - Indoor') || 
-                station.includes('Support - Indoor') || 
-                station.includes('Head - Indoor') ||
-                (station.includes('Supervising') && station.includes('Indoor')));
-      });
-      const outdoor = working.filter(s => {
-        const station = s.station || '';
-        return (station.includes('Outdoor - ') || 
-                station.includes('Bar Back - Outdoor') || 
-                station.includes('Support - Outdoor') || 
-                station.includes('Head - Outdoor') ||
-                (station.includes('Supervising') && station.includes('Outdoor')));
-      });
-      
-      // For heads supervising both or not allocated to specific area, add to both counts
-      const floatingToIndoor = working.filter(s => {
-        const station = s.station || '';
-        return (station.includes('Supervising') && !station.includes('Indoor') && !station.includes('Outdoor')) ||
-               station.includes('Floating');
-      });
-      
-      // Split floating between indoor and outdoor for counting
-      const indoorWithFloating = [...indoor, ...floatingToIndoor.slice(0, Math.ceil(floatingToIndoor.length / 2))];
-      const outdoorWithFloating = [...outdoor, ...floatingToIndoor.slice(Math.ceil(floatingToIndoor.length / 2))];
-      
-      const eventLabel = dailyEvents[day] ? ` (${dailyEvents[day]})` : '';
-      
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${day}${eventLabel}`, 14, finalY);
-      finalY += 3;
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Total Working: ${working.length} | Total Off: ${off.length}`, 16, finalY);
-      finalY += 4;
-      
-      // Indoor Staff
-      if (indoorWithFloating.length > 0) {
-        doc.setFont('helvetica', 'bold');
-        doc.text('INDOOR:', 18, finalY);
-        finalY += 3;
-        doc.setFont('helvetica', 'normal');
-        indoorWithFloating.forEach(s => {
-          const staff = staffMembers.find(sm => sm.id === s.staffId);
-          if (staff) {
-            const title = staff.title.replace('_', ' ');
-            const timeRange = s.timeRange || '';
-            doc.text(`  • ${staff.name} (${title}) - ${timeRange}`, 20, finalY);
-            finalY += 3;
-          }
-        });
-      }
-      
-      // Outdoor Staff
-      if (outdoorWithFloating.length > 0) {
-        doc.setFont('helvetica', 'bold');
-        doc.text('OUTDOOR:', 18, finalY);
-        finalY += 3;
-        doc.setFont('helvetica', 'normal');
-        outdoorWithFloating.forEach(s => {
-          const staff = staffMembers.find(sm => sm.id === s.staffId);
-          if (staff) {
-            const title = staff.title.replace('_', ' ');
-            const timeRange = s.timeRange || '';
-            doc.text(`  • ${staff.name} (${title}) - ${timeRange}`, 20, finalY);
-            finalY += 3;
-          }
-        });
-      }
-      
-      // Off Staff
-      if (off.length > 0) {
-        doc.setFont('helvetica', 'bold');
-        doc.text('OFF:', 18, finalY);
-        finalY += 3;
-        doc.setFont('helvetica', 'normal');
-        off.forEach(s => {
-          const staff = staffMembers.find(sm => sm.id === s.staffId);
-          if (staff) {
-            const title = staff.title.replace('_', ' ');
-            doc.text(`  • ${staff.name} (${title})`, 20, finalY);
-            finalY += 3;
-          }
-        });
-      }
-      
-      finalY += 2;
-    });
-
-    // Role Responsibilities
-    finalY += 3;
-    doc.setFontSize(10);
+    // Section header with background
+    doc.setFillColor(51, 65, 85);
+    doc.rect(14, finalY - 5, 270, 10, 'F');
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('ROLE RESPONSIBILITIES', 14, finalY);
-    finalY += 4;
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    Object.entries(ROLE_RESPONSIBILITIES).forEach(([role, responsibility]) => {
-      doc.text(`${role.replace('_', ' ').toUpperCase()}: ${responsibility}`, 14, finalY);
-      finalY += 3;
-    });
-
-    // Stations Overview
-    finalY += 3;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ROLE RESPONSIBILITIES & PRIORITIES', 14, finalY);
-    finalY += 4;
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.text('PRIORITY 1 - HEAD BARTENDERS: SUPERVISING (Divided between indoor/outdoor if 2+ heads)', 14, finalY);
-    finalY += 3;
-    doc.text('PRIORITY 2 - BARTENDERS & SENIORS: IN CHARGE OF STATIONS - Operate assigned stations, supervise bar backs,', 14, finalY);
-    finalY += 3;
-    doc.text('  manage station closing, refresh and maintain stations based on operational needs during service', 14, finalY);
-    finalY += 3;
-    doc.text('PRIORITY 3 - BAR BACKS (PRIORITY ROLE): Pickups, refilling, glassware polishing, batching,', 14, finalY);
-    finalY += 3;
-    doc.text('  opening/closing, fridges/freezers refill, stock refilling, garnish cutting (Divided if 2+)', 14, finalY);
-    finalY += 3;
-    doc.text('PRIORITY 4 - SUPPORT: Glassware polishing, general support (10h shifts, divided if 2+)', 14, finalY);
-    finalY += 4;
-    doc.setFont('helvetica', 'bold');
-    doc.text('DIVISION RULES:', 14, finalY);
-    finalY += 3;
-    doc.setFont('helvetica', 'normal');
-    doc.text('• 2+ Heads → Divided between indoor/outdoor supervision', 14, finalY);
-    finalY += 3;
-    doc.text('• 2+ Bar backs → Divided between indoor/outdoor areas', 14, finalY);
-    finalY += 3;
-    doc.text('• 1 Bar back + 1 Support → Also divided between areas', 14, finalY);
-    finalY += 3;
-    doc.text('• 2+ Support → Divided between indoor/outdoor areas', 14, finalY);
+    doc.setTextColor(255, 255, 255);
+    doc.text('ROLE RESPONSIBILITIES & PRIORITIES', 16, finalY + 1);
     
-    // Legend & Notes
-    finalY += 5;
-    doc.setFontSize(10);
+    finalY += 10;
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text('NOTES', 14, finalY);
+    
+    // Priority 1
+    doc.setTextColor(59, 130, 246);
+    doc.text('PRIORITY 1 - HEAD BARTENDERS:', 16, finalY);
     finalY += 4;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(51, 65, 85);
+    doc.text('Supervising operations - Observe indoor/outdoor areas, provide support where needed', 18, finalY);
+    finalY += 3;
+    doc.text('(Divided between indoor/outdoor supervision if 2+ heads)', 18, finalY);
+    finalY += 6;
+    
+    // Priority 2
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(16, 185, 129);
+    doc.text('PRIORITY 2 - BARTENDERS & SENIOR BARTENDERS:', 16, finalY);
+    finalY += 4;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(51, 65, 85);
+    doc.text('Station Operations - Operate assigned stations, supervise bar backs, manage station closing', 18, finalY);
+    finalY += 3;
+    doc.text('procedures, refresh and maintain stations based on operational needs during service', 18, finalY);
+    finalY += 6;
+    
+    // Priority 3
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(245, 158, 11);
+    doc.text('PRIORITY 3 - BAR BACKS (CRITICAL PRIORITY ROLE):', 16, finalY);
+    finalY += 4;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(51, 65, 85);
+    doc.text('Essential Support - Pickups, refilling, glassware polishing, batching, opening/closing procedures,', 18, finalY);
+    finalY += 3;
+    doc.text('fridges/freezers refill, stock management, garnish cutting (Divided between indoor/outdoor if 2+)', 18, finalY);
+    finalY += 6;
+    
+    // Priority 4
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(139, 92, 246);
+    doc.text('PRIORITY 4 - SUPPORT:', 16, finalY);
+    finalY += 4;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(51, 65, 85);
+    doc.text('General Support - Glassware polishing, general assistance (10-hour shifts, divided between areas if 2+)', 18, finalY);
+    finalY += 8;
+    
+    // Division Rules
+    doc.setFillColor(241, 245, 249);
+    doc.rect(14, finalY - 3, 270, 20, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(51, 65, 85);
+    doc.setFontSize(9);
+    doc.text('DIVISION RULES:', 16, finalY + 2);
+    finalY += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text('• 2+ Head Bartenders → Divided between indoor/outdoor supervision', 18, finalY);
+    finalY += 3;
+    doc.text('• 2+ Bar Backs → Divided between indoor/outdoor operational areas', 18, finalY);
+    finalY += 3;
+    doc.text('• 1 Bar Back + 1 Support → Also divided between indoor/outdoor areas', 18, finalY);
+    finalY += 3;
+    doc.text('• 2+ Support Staff → Divided between indoor/outdoor areas', 18, finalY);
+    finalY += 8;
+
+    // Operational Notes
+    doc.setFillColor(51, 65, 85);
+    doc.rect(14, finalY - 5, 270, 10, 'F');
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('OPERATIONAL NOTES & GUIDELINES', 16, finalY + 1);
+    
+    finalY += 10;
+    doc.setTextColor(51, 65, 85);
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text('• Venue hours: 5:00 PM - 2:00 AM (9 hours operation)', 14, finalY);
+    doc.text('• VENUE HOURS: 5:00 PM - 2:00 AM (9-hour operation)', 16, finalY);
     finalY += 3;
-    doc.text('• Working hours: All staff 9h (Support 10h)', 14, finalY);
+    doc.text('• WORKING HOURS: All staff 9 hours (Support staff 10 hours)', 16, finalY);
     finalY += 3;
-    doc.text('• Head bartenders & Bartenders: 5:00 PM - 2:00 AM (9h, covers full venue)', 14, finalY);
+    doc.text('• HEAD BARTENDERS & BARTENDERS: 5:00 PM - 2:00 AM (9h, full venue coverage)', 16, finalY);
     finalY += 3;
-    doc.text('• Bar backs (1st): Early start for pickups/setup (9h)', 14, finalY);
+    doc.text('• BAR BACKS (Primary): Early start for pickups and setup duties (9h total)', 16, finalY);
     finalY += 3;
-    doc.text('• Bar backs (additional): 5:00 PM - 2:00 AM (9h, covers full venue)', 14, finalY);
+    doc.text('• BAR BACKS (Additional): 5:00 PM - 2:00 AM (9h, full venue coverage)', 16, finalY);
     finalY += 3;
-    doc.text('• Support: 3:00 PM - 1:00 AM (10h, early setup to near closing)', 14, finalY);
+    doc.text('• SUPPORT STAFF: 3:00 PM - 1:00 AM (10h, early setup through near closing)', 16, finalY);
+    finalY += 4;
+    doc.setFont('helvetica', 'bold');
+    doc.text('OFF DAYS POLICY:', 16, finalY);
     finalY += 3;
-    doc.text('• OFF DAYS LOGIC: Everyone gets AT LEAST 1 day off per week (can\'t be 0)', 14, finalY);
+    doc.setFont('helvetica', 'normal');
+    doc.text('• Minimum 1 day off per week guaranteed for all staff', 16, finalY);
     finalY += 3;
-    doc.text('• For same titles: Alternate pattern - Person A: Week 1=1 day, Week 2=2 days | Person B: Week 1=2 days, Week 2=1 day', 14, finalY);
+    doc.text('• Alternating pattern for same titles: Week 1 (1 day off) / Week 2 (2 days off) rotation', 16, finalY);
     finalY += 3;
-    doc.text('• If off day falls on event day, alternative day is automatically assigned', 14, finalY);
+    doc.text('• Automatic alternative day assignment if off day conflicts with event day', 16, finalY);
     finalY += 3;
     
     // Show event days
     const eventDays = Object.entries(dailyEvents)
       .filter(([_, event]) => event)
-      .map(([day, event]) => `${day} (${event})`)
+      .map(([day, event]) => `${day.toUpperCase()} (${event})`)
       .join(', ');
     
     if (eventDays) {
-      doc.text(`• No offs allowed on event days: ${eventDays}`, 14, finalY);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`• EVENT DAYS (No offs allowed): ${eventDays}`, 16, finalY);
       finalY += 3;
+      doc.setFont('helvetica', 'normal');
     }
     
-    doc.text('• Break Time: 5:00 PM - 6:00 PM | Ending Back & Front: 6:45 PM (Mandatory)', 14, finalY);
+    doc.text('• BREAK TIME: 5:00 PM - 6:00 PM | ENDING BACK & FRONT: 6:45 PM (Mandatory)', 16, finalY);
     finalY += 3;
-    doc.text('• Store Pick-up: Monday, Wednesday, Friday (Bar backs handle with early start)', 14, finalY);
-    finalY += 3;
-    doc.text('• Bar backs are PRIORITY ROLE with most responsibilities', 14, finalY);
+    doc.text('• STORE PICKUP: Monday, Wednesday, Friday (Handled by bar backs with early start)', 16, finalY);
 
-    doc.save(`${venueName || 'schedule'}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    doc.save(`${(venueName || 'schedule').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     toast.success('Schedule exported to PDF');
   };
 
