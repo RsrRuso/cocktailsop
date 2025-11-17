@@ -200,69 +200,75 @@ export default function StaffScheduling() {
     const offsPerDay: number[] = [0, 0, 0, 0, 0, 0, 0];
     
     const divideIntoGroups = (staffList: StaffMember[], roleOffset: number) => {
-      return staffList.map((staff, index) => {
+      console.log(`\n🎯 Dividing ${staffList.length} staff members (1 day off every 2 weeks)...`);
+      console.log(`📅 Available off days: ${allowedOffDays.map(d => DAYS_OF_WEEK[d]).join(', ')}`);
+      
+      // Track distribution to ensure ALL 4 days are used
+      const dayOffDistribution: Record<number, string[]> = {};
+      allowedOffDays.forEach(day => {
+        dayOffDistribution[day] = [];
+      });
+      
+      const results = staffList.map((staff, index) => {
         const globalIndex = roleOffset + index;
         
-        // Alternating logic: odd global index gets 2 days, even gets 1 day
-        const shouldGetTwoDays = isOddWeek ? (globalIndex % 2 === 1) : (globalIndex % 2 === 0);
-        const targetDaysOff = shouldGetTwoDays ? 2 : 1;
+        // BIWEEKLY LOGIC: 1 day off every 2 weeks
+        // Even index staff: get day off on odd weeks (week 1, 3, 5...)
+        // Odd index staff: get day off on even weeks (week 2, 4, 6...)
+        const getsOffThisWeek = (globalIndex % 2 === 0 && isOddWeek) || (globalIndex % 2 === 1 && !isOddWeek);
         
-        console.log(`\n🎯 ASSIGNING: ${staff.name} (global index ${globalIndex}, should get ${targetDaysOff} days)`);
-        
-        // Get available days (not busy)
-        const availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
-        console.log(`   Available days (not busy):`, availableDays.map(d => `${DAYS_OF_WEEK[d]}(${d})`));
-        console.log(`   Current usage:`, availableDays.map(d => `${DAYS_OF_WEEK[d]}:${offsPerDay[d]}`).join(', '));
-        
-        if (availableDays.length === 0) {
-          console.error('❌ ALL DAYS BUSY - FORCING MONDAY');
-          offsPerDay[0]++;
+        if (!getsOffThisWeek) {
+          console.log(`  ⏭️ ${staff.name} (idx ${globalIndex}): Working full week (off day is in alternate week)`);
           return {
             staff,
-            daysOff: [0],
-            groupType: shouldGetTwoDays ? '2-day' : '1-day',
-            actualDaysOff: 1
+            daysOff: [],
+            groupType: 'full-week-this-time',
+            actualDaysOff: 0
           };
         }
         
-        // FORCE ROUND ROBIN: Use strict cycling through available days
-        let finalDaysOff: number[] = [];
+        // Get available days (not busy)
+        const availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
         
-        if (targetDaysOff === 1) {
-          // Simple round robin for 1 day
-          const pickIndex = globalIndex % availableDays.length;
-          finalDaysOff.push(availableDays[pickIndex]);
-          console.log(`   → Picked index ${pickIndex}: ${DAYS_OF_WEEK[availableDays[pickIndex]]}`);
-        } else {
-          // For 2 days: pick 2 different days using round robin
-          const pick1 = globalIndex % availableDays.length;
-          const pick2 = (globalIndex + 1) % availableDays.length;
-          finalDaysOff.push(availableDays[pick1]);
-          if (availableDays[pick2] !== availableDays[pick1]) {
-            finalDaysOff.push(availableDays[pick2]);
-          } else if (availableDays.length > 1) {
-            // Pick the next different day
-            const pick3 = (globalIndex + 2) % availableDays.length;
-            finalDaysOff.push(availableDays[pick3]);
-          }
-          console.log(`   → Picked: ${finalDaysOff.map(d => DAYS_OF_WEEK[d]).join(', ')}`);
+        if (availableDays.length === 0) {
+          console.warn(`  ⚠️ ${staff.name}: All 4 days busy, working full week`);
+          return {
+            staff,
+            daysOff: [],
+            groupType: 'forced-full',
+            actualDaysOff: 0
+          };
         }
         
-        // Update counter
-        finalDaysOff.forEach(day => {
-          offsPerDay[day]++;
-        });
+        // CRITICAL: Round-robin ensures ALL 4 days get used evenly
+        // Cycle through: Mon(0) → Wed(2) → Thu(3) → Sun(6) → Mon → ...
+        const dayIndex = globalIndex % availableDays.length;
+        const finalDayOff = availableDays[dayIndex];
         
-        console.log(`   ✅ ASSIGNED: ${finalDaysOff.map(d => DAYS_OF_WEEK[d]).join(', ')}`);
-        console.log(`   📊 Usage now:`, availableDays.map(d => `${DAYS_OF_WEEK[d]}:${offsPerDay[d]}`).join(', '));
+        // Track this assignment
+        dayOffDistribution[finalDayOff].push(staff.name);
+        offsPerDay[finalDayOff]++;
+        
+        console.log(`  ✅ ${staff.name} (idx ${globalIndex}): ${DAYS_OF_WEEK[finalDayOff]} (position ${dayIndex} in cycle)`);
         
         return {
           staff,
-          daysOff: finalDaysOff,
-          groupType: shouldGetTwoDays ? '2-day' : '1-day',
-          actualDaysOff: finalDaysOff.length
+          daysOff: [finalDayOff],
+          groupType: 'one-day-biweekly',
+          actualDaysOff: 1
         };
       });
+      
+      // SHOW DISTRIBUTION SUMMARY
+      console.log(`\n📊 ${staffList[0]?.title || 'STAFF'} DAY OFF DISTRIBUTION:`);
+      allowedOffDays.forEach(dayNum => {
+        const dayName = DAYS_OF_WEEK[dayNum];
+        const count = dayOffDistribution[dayNum].length;
+        const names = dayOffDistribution[dayNum].join(', ') || 'none';
+        console.log(`  ${dayName}: ${count} person(s) - ${names}`);
+      });
+      
+      return results;
     };
 
     const headSchedules = divideIntoGroups(headBartenders, 0);
@@ -537,8 +543,20 @@ export default function StaffScheduling() {
     }
 
     console.log('✅ Schedule generated successfully!', { totalEntries: Object.keys(newSchedule).length });
+    
+    // Final summary of all day offs across all roles
+    console.log('\n\n🎉 FINAL SCHEDULE SUMMARY - ALL STAFF:');
+    console.log(`Total staff: ${staffMembers.length}`);
+    console.log('\nDay off distribution across ALL 4 DAYS:');
+    const finalDistribution = [0, 2, 3, 6].map(dayNum => {
+      const dayName = DAYS_OF_WEEK[dayNum];
+      const count = offsPerDay[dayNum];
+      return `${dayName}: ${count}`;
+    }).join(' | ');
+    console.log(finalDistribution);
+    
     setSchedule(newSchedule);
-    toast.success(`✅ Schedule generated! Off days: Mon/Wed/Thu/Sun. Everyone gets 1-2 days off. Same titles alternate weekly.`, {
+    toast.success(`✅ Schedule generated! Off days distributed across Mon/Wed/Thu/Sun. Each person: 1 day off every 2 weeks.`, {
       duration: 5000
     });
   };
