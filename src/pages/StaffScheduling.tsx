@@ -155,6 +155,19 @@ export default function StaffScheduling() {
       return;
     }
 
+    // Recommend sufficient staff for weekday outdoor coverage
+    const totalBartenders = headBartenders.length + seniorBartenders.length + bartenders.length;
+    if (totalBartenders < 5) {
+      toast.warning('Recommendation: For optimal weekday outdoor coverage, add at least 5 bartenders (2 Head + 3+ Bartenders/Senior)', {
+        duration: 5000
+      });
+    }
+    if (support.length < 1) {
+      toast.warning('Recommendation: Add at least 1 support staff for outdoor assistance on weekdays', {
+        duration: 5000
+      });
+    }
+
     // BUSY DAYS - No offs allowed: Tuesday (Ladies Night), Friday (Weekend), Saturday (Brunch/Weekend)
     const busyDays = [1, 4, 5]; // Tuesday=1, Friday=4, Saturday=5
 
@@ -264,7 +277,7 @@ export default function StaffScheduling() {
           };
           stationIndex++;
         } else if (!outdoorBartenderAssigned) {
-          // Outdoor station 2 - every day
+          // Outdoor station 2 - PRIORITY on weekdays to ensure coverage
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
@@ -307,7 +320,7 @@ export default function StaffScheduling() {
           };
           stationIndex++;
         } else if (!outdoorBartenderAssigned) {
-          // Outdoor station 2 - every day
+          // Outdoor station 2 - PRIORITY on weekdays to ensure coverage
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
@@ -377,6 +390,8 @@ export default function StaffScheduling() {
       });
 
       // === SUPPORT - Schedule based on rotation ===
+      // Ensure at least one support for outdoor on weekdays
+      let outdoorSupportAssigned = false;
       supportSchedules.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
 
@@ -391,20 +406,32 @@ export default function StaffScheduling() {
             type: 'off'
           };
         } else {
-          // Support works when on duty
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange: '3:00 PM - 1:00 AM',
-            type: 'regular',
-            station: 'Floating Support - Help as needed'
-          };
+          // On weekdays, prioritize outdoor support for first available support staff
+          if (isWeekday && !outdoorSupportAssigned && idx === 0) {
+            newSchedule[key] = {
+              staffId: schedule.staff.id,
+              day,
+              timeRange: '3:00 PM - 1:00 AM',
+              type: 'regular',
+              station: 'Outdoor - Support Help'
+            };
+            outdoorSupportAssigned = true;
+          } else {
+            // Other support staff - floating or indoor
+            newSchedule[key] = {
+              staffId: schedule.staff.id,
+              day,
+              timeRange: '3:00 PM - 1:00 AM',
+              type: 'regular',
+              station: idx === 1 ? 'Indoor - Floating Support' : 'Floating Support - Help as needed'
+            };
+          }
         }
       });
     });
 
     setSchedule(newSchedule);
-    toast.success('Schedule generated! Day-offs distributed on less busy days (Mon/Wed/Thu/Sun). No offs on Tue/Fri/Sat.');
+    toast.success('Schedule generated! Weekdays: Outdoor has 1+ bartender & 1 support. Day-offs on less busy days.');
   };
 
   const exportToPDF = () => {
