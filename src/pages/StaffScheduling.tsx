@@ -912,37 +912,41 @@ export default function StaffScheduling() {
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
     
-    // Attractive color palette: dark grey, white, and light blue
+    // Dark theme color palette
     const colors = {
-      primary: [45, 45, 55] as [number, number, number], // Dark grey
-      lightBlue: [173, 216, 230] as [number, number, number], // Light blue
-      darkBlue: [100, 149, 237] as [number, number, number], // Darker blue for accents
-      white: [255, 255, 255] as [number, number, number], // White
-      foreground: [30, 30, 40] as [number, number, number], // Very dark text
-      muted: [200, 200, 200] as [number, number, number], // Light grey
-      mutedText: [100, 100, 100] as [number, number, number] // Medium grey text
+      background: [26, 26, 26] as [number, number, number], // Dark background
+      primary: [60, 60, 70] as [number, number, number], // Slightly lighter dark grey
+      accent: [100, 149, 237] as [number, number, number], // Blue accent
+      white: [255, 255, 255] as [number, number, number], // White text
+      lightGrey: [200, 200, 200] as [number, number, number], // Light grey text
+      mediumGrey: [150, 150, 150] as [number, number, number], // Medium grey
+      darkGrey: [40, 40, 45] as [number, number, number] // Dark grey for cells
     };
     
-    // Modern header background - light blue
-    doc.setFillColor(...colors.lightBlue);
+    // Dark background for entire page
+    doc.setFillColor(...colors.background);
+    doc.rect(0, 0, 297, 210, 'F');
+    
+    // Header background - darker grey
+    doc.setFillColor(...colors.primary);
     doc.rect(0, 0, 297, 28, 'F');
     
-    // Title with professional styling
+    // Title with light text
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...colors.foreground);
+    doc.setTextColor(...colors.white);
     doc.text((venueName || 'STAFF SCHEDULE').toUpperCase(), 148, 14, { align: 'center' });
     
-    // Subtitle with accent
+    // Subtitle with light text
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...colors.foreground);
+    doc.setTextColor(...colors.lightGrey);
     const weekStart = new Date(weekStartDate);
     const weekEnd = addDays(weekStart, 6);
     doc.text(`WEEK: ${format(weekStart, 'MMM dd').toUpperCase()} - ${format(weekEnd, 'MMM dd, yyyy').toUpperCase()}`, 148, 22, { align: 'center' });
     
     // Reset text color for table
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(...colors.white);
     
     // Table headers - uppercase
     const headers = [['STAFF NAME', ...DAYS_OF_WEEK.map(d => d.toUpperCase())]];
@@ -966,8 +970,9 @@ export default function StaffScheduling() {
         fontSize: 6, 
         cellPadding: 1.2, 
         lineWidth: 0.2, 
-        lineColor: colors.muted,
-        textColor: colors.foreground,
+        lineColor: colors.primary,
+        textColor: colors.white,
+        fillColor: colors.darkGrey,
         valign: 'middle',
         halign: 'center'
       },
@@ -983,12 +988,13 @@ export default function StaffScheduling() {
         0: { 
           cellWidth: 28, 
           fontStyle: 'bold', 
-          fillColor: [255, 255, 255],
+          fillColor: colors.darkGrey,
+          textColor: colors.white,
           halign: 'left'
         }
       },
       alternateRowStyles: {
-        fillColor: [255, 255, 255]
+        fillColor: [35, 35, 40]
       },
       didParseCell: (data) => {
         if (data.row.section === 'body' && data.column.index > 0) {
@@ -1038,7 +1044,7 @@ export default function StaffScheduling() {
     const hasEvents = Object.values(dailyEvents).some(event => event && event.trim() !== '');
     
     if (hasEvents) {
-      doc.setFillColor(...colors.darkBlue);
+      doc.setFillColor(...colors.accent);
       doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
@@ -1048,7 +1054,7 @@ export default function StaffScheduling() {
       finalY += 10;
       doc.setFontSize(6.5);
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...colors.foreground);
+      doc.setTextColor(...colors.lightGrey);
       
       DAYS_OF_WEEK.forEach(day => {
         const event = dailyEvents[day];
@@ -1060,10 +1066,10 @@ export default function StaffScheduling() {
           
           const staffInfo = openingStaff ? ` | Opening: ${openingStaff.name}` : '';
           doc.setFont('helvetica', 'bold');
-          doc.setTextColor(...colors.darkBlue);
+          doc.setTextColor(...colors.accent);
           doc.text(`${day}:`, 18, finalY);
           doc.setFont('helvetica', 'normal');
-          doc.setTextColor(...colors.foreground);
+          doc.setTextColor(...colors.lightGrey);
           doc.text(`${event}${staffInfo}`, 40, finalY);
           finalY += 3.5;
         }
@@ -1073,7 +1079,7 @@ export default function StaffScheduling() {
     }
     
     // Role Responsibilities Section - Based on titles only
-    doc.setFillColor(...colors.darkBlue);
+    doc.setFillColor(...colors.accent);
     doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
@@ -1082,7 +1088,7 @@ export default function StaffScheduling() {
     
     finalY += 10;
     doc.setFontSize(7);
-    doc.setTextColor(...colors.foreground);
+    doc.setTextColor(...colors.lightGrey);
     
     // Get unique titles from staff members
     const uniqueTitles = Array.from(new Set(staffMembers.map(s => s.title)))
@@ -1099,17 +1105,18 @@ export default function StaffScheduling() {
       
       const description = ROLE_RESPONSIBILITIES[title];
       
-      // Light blue box for each role with increased height for longer text
-      doc.setFillColor(...colors.lightBlue);
+      // Dark grey box for each role
+      doc.setFillColor(...colors.darkGrey);
       doc.roundedRect(18, finalY - 2, 260, 10, 1, 1, 'F');
       
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7);
-      doc.setTextColor(...colors.foreground);
+      doc.setTextColor(...colors.white);
       doc.text(`${roleTitle.toUpperCase()}:`, 22, finalY + 2);
       
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(6.2);
+      doc.setTextColor(...colors.lightGrey);
       // Split long text into multiple lines if needed
       const splitText = doc.splitTextToSize(description, 185);
       doc.text(splitText, 70, finalY + 2);
