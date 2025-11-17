@@ -1518,9 +1518,9 @@ export default function StaffScheduling() {
                       const isBusyDay = !!dailyEvents[day];
                       const dayLabel = dailyEvents[day] || '';
                       return (
-                        <th key={day} className={`border border-gray-700 p-1 font-semibold text-center min-w-[70px] ${isBusyDay ? 'bg-orange-900/30' : 'bg-gray-800'} text-gray-100`}>
-                          <div className="text-[10px]">{day}</div>
-                          {dayLabel && <div className="text-[8px] font-normal text-gray-400">{dayLabel}</div>}
+                        <th key={day} className={`border border-gray-700 p-1 font-semibold text-center min-w-[65px] ${isBusyDay ? 'bg-orange-900/30' : 'bg-gray-800'} text-gray-100`}>
+                          <div className="text-[11px]">{day}</div>
+                          {dayLabel && <div className="text-[9px] font-normal text-gray-400">{dayLabel}</div>}
                         </th>
                       );
                     })}
