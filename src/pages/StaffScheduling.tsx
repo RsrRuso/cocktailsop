@@ -1119,7 +1119,9 @@ export default function StaffScheduling() {
           const link = document.createElement('a');
           link.href = url;
           link.download = `${venueName || 'schedule'}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+          document.body.appendChild(link);
           link.click();
+          document.body.removeChild(link);
           URL.revokeObjectURL(url);
           toast.success(`${day} schedule exported to JPG`);
         }
@@ -1129,6 +1131,41 @@ export default function StaffScheduling() {
       toast.error('Failed to export image');
     } finally {
       document.body.removeChild(container);
+    }
+  };
+
+  const exportWeeklySummaryToJPG = async () => {
+    const element = document.getElementById('Weekly Off Days Summary');
+    if (!element) {
+      toast.error('Summary section not found');
+      return;
+    }
+
+    try {
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#111827',
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+      });
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${venueName || 'schedule'}-weekly-summary-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          toast.success('Weekly summary exported to JPG');
+        }
+      }, 'image/jpeg', 0.95);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export image');
     }
   };
 
@@ -1349,7 +1386,7 @@ export default function StaffScheduling() {
                 Weekly Off Days Summary
               </h3>
               <Button 
-                onClick={() => exportDayToJPG('Weekly Off Days Summary')} 
+                onClick={exportWeeklySummaryToJPG} 
                 variant="outline" 
                 size="sm"
                 className="border-gray-600 hover:bg-gray-800 hover:border-primary transition-all"
