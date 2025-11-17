@@ -15,7 +15,7 @@ import BottomNav from '@/components/BottomNav';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, startOfWeek, addDays } from 'date-fns';
-import html2canvas from 'html2canvas';
+import { toJpeg } from 'html-to-image';
 
 interface StaffMember {
   id: string;
@@ -1181,65 +1181,27 @@ export default function StaffScheduling() {
     }
 
     console.log(`Starting download for ${day}...`);
-    toast.info(`Preparing ${day} for download...`);
+    toast.info(`Capturing ${day}...`);
     
     try {
-      // Short delay for UI to settle
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      console.log(`Capturing ${day} with html2canvas...`);
-      
-      // Use simpler html2canvas options that are more reliable
-      const canvas = await html2canvas(element, {
-        backgroundColor: '#111827',
-        scale: 1.5, // Lower scale for reliability
-        logging: true,
-        useCORS: true,
-        allowTaint: true, // Allow tainted canvas for compatibility
-        imageTimeout: 0, // Don't wait for images
-        removeContainer: true,
-      });
-      
-      console.log(`Canvas created for ${day}, size: ${canvas.width}x${canvas.height}`);
-      
-      // Convert to blob as JPEG with lower quality for faster processing
-      console.log('Converting to blob...');
-      const blob = await new Promise<Blob | null>((resolve, reject) => {
-        try {
-          canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.9);
-        } catch (err) {
-          reject(err);
-        }
-      });
-      
-      if (!blob) {
-        console.error('Failed to create blob');
-        throw new Error('Failed to create image blob');
-      }
-      
-      console.log(`Blob created, size: ${blob.size} bytes`);
-      
-      // Create and trigger download
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
       const filename = `${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
       
-      link.href = url;
+      console.log(`Using html-to-image to capture ${day}...`);
+      
+      const dataUrl = await toJpeg(element, {
+        quality: 0.95,
+        pixelRatio: 2,
+        cacheBust: true,
+      });
+      
+      console.log(`Image captured successfully for ${day}, downloading...`);
+      
+      const link = document.createElement('a');
       link.download = filename;
-      
-      console.log(`Triggering download: ${filename}`);
-      
-      // Different approach for triggering download
-      document.body.appendChild(link);
+      link.href = dataUrl;
       link.click();
       
-      // Cleanup after a brief delay
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        console.log(`Download cleanup completed for ${day}`);
-      }, 100);
-      
+      console.log(`Download triggered for ${day}`);
       toast.success(`${day} downloaded!`);
       
     } catch (error) {
@@ -1258,26 +1220,18 @@ export default function StaffScheduling() {
     toast.info('Capturing weekly summary...');
 
     try {
-      const canvas = await html2canvas(element, {
-        backgroundColor: '#111827',
-        scale: 2,
-        logging: false,
-        useCORS: true,
+      const dataUrl = await toJpeg(element, {
+        quality: 0.95,
+        pixelRatio: 2,
+        cacheBust: true,
       });
       
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-weekly-summary-${format(new Date(), 'yyyy-MM-dd')}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          toast.success('Weekly summary downloaded!');
-        }
-      }, 'image/png');
+      const link = document.createElement('a');
+      link.download = `${(venueName || 'schedule').replace(/\s+/g, '-')}-weekly-summary-${format(new Date(), 'yyyy-MM-dd')}.jpg`;
+      link.href = dataUrl;
+      link.click();
+      
+      toast.success('Weekly summary downloaded!');
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Download failed');
