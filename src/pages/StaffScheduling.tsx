@@ -80,18 +80,30 @@ export default function StaffScheduling() {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
+      console.log('User authenticated:', user.id);
       fetchStaffMembers();
+    } else {
+      console.log('No user authenticated');
     }
   }, [user]);
 
   const fetchStaffMembers = async () => {
+    if (!user?.id) {
+      console.log('No user ID available');
+      return;
+    }
+
+    console.log('Fetching staff for user:', user.id);
+    
     const { data, error } = await supabase
       .from('staff_members')
       .select('*')
-      .eq('user_id', user?.id)
+      .eq('user_id', user.id)
       .eq('is_active', true)
       .order('title', { ascending: true });
+
+    console.log('Staff members query result:', { data, error, count: data?.length });
 
     if (!error && data) {
       // Load break timings from database or use defaults
