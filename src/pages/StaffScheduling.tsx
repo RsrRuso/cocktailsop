@@ -978,12 +978,12 @@ export default function StaffScheduling() {
         0: { 
           cellWidth: 28, 
           fontStyle: 'bold', 
-          fillColor: colors.muted,
+          fillColor: [255, 255, 255],
           halign: 'left'
         }
       },
       alternateRowStyles: {
-        fillColor: [230, 230, 230]
+        fillColor: [255, 255, 255]
       },
       didParseCell: (data) => {
         if (data.row.section === 'body' && data.column.index > 0) {
