@@ -1024,7 +1024,7 @@ export default function StaffScheduling() {
       const element = document.getElementById(`day-${day}`);
       
       if (!element) {
-        toast.error(`Section not found`);
+        toast.error('Section not found');
         return;
       }
 
@@ -1064,244 +1064,6 @@ export default function StaffScheduling() {
       console.error('Download failed:', error);
       toast.error(`Failed to download ${day}`);
     }
-  };
-
-  const exportDayToPDF = (day: string) => {
-    // Calculate day schedule data
-    const daySchedule = Object.values(schedule).filter(s => s.day === day);
-    const working = daySchedule.filter(s => s.timeRange !== 'OFF');
-    const off = daySchedule.filter(s => s.timeRange === 'OFF');
-    
-    // Categorize by area
-    const indoor = working.filter(s => {
-      const station = s.station || '';
-      return station.toLowerCase().includes('indoor');
-    });
-    const outdoor = working.filter(s => {
-      const station = s.station || '';
-      return station.toLowerCase().includes('outdoor');
-    });
-    
-    const categorizedIds = new Set([...indoor, ...outdoor].map(s => s.staffId));
-    const uncategorized = working.filter(s => !categorizedIds.has(s.staffId));
-    
-    // Get staff details
-    const indoorStaff = [...indoor, ...uncategorized].map(s => {
-      const staff = staffMembers.find(sm => sm.id === s.staffId);
-      return { name: staff?.name || 'Unknown', station: s.station || 'General Support', timeRange: s.timeRange };
-    });
-    const outdoorStaff = outdoor.map(s => {
-      const staff = staffMembers.find(sm => sm.id === s.staffId);
-      return { name: staff?.name || 'Unknown', station: s.station, timeRange: s.timeRange };
-    });
-    const offStaff = off.map(s => {
-      const staff = staffMembers.find(sm => sm.id === s.staffId);
-      return staff?.name || 'Unknown';
-    });
-
-    const doc = new jsPDF();
-    const eventLabel = dailyEvents[day];
-    const isBusyDay = !!eventLabel;
-    
-    // Dark background for entire page
-    doc.setFillColor(17, 24, 39); // gray-900
-    doc.rect(0, 0, 210, 297, 'F');
-    
-    // Header section with gradient effect
-    doc.setFillColor(31, 41, 55); // gray-800
-    doc.rect(0, 0, 210, 40, 'F');
-    
-    doc.setTextColor(243, 244, 246); // gray-100
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.text(venueName || 'Staff Schedule', 105, 15, { align: 'center' });
-    
-    doc.setFontSize(16);
-    doc.text(day, 105, 25, { align: 'center' });
-    
-    // Event label if exists
-    if (eventLabel) {
-      doc.setFontSize(11);
-      doc.setTextColor(253, 186, 116); // orange-300
-      doc.text(`📅 ${eventLabel}`, 105, 35, { align: 'center' });
-    }
-
-    let yPos = 50;
-
-    // Summary stats boxes
-    const boxWidth = 45;
-    const boxHeight = 18;
-    const startX = 15;
-    const spacing = 3;
-    
-    // Working box (green)
-    doc.setFillColor(6, 78, 59); // green-950
-    doc.roundedRect(startX, yPos, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setFillColor(5, 46, 22); // green-900 border effect
-    doc.roundedRect(startX, yPos, boxWidth, boxHeight, 2, 2, 'S');
-    doc.setTextColor(74, 222, 128); // green-400
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text(working.length.toString(), startX + boxWidth/2, yPos + 10, { align: 'center' });
-    doc.setFontSize(8);
-    doc.setTextColor(156, 163, 175); // gray-400
-    doc.text('WORKING', startX + boxWidth/2, yPos + 15, { align: 'center' });
-    
-    // Off box (red)
-    doc.setFillColor(69, 10, 10); // red-950
-    doc.roundedRect(startX + boxWidth + spacing, yPos, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(248, 113, 113); // red-400
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text(off.length.toString(), startX + boxWidth + spacing + boxWidth/2, yPos + 10, { align: 'center' });
-    doc.setFontSize(8);
-    doc.setTextColor(156, 163, 175);
-    doc.text('OFF', startX + boxWidth + spacing + boxWidth/2, yPos + 15, { align: 'center' });
-    
-    // Indoor box (blue)
-    doc.setFillColor(23, 37, 84); // blue-950
-    doc.roundedRect(startX + (boxWidth + spacing) * 2, yPos, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(96, 165, 250); // blue-400
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text(indoor.length.toString(), startX + (boxWidth + spacing) * 2 + boxWidth/2, yPos + 10, { align: 'center' });
-    doc.setFontSize(8);
-    doc.setTextColor(156, 163, 175);
-    doc.text('INDOOR', startX + (boxWidth + spacing) * 2 + boxWidth/2, yPos + 15, { align: 'center' });
-    
-    // Outdoor box (purple)
-    doc.setFillColor(46, 16, 101); // purple-950
-    doc.roundedRect(startX + (boxWidth + spacing) * 3, yPos, boxWidth, boxHeight, 2, 2, 'F');
-    doc.setTextColor(192, 132, 252); // purple-400
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text(outdoor.length.toString(), startX + (boxWidth + spacing) * 3 + boxWidth/2, yPos + 10, { align: 'center' });
-    doc.setFontSize(8);
-    doc.setTextColor(156, 163, 175);
-    doc.text('OUTDOOR', startX + (boxWidth + spacing) * 3 + boxWidth/2, yPos + 15, { align: 'center' });
-    
-    yPos += 25;
-
-    // Indoor Staff Section
-    if (indoorStaff.length > 0) {
-      // Section background
-      doc.setFillColor(23, 37, 84); // blue-950
-      const sectionHeight = indoorStaff.length * 10 + 12;
-      doc.roundedRect(startX, yPos, 180, sectionHeight, 2, 2, 'F');
-      
-      // Section border
-      doc.setDrawColor(30, 58, 138); // blue-900
-      doc.roundedRect(startX, yPos, 180, sectionHeight, 2, 2, 'S');
-      
-      yPos += 7;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(147, 197, 253); // blue-300
-      doc.text('🔵 Indoor Stations', startX + 3, yPos);
-      yPos += 6;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(209, 213, 219); // gray-300
-      
-      indoorStaff.forEach(s => {
-        doc.text(`• ${s.name}`, startX + 5, yPos);
-        doc.setTextColor(156, 163, 175); // gray-500
-        doc.setFontSize(8);
-        doc.text(`(${s.timeRange})`, startX + 70, yPos);
-        yPos += 3;
-        doc.setTextColor(147, 197, 253, 0.8); // blue-400/80
-        doc.setFontSize(8);
-        doc.text(s.station, startX + 8, yPos);
-        yPos += 4;
-        doc.setTextColor(209, 213, 219);
-        doc.setFontSize(9);
-      });
-      yPos += 5;
-    }
-
-    // Outdoor Staff Section
-    if (outdoorStaff.length > 0) {
-      if (yPos > 230) {
-        doc.addPage();
-        doc.setFillColor(17, 24, 39);
-        doc.rect(0, 0, 210, 297, 'F');
-        yPos = 20;
-      }
-      
-      // Section background
-      doc.setFillColor(46, 16, 101); // purple-950
-      const sectionHeight = outdoorStaff.length * 10 + 12;
-      doc.roundedRect(startX, yPos, 180, sectionHeight, 2, 2, 'F');
-      
-      // Section border
-      doc.setDrawColor(88, 28, 135); // purple-900
-      doc.roundedRect(startX, yPos, 180, sectionHeight, 2, 2, 'S');
-      
-      yPos += 7;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(216, 180, 254); // purple-300
-      doc.text('🟣 Outdoor Stations', startX + 3, yPos);
-      yPos += 6;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(209, 213, 219);
-      
-      outdoorStaff.forEach(s => {
-        doc.text(`• ${s.name}`, startX + 5, yPos);
-        doc.setTextColor(156, 163, 175);
-        doc.setFontSize(8);
-        doc.text(`(${s.timeRange})`, startX + 70, yPos);
-        yPos += 3;
-        doc.setTextColor(192, 132, 252, 0.8); // purple-400/80
-        doc.setFontSize(8);
-        doc.text(s.station, startX + 8, yPos);
-        yPos += 4;
-        doc.setTextColor(209, 213, 219);
-        doc.setFontSize(9);
-      });
-      yPos += 5;
-    }
-
-    // Off Staff Section
-    if (offStaff.length > 0) {
-      if (yPos > 240) {
-        doc.addPage();
-        doc.setFillColor(17, 24, 39);
-        doc.rect(0, 0, 210, 297, 'F');
-        yPos = 20;
-      }
-      
-      // Section background
-      doc.setFillColor(69, 10, 10); // red-950
-      const sectionHeight = offStaff.length * 6 + 12;
-      doc.roundedRect(startX, yPos, 180, sectionHeight, 2, 2, 'F');
-      
-      // Section border
-      doc.setDrawColor(127, 29, 29); // red-900
-      doc.roundedRect(startX, yPos, 180, sectionHeight, 2, 2, 'S');
-      
-      yPos += 7;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(252, 165, 165); // red-300
-      doc.text('🔴 Off Duty', startX + 3, yPos);
-      yPos += 6;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(209, 213, 219);
-      
-      offStaff.forEach(s => {
-        doc.text(`• ${s}`, startX + 5, yPos);
-        yPos += 5;
-      });
-    }
-
-    doc.save(`${(venueName || 'schedule').replace(/\s+/g, '-')}-${day}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-    toast.success(`${day} PDF downloaded!`);
   };
 
   const exportWeeklySummaryToJPG = async () => {
@@ -1664,28 +1426,16 @@ export default function StaffScheduling() {
                         {isBusyDay && <span className="inline-block w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>}
                         {day}
                       </div>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => exportDayToPDF(day)}
-                          className="h-7 px-2 text-xs hover:bg-gray-700 transition-colors"
-                          title="Download as PDF"
-                        >
-                          <Download className="h-3 w-3 mr-1" />
-                          PDF
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => exportDayToJPG(day)}
-                          className="h-7 px-2 text-xs hover:bg-gray-700 transition-colors"
-                          title="Download as Screenshot"
-                        >
-                          <Download className="h-3 w-3 mr-1" />
-                          IMG
-                        </Button>
-                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => exportDayToJPG(day)}
+                        className="h-7 px-2 text-xs hover:bg-gray-700 transition-colors"
+                        title="Download Screenshot"
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        Download
+                      </Button>
                     </div>
                     {dayLabel && (
                       <div className="text-xs text-orange-300 mb-3 bg-orange-950/30 rounded px-2 py-1 font-medium">
