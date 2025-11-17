@@ -204,6 +204,13 @@ export default function StaffScheduling() {
     const barBacks = shuffleArray(staffMembers.filter(s => s.title === 'bar_back'));
     const support = shuffleArray(staffMembers.filter(s => s.title === 'support'));
 
+    console.log('🔀 SHUFFLED Staff order:');
+    console.log('  Heads:', headBartenders.map(s => s.name).join(', '));
+    console.log('  Seniors:', seniorBartenders.map(s => s.name).join(', '));
+    console.log('  Bartenders:', bartenders.map(s => s.name).join(', '));
+    console.log('  Bar Backs:', barBacks.map(s => s.name).join(', '));
+    console.log('  Support:', support.map(s => s.name).join(', '));
+
     console.log('📊 Staff counts:', {
       headBartenders: headBartenders.length,
       seniorBartenders: seniorBartenders.length,
@@ -409,6 +416,7 @@ export default function StaffScheduling() {
         if (targetDaysOff === 1) {
           // 1 day off: randomized selection
           const selectedDay = availableDays[0]; // Already shuffled, so take first
+          console.log(`  🎲 ${staff.name}: Selected ${DAYS_OF_WEEK[selectedDay]} from shuffled options: ${availableDays.map(d => DAYS_OF_WEEK[d]).join(', ')}`);
           finalDaysOff.push(selectedDay);
           dayOffDistribution[selectedDay].push(staff.name);
           offsPerDay[selectedDay]++;
@@ -424,6 +432,7 @@ export default function StaffScheduling() {
           console.log(`  ✅ 1 day: ${DAYS_OF_WEEK[selectedDay]}`);
         } else {
           // 2 days off: pick first 2 from shuffled available days
+          console.log(`  🎲 ${staff.name}: Selecting 2 days from shuffled options: ${availableDays.map(d => DAYS_OF_WEEK[d]).join(', ')}`);
           let attempts = 0;
           const maxAttempts = availableDays.length;
           
