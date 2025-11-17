@@ -1076,13 +1076,13 @@ export default function StaffScheduling() {
     
     // Staff Responsibilities Section - New detailed section
     doc.setFillColor(...colors.primary);
-    doc.roundedRect(14, finalY - 2, 270, 10, 2, 2, 'F');
+    doc.roundedRect(14, finalY - 2, 270, 12, 2, 2, 'F');
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
-    doc.text('STAFF RESPONSIBILITIES & STATIONS', 18, finalY + 4);
+    doc.text('STAFF RESPONSIBILITIES & STATIONS', 18, finalY + 5);
     
-    finalY += 13;
+    finalY += 14;
     doc.setFontSize(6.5);
     doc.setTextColor(...colors.foreground);
     
