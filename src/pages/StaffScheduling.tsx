@@ -333,7 +333,8 @@ export default function StaffScheduling() {
         }
         
         // CRITICAL: If no available days after constraints, must give at least 1 day off anyway
-        if (availableDays.length === 0) {
+        // EXCEPTION: Support staff can work 7 days when they have 0 target days off
+        if (availableDays.length === 0 && !isSupport) {
           console.warn(`  ⚠️ ${staff.name}: No valid days pass all constraints - forcing at least 1 day off`);
           // Fall back to all allowed off days (ignore bartender minimum constraint for this person)
           availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
@@ -346,6 +347,10 @@ export default function StaffScheduling() {
           // Force them to get only 1 day off (minimum required)
           targetDaysOff = 1;
           console.warn(`  ⚠️ Forcing ${staff.name} to get ${targetDaysOff} day off despite constraints`);
+        } else if (availableDays.length === 0 && isSupport && targetDaysOff === 0) {
+          // Support staff with 0 target days off can work all 7 days
+          console.log(`  ℹ️ ${staff.name} (SUPPORT): Working all 7 days this week (no off days scheduled)`);
+          return { staffId: staff.id, offDays: [] };
         }
         
         // Distribute days evenly using round-robin
