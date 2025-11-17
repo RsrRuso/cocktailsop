@@ -1192,6 +1192,7 @@ export default function StaffScheduling() {
         quality: 0.95,
         pixelRatio: 1.5,
         width: 320,
+        height: 500,
         cacheBust: true,
       });
       
@@ -1225,6 +1226,7 @@ export default function StaffScheduling() {
         quality: 0.95,
         pixelRatio: 1.5,
         width: 320,
+        height: 500,
         cacheBust: true,
       });
       
