@@ -527,7 +527,7 @@ export default function StaffScheduling() {
         };
       });
       
-      // Schedule working heads
+      // Schedule working heads - MAX 1 OUTDOOR, rest indoor
       workingHeads.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
@@ -537,7 +537,8 @@ export default function StaffScheduling() {
           return;
         }
         
-        const area = shouldDivideHeads ? (idx % 2 === 0 ? 'Indoor' : 'Outdoor') : 'Supervising';
+        // Only first head goes outdoor if dividing, rest are indoor
+        const area = shouldDivideHeads && idx === 0 ? 'Outdoor' : 'Indoor';
         
         // Determine time range based on day type
         let timeRange;
@@ -574,17 +575,19 @@ export default function StaffScheduling() {
       });
       
       const allStationBartenders = [...workingSeniorBartenders, ...workingBartenders];
-      // PRIORITY: Indoor bar is always busier - allocate based on team size
-      // When 4 working: 2 indoor, 2 outdoor
-      // When 3 working: 2 indoor (1 is support), 1 outdoor
-      const stations = allStationBartenders.length >= 4 ? [
+      // MAX 1 OUTDOOR bartender, rest indoor
+      const numBartenders = allStationBartenders.length;
+      const stations = numBartenders >= 4 ? [
+        'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Indoor - Garnishing Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Indoor - Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
+      ] : numBartenders === 3 ? [
         'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Garnishing Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Outdoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
       ] : [
         'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Support Station: Operate station, flexible support indoor/outdoor, refresh & maintain',
         'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
       ];
 
@@ -656,15 +659,15 @@ export default function StaffScheduling() {
           return;
         }
         
-        // Allocate bar backs based on team size
-        // When 3+ working: 1 indoor, 1 outdoor, 1+ flexible support
-        // When 2 working: 1 indoor, 1 outdoor
+        // MAX 1 OUTDOOR barback (first one), rest indoor
         const barBackStations = workingBarBacks.length >= 3 ? [
-          'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
           'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
-          'Bar Back - Support (Indoor/Outdoor): Flexible support, help where needed, pickups, refilling, stock'
-        ] : [
           'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
+          'Bar Back - Indoor Support: Pickups, Refilling, Glassware, Batching, help where needed, stock'
+        ] : workingBarBacks.length === 2 ? [
+          'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
+          'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish'
+        ] : [
           'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish'
         ];
         
