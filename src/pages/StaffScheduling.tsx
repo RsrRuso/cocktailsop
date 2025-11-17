@@ -1319,115 +1319,6 @@ export default function StaffScheduling() {
           </div>
         </Card>
 
-        {/* Break Timings Configuration */}
-        <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl" />
-          <div className="relative">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-orange-500/20 rounded-lg">
-                <Calendar className="w-5 h-5 text-orange-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-100">Break Schedule</h3>
-                <p className="text-xs text-gray-500">Configure staff break timings</p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <Label className="text-xs font-semibold text-gray-400 mb-2 block uppercase tracking-wide">First Wave Start</Label>
-                <Input
-                  type="time"
-                  value={(() => {
-                    const [time, period] = breakTimings.firstWaveStart.split(' ');
-                    const [hours, minutes] = time.split(':');
-                    let hour = parseInt(hours);
-                    if (period === 'PM' && hour !== 12) hour += 12;
-                    if (period === 'AM' && hour === 12) hour = 0;
-                    return `${hour.toString().padStart(2, '0')}:${minutes}`;
-                  })()}
-                  onChange={(e) => {
-                    const time = e.target.value;
-                    const [hours, minutes] = time.split(':');
-                    const hour = parseInt(hours);
-                    const ampm = hour >= 12 ? 'PM' : 'AM';
-                    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                    setBreakTimings({
-                      ...breakTimings,
-                      firstWaveStart: `${displayHour}:${minutes} ${ampm}`
-                    });
-                  }}
-                  className="bg-gray-800/50 border-gray-700/50 text-gray-100 h-10 font-mono"
-                />
-                <p className="text-[10px] text-gray-500 mt-1.5">Opening shifts (12PM, 3PM, 4PM)</p>
-              </div>
-
-              <div>
-                <Label className="text-xs font-semibold text-gray-400 mb-2 block uppercase tracking-wide">First Wave End</Label>
-                <Input
-                  type="time"
-                  value={(() => {
-                    const [time, period] = breakTimings.firstWaveEnd.split(' ');
-                    const [hours, minutes] = time.split(':');
-                    let hour = parseInt(hours);
-                    if (period === 'PM' && hour !== 12) hour += 12;
-                    if (period === 'AM' && hour === 12) hour = 0;
-                    return `${hour.toString().padStart(2, '0')}:${minutes}`;
-                  })()}
-                  onChange={(e) => {
-                    const time = e.target.value;
-                    const [hours, minutes] = time.split(':');
-                    const hour = parseInt(hours);
-                    const ampm = hour >= 12 ? 'PM' : 'AM';
-                    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                    setBreakTimings({
-                      ...breakTimings,
-                      firstWaveEnd: `${displayHour}:${minutes} ${ampm}`,
-                      secondWaveStart: `${displayHour}:${minutes} ${ampm}`
-                    });
-                  }}
-                  className="bg-gray-800/50 border-gray-700/50 text-gray-100 h-10 font-mono"
-                />
-                <p className="text-[10px] text-gray-500 mt-1.5">When first wave returns</p>
-              </div>
-
-              <div>
-                <Label className="text-xs font-semibold text-gray-400 mb-2 block uppercase tracking-wide">Second Wave Start</Label>
-                <Input
-                  type="time"
-                  value={(() => {
-                    const [time, period] = breakTimings.secondWaveStart.split(' ');
-                    const [hours, minutes] = time.split(':');
-                    let hour = parseInt(hours);
-                    if (period === 'PM' && hour !== 12) hour += 12;
-                    if (period === 'AM' && hour === 12) hour = 0;
-                    return `${hour.toString().padStart(2, '0')}:${minutes}`;
-                  })()}
-                  onChange={(e) => {
-                    const time = e.target.value;
-                    const [hours, minutes] = time.split(':');
-                    const hour = parseInt(hours);
-                    const ampm = hour >= 12 ? 'PM' : 'AM';
-                    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                    setBreakTimings({
-                      ...breakTimings,
-                      secondWaveStart: `${displayHour}:${minutes} ${ampm}`
-                    });
-                  }}
-                  className="bg-gray-800/50 border-gray-700/50 text-gray-100 h-10 font-mono"
-                />
-                <p className="text-[10px] text-gray-500 mt-1.5">Late shifts (5PM)</p>
-              </div>
-            </div>
-
-            <div className="mt-3 p-2.5 bg-gradient-to-r from-orange-950/30 to-amber-950/20 rounded-lg border border-orange-800/30">
-              <p className="text-xs text-orange-300 flex items-center gap-2">
-                <span className="text-sm">⚠️</span>
-                <span>Coverage during first wave: 2 Indoor staff + 1 Support remain working</span>
-              </p>
-            </div>
-          </div>
-        </Card>
 
         {/* Staff Management */}
         <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
@@ -1874,8 +1765,101 @@ export default function StaffScheduling() {
 
         {/* Schedule Table */}
         {staffMembers.length > 0 && (
-          <Card className="p-2 overflow-x-auto bg-gray-900 border-gray-800">
-            <h3 className="text-sm font-semibold mb-2 text-gray-100">Weekly Schedule</h3>
+          <Card className="p-5 overflow-x-auto bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl">
+            <div className="flex justify-between items-start mb-4 gap-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-100">Weekly Schedule</h3>
+                <p className="text-xs text-gray-500">Staff assignments and break timings</p>
+              </div>
+              
+              {/* Break Timings Controls - Inline */}
+              <div className="flex gap-2 items-center">
+                <div className="flex items-center gap-2 px-2 py-1 bg-orange-500/10 rounded border border-orange-500/20">
+                  <span className="text-[10px] text-orange-400 font-semibold">☕ Breaks:</span>
+                </div>
+                <div className="flex gap-2">
+                  <div>
+                    <Label className="text-[9px] text-gray-500 mb-0.5 block">1st Start</Label>
+                    <Input
+                      type="time"
+                      value={(() => {
+                        const [time, period] = breakTimings.firstWaveStart.split(' ');
+                        const [hours, minutes] = time.split(':');
+                        let hour = parseInt(hours);
+                        if (period === 'PM' && hour !== 12) hour += 12;
+                        if (period === 'AM' && hour === 12) hour = 0;
+                        return `${hour.toString().padStart(2, '0')}:${minutes}`;
+                      })()}
+                      onChange={(e) => {
+                        const time = e.target.value;
+                        const [hours, minutes] = time.split(':');
+                        const hour = parseInt(hours);
+                        const ampm = hour >= 12 ? 'PM' : 'AM';
+                        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                        setBreakTimings({
+                          ...breakTimings,
+                          firstWaveStart: `${displayHour}:${minutes} ${ampm}`
+                        });
+                      }}
+                      className="h-7 w-20 text-[10px] bg-gray-800/50 border-gray-700/50 text-gray-100 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[9px] text-gray-500 mb-0.5 block">1st End</Label>
+                    <Input
+                      type="time"
+                      value={(() => {
+                        const [time, period] = breakTimings.firstWaveEnd.split(' ');
+                        const [hours, minutes] = time.split(':');
+                        let hour = parseInt(hours);
+                        if (period === 'PM' && hour !== 12) hour += 12;
+                        if (period === 'AM' && hour === 12) hour = 0;
+                        return `${hour.toString().padStart(2, '0')}:${minutes}`;
+                      })()}
+                      onChange={(e) => {
+                        const time = e.target.value;
+                        const [hours, minutes] = time.split(':');
+                        const hour = parseInt(hours);
+                        const ampm = hour >= 12 ? 'PM' : 'AM';
+                        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                        setBreakTimings({
+                          ...breakTimings,
+                          firstWaveEnd: `${displayHour}:${minutes} ${ampm}`,
+                          secondWaveStart: `${displayHour}:${minutes} ${ampm}`
+                        });
+                      }}
+                      className="h-7 w-20 text-[10px] bg-gray-800/50 border-gray-700/50 text-gray-100 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[9px] text-gray-500 mb-0.5 block">2nd Start</Label>
+                    <Input
+                      type="time"
+                      value={(() => {
+                        const [time, period] = breakTimings.secondWaveStart.split(' ');
+                        const [hours, minutes] = time.split(':');
+                        let hour = parseInt(hours);
+                        if (period === 'PM' && hour !== 12) hour += 12;
+                        if (period === 'AM' && hour === 12) hour = 0;
+                        return `${hour.toString().padStart(2, '0')}:${minutes}`;
+                      })()}
+                      onChange={(e) => {
+                        const time = e.target.value;
+                        const [hours, minutes] = time.split(':');
+                        const hour = parseInt(hours);
+                        const ampm = hour >= 12 ? 'PM' : 'AM';
+                        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                        setBreakTimings({
+                          ...breakTimings,
+                          secondWaveStart: `${displayHour}:${minutes} ${ampm}`
+                        });
+                      }}
+                      className="h-7 w-20 text-[10px] bg-gray-800/50 border-gray-700/50 text-gray-100 font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
             <div className="min-w-max">
               <table className="w-full border-collapse text-[10px]">
                 <thead>
