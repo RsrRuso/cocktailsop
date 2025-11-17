@@ -511,40 +511,47 @@ export default function StaffScheduling() {
       });
     });
 
-    // CRITICAL VALIDATION: Monday, Wednesday, Thursday, Sunday MUST have at least one bartender/senior/head
-    const criticalDays = [
-      { name: 'Monday', index: 0 },
-      { name: 'Wednesday', index: 2 },
-      { name: 'Thursday', index: 3 },
-      { name: 'Sunday', index: 6 }
-    ];
+    // CRITICAL VALIDATION: Each day MUST have at least 2 bartenders AND 4 total staff
+    const validationErrors: string[] = [];
 
-    const missingCoverageDays: string[] = [];
-
-    criticalDays.forEach(({ name, index }) => {
-      const allOperators = [...headBartenders, ...seniorBartenders, ...bartenders];
+    DAYS_OF_WEEK.forEach((name, dayIndex) => {
+      const allBartenderRoles = [...headBartenders, ...seniorBartenders, ...bartenders];
       
-      // Check if at least one operator (bartender/senior/head) is NOT off on this day
-      const hasOperatorWorking = allOperators.some(staff => {
+      // Count working bartenders (head, senior, or bartender)
+      const workingBartendersCount = allBartenderRoles.filter(staff => {
         const key = `${staff.id}-${name}`;
         const cell = newSchedule[key];
         return cell && cell.timeRange !== 'OFF';
-      });
+      }).length;
 
-      if (!hasOperatorWorking) {
-        missingCoverageDays.push(name);
+      // Count total working staff (all roles)
+      const allStaff = [...headBartenders, ...seniorBartenders, ...bartenders, ...barBacks, ...support];
+      const totalWorkingStaff = allStaff.filter(staff => {
+        const key = `${staff.id}-${name}`;
+        const cell = newSchedule[key];
+        return cell && cell.timeRange !== 'OFF';
+      }).length;
+
+      // Validate: Need at least 2 bartenders
+      if (workingBartendersCount < 2) {
+        validationErrors.push(`${name}: Only ${workingBartendersCount} bartender(s) - need at least 2`);
+      }
+
+      // Validate: Need at least 4 total staff
+      if (totalWorkingStaff < 4) {
+        validationErrors.push(`${name}: Only ${totalWorkingStaff} total staff - need at least 4`);
       }
     });
 
-    if (missingCoverageDays.length > 0) {
-      toast.error(`❌ Cannot generate schedule: ${missingCoverageDays.join(', ')} must have at least one bartender (or senior/head) scheduled. Add more bartenders or adjust days off.`, {
-        duration: 7000
+    if (validationErrors.length > 0) {
+      toast.error(`❌ Cannot generate schedule:\n${validationErrors.join('\n')}\n\nAdd more staff or adjust off days.`, {
+        duration: 8000
       });
       return;
     }
 
     setSchedule(newSchedule);
-    toast.success(`✅ Schedule generated! Everyone gets at least 1 day off. Same titles alternate: Week ${weekNumber % 2 === 1 ? '(Odd)' : '(Even)'} pattern. Event days respected. All 9h shifts (Support 10h).`);
+    toast.success(`✅ Schedule generated! Minimum 2 bartenders + 4 total staff per shift. Everyone gets at least 1 day off. Same titles alternate: Week ${weekNumber % 2 === 1 ? '(Odd)' : '(Even)'} pattern.`);
   };
 
   const exportToPDF = () => {
