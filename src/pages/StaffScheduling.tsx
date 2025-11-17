@@ -177,6 +177,16 @@ export default function StaffScheduling() {
     return schedule[key];
   };
 
+  // Helper function to shuffle array (Fisher-Yates algorithm)
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
   const autoGenerateSchedule = async () => {
     console.log('🔄 Starting schedule generation...');
     
@@ -187,12 +197,12 @@ export default function StaffScheduling() {
 
     const newSchedule: Record<string, ScheduleCell> = {};
     
-    // Get staff by role
-    const headBartenders = staffMembers.filter(s => s.title === 'head_bartender');
-    const seniorBartenders = staffMembers.filter(s => s.title === 'senior_bartender');
-    const bartenders = staffMembers.filter(s => s.title === 'bartender');
-    const barBacks = staffMembers.filter(s => s.title === 'bar_back');
-    const support = staffMembers.filter(s => s.title === 'support');
+    // Get staff by role and SHUFFLE them for randomized allocation
+    const headBartenders = shuffleArray(staffMembers.filter(s => s.title === 'head_bartender'));
+    const seniorBartenders = shuffleArray(staffMembers.filter(s => s.title === 'senior_bartender'));
+    const bartenders = shuffleArray(staffMembers.filter(s => s.title === 'bartender'));
+    const barBacks = shuffleArray(staffMembers.filter(s => s.title === 'bar_back'));
+    const support = shuffleArray(staffMembers.filter(s => s.title === 'support'));
 
     console.log('📊 Staff counts:', {
       headBartenders: headBartenders.length,
@@ -328,8 +338,8 @@ export default function StaffScheduling() {
           };
         }
         
-        // Get available days (not busy)
-        let availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
+        // Get available days (not busy) and SHUFFLE for randomized allocation
+        let availableDays = shuffleArray(allowedOffDays.filter(day => !busyDays.includes(day)));
         
         // CRITICAL VALIDATIONS for bartender roles:
         if (isBartenderRole) {
@@ -397,9 +407,8 @@ export default function StaffScheduling() {
         let finalDaysOff: number[] = [];
         
         if (targetDaysOff === 1) {
-          // 1 day off: simple round-robin
-          const dayIndex = globalIndex % availableDays.length;
-          const selectedDay = availableDays[dayIndex];
+          // 1 day off: randomized selection
+          const selectedDay = availableDays[0]; // Already shuffled, so take first
           finalDaysOff.push(selectedDay);
           dayOffDistribution[selectedDay].push(staff.name);
           offsPerDay[selectedDay]++;
@@ -414,13 +423,12 @@ export default function StaffScheduling() {
           
           console.log(`  ✅ 1 day: ${DAYS_OF_WEEK[selectedDay]}`);
         } else {
-          // 2 days off: pick 2 different days (with validation)
+          // 2 days off: pick first 2 from shuffled available days
           let attempts = 0;
-          const maxAttempts = availableDays.length * 2;
+          const maxAttempts = availableDays.length;
           
           while (finalDaysOff.length < 2 && attempts < maxAttempts) {
-            const dayIndex = (globalIndex + attempts) % availableDays.length;
-            const candidateDay = availableDays[dayIndex];
+            const candidateDay = availableDays[attempts]; // Take from shuffled array
             
             // Check if we already picked this day
             if (!finalDaysOff.includes(candidateDay)) {
