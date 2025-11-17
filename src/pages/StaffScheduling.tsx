@@ -1591,26 +1591,65 @@ export default function StaffScheduling() {
                     )}
 
                     {/* Break Schedule */}
-                    {working.length > 0 && (
-                      <div className="space-y-1.5 mb-2 bg-gradient-to-r from-orange-950/30 to-amber-950/20 rounded-lg p-2 border border-orange-800/40">
-                        <div className="text-xs font-bold text-orange-300 flex items-center gap-1">
-                          ☕ Break Schedule
-                        </div>
-                        <div className="space-y-1.5 text-[10px] pl-2">
-                          <div className="bg-orange-950/20 rounded p-1.5 border border-orange-900/30">
-                            <span className="font-semibold text-orange-400">First Wave: 5:30-6:30 PM</span>
-                            <div className="text-gray-400 mt-0.5">Opening shifts (12 PM, 3 PM, 4 PM)</div>
-                            <div className="text-amber-400/80 mt-1 text-[9px]">
-                              ⚠️ Coverage: 2 Indoor + 1 Support remain
-                            </div>
+                    {working.length > 0 && (() => {
+                      // First Wave: 12 PM, 3 PM, 4 PM shifts
+                      const firstWaveStaff = working.filter(s => {
+                        const time = s.timeRange;
+                        return time.startsWith('12:00 PM') || time.startsWith('3:00 PM') || time.startsWith('4:00 PM');
+                      }).map(s => {
+                        const staff = staffMembers.find(sm => sm.id === s.staffId);
+                        return { name: staff?.name || 'Unknown', timeRange: s.timeRange };
+                      });
+                      
+                      // Second Wave: 5 PM shifts
+                      const secondWaveStaff = working.filter(s => {
+                        const time = s.timeRange;
+                        return time.startsWith('5:00 PM');
+                      }).map(s => {
+                        const staff = staffMembers.find(sm => sm.id === s.staffId);
+                        return { name: staff?.name || 'Unknown', timeRange: s.timeRange };
+                      });
+                      
+                      return (firstWaveStaff.length > 0 || secondWaveStaff.length > 0) && (
+                        <div className="space-y-1.5 mb-2 bg-gradient-to-r from-orange-950/30 to-amber-950/20 rounded-lg p-2 border border-orange-800/40">
+                          <div className="text-xs font-bold text-orange-300 flex items-center gap-1">
+                            ☕ Break Schedule
                           </div>
-                          <div className="bg-teal-950/20 rounded p-1.5 border border-teal-900/30">
-                            <span className="font-semibold text-teal-400">Second Wave: After 6:30 PM</span>
-                            <div className="text-gray-400 mt-0.5">First wave returns to relieve</div>
+                          <div className="space-y-1.5 text-[10px] pl-2">
+                            {firstWaveStaff.length > 0 && (
+                              <div className="bg-orange-950/20 rounded p-1.5 border border-orange-900/30">
+                                <span className="font-semibold text-orange-400">First Wave: 5:30-6:30 PM</span>
+                                <div className="text-gray-300 mt-1 space-y-0.5">
+                                  {firstWaveStaff.map((s, idx) => (
+                                    <div key={idx} className="pl-2">
+                                      • {s.name} <span className="text-gray-500 text-[9px]">({s.timeRange.split(' - ')[0]})</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="text-amber-400/80 mt-1.5 text-[9px] bg-amber-950/20 rounded p-1">
+                                  ⚠️ Coverage: 2 Indoor + 1 Support remain
+                                </div>
+                              </div>
+                            )}
+                            {secondWaveStaff.length > 0 && (
+                              <div className="bg-teal-950/20 rounded p-1.5 border border-teal-900/30">
+                                <span className="font-semibold text-teal-400">Second Wave: After 6:30 PM</span>
+                                <div className="text-gray-300 mt-1 space-y-0.5">
+                                  {secondWaveStaff.map((s, idx) => (
+                                    <div key={idx} className="pl-2">
+                                      • {s.name} <span className="text-gray-500 text-[9px]">({s.timeRange.split(' - ')[0]})</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="text-teal-400/80 mt-1 text-[9px]">
+                                  First wave returns to provide relief
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Off Staff */}
                     {offStaff.length > 0 && (
