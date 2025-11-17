@@ -142,7 +142,7 @@ export default function StaffScheduling() {
     return schedule[key];
   };
 
-  const autoGenerateSchedule = () => {
+  const autoGenerateSchedule = async () => {
     console.log('🔄 Starting schedule generation...');
     
     if (staffMembers.length === 0) {
@@ -179,10 +179,37 @@ export default function StaffScheduling() {
     console.log('📅 Busy days:', busyDays, 'Events:', dailyEvents);
     console.log('🔍 Monday (index 0) is busy?', busyDays.includes(0), 'Monday event:', dailyEvents['Monday']);
     
-    // Calculate week number to alternate between 1-day and 2-day off patterns
+    // Calculate week number to determine alternating pattern
     const weekDate = new Date(weekStartDate);
     const weekNumber = Math.floor((weekDate.getTime() - new Date(weekDate.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
     const isOddWeek = weekNumber % 2 === 1;
+    
+    // Fetch previous week's schedule to implement alternating logic
+    const previousWeekStart = new Date(weekDate);
+    previousWeekStart.setDate(previousWeekStart.getDate() - 7);
+    const previousWeekStartStr = format(previousWeekStart, 'yyyy-MM-dd');
+    
+    console.log('📅 Fetching previous week schedule:', previousWeekStartStr);
+    
+    const { data: previousAllocations } = await supabase
+      .from('staff_allocations')
+      .select('*')
+      .eq('user_id', user?.id)
+      .gte('allocation_date', previousWeekStartStr)
+      .lt('allocation_date', weekStartDate);
+    
+    // Track previous week's days off per staff member
+    const previousWeekDaysOff: Record<string, number> = {};
+    if (previousAllocations) {
+      staffMembers.forEach(staff => {
+        const staffPreviousAllocs = previousAllocations.filter(a => a.staff_member_id === staff.id);
+        const offCount = staffPreviousAllocs.filter(a => 
+          a.shift_type === 'off' || a.station_assignment === 'OFF'
+        ).length;
+        previousWeekDaysOff[staff.id] = offCount;
+        console.log(`📊 ${staff.name} had ${offCount} days off last week`);
+      });
+    }
     
     console.log('📆 Week info:', { weekNumber, isOddWeek });
     
@@ -209,10 +236,10 @@ export default function StaffScheduling() {
       bartendersOffPerDay[idx] = 0;
     });
     
-    const divideIntoGroups = (staffList: StaffMember[], roleOffset: number, isBartenderRole: boolean = false) => {
-      console.log(`\n🎯 Dividing ${staffList.length} staff members (ALWAYS 1-2 days off per week)...`);
+    const divideIntoGroups = (staffList: StaffMember[], roleOffset: number, isBartenderRole: boolean = false, isSupport: boolean = false) => {
+      console.log(`\n🎯 Dividing ${staffList.length} staff members (Alternating 1-2 days off)...`);
       console.log(`📅 Available off days: ${allowedOffDays.map(d => DAYS_OF_WEEK[d]).join(', ')}`);
-      console.log(`⚠️ Bartender role: ${isBartenderRole}`);
+      console.log(`⚠️ Bartender role: ${isBartenderRole}, Support role: ${isSupport}`);
       
       // Track distribution to ensure ALL 4 days are used
       const dayOffDistribution: Record<number, string[]> = {};
@@ -223,13 +250,37 @@ export default function StaffScheduling() {
       const results = staffList.map((staff, index) => {
         const globalIndex = roleOffset + index;
         
-        // CRITICAL: Everyone gets AT LEAST 1 day off per week (never 0)
-        // Alternating logic: even index gets 1 day this week, 2 days next week
-        //                     odd index gets 2 days this week, 1 day next week
-        const shouldGetTwoDays = isOddWeek ? (globalIndex % 2 === 1) : (globalIndex % 2 === 0);
-        const targetDaysOff = shouldGetTwoDays ? 2 : 1;
+        // SPECIAL RULE FOR SUPPORT: 1 day off every 2 weeks (works 10 hours daily)
+        let targetDaysOff: number;
+        if (isSupport) {
+          // Support gets 1 day off every 2 weeks (odd weeks only)
+          targetDaysOff = isOddWeek ? 1 : 0;
+          console.log(`\n  🎯 ${staff.name} (SUPPORT): Target = ${targetDaysOff} day(s) off (odd week: ${isOddWeek})`);
+        } else {
+          // Check previous week's days off for this staff member
+          const previousDaysOff = previousWeekDaysOff[staff.id] ?? 0;
+          
+          // ALTERNATING LOGIC:
+          // - If they had 2 days off last week → give 1 day off this week
+          // - If they had 1 day off last week → give 2 days off this week
+          // - If they had 0 days off last week (new staff) → give 2 days to start
+          if (previousDaysOff === 2) {
+            targetDaysOff = 1;
+          } else if (previousDaysOff === 1) {
+            targetDaysOff = 2;
+          } else {
+            // New staff or first schedule: alternate based on index
+            targetDaysOff = globalIndex % 2 === 0 ? 2 : 1;
+          }
+          
+          console.log(`\n  🎯 ${staff.name}: Last week = ${previousDaysOff} days off → This week = ${targetDaysOff} day(s) off`);
+        }
         
-        console.log(`\n  🎯 ${staff.name} (idx ${globalIndex}): Target = ${targetDaysOff} day(s) off`);
+        // If support gets 0 days off this week, skip the off day assignment
+        if (isSupport && targetDaysOff === 0) {
+          console.log(`  ℹ️ ${staff.name} (SUPPORT) works all 7 days this week`);
+          return { staffId: staff.id, offDays: [] };
+        }
         
         // Get available days (not busy)
         let availableDays = allowedOffDays.filter(day => !busyDays.includes(day));
@@ -344,11 +395,11 @@ export default function StaffScheduling() {
       return results;
     };
 
-    const headSchedules = divideIntoGroups(headBartenders, 0, true);
-    const seniorBartenderSchedules = divideIntoGroups(seniorBartenders, headBartenders.length, true);
-    const bartenderSchedules = divideIntoGroups(bartenders, headBartenders.length + seniorBartenders.length, true);
-    const barBackSchedules = divideIntoGroups(barBacks, headBartenders.length + seniorBartenders.length + bartenders.length, false);
-    const supportSchedules = divideIntoGroups(support, headBartenders.length + seniorBartenders.length + bartenders.length + barBacks.length, false);
+    const headSchedules = divideIntoGroups(headBartenders, 0, true, false);
+    const seniorBartenderSchedules = divideIntoGroups(seniorBartenders, headBartenders.length, true, false);
+    const bartenderSchedules = divideIntoGroups(bartenders, headBartenders.length + seniorBartenders.length, true, false);
+    const barBackSchedules = divideIntoGroups(barBacks, headBartenders.length + seniorBartenders.length + bartenders.length, false, false);
+    const supportSchedules = divideIntoGroups(support, headBartenders.length + seniorBartenders.length + bartenders.length + barBacks.length, false, true);
     
     // Log final distribution
     console.log('📊 Final off day distribution:', {
@@ -639,8 +690,8 @@ export default function StaffScheduling() {
     console.log(finalDistribution);
     
     setSchedule(newSchedule);
-    toast.success(`✅ Schedule generated! Min 3 bartenders working daily (max 2 off same day). Bar backs & support additional. Everyone gets 1-2 days off.`, {
-      duration: 6000
+    toast.success(`✅ Schedule generated! Alternating 1-2 days off week-to-week. Monthly total: 6 days off (bartenders), ~2 days (support - every 2 weeks). Min 3 bartenders working daily.`, {
+      duration: 7000
     });
   };
 
