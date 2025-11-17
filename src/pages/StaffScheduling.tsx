@@ -1618,12 +1618,33 @@ export default function StaffScheduling() {
 
         {/* Daily Summary */}
         {staffMembers.length > 0 && Object.keys(schedule).length > 0 && (
-          <Card className="p-6 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 border-gray-700 shadow-xl">
-            <h3 className="text-xl font-bold text-gray-100 mb-6 flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              Daily Breakdown
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
+          <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/3 rounded-full blur-3xl" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-secondary/20 rounded-lg">
+                    <Users className="w-5 h-5 text-secondary" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-100">Daily Breakdown</h3>
+                    <p className="text-xs text-gray-500">Staff schedule by day</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 rounded-lg border border-orange-500/20 hover:bg-orange-500/15 transition-all cursor-help group relative">
+                  <span className="text-xs text-orange-400 font-semibold">☕ Break Times:</span>
+                  <span className="text-xs text-orange-300 font-mono">{breakTimings.firstWaveStart}-{breakTimings.firstWaveEnd}</span>
+                  <span className="text-xs text-orange-500">|</span>
+                  <span className="text-xs text-orange-300 font-mono">{breakTimings.secondWaveStart}+</span>
+                  <span className="text-[10px] text-orange-400/60 ml-1">✏️ editable</span>
+                  <div className="absolute hidden group-hover:block bottom-full mb-2 right-0 bg-gray-900 border border-orange-500/30 rounded-lg p-2 shadow-xl w-48 z-10">
+                    <p className="text-[10px] text-gray-300">
+                      Adjust break timings in the "Break Schedule" section above
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
               {DAYS_OF_WEEK.map((day, dayIndex) => {
                 const daySchedule = Object.values(schedule).filter(s => s.day === day);
                 const working = daySchedule.filter(s => s.timeRange !== 'OFF');
@@ -1825,6 +1846,7 @@ export default function StaffScheduling() {
                   </div>
                 );
               })}
+            </div>
             </div>
           </Card>
         )}
