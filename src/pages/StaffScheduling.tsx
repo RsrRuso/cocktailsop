@@ -559,10 +559,10 @@ export default function StaffScheduling() {
       
       const allStationBartenders = [...workingSeniorBartenders, ...workingBartenders];
       const stations = [
-        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
       ];
 
       allStationBartenders.forEach((schedule, idx) => {
@@ -577,14 +577,13 @@ export default function StaffScheduling() {
           };
           assignedStaffIds.add(schedule.staff.id);
         } else {
-          // Extra bartenders alternate between indoor/outdoor floating support
-          const area = (idx - stations.length) % 2 === 0 ? 'Indoor' : 'Outdoor';
+          // Extra bartenders prioritize indoor floating support
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange: '4:00 PM - 1:00 AM',
             type: 'regular',
-            station: `${area} - Floating Support: Assist all ${area.toLowerCase()} stations as needed`
+            station: 'Indoor - Floating Support: Assist all indoor stations as needed'
           };
           assignedStaffIds.add(schedule.staff.id);
         }
@@ -607,9 +606,10 @@ export default function StaffScheduling() {
       workingBarBacks.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
-        // Allocate bar backs to Indoor or Outdoor
+        // Allocate bar backs - First one outdoor, rest indoor
         const barBackStations = [
           'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
+          'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
           'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish'
         ];
         
@@ -632,8 +632,8 @@ export default function StaffScheduling() {
           type = 'regular';
         }
         
-        // Assign station (alternate between outdoor and indoor)
-        const station = idx < barBackStations.length ? barBackStations[idx] : barBackStations[idx % barBackStations.length];
+        // Assign station - prioritize indoor after first outdoor
+        const station = idx < barBackStations.length ? barBackStations[idx] : barBackStations[barBackStations.length - 1];
         
         newSchedule[key] = {
           staffId: schedule.staff.id,
