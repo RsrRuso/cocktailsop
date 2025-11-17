@@ -530,6 +530,13 @@ export default function StaffScheduling() {
       // Schedule working heads
       workingHeads.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
+        
+        // Skip if already assigned to avoid duplicates
+        if (assignedStaffIds.has(schedule.staff.id)) {
+          console.warn(`⚠️ Skipping duplicate assignment for ${schedule.staff.name} on ${day}`);
+          return;
+        }
+        
         const area = shouldDivideHeads ? (idx % 2 === 0 ? 'Indoor' : 'Outdoor') : 'Supervising';
         
         // Determine time range based on day type
@@ -584,6 +591,12 @@ export default function StaffScheduling() {
       allStationBartenders.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
+        // Skip if already assigned to avoid duplicates
+        if (assignedStaffIds.has(schedule.staff.id)) {
+          console.warn(`⚠️ Skipping duplicate assignment for ${schedule.staff.name} on ${day}`);
+          return;
+        }
+        
         // Determine time range based on day type and position
         let timeRange;
         if (isBrunchDay) {
@@ -636,6 +649,12 @@ export default function StaffScheduling() {
       
       workingBarBacks.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
+        
+        // Skip if already assigned to avoid duplicates
+        if (assignedStaffIds.has(schedule.staff.id)) {
+          console.warn(`⚠️ Skipping duplicate assignment for ${schedule.staff.name} on ${day}`);
+          return;
+        }
         
         // Allocate bar backs based on team size
         // When 3+ working: 1 indoor, 1 outdoor, 1+ flexible support
@@ -705,6 +724,12 @@ export default function StaffScheduling() {
       workingSupport.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
+        // Skip if already assigned to avoid duplicates
+        if (assignedStaffIds.has(schedule.staff.id)) {
+          console.warn(`⚠️ Skipping duplicate assignment for ${schedule.staff.name} on ${day}`);
+          return;
+        }
+        
         // Allocate support to Indoor or Outdoor (10 hours: 3:00 PM - 1:00 AM)
         const supportStations = [
           'Support - Outdoor: Glassware Polishing, General Support',
@@ -722,6 +747,7 @@ export default function StaffScheduling() {
           type: 'regular',
           station
         };
+        assignedStaffIds.add(schedule.staff.id);
       });
     });
 
