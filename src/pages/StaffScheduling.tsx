@@ -143,6 +143,8 @@ export default function StaffScheduling() {
   };
 
   const autoGenerateSchedule = () => {
+    console.log('🔄 Starting schedule generation...');
+    
     if (staffMembers.length === 0) {
       toast.error('Please add staff members first');
       return;
@@ -157,52 +159,31 @@ export default function StaffScheduling() {
     const barBacks = staffMembers.filter(s => s.title === 'bar_back');
     const support = staffMembers.filter(s => s.title === 'support');
 
+    console.log('📊 Staff counts:', {
+      headBartenders: headBartenders.length,
+      seniorBartenders: seniorBartenders.length,
+      bartenders: bartenders.length,
+      barBacks: barBacks.length,
+      support: support.length
+    });
+
     if (headBartenders.length === 0 && seniorBartenders.length === 0 && bartenders.length === 0) {
       toast.error('Please add at least some bartenders');
       return;
     }
 
-    // PRE-VALIDATION: Check if minimum staffing is achievable
     const totalBartenders = headBartenders.length + seniorBartenders.length + bartenders.length;
-    
-    // Need at least 3 bartenders to ensure 2 per shift (1 can be off)
-    if (totalBartenders < 3) {
-      toast.error(`❌ Need at least 3 bartenders total to ensure 2 per shift. Currently have ${totalBartenders}. Add ${3 - totalBartenders} more bartender(s).`, {
-        duration: 6000
-      });
-      return;
-    }
-    
-    // Need at least 2 bar backs to ensure 1 per shift (1 can be off)
-    if (barBacks.length < 2) {
-      toast.error(`❌ Need at least 2 bar backs total to ensure 1 per shift. Currently have ${barBacks.length}. Add ${2 - barBacks.length} more bar back(s).`, {
-        duration: 6000
-      });
-      return;
-    }
-    
-    // Need at least 2 support to ensure 1 per shift (1 can be off)
-    if (support.length < 2) {
-      toast.error(`❌ Need at least 2 support staff total to ensure 1 per shift. Currently have ${support.length}. Add ${2 - support.length} more support staff.`, {
-        duration: 6000
-      });
-      return;
-    }
-
-    // Recommend sufficient staff for optimal coverage
-    if (totalBartenders < 4) {
-      toast.warning('⚠️ Recommendation: Add more bartenders for optimal station coverage (4+ recommended)', {
-        duration: 4000
-      });
-    }
 
     // BUSY DAYS - Determine from dailyEvents (days with events get no offs)
     const busyDays = DAYS_OF_WEEK.map((day, idx) => dailyEvents[day] ? idx : -1).filter(idx => idx !== -1);
+    console.log('📅 Busy days:', busyDays, dailyEvents);
     
     // Calculate week number to alternate between 1-day and 2-day off patterns
     const weekDate = new Date(weekStartDate);
     const weekNumber = Math.floor((weekDate.getTime() - new Date(weekDate.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
     const isOddWeek = weekNumber % 2 === 1;
+    
+    console.log('📆 Week info:', { weekNumber, isOddWeek });
     
     // FAIR OFFS DISTRIBUTION - CRITICAL RULES:
     // 1. Everyone gets AT LEAST 1 day off per week (can't be 0, max 2)
@@ -214,6 +195,7 @@ export default function StaffScheduling() {
     
     // Available off days - ONLY these days
     const allowedOffDays = [0, 2, 3, 6]; // Monday, Wednesday, Thursday, Sunday
+    console.log('✅ Allowed off days:', allowedOffDays.map(d => DAYS_OF_WEEK[d]));
     
     // Track how many offs per day to ensure even distribution
     const offsPerDay: number[] = [0, 0, 0, 0, 0, 0, 0];
@@ -246,6 +228,8 @@ export default function StaffScheduling() {
           finalDaysOff.push(leastUsedDay);
           offsPerDay[leastUsedDay]++;
         }
+        
+        console.log(`👤 ${staff.name}: ${finalDaysOff.length} days off on`, finalDaysOff.map(d => DAYS_OF_WEEK[d]));
         
         return {
           staff,
@@ -546,6 +530,7 @@ export default function StaffScheduling() {
       });
     }
 
+    console.log('✅ Schedule generated successfully!', { totalEntries: Object.keys(newSchedule).length });
     setSchedule(newSchedule);
     toast.success(`✅ Schedule generated! Off days: Mon/Wed/Thu/Sun. Everyone gets 1-2 days off. Same titles alternate weekly.`, {
       duration: 5000
