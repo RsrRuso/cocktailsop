@@ -1004,6 +1004,147 @@ export default function StaffScheduling() {
     toast.success('Schedule exported to PDF');
   };
 
+  const exportDayToPDF = (day: string) => {
+    const doc = new jsPDF('portrait');
+    const weekStart = new Date(weekStartDate);
+    const weekEnd = addDays(weekStart, 6);
+    
+    // Title
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text(venueName || 'Staff Schedule', 105, 20, { align: 'center' });
+    
+    // Day and Week
+    doc.setFontSize(14);
+    doc.text(day, 105, 30, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Week: ${format(weekStart, 'MMM dd')} - ${format(weekEnd, 'MMM dd, yyyy')}`, 105, 38, { align: 'center' });
+    
+    const eventLabel = dailyEvents[day] ? ` - ${dailyEvents[day]}` : '';
+    if (eventLabel) {
+      doc.setFontSize(12);
+      doc.setTextColor(255, 165, 0);
+      doc.text(eventLabel, 105, 46, { align: 'center' });
+      doc.setTextColor(0, 0, 0);
+    }
+    
+    let yPos = eventLabel ? 55 : 48;
+    
+    const daySchedule = Object.values(schedule).filter(s => s.day === day);
+    const working = daySchedule.filter(s => s.timeRange !== 'OFF');
+    const off = daySchedule.filter(s => s.timeRange === 'OFF');
+    
+    // Categorize staff
+    const indoor = working.filter(s => {
+      const station = s.station || '';
+      const staff = staffMembers.find(sm => sm.id === s.staffId);
+      const isBarBackOrSupport = staff?.title === 'bar_back' || staff?.title === 'support';
+      return !isBarBackOrSupport && (
+        station.includes('Indoor - Station') || 
+        (station.includes('Supervising') && station.includes('Indoor'))
+      );
+    });
+    const outdoor = working.filter(s => {
+      const station = s.station || '';
+      const staff = staffMembers.find(sm => sm.id === s.staffId);
+      const isBarBackOrSupport = staff?.title === 'bar_back' || staff?.title === 'support';
+      return !isBarBackOrSupport && (
+        station.includes('Outdoor - Station') || 
+        (station.includes('Supervising') && station.includes('Outdoor'))
+      );
+    });
+    
+    // Summary
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('SUMMARY', 14, yPos);
+    yPos += 5;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Total Working: ${working.length} | Total Off: ${off.length}`, 14, yPos);
+    yPos += 4;
+    doc.text(`Indoor Staff: ${indoor.length} | Outdoor Staff: ${outdoor.length}`, 14, yPos);
+    yPos += 8;
+    
+    // Indoor Staff
+    if (indoor.length > 0) {
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 100, 200);
+      doc.text('INDOOR STATIONS', 14, yPos);
+      doc.setTextColor(0, 0, 0);
+      yPos += 5;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      indoor.forEach(s => {
+        const staff = staffMembers.find(sm => sm.id === s.staffId);
+        if (staff) {
+          const title = staff.title.replace('_', ' ');
+          const timeRange = s.timeRange || '';
+          const station = s.station || '';
+          doc.text(`• ${staff.name} (${title})`, 16, yPos);
+          yPos += 4;
+          doc.setFontSize(7);
+          doc.text(`  ${timeRange} - ${station}`, 18, yPos);
+          yPos += 4;
+          doc.setFontSize(8);
+        }
+      });
+      yPos += 3;
+    }
+    
+    // Outdoor Staff
+    if (outdoor.length > 0) {
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(128, 0, 128);
+      doc.text('OUTDOOR STATIONS', 14, yPos);
+      doc.setTextColor(0, 0, 0);
+      yPos += 5;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      outdoor.forEach(s => {
+        const staff = staffMembers.find(sm => sm.id === s.staffId);
+        if (staff) {
+          const title = staff.title.replace('_', ' ');
+          const timeRange = s.timeRange || '';
+          const station = s.station || '';
+          doc.text(`• ${staff.name} (${title})`, 16, yPos);
+          yPos += 4;
+          doc.setFontSize(7);
+          doc.text(`  ${timeRange} - ${station}`, 18, yPos);
+          yPos += 4;
+          doc.setFontSize(8);
+        }
+      });
+      yPos += 3;
+    }
+    
+    // Off Staff
+    if (off.length > 0) {
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(200, 0, 0);
+      doc.text('OFF', 14, yPos);
+      doc.setTextColor(0, 0, 0);
+      yPos += 5;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      off.forEach(s => {
+        const staff = staffMembers.find(sm => sm.id === s.staffId);
+        if (staff) {
+          const title = staff.title.replace('_', ' ');
+          doc.text(`• ${staff.name} (${title})`, 16, yPos);
+          yPos += 4;
+        }
+      });
+    }
+    
+    doc.save(`${venueName || 'schedule'}-${day}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    toast.success(`${day} schedule exported to PDF`);
+  };
+
   // Separate head bartender from other staff
   const headBartenders = staffMembers.filter(s => s.title === 'head_bartender');
   const otherStaff = staffMembers.filter(s => s.title !== 'head_bartender');
@@ -1307,7 +1448,17 @@ export default function StaffScheduling() {
 
                 return (
                   <div key={day} className={`border rounded-lg p-3 ${isBusyDay ? 'border-orange-500 bg-orange-900/20' : 'bg-gray-800 border-gray-700'}`}>
-                    <div className="font-semibold text-sm mb-1 text-gray-100">{day}</div>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="font-semibold text-sm text-gray-100">{day}</div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => exportDayToPDF(day)}
+                        className="h-6 px-2 text-xs hover:bg-gray-700"
+                      >
+                        <Download className="h-3 w-3" />
+                      </Button>
+                    </div>
                     {dayLabel && (
                       <div className="text-xs text-orange-400 mb-2">
                         {dayLabel}
