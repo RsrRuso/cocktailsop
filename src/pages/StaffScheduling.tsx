@@ -254,7 +254,7 @@ export default function StaffScheduling() {
       const stations = ['Indoor - Station 1', 'Indoor - Station 2', 'Indoor - Garnishing Station 3'];
       let operatorIndex = 0;
 
-      // PRIORITY 1: Outdoor Station 1 (MUST have coverage)
+      // PRIORITY 1: Outdoor Station 1 (MUST have coverage) - 9 hours
       if (operatorIndex < availableOperators.length) {
         const operator = availableOperators[operatorIndex];
         newSchedule[`${operator.staff.id}-${day}`] = {
@@ -267,14 +267,14 @@ export default function StaffScheduling() {
         operatorIndex++;
       }
 
-      // PRIORITY 2: Indoor Stations (Fill as many as possible)
+      // PRIORITY 2: Indoor Stations (Fill as many as possible) - 9 hours
       let stationIdx = 0;
       while (operatorIndex < availableOperators.length && stationIdx < stations.length) {
         const operator = availableOperators[operatorIndex];
         newSchedule[`${operator.staff.id}-${day}`] = {
           staffId: operator.staff.id,
           day,
-          timeRange: '5:00 PM - 3:00 AM',
+          timeRange: '6:00 PM - 3:00 AM',
           type: 'regular',
           station: stations[stationIdx]
         };
@@ -282,7 +282,7 @@ export default function StaffScheduling() {
         stationIdx++;
       }
 
-      // PRIORITY 3: Head Bartender as Floating Supervisor (if we have 4+ operators)
+      // PRIORITY 3: Head Bartender as Floating Supervisor (if we have 4+ operators) - 9 hours
       if (operatorIndex < availableOperators.length && availableOperators.length >= 4) {
         const operator = availableOperators[operatorIndex];
         // Prefer head bartender for this role
@@ -292,40 +292,40 @@ export default function StaffScheduling() {
         newSchedule[`${supervisorOperator.staff.id}-${day}`] = {
           staffId: supervisorOperator.staff.id,
           day,
-          timeRange: '5:00 PM - 3:00 AM',
+          timeRange: '6:00 PM - 3:00 AM',
           type: 'regular',
           station: 'Floating Supervisor: Observe Indoor/Outdoor, Support Where Needed'
         };
         operatorIndex++;
       }
 
-      // PRIORITY 4: Ticket Segregator or Second Outdoor (only if 5+ operators)
+      // PRIORITY 4: Ticket Segregator or Second Outdoor (only if 5+ operators) - 9 hours
       if (operatorIndex < availableOperators.length && availableOperators.length >= 5) {
         const operator = availableOperators[operatorIndex];
         newSchedule[`${operator.staff.id}-${day}`] = {
           staffId: operator.staff.id,
           day,
-          timeRange: '5:00 PM - 3:00 AM',
+          timeRange: '6:00 PM - 3:00 AM',
           type: 'regular',
           station: 'Indoor - Ticket Segregator'
         };
         operatorIndex++;
       }
 
-      // PRIORITY 5: Extra Support
+      // PRIORITY 5: Extra Support - 9 hours
       while (operatorIndex < availableOperators.length) {
         const operator = availableOperators[operatorIndex];
         newSchedule[`${operator.staff.id}-${day}`] = {
           staffId: operator.staff.id,
           day,
-          timeRange: isBusyDay ? '5:00 PM - 3:00 AM' : 'OFF',
+          timeRange: isBusyDay ? '6:00 PM - 3:00 AM' : 'OFF',
           type: isBusyDay ? 'regular' : 'off',
           station: isBusyDay ? 'Extra Support' : undefined
         };
         operatorIndex++;
       }
 
-      // === BAR BACKS - Divided between Indoor & Outdoor Support ===
+      // === BAR BACKS - Divided between Indoor & Outdoor Support (9 hours) ===
       barBackSchedules.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
 
@@ -342,7 +342,7 @@ export default function StaffScheduling() {
         } else {
           // Alternate between indoor and outdoor areas
           const area = idx % 2 === 0 ? 'Indoor' : 'Outdoor';
-          const timeRange = isPickupDay && idx === 0 ? 'PICKUP 12:00 PM - 3:00 AM' : isSaturday && idx === 0 ? 'BRUNCH 11:00 AM - 3:00 AM' : idx === 0 ? '2:00 PM - 3:00 AM' : '4:00 PM - 2:00 AM';
+          const timeRange = isPickupDay && idx === 0 ? 'PICKUP 12:00 PM - 9:00 PM' : isSaturday && idx === 0 ? 'BRUNCH 11:00 AM - 8:00 PM' : idx === 0 ? '3:00 PM - 12:00 AM' : '5:00 PM - 2:00 AM';
           const type = isPickupDay && idx === 0 ? 'pickup' : isSaturday && idx === 0 ? 'brunch' : idx === 0 ? 'opening' : 'regular';
           
           newSchedule[key] = {
@@ -355,7 +355,7 @@ export default function StaffScheduling() {
         }
       });
 
-      // === SUPPORT - Divided between Indoor & Outdoor Areas ===
+      // === SUPPORT - Divided between Indoor & Outdoor Areas (10 hours) ===
       supportSchedules.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
 
@@ -370,7 +370,7 @@ export default function StaffScheduling() {
             type: 'off'
           };
         } else {
-          // Alternate between indoor and outdoor areas
+          // Alternate between indoor and outdoor areas (10 hours)
           const area = idx % 2 === 0 ? 'Indoor' : 'Outdoor';
           newSchedule[key] = {
             staffId: schedule.staff.id,
@@ -416,7 +416,7 @@ export default function StaffScheduling() {
     }
 
     setSchedule(newSchedule);
-    toast.success('✅ Schedule generated! Bar backs & support divided between indoor/outdoor areas. Heads act as floating supervisors.');
+    toast.success('✅ Schedule generated! Working hours: Bartenders 9h, Support 10h. Bar backs & support divided between indoor/outdoor.');
   };
 
   const exportToPDF = () => {
