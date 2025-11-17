@@ -1384,6 +1384,12 @@ export default function StaffScheduling() {
                           (station.includes('Supervising') && station.includes('Outdoor')));
                 });
                 
+                // Get IDs that are already categorized
+                const categorizedIds = new Set([...indoor, ...outdoor].map(s => s.staffId));
+                
+                // Catch any working staff not categorized as indoor/outdoor
+                const uncategorized = working.filter(s => !categorizedIds.has(s.staffId));
+                
                 // Get staff details
                 const indoorStaff = indoor.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
@@ -1392,6 +1398,10 @@ export default function StaffScheduling() {
                 const outdoorStaff = outdoor.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
                   return { name: staff?.name || 'Unknown', station: s.station };
+                });
+                const uncategorizedStaff = uncategorized.map(s => {
+                  const staff = staffMembers.find(sm => sm.id === s.staffId);
+                  return { name: staff?.name || 'Unknown', station: s.station || 'No station assigned' };
                 });
                 const offStaff = off.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
@@ -1475,6 +1485,23 @@ export default function StaffScheduling() {
                           {outdoorStaff.map((s, idx) => (
                             <div key={idx} className="text-gray-300">
                               • {s.name} <span className="text-gray-500">-</span> <span className="text-purple-400/80">{s.station}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Uncategorized Staff (Working but no clear area assignment) */}
+                    {uncategorizedStaff.length > 0 && (
+                      <div className="space-y-1.5 mb-2 bg-yellow-950/20 rounded-lg p-2 border border-yellow-900/30">
+                        <div className="text-xs font-bold text-yellow-300 flex items-center gap-1">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                          Working
+                        </div>
+                        <div className="space-y-1 text-xs pl-3">
+                          {uncategorizedStaff.map((s, idx) => (
+                            <div key={idx} className="text-gray-300">
+                              • {s.name} <span className="text-gray-500">-</span> <span className="text-yellow-400/80">{s.station}</span>
                             </div>
                           ))}
                         </div>
