@@ -1389,115 +1389,122 @@ export default function StaffScheduling() {
         <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
           <div className="absolute bottom-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
           <div className="relative">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/20 rounded-lg">
-                  <Users className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-100">Staff Members</h3>
-                  <p className="text-xs text-gray-500">{staffMembers.length} active staff</p>
-                </div>
-              </div>
-              <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="h-9 px-4 font-medium shadow-lg shadow-primary/10">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Staff
-                  </Button>
-                </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Staff Member</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label>Name</Label>
-                    <Input
-                      value={newStaff.name}
-                      onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
-                      placeholder="Staff name"
-                    />
-                  </div>
-                  <div>
-                    <Label>Title/Role</Label>
-                    <Select
-                      value={newStaff.title}
-                      onValueChange={(value) => setNewStaff({ ...newStaff, title: value as StaffMember['title'] })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="head_bartender">Head Bartender</SelectItem>
-                        <SelectItem value="senior_bartender">Senior Bartender</SelectItem>
-                        <SelectItem value="bartender">Bartender</SelectItem>
-                        <SelectItem value="bar_back">Bar Back</SelectItem>
-                        <SelectItem value="support">Support</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {ROLE_RESPONSIBILITIES[newStaff.title]}
-                    </p>
-                  </div>
-                  <Button onClick={addStaffMember} className="w-full">Add Staff Member</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <div className="space-y-3">
-            {/* Head Bartender section at the top */}
-            {headBartenders.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-gray-400 uppercase">
-                  Head Bartender ({headBartenders.length})
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                  {headBartenders.map(staff => (
-                    <div key={staff.id} className="flex items-center justify-between p-2 border border-gray-800 rounded-lg bg-gray-800">
-                      <span className="font-medium text-gray-100">{staff.name}</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => deleteStaffMember(staff.id)}
-                        className="hover:bg-gray-700"
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
+            <Accordion type="single" collapsible defaultValue="staff-members">
+              <AccordionItem value="staff-members" className="border-none">
+                <AccordionTrigger className="hover:no-underline pb-4">
+                  <div className="flex items-center justify-between w-full pr-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/20 rounded-lg">
+                        <Users className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-100">Staff Members</h3>
+                        <p className="text-xs text-gray-500">{staffMembers.length} active staff</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Other staff grouped by title */}
-            {Object.entries(groupedStaff).map(([title, members]) => (
-              <div key={title} className="space-y-2">
-                <h4 className="text-sm font-medium text-gray-400 uppercase">
-                  {title.replace('_', ' ')} ({members.length})
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                  {members.map(staff => (
-                    <div key={staff.id} className="flex items-center justify-between p-2 border border-gray-800 rounded-lg bg-gray-800">
-                      <span className="font-medium text-gray-100">{staff.name}</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => deleteStaffMember(staff.id)}
-                        className="hover:bg-gray-700"
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-            {staffMembers.length === 0 && (
-              <p className="text-center text-gray-400 py-8">No staff members added yet</p>
-            )}
-          </div>
+                    <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
+                      <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button size="sm" className="h-9 px-4 font-medium shadow-lg shadow-primary/10">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Staff
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add Staff Member</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label>Name</Label>
+                            <Input
+                              value={newStaff.name}
+                              onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                              placeholder="Staff name"
+                            />
+                          </div>
+                          <div>
+                            <Label>Title/Role</Label>
+                            <Select
+                              value={newStaff.title}
+                              onValueChange={(value) => setNewStaff({ ...newStaff, title: value as StaffMember['title'] })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="head_bartender">Head Bartender</SelectItem>
+                                <SelectItem value="senior_bartender">Senior Bartender</SelectItem>
+                                <SelectItem value="bartender">Bartender</SelectItem>
+                                <SelectItem value="bar_back">Bar Back</SelectItem>
+                                <SelectItem value="support">Support</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {ROLE_RESPONSIBILITIES[newStaff.title]}
+                            </p>
+                          </div>
+                          <Button onClick={addStaffMember} className="w-full">Add Staff Member</Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-3">
+                    {/* Head Bartender section at the top */}
+                    {headBartenders.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-gray-400 uppercase">
+                          Head Bartender ({headBartenders.length})
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                          {headBartenders.map(staff => (
+                            <div key={staff.id} className="flex items-center justify-between p-2 border border-gray-800 rounded-lg bg-gray-800">
+                              <span className="font-medium text-gray-100">{staff.name}</span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => deleteStaffMember(staff.id)}
+                                className="hover:bg-gray-700"
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Other staff grouped by title */}
+                    {Object.entries(groupedStaff).map(([title, members]) => (
+                      <div key={title} className="space-y-2">
+                        <h4 className="text-sm font-medium text-gray-400 uppercase">
+                          {title.replace('_', ' ')} ({members.length})
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                          {members.map(staff => (
+                            <div key={staff.id} className="flex items-center justify-between p-2 border border-gray-800 rounded-lg bg-gray-800">
+                              <span className="font-medium text-gray-100">{staff.name}</span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => deleteStaffMember(staff.id)}
+                                className="hover:bg-gray-700"
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {staffMembers.length === 0 && (
+                      <p className="text-center text-gray-400 py-8">No staff members added yet</p>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         </Card>
 
