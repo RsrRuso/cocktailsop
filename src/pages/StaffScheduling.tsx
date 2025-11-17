@@ -263,16 +263,18 @@ export default function StaffScheduling() {
             station: stations[stationIndex]
           };
           stationIndex++;
-        } else if (isWeekday && !outdoorBartenderAssigned) {
+        } else if (!outdoorBartenderAssigned) {
+          // Outdoor station 2 - every day
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
-            timeRange: '4:00 PM - 1:00 AM',
+            timeRange: isWeekday ? '4:00 PM - 1:00 AM' : '5:00 PM - 2:00 AM',
             type: 'regular',
             station: 'Outdoor - Station 2'
           };
           outdoorBartenderAssigned = true;
         } else {
+          // Extra support on busy days, OFF on quiet days
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
@@ -304,16 +306,18 @@ export default function StaffScheduling() {
             station: stations[stationIndex]
           };
           stationIndex++;
-        } else if (isWeekday && !outdoorBartenderAssigned) {
+        } else if (!outdoorBartenderAssigned) {
+          // Outdoor station 2 - every day
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
-            timeRange: '4:00 PM - 1:00 AM',
+            timeRange: isWeekday ? '4:00 PM - 1:00 AM' : '5:00 PM - 2:00 AM',
             type: 'regular',
             station: 'Outdoor - Station 2'
           };
           outdoorBartenderAssigned = true;
         } else {
+          // Extra support on busy days, OFF on quiet days
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
@@ -339,7 +343,7 @@ export default function StaffScheduling() {
             type: 'off'
           };
         } else if (idx === 0) {
-          // Primary bar back
+          // Primary bar back - Indoor focus
           const timeRange = isPickupDay ? 'PICKUP 12:00 PM - 3:00 AM' : isSaturday ? 'BRUNCH 11:00 AM - 3:00 AM' : '2:00 PM - 3:00 AM';
           const type = isPickupDay ? 'pickup' : isSaturday ? 'brunch' : 'opening';
           newSchedule[key] = {
@@ -347,17 +351,27 @@ export default function StaffScheduling() {
             day,
             timeRange,
             type,
-            station: 'Refill Fridges, Batches, Premixes, Glassware'
+            station: 'Indoor - Refill Fridges, Batches, Premixes, Glassware'
           };
-        } else {
-          // Backup bar back
+        } else if (idx === 1) {
+          // Second bar back - Outdoor focus
           const timeRange = isSaturday ? 'BRUNCH 11:00 AM - 2:00 AM' : '4:00 PM - 2:00 AM';
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange,
             type: isSaturday ? 'brunch' : 'regular',
-            station: 'Support Bar Back - Refill & Setup'
+            station: 'Outdoor - Bar Back Support & Setup'
+          };
+        } else {
+          // Additional bar back - General/Floating
+          const timeRange = isSaturday ? 'BRUNCH 11:00 AM - 2:00 AM' : '4:00 PM - 2:00 AM';
+          newSchedule[key] = {
+            staffId: schedule.staff.id,
+            day,
+            timeRange,
+            type: isSaturday ? 'brunch' : 'regular',
+            station: 'Floating - General Bar Back Support'
           };
         }
       });
