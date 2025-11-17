@@ -79,16 +79,25 @@ export default function StaffScheduling() {
 
   useEffect(() => {
     if (user) {
+      restoreAllStaff();
       fetchStaffMembers();
     }
   }, [user]);
+
+  const restoreAllStaff = async () => {
+    // Restore all previously deleted staff members
+    await supabase
+      .from('staff_members')
+      .update({ is_active: true })
+      .eq('user_id', user?.id)
+      .eq('is_active', false);
+  };
 
   const fetchStaffMembers = async () => {
     const { data, error } = await supabase
       .from('staff_members')
       .select('*')
       .eq('user_id', user?.id)
-      .eq('is_active', true)
       .order('title', { ascending: true });
 
     if (!error && data) {
@@ -1458,14 +1467,6 @@ export default function StaffScheduling() {
                           {headBartenders.map(staff => (
                             <div key={staff.id} className="flex items-center justify-between p-2 border border-gray-800 rounded-lg bg-gray-800">
                               <span className="font-medium text-gray-100">{staff.name}</span>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => deleteStaffMember(staff.id)}
-                                className="hover:bg-gray-700"
-                              >
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
                             </div>
                           ))}
                         </div>
@@ -1482,14 +1483,6 @@ export default function StaffScheduling() {
                           {members.map(staff => (
                             <div key={staff.id} className="flex items-center justify-between p-2 border border-gray-800 rounded-lg bg-gray-800">
                               <span className="font-medium text-gray-100">{staff.name}</span>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => deleteStaffMember(staff.id)}
-                                className="hover:bg-gray-700"
-                              >
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
                             </div>
                           ))}
                         </div>
