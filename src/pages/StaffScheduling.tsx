@@ -1201,7 +1201,7 @@ export default function StaffScheduling() {
       
       <div className="container mx-auto p-4 space-y-4">
         {/* Header Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/20 via-accent/10 to-secondary/20 border border-primary/20 p-6 mb-6">
+        <div className="relative overflow-hidden rounded-2xl bg-gray-800 border border-gray-700 p-6 mb-6">
           <div className="absolute inset-0 bg-grid-white/[0.02]" />
           <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex-1 max-w-md">
