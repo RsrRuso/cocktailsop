@@ -1113,34 +1113,31 @@ export default function StaffScheduling() {
     
     // Hygiene & Safety Tips - Light blue background with dark text
     const hygieneTips = [
-      'Hair tied back, clean uniform, gloves when handling food',
-      'Wash hands: before shifts, after breaks, after touching face/hair',
-      'Clean & sanitize workstations, surfaces & equipment every 2 hours',
-      'Use separate cutting boards for garnishes - never mix with food',
-      'Store garnishes in covered containers, check expiration dates',
-      'Label ALL containers with contents & date - check daily',
-      'Check fridge/freezer temps twice daily (AM & PM) - log & report issues',
-      'Use ice scoops only - never use glassware to scoop ice',
-      'Report illness immediately - do not work when unwell'
+      'Hair tied, clean uniform, gloves for food',
+      'Wash hands: before shifts, after breaks, after face/hair touch',
+      'Clean & sanitize workstations every 2 hours',
+      'Separate cutting boards for garnishes only',
+      'Store garnishes covered, check expiry dates',
+      'Label containers with contents & date daily',
+      'Check fridge/freezer temps AM & PM - log & report',
+      'Ice scoops only - no glassware for ice',
+      'Report illness - do not work when unwell'
     ];
     
-    const boxHeight = hygieneTips.length * 4.5 + 10;
+    const boxHeight = hygieneTips.length * 3.5 + 8;
     doc.setFillColor(...colors.lightBlue);
-    doc.roundedRect(14, finalY - 2, 270, boxHeight, 2, 2, 'F');
+    doc.roundedRect(14, finalY - 2, 182, boxHeight, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
+    doc.setFontSize(7.5);
     doc.setTextColor(...colors.foreground);
-    doc.text('HYGIENE & SAFETY - BAR TEAM GUIDELINES', 18, finalY + 4);
+    doc.text('HYGIENE & SAFETY GUIDELINES', 18, finalY + 3);
     
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    let tipY = finalY + 9;
+    doc.setFontSize(6.5);
+    let tipY = finalY + 7;
     hygieneTips.forEach((tip, index) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${index + 1}.`, 18, tipY);
-      doc.setFont('helvetica', 'normal');
-      doc.text(tip, 24, tipY);
-      tipY += 4.5;
+      doc.text(`${index + 1}. ${tip}`, 18, tipY);
+      tipY += 3.5;
     });
     
     finalY += boxHeight + 2;
