@@ -319,7 +319,12 @@ export default function StaffScheduling() {
         // If support gets 0 days off this week (works 10h, gets 2 days/month total), skip off day assignment
         if (isSupport && targetDaysOff === 0) {
           console.log(`  ℹ️ ${staff.name} (SUPPORT) works all 7 days this week (10h shifts, off days next week)`);
-          return { staffId: staff.id, offDays: [] };
+          return {
+            staff,
+            daysOff: [],
+            groupType: 'working-all-week',
+            actualDaysOff: 0
+          };
         }
         
         // Get available days (not busy)
