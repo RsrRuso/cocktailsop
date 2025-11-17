@@ -204,7 +204,7 @@ export default function StaffScheduling() {
       const isSaturday = dayIndex === 5; // Brunch + Weekend
       const isBusyDay = busyDays.includes(dayIndex);
 
-      // === FLEXIBLE STATION ASSIGNMENT: Prioritize Outdoor Coverage ===
+      // === FLEXIBLE STATION ASSIGNMENT: Prioritize Coverage ===
       const availableOperators: Array<{ staff: StaffMember; daysOff: number[]; role: string }> = [];
       
       // Collect all operators who are working this day
@@ -282,8 +282,25 @@ export default function StaffScheduling() {
         stationIdx++;
       }
 
-      // PRIORITY 3: Ticket Segregator (only if we have 4+ operators)
+      // PRIORITY 3: Head Bartender as Floating Supervisor (if we have 4+ operators)
       if (operatorIndex < availableOperators.length && availableOperators.length >= 4) {
+        const operator = availableOperators[operatorIndex];
+        // Prefer head bartender for this role
+        const headIndex = availableOperators.findIndex((op, idx) => idx >= operatorIndex && op.role === 'head');
+        const supervisorOperator = headIndex !== -1 ? availableOperators[headIndex] : operator;
+        
+        newSchedule[`${supervisorOperator.staff.id}-${day}`] = {
+          staffId: supervisorOperator.staff.id,
+          day,
+          timeRange: '5:00 PM - 3:00 AM',
+          type: 'regular',
+          station: 'Floating Supervisor: Observe Indoor/Outdoor, Support Where Needed'
+        };
+        operatorIndex++;
+      }
+
+      // PRIORITY 4: Ticket Segregator or Second Outdoor (only if 5+ operators)
+      if (operatorIndex < availableOperators.length && availableOperators.length >= 5) {
         const operator = availableOperators[operatorIndex];
         newSchedule[`${operator.staff.id}-${day}`] = {
           staffId: operator.staff.id,
@@ -295,28 +312,16 @@ export default function StaffScheduling() {
         operatorIndex++;
       }
 
-      // PRIORITY 4: Outdoor Station 2 or Extra Support
+      // PRIORITY 5: Extra Support
       while (operatorIndex < availableOperators.length) {
         const operator = availableOperators[operatorIndex];
-        if (operatorIndex === availableOperators.length - 2) {
-          // Second-to-last gets outdoor station 2
-          newSchedule[`${operator.staff.id}-${day}`] = {
-            staffId: operator.staff.id,
-            day,
-            timeRange: isWeekday ? '4:00 PM - 1:00 AM' : '5:00 PM - 2:00 AM',
-            type: 'regular',
-            station: 'Outdoor - Station 2'
-          };
-        } else {
-          // Rest get extra support or OFF
-          newSchedule[`${operator.staff.id}-${day}`] = {
-            staffId: operator.staff.id,
-            day,
-            timeRange: isBusyDay ? '5:00 PM - 3:00 AM' : 'OFF',
-            type: isBusyDay ? 'regular' : 'off',
-            station: isBusyDay ? 'Extra Support' : undefined
-          };
-        }
+        newSchedule[`${operator.staff.id}-${day}`] = {
+          staffId: operator.staff.id,
+          day,
+          timeRange: isBusyDay ? '5:00 PM - 3:00 AM' : 'OFF',
+          type: isBusyDay ? 'regular' : 'off',
+          station: isBusyDay ? 'Extra Support' : undefined
+        };
         operatorIndex++;
       }
 
@@ -418,7 +423,7 @@ export default function StaffScheduling() {
     }
 
     setSchedule(newSchedule);
-    toast.success('✅ Schedule generated! Flexible assignment: Outdoor prioritized, indoor stations filled, ticket segregation added only if 4+ bartenders available.');
+    toast.success('✅ Schedule generated! Outdoor prioritized, head bartenders act as floating supervisors when 4+ staff available.');
   };
 
   const exportToPDF = () => {
@@ -575,21 +580,23 @@ export default function StaffScheduling() {
     finalY += 3;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('STATION OVERVIEW & FLEXIBLE ASSIGNMENT RULES', 14, finalY);
+    doc.text('FLEXIBLE ASSIGNMENT PRIORITIES', 14, finalY);
     finalY += 4;
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text('PRIORITY 1: OUTDOOR COVERAGE (MUST have at least 1 bartender/senior/head)', 14, finalY);
+    doc.text('PRIORITY 1: OUTDOOR STATION 1 (MUST have at least 1 bartender/senior/head)', 14, finalY);
     finalY += 3;
     doc.text('PRIORITY 2: INDOOR STATIONS (Filled with remaining bartenders/senior/head)', 14, finalY);
     finalY += 3;
-    doc.text('PRIORITY 3: TICKET SEGREGATOR (Only assigned if 4+ bartenders available)', 14, finalY);
+    doc.text('PRIORITY 3: FLOATING SUPERVISOR (Head bartender observes indoor/outdoor, supports where needed - if 4+ staff)', 14, finalY);
+    finalY += 3;
+    doc.text('PRIORITY 4: TICKET SEGREGATOR (Only if 5+ bartenders available)', 14, finalY);
     finalY += 4;
     doc.setFont('helvetica', 'bold');
-    doc.text('FLEXIBILITY RULE: Outdoor prioritized over ticket segregation and indoor stations', 14, finalY);
+    doc.text('FLEXIBLE RULE: Second outdoor station removed - Head acts as floating supervisor instead', 14, finalY);
     finalY += 3;
     doc.setFont('helvetica', 'normal');
-    doc.text('• If limited staff, ticket segregation may be skipped to ensure outdoor coverage', 14, finalY);
+    doc.text('• Head bartender observes all areas and fills gaps rather than being station-locked', 14, finalY);
     finalY += 3;
     doc.text('• Bar Backs & Support: NOT assigned to indoor/outdoor stations (Assist only)', 14, finalY);
     
