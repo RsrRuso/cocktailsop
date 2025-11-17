@@ -1113,20 +1113,20 @@ export default function StaffScheduling() {
     
     // Hygiene & Safety Tips - Light blue background with dark text
     const hygieneTips = [
-      'Hair tied, clean uniform, gloves for food',
-      'Wash hands: before shifts, after breaks, after face/hair touch',
-      'Clean & sanitize workstations every 2 hours',
-      'Separate cutting boards for garnishes only',
-      'Store garnishes covered, check expiry dates',
-      'Label containers with contents & date daily',
-      'Check fridge/freezer temps AM & PM - log & report',
-      'Ice scoops only - no glassware for ice',
-      'Report illness - do not work when unwell'
+      'Clean uniform & gloves for food handling',
+      'Wash hands: before shifts, after breaks, after face touch',
+      'Sanitize workstations every 2 hours',
+      'Separate boards for garnishes only',
+      'Store garnishes covered, check dates',
+      'Label all containers with content & date',
+      'Check fridge/freezer temps AM & PM',
+      'Ice scoops only - no glassware',
+      'Report illness - do not work if unwell'
     ];
     
     const boxHeight = hygieneTips.length * 3.5 + 8;
     doc.setFillColor(...colors.lightBlue);
-    doc.roundedRect(14, finalY - 2, 182, boxHeight, 2, 2, 'F');
+    doc.roundedRect(14, finalY - 2, 165, boxHeight, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
     doc.setTextColor(...colors.foreground);
