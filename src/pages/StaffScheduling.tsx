@@ -1111,33 +1111,33 @@ export default function StaffScheduling() {
     });
     
     
-    // Hygiene & Safety Tips - Compact version
+    // Hygiene & Safety Tips - Full text version
     const hygieneTips = [
-      'Clean uniform & gloves',
-      'Wash hands regularly',
-      'Sanitize stations every 2h',
-      'Separate boards for garnishes',
-      'Store covered, check dates',
-      'Label containers & date',
-      'Check temps AM/PM',
-      'Ice scoops only',
-      'Report illness'
+      'Clean uniform and gloves for food handling',
+      'Wash hands before shifts, after breaks, after touching face',
+      'Sanitize workstations every 2 hours',
+      'Use separate cutting boards for garnishes only',
+      'Store garnishes covered and check expiration dates',
+      'Label all containers with contents and date',
+      'Check fridge and freezer temperatures AM and PM',
+      'Use ice scoops only - never use glassware',
+      'Report illness immediately - do not work if unwell'
     ];
     
-    const boxHeight = hygieneTips.length * 3.2 + 8;
+    const boxHeight = hygieneTips.length * 3.8 + 9;
     doc.setFillColor(...colors.lightBlue);
-    doc.roundedRect(14, finalY - 2, 150, boxHeight, 2, 2, 'F');
+    doc.roundedRect(14, finalY - 2, 180, boxHeight, 2, 2, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
+    doc.setFontSize(7.5);
     doc.setTextColor(...colors.foreground);
     doc.text('HYGIENE & SAFETY', 18, finalY + 3);
     
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6);
-    let tipY = finalY + 6.5;
+    doc.setFontSize(6.2);
+    let tipY = finalY + 7.5;
     hygieneTips.forEach((tip, index) => {
       doc.text(`${index + 1}. ${tip}`, 18, tipY);
-      tipY += 3.2;
+      tipY += 3.8;
     });
     
     finalY += boxHeight + 2;
