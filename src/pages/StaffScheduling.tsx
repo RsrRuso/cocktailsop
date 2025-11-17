@@ -156,29 +156,23 @@ export default function StaffScheduling() {
     // Calculate week number from selected date
     const weekStart = new Date(weekStartDate);
     const weekNumber = Math.floor(weekStart.getTime() / (7 * 24 * 60 * 60 * 1000));
-    const isOneOffWeek = weekNumber % 2 === 0; // Even weeks: 1 day off, Odd weeks: 2 days off
 
-    // Divide each role into two groups for rotation
-    const headGroup1 = headBartenders.filter((_, i) => i % 2 === 0);
-    const headGroup2 = headBartenders.filter((_, i) => i % 2 === 1);
-    const bartenderGroup1 = bartenders.filter((_, i) => i % 2 === 0);
-    const bartenderGroup2 = bartenders.filter((_, i) => i % 2 === 1);
-    const barBackGroup1 = barBacks.filter((_, i) => i % 2 === 0);
-    const barBackGroup2 = barBacks.filter((_, i) => i % 2 === 1);
-
-    // Assign days off for each group
-    const getDaysOff = (groupIndex: number, isOneOff: boolean) => {
-      if (isOneOff) {
-        // 1 day off - alternate between groups
-        return groupIndex === 0 ? [2] : [5]; // Wed or Sat
-      } else {
-        // 2 days off - alternate between groups
-        return groupIndex === 0 ? [1, 2] : [4, 5]; // Tue-Wed or Fri-Sat
-      }
+    // Within the same week, alternate who gets 1 day off vs 2 days off
+    // Group 1: 1 day off, Group 2: 2 days off (swaps each week)
+    const divideIntoGroups = (staffList: StaffMember[]) => {
+      const group1DaysOff = [2]; // Wednesday - 1 day off
+      const group2DaysOff = [4, 5]; // Friday-Saturday - 2 days off
+      
+      return staffList.map((staff, index) => ({
+        staff,
+        daysOff: index % 2 === 0 ? group1DaysOff : group2DaysOff,
+        groupType: index % 2 === 0 ? '1-day' : '2-day'
+      }));
     };
 
-    const group1DaysOff = getDaysOff(0, isOneOffWeek);
-    const group2DaysOff = getDaysOff(1, isOneOffWeek);
+    const headSchedules = divideIntoGroups(headBartenders);
+    const bartenderSchedules = divideIntoGroups(bartenders);
+    const barBackSchedules = divideIntoGroups(barBacks);
 
     // Generate schedule for entire week
     DAYS_OF_WEEK.forEach((day, dayIndex) => {
@@ -186,55 +180,40 @@ export default function StaffScheduling() {
       const isPickupDay = day === 'Monday' || day === 'Wednesday' || day === 'Friday';
 
       // === INDOOR BAR: Head Bartender - Ticket Segregator ===
-      headGroup1.forEach((staff, idx) => {
-        const key = `${staff.id}-${day}`;
-        if (group1DaysOff.includes(dayIndex)) {
+      let indoorHeadAssigned = false;
+      headSchedules.forEach((schedule, idx) => {
+        const key = `${schedule.staff.id}-${day}`;
+        
+        if (schedule.daysOff.includes(dayIndex)) {
           newSchedule[key] = {
-            staffId: staff.id,
+            staffId: schedule.staff.id,
             day,
             timeRange: 'OFF',
             type: 'off'
           };
-        } else {
+        } else if (!indoorHeadAssigned) {
+          // First available head bartender covers indoor
           newSchedule[key] = {
-            staffId: staff.id,
+            staffId: schedule.staff.id,
             day,
             timeRange: '5:00 PM - 3:00 AM',
             type: 'regular',
             station: 'Indoor - Ticket Segregator'
           };
-        }
-      });
-
-      headGroup2.forEach((staff, idx) => {
-        const key = `${staff.id}-${day}`;
-        if (group2DaysOff.includes(dayIndex)) {
-          newSchedule[key] = {
-            staffId: staff.id,
-            day,
-            timeRange: 'OFF',
-            type: 'off'
-          };
-        } else if (isWeekday && headGroup1.some(h => group1DaysOff.includes(dayIndex))) {
-          // Cover outdoor on weekdays if group1 heads are off
-          newSchedule[key] = {
-            staffId: staff.id,
-            day,
-            timeRange: '4:00 PM - 1:00 AM',
-            type: 'regular',
-            station: 'Outdoor Bar - Head'
-          };
+          indoorHeadAssigned = true;
         } else if (isWeekday) {
+          // Second head covers outdoor on weekdays
           newSchedule[key] = {
-            staffId: staff.id,
+            staffId: schedule.staff.id,
             day,
             timeRange: '4:00 PM - 1:00 AM',
             type: 'regular',
             station: 'Outdoor Bar - Head'
           };
         } else {
+          // Weekend outdoor or backup
           newSchedule[key] = {
-            staffId: staff.id,
+            staffId: schedule.staff.id,
             day,
             timeRange: '5:00 PM - 2:00 AM',
             type: 'regular',
@@ -243,45 +222,45 @@ export default function StaffScheduling() {
         }
       });
 
-      // === BARTENDERS - Stations 1, 2, 3 ===
+      // === BARTENDERS - Stations 1, 2, 3 and Outdoor ===
       const stations = ['Indoor - Station 1', 'Indoor - Station 2', 'Indoor - Garnishing Station 3'];
       let stationIndex = 0;
+      let outdoorBartenderAssigned = false;
 
-      [...bartenderGroup1, ...bartenderGroup2].forEach((staff, idx) => {
-        const key = `${staff.id}-${day}`;
-        const isGroup1 = bartenderGroup1.includes(staff);
-        const daysOff = isGroup1 ? group1DaysOff : group2DaysOff;
+      bartenderSchedules.forEach((schedule) => {
+        const key = `${schedule.staff.id}-${day}`;
 
-        if (daysOff.includes(dayIndex)) {
+        if (schedule.daysOff.includes(dayIndex)) {
           newSchedule[key] = {
-            staffId: staff.id,
+            staffId: schedule.staff.id,
             day,
             timeRange: 'OFF',
             type: 'off'
           };
         } else if (stationIndex < 3) {
-          // Indoor stations
+          // Indoor stations (first 3 available bartenders)
           newSchedule[key] = {
-            staffId: staff.id,
+            staffId: schedule.staff.id,
             day,
             timeRange: '5:00 PM - 3:00 AM',
             type: 'regular',
             station: stations[stationIndex]
           };
           stationIndex++;
-        } else if (isWeekday) {
+        } else if (isWeekday && !outdoorBartenderAssigned) {
           // Outdoor bartender on weekdays
           newSchedule[key] = {
-            staffId: staff.id,
+            staffId: schedule.staff.id,
             day,
             timeRange: '4:00 PM - 1:00 AM',
             type: 'regular',
             station: 'Outdoor Bar - Bartender'
           };
+          outdoorBartenderAssigned = true;
         } else {
-          // Extra staff or weekend
+          // Extra staff - OFF
           newSchedule[key] = {
-            staffId: staff.id,
+            staffId: schedule.staff.id,
             day,
             timeRange: 'OFF',
             type: 'off'
@@ -290,14 +269,12 @@ export default function StaffScheduling() {
       });
 
       // === BAR BACKS - Refill, Batches, Premixes ===
-      [...barBackGroup1, ...barBackGroup2].forEach((staff, idx) => {
-        const key = `${staff.id}-${day}`;
-        const isGroup1 = barBackGroup1.includes(staff);
-        const daysOff = isGroup1 ? group1DaysOff : group2DaysOff;
+      barBackSchedules.forEach((schedule, idx) => {
+        const key = `${schedule.staff.id}-${day}`;
 
-        if (daysOff.includes(dayIndex)) {
+        if (schedule.daysOff.includes(dayIndex)) {
           newSchedule[key] = {
-            staffId: staff.id,
+            staffId: schedule.staff.id,
             day,
             timeRange: 'OFF',
             type: 'off'
@@ -306,7 +283,7 @@ export default function StaffScheduling() {
           // Primary bar back
           const timeRange = isPickupDay ? 'PICKUP 12:00 PM - 3:00 AM' : '2:00 PM - 3:00 AM';
           newSchedule[key] = {
-            staffId: staff.id,
+            staffId: schedule.staff.id,
             day,
             timeRange,
             type: isPickupDay ? 'pickup' : 'opening',
@@ -315,7 +292,7 @@ export default function StaffScheduling() {
         } else {
           // Backup bar back
           newSchedule[key] = {
-            staffId: staff.id,
+            staffId: schedule.staff.id,
             day,
             timeRange: '4:00 PM - 2:00 AM',
             type: 'regular',
@@ -337,8 +314,7 @@ export default function StaffScheduling() {
     });
 
     setSchedule(newSchedule);
-    const weekType = isOneOffWeek ? '1 day off' : '2 days off';
-    toast.success(`Week ${weekNumber % 2 + 1} schedule generated (${weekType} rotation)!`);
+    toast.success('Schedule generated with balanced day-off rotation per role!');
   };
 
   const exportToPDF = () => {
