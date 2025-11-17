@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Download, Plus, Trash2, Wand2 } from 'lucide-react';
+import { Download, Plus, Trash2, Wand2, Calendar, Users } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
 import jsPDF from 'jspdf';
@@ -1342,40 +1342,53 @@ export default function StaffScheduling() {
 
         {/* Weekly Off Days Summary */}
         {staffMembers.length > 0 && Object.keys(schedule).length > 0 && (
-          <Card className="p-4 bg-gray-900 border-gray-800">
-            <h3 className="text-lg font-semibold mb-4 text-gray-100">
-              Weekly Off Days Summary
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <Card className="p-6 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 border-gray-700 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-100 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-primary" />
+                Weekly Off Days Summary
+              </h3>
+              <Button 
+                onClick={() => exportDayToJPG('Weekly Off Days Summary')} 
+                variant="outline" 
+                size="sm"
+                className="border-gray-600 hover:bg-gray-800 hover:border-primary transition-all"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button>
+            </div>
+            <div id="Weekly Off Days Summary" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {staffMembers.map(staff => {
                 const staffSchedule = Object.values(schedule).filter(s => s.staffId === staff.id);
                 const offDays = staffSchedule.filter(s => s.timeRange === 'OFF');
                 const offDaysList = offDays.map(s => s.day).join(', ');
                 
                 return (
-                  <div key={staff.id} className="border border-gray-800 rounded-lg p-3 bg-gray-800">
-                    <div className="flex items-center justify-between mb-2">
+                  <div key={staff.id} className="border border-gray-700 rounded-xl p-4 bg-gradient-to-br from-gray-800 to-gray-850 shadow-lg hover:shadow-xl transition-all hover:border-primary/50">
+                    <div className="flex items-center justify-between mb-3">
                       <div>
-                        <div className="font-semibold text-gray-100">{staff.name}</div>
-                        <div className="text-xs text-gray-400 capitalize">
+                        <div className="font-bold text-gray-100 text-sm">{staff.name}</div>
+                        <div className="text-xs text-gray-400 capitalize mt-1 flex items-center gap-1">
+                          <span className="inline-block w-2 h-2 rounded-full bg-primary/60"></span>
                           {staff.title.replace('_', ' ')}
                         </div>
                       </div>
                       <div className="text-center">
-                        <div className={`text-2xl font-bold ${offDays.length === 0 ? 'text-red-500' : offDays.length >= 2 ? 'text-green-500' : 'text-yellow-500'}`}>
+                        <div className={`text-3xl font-extrabold ${offDays.length === 0 ? 'text-red-400' : offDays.length >= 2 ? 'text-green-400' : 'text-yellow-400'}`}>
                           {offDays.length}
                         </div>
-                        <div className="text-[10px] text-gray-400">days off</div>
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wide">days off</div>
                       </div>
                     </div>
                     {offDaysList && (
-                      <div className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-700">
-                        Off: {offDaysList}
+                      <div className="text-xs text-gray-300 mt-3 pt-3 border-t border-gray-700/50 bg-gray-900/30 rounded px-2 py-2">
+                        <span className="text-gray-500 font-medium">Off Days:</span> {offDaysList}
                       </div>
                     )}
                     {offDays.length === 0 && (
-                      <div className="text-xs text-red-500 mt-2 pt-2 border-t border-gray-700">
-                        ⚠️ No days off this week
+                      <div className="text-xs text-red-400 mt-3 pt-3 border-t border-red-900/30 bg-red-950/20 rounded px-2 py-2 flex items-center gap-1">
+                        <span className="text-red-500">⚠️</span> No days off this week
                       </div>
                     )}
                   </div>
@@ -1387,8 +1400,9 @@ export default function StaffScheduling() {
 
         {/* Daily Summary */}
         {staffMembers.length > 0 && Object.keys(schedule).length > 0 && (
-          <Card className="p-4 bg-gray-900 border-gray-800">
-            <h3 className="text-lg font-semibold mb-4 text-gray-100">
+          <Card className="p-6 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 border-gray-700 shadow-xl">
+            <h3 className="text-xl font-bold text-gray-100 mb-6 flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
               Daily Breakdown
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
@@ -1434,52 +1448,58 @@ export default function StaffScheduling() {
                 const dayLabel = dailyEvents[day] || '';
 
                 return (
-                  <div key={day} className={`border rounded-lg p-3 ${isBusyDay ? 'border-orange-500 bg-orange-900/20' : 'bg-gray-800 border-gray-700'}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="font-semibold text-sm text-gray-100">{day}</div>
+                  <div key={day} className={`border rounded-xl p-4 shadow-lg hover:shadow-xl transition-all ${isBusyDay ? 'border-orange-400 bg-gradient-to-br from-orange-900/30 to-orange-950/20' : 'bg-gradient-to-br from-gray-800 to-gray-850 border-gray-700 hover:border-primary/50'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-bold text-sm text-gray-100 flex items-center gap-1">
+                        {isBusyDay && <span className="inline-block w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>}
+                        {day}
+                      </div>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => exportDayToJPG(day)}
-                        className="h-6 px-2 text-xs hover:bg-gray-700"
+                        className="h-7 px-2 text-xs hover:bg-gray-700 transition-colors"
                       >
                         <Download className="h-3 w-3" />
                       </Button>
                     </div>
                     {dayLabel && (
-                      <div className="text-xs text-orange-400 mb-2">
-                        {dayLabel}
+                      <div className="text-xs text-orange-300 mb-3 bg-orange-950/30 rounded px-2 py-1 font-medium">
+                        📅 {dayLabel}
                       </div>
                     )}
                     
                     {/* Summary Numbers */}
                     <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="text-center p-2 bg-green-950/30 rounded">
-                        <div className="text-xl font-bold text-green-400">{working.length}</div>
-                        <div className="text-[10px] text-gray-400">Working</div>
+                      <div className="text-center p-2 bg-gradient-to-br from-green-950/40 to-green-900/20 rounded-lg border border-green-800/30">
+                        <div className="text-2xl font-extrabold text-green-400">{working.length}</div>
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wide">Working</div>
                       </div>
-                      <div className="text-center p-2 bg-red-950/30 rounded">
-                        <div className="text-xl font-bold text-red-400">{off.length}</div>
-                        <div className="text-[10px] text-gray-400">Off</div>
+                      <div className="text-center p-2 bg-gradient-to-br from-red-950/40 to-red-900/20 rounded-lg border border-red-800/30">
+                        <div className="text-2xl font-extrabold text-red-400">{off.length}</div>
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wide">Off</div>
                       </div>
-                      <div className="text-center p-2 bg-blue-950/30 rounded">
-                        <div className="text-lg font-bold text-blue-400">{indoor.length}</div>
-                        <div className="text-[10px] text-gray-400">Indoor</div>
+                      <div className="text-center p-2 bg-gradient-to-br from-blue-950/40 to-blue-900/20 rounded-lg border border-blue-800/30">
+                        <div className="text-xl font-bold text-blue-400">{indoor.length}</div>
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wide">Indoor</div>
                       </div>
-                      <div className="text-center p-2 bg-purple-950/30 rounded">
-                        <div className="text-lg font-bold text-purple-400">{outdoor.length}</div>
-                        <div className="text-[10px] text-gray-400">Outdoor</div>
+                      <div className="text-center p-2 bg-gradient-to-br from-purple-950/40 to-purple-900/20 rounded-lg border border-purple-800/30">
+                        <div className="text-xl font-bold text-purple-400">{outdoor.length}</div>
+                        <div className="text-[10px] text-gray-400 uppercase tracking-wide">Outdoor</div>
                       </div>
                     </div>
                     
                     {/* Indoor Staff */}
                     {indoorStaff.length > 0 && (
-                      <div className="space-y-1 mb-2">
-                        <div className="text-xs font-semibold text-blue-400">Indoor Stations:</div>
-                        <div className="space-y-1 text-xs">
+                      <div className="space-y-1.5 mb-2 bg-blue-950/20 rounded-lg p-2 border border-blue-900/30">
+                        <div className="text-xs font-bold text-blue-300 flex items-center gap-1">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                          Indoor Stations
+                        </div>
+                        <div className="space-y-1 text-xs pl-3">
                           {indoorStaff.map((s, idx) => (
-                            <div key={idx} className="text-gray-400">
-                              • {s.name} - {s.station}
+                            <div key={idx} className="text-gray-300">
+                              • {s.name} <span className="text-gray-500">-</span> <span className="text-blue-400/80">{s.station}</span>
                             </div>
                           ))}
                         </div>
@@ -1488,12 +1508,15 @@ export default function StaffScheduling() {
 
                     {/* Outdoor Staff */}
                     {outdoorStaff.length > 0 && (
-                      <div className="space-y-1 mb-2">
-                        <div className="text-xs font-semibold text-purple-400">Outdoor Stations:</div>
-                        <div className="space-y-1 text-xs">
+                      <div className="space-y-1.5 mb-2 bg-purple-950/20 rounded-lg p-2 border border-purple-900/30">
+                        <div className="text-xs font-bold text-purple-300 flex items-center gap-1">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                          Outdoor Stations
+                        </div>
+                        <div className="space-y-1 text-xs pl-3">
                           {outdoorStaff.map((s, idx) => (
-                            <div key={idx} className="text-gray-400">
-                              • {s.name} - {s.station}
+                            <div key={idx} className="text-gray-300">
+                              • {s.name} <span className="text-gray-500">-</span> <span className="text-purple-400/80">{s.station}</span>
                             </div>
                           ))}
                         </div>
@@ -1502,9 +1525,9 @@ export default function StaffScheduling() {
 
                     {/* Off Staff */}
                     {offStaff.length > 0 && (
-                      <div className="space-y-1 pt-2 border-t border-gray-700">
-                        <div className="text-xs font-medium text-gray-200">Off:</div>
-                        <div className="space-y-1 text-xs">
+                      <div className="space-y-1.5 pt-2 border-t border-gray-700/50 bg-gray-900/30 rounded-lg p-2 mt-2">
+                        <div className="text-xs font-bold text-gray-300">Off Duty:</div>
+                        <div className="space-y-1 text-xs pl-3">
                           {offStaff.map((name, idx) => (
                             <div key={idx} className="text-gray-400">
                               • {name}
