@@ -854,6 +854,51 @@ export default function StaffScheduling() {
           </div>
         </Card>
 
+        {/* Weekly Off Days Summary */}
+        {staffMembers.length > 0 && Object.keys(schedule).length > 0 && (
+          <Card className="p-4">
+            <h3 className="text-lg font-semibold mb-4">
+              Weekly Off Days Summary
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {staffMembers.map(staff => {
+                const staffSchedule = Object.values(schedule).filter(s => s.staffId === staff.id);
+                const offDays = staffSchedule.filter(s => s.timeRange === 'OFF');
+                const offDaysList = offDays.map(s => s.day).join(', ');
+                
+                return (
+                  <div key={staff.id} className="border rounded-lg p-3 bg-card">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <div className="font-semibold">{staff.name}</div>
+                        <div className="text-xs text-muted-foreground capitalize">
+                          {staff.title.replace('_', ' ')}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className={`text-2xl font-bold ${offDays.length === 0 ? 'text-red-500' : offDays.length >= 2 ? 'text-green-500' : 'text-yellow-500'}`}>
+                          {offDays.length}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">days off</div>
+                      </div>
+                    </div>
+                    {offDaysList && (
+                      <div className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                        Off: {offDaysList}
+                      </div>
+                    )}
+                    {offDays.length === 0 && (
+                      <div className="text-xs text-red-500 mt-2 pt-2 border-t">
+                        ⚠️ No days off this week
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
+
         {/* Daily Summary */}
         {staffMembers.length > 0 && Object.keys(schedule).length > 0 && (
           <Card className="p-4">
