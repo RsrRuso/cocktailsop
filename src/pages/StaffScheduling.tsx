@@ -46,7 +46,7 @@ const ROLE_RESPONSIBILITIES = {
   senior_bartender: 'Operate Stations & Training. HYGIENE & SAFETY: Ensure food safety compliance, maintain labeling standards, monitor product expirations',
   bartender: 'IN CHARGE OF STATIONS: Operate assigned bar stations, supervise bar backs, manage station closing procedures, refresh and maintain stations based on operational needs during service. HYGIENE & SAFETY: Maintain hygiene standards, proper labeling, check product expirations',
   bar_back: 'PRIORITY ROLE: Pickups, refilling, glassware polishing, batching, station opening/closing, refill fridges/freezers, stock refilling, garnish cutting (Divided between indoor/outdoor if 2+). HYGIENE & SAFETY: Food safety compliance, labeling updates, expiration monitoring',
-  support: 'Glassware polishing, general support (Divided between indoor/outdoor if 2+). HYGIENE & SAFETY: Maintain hygiene standards, assist with labeling, monitor expirations',
+  support: '10-HOUR SHIFTS (3PM-1AM): Glassware polishing, general support (Divided between indoor/outdoor if 2+). 2 DAYS OFF PER MONTH. HYGIENE & SAFETY: Maintain hygiene standards, assist with labeling, monitor expirations',
 };
 
 export default function StaffScheduling() {
@@ -257,12 +257,12 @@ export default function StaffScheduling() {
       const results = staffList.map((staff, index) => {
         const globalIndex = roleOffset + index;
         
-        // SPECIAL RULE FOR SUPPORT: 1 day off every 2 weeks (works 10 hours daily)
+        // SPECIAL RULE FOR SUPPORT: 2 days off per MONTH (1 day off every 2 weeks, 10-hour shifts)
         let targetDaysOff: number;
         if (isSupport) {
-          // Support gets 1 day off every 2 weeks (odd weeks only)
+          // Support gets 1 day off every 2 weeks = 2 days per month (works 10 hours daily)
           targetDaysOff = isOddWeek ? 1 : 0;
-          console.log(`\n  🎯 ${staff.name} (SUPPORT): Target = ${targetDaysOff} day(s) off (odd week: ${isOddWeek})`);
+          console.log(`\n  🎯 ${staff.name} (SUPPORT): Target = ${targetDaysOff} day(s) off (odd week: ${isOddWeek}, 10h shifts)`);
         } else {
           // Check previous week's days off for this staff member
           const previousDaysOff = previousWeekDaysOff[staff.id] ?? 0;
@@ -283,9 +283,9 @@ export default function StaffScheduling() {
           console.log(`\n  🎯 ${staff.name}: Last week = ${previousDaysOff} days off → This week = ${targetDaysOff} day(s) off`);
         }
         
-        // If support gets 0 days off this week, skip the off day assignment
+        // If support gets 0 days off this week (works 10h, gets 2 days/month total), skip off day assignment
         if (isSupport && targetDaysOff === 0) {
-          console.log(`  ℹ️ ${staff.name} (SUPPORT) works all 7 days this week`);
+          console.log(`  ℹ️ ${staff.name} (SUPPORT) works all 7 days this week (10h shifts, off days next week)`);
           return { staffId: staff.id, offDays: [] };
         }
         
@@ -349,8 +349,8 @@ export default function StaffScheduling() {
           targetDaysOff = 1;
           console.warn(`  ⚠️ Forcing ${staff.name} to get ${targetDaysOff} day off despite constraints`);
         } else if (availableDays.length === 0 && isSupport && targetDaysOff === 0) {
-          // Support staff with 0 target days off can work all 7 days
-          console.log(`  ℹ️ ${staff.name} (SUPPORT): Working all 7 days this week (no off days scheduled)`);
+          // Support staff with 0 target days off can work all 7 days (10-hour shifts, 2 days off per month)
+          console.log(`  ℹ️ ${staff.name} (SUPPORT): Working all 7 days this week (10h shifts, no off days scheduled)`);
           return { staffId: staff.id, offDays: [] };
         }
         
@@ -693,7 +693,7 @@ export default function StaffScheduling() {
       workingSupport.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
-        // Allocate support to Indoor or Outdoor (10 hours)
+        // Allocate support to Indoor or Outdoor (10 hours: 3:00 PM - 1:00 AM)
         const supportStations = [
           'Support - Outdoor: Glassware Polishing, General Support',
           'Support - Indoor: Glassware Polishing, General Support'
@@ -702,11 +702,11 @@ export default function StaffScheduling() {
         // Assign station (alternate between outdoor and indoor)
         const station = idx < supportStations.length ? supportStations[idx] : supportStations[idx % supportStations.length];
         
-        // Support typically works IN - 3 PM (starts at 3 PM, no specific end time in schedule)
+        // Support works 10 hours: 3:00 PM - 1:00 AM
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
-          timeRange: 'IN - 3 PM',
+          timeRange: '3:00 PM - 1:00 AM',
           type: 'regular',
           station
         };
@@ -775,7 +775,7 @@ export default function StaffScheduling() {
     console.log(finalDistribution);
     
     setSchedule(newSchedule);
-    toast.success(`✅ Schedule generated! Alternating 1-2 days off week-to-week. Monthly total: 6 days off (bartenders), ~2 days (support - every 2 weeks). Min 3 bartenders working daily.`, {
+    toast.success(`✅ Schedule generated! Bartenders: Alternating 1-2 days off week-to-week. Support: 2 days off per month (10h shifts). Min 3 bartenders working daily.`, {
       duration: 7000
     });
   };
@@ -941,7 +941,7 @@ export default function StaffScheduling() {
     finalY += 4;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(51, 65, 85);
-    doc.text('General Support - Glassware polishing, general assistance (10-hour shifts, divided between areas if 2+)', 18, finalY);
+    doc.text('General Support - Glassware polishing, general assistance (10-hour shifts: 3PM-1AM, 2 days off per month, divided between areas if 2+)', 18, finalY);
     finalY += 8;
     
     // Division Rules
@@ -993,7 +993,9 @@ export default function StaffScheduling() {
     doc.setFont('helvetica', 'normal');
     doc.text('• Minimum 1 day off per week guaranteed for all staff', 16, finalY);
     finalY += 3;
-    doc.text('• Alternating pattern for same titles: Week 1 (1 day off) / Week 2 (2 days off) rotation', 16, finalY);
+    doc.text('• Alternating pattern for bartenders: Week 1 (1 day off) / Week 2 (2 days off) rotation', 16, finalY);
+    finalY += 3;
+    doc.text('• Support staff: 2 days off per MONTH (1 day off every 2 weeks)', 16, finalY);
     finalY += 3;
     doc.text('• Automatic alternative day assignment if off day conflicts with event day', 16, finalY);
     finalY += 3;
