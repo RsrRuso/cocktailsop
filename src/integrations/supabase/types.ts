@@ -376,6 +376,87 @@ export type Database = {
           },
         ]
       }
+      cocktail_sops: {
+        Row: {
+          abv_percentage: number | null
+          brix: number | null
+          created_at: string
+          drink_name: string
+          garnish: string
+          glass: string
+          ice: string
+          id: string
+          kcal: number | null
+          main_image: string | null
+          method_sop: string
+          ph: number | null
+          ratio: string | null
+          recipe: Json
+          service_notes: string | null
+          taste_bitter: number | null
+          taste_salty: number | null
+          taste_sour: number | null
+          taste_sweet: number | null
+          taste_umami: number | null
+          technique: string
+          total_ml: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          abv_percentage?: number | null
+          brix?: number | null
+          created_at?: string
+          drink_name: string
+          garnish: string
+          glass: string
+          ice: string
+          id?: string
+          kcal?: number | null
+          main_image?: string | null
+          method_sop: string
+          ph?: number | null
+          ratio?: string | null
+          recipe?: Json
+          service_notes?: string | null
+          taste_bitter?: number | null
+          taste_salty?: number | null
+          taste_sour?: number | null
+          taste_sweet?: number | null
+          taste_umami?: number | null
+          technique: string
+          total_ml: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          abv_percentage?: number | null
+          brix?: number | null
+          created_at?: string
+          drink_name?: string
+          garnish?: string
+          glass?: string
+          ice?: string
+          id?: string
+          kcal?: number | null
+          main_image?: string | null
+          method_sop?: string
+          ph?: number | null
+          ratio?: string | null
+          recipe?: Json
+          service_notes?: string | null
+          taste_bitter?: number | null
+          taste_salty?: number | null
+          taste_sour?: number | null
+          taste_sweet?: number | null
+          taste_umami?: number | null
+          technique?: string
+          total_ml?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       competitions: {
         Row: {
           certificate_url: string | null
