@@ -308,6 +308,15 @@ const OpsTools = () => {
         path: "/cocktail-specs",
       },
       {
+        name: "Cocktail SOP",
+        description: "Professional SOP with PDF export",
+        details: "Generate detailed cocktail SOPs matching Attiko format. Include identity, metrics, taste profiles, recipes with allergens, and export to professional PDFs.",
+        icon: FileText,
+        gradient: "from-indigo-600 to-purple-500",
+        premium: false,
+        path: "/cocktail-sop",
+      },
+      {
         name: "Training Log",
         description: "Track staff training and certifications",
         details: "Monitor employee training progress, certification renewals, and skill development. Ensure compliance and maintain competency records.",
