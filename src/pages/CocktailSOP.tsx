@@ -117,14 +117,70 @@ export default function CocktailSOP() {
   }, [user, navigate]);
 
   useEffect(() => {
-    const total = ingredients.reduce((sum, ing) => ing.unit === 'ml' ? sum + (ing.amount || 0) : sum, 0);
-    setTotalMl(total);
+    let totalVolume = 0;
+    let totalAlcohol = 0;
+    let totalCalories = 0;
+    let totalSugar = 0;
+    let acidVolume = 0;
+
+    ingredients.forEach(ing => {
+      if (ing.amount > 0) {
+        // Convert to ml if needed (drops to ml approximation)
+        const volumeInMl = ing.unit === 'ml' ? ing.amount : ing.amount * 0.05;
+        
+        if (ing.unit === 'ml') {
+          totalVolume += ing.amount;
+        }
+        
+        // Calculate alcohol content
+        if (ing.abv > 0) {
+          totalAlcohol += (volumeInMl * ing.abv) / 100;
+        }
+        
+        // Calculate calories based on ingredient type
+        const ingType = ing.type.toUpperCase();
+        const ingName = ing.ingredient.toLowerCase();
+        
+        if (ingType === 'SPIRIT' || ingType === 'WHISKEY') {
+          totalCalories += volumeInMl * 7 * (ing.abv / 100); // 7 cal per ml of pure alcohol
+        } else if (ingType === 'SYRUP' || ingType === 'LIQUEUR') {
+          totalCalories += volumeInMl * 3; // ~3 cal per ml for sugar
+          totalSugar += volumeInMl * 0.5; // ~50% sugar content
+        } else if (ingType === 'JUICE') {
+          totalCalories += volumeInMl * 0.4; // ~0.4 cal per ml for juice
+          totalSugar += volumeInMl * 0.1; // ~10% sugar in citrus juice
+          
+          if (ingName.includes('lime') || ingName.includes('lemon') || ingName.includes('citrus')) {
+            acidVolume += volumeInMl;
+          }
+        } else if (ingType === 'WINE' || ingType === 'VERMOUTH') {
+          totalCalories += volumeInMl * 0.8; // ~0.8 cal per ml
+          totalSugar += volumeInMl * 0.15; // ~15% sugar
+        }
+      }
+    });
+
+    // Set total ml
+    setTotalMl(Math.round(totalVolume));
     
-    const alcoholVol = ingredients.reduce((sum, ing) => 
-      ing.unit === 'ml' && ing.abv > 0 ? sum + ((ing.amount || 0) * (ing.abv / 100)) : sum, 0
-    );
-    setAbvPercentage(total > 0 ? Number((alcoholVol / total * 100).toFixed(1)) : 0);
-    setKcal(Math.round(alcoholVol * 7));
+    // Set ABV percentage
+    setAbvPercentage(totalVolume > 0 ? Number(((totalAlcohol / totalVolume) * 100).toFixed(1)) : 0);
+    
+    // Set calories
+    setKcal(Math.round(totalCalories));
+    
+    // Set Brix (sugar content percentage) - rough approximation
+    const brixValue = totalVolume > 0 ? (totalSugar / totalVolume) * 100 : 0;
+    setBrix(Number(brixValue.toFixed(1)));
+    
+    // Set pH (acidity) - rough approximation
+    if (acidVolume > 0 && totalVolume > 0) {
+      const acidRatio = acidVolume / totalVolume;
+      const phValue = Math.max(2.5, 7 - (acidRatio * 4.5)); // More acid = lower pH
+      setPh(Number(phValue.toFixed(1)));
+    } else {
+      setPh(7);
+    }
   }, [ingredients]);
 
   const fetchSOPs = async () => {
