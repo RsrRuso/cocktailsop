@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { Download, Plus, Trash2, Wand2, Calendar, Users } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
-import VoiceScheduleInput from '@/components/VoiceScheduleInput';
+
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, startOfWeek, addDays } from 'date-fns';
@@ -181,81 +181,6 @@ export default function StaffScheduling() {
     fetchStaffMembers();
   };
 
-  const handleVoiceInput = (transcription: string) => {
-    console.log('Voice transcription:', transcription);
-    toast.info('Processing your schedule instructions...');
-    
-    const text = transcription.toLowerCase();
-    const newScheduleEntries: Record<string, ScheduleCell> = {};
-    
-    // Parse staff names and schedules from transcription
-    staffMembers.forEach(staff => {
-      const staffName = staff.name.toLowerCase();
-      
-      // Check if this staff member is mentioned
-      if (text.includes(staffName)) {
-        // Find days mentioned
-        DAYS_OF_WEEK.forEach(day => {
-          const dayLower = day.toLowerCase();
-          const staffNameIndex = text.indexOf(staffName);
-          const dayIndex = text.indexOf(dayLower, staffNameIndex);
-          
-          if (dayIndex === -1) return;
-          
-          const segment = text.substring(staffNameIndex, dayIndex + dayLower.length + 50);
-          
-          // Check for off days
-          if (segment.includes('off') || segment.includes('day off')) {
-            const cellKey = `${staff.id}-${day}`;
-            newScheduleEntries[cellKey] = {
-              staffId: staff.id,
-              day,
-              timeRange: 'OFF',
-              type: 'off'
-            };
-          }
-          // Check for time ranges
-          else if (segment.match(/\d{1,2}\s*(?:pm|am)?\s*(?:to|-)\s*\d{1,2}\s*(?:pm|am)?/i)) {
-            const timeMatch = segment.match(/(\d{1,2}\s*(?:pm|am)?)\s*(?:to|-)\s*(\d{1,2}\s*(?:pm|am)?)/i);
-            if (timeMatch) {
-              const cellKey = `${staff.id}-${day}`;
-              newScheduleEntries[cellKey] = {
-                staffId: staff.id,
-                day,
-                timeRange: `${timeMatch[1].toUpperCase()}-${timeMatch[2].toUpperCase()}`,
-                type: 'regular'
-              };
-            }
-          }
-          // Check for shift types
-          else if (segment.includes('opening')) {
-            const cellKey = `${staff.id}-${day}`;
-            newScheduleEntries[cellKey] = {
-              staffId: staff.id,
-              day,
-              timeRange: '4PM-12AM',
-              type: 'opening'
-            };
-          } else if (segment.includes('closing')) {
-            const cellKey = `${staff.id}-${day}`;
-            newScheduleEntries[cellKey] = {
-              staffId: staff.id,
-              day,
-              timeRange: '5PM-1AM',
-              type: 'closing'
-            };
-          }
-        });
-      }
-    });
-    
-    if (Object.keys(newScheduleEntries).length > 0) {
-      setSchedule(prev => ({ ...prev, ...newScheduleEntries }));
-      toast.success(`✅ Added ${Object.keys(newScheduleEntries).length} schedule entries from voice!`);
-    } else {
-      toast.error('Could not parse schedule. Try: "Miguel works Monday 4pm to 12am" or "Russo off Tuesday"');
-    }
-  };
 
 
   const updateScheduleCell = (staffId: string, day: string, timeRange: string, type: ScheduleCell['type'], station?: string) => {
@@ -1354,7 +1279,6 @@ export default function StaffScheduling() {
             </div>
             
             <div className="flex gap-2">
-              <VoiceScheduleInput onTranscription={handleVoiceInput} />
               <Button onClick={autoGenerateSchedule} variant="default" className="h-11 px-6 font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
                 <Wand2 className="w-4 h-4 mr-2" />
                 Generate Schedule
