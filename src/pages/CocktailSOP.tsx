@@ -120,7 +120,10 @@ export default function CocktailSOP() {
       toast({ title: 'Error', description: 'Failed to fetch SOPs', variant: 'destructive' });
       return;
     }
-    setSops((data || []).map(sop => ({ ...sop, recipe: Array.isArray(sop.recipe) ? sop.recipe : [] })) as CocktailSOP[]);
+    setSops((data || []).map(sop => ({ 
+      ...sop, 
+      recipe: (Array.isArray(sop.recipe) ? sop.recipe : []) as unknown as Ingredient[]
+    })) as CocktailSOP[]);
   };
 
   const addIngredient = () => {
@@ -138,7 +141,7 @@ export default function CocktailSOP() {
       total_ml: totalMl, abv_percentage: abvPercentage, ratio, ph, brix, kcal,
       method_sop: methodSOP, service_notes: serviceNotes,
       taste_sweet: tasteSweet, taste_sour: tasteSour, taste_salty: tasteSalty,
-      taste_umami: tasteUmami, taste_bitter: tasteBitter, recipe: ingredients
+      taste_umami: tasteUmami, taste_bitter: tasteBitter, recipe: ingredients as unknown as any
     }]);
 
     if (error) {
