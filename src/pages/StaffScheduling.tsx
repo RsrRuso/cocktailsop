@@ -1840,19 +1840,34 @@ export default function StaffScheduling() {
                         });
                       };
 
-                      // First Wave: 12 PM, 3 PM, 4 PM shifts
+                      // First Wave: Earlier shifts (12 PM, 1 PM, 2 PM, 3 PM, 4 PM) - staff who started earlier get first break
                       const firstWaveStaff = sortByRole(working.filter(s => {
                         const time = s.timeRange;
-                        return time.startsWith('12:00 PM') || time.startsWith('3:00 PM') || time.startsWith('4:00 PM');
+                        const startHour = parseInt(time.split(':')[0]);
+                        const isPM = time.includes('PM');
+                        const isAM = time.includes('AM');
+                        // Convert to 24-hour for comparison
+                        let hour24 = startHour;
+                        if (isPM && startHour !== 12) hour24 = startHour + 12;
+                        if (isAM && startHour === 12) hour24 = 0;
+                        // 12 PM (14h) to 4 PM (16h) all get first wave
+                        return hour24 >= 12 && hour24 <= 16;
                       }).map(s => {
                         const staff = staffMembers.find(sm => sm.id === s.staffId);
                         return { name: staff?.name || 'Unknown', timeRange: s.timeRange, staff };
                       }));
                       
-                      // Second Wave: 5 PM shifts
+                      // Second Wave: Later shifts (5 PM onwards) - staff who started later break after first wave
                       const secondWaveStaff = sortByRole(working.filter(s => {
                         const time = s.timeRange;
-                        return time.startsWith('5:00 PM');
+                        const startHour = parseInt(time.split(':')[0]);
+                        const isPM = time.includes('PM');
+                        const isAM = time.includes('AM');
+                        let hour24 = startHour;
+                        if (isPM && startHour !== 12) hour24 = startHour + 12;
+                        if (isAM && startHour === 12) hour24 = 0;
+                        // 5 PM (17h) and later get second wave
+                        return hour24 >= 17;
                       }).map(s => {
                         const staff = staffMembers.find(sm => sm.id === s.staffId);
                         return { name: staff?.name || 'Unknown', timeRange: s.timeRange, staff };
