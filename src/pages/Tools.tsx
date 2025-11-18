@@ -32,6 +32,12 @@ const Tools = () => {
 
   const tools = [
     {
+      name: "Cocktail SOP",
+      description: "Professional cocktail specifications with PDF export",
+      icon: FileText,
+      path: "/cocktail-sop",
+    },
+    {
       name: "Batch Calculator",
       description: "Calculate precise batch quantities",
       icon: Calculator,
@@ -146,7 +152,7 @@ const Tools = () => {
       toast.error("Subscribe to access professional tools");
       return;
     }
-    if (path === "/inventory-manager") {
+    if (path === "/inventory-manager" || path === "/cocktail-sop") {
       window.location.href = path;
     } else {
       toast.info("Tool coming soon!");
