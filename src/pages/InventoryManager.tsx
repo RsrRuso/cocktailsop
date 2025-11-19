@@ -57,7 +57,7 @@ const InventoryManager = () => {
   const [itemMasterToDelete, setItemMasterToDelete] = useState<any>(null);
   const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const attikoStoreId = stores.find((store) => store.name?.toLowerCase() === 'attiko')?.id;
+  const attikoStoreId = stores.find((store) => store.name?.toLowerCase().includes('attiko'))?.id;
 
   useEffect(() => {
     if (hasAccess && !workspaceLoading) {
@@ -1008,7 +1008,13 @@ const InventoryManager = () => {
                                     variant="ghost"
                                     className="h-7 text-xs"
                                     onClick={() => handleMarkAsSold(inv.id, inv.quantity)}
-                                    disabled={inv.status !== 'available' || inv.store_id !== attikoStoreId}
+                                    disabled={
+                                      inv.status !== 'available' ||
+                                      !(
+                                        (attikoStoreId && inv.store_id === attikoStoreId) ||
+                                        inv.stores?.name?.toLowerCase().includes('attiko')
+                                      )
+                                    }
                                   >
                                     Sold
                                   </Button>
