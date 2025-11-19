@@ -73,27 +73,56 @@ const InventoryManager = () => {
   const fetchData = async () => {
     if (!user || !hasAccess) return;
 
+    const workspaceId = currentWorkspace?.id;
+    console.log('Fetching data for workspace:', workspaceId);
+
+    // Build queries based on whether we have a workspace or not
+    const storesQuery = supabase.from("stores").select("*");
+    const itemsQuery = supabase.from("items").select("*");
+    const inventoryQuery = supabase.from("inventory").select(`
+      *,
+      stores(name, area),
+      items(name, brand, color_code, category)
+    `);
+    const transfersQuery = supabase.from("inventory_transfers").select(`
+      *,
+      from_store:stores!from_store_id(name),
+      to_store:stores!to_store_id(name),
+      transferred_by:employees(name)
+    `);
+    const activityQuery = supabase.from("inventory_activity_log").select(`
+      *,
+      stores(name),
+      employees(name)
+    `);
+
+    // Apply workspace or user filtering
+    if (workspaceId) {
+      storesQuery.eq("workspace_id", workspaceId);
+      itemsQuery.eq("workspace_id", workspaceId);
+      inventoryQuery.eq("workspace_id", workspaceId);
+      transfersQuery.eq("workspace_id", workspaceId);
+      activityQuery.eq("workspace_id", workspaceId);
+    } else {
+      storesQuery.eq("user_id", user.id).is("workspace_id", null);
+      itemsQuery.eq("user_id", user.id).is("workspace_id", null);
+      inventoryQuery.eq("user_id", user.id).is("workspace_id", null);
+      transfersQuery.eq("user_id", user.id).is("workspace_id", null);
+      activityQuery.eq("user_id", user.id).is("workspace_id", null);
+    }
+
     const [storesRes, itemsRes, employeesRes, inventoryRes, transfersRes, activityRes] = await Promise.all([
-      supabase.from("stores").select("*").eq("user_id", user.id).order("name"),
-      supabase.from("items").select("*").eq("user_id", user.id).order("name"),
+      storesQuery.order("name"),
+      itemsQuery.order("name"),
       supabase.from("employees").select("*").eq("user_id", user.id).order("name"),
-      supabase.from("inventory").select(`
-        *,
-        stores(name, area),
-        items(name, brand, color_code, category)
-      `).eq("user_id", user.id).order("priority_score", { ascending: false }),
-      supabase.from("inventory_transfers").select(`
-        *,
-        from_store:stores!from_store_id(name),
-        to_store:stores!to_store_id(name),
-        transferred_by:employees(name)
-      `).eq("user_id", user.id).order("transfer_date", { ascending: false }).limit(20),
-      supabase.from("inventory_activity_log").select(`
-        *,
-        stores(name),
-        employees(name)
-      `).eq("user_id", user.id).order("created_at", { ascending: false }).limit(50)
+      inventoryQuery.order("priority_score", { ascending: false }),
+      transfersQuery.order("transfer_date", { ascending: false }).limit(20),
+      activityQuery.order("created_at", { ascending: false }).limit(50)
     ]);
+
+    console.log('Fetched stores:', storesRes.data?.length);
+    console.log('Fetched items:', itemsRes.data?.length);
+    console.log('Fetched inventory:', inventoryRes.data?.length);
 
     if (storesRes.data) setStores(storesRes.data);
     if (itemsRes.data) setItems(itemsRes.data);
