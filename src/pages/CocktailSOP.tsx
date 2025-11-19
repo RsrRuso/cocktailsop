@@ -265,48 +265,127 @@ export default function CocktailSOP() {
 
   const exportToPDF = (sop: CocktailSOP) => {
     const doc = new jsPDF();
-    
-    // Header
-    doc.setFontSize(22);
-    doc.text('LAB - SOP', 20, 20);
-    
-    doc.setFontSize(18);
-    doc.text(sop.drink_name, 20, 35);
-    
-    // Recipe table
-    doc.setFontSize(12);
-    doc.text('Recipe', 20, 50);
-    
     const recipeData = Array.isArray(sop.recipe) ? sop.recipe : [];
     
+    // Header
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text('ATTIKO — COCKTAIL SOP', 15, 15);
+    
+    // Main Title
+    doc.setFontSize(24);
+    doc.setTextColor(0);
+    doc.setFont('helvetica', 'bold');
+    doc.text(sop.drink_name.toUpperCase(), 15, 28);
+    
+    // Identity Table (Left Column)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Identity', 15, 42);
+    doc.text('Metrics', 75, 42);
+    
     autoTable(doc, {
-      startY: 55,
-      head: [['Ingredient', 'Amount', 'Unit', 'ABV %']],
+      startY: 45,
+      head: [],
+      body: [
+        ['Drink Name', sop.drink_name],
+        ['Technique', sop.technique],
+        ['Glass', sop.glass],
+        ['Ice', sop.ice],
+        ['Garnish', sop.garnish],
+        ['Total (ml)', sop.total_ml.toString()],
+        ['ABV (%)', sop.abv_percentage.toFixed(1)],
+        ['Ratio', sop.ratio || '—'],
+        ['pH', sop.ph?.toString() || '0'],
+        ['Brix', sop.brix?.toString() || '0'],
+        ['Kcal', sop.kcal?.toString() || '0'],
+      ],
+      theme: 'plain',
+      styles: {
+        fontSize: 9,
+        cellPadding: 2,
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+      },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 40 },
+        1: { cellWidth: 50 },
+      },
+      margin: { left: 15, right: 105 },
+    });
+
+    // Method (SOP) - Right Column
+    let rightColY = 45;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Method (SOP)', 110, rightColY);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    rightColY += 5;
+    
+    if (sop.method_sop) {
+      const methodLines = doc.splitTextToSize(sop.method_sop, 85);
+      doc.text(methodLines, 110, rightColY);
+      rightColY += methodLines.length * 4 + 8;
+    }
+
+    // Service Notes - Right Column
+    if (sop.service_notes) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Service Notes', 110, rightColY);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      rightColY += 5;
+      
+      const notesLines = doc.splitTextToSize(sop.service_notes, 85);
+      doc.text(notesLines, 110, rightColY);
+      rightColY += notesLines.length * 4 + 8;
+    }
+
+    // Recipe Table (Full Width at Bottom)
+    const recipeStartY = Math.max((doc as any).lastAutoTable.finalY + 15, rightColY);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Recipe', 15, recipeStartY);
+    
+    autoTable(doc, {
+      startY: recipeStartY + 3,
+      head: [['INGREDIENT', 'AMOUNT', 'UNIT', 'TYPE', '%ABV', 'NOTES']],
       body: recipeData.map((ing: any) => [
-        ing.ingredient || '',
+        (ing.ingredient || '').toUpperCase(),
         ing.amount?.toString() || '0',
         ing.unit || 'ml',
-        (ing.abv?.toString() || '0') + '%',
+        '', // Type field (empty for now)
+        ing.abv?.toString() || '0',
+        '', // Notes field (empty for now)
       ]),
+      theme: 'grid',
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+      },
+      headStyles: {
+        fillColor: [240, 240, 240],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        fontSize: 8,
+      },
+      margin: { left: 15, right: 15 },
     });
+
+    // Add page number at bottom
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text(`Page 1 of ${pageCount}`, 15, 285);
     
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
-    
-    // Specs
-    doc.text(`Technique: ${sop.technique}`, 20, finalY);
-    doc.text(`Glass: ${sop.glass}`, 20, finalY + 7);
-    doc.text(`Ice: ${sop.ice}`, 20, finalY + 14);
-    doc.text(`Garnish: ${sop.garnish}`, 20, finalY + 21);
-    doc.text(`Total: ${sop.total_ml}ml | ABV: ${sop.abv_percentage}%`, 20, finalY + 28);
-    
-    // Method
-    if (sop.method_sop) {
-      doc.text('Method:', 20, finalY + 40);
-      const splitMethod = doc.splitTextToSize(sop.method_sop, 170);
-      doc.text(splitMethod, 20, finalY + 47);
-    }
-    
-    doc.save(`${sop.drink_name}_SOP.pdf`);
+    doc.save(`${sop.drink_name.replace(/\s+/g, '_')}_SOP.pdf`);
     toast({ title: 'PDF exported successfully' });
   };
 
@@ -404,11 +483,12 @@ export default function CocktailSOP() {
 
       {/* Create/Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl h-[95vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingId ? 'Edit' : 'Create'} Cocktail SOP</DialogTitle>
           </DialogHeader>
 
+          <div className="flex-1 overflow-y-auto pr-2">
           <Tabs defaultValue="basic" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
@@ -591,8 +671,9 @@ export default function CocktailSOP() {
               </div>
             </TabsContent>
           </Tabs>
+          </div>
 
-          <div className="flex gap-2 justify-end pt-4">
+          <div className="flex gap-2 justify-end pt-4 border-t">
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
