@@ -943,7 +943,14 @@ const InventoryManager = () => {
                         .filter(inv => {
                           if (inv.status === 'sold' || (inv.quantity ?? 0) <= 0) return false;
                           if (selectedStore && selectedStore !== 'all' && inv.store_id !== selectedStore) return false;
-                          return true;
+                          if (!searchTerm) return true;
+
+                          const search = searchTerm.toLowerCase();
+                          return (
+                            inv.items?.name?.toLowerCase().includes(search) ||
+                            inv.items?.brand?.toLowerCase().includes(search) ||
+                            inv.stores?.name?.toLowerCase().includes(search)
+                          );
                         })
                         .map((inv) => {
                           const daysUntil = getDaysUntilExpiry(inv.expiration_date);
@@ -1019,7 +1026,7 @@ const InventoryManager = () => {
           <TabsContent value="archive" className="space-y-2">
             <Card>
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">Archived Items (Sold & Transferred)</CardTitle>
+                <CardTitle className="text-sm font-medium">Archived Items (Sold)</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
@@ -1028,14 +1035,14 @@ const InventoryManager = () => {
                       <TableRow>
                         <TableHead className="text-xs py-2">Item</TableHead>
                         <TableHead className="text-xs py-2">Store</TableHead>
-                        <TableHead className="text-xs py-2">Date</TableHead>
+                        <TableHead className="text-xs py-2">Sold Date</TableHead>
                         <TableHead className="text-xs py-2">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {inventory
                         .filter((inv) => 
-                          (inv.status === 'sold' || inv.status === 'transferred') && 
+                          inv.status === 'sold' && 
                           (!selectedStore || selectedStore === 'all' || inv.store_id === selectedStore)
                         )
                         .map((inv) => {
@@ -1057,9 +1064,7 @@ const InventoryManager = () => {
                                 {new Date(inv.updated_at || inv.created_at).toLocaleDateString()}
                               </TableCell>
                               <TableCell className="py-2">
-                                <Badge variant="secondary" className="text-xs">
-                                  {inv.status === 'sold' ? 'Sold' : 'Transferred'}
-                                </Badge>
+                                <Badge variant="secondary" className="text-xs">Sold</Badge>
                               </TableCell>
                             </TableRow>
                           );
