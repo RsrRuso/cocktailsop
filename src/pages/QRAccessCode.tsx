@@ -245,10 +245,10 @@ const QRAccessCode = () => {
       <TopNav />
       <main className="flex-1 container mx-auto px-4 py-4 pb-20 max-w-2xl">
         <Button
-          variant="ghost"
-          size="sm"
+          variant="outline"
+          size="default"
           onClick={() => navigate(-1)}
-          className="mb-4"
+          className="mb-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
