@@ -1448,22 +1448,31 @@ const InventoryManager = () => {
                             .map(line => line.trim())
                             .filter(name => name.length > 0);
                           
-                          const itemsToInsert = names.map(name => ({
+                          // Check for duplicates in existing items
+                          const existingNames = new Set(items.map(item => item.name.toLowerCase()));
+                          const newNames = names.filter(name => !existingNames.has(name.toLowerCase()));
+                          const duplicates = names.length - newNames.length;
+
+                          if (newNames.length === 0) {
+                            toast.error("All items already exist in master list");
+                            return;
+                          }
+
+                          const itemsToInsert = newNames.map(name => ({
                             user_id: user?.id,
                             workspace_id: currentWorkspace?.id || null,
                             name: name,
                           }));
 
-                          if (itemsToInsert.length === 0) {
-                            toast.error("No valid item names found");
-                            return;
-                          }
-
                           const { error } = await supabase.from("items").insert(itemsToInsert);
 
                           if (error) throw error;
 
-                          toast.success(`${itemsToInsert.length} items added to master list`);
+                          const message = duplicates > 0 
+                            ? `${itemsToInsert.length} new items added (${duplicates} duplicates skipped)`
+                            : `${itemsToInsert.length} items added to master list`;
+                          
+                          toast.success(message);
                           fetchData();
                           e.currentTarget.reset();
                         } catch (error: any) {
