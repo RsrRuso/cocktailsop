@@ -941,6 +941,9 @@ const InventoryManager = () => {
                     <TableBody>
                       {inventory
                         .filter(inv => {
+                          const storeName = inv.stores?.name?.trim().toLowerCase();
+                          const isBasementOrAttiko = storeName === 'basement' || storeName === 'attiko';
+                          if (!isBasementOrAttiko) return false;
                           if (inv.status === 'sold' || (inv.quantity ?? 0) <= 0) return false;
                           if (selectedStore && selectedStore !== 'all' && inv.store_id !== selectedStore) return false;
                           if (!searchTerm) return true;
