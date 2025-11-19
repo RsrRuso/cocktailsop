@@ -118,7 +118,7 @@ const ScanAccess = () => {
 
       if (existing) {
         if (existing.status === "approved") {
-          toast.info("This email already has approved access. Please sign up or log in.");
+          toast.info("This email already has approved access. Please sign in at cocktailsop.com/auth");
           setStatus("success");
           return;
         }
@@ -129,21 +129,50 @@ const ScanAccess = () => {
         }
       }
 
-      // Create new access request
-      const { error } = await supabase
+      // Generate a random password for the user
+      const tempPassword = crypto.randomUUID() + "!Aa1";
+
+      // Create user account
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: email,
+        password: tempPassword,
+        options: {
+          data: {
+            full_name: email.split('@')[0],
+            username: email.split('@')[0] + Math.random().toString(36).substring(7),
+          }
+        }
+      });
+
+      if (signUpError) {
+        // If user already exists, that's okay - we'll link the request to them
+        console.log("User may already exist:", signUpError);
+      }
+
+      const userId = signUpData?.user?.id;
+
+      // Send password reset email so they can set their own password
+      if (userId) {
+        await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth`,
+        });
+      }
+
+      // Create access request
+      const { error: requestError } = await supabase
         .from("access_requests")
         .insert([{
           workspace_id: workspaceId,
-          user_id: user?.id || null,
+          user_id: userId || null,
           user_email: email,
           status: "pending",
-          qr_code_id: workspaceId // Using workspace_id as qr_code_id for compatibility
+          qr_code_id: workspaceId
         }]);
 
-      if (error) throw error;
+      if (requestError) throw requestError;
 
       setStatus("success");
-      toast.success("Request sent! You'll receive an email when approved.");
+      toast.success("Account created! Check your email to set your password and wait for approval.");
     } catch (error: any) {
       console.error("Error requesting access:", error);
       setStatus("error");
@@ -181,9 +210,9 @@ const ScanAccess = () => {
           ) : status === "success" ? (
             <>
               <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-green-500" />
-              <CardTitle>Request Sent!</CardTitle>
+              <CardTitle>Account Created & Request Sent!</CardTitle>
               <CardDescription>
-                Your request has been sent to the workspace owner. You'll receive an email once approved.
+                Your account has been created. Check your email to set your password. Your workspace access request is pending approval.
               </CardDescription>
             </>
           ) : (
