@@ -3070,6 +3070,7 @@ export type Database = {
           is_active: boolean | null
           manager_id: string | null
           name: string
+          store_type: string | null
           user_id: string
           workspace_id: string | null
         }
@@ -3081,6 +3082,7 @@ export type Database = {
           is_active?: boolean | null
           manager_id?: string | null
           name: string
+          store_type?: string | null
           user_id: string
           workspace_id?: string | null
         }
@@ -3092,6 +3094,7 @@ export type Database = {
           is_active?: boolean | null
           manager_id?: string | null
           name?: string
+          store_type?: string | null
           user_id?: string
           workspace_id?: string | null
         }

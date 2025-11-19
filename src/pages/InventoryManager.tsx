@@ -495,6 +495,7 @@ const InventoryManager = () => {
       name: formData.get("storeName") as string,
       area: formData.get("area") as string,
       address: formData.get("address") as string,
+      store_type: formData.get("storeType") as string || 'both',
     }).eq("id", storeId);
 
     if (error) {
@@ -947,7 +948,7 @@ const InventoryManager = () => {
         </div>
 
         <Tabs defaultValue="inventory" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 h-auto">
+          <TabsList className="grid w-full grid-cols-8 h-auto">
             <TabsTrigger value="inventory" className="text-xs py-2">
               <Package className="w-3 h-3 sm:mr-1" />
               <span className="hidden sm:inline">Active</span>
@@ -966,6 +967,10 @@ const InventoryManager = () => {
             </TabsTrigger>
             <TabsTrigger value="items" className="text-xs py-2">
               <Package className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">Receive</span>
+            </TabsTrigger>
+            <TabsTrigger value="manage-items" className="text-xs py-2">
+              <Pencil className="w-3 h-3 sm:mr-1" />
               <span className="hidden sm:inline">Items</span>
             </TabsTrigger>
             <TabsTrigger value="staff" className="text-xs py-2">
@@ -1249,6 +1254,19 @@ const InventoryManager = () => {
                     <Label className="text-xs">Address</Label>
                     <Input name="address" className="h-8 text-sm" />
                   </div>
+                  <div>
+                    <Label className="text-xs">Store Type</Label>
+                    <Select name="storeType" defaultValue="both">
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="both">Both (Receive & Sell)</SelectItem>
+                        <SelectItem value="receive">Receive Only</SelectItem>
+                        <SelectItem value="sell">Sell Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <Button type="submit" size="sm">Add Store</Button>
                 </form>
 
@@ -1258,7 +1276,12 @@ const InventoryManager = () => {
                       <CardContent className="p-2">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
-                            <h3 className="text-sm font-semibold">{store.name}</h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm font-semibold">{store.name}</h3>
+                              <Badge variant={store.store_type === 'receive' ? 'default' : store.store_type === 'sell' ? 'destructive' : 'secondary'} className="text-xs">
+                                {store.store_type === 'receive' ? '📥 Receive' : store.store_type === 'sell' ? '💰 Sell' : '🔄 Both'}
+                              </Badge>
+                            </div>
                             <p className="text-xs text-muted-foreground">{store.area}</p>
                             {store.address && <p className="text-xs mt-0.5">{store.address}</p>}
                           </div>
@@ -1285,6 +1308,19 @@ const InventoryManager = () => {
                                   <div>
                                     <Label className="text-xs">Address</Label>
                                     <Input name="address" defaultValue={store.address} className="h-8 text-sm" />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs">Store Type</Label>
+                                    <Select name="storeType" defaultValue={store.store_type || 'both'}>
+                                      <SelectTrigger className="h-8 text-sm">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="both">Both (Receive & Sell)</SelectItem>
+                                        <SelectItem value="receive">Receive Only</SelectItem>
+                                        <SelectItem value="sell">Sell Only</SelectItem>
+                                      </SelectContent>
+                                    </Select>
                                   </div>
                                   <Button type="submit" size="sm">Update Store</Button>
                                 </form>
@@ -1327,9 +1363,9 @@ const InventoryManager = () => {
                           <SelectValue placeholder="Select store" />
                         </SelectTrigger>
                         <SelectContent position="popper" className="bg-popover border z-[100]">
-                          {stores.map((store) => (
+                          {stores.filter(s => s.store_type === 'receive' || s.store_type === 'both').map((store) => (
                             <SelectItem key={store.id} value={store.id}>
-                              {store.name} - {store.area}
+                              {store.name} - {store.area} {store.store_type === 'receive' ? '📥' : '🔄'}
                             </SelectItem>
                           ))}
                         </SelectContent>
