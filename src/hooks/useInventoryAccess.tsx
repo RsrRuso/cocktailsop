@@ -36,6 +36,25 @@ export const useInventoryAccess = () => {
     try {
       setIsLoading(true);
       
+      // Check if user owns any workspace
+      const { data: ownedWorkspaces, error: ownerError } = await supabase
+        .from('workspaces')
+        .select('id')
+        .eq('owner_id', user.id)
+        .limit(1);
+
+      if (ownerError) throw ownerError;
+
+      console.log('Workspace owner check:', ownedWorkspaces);
+
+      // If user owns a workspace, grant access
+      if (ownedWorkspaces && ownedWorkspaces.length > 0) {
+        console.log('User owns workspace, granting access');
+        setHasAccess(true);
+        setIsLoading(false);
+        return;
+      }
+
       // Check if user is a workspace member
       const { data: memberData, error: memberError } = await supabase
         .from('workspace_members')
@@ -55,22 +74,9 @@ export const useInventoryAccess = () => {
         return;
       }
 
-      // Check if user has approved access request (legacy)
-      const { data: accessData, error: accessError } = await supabase
-        .from('access_requests')
-        .select('status')
-        .eq('user_id', user.id)
-        .eq('status', 'approved')
-        .limit(1);
-
-      if (accessError && accessError.code !== 'PGRST116') {
-        throw accessError;
-      }
-
-      console.log('Access request check:', accessData);
-      const granted = !!accessData && accessData.length > 0;
-      console.log('Final access decision:', granted);
-      setHasAccess(granted);
+      // All authenticated users have access - they can create their own workspace
+      console.log('Granting access to all authenticated users');
+      setHasAccess(true);
     } catch (error) {
       console.error('Error checking access:', error);
       setHasAccess(false);
