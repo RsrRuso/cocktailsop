@@ -27,64 +27,20 @@ const ScanAccess = () => {
       
       setLoading(true);
       try {
-        // If user is a manager/founder, automatically approve their access
+        // Managers/Founders have direct access - no approval needed
         if (isManager && !isLoadingRole) {
-          const { data: existing } = await supabase
-            .from("access_requests")
-            .select("*")
-            .eq("qr_code_id", qrCodeId)
-            .eq("user_id", user.id)
-            .maybeSingle();
-
-          if (!existing) {
-            // Create new approved access request
-            const { error } = await supabase
-              .from("access_requests")
-              .insert({
-                qr_code_id: qrCodeId,
-                user_id: user.id,
-                user_email: user.email,
-                status: "approved",
-                approved_by: user.id,
-                approved_at: new Date().toISOString()
-              });
-
-            if (error) {
-              console.error("Error auto-approving access:", error);
-              toast.error("Failed to grant access automatically");
-              setLoading(false);
-              return;
-            }
-          } else if (existing.status !== "approved") {
-            // Update existing request to approved
-            const { error } = await supabase
-              .from("access_requests")
-              .update({
-                status: "approved",
-                approved_by: user.id,
-                approved_at: new Date().toISOString()
-              })
-              .eq("id", existing.id);
-
-            if (error) {
-              console.error("Error updating access:", error);
-              toast.error("Failed to update access");
-              setLoading(false);
-              return;
-            }
-          }
-
-          toast.success("Access automatically granted!");
-          setTimeout(() => navigate("/inventory-manager"), 1500);
+          toast.success("Welcome! You have direct access as manager.");
+          navigate("/inventory-manager");
           return;
         }
 
+        // For regular users, check if they have existing access request
         const { data: existing } = await supabase
           .from("access_requests")
           .select("*")
           .eq("qr_code_id", qrCodeId)
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
 
         if (existing) {
           if (existing.status === "approved") {
@@ -98,7 +54,8 @@ const ScanAccess = () => {
           }
         }
       } catch (error) {
-        // No existing request found, show form
+        console.error("Error checking access:", error);
+        // Show form for new users
       } finally {
         setLoading(false);
       }
