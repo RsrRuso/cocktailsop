@@ -255,26 +255,24 @@ const QRAccessCode = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Workspace Access QR Code</CardTitle>
-            <CardDescription>
-              {currentWorkspace 
-                ? `Share this QR code to invite people to ${currentWorkspace.name}`
-                : "Create or select a workspace to generate a QR code"
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Workspace Selection */}
-            <div className="space-y-2">
-              <Label>Select Workspace</Label>
-              <div className="flex gap-2">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle>Workspace Access QR Code</CardTitle>
+                <CardDescription>
+                  {currentWorkspace 
+                    ? `Share this QR code to invite people to ${currentWorkspace.name}`
+                    : "Create or select a workspace to generate a QR code"
+                  }
+                </CardDescription>
+              </div>
+              <div className="flex gap-2 min-w-[300px]">
                 <Select 
                   value={currentWorkspace?.id || ""} 
                   onValueChange={switchWorkspace}
                   disabled={workspaces.length === 0}
                 >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select a workspace" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select workspace" />
                   </SelectTrigger>
                   <SelectContent>
                     {workspaces.map((workspace) => (
@@ -287,7 +285,9 @@ const QRAccessCode = () => {
                 
                 <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                   <DialogTrigger asChild>
-                    <Button variant="outline">New Workspace</Button>
+                    <Button variant="outline" size="icon">
+                      <Users className="h-4 w-4" />
+                    </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
@@ -319,6 +319,8 @@ const QRAccessCode = () => {
                 </Dialog>
               </div>
             </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
 
             {currentWorkspace && (
               <>
