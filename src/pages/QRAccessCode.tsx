@@ -5,6 +5,7 @@ import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { QRCodeSVG } from "qrcode.react";
 import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 const QRAccessCode = () => {
   const [qrCodeId, setQrCodeId] = useState(crypto.randomUUID());
@@ -34,9 +35,20 @@ const QRAccessCode = () => {
               <p className="text-sm text-muted-foreground">
                 Staff can scan this code to request access
               </p>
-              <p className="text-xs text-muted-foreground font-mono">
-                {qrCodeId.slice(0, 8)}...
-              </p>
+              <div className="bg-muted p-3 rounded-md">
+                <p className="text-xs font-semibold mb-1">Share this link:</p>
+                <p className="text-xs font-mono break-all">{qrCodeUrl}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(qrCodeUrl);
+                  toast.success("Link copied to clipboard!");
+                }}
+              >
+                Copy Link
+              </Button>
             </div>
             <Button onClick={generateNewCode} variant="outline">
               <RefreshCw className="mr-2 h-4 w-4" />
