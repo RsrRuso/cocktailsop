@@ -1189,11 +1189,29 @@ const InventoryManager = () => {
                           <SelectValue placeholder="Select item and source store" />
                         </SelectTrigger>
                         <SelectContent position="popper" className="bg-popover border z-[100] max-h-[300px]">
-                          {inventory.filter(inv => inv.quantity > 0 && inv.status !== 'sold').map((inv) => (
-                            <SelectItem key={inv.id} value={inv.id}>
-                              {inv.items?.name} • From: {inv.stores?.name} • Qty: {inv.quantity}
-                            </SelectItem>
-                          ))}
+                          {(() => {
+                            // Get inventory items that have stock
+                            const availableInventory = inventory.filter(inv => inv.quantity > 0 && inv.status !== 'sold');
+                            // Group by item_id to show all items from Manage Items that have inventory
+                            const itemInventoryMap = new Map();
+                            availableInventory.forEach(inv => {
+                              if (!itemInventoryMap.has(inv.item_id)) {
+                                itemInventoryMap.set(inv.item_id, []);
+                              }
+                              itemInventoryMap.get(inv.item_id).push(inv);
+                            });
+                            
+                            // Show all items from items (Manage Items) that have inventory
+                            return items
+                              .filter(item => itemInventoryMap.has(item.id))
+                              .flatMap(item => 
+                                itemInventoryMap.get(item.id).map(inv => (
+                                  <SelectItem key={inv.id} value={inv.id}>
+                                    {item.name} {item.brand && `(${item.brand})`} • From: {inv.stores?.name} • Qty: {inv.quantity}
+                                  </SelectItem>
+                                ))
+                              );
+                          })()}
                         </SelectContent>
                       </Select>
                     </div>
