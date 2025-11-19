@@ -17,6 +17,16 @@ import { Html5QrcodeScanner } from "html5-qrcode";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const InventoryManager = () => {
   const [stores, setStores] = useState<any[]>([]);
@@ -33,6 +43,8 @@ const InventoryManager = () => {
   const [quickTransferItem, setQuickTransferItem] = useState<any>(null);
   const [editingStore, setEditingStore] = useState<any>(null);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
   const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -450,6 +462,76 @@ const InventoryManager = () => {
     }
   };
 
+  const handleUpdateItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const quantity = Number(formData.get("quantity"));
+    const expirationDate = formData.get("expirationDate") as string;
+    const batchNumber = formData.get("batchNumber") as string;
+
+    const { error } = await supabase
+      .from("inventory")
+      .update({
+        quantity,
+        expiration_date: expirationDate,
+        batch_number: batchNumber,
+      })
+      .eq("id", editingItem.id);
+
+    if (error) {
+      toast.error("Failed to update item");
+      return;
+    }
+
+    await supabase.from("inventory_activity_log").insert({
+      user_id: user.id,
+      inventory_id: editingItem.id,
+      store_id: editingItem.store_id,
+      action_type: "updated",
+      quantity_before: editingItem.quantity,
+      quantity_after: quantity,
+    });
+
+    toast.success("Item updated successfully");
+    setEditingItem(null);
+    fetchData();
+  };
+
+  const handleDeleteItem = async () => {
+    if (!itemToDelete) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("inventory")
+      .delete()
+      .eq("id", itemToDelete.id);
+
+    if (error) {
+      toast.error("Failed to delete item");
+      return;
+    }
+
+    await supabase.from("inventory_activity_log").insert({
+      user_id: user.id,
+      inventory_id: itemToDelete.id,
+      store_id: itemToDelete.store_id,
+      action_type: "deleted",
+      quantity_before: itemToDelete.quantity,
+      quantity_after: 0,
+    });
+
+    toast.success("Item deleted successfully");
+    setItemToDelete(null);
+    fetchData();
+  };
+
   const handleTransfer = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -729,6 +811,14 @@ const InventoryManager = () => {
                                 <div className="flex gap-1">
                                   <Button 
                                     size="sm" 
+                                    variant="ghost"
+                                    className="h-7 px-2"
+                                    onClick={() => setEditingItem(inv)}
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
                                     variant="outline"
                                     className="h-7 text-xs"
                                     onClick={() => setQuickTransferItem(inv)}
@@ -745,6 +835,14 @@ const InventoryManager = () => {
                                     disabled={inv.status !== 'available'}
                                   >
                                     Sold
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    className="h-7 px-2 text-destructive hover:text-destructive"
+                                    onClick={() => setItemToDelete(inv)}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
                                   </Button>
                                 </div>
                               </TableCell>
@@ -1224,6 +1322,95 @@ const InventoryManager = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Item Dialog */}
+      <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Inventory Item</DialogTitle>
+          </DialogHeader>
+          {editingItem && (
+            <form onSubmit={handleUpdateItem} className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Item</Label>
+                <Input 
+                  value={editingItem.items?.name || ""} 
+                  disabled 
+                  className="bg-muted"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Store</Label>
+                <Input 
+                  value={editingItem.stores?.name || ""} 
+                  disabled 
+                  className="bg-muted"
+                />
+              </div>
+              <div>
+                <Label htmlFor="quantity" className="text-sm font-medium">Quantity</Label>
+                <Input
+                  id="quantity"
+                  name="quantity"
+                  type="number"
+                  defaultValue={editingItem.quantity}
+                  required
+                  min="0"
+                />
+              </div>
+              <div>
+                <Label htmlFor="expirationDate" className="text-sm font-medium">Expiration Date</Label>
+                <Input
+                  id="expirationDate"
+                  name="expirationDate"
+                  type="date"
+                  defaultValue={editingItem.expiration_date}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="batchNumber" className="text-sm font-medium">Batch Number</Label>
+                <Input
+                  id="batchNumber"
+                  name="batchNumber"
+                  defaultValue={editingItem.batch_number || ""}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditingItem(null)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Save Changes</Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{itemToDelete?.items?.name}</strong> from{" "}
+              <strong>{itemToDelete?.stores?.name}</strong>. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setItemToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Quick Transfer Dialog */}
       <Dialog open={!!quickTransferItem} onOpenChange={(open) => !open && setQuickTransferItem(null)}>
