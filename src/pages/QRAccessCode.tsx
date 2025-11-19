@@ -244,17 +244,14 @@ const QRAccessCode = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <TopNav />
       <main className="flex-1 container mx-auto px-4 py-8 pb-20 max-w-2xl">
-        <div className="mb-8">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => navigate(-1)}
-            className="gap-2"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            Back
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-6 w-6" />
+        </Button>
 
         <Card>
           <CardHeader>
