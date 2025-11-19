@@ -18,6 +18,9 @@ interface AccessRequest {
   created_at: string;
   user_id: string;
   workspace_id: string;
+  workspaces?: {
+    name: string;
+  };
 }
 
 const AccessApproval = () => {
@@ -27,16 +30,35 @@ const AccessApproval = () => {
   const [requests, setRequests] = useState<AccessRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [isWorkspaceOwner, setIsWorkspaceOwner] = useState(false);
 
+  // Check if user is a workspace owner
   useEffect(() => {
-    if (!roleLoading && !isManager) {
-      toast.error("Access denied - Manager privileges required");
+    const checkWorkspaceOwnership = async () => {
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('workspaces')
+        .select('id')
+        .eq('owner_id', user.id)
+        .limit(1);
+
+      setIsWorkspaceOwner(!!data && data.length > 0);
+    };
+
+    checkWorkspaceOwnership();
+  }, [user]);
+
+  // Check access permissions
+  useEffect(() => {
+    if (!roleLoading && !isManager && !isWorkspaceOwner) {
+      toast.error("Access denied - You need to be a manager or workspace owner");
       navigate("/home");
     }
-  }, [isManager, roleLoading, navigate]);
+  }, [isManager, isWorkspaceOwner, roleLoading, navigate]);
 
   useEffect(() => {
-    if (isManager) {
+    if (isManager || isWorkspaceOwner) {
       fetchRequests();
       
       // Subscribe to new requests
@@ -59,14 +81,37 @@ const AccessApproval = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [isManager]);
+  }, [isManager, isWorkspaceOwner]);
 
   const fetchRequests = async () => {
     try {
-      const { data, error } = await supabase
+      if (!user) return;
+
+      let query = supabase
         .from("access_requests")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*, workspaces(name)");
+
+      // If not a manager, only show requests for their workspaces
+      if (!isManager) {
+        // First get user's workspace IDs
+        const { data: workspaceData } = await supabase
+          .from('workspaces')
+          .select('id')
+          .eq('owner_id', user.id);
+
+        const workspaceIds = workspaceData?.map(w => w.id) || [];
+        
+        if (workspaceIds.length > 0) {
+          query = query.in('workspace_id', workspaceIds);
+        } else {
+          // No workspaces owned, return empty
+          setRequests([]);
+          setLoading(false);
+          return;
+        }
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
       setRequests(data || []);
@@ -219,6 +264,11 @@ const AccessApproval = () => {
                 >
                   <div className="space-y-1 flex-1 min-w-0">
                     <p className="font-medium truncate">{request.user_email}</p>
+                    {request.workspaces && (
+                      <p className="text-sm text-muted-foreground">
+                        Workspace: {request.workspaces.name}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       {new Date(request.created_at).toLocaleString()}
                     </p>
