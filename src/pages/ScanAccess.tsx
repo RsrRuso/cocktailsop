@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useManagerRole } from "@/hooks/useManagerRole";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 const ScanAccess = () => {
   const { qrCodeId } = useParams();
   const { user } = useAuth();
+  const { isManager, isLoading: isLoadingRole } = useManagerRole();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -25,6 +27,36 @@ const ScanAccess = () => {
       
       setLoading(true);
       try {
+        // If user is a manager/founder, automatically approve their access
+        if (isManager && !isLoadingRole) {
+          const { data: existing } = await supabase
+            .from("access_requests")
+            .select("*")
+            .eq("qr_code_id", qrCodeId)
+            .eq("user_id", user.id)
+            .single();
+
+          if (!existing || existing.status !== "approved") {
+            // Create or update to approved status
+            await supabase
+              .from("access_requests")
+              .upsert({
+                qr_code_id: qrCodeId,
+                user_id: user.id,
+                user_email: user.email,
+                status: "approved",
+                approved_by: user.id,
+                approved_at: new Date().toISOString()
+              }, {
+                onConflict: 'id'
+              });
+          }
+
+          toast.success("Access automatically granted!");
+          setTimeout(() => navigate("/inventory-manager"), 1500);
+          return;
+        }
+
         const { data: existing } = await supabase
           .from("access_requests")
           .select("*")
@@ -50,8 +82,10 @@ const ScanAccess = () => {
       }
     };
 
-    checkExistingAccess();
-  }, [user, qrCodeId, navigate]);
+    if (!isLoadingRole) {
+      checkExistingAccess();
+    }
+  }, [user, qrCodeId, navigate, isManager, isLoadingRole]);
 
   const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +148,7 @@ const ScanAccess = () => {
     }
   };
 
-  if (loading) {
+  if (loading || isLoadingRole) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
