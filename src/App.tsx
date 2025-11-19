@@ -88,6 +88,9 @@ const ShopAuth = lazy(() => import("./pages/ShopAuth"));
 const Orders = lazy(() => import("./pages/Orders"));
 const SellerDashboard = lazy(() => import("./pages/SellerDashboard"));
 const StaffScheduling = lazy(() => import("./pages/StaffScheduling"));
+const QRAccessCode = lazy(() => import("./pages/QRAccessCode"));
+const ScanAccess = lazy(() => import("./pages/ScanAccess"));
+const AccessApproval = lazy(() => import("./pages/AccessApproval"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -135,8 +138,11 @@ const App = () => (
           <Route path="/advanced-editor" element={<AdvancedEditor />} />
           <Route path="/reel-editor" element={<ReelEditor />} />
           <Route path="/team-invitation" element={<TeamInvitation />} />
-          <Route path="/inventory-manager" element={<InventoryManager />} />
-          <Route path="/temperature-log" element={<TemperatureLog />} />
+              <Route path="/inventory-manager" element={<InventoryManager />} />
+              <Route path="/qr-access-code" element={<QRAccessCode />} />
+              <Route path="/scan-access/:qrCodeId" element={<ScanAccess />} />
+              <Route path="/access-approval" element={<AccessApproval />} />
+              <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
           <Route path="/abv-calculator" element={<ABVCalculator />} />
           <Route path="/scaling-tool" element={<ScalingTool />} />

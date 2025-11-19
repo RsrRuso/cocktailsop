@@ -1,17 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useInventoryAccess } from "@/hooks/useInventoryAccess";
+import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Package, Store, Users, ArrowRightLeft, Upload, Camera, Scan, TrendingUp, Pencil, Trash2 } from "lucide-react";
+import { Package, Store, Users, ArrowRightLeft, Upload, Camera, Scan, TrendingUp, Pencil, Trash2, Loader2, Lock } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,6 +32,9 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const InventoryManager = () => {
+  const { user } = useAuth();
+  const { hasAccess, isLoading: accessLoading } = useInventoryAccess();
+  const navigate = useNavigate();
   const [stores, setStores] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -49,8 +55,10 @@ const InventoryManager = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (hasAccess) {
+      fetchData();
+    }
+  }, [hasAccess]);
 
   useEffect(() => {
     if (selectedStore) {
@@ -59,8 +67,7 @@ const InventoryManager = () => {
   }, [selectedStore, inventory]);
 
   const fetchData = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user || !hasAccess) return;
 
     const [storesRes, itemsRes, employeesRes, inventoryRes, transfersRes, activityRes] = await Promise.all([
       supabase.from("stores").select("*").eq("user_id", user.id).order("name"),
@@ -675,6 +682,39 @@ const InventoryManager = () => {
     if (priority >= 50) return "bg-orange-500";
     return "bg-yellow-500";
   };
+
+  if (accessLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <TopNav />
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <Lock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <CardTitle>Access Required</CardTitle>
+              <CardDescription>
+                You need approval to access the Inventory Manager. Please scan the QR code provided by your manager or wait for approval.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate("/home")} className="w-full">
+                Return to Home
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
