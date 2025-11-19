@@ -34,7 +34,7 @@ const QRAccessCode = () => {
               Share this QR code with staff who need access to inventory management
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center space-y-4 max-h-[calc(100vh-240px)] overflow-y-auto">
+          <CardContent className="flex flex-col items-center space-y-4 pb-4">
             <div className="bg-white p-4 rounded-lg">
               <QRCodeSVG value={qrCodeUrl} size={200} />
             </div>

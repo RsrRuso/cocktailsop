@@ -162,7 +162,7 @@ const AccessApproval = () => {
               Approve or reject staff access to inventory management
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 max-h-[calc(100vh-240px)] overflow-y-auto">
+          <CardContent className="space-y-3 pb-4">
             {requests.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 No access requests yet
