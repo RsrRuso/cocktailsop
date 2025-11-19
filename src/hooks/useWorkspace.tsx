@@ -88,13 +88,19 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   const switchWorkspace = (workspaceId: string) => {
+    // Handle personal inventory (no workspace)
+    if (!workspaceId || workspaceId === 'personal') {
+      setCurrentWorkspace(null);
+      localStorage.removeItem('currentWorkspaceId');
+      return;
+    }
+
     const workspace = workspaces.find(w => w.id === workspaceId);
     if (workspace) {
       setCurrentWorkspace(workspace);
       localStorage.setItem('currentWorkspaceId', workspaceId);
     }
   };
-
   const createWorkspace = async (name: string, description?: string): Promise<Workspace | null> => {
     if (!user) return null;
 
