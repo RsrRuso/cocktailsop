@@ -2109,6 +2109,7 @@ export default function StaffScheduling() {
                                 <SelectItem value="3:00 PM - 1:00 AM" className="text-gray-100 text-[10px]">3:00 PM - 1:00 AM (10h Support)</SelectItem>
                                 <SelectItem value="4:00 PM - 1:00 AM" className="text-gray-100 text-[10px]">4:00 PM - 1:00 AM (9h)</SelectItem>
                                 <SelectItem value="5:00 PM - 2:00 AM" className="text-gray-100 text-[10px]">5:00 PM - 2:00 AM (9h)</SelectItem>
+                                <SelectItem value="5:00 PM - 3:00 AM" className="text-gray-100 text-[10px]">5:00 PM - 3:00 AM (10h)</SelectItem>
                               </SelectContent>
                             </Select>
                             {cell?.timeRange && cell.timeRange !== 'OFF' && (
