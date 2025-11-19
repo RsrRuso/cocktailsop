@@ -22,7 +22,7 @@ const QRAccessCode = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const selectedWorkspaceId = currentWorkspace?.id || qrCodeId;
-  const qrUrl = `${window.location.origin}/scan-access/${selectedWorkspaceId}`;
+  const qrUrl = `https://cocktailsop.com/scan-access/${selectedWorkspaceId}`;
   const qrPath = `/scan-access/${selectedWorkspaceId}`;
 
   const generateNewCode = () => {

@@ -17,6 +17,7 @@ interface AccessRequest {
   status: string;
   created_at: string;
   user_id: string;
+  workspace_id: string;
 }
 
 const AccessApproval = () => {
@@ -80,7 +81,12 @@ const AccessApproval = () => {
   const handleApprove = async (requestId: string) => {
     setProcessingId(requestId);
     try {
-      const { error } = await supabase
+      // Get the request details
+      const request = requests.find(r => r.id === requestId);
+      if (!request) throw new Error("Request not found");
+
+      // Update access request status
+      const { error: updateError } = await supabase
         .from("access_requests")
         .update({
           status: "approved",
@@ -89,7 +95,24 @@ const AccessApproval = () => {
         })
         .eq("id", requestId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Add user to workspace_members if they have a user_id
+      if (request.user_id && request.workspace_id) {
+        const { error: memberError } = await supabase
+          .from("workspace_members")
+          .insert({
+            workspace_id: request.workspace_id,
+            user_id: request.user_id,
+            role: "member"
+          });
+
+        if (memberError) {
+          console.error("Error adding to workspace:", memberError);
+          // Don't throw - approval still succeeded
+        }
+      }
+
       toast.success("Access granted!");
     } catch (error) {
       console.error("Error approving request:", error);
