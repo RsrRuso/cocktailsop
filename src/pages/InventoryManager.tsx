@@ -1421,7 +1421,7 @@ const InventoryManager = () => {
                     </DialogContent>
                   </Dialog>
                   
-                  <Dialog open={pastedText !== "" || parsedItems.length > 0} onOpenChange={(open) => {
+                  <Dialog onOpenChange={(open) => {
                     if (!open) {
                       setPastedText("");
                       setParsedItems([]);
