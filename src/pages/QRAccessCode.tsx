@@ -1,25 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Copy, RefreshCw, TestTube2, ArrowLeft } from "lucide-react";
+import { Copy, RefreshCw, TestTube2, ArrowLeft, Users, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 
+interface WorkspaceMember {
+  id: string;
+  user_id: string;
+  role: string;
+  joined_at: string;
+  profiles?: {
+    full_name: string;
+    avatar_url: string;
+  };
+}
+
 const QRAccessCode = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { currentWorkspace, workspaces, createWorkspace, switchWorkspace, isLoading } = useWorkspace();
   const [qrCodeId, setQrCodeId] = useState(crypto.randomUUID());
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<WorkspaceMember | null>(null);
 
   const selectedWorkspaceId = currentWorkspace?.id || qrCodeId;
   const qrUrl = `https://cocktailsop.com/scan-access/${selectedWorkspaceId}`;
@@ -52,9 +71,75 @@ const QRAccessCode = () => {
     }
   };
 
+  const fetchMembers = async () => {
+    if (!currentWorkspace) return;
+    
+    setLoadingMembers(true);
+    try {
+      // Fetch workspace members
+      const { data: membersData, error: membersError } = await supabase
+        .from('workspace_members')
+        .select('id, user_id, role, joined_at')
+        .eq('workspace_id', currentWorkspace.id)
+        .order('joined_at', { ascending: true });
+
+      if (membersError) throw membersError;
+
+      // Fetch profiles for all members
+      const userIds = membersData?.map(m => m.user_id) || [];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combine data
+      const enrichedMembers = membersData?.map(member => ({
+        ...member,
+        profiles: profilesData?.find(p => p.id === member.user_id)
+      })) || [];
+
+      setMembers(enrichedMembers);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+      toast.error('Failed to load members');
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentWorkspace) {
+      fetchMembers();
+    }
+  }, [currentWorkspace]);
+
+  const handleRemoveMember = async () => {
+    if (!memberToRemove) return;
+
+    try {
+      const { error } = await supabase
+        .from('workspace_members')
+        .delete()
+        .eq('id', memberToRemove.id);
+
+      if (error) throw error;
+
+      toast.success('Member removed from workspace');
+      setMembers(members.filter(m => m.id !== memberToRemove.id));
+      setMemberToRemove(null);
+    } catch (error) {
+      console.error('Error removing member:', error);
+      toast.error('Failed to remove member');
+    }
+  };
+
   const handleTestScan = () => {
     navigate(qrPath);
   };
+
+  const isOwner = currentWorkspace?.owner_id === user?.id;
 
   if (isLoading) {
     return (
