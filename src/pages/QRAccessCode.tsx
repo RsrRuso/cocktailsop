@@ -26,34 +26,34 @@ const QRAccessCode = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <TopNav />
-      <main className="flex-1 container mx-auto px-4 py-6 pb-24">
+      <main className="flex-1 container mx-auto px-4 py-4 pb-20 max-w-2xl">
         <Card>
-          <CardHeader>
-            <CardTitle>Inventory Access QR Code</CardTitle>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl">Inventory Access QR Code</CardTitle>
             <CardDescription>
               Share this QR code with staff who need access to inventory management
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center space-y-6">
-            <div className="bg-white p-6 rounded-lg">
-              <QRCodeSVG value={qrCodeUrl} size={256} />
+          <CardContent className="flex flex-col items-center space-y-4 max-h-[calc(100vh-240px)] overflow-y-auto">
+            <div className="bg-white p-4 rounded-lg">
+              <QRCodeSVG value={qrCodeUrl} size={200} />
             </div>
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-2 w-full">
               <p className="text-sm text-muted-foreground">
                 Staff can scan this code to request access
               </p>
               <div className="space-y-2">
-                <div className="bg-muted p-3 rounded-md">
+                <div className="bg-muted p-2 rounded-md">
                   <p className="text-xs font-semibold mb-1">Full URL:</p>
                   <p className="text-xs font-mono break-all">{qrCodeUrl}</p>
                 </div>
-                <div className="bg-muted p-3 rounded-md">
+                <div className="bg-muted p-2 rounded-md">
                   <p className="text-xs font-semibold mb-1">Or use this path:</p>
                   <p className="text-xs font-mono break-all">{scanPath}</p>
                   <p className="text-xs text-muted-foreground mt-1">Navigate to this path in your app</p>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 w-full">
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -62,6 +62,7 @@ const QRAccessCode = () => {
                       navigator.clipboard.writeText(qrCodeUrl);
                       toast.success("Full URL copied!");
                     }}
+                    className="flex-1"
                   >
                     Copy Full URL
                   </Button>
@@ -72,6 +73,7 @@ const QRAccessCode = () => {
                       navigator.clipboard.writeText(scanPath);
                       toast.success("Path copied!");
                     }}
+                    className="flex-1"
                   >
                     Copy Path
                   </Button>
@@ -87,7 +89,7 @@ const QRAccessCode = () => {
                 </Button>
               </div>
             </div>
-            <Button onClick={generateNewCode} variant="outline">
+            <Button onClick={generateNewCode} variant="outline" size="sm">
               <RefreshCw className="mr-2 h-4 w-4" />
               Generate New Code
             </Button>
