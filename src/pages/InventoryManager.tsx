@@ -1044,10 +1044,13 @@ const InventoryManager = () => {
                     </TableHeader>
                     <TableBody>
                       {inventory
-                        .filter((inv) => 
-                          inv.status === 'sold' && 
-                          (!selectedStore || selectedStore === 'all' || inv.store_id === selectedStore)
-                        )
+                        .filter((inv) => {
+                          const storeName = inv.stores?.name?.trim().toLowerCase();
+                          const isBasementOrAttiko = storeName === 'basement' || storeName === 'attiko';
+                          return inv.status === 'sold' && 
+                            isBasementOrAttiko &&
+                            (!selectedStore || selectedStore === 'all' || inv.store_id === selectedStore);
+                        })
                         .map((inv) => {
                           return (
                             <TableRow key={inv.id}>
