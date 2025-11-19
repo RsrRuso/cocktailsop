@@ -243,7 +243,7 @@ const QRAccessCode = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <TopNav />
-      <main className="flex-1 container mx-auto px-4 py-8 pb-20 max-w-2xl">
+      <main className="flex-1 container mx-auto px-4 py-8 pb-32 max-w-2xl overflow-y-auto">
         <Card>
           <CardHeader>
             <CardTitle>Workspace Access QR Code</CardTitle>
