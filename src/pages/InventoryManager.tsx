@@ -86,6 +86,7 @@ const InventoryManager = () => {
       `)
       .eq("store_id", storeId)
       .eq("status", "available")
+      .gt("quantity", 0)
       .order("priority_score", { ascending: false })
       .limit(10);
 
