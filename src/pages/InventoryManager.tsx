@@ -1330,7 +1330,20 @@ const InventoryManager = () => {
                 <div className="grid gap-2 mt-4">
                   <h3 className="text-sm font-semibold">Received Items (FIFO Order)</h3>
                   {inventory
-                    .filter(inv => inv.quantity > 0 && inv.status !== 'sold')
+                    .filter(inv => {
+                      // First check quantity and status
+                      if (inv.quantity <= 0 || inv.status === 'sold') return false;
+                      
+                      // Apply store filter
+                      if (selectedStore && selectedStore !== 'all') {
+                        // If specific store selected, show only that store
+                        return inv.store_id === selectedStore;
+                      } else {
+                        // If "All Stores" selected, show only Basement and Attiko
+                        const storeName = inv.stores?.name?.toLowerCase() || "";
+                        return storeName.includes("basement") || storeName.includes("attiko");
+                      }
+                    })
                     .sort((a, b) => new Date(a.expiration_date).getTime() - new Date(b.expiration_date).getTime())
                     .map((inv) => {
                       const daysUntilExpiry = getDaysUntilExpiry(inv.expiration_date);
