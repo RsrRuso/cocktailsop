@@ -1403,29 +1403,50 @@ export type Database = {
       }
       inventory: {
         Row: {
+          batch_number: string | null
           created_at: string
           expiration_date: string
           id: string
           item_id: string
+          notes: string | null
+          photo_url: string | null
+          priority_score: number | null
           quantity: number
+          received_date: string | null
+          scanned_data: Json | null
+          status: string | null
           store_id: string
           user_id: string
         }
         Insert: {
+          batch_number?: string | null
           created_at?: string
           expiration_date: string
           id?: string
           item_id: string
+          notes?: string | null
+          photo_url?: string | null
+          priority_score?: number | null
           quantity?: number
+          received_date?: string | null
+          scanned_data?: Json | null
+          status?: string | null
           store_id: string
           user_id: string
         }
         Update: {
+          batch_number?: string | null
           created_at?: string
           expiration_date?: string
           id?: string
           item_id?: string
+          notes?: string | null
+          photo_url?: string | null
+          priority_score?: number | null
           quantity?: number
+          received_date?: string | null
+          scanned_data?: Json | null
+          status?: string | null
           store_id?: string
           user_id?: string
         }
@@ -1442,6 +1463,147 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_activity_log: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          details: Json | null
+          employee_id: string | null
+          id: string
+          inventory_id: string | null
+          photo_url: string | null
+          quantity_after: number | null
+          quantity_before: number | null
+          store_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          details?: Json | null
+          employee_id?: string | null
+          id?: string
+          inventory_id?: string | null
+          photo_url?: string | null
+          quantity_after?: number | null
+          quantity_before?: number | null
+          store_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          details?: Json | null
+          employee_id?: string | null
+          id?: string
+          inventory_id?: string | null
+          photo_url?: string | null
+          quantity_after?: number | null
+          quantity_before?: number | null
+          store_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_activity_log_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_activity_log_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_activity_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_transfers: {
+        Row: {
+          created_at: string | null
+          from_store_id: string | null
+          id: string
+          inventory_id: string | null
+          notes: string | null
+          photo_url: string | null
+          quantity: number
+          scanned_data: Json | null
+          status: string | null
+          to_store_id: string | null
+          transfer_date: string | null
+          transferred_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          from_store_id?: string | null
+          id?: string
+          inventory_id?: string | null
+          notes?: string | null
+          photo_url?: string | null
+          quantity: number
+          scanned_data?: Json | null
+          status?: string | null
+          to_store_id?: string | null
+          transfer_date?: string | null
+          transferred_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          from_store_id?: string | null
+          id?: string
+          inventory_id?: string | null
+          notes?: string | null
+          photo_url?: string | null
+          quantity?: number
+          scanned_data?: Json | null
+          status?: string | null
+          to_store_id?: string | null
+          transfer_date?: string | null
+          transferred_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_transfers_from_store_id_fkey"
+            columns: ["from_store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transfers_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transfers_to_store_id_fkey"
+            columns: ["to_store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transfers_transferred_by_fkey"
+            columns: ["transferred_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -1493,6 +1655,10 @@ export type Database = {
       }
       items: {
         Row: {
+          barcode: string | null
+          brand: string | null
+          category: string | null
+          color_code: string | null
           created_at: string
           description: string | null
           id: string
@@ -1500,6 +1666,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          barcode?: string | null
+          brand?: string | null
+          category?: string | null
+          color_code?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1507,6 +1677,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          barcode?: string | null
+          brand?: string | null
+          category?: string | null
+          color_code?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -2801,27 +2975,44 @@ export type Database = {
       }
       stores: {
         Row: {
+          address: string | null
           area: string
           created_at: string
           id: string
+          is_active: boolean | null
+          manager_id: string | null
           name: string
           user_id: string
         }
         Insert: {
+          address?: string | null
           area: string
           created_at?: string
           id?: string
+          is_active?: boolean | null
+          manager_id?: string | null
           name: string
           user_id: string
         }
         Update: {
+          address?: string | null
           area?: string
           created_at?: string
           id?: string
+          is_active?: boolean | null
+          manager_id?: string | null
           name?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stores_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stories: {
         Row: {
@@ -3777,6 +3968,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_fifo_priority: {
+        Args: { p_expiration_date: string; p_received_date: string }
+        Returns: number
+      }
       create_notification: {
         Args: {
           p_content: string
