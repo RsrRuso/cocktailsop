@@ -1297,15 +1297,44 @@ const InventoryManager = () => {
                     </div>
                     <div>
                       <Label className="text-xs">Item Name</Label>
-                      <Input name="itemName" className="h-8 text-sm" required />
+                      <Input 
+                        name="itemName" 
+                        className="h-8 text-sm" 
+                        required 
+                        list="item-names"
+                      />
+                      <datalist id="item-names">
+                        {Array.from(new Set(items.map(item => item.name).filter(Boolean))).map((name) => (
+                          <option key={name} value={name} />
+                        ))}
+                      </datalist>
                     </div>
                     <div>
                       <Label className="text-xs">Brand</Label>
-                      <Input name="brand" className="h-8 text-sm" />
+                      <Input 
+                        name="brand" 
+                        className="h-8 text-sm" 
+                        list="item-brands"
+                      />
+                      <datalist id="item-brands">
+                        {Array.from(new Set(items.map(item => item.brand).filter(Boolean))).map((brand) => (
+                          <option key={brand} value={brand} />
+                        ))}
+                      </datalist>
                     </div>
                     <div>
                       <Label className="text-xs">Category</Label>
-                      <Input name="category" className="h-8 text-sm" placeholder="e.g., Dairy, Meat" />
+                      <Input 
+                        name="category" 
+                        className="h-8 text-sm" 
+                        placeholder="e.g., Dairy, Meat" 
+                        list="item-categories"
+                      />
+                      <datalist id="item-categories">
+                        {Array.from(new Set(items.map(item => item.category).filter(Boolean))).map((category) => (
+                          <option key={category} value={category} />
+                        ))}
+                      </datalist>
                     </div>
                     <div>
                       <Label className="text-xs">Quantity</Label>
