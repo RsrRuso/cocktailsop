@@ -65,6 +65,43 @@ const InventoryManager = () => {
   }, [hasAccess, currentWorkspace, workspaceLoading]);
 
   useEffect(() => {
+    if (!user || !hasAccess) return;
+
+    // Set up realtime subscription for inventory changes
+    const channel = supabase
+      .channel('inventory-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'inventory'
+        },
+        (payload) => {
+          console.log('Inventory changed:', payload);
+          fetchData(); // Refresh data on any inventory change
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'inventory_transfers'
+        },
+        (payload) => {
+          console.log('Transfer changed:', payload);
+          fetchData(); // Refresh data on transfer changes
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, hasAccess]);
+
+  useEffect(() => {
     if (selectedStore) {
       fetchFIFORecommendations(selectedStore);
     }
