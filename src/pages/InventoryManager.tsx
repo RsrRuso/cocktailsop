@@ -943,14 +943,7 @@ const InventoryManager = () => {
                         .filter(inv => {
                           if (inv.status === 'sold' || (inv.quantity ?? 0) <= 0) return false;
                           if (selectedStore && selectedStore !== 'all' && inv.store_id !== selectedStore) return false;
-                          if (!searchTerm) return true;
-                          
-                          const search = searchTerm.toLowerCase();
-                          return (
-                            inv.items?.name?.toLowerCase().includes(search) ||
-                            inv.items?.brand?.toLowerCase().includes(search) ||
-                            inv.stores?.name?.toLowerCase().includes(search)
-                          );
+                          return true;
                         })
                         .map((inv) => {
                           const daysUntil = getDaysUntilExpiry(inv.expiration_date);
