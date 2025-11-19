@@ -1,27 +1,68 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { QRCodeSVG } from "qrcode.react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Copy, RefreshCw, TestTube2, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { QRCodeSVG } from "qrcode.react";
-import { RefreshCw, TestTube2, ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
 
 const QRAccessCode = () => {
   const navigate = useNavigate();
+  const { currentWorkspace, workspaces, createWorkspace, switchWorkspace, isLoading } = useWorkspace();
   const [qrCodeId, setQrCodeId] = useState(crypto.randomUUID());
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  const selectedWorkspaceId = currentWorkspace?.id || qrCodeId;
+  const qrUrl = `${window.location.origin}/scan-access/${selectedWorkspaceId}`;
+  const qrPath = `/scan-access/${selectedWorkspaceId}`;
 
   const generateNewCode = () => {
-    setQrCodeId(crypto.randomUUID());
+    const newId = crypto.randomUUID();
+    setQrCodeId(newId);
+    toast.success("New QR code generated");
+  };
+
+  const handleCreateWorkspace = async () => {
+    if (!newWorkspaceName.trim()) {
+      toast.error("Please enter a workspace name");
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const workspace = await createWorkspace(newWorkspaceName);
+      if (workspace) {
+        toast.success("Workspace created!");
+        setShowCreateDialog(false);
+        setNewWorkspaceName("");
+      } else {
+        toast.error("Failed to create workspace");
+      }
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleTestScan = () => {
-    navigate(`/scan-access/${qrCodeId}`);
+    navigate(qrPath);
   };
 
-  const qrCodeUrl = `${window.location.origin}/scan-access/${qrCodeId}`;
-  const scanPath = `/scan-access/${qrCodeId}`;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Loading workspaces...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -36,84 +77,154 @@ const QRAccessCode = () => {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
+
         <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <CardTitle className="text-xl">Inventory Access QR Code</CardTitle>
-                <CardDescription>
-                  Share this QR code with staff who need access to inventory management
-                </CardDescription>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate(-1)}
-                aria-label="Go back"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </div>
+          <CardHeader>
+            <CardTitle>Workspace Access QR Code</CardTitle>
+            <CardDescription>
+              {currentWorkspace 
+                ? `Share this QR code to invite people to ${currentWorkspace.name}`
+                : "Create or select a workspace to generate a QR code"
+              }
+            </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center space-y-4 pb-4">
-            <div className="bg-white p-4 rounded-lg">
-              <QRCodeSVG value={qrCodeUrl} size={200} />
-            </div>
-            <div className="text-center space-y-2 w-full">
-              <p className="text-sm text-muted-foreground">
-                Staff can scan this code to request access
-              </p>
-              <div className="space-y-2">
-                <div className="bg-muted p-2 rounded-md">
-                  <p className="text-xs font-semibold mb-1">Full URL:</p>
-                  <p className="text-xs font-mono break-all">{qrCodeUrl}</p>
-                </div>
-                <div className="bg-muted p-2 rounded-md">
-                  <p className="text-xs font-semibold mb-1">Or use this path:</p>
-                  <p className="text-xs font-mono break-all">{scanPath}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Navigate to this path in your app</p>
-                </div>
+          <CardContent className="space-y-6">
+            {/* Workspace Selection */}
+            <div className="space-y-2">
+              <Label>Select Workspace</Label>
+              <div className="flex gap-2">
+                <Select 
+                  value={currentWorkspace?.id || ""} 
+                  onValueChange={switchWorkspace}
+                  disabled={workspaces.length === 0}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select a workspace" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workspaces.map((workspace) => (
+                      <SelectItem key={workspace.id} value={workspace.id}>
+                        {workspace.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">New Workspace</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create Workspace</DialogTitle>
+                      <DialogDescription>
+                        Create a new workspace for team collaboration
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="workspace-name">Workspace Name</Label>
+                        <Input
+                          id="workspace-name"
+                          value={newWorkspaceName}
+                          onChange={(e) => setNewWorkspaceName(e.target.value)}
+                          placeholder="My Team Workspace"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleCreateWorkspace} disabled={isCreating}>
+                        {isCreating ? "Creating..." : "Create"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
-              <div className="flex flex-col gap-2 w-full">
-                <div className="flex gap-2">
+            </div>
+
+            {currentWorkspace && (
+              <>
+                {/* QR Code Display */}
+                <div className="flex justify-center p-6 bg-muted rounded-lg">
+                  <div className="bg-white p-4 rounded-lg">
+                    <QRCodeSVG value={qrUrl} size={200} level="H" />
+                  </div>
+                </div>
+
+                {/* URLs Display */}
+                <div className="space-y-2">
+                  <div className="p-3 bg-muted rounded-md">
+                    <p className="text-sm font-medium mb-1">Full URL</p>
+                    <p className="text-xs font-mono break-all text-muted-foreground">{qrUrl}</p>
+                  </div>
+                  <div className="p-3 bg-muted rounded-md">
+                    <p className="text-sm font-medium mb-1">Path</p>
+                    <p className="text-xs font-mono break-all text-muted-foreground">{qrPath}</p>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-3">
                   <Button
                     variant="outline"
                     size="sm"
+                    className="w-full"
                     onClick={() => {
-                      navigator.clipboard.writeText(qrCodeUrl);
-                      toast.success("Full URL copied!");
+                      navigator.clipboard.writeText(qrUrl);
+                      toast.success("URL copied to clipboard");
                     }}
-                    className="flex-1"
                   >
-                    Copy Full URL
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copy URL
                   </Button>
+
                   <Button
                     variant="outline"
                     size="sm"
+                    className="w-full"
                     onClick={() => {
-                      navigator.clipboard.writeText(scanPath);
-                      toast.success("Path copied!");
+                      navigator.clipboard.writeText(qrPath);
+                      toast.success("Path copied to clipboard");
                     }}
-                    className="flex-1"
                   >
+                    <Copy className="mr-2 h-4 w-4" />
                     Copy Path
                   </Button>
+
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleTestScan}
+                  >
+                    <TestTube2 className="mr-2 h-4 w-4" />
+                    Test Scan
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={generateNewCode}
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    New Code
+                  </Button>
                 </div>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleTestScan}
-                  className="w-full"
-                >
-                  <TestTube2 className="mr-2 h-4 w-4" />
-                  Test Scan (Simulate Employee Access)
+              </>
+            )}
+
+            {!currentWorkspace && workspaces.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p className="mb-4">No workspaces yet. Create one to get started!</p>
+                <Button onClick={() => setShowCreateDialog(true)}>
+                  Create First Workspace
                 </Button>
               </div>
-            </div>
-            <Button onClick={generateNewCode} variant="outline" size="sm">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Generate New Code
-            </Button>
+            )}
           </CardContent>
         </Card>
       </main>

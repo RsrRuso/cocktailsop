@@ -10,6 +10,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { RoutePreloader } from "@/components/RoutePreloader";
 
 // Eager load ONLY index/landing/auth (no user data)
@@ -109,11 +110,12 @@ const App = () => (
       <InAppNotificationProvider>
         <BrowserRouter>
           <AuthProvider>
-            <CartProvider>
-              <RoutePreloader />
-              <Toaster />
-              <Sonner />
-              <Suspense fallback={<PageLoader />}>
+            <WorkspaceProvider>
+              <CartProvider>
+                <RoutePreloader />
+                <Toaster />
+                <Sonner />
+                <Suspense fallback={<PageLoader />}>
                 <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/landing" element={<Landing />} />
@@ -140,7 +142,7 @@ const App = () => (
           <Route path="/team-invitation" element={<TeamInvitation />} />
               <Route path="/inventory-manager" element={<InventoryManager />} />
               <Route path="/qr-access-code" element={<QRAccessCode />} />
-              <Route path="/scan-access/:qrCodeId" element={<ScanAccess />} />
+              <Route path="/scan-access/:workspaceId" element={<ScanAccess />} />
               <Route path="/access-approval" element={<AccessApproval />} />
               <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
@@ -196,6 +198,7 @@ const App = () => (
                 </Routes>
               </Suspense>
             </CartProvider>
+            </WorkspaceProvider>
           </AuthProvider>
         </BrowserRouter>
       </InAppNotificationProvider>
