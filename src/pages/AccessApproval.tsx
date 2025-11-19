@@ -154,68 +154,65 @@ const AccessApproval = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <TopNav />
-      <main className="flex-1 container mx-auto px-4 py-6 pb-24">
+      <main className="flex-1 container mx-auto px-4 py-4 pb-20 max-w-4xl">
         <Card>
-          <CardHeader>
-            <CardTitle>Access Requests</CardTitle>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl">Access Requests</CardTitle>
             <CardDescription>
               Approve or reject staff access to inventory management
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {requests.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No access requests yet
-                </p>
-              ) : (
-                requests.map((request) => (
-                  <Card key={request.id}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <p className="font-medium">{request.user_email}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(request.created_at).toLocaleString()}
-                          </p>
-                          {getStatusBadge(request.status)}
-                        </div>
-                        {request.status === "pending" && (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
-                              onClick={() => handleApprove(request.id)}
-                              disabled={processingId === request.id}
-                            >
-                              {processingId === request.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Check className="h-4 w-4" />
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-                              onClick={() => handleReject(request.id)}
-                              disabled={processingId === request.id}
-                            >
-                              {processingId === request.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <X className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
+          <CardContent className="space-y-3 max-h-[calc(100vh-240px)] overflow-y-auto">
+            {requests.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                No access requests yet
+              </p>
+            ) : (
+              requests.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-3"
+                >
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <p className="font-medium truncate">{request.user_email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(request.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {getStatusBadge(request.status)}
+                    {request.status === "pending" && (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprove(request.id)}
+                          disabled={processingId === request.id}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {processingId === request.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleReject(request.id)}
+                          disabled={processingId === request.id}
+                        >
+                          {processingId === request.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </main>
