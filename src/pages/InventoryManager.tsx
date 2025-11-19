@@ -16,11 +16,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Package, Store, Users, ArrowRightLeft, Upload, Camera, Scan, TrendingUp, Pencil, Trash2, Loader2, Lock } from "lucide-react";
+import { Package, Store, Users, ArrowRightLeft, Upload, Camera, Scan, TrendingUp, Pencil, Trash2, Loader2, Lock, X } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -55,6 +56,8 @@ const InventoryManager = () => {
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [editingItemMaster, setEditingItemMaster] = useState<any>(null);
   const [itemMasterToDelete, setItemMasterToDelete] = useState<any>(null);
+  const [pastedText, setPastedText] = useState("");
+  const [parsedItems, setParsedItems] = useState<string[]>([]);
   const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1417,81 +1420,155 @@ const InventoryManager = () => {
                     </DialogContent>
                   </Dialog>
                   
-                  <Dialog>
+                  <Dialog open={pastedText !== "" || parsedItems.length > 0} onOpenChange={(open) => {
+                    if (!open) {
+                      setPastedText("");
+                      setParsedItems([]);
+                    }
+                  }}>
                     <DialogTrigger asChild>
                       <Button type="button" variant="outline" size="sm" className="w-full">
                         📋 Paste List
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-lg">
+                    <DialogContent className="sm:max-w-[600px]">
                       <DialogHeader>
-                        <DialogTitle>Paste Item Names</DialogTitle>
-                        <CardDescription>
-                          Just paste item names, one per line
-                        </CardDescription>
+                        <DialogTitle>Paste Item List</DialogTitle>
                       </DialogHeader>
-                      <form onSubmit={async (e) => {
-                        e.preventDefault();
-                        const formData = new FormData(e.currentTarget);
-                        const pastedData = formData.get("pastedItems") as string;
-                        
-                        if (!pastedData?.trim()) {
-                          toast.error("Please paste some item names");
-                          return;
-                        }
+                      <div className="space-y-4">
+                        {parsedItems.length === 0 ? (
+                          <>
+                            <div>
+                              <Textarea
+                                value={pastedText}
+                                onChange={(e) => setPastedText(e.target.value)}
+                                placeholder="Paste item names here, one per line..."
+                                className="min-h-[200px]"
+                              />
+                              <p className="text-sm text-muted-foreground mt-2">
+                                Enter one item name per line
+                              </p>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={() => {
+                                  setPastedText("");
+                                  setParsedItems([]);
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button 
+                                onClick={() => {
+                                  const names = pastedText
+                                    .split("\n")
+                                    .map(line => line.trim())
+                                    .filter(name => name.length > 0);
+                                  setParsedItems(names);
+                                }}
+                                disabled={!pastedText.trim()}
+                              >
+                                Parse Items
+                              </Button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <p className="text-sm font-medium">{parsedItems.length} items ready</p>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setParsedItems([]);
+                                    setPastedText("");
+                                  }}
+                                >
+                                  Clear All
+                                </Button>
+                              </div>
+                              <ScrollArea className="h-[300px] border rounded-md p-2">
+                                <div className="space-y-1">
+                                  {parsedItems.map((item, index) => (
+                                    <div key={index} className="flex items-center gap-2 p-2 hover:bg-accent rounded">
+                                      <Input
+                                        value={item}
+                                        onChange={(e) => {
+                                          const newItems = [...parsedItems];
+                                          newItems[index] = e.target.value;
+                                          setParsedItems(newItems);
+                                        }}
+                                        className="flex-1"
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => {
+                                          setParsedItems(parsedItems.filter((_, i) => i !== index));
+                                        }}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={() => {
+                                  setParsedItems([]);
+                                  setPastedText("");
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button onClick={async () => {
+                                try {
+                                  const existingNames = new Set(items.map(item => item.name.toLowerCase()));
+                                  const newNames = parsedItems.filter(name => !existingNames.has(name.toLowerCase()));
+                                  const duplicates = parsedItems.length - newNames.length;
 
-                        try {
-                          // Split by lines and filter out empty lines
-                          const names = pastedData
-                            .trim()
-                            .split('\n')
-                            .map(line => line.trim())
-                            .filter(name => name.length > 0);
-                          
-                          // Check for duplicates in existing items
-                          const existingNames = new Set(items.map(item => item.name.toLowerCase()));
-                          const newNames = names.filter(name => !existingNames.has(name.toLowerCase()));
-                          const duplicates = names.length - newNames.length;
+                                  if (newNames.length === 0) {
+                                    toast.error("All items already exist in master list");
+                                    return;
+                                  }
 
-                          if (newNames.length === 0) {
-                            toast.error("All items already exist in master list");
-                            return;
-                          }
+                                  const itemsToInsert = newNames.map(name => ({
+                                    user_id: user?.id,
+                                    workspace_id: currentWorkspace?.id || null,
+                                    name: name,
+                                  }));
 
-                          const itemsToInsert = newNames.map(name => ({
-                            user_id: user?.id,
-                            workspace_id: currentWorkspace?.id || null,
-                            name: name,
-                          }));
+                                  const { error } = await supabase.from("items").insert(itemsToInsert);
 
-                          const { error } = await supabase.from("items").insert(itemsToInsert);
+                                  if (error) throw error;
 
-                          if (error) throw error;
-
-                          const message = duplicates > 0 
-                            ? `${itemsToInsert.length} new items added (${duplicates} duplicates skipped)`
-                            : `${itemsToInsert.length} items added to master list`;
-                          
-                          toast.success(message);
-                          fetchData();
-                          e.currentTarget.reset();
-                        } catch (error: any) {
-                          toast.error(`Failed to add items: ${error.message}`);
-                        }
-                      }} className="space-y-3">
-                        <div>
-                          <Textarea 
-                            name="pastedItems"
-                            placeholder="Milk&#10;Bread&#10;Eggs&#10;Cheese&#10;Butter"
-                            className="min-h-[250px] text-sm"
-                            required
-                          />
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          💡 Just paste item names, one per line
-                        </div>
-                        <Button type="submit" className="w-full">Add All Items to Master List</Button>
-                      </form>
+                                  const message = duplicates > 0 
+                                    ? `${itemsToInsert.length} new items added (${duplicates} duplicates skipped)`
+                                    : `${itemsToInsert.length} items added to master list`;
+                                  
+                                  toast.success(message);
+                                  fetchData();
+                                  setParsedItems([]);
+                                  setPastedText("");
+                                } catch (error: any) {
+                                  toast.error(error.message || "Failed to add items");
+                                }
+                              }}>
+                                Add Items
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </DialogContent>
                   </Dialog>
                   
