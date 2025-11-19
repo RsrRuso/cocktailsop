@@ -129,14 +129,18 @@ const ScanAccess = () => {
         }
       }
 
-      // Generate a random password for the user
+      // Check if user already exists by trying to find them in access_requests or trying signup
+      let userId: string | null = null;
+      
+      // Generate a random password for new users
       const tempPassword = crypto.randomUUID() + "!Aa1";
 
-      // Create user account
+      // Try to create user account (this will fail silently if user exists)
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: email,
         password: tempPassword,
         options: {
+          emailRedirectTo: 'https://cocktailsop.com/auth',
           data: {
             full_name: email.split('@')[0],
             username: email.split('@')[0] + Math.random().toString(36).substring(7),
@@ -144,39 +148,49 @@ const ScanAccess = () => {
         }
       });
 
-      if (signUpError) {
-        // If user already exists, that's okay - we'll link the request to them
-        console.log("User may already exist:", signUpError);
+      // If signup succeeded, use the new user's ID
+      if (signUpData?.user?.id) {
+        userId = signUpData.user.id;
+        
+        // Send password reset email so they can set their own password
+        try {
+          await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: 'https://cocktailsop.com/auth',
+          });
+        } catch (resetError) {
+          console.log("Password reset email could not be sent:", resetError);
+        }
+      } else if (signUpError) {
+        console.log("Signup info:", signUpError.message);
       }
 
-      const userId = signUpData?.user?.id;
-
-      // Send password reset email so they can set their own password
-      if (userId) {
-        await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth`,
-        });
-      }
-
-      // Create access request
+      // Create access request (even if signup failed, we create the request with null user_id)
       const { error: requestError } = await supabase
         .from("access_requests")
         .insert([{
           workspace_id: workspaceId,
-          user_id: userId || null,
+          user_id: userId,
           user_email: email,
           status: "pending",
           qr_code_id: workspaceId
         }]);
 
-      if (requestError) throw requestError;
+      if (requestError) {
+        console.error("Access request error:", requestError);
+        throw new Error(requestError.message || "Failed to create access request");
+      }
 
       setStatus("success");
-      toast.success("Account created! Check your email to set your password and wait for approval.");
+      
+      if (userId) {
+        toast.success("Request sent! Check your email to set your password and wait for approval.");
+      } else {
+        toast.success("Request sent! You'll be notified when approved.");
+      }
     } catch (error: any) {
       console.error("Error requesting access:", error);
       setStatus("error");
-      toast.error(error.message || "Failed to request access");
+      toast.error(error.message || "Failed to request access. Please try again.");
     } finally {
       setSubmitting(false);
     }
