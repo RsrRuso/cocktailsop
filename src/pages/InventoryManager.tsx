@@ -29,6 +29,10 @@ const InventoryManager = () => {
   const [fifoRecommendations, setFifoRecommendations] = useState<any[]>([]);
   const [scanDialogOpen, setScanDialogOpen] = useState(false);
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [quickTransferItem, setQuickTransferItem] = useState<any>(null);
+  const [editingStore, setEditingStore] = useState<any>(null);
+  const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -641,6 +645,16 @@ const InventoryManager = () => {
           </TabsList>
 
           <TabsContent value="inventory" className="space-y-2">
+            {/* Search Bar */}
+            <div className="px-2">
+              <Input
+                placeholder="Search items by name, brand, or store..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-9 text-sm"
+              />
+            </div>
+            
             {/* Compact Table View */}
             <Card>
               <CardHeader className="py-3">
@@ -661,10 +675,18 @@ const InventoryManager = () => {
                     </TableHeader>
                     <TableBody>
                       {inventory
-                        .filter(inv => 
-                          inv.status !== 'sold' && 
-                          (!selectedStore || selectedStore === 'all' || inv.store_id === selectedStore)
-                        )
+                        .filter(inv => {
+                          if (inv.status === 'sold') return false;
+                          if (selectedStore && selectedStore !== 'all' && inv.store_id !== selectedStore) return false;
+                          if (!searchTerm) return true;
+                          
+                          const search = searchTerm.toLowerCase();
+                          return (
+                            inv.items?.name?.toLowerCase().includes(search) ||
+                            inv.items?.brand?.toLowerCase().includes(search) ||
+                            inv.stores?.name?.toLowerCase().includes(search)
+                          );
+                        })
                         .map((inv) => {
                           const daysUntil = getDaysUntilExpiry(inv.expiration_date);
                           return (
@@ -704,15 +726,27 @@ const InventoryManager = () => {
                                 </Badge>
                               </TableCell>
                               <TableCell className="py-2">
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost"
-                                  className="h-7 text-xs"
-                                  onClick={() => handleMarkAsSold(inv.id, inv.quantity)}
-                                  disabled={inv.status !== 'available'}
-                                >
-                                  Sold
-                                </Button>
+                                <div className="flex gap-1">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="h-7 text-xs"
+                                    onClick={() => setQuickTransferItem(inv)}
+                                    disabled={inv.quantity <= 0}
+                                  >
+                                    <ArrowRightLeft className="w-3 h-3 mr-1" />
+                                    Transfer
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    className="h-7 text-xs"
+                                    onClick={() => handleMarkAsSold(inv.id, inv.quantity)}
+                                    disabled={inv.status !== 'available'}
+                                  >
+                                    Sold
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           );
@@ -1073,7 +1107,7 @@ const InventoryManager = () => {
                           <SelectValue placeholder="Select item and source store" />
                         </SelectTrigger>
                         <SelectContent position="popper" className="bg-popover border z-[100] max-h-[300px]">
-                          {inventory.filter(inv => inv.status === 'available' && inv.quantity > 0).map((inv) => (
+                          {inventory.filter(inv => inv.quantity > 0 && inv.status !== 'sold').map((inv) => (
                             <SelectItem key={inv.id} value={inv.id}>
                               {inv.items?.name} • From: {inv.stores?.name} • Qty: {inv.quantity}
                             </SelectItem>
@@ -1188,6 +1222,171 @@ const InventoryManager = () => {
               Take a photo of the product's expiry date. Our AI will extract the date automatically.
             </p>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Transfer Dialog */}
+      <Dialog open={!!quickTransferItem} onOpenChange={(open) => !open && setQuickTransferItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Quick Transfer</DialogTitle>
+          </DialogHeader>
+          {quickTransferItem && (
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) return;
+
+              const toStoreId = formData.get("toStoreId") as string;
+              const quantity = parseFloat(formData.get("quantity") as string);
+
+              if (quickTransferItem.store_id === toStoreId) {
+                toast.error("Cannot transfer to the same store");
+                return;
+              }
+
+              if (quantity > quickTransferItem.quantity) {
+                toast.error(`Cannot transfer ${quantity} items. Only ${quickTransferItem.quantity} available.`);
+                return;
+              }
+
+              const { data: transfer, error: transferError } = await supabase
+                .from("inventory_transfers")
+                .insert({
+                  user_id: user.id,
+                  inventory_id: quickTransferItem.id,
+                  from_store_id: quickTransferItem.store_id,
+                  to_store_id: toStoreId,
+                  quantity: quantity,
+                  transferred_by: formData.get("transferredBy") as string,
+                  notes: formData.get("notes") as string,
+                  status: "completed"
+                })
+                .select()
+                .single();
+
+              if (transferError) {
+                toast.error("Failed to create transfer");
+                return;
+              }
+
+              const remainingQty = quickTransferItem.quantity - quantity;
+
+              await supabase
+                .from("inventory")
+                .update({ 
+                  quantity: remainingQty,
+                  status: remainingQty <= 0 ? "transferred" : "available"
+                })
+                .eq("id", quickTransferItem.id);
+
+              const { data: destInv } = await supabase
+                .from("inventory")
+                .select("*")
+                .eq("store_id", toStoreId)
+                .eq("item_id", quickTransferItem.item_id)
+                .eq("expiration_date", quickTransferItem.expiration_date)
+                .single();
+
+              if (destInv) {
+                await supabase
+                  .from("inventory")
+                  .update({ quantity: destInv.quantity + quantity })
+                  .eq("id", destInv.id);
+              } else {
+                await supabase.from("inventory").insert({
+                  user_id: user.id,
+                  store_id: toStoreId,
+                  item_id: quickTransferItem.item_id,
+                  quantity: quantity,
+                  expiration_date: quickTransferItem.expiration_date,
+                  received_date: new Date().toISOString(),
+                  batch_number: quickTransferItem.batch_number,
+                  status: "available"
+                });
+              }
+
+              await supabase.from("inventory_activity_log").insert({
+                user_id: user.id,
+                inventory_id: quickTransferItem.id,
+                store_id: quickTransferItem.store_id,
+                action_type: "transferred",
+                quantity_before: quickTransferItem.quantity,
+                quantity_after: quickTransferItem.quantity - quantity,
+                details: { to_store_id: toStoreId, transfer_id: transfer.id }
+              });
+
+              toast.success(`Transfer completed! Transferred: ${quantity}, Remaining: ${remainingQty}`);
+              fetchData();
+              setQuickTransferItem(null);
+            }} className="space-y-3">
+              <div className="space-y-2">
+                <div className="p-2 bg-muted rounded">
+                  <p className="text-sm font-medium">{quickTransferItem.items?.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    From: {quickTransferItem.stores?.name} • Available: {quickTransferItem.quantity}
+                  </p>
+                </div>
+                
+                <div>
+                  <Label className="text-xs">Quantity to Transfer</Label>
+                  <Input 
+                    name="quantity" 
+                    type="number" 
+                    step="0.01" 
+                    max={quickTransferItem.quantity}
+                    className="h-8 text-sm" 
+                    required 
+                  />
+                </div>
+                
+                <div>
+                  <Label className="text-xs">To Store (Destination)</Label>
+                  <Select name="toStoreId" required>
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder="Select destination" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" className="bg-popover border z-[100]">
+                      {stores.filter(s => s.id !== quickTransferItem.store_id).map((store) => (
+                        <SelectItem key={store.id} value={store.id}>
+                          {store.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label className="text-xs">Transferred By</Label>
+                  <Select name="transferredBy" required>
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder="Select employee" />
+                    </SelectTrigger>
+                    <SelectContent position="popper" className="bg-popover border z-[100]">
+                      {employees.map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label className="text-xs">Notes (Optional)</Label>
+                  <Textarea name="notes" className="text-sm" rows={2} />
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setQuickTransferItem(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm">Complete Transfer</Button>
+              </div>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 
