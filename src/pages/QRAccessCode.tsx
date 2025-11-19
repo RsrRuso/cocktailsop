@@ -38,10 +38,22 @@ const QRAccessCode = () => {
         </Button>
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl">Inventory Access QR Code</CardTitle>
-            <CardDescription>
-              Share this QR code with staff who need access to inventory management
-            </CardDescription>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-xl">Inventory Access QR Code</CardTitle>
+                <CardDescription>
+                  Share this QR code with staff who need access to inventory management
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(-1)}
+                aria-label="Go back"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="flex flex-col items-center space-y-4 pb-4">
             <div className="bg-white p-4 rounded-lg">
