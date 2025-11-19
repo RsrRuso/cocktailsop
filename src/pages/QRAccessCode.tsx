@@ -28,6 +28,16 @@ interface WorkspaceMember {
   };
 }
 
+interface Follower {
+  follower_id: string;
+  profiles: {
+    id: string;
+    full_name: string;
+    avatar_url: string;
+    username: string;
+  };
+}
+
 const QRAccessCode = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -39,6 +49,9 @@ const QRAccessCode = () => {
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<WorkspaceMember | null>(null);
+  const [followers, setFollowers] = useState<Follower[]>([]);
+  const [showAddFollowerDialog, setShowAddFollowerDialog] = useState(false);
+  const [addingFollower, setAddingFollower] = useState(false);
 
   const selectedWorkspaceId = currentWorkspace?.id || qrCodeId;
   const qrUrl = `https://cocktailsop.com/scan-access/${selectedWorkspaceId}`;
@@ -109,11 +122,89 @@ const QRAccessCode = () => {
     }
   };
 
+  const fetchFollowers = async () => {
+    if (!user) return;
+
+    try {
+      const { data: followData, error: followError } = await supabase
+        .from('follows')
+        .select('follower_id')
+        .eq('following_id', user.id);
+
+      if (followError) throw followError;
+
+      const followerIds = followData?.map(f => f.follower_id) || [];
+      
+      if (followerIds.length === 0) {
+        setFollowers([]);
+        return;
+      }
+
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url, username')
+        .in('id', followerIds);
+
+      if (profilesError) throw profilesError;
+
+      const enrichedFollowers = followerIds.map(followerId => ({
+        follower_id: followerId,
+        profiles: profilesData?.find(p => p.id === followerId) || {
+          id: followerId,
+          full_name: 'Unknown User',
+          avatar_url: '',
+          username: 'unknown'
+        }
+      }));
+
+      setFollowers(enrichedFollowers);
+    } catch (error) {
+      console.error('Error fetching followers:', error);
+      toast.error('Failed to load followers');
+    }
+  };
+
   useEffect(() => {
     if (currentWorkspace) {
       fetchMembers();
     }
-  }, [currentWorkspace]);
+    if (user) {
+      fetchFollowers();
+    }
+  }, [currentWorkspace, user]);
+
+  const handleAddFollower = async (followerId: string) => {
+    if (!currentWorkspace || !isOwner) return;
+
+    setAddingFollower(true);
+    try {
+      // Check if already a member
+      const existingMember = members.find(m => m.user_id === followerId);
+      if (existingMember) {
+        toast.error('This user is already a member');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('workspace_members')
+        .insert({
+          workspace_id: currentWorkspace.id,
+          user_id: followerId,
+          role: 'member'
+        });
+
+      if (error) throw error;
+
+      toast.success('Follower added to workspace');
+      fetchMembers();
+      setShowAddFollowerDialog(false);
+    } catch (error) {
+      console.error('Error adding follower:', error);
+      toast.error('Failed to add follower');
+    } finally {
+      setAddingFollower(false);
+    }
+  };
 
   const handleRemoveMember = async () => {
     if (!memberToRemove) return;
@@ -317,10 +408,62 @@ const QRAccessCode = () => {
         {currentWorkspace && (
           <Card className="mt-4">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Workspace Members
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  <CardTitle>Workspace Members</CardTitle>
+                </div>
+                {isOwner && (
+                  <Dialog open={showAddFollowerDialog} onOpenChange={setShowAddFollowerDialog}>
+                    <DialogTrigger asChild>
+                      <Button size="sm">Add Follower</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Follower to Workspace</DialogTitle>
+                        <DialogDescription>
+                          Select a follower to add to this workspace
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="max-h-[400px] overflow-y-auto space-y-2">
+                        {followers.length === 0 ? (
+                          <p className="text-center py-4 text-muted-foreground">No followers found</p>
+                        ) : (
+                          followers.map((follower) => {
+                            const isAlreadyMember = members.some(m => m.user_id === follower.follower_id);
+                            return (
+                              <div 
+                                key={follower.follower_id}
+                                className="flex items-center justify-between p-3 rounded-lg border"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <Avatar>
+                                    <AvatarImage src={follower.profiles.avatar_url} />
+                                    <AvatarFallback>
+                                      {follower.profiles.full_name?.charAt(0) || 'U'}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-medium">{follower.profiles.full_name}</p>
+                                    <p className="text-xs text-muted-foreground">@{follower.profiles.username}</p>
+                                  </div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleAddFollower(follower.follower_id)}
+                                  disabled={isAlreadyMember || addingFollower}
+                                >
+                                  {isAlreadyMember ? 'Already Member' : 'Add'}
+                                </Button>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
               <CardDescription>
                 {isOwner ? "Manage members in this workspace" : "View members in this workspace"}
               </CardDescription>
