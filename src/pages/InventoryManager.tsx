@@ -8,10 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Package, Store, Users, ArrowRightLeft, Upload, Camera, Scan, TrendingUp } from "lucide-react";
+import { Package, Store, Users, ArrowRightLeft, Upload, Camera, Scan, TrendingUp, Pencil, Trash2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { Textarea } from "@/components/ui/textarea";
@@ -320,6 +320,67 @@ const InventoryManager = () => {
       toast.success("Employee added successfully");
       fetchData();
       e.currentTarget.reset();
+    }
+  };
+
+  const handleUpdateStore = async (e: React.FormEvent<HTMLFormElement>, storeId: string) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    const { error } = await supabase.from("stores").update({
+      name: formData.get("storeName") as string,
+      area: formData.get("area") as string,
+      address: formData.get("address") as string,
+    }).eq("id", storeId);
+
+    if (error) {
+      toast.error("Failed to update store");
+    } else {
+      toast.success("Store updated successfully");
+      fetchData();
+    }
+  };
+
+  const handleDeleteStore = async (storeId: string) => {
+    if (!confirm("Are you sure you want to delete this store? All inventory in this store will also be removed.")) return;
+    
+    const { error } = await supabase.from("stores").delete().eq("id", storeId);
+
+    if (error) {
+      toast.error("Failed to delete store");
+    } else {
+      toast.success("Store deleted successfully");
+      fetchData();
+    }
+  };
+
+  const handleUpdateEmployee = async (e: React.FormEvent<HTMLFormElement>, employeeId: string) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    const { error } = await supabase.from("employees").update({
+      name: formData.get("employeeName") as string,
+      title: formData.get("title") as string,
+    }).eq("id", employeeId);
+
+    if (error) {
+      toast.error("Failed to update employee");
+    } else {
+      toast.success("Employee updated successfully");
+      fetchData();
+    }
+  };
+
+  const handleDeleteEmployee = async (employeeId: string) => {
+    if (!confirm("Are you sure you want to delete this employee?")) return;
+    
+    const { error } = await supabase.from("employees").delete().eq("id", employeeId);
+
+    if (error) {
+      toast.error("Failed to delete employee");
+    } else {
+      toast.success("Employee deleted successfully");
+      fetchData();
     }
   };
 
@@ -812,9 +873,50 @@ const InventoryManager = () => {
                   {stores.map((store) => (
                     <Card key={store.id}>
                       <CardContent className="p-2">
-                        <h3 className="text-sm font-semibold">{store.name}</h3>
-                        <p className="text-xs text-muted-foreground">{store.area}</p>
-                        {store.address && <p className="text-xs mt-0.5">{store.address}</p>}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <h3 className="text-sm font-semibold">{store.name}</h3>
+                            <p className="text-xs text-muted-foreground">{store.area}</p>
+                            {store.address && <p className="text-xs mt-0.5">{store.address}</p>}
+                          </div>
+                          <div className="flex gap-1">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Edit Store</DialogTitle>
+                                </DialogHeader>
+                                <form onSubmit={(e) => handleUpdateStore(e, store.id)} className="space-y-3">
+                                  <div>
+                                    <Label className="text-xs">Store Name</Label>
+                                    <Input name="storeName" defaultValue={store.name} className="h-8 text-sm" required />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs">Area</Label>
+                                    <Input name="area" defaultValue={store.area} className="h-8 text-sm" required />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs">Address</Label>
+                                    <Input name="address" defaultValue={store.address} className="h-8 text-sm" />
+                                  </div>
+                                  <Button type="submit" size="sm">Update Store</Button>
+                                </form>
+                              </DialogContent>
+                            </Dialog>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteStore(store.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -909,8 +1011,45 @@ const InventoryManager = () => {
                   {employees.map((emp) => (
                     <Card key={emp.id}>
                       <CardContent className="p-2">
-                        <h3 className="text-sm font-semibold">{emp.name}</h3>
-                        <p className="text-xs text-muted-foreground">{emp.title}</p>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <h3 className="text-sm font-semibold">{emp.name}</h3>
+                            <p className="text-xs text-muted-foreground">{emp.title}</p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Edit Employee</DialogTitle>
+                                </DialogHeader>
+                                <form onSubmit={(e) => handleUpdateEmployee(e, emp.id)} className="space-y-3">
+                                  <div>
+                                    <Label className="text-xs">Employee Name</Label>
+                                    <Input name="employeeName" defaultValue={emp.name} className="h-8 text-sm" required />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs">Title/Position</Label>
+                                    <Input name="title" defaultValue={emp.title} className="h-8 text-sm" required />
+                                  </div>
+                                  <Button type="submit" size="sm">Update Employee</Button>
+                                </form>
+                              </DialogContent>
+                            </Dialog>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteEmployee(emp.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
