@@ -1074,7 +1074,7 @@ const InventoryManager = () => {
           <TabsContent value="items">
             <Card>
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">Receive Items (Auto-Generated Barcodes)</CardTitle>
+                <CardTitle className="text-sm font-medium">Receiving</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <form onSubmit={handleAddItem} className="space-y-2">
@@ -1127,53 +1127,111 @@ const InventoryManager = () => {
                 </form>
 
                 <div className="grid gap-2 mt-4">
+                  <h3 className="text-sm font-semibold">Received Items (FIFO Order)</h3>
+                  {inventory
+                    .filter(inv => inv.quantity > 0 && inv.status !== 'sold')
+                    .sort((a, b) => new Date(a.expiration_date).getTime() - new Date(b.expiration_date).getTime())
+                    .map((inv) => {
+                      const daysUntilExpiry = getDaysUntilExpiry(inv.expiration_date);
+                      const item = items.find(i => i.id === inv.item_id);
+                      if (!item) return null;
+                      
+                      return (
+                        <Card 
+                          key={inv.id} 
+                          className="cursor-pointer hover:bg-accent transition-colors"
+                          onClick={() => setQuickTransferItem(inv)}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-1 min-w-0">
+                                {item.color_code && (
+                                  <div 
+                                    className="w-4 h-4 rounded inline-block mr-2" 
+                                    style={{ backgroundColor: item.color_code }}
+                                  />
+                                )}
+                                <h3 className="text-sm font-semibold inline">{item.name}</h3>
+                                {item.brand && <p className="text-xs text-muted-foreground">Brand: {item.brand}</p>}
+                                {item.category && <p className="text-xs text-muted-foreground">Category: {item.category}</p>}
+                                <div className="mt-2 space-y-1">
+                                  <p className="text-xs">
+                                    <span className="font-medium">Store:</span> {inv.stores?.name} ({inv.stores?.area})
+                                  </p>
+                                  <p className="text-xs">
+                                    <span className="font-medium">Qty:</span> {inv.quantity}
+                                  </p>
+                                  <p className={`text-xs font-medium ${
+                                    daysUntilExpiry < 0 ? 'text-red-600' :
+                                    daysUntilExpiry <= 3 ? 'text-orange-600' :
+                                    daysUntilExpiry <= 7 ? 'text-yellow-600' : 'text-green-600'
+                                  }`}>
+                                    <span>Expires:</span> {new Date(inv.expiration_date).toLocaleDateString()} 
+                                    ({daysUntilExpiry < 0 ? 'EXPIRED' : `${daysUntilExpiry} days left`})
+                                  </p>
+                                  <Badge className="text-xs" variant={inv.priority_score >= 80 ? "destructive" : "secondary"}>
+                                    FIFO Priority: {inv.priority_score}
+                                  </Badge>
+                                </div>
+                                {item.barcode && (
+                                  <div className="mt-2 p-2 bg-white border rounded">
+                                    <div className="flex flex-col items-center gap-1">
+                                      <div className="flex gap-[1px]">
+                                        {item.barcode.split('').map((char, i) => (
+                                          <div key={i} className="w-[2px] h-12 bg-black" style={{ 
+                                            opacity: parseInt(char) % 2 === 0 ? 1 : 0.3 
+                                          }} />
+                                        ))}
+                                      </div>
+                                      <p className="text-xs font-mono tracking-wider">{item.barcode}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="manage-items">
+            <Card>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">Manage Items</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid gap-2">
                   {items.map((item) => (
                     <Card key={item.id}>
-                      <CardContent className="p-3">
-                        <div className="flex items-start gap-3">
-                          <div className="flex-1 min-w-0">
-                            {item.color_code && (
-                              <div 
-                                className="w-4 h-4 rounded inline-block mr-2" 
-                                style={{ backgroundColor: item.color_code }}
-                              />
-                            )}
-                            <h3 className="text-sm font-semibold inline">{item.name}</h3>
+                      <CardContent className="p-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <h3 className="text-sm font-semibold">{item.name}</h3>
                             {item.brand && <p className="text-xs text-muted-foreground">Brand: {item.brand}</p>}
                             {item.category && <p className="text-xs text-muted-foreground">Category: {item.category}</p>}
-                            {item.barcode && (
-                              <div className="mt-2 p-2 bg-white border rounded">
-                                <div className="flex flex-col items-center gap-1">
-                                  <div className="flex gap-[1px]">
-                                    {item.barcode.split('').map((char, i) => (
-                                      <div key={i} className="w-[2px] h-12 bg-black" style={{ 
-                                        opacity: parseInt(char) % 2 === 0 ? 1 : 0.3 
-                                      }} />
-                                    ))}
-                                  </div>
-                                  <p className="text-xs font-mono tracking-wider">{item.barcode}</p>
-                                </div>
-                              </div>
-                            )}
+                            {item.barcode && <p className="text-xs text-muted-foreground">Barcode: {item.barcode}</p>}
                           </div>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-7 w-7 p-0"
-                            onClick={() => setEditingItemMaster(item)}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                            onClick={() => setItemMasterToDelete(item)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditingItemMaster(item)}>
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                              </DialogTrigger>
+                            </Dialog>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                              onClick={() => setItemMasterToDelete(item)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
