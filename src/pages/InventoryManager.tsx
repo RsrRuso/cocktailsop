@@ -1351,70 +1351,132 @@ const InventoryManager = () => {
                 <CardDescription className="text-xs">Select from master list or add new items</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* Quick Add to Master List Button */}
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button type="button" variant="outline" size="sm" className="w-full">
-                      <Package className="w-3 h-3 mr-2" />
-                      Quick Add New Item to Master List
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add New Item to Master List</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={async (e) => {
-                      e.preventDefault();
-                      const formData = new FormData(e.currentTarget);
-                      const name = formData.get("newItemName") as string;
-                      const brand = formData.get("newItemBrand") as string;
-                      const category = formData.get("newItemCategory") as string;
-                      const barcode = formData.get("newItemBarcode") as string;
-                      const colorCode = formData.get("newItemColorCode") as string;
+                {/* Master List Management Buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" className="w-full">
+                        <Package className="w-3 h-3 mr-2" />
+                        Quick Add Item
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add New Item to Master List</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        const name = formData.get("newItemName") as string;
+                        const brand = formData.get("newItemBrand") as string;
+                        const category = formData.get("newItemCategory") as string;
+                        const barcode = formData.get("newItemBarcode") as string;
+                        const colorCode = formData.get("newItemColorCode") as string;
 
-                      try {
-                        const { error } = await supabase.from("items").insert({
-                          user_id: user?.id,
-                          workspace_id: currentWorkspace?.id || null,
-                          name,
-                          brand: brand || null,
-                          category: category || null,
-                          barcode: barcode || null,
-                          color_code: colorCode || null,
-                        });
+                        try {
+                          const { error } = await supabase.from("items").insert({
+                            user_id: user?.id,
+                            workspace_id: currentWorkspace?.id || null,
+                            name,
+                            brand: brand || null,
+                            category: category || null,
+                            barcode: barcode || null,
+                            color_code: colorCode || null,
+                          });
 
-                        if (error) throw error;
-                        toast.success("Item added to master list");
-                        fetchData();
-                        e.currentTarget.reset();
-                      } catch (error: any) {
-                        toast.error(error.message);
-                      }
-                    }} className="space-y-3">
-                      <div>
-                        <Label className="text-sm">Item Name *</Label>
-                        <Input name="newItemName" required className="h-9" />
-                      </div>
-                      <div>
-                        <Label className="text-sm">Brand</Label>
-                        <Input name="newItemBrand" className="h-9" />
-                      </div>
-                      <div>
-                        <Label className="text-sm">Category</Label>
-                        <Input name="newItemCategory" className="h-9" />
-                      </div>
-                      <div>
-                        <Label className="text-sm">Barcode</Label>
-                        <Input name="newItemBarcode" className="h-9" />
-                      </div>
-                      <div>
-                        <Label className="text-sm">Color Code</Label>
-                        <Input name="newItemColorCode" type="color" className="h-9" />
-                      </div>
-                      <Button type="submit" className="w-full">Add to Master List</Button>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                          if (error) throw error;
+                          toast.success("Item added to master list");
+                          fetchData();
+                          e.currentTarget.reset();
+                        } catch (error: any) {
+                          toast.error(error.message);
+                        }
+                      }} className="space-y-3">
+                        <div>
+                          <Label className="text-sm">Item Name *</Label>
+                          <Input name="newItemName" required className="h-9" />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Brand</Label>
+                          <Input name="newItemBrand" className="h-9" />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Category</Label>
+                          <Input name="newItemCategory" className="h-9" />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Barcode</Label>
+                          <Input name="newItemBarcode" className="h-9" />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Color Code</Label>
+                          <Input name="newItemColorCode" type="color" className="h-9" />
+                        </div>
+                        <Button type="submit" className="w-full">Add to Master List</Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = '.xlsx,.xls,.csv';
+                      input.onchange = async (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (!file) return;
+
+                        try {
+                          const data = await file.arrayBuffer();
+                          const workbook = XLSX.read(data);
+                          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                          const itemsToInsert = jsonData.map((row: any) => ({
+                            user_id: user?.id,
+                            workspace_id: currentWorkspace?.id || null,
+                            name: row.name || row.Name || row.item || row.Item || row.product || row.Product,
+                            brand: row.brand || row.Brand || null,
+                            category: row.category || row.Category || null,
+                            barcode: row.barcode || row.Barcode || null,
+                            color_code: row.color_code || row.ColorCode || row.color || null,
+                            description: row.description || row.Description || null,
+                          })).filter(item => item.name);
+
+                          if (itemsToInsert.length === 0) {
+                            toast.error("No valid items found in file. Make sure you have a 'name' or 'Name' column.");
+                            return;
+                          }
+
+                          const { error } = await supabase.from("items").insert(itemsToInsert);
+
+                          if (error) throw error;
+
+                          toast.success(`${itemsToInsert.length} items added to master list`);
+                          fetchData();
+                        } catch (error: any) {
+                          toast.error(`Upload failed: ${error.message}`);
+                        }
+                      };
+                      input.click();
+                    }}
+                  >
+                    <Upload className="w-3 h-3 mr-2" />
+                    Bulk Upload List
+                  </Button>
+                </div>
+                
+                {/* Info card for bulk upload */}
+                <Card className="bg-muted/50">
+                  <CardContent className="p-3 text-xs space-y-1">
+                    <p className="font-medium">📋 Bulk Upload Format:</p>
+                    <p>Excel/CSV with columns: <strong>name</strong> (required), brand, category, barcode, color_code, description</p>
+                  </CardContent>
+                </Card>
 
                 <form onSubmit={handleAddItem} className="space-y-2">
                   {/* Workspace indicator */}
