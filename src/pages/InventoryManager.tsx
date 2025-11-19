@@ -16,6 +16,7 @@ import * as XLSX from "xlsx";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const InventoryManager = () => {
   const [stores, setStores] = useState<any[]>([]);
@@ -300,6 +301,27 @@ const InventoryManager = () => {
     }
   };
 
+  const handleAddEmployee = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase.from("employees").insert({
+      user_id: user.id,
+      name: formData.get("employeeName") as string,
+      title: formData.get("title") as string,
+    });
+
+    if (error) {
+      toast.error("Failed to add employee");
+    } else {
+      toast.success("Employee added successfully");
+      fetchData();
+      e.currentTarget.reset();
+    }
+  };
+
   const handleAddInventory = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -467,232 +489,188 @@ const InventoryManager = () => {
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
       
-      <div className="container mx-auto p-4 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="container mx-auto p-2 sm:p-4 space-y-4">
+        <div className="flex items-center justify-between mb-2">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">FIFO Inventory Manager</h1>
-            <p className="text-muted-foreground">Track inventory with First-In-First-Out priority</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">FIFO Inventory</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Track inventory with FIFO priority</p>
           </div>
-          <QRCodeSVG value={window.location.href} size={80} />
+        </div>
+
+        {/* Quick Actions - Compact horizontal bar */}
+        <div className="flex flex-wrap gap-2 bg-card p-2 rounded-lg border">
+          <Button onClick={() => fileInputRef.current?.click()} size="sm" variant="outline">
+            <Upload className="w-3 h-3 mr-1" />
+            Excel
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleExcelUpload}
+            className="hidden"
+          />
+          <Button onClick={startBarcodeScanner} size="sm" variant="outline">
+            <Scan className="w-3 h-3 mr-1" />
+            Scan
+          </Button>
+          <Button onClick={() => setPhotoDialogOpen(true)} size="sm" variant="outline">
+            <Camera className="w-3 h-3 mr-1" />
+            Photo
+          </Button>
+          <Select value={selectedStore} onValueChange={setSelectedStore}>
+            <SelectTrigger className="h-8 w-[140px]">
+              <SelectValue placeholder="Filter by Store" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Stores</SelectItem>
+              {stores.map((store) => (
+                <SelectItem key={store.id} value={store.id}>
+                  {store.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <Tabs defaultValue="inventory" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="inventory">
-              <Package className="w-4 h-4 mr-2" />
-              Inventory
+          <TabsList className="grid w-full grid-cols-6 h-auto">
+            <TabsTrigger value="inventory" className="text-xs py-2">
+              <Package className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">Inventory</span>
             </TabsTrigger>
-            <TabsTrigger value="fifo">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              FIFO Priority
+            <TabsTrigger value="fifo" className="text-xs py-2">
+              <TrendingUp className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">FIFO</span>
             </TabsTrigger>
-            <TabsTrigger value="stores">
-              <Store className="w-4 h-4 mr-2" />
-              Stores
+            <TabsTrigger value="stores" className="text-xs py-2">
+              <Store className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">Stores</span>
             </TabsTrigger>
-            <TabsTrigger value="items">
-              <Package className="w-4 h-4 mr-2" />
-              Items
+            <TabsTrigger value="items" className="text-xs py-2">
+              <Package className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">Items</span>
             </TabsTrigger>
-            <TabsTrigger value="staff">
-              <Users className="w-4 h-4 mr-2" />
-              Staff
+            <TabsTrigger value="staff" className="text-xs py-2">
+              <Users className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">Staff</span>
             </TabsTrigger>
-            <TabsTrigger value="transfer">
-              <ArrowRightLeft className="w-4 h-4 mr-2" />
-              Transfer
+            <TabsTrigger value="transfer" className="text-xs py-2">
+              <ArrowRightLeft className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">Transfer</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="inventory" className="space-y-4">
+          <TabsContent value="inventory" className="space-y-2">
+            {/* Compact Table View */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="w-5 h-5" />
-                  Add Inventory
-                </CardTitle>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">Current Inventory</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex gap-2 mb-4">
-                  <Button onClick={() => fileInputRef.current?.click()} variant="outline">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Import Excel
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".xlsx,.xls"
-                    onChange={handleExcelUpload}
-                    className="hidden"
-                  />
-                  <Button onClick={startBarcodeScanner} variant="outline">
-                    <Scan className="w-4 h-4 mr-2" />
-                    Scan Barcode
-                  </Button>
-                  <Button onClick={() => setPhotoDialogOpen(true)} variant="outline">
-                    <Camera className="w-4 h-4 mr-2" />
-                    Scan Expiry Photo
-                  </Button>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs py-2">Item</TableHead>
+                        <TableHead className="text-xs py-2">Store</TableHead>
+                        <TableHead className="text-xs py-2">Qty</TableHead>
+                        <TableHead className="text-xs py-2">Expiry</TableHead>
+                        <TableHead className="text-xs py-2">Priority</TableHead>
+                        <TableHead className="text-xs py-2">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {inventory
+                        .filter(inv => !selectedStore || selectedStore === 'all' || inv.store_id === selectedStore)
+                        .map((inv) => {
+                          const daysUntil = getDaysUntilExpiry(inv.expiration_date);
+                          return (
+                            <TableRow key={inv.id}>
+                              <TableCell className="py-2">
+                                <div className="flex items-center gap-1">
+                                  {inv.items?.color_code && (
+                                    <div 
+                                      className="w-2 h-2 rounded-full flex-shrink-0"
+                                      style={{ backgroundColor: inv.items.color_code }}
+                                    />
+                                  )}
+                                  <span className="text-xs font-medium">{inv.items?.name}</span>
+                                </div>
+                                {inv.items?.brand && (
+                                  <div className="text-xs text-muted-foreground">{inv.items.brand}</div>
+                                )}
+                              </TableCell>
+                              <TableCell className="py-2">
+                                <div className="text-xs font-medium">{inv.stores?.name}</div>
+                                <div className="text-xs text-muted-foreground">{inv.stores?.area}</div>
+                              </TableCell>
+                              <TableCell className="py-2">
+                                <span className="text-sm font-bold">{inv.quantity}</span>
+                              </TableCell>
+                              <TableCell className="py-2">
+                                <div className="text-xs">{new Date(inv.expiration_date).toLocaleDateString()}</div>
+                                <div className={`text-xs ${daysUntil < 7 ? 'text-red-500' : daysUntil < 30 ? 'text-orange-500' : 'text-muted-foreground'}`}>
+                                  {daysUntil} days
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-2">
+                                <Badge 
+                                  className={`${getPriorityBadgeColor(inv.priority_score || 0)} text-white text-xs`}
+                                >
+                                  {inv.priority_score || 0}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="py-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  className="h-7 text-xs"
+                                  onClick={() => handleMarkAsSold(inv.id, inv.quantity)}
+                                  disabled={inv.status !== 'available'}
+                                >
+                                  Sold
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                    </TableBody>
+                  </Table>
                 </div>
-
-                <form onSubmit={handleAddInventory} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Store</Label>
-                      <Select name="storeId" required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select store" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {stores.map((store) => (
-                            <SelectItem key={store.id} value={store.id}>
-                              {store.name} - {store.area}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Item</Label>
-                      <Select name="itemId" required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select item" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {items.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
-                              {item.name} {item.brand && `- ${item.brand}`}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Quantity</Label>
-                      <Input name="quantity" type="number" step="0.01" required />
-                    </div>
-                    <div>
-                      <Label>Expiration Date</Label>
-                      <Input name="expirationDate" type="date" required />
-                    </div>
-                    <div>
-                      <Label>Received Date</Label>
-                      <Input name="receivedDate" type="date" defaultValue={new Date().toISOString().split('T')[0]} />
-                    </div>
-                    <div>
-                      <Label>Batch Number</Label>
-                      <Input name="batchNumber" />
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Notes</Label>
-                    <Textarea name="notes" />
-                  </div>
-                  <Button type="submit">Add to Inventory</Button>
-                </form>
               </CardContent>
             </Card>
-
-            <div className="grid gap-4">
-              {inventory.filter(inv => inv.status === 'available').map((inv) => {
-                const daysUntilExpiry = getDaysUntilExpiry(inv.expiration_date);
-                return (
-                  <Card key={inv.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-lg">{inv.items?.name}</h3>
-                            {inv.items?.color_code && (
-                              <div 
-                                className="w-6 h-6 rounded-full border-2" 
-                                style={{ backgroundColor: inv.items.color_code }}
-                                title={inv.items.color_code}
-                              />
-                            )}
-                            <Badge className={getPriorityBadgeColor(inv.priority_score)}>
-                              Priority: {inv.priority_score}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {inv.items?.brand && `${inv.items.brand} • `}
-                            {inv.items?.category && `${inv.items.category} • `}
-                            Store: {inv.stores?.name}
-                          </p>
-                          <div className="mt-2 space-y-1 text-sm">
-                            <p>Quantity: <strong>{inv.quantity}</strong></p>
-                            <p>Expires: <strong>{new Date(inv.expiration_date).toLocaleDateString()}</strong> 
-                              <span className={daysUntilExpiry <= 7 ? "text-red-500 ml-2" : daysUntilExpiry <= 14 ? "text-orange-500 ml-2" : "ml-2"}>
-                                ({daysUntilExpiry} days)
-                              </span>
-                            </p>
-                            <p>Received: {new Date(inv.received_date).toLocaleDateString()}</p>
-                            {inv.batch_number && <p>Batch: {inv.batch_number}</p>}
-                          </div>
-                        </div>
-                        <Button 
-                          onClick={() => handleMarkAsSold(inv.id, inv.quantity)}
-                          variant="destructive"
-                          size="sm"
-                        >
-                          Mark as Sold
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
           </TabsContent>
 
-          <TabsContent value="fifo" className="space-y-4">
+          <TabsContent value="fifo" className="space-y-2">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  FIFO Priority Recommendations
-                </CardTitle>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">FIFO Priority - Use Store Filter Above</CardTitle>
               </CardHeader>
-              <CardContent>
-                <Select value={selectedStore} onValueChange={setSelectedStore}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select store to view recommendations" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stores.map((store) => (
-                      <SelectItem key={store.id} value={store.id}>
-                        {store.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {selectedStore && (
-                  <div className="mt-4 space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Items sorted by urgency (highest priority first)
-                    </p>
+              <CardContent className="p-2">
+                {selectedStore && selectedStore !== 'all' ? (
+                  <div className="space-y-2">
                     {fifoRecommendations.map((item, index) => {
                       const daysUntilExpiry = getDaysUntilExpiry(item.expiration_date);
                       return (
                         <Card key={item.id} className="border-l-4" style={{
                           borderLeftColor: index === 0 ? '#ef4444' : index === 1 ? '#f97316' : '#eab308'
                         }}>
-                          <CardContent className="p-3">
+                          <CardContent className="p-2">
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="text-2xl font-bold text-muted-foreground">#{index + 1}</div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-lg font-bold text-muted-foreground">#{index + 1}</div>
                                 <div>
-                                  <h4 className="font-semibold">{item.items?.name}</h4>
-                                  <p className="text-sm text-muted-foreground">
-                                    {item.items?.brand} • Qty: {item.quantity}
+                                  <h4 className="text-sm font-semibold">{item.items?.name}</h4>
+                                  <p className="text-xs text-muted-foreground">
+                                    {item.items?.brand} • Qty: <strong>{item.quantity}</strong>
                                   </p>
                                   <p className="text-xs">
                                     Expires in <strong className={daysUntilExpiry <= 7 ? "text-red-500" : ""}>{daysUntilExpiry} days</strong>
                                   </p>
                                 </div>
                               </div>
-                              <Badge className={getPriorityBadgeColor(item.priority_score)}>
+                              <Badge className={`${getPriorityBadgeColor(item.priority_score)} text-white text-xs`}>
                                 {item.priority_score}
                               </Badge>
                             </div>
@@ -701,20 +679,24 @@ const InventoryManager = () => {
                       );
                     })}
                   </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Select a store from the filter above to view FIFO recommendations
+                  </p>
                 )}
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
+              <CardContent className="p-2">
+                <div className="space-y-1">
                   {activityLog.slice(0, 10).map((log) => (
-                    <div key={log.id} className="flex items-center gap-3 p-2 bg-muted rounded">
-                      <Badge variant="outline">{log.action_type}</Badge>
-                      <p className="text-sm flex-1">
+                    <div key={log.id} className="flex items-center gap-2 p-1.5 bg-muted rounded text-xs">
+                      <Badge variant="outline" className="text-xs py-0">{log.action_type}</Badge>
+                      <p className="flex-1">
                         {log.stores?.name} • {log.employees?.name}
                         {log.quantity_after !== null && ` • Qty: ${log.quantity_after}`}
                       </p>
@@ -730,35 +712,35 @@ const InventoryManager = () => {
 
           <TabsContent value="stores">
             <Card>
-              <CardHeader>
-                <CardTitle>Add Store</CardTitle>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">Manage Stores</CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleAddStore} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+              <CardContent className="space-y-3">
+                <form onSubmit={handleAddStore} className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label>Store Name</Label>
-                      <Input name="storeName" required />
+                      <Label className="text-xs">Store Name</Label>
+                      <Input name="storeName" className="h-8 text-sm" required />
                     </div>
                     <div>
-                      <Label>Area</Label>
-                      <Input name="area" required />
+                      <Label className="text-xs">Area</Label>
+                      <Input name="area" className="h-8 text-sm" required />
                     </div>
                   </div>
                   <div>
-                    <Label>Address</Label>
-                    <Input name="address" />
+                    <Label className="text-xs">Address</Label>
+                    <Input name="address" className="h-8 text-sm" />
                   </div>
-                  <Button type="submit">Add Store</Button>
+                  <Button type="submit" size="sm">Add Store</Button>
                 </form>
 
-                <div className="mt-6 grid gap-3">
+                <div className="grid gap-2 mt-4">
                   {stores.map((store) => (
                     <Card key={store.id}>
-                      <CardContent className="p-4">
-                        <h3 className="font-semibold">{store.name}</h3>
-                        <p className="text-sm text-muted-foreground">{store.area}</p>
-                        {store.address && <p className="text-xs mt-1">{store.address}</p>}
+                      <CardContent className="p-2">
+                        <h3 className="text-sm font-semibold">{store.name}</h3>
+                        <p className="text-xs text-muted-foreground">{store.area}</p>
+                        {store.address && <p className="text-xs mt-0.5">{store.address}</p>}
                       </CardContent>
                     </Card>
                   ))}
@@ -769,53 +751,53 @@ const InventoryManager = () => {
 
           <TabsContent value="items">
             <Card>
-              <CardHeader>
-                <CardTitle>Add Item</CardTitle>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">Manage Items</CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleAddItem} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+              <CardContent className="space-y-3">
+                <form onSubmit={handleAddItem} className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label>Item Name</Label>
-                      <Input name="itemName" required />
+                      <Label className="text-xs">Item Name</Label>
+                      <Input name="itemName" className="h-8 text-sm" required />
                     </div>
                     <div>
-                      <Label>Brand</Label>
-                      <Input name="brand" />
+                      <Label className="text-xs">Brand</Label>
+                      <Input name="brand" className="h-8 text-sm" />
                     </div>
                     <div>
-                      <Label>Category</Label>
-                      <Input name="category" placeholder="e.g., Dairy, Meat, Produce" />
+                      <Label className="text-xs">Category</Label>
+                      <Input name="category" className="h-8 text-sm" placeholder="e.g., Dairy, Meat" />
                     </div>
                     <div>
-                      <Label>Color Code</Label>
-                      <Input name="colorCode" type="color" />
+                      <Label className="text-xs">Color Code</Label>
+                      <Input name="colorCode" type="color" className="h-8" />
                     </div>
                     <div>
-                      <Label>Barcode</Label>
-                      <Input name="barcode" />
+                      <Label className="text-xs">Barcode</Label>
+                      <Input name="barcode" className="h-8 text-sm" />
                     </div>
                   </div>
                   <div>
-                    <Label>Description</Label>
-                    <Textarea name="description" />
+                    <Label className="text-xs">Description</Label>
+                    <Textarea name="description" className="text-sm" rows={2} />
                   </div>
-                  <Button type="submit">Add Item</Button>
+                  <Button type="submit" size="sm">Add Item</Button>
                 </form>
 
-                <div className="mt-6 grid gap-3">
+                <div className="grid gap-2 mt-4">
                   {items.map((item) => (
                     <Card key={item.id}>
-                      <CardContent className="p-4 flex items-center gap-3">
+                      <CardContent className="p-2 flex items-center gap-2">
                         {item.color_code && (
                           <div 
-                            className="w-8 h-8 rounded border-2" 
+                            className="w-4 h-4 rounded flex-shrink-0" 
                             style={{ backgroundColor: item.color_code }}
                           />
                         )}
                         <div className="flex-1">
-                          <h3 className="font-semibold">{item.name}</h3>
-                          <p className="text-sm text-muted-foreground">
+                          <h3 className="text-sm font-semibold">{item.name}</h3>
+                          <p className="text-xs text-muted-foreground">
                             {item.brand && `${item.brand} • `}
                             {item.category && `${item.category} • `}
                             {item.barcode && `Barcode: ${item.barcode}`}
@@ -831,47 +813,30 @@ const InventoryManager = () => {
 
           <TabsContent value="staff">
             <Card>
-              <CardHeader>
-                <CardTitle>Manage Staff</CardTitle>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">Manage Staff</CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={async (e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  const { data: { user } } = await supabase.auth.getUser();
-                  if (!user) return;
-
-                  const { error } = await supabase.from("employees").insert({
-                    user_id: user.id,
-                    name: formData.get("employeeName") as string,
-                    title: formData.get("title") as string,
-                  });
-
-                  if (!error) {
-                    toast.success("Employee added");
-                    fetchData();
-                    e.currentTarget.reset();
-                  }
-                }} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+              <CardContent className="space-y-3">
+                <form onSubmit={handleAddEmployee} className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label>Employee Name</Label>
-                      <Input name="employeeName" required />
+                      <Label className="text-xs">Employee Name</Label>
+                      <Input name="employeeName" className="h-8 text-sm" required />
                     </div>
                     <div>
-                      <Label>Title/Role</Label>
-                      <Input name="title" required />
+                      <Label className="text-xs">Title/Position</Label>
+                      <Input name="title" className="h-8 text-sm" required />
                     </div>
                   </div>
-                  <Button type="submit">Add Employee</Button>
+                  <Button type="submit" size="sm">Add Employee</Button>
                 </form>
 
-                <div className="mt-6 grid gap-3">
+                <div className="grid gap-2 mt-4">
                   {employees.map((emp) => (
                     <Card key={emp.id}>
-                      <CardContent className="p-4">
-                        <h3 className="font-semibold">{emp.name}</h3>
-                        <p className="text-sm text-muted-foreground">{emp.title}</p>
+                      <CardContent className="p-2">
+                        <h3 className="text-sm font-semibold">{emp.name}</h3>
+                        <p className="text-xs text-muted-foreground">{emp.title}</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -882,32 +847,36 @@ const InventoryManager = () => {
 
           <TabsContent value="transfer">
             <Card>
-              <CardHeader>
-                <CardTitle>Transfer Inventory</CardTitle>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">Transfer Inventory</CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleTransfer} className="space-y-4">
-                  <div>
-                    <Label>Select Inventory Item</Label>
-                    <Select name="inventoryId" required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select item to transfer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {inventory.filter(inv => inv.status === 'available' && inv.quantity > 0).map((inv) => (
-                          <SelectItem key={inv.id} value={inv.id}>
-                            {inv.items?.name} - {inv.stores?.name} (Qty: {inv.quantity})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+              <CardContent className="space-y-3">
+                <form onSubmit={handleTransfer} className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label>To Store</Label>
-                      <Select name="toStoreId" required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Destination store" />
+                      <Label className="text-xs">Inventory Item</Label>
+                      <Select name="inventoryId" required>
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue placeholder="Select item" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {inventory.filter(inv => inv.status === 'available').map((inv) => (
+                            <SelectItem key={inv.id} value={inv.id}>
+                              {inv.items?.name} - {inv.stores?.name} (Qty: {inv.quantity})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Quantity to Transfer</Label>
+                      <Input name="quantity" type="number" step="0.01" className="h-8 text-sm" required />
+                    </div>
+                    <div>
+                      <Label className="text-xs">From Store</Label>
+                      <Select name="fromStoreId" required>
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue placeholder="Select store" />
                         </SelectTrigger>
                         <SelectContent>
                           {stores.map((store) => (
@@ -919,14 +888,25 @@ const InventoryManager = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label>Quantity to Transfer</Label>
-                      <Input name="transferQuantity" type="number" step="0.01" required />
+                      <Label className="text-xs">To Store</Label>
+                      <Select name="toStoreId" required>
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue placeholder="Select store" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {stores.map((store) => (
+                            <SelectItem key={store.id} value={store.id}>
+                              {store.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div>
-                    <Label>Transferred By</Label>
+                    <Label className="text-xs">Transferred By</Label>
                     <Select name="transferredBy" required>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-8 text-sm">
                         <SelectValue placeholder="Select employee" />
                       </SelectTrigger>
                       <SelectContent>
@@ -939,30 +919,30 @@ const InventoryManager = () => {
                     </Select>
                   </div>
                   <div>
-                    <Label>Transfer Notes</Label>
-                    <Textarea name="transferNotes" />
+                    <Label className="text-xs">Transfer Notes</Label>
+                    <Textarea name="transferNotes" className="text-sm" rows={2} />
                   </div>
-                  <Button type="submit">Complete Transfer</Button>
+                  <Button type="submit" size="sm">Complete Transfer</Button>
                 </form>
 
-                <div className="mt-6">
-                  <h3 className="font-semibold mb-3">Recent Transfers</h3>
-                  <div className="space-y-2">
+                <div className="mt-4">
+                  <h3 className="text-sm font-semibold mb-2">Recent Transfers</h3>
+                  <div className="space-y-1">
                     {transfers.slice(0, 10).map((transfer) => (
                       <Card key={transfer.id}>
-                        <CardContent className="p-3">
+                        <CardContent className="p-2">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm font-medium">
+                              <p className="text-xs font-medium">
                                 {transfer.from_store?.name} → {transfer.to_store?.name}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 By: {transfer.transferred_by?.name} • Qty: {transfer.quantity}
                               </p>
                             </div>
-                            <Badge>{transfer.status}</Badge>
+                            <Badge className="text-xs">{transfer.status}</Badge>
                           </div>
-                          <p className="text-xs mt-1">
+                          <p className="text-xs mt-0.5">
                             {new Date(transfer.transfer_date).toLocaleString()}
                           </p>
                         </CardContent>
