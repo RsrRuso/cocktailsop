@@ -453,6 +453,7 @@ const InventoryManager = () => {
     if (!user) return;
 
     const inventoryId = formData.get("inventoryId") as string;
+    const fromStoreId = formData.get("fromStoreId") as string;
     const toStoreId = formData.get("toStoreId") as string;
     const quantity = parseFloat(formData.get("quantity") as string);
 
@@ -467,8 +468,8 @@ const InventoryManager = () => {
       return;
     }
 
-    // Prevent same-store transfers
-    if (sourceInv.store_id === toStoreId) {
+    // Prevent same-store transfers (both selected stores and actual source store)
+    if (fromStoreId === toStoreId || sourceInv.store_id === toStoreId) {
       toast.error("Cannot transfer to the same store");
       return;
     }
@@ -1141,26 +1142,29 @@ const InventoryManager = () => {
                 <div className="mt-4">
                   <h3 className="text-sm font-semibold mb-2">Recent Transfers</h3>
                   <div className="space-y-1">
-                    {transfers.slice(0, 10).map((transfer) => (
-                      <Card key={transfer.id}>
-                        <CardContent className="p-2">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-xs font-medium">
-                                {transfer.from_store?.name} → {transfer.to_store?.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                By: {transfer.transferred_by?.name} • Qty: {transfer.quantity}
-                              </p>
+                    {transfers
+                      .filter((transfer) => transfer.from_store_id !== transfer.to_store_id)
+                      .slice(0, 10)
+                      .map((transfer) => (
+                        <Card key={transfer.id}>
+                          <CardContent className="p-2">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs font-medium">
+                                  {transfer.from_store?.name} → {transfer.to_store?.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  By: {transfer.transferred_by?.name} • Qty: {transfer.quantity}
+                                </p>
+                              </div>
+                              <Badge className="text-xs">{transfer.status}</Badge>
                             </div>
-                            <Badge className="text-xs">{transfer.status}</Badge>
-                          </div>
-                          <p className="text-xs mt-0.5">
-                            {new Date(transfer.transfer_date).toLocaleString()}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ))}
+                            <p className="text-xs mt-0.5">
+                              {new Date(transfer.transfer_date).toLocaleString()}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ))}
                   </div>
                 </div>
               </CardContent>
