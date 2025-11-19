@@ -67,6 +67,10 @@ const Auth = () => {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Get redirect URL from query params
+  const searchParams = new URLSearchParams(window.location.search);
+  const redirectTo = searchParams.get('redirect') || '/home';
+
   // Check if user is coming from password reset link
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -97,7 +101,7 @@ const Auth = () => {
         if (error) throw error;
         toast.success("Password updated successfully!");
         setIsResettingPassword(false);
-        navigate("/home");
+        navigate(redirectTo);
       } else if (isForgotPassword) {
         // Validate email
         const validated = resetPasswordSchema.parse({ email });
@@ -131,7 +135,7 @@ const Auth = () => {
         });
         if (error) throw error;
         toast.success("Account created! Welcome to SpecVerse");
-        navigate("/home");
+        navigate(redirectTo);
       } else {
         // Validate signin inputs
         const validated = signInSchema.parse({
@@ -145,7 +149,7 @@ const Auth = () => {
         });
         if (error) throw error;
         toast.success("Welcome back!");
-        navigate("/home");
+        navigate(redirectTo);
       }
     } catch (error: any) {
       if (error instanceof z.ZodError) {

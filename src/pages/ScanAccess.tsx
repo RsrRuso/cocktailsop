@@ -15,7 +15,6 @@ const ScanAccess = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [email, setEmail] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
   const [status, setStatus] = useState<"form" | "requesting" | "success" | "error">("form");
 
@@ -25,6 +24,13 @@ const ScanAccess = () => {
       if (!workspaceId) {
         toast.error("Invalid workspace link");
         setLoading(false);
+        return;
+      }
+
+      // Redirect to auth if not logged in
+      if (!user) {
+        toast.info("Please log in to request access");
+        navigate(`/auth?redirect=/scan-access/${workspaceId}`);
         return;
       }
 
@@ -44,42 +50,39 @@ const ScanAccess = () => {
 
         setWorkspaceName(workspace.name);
 
-        // If user is logged in
-        if (user) {
-          // Check if user is workspace owner
-          if (workspace.owner_id === user.id) {
-            toast.success("Welcome to your workspace!");
-            navigate("/inventory-manager");
-            return;
-          }
+        // Check if user is workspace owner
+        if (workspace.owner_id === user.id) {
+          toast.success("Welcome to your workspace!");
+          navigate("/inventory-manager");
+          return;
+        }
 
-          // Check if user is already a member
-          const { data: membership } = await supabase
-            .from("workspace_members")
-            .select("*")
-            .eq("workspace_id", workspaceId)
-            .eq("user_id", user.id)
-            .maybeSingle();
+        // Check if user is already a member
+        const { data: membership } = await supabase
+          .from("workspace_members")
+          .select("*")
+          .eq("workspace_id", workspaceId)
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-          if (membership) {
-            toast.success("Access granted!");
-            navigate("/inventory-manager");
-            return;
-          }
+        if (membership) {
+          toast.success("Access granted!");
+          navigate("/inventory-manager");
+          return;
+        }
 
-          // Check for pending request
-          const { data: existing } = await supabase
-            .from("access_requests")
-            .select("*")
-            .eq("workspace_id", workspaceId)
-            .eq("user_id", user.id)
-            .eq("status", "pending")
-            .maybeSingle();
+        // Check for pending request
+        const { data: existing } = await supabase
+          .from("access_requests")
+          .select("*")
+          .eq("workspace_id", workspaceId)
+          .eq("user_id", user.id)
+          .eq("status", "pending")
+          .maybeSingle();
 
-          if (existing) {
-            setStatus("success");
-            toast.info("Your access request is pending approval");
-          }
+        if (existing) {
+          setStatus("success");
+          toast.info("Your access request is pending approval");
         }
       } catch (error) {
         console.error("Error checking access:", error);
@@ -94,13 +97,9 @@ const ScanAccess = () => {
   const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!workspaceId) {
-      toast.error("Invalid workspace link");
-      return;
-    }
-
-    if (!email) {
-      toast.error("Please enter your email");
+    if (!workspaceId || !user) {
+      toast.error("Please log in first");
+      navigate(`/auth?redirect=/scan-access/${workspaceId}`);
       return;
     }
 
@@ -108,69 +107,34 @@ const ScanAccess = () => {
     setStatus("requesting");
 
     try {
-      // Check if email already has a pending/approved request for this workspace
+      // Check if user already has a pending/approved request for this workspace
       const { data: existing } = await supabase
         .from("access_requests")
         .select("*")
         .eq("workspace_id", workspaceId)
-        .eq("user_email", email)
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (existing) {
         if (existing.status === "approved") {
-          toast.info("This email already has approved access. Please sign in at cocktailsop.com/auth");
+          toast.info("Your access has been approved!");
           setStatus("success");
           return;
         }
         if (existing.status === "pending") {
-          toast.info("A request from this email is already pending approval");
+          toast.info("You already have a pending access request");
           setStatus("success");
           return;
         }
       }
 
-      // Check if user already exists by trying to find them in access_requests or trying signup
-      let userId: string | null = null;
-      
-      // Generate a random password for new users
-      const tempPassword = crypto.randomUUID() + "!Aa1";
-
-      // Try to create user account (this will fail silently if user exists)
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: email,
-        password: tempPassword,
-        options: {
-          emailRedirectTo: 'https://cocktailsop.com/auth',
-          data: {
-            full_name: email.split('@')[0],
-            username: email.split('@')[0] + Math.random().toString(36).substring(7),
-          }
-        }
-      });
-
-      // If signup succeeded, use the new user's ID
-      if (signUpData?.user?.id) {
-        userId = signUpData.user.id;
-        
-        // Send password reset email so they can set their own password
-        try {
-          await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: 'https://cocktailsop.com/auth',
-          });
-        } catch (resetError) {
-          console.log("Password reset email could not be sent:", resetError);
-        }
-      } else if (signUpError) {
-        console.log("Signup info:", signUpError.message);
-      }
-
-      // Create access request (even if signup failed, we create the request with null user_id)
+      // Create access request using logged-in user's info
       const { error: requestError } = await supabase
         .from("access_requests")
         .insert([{
           workspace_id: workspaceId,
-          user_id: userId,
-          user_email: email,
+          user_id: user.id,
+          user_email: user.email,
           status: "pending",
           qr_code_id: workspaceId
         }]);
@@ -181,12 +145,7 @@ const ScanAccess = () => {
       }
 
       setStatus("success");
-      
-      if (userId) {
-        toast.success("Request sent! Check your email to set your password and wait for approval.");
-      } else {
-        toast.success("Request sent! You'll be notified when approved.");
-      }
+      toast.success("Access request sent! You'll be notified when approved.");
     } catch (error: any) {
       console.error("Error requesting access:", error);
       setStatus("error");
@@ -212,7 +171,7 @@ const ScanAccess = () => {
             <>
               <CardTitle>Join {workspaceName}</CardTitle>
               <CardDescription>
-                Enter your email to request access to this workspace
+                Request access to this workspace
               </CardDescription>
             </>
           ) : status === "requesting" ? (
@@ -224,9 +183,9 @@ const ScanAccess = () => {
           ) : status === "success" ? (
             <>
               <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-green-500" />
-              <CardTitle>Account Created & Request Sent!</CardTitle>
+              <CardTitle>Request Sent!</CardTitle>
               <CardDescription>
-                Your account has been created. Check your email to set your password. Your workspace access request is pending approval.
+                Your access request is pending approval. You'll be notified via email.
               </CardDescription>
             </>
           ) : (
@@ -240,20 +199,21 @@ const ScanAccess = () => {
           )}
         </CardHeader>
         
-        {status === "form" && (
+        {status === "form" && user && (
           <CardContent>
             <form onSubmit={handleSubmitRequest} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">Your Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your.email@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={submitting}
+                  value={user.email || ""}
+                  disabled
+                  className="bg-muted"
                 />
+                <p className="text-sm text-muted-foreground">
+                  Logged in as {user.email}
+                </p>
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? "Submitting..." : "Request Access"}
