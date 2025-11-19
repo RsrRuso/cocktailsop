@@ -520,18 +520,27 @@ const InventoryManager = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const inventoryId = formData.get("inventoryId") as string;
+    const itemId = formData.get("itemId") as string;
+    const fromStoreId = formData.get("fromStoreId") as string;
     const toStoreId = formData.get("toStoreId") as string;
     const quantity = parseFloat(formData.get("quantity") as string);
 
-    const { data: sourceInv } = await supabase
+    const { data: sourceInv, error: sourceError } = await supabase
       .from("inventory")
       .select("*")
-      .eq("id", inventoryId)
-      .single();
+      .eq("item_id", itemId)
+      .eq("store_id", fromStoreId)
+      .order("expiration_date", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (sourceError) {
+      toast.error("Failed to fetch source inventory");
+      return;
+    }
 
     if (!sourceInv) {
-      toast.error("Source inventory not found");
+      toast.error("No inventory found for this item in the selected source store");
       return;
     }
 
@@ -550,7 +559,7 @@ const InventoryManager = () => {
       .from("inventory_transfers")
       .insert({
         user_id: user.id,
-        inventory_id: inventoryId,
+        inventory_id: sourceInv.id,
         from_store_id: sourceInv.store_id,
         to_store_id: toStoreId,
         quantity: quantity,
@@ -574,15 +583,20 @@ const InventoryManager = () => {
         quantity: remainingQty,
         status: remainingQty <= 0 ? "transferred" : "available"
       })
-      .eq("id", inventoryId);
+      .eq("id", sourceInv.id);
 
-    const { data: destInv } = await supabase
+    const { data: destInv, error: destError } = await supabase
       .from("inventory")
       .select("*")
       .eq("store_id", toStoreId)
       .eq("item_id", sourceInv.item_id)
       .eq("expiration_date", sourceInv.expiration_date)
-      .single();
+      .maybeSingle();
+
+    if (destError) {
+      toast.error("Failed to fetch destination inventory");
+      return;
+    }
 
     if (destInv) {
       await supabase
@@ -604,7 +618,7 @@ const InventoryManager = () => {
 
     await supabase.from("inventory_activity_log").insert({
       user_id: user.id,
-      inventory_id: inventoryId,
+      inventory_id: sourceInv.id,
       store_id: sourceInv.store_id,
       action_type: "transferred",
       quantity_before: sourceInv.quantity,
@@ -1184,40 +1198,37 @@ const InventoryManager = () => {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="col-span-2">
                       <Label className="text-xs">Select Item to Transfer</Label>
-                      <Select name="inventoryId" required>
+                      <Select name="itemId" required>
                         <SelectTrigger className="h-8 text-sm">
-                          <SelectValue placeholder="Select item and source store" />
+                          <SelectValue placeholder="Select item" />
                         </SelectTrigger>
                         <SelectContent position="popper" className="bg-popover border z-[100] max-h-[300px]">
-                          {(() => {
-                            // Get inventory items that have stock
-                            const availableInventory = inventory.filter(inv => inv.quantity > 0 && inv.status !== 'sold');
-                            // Group by item_id to show all items from Manage Items that have inventory
-                            const itemInventoryMap = new Map();
-                            availableInventory.forEach(inv => {
-                              if (!itemInventoryMap.has(inv.item_id)) {
-                                itemInventoryMap.set(inv.item_id, []);
-                              }
-                              itemInventoryMap.get(inv.item_id).push(inv);
-                            });
-                            
-                            // Show all items from items (Manage Items) that have inventory
-                            return items
-                              .filter(item => itemInventoryMap.has(item.id))
-                              .flatMap(item => 
-                                itemInventoryMap.get(item.id).map(inv => (
-                                  <SelectItem key={inv.id} value={inv.id}>
-                                    {item.name} {item.brand && `(${item.brand})`} • From: {inv.stores?.name} • Qty: {inv.quantity}
-                                  </SelectItem>
-                                ))
-                              );
-                          })()}
+                          {items.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.name} {item.brand && `(${item.brand})`}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
                       <Label className="text-xs">Quantity to Transfer</Label>
                       <Input name="quantity" type="number" step="0.01" className="h-8 text-sm" required />
+                    </div>
+                    <div>
+                      <Label className="text-xs">From Store (Source)</Label>
+                      <Select name="fromStoreId" required>
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue placeholder="Select source store" />
+                        </SelectTrigger>
+                        <SelectContent position="popper" className="bg-popover border z-[100]">
+                          {stores.map((store) => (
+                            <SelectItem key={store.id} value={store.id}>
+                              {store.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label className="text-xs">To Store (Destination)</Label>
