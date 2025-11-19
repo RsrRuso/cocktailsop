@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInventoryAccess } from "@/hooks/useInventoryAccess";
 import { useManagerRole } from "@/hooks/useManagerRole";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -36,6 +37,7 @@ const InventoryManager = () => {
   const { user } = useAuth();
   const { hasAccess, isLoading: accessLoading } = useInventoryAccess();
   const { isManager } = useManagerRole();
+  const { currentWorkspace, workspaces, switchWorkspace, isLoading: workspaceLoading } = useWorkspace();
   const navigate = useNavigate();
   const [stores, setStores] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
@@ -57,10 +59,10 @@ const InventoryManager = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (hasAccess) {
+    if (hasAccess && !workspaceLoading) {
       fetchData();
     }
-  }, [hasAccess]);
+  }, [hasAccess, currentWorkspace, workspaceLoading]);
 
   useEffect(() => {
     if (selectedStore) {
@@ -133,6 +135,7 @@ const InventoryManager = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const workspaceId = currentWorkspace?.id;
       let successCount = 0;
       let errorCount = 0;
 
@@ -153,6 +156,7 @@ const InventoryManager = () => {
               .from("items")
               .insert({
                 user_id: user.id,
+                workspace_id: workspaceId || null,
                 name: rowData.item_name || rowData.name,
                 brand: rowData.brand,
                 color_code: rowData.color_code,
@@ -174,6 +178,7 @@ const InventoryManager = () => {
           if (store && itemId) {
             await supabase.from("inventory").insert({
               user_id: user.id,
+              workspace_id: workspaceId || null,
               store_id: store.id,
               item_id: itemId,
               quantity: rowData.quantity || 1,
@@ -286,8 +291,11 @@ const InventoryManager = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    const workspaceId = currentWorkspace?.id;
+
     const { error } = await supabase.from("stores").insert({
       user_id: user.id,
+      workspace_id: workspaceId || null,
       name: formData.get("storeName") as string,
       area: formData.get("area") as string,
       address: formData.get("address") as string,
@@ -318,6 +326,7 @@ const InventoryManager = () => {
     const storeId = formData.get("storeId") as string;
     const quantity = parseFloat(formData.get("quantity") as string);
     const expirationDate = formData.get("expirationDate") as string;
+    const workspaceId = currentWorkspace?.id;
 
     if (!storeId) {
       toast.error("Please select a store");
@@ -327,6 +336,7 @@ const InventoryManager = () => {
     // First, create the item
     const { data: newItem, error: itemError } = await supabase.from("items").insert({
       user_id: user.id,
+      workspace_id: workspaceId || null,
       name: formData.get("itemName") as string,
       brand: formData.get("brand") as string,
       category: formData.get("category") as string,
@@ -343,6 +353,7 @@ const InventoryManager = () => {
     // Then create inventory entry
     const { error: inventoryError } = await supabase.from("inventory").insert({
       user_id: user.id,
+      workspace_id: workspaceId || null,
       item_id: newItem.id,
       store_id: storeId,
       quantity: quantity,
@@ -450,8 +461,11 @@ const InventoryManager = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    const workspaceId = currentWorkspace?.id;
+
     const { error } = await supabase.from("inventory").insert({
       user_id: user.id,
+      workspace_id: workspaceId || null,
       store_id: formData.get("storeId") as string,
       item_id: formData.get("itemId") as string,
       quantity: parseFloat(formData.get("quantity") as string),
@@ -468,6 +482,7 @@ const InventoryManager = () => {
       
       await supabase.from("inventory_activity_log").insert({
         user_id: user.id,
+        workspace_id: workspaceId || null,
         store_id: formData.get("storeId") as string,
         action_type: "received",
         quantity_after: parseFloat(formData.get("quantity") as string),
@@ -483,6 +498,8 @@ const InventoryManager = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    const workspaceId = currentWorkspace?.id;
+
     const { error } = await supabase
       .from("inventory")
       .update({ status: "sold", quantity: 0 })
@@ -495,6 +512,7 @@ const InventoryManager = () => {
       
       await supabase.from("inventory_activity_log").insert({
         user_id: user.id,
+        workspace_id: workspaceId || null,
         inventory_id: inventoryId,
         store_id: inv?.store_id,
         action_type: "sold",
@@ -647,8 +665,10 @@ const InventoryManager = () => {
         .update({ quantity: destInv.quantity + quantity })
         .eq("id", destInv.id);
     } else {
+      const workspaceId = currentWorkspace?.id;
       await supabase.from("inventory").insert({
         user_id: user.id,
+        workspace_id: workspaceId || null,
         store_id: toStoreId,
         item_id: sourceInv.item_id,
         quantity: quantity,
@@ -659,8 +679,10 @@ const InventoryManager = () => {
       });
     }
 
+    const workspaceId = currentWorkspace?.id;
     await supabase.from("inventory_activity_log").insert({
       user_id: user.id,
+      workspace_id: workspaceId || null,
       inventory_id: sourceInv.id,
       store_id: sourceInv.store_id,
       action_type: "transferred",
@@ -729,6 +751,37 @@ const InventoryManager = () => {
             <p className="text-xs sm:text-sm text-muted-foreground">Track inventory with FIFO priority</p>
           </div>
         </div>
+
+        {/* Workspace Selector */}
+        {workspaces.length > 0 && (
+          <Card className="p-4">
+            <div className="flex items-center gap-4">
+              <Label className="text-sm font-medium whitespace-nowrap">Workspace:</Label>
+              <Select
+                value={currentWorkspace?.id || "personal"}
+                onValueChange={(value) => {
+                  if (value === "personal") {
+                    switchWorkspace("");
+                  } else {
+                    switchWorkspace(value);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="personal">Personal Inventory</SelectItem>
+                  {workspaces.map((workspace) => (
+                    <SelectItem key={workspace.id} value={workspace.id}>
+                      {workspace.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </Card>
+        )}
 
         {/* Quick Actions - Compact horizontal bar */}
         <div className="flex flex-wrap gap-2 bg-card p-2 rounded-lg border">
@@ -1662,8 +1715,10 @@ const InventoryManager = () => {
                   .update({ quantity: destInv.quantity + quantity })
                   .eq("id", destInv.id);
               } else {
+                const workspaceId = currentWorkspace?.id;
                 await supabase.from("inventory").insert({
                   user_id: user.id,
+                  workspace_id: workspaceId || null,
                   store_id: toStoreId,
                   item_id: quickTransferItem.item_id,
                   quantity: quantity,
@@ -1674,8 +1729,10 @@ const InventoryManager = () => {
                 });
               }
 
+              const workspaceId = currentWorkspace?.id;
               await supabase.from("inventory_activity_log").insert({
                 user_id: user.id,
+                workspace_id: workspaceId || null,
                 inventory_id: quickTransferItem.id,
                 store_id: quickTransferItem.store_id,
                 action_type: "transferred",
