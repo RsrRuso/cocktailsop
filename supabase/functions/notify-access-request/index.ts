@@ -1,8 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import React from 'npm:react@18.3.1'
-import { Resend } from 'npm:resend@4.0.0'
-import { renderAsync } from 'npm:@react-email/components@0.0.22'
-import { AccessRequestEmail } from './_templates/access-request.tsx'
+import { Resend } from 'npm:resend@2.0.0'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 
@@ -55,16 +52,29 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Render email template
-    const html = await renderAsync(
-      React.createElement(AccessRequestEmail, {
-        user_email: record.user_email,
-        request_id: record.id,
-        app_url: Deno.env.get('SUPABASE_URL')?.replace('//', '//').split('//')[1].split('.')[0] 
-          ? `https://${Deno.env.get('SUPABASE_URL')?.split('//')[1].split('.')[0]}.lovable.app`
-          : 'https://your-app.lovable.app',
-      })
-    )
+    // Create HTML email
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #2754C5;">🔐 New Access Request</h1>
+            <p>A new access request has been submitted:</p>
+            <div style="background: #f4f4f4; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>Email:</strong> ${record.user_email}</p>
+              <p><strong>Request ID:</strong> ${record.id}</p>
+            </div>
+            <p>Please review and approve/reject this request in the Access Approval page.</p>
+            <p style="margin-top: 30px; color: #898989; font-size: 12px;">
+              This is an automated notification from your Inventory Manager system.
+            </p>
+          </div>
+        </body>
+      </html>
+    `
 
     // Send email to all managers
     const { error } = await resend.emails.send({
