@@ -957,113 +957,99 @@ const InventoryManager = () => {
               />
             </div>
             
-            {/* Compact Table View */}
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">Active Inventory</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs py-2">Item</TableHead>
-                        <TableHead className="text-xs py-2">Store</TableHead>
-                        <TableHead className="text-xs py-2">Qty</TableHead>
-                        <TableHead className="text-xs py-2">Expiry</TableHead>
-                        <TableHead className="text-xs py-2">Priority</TableHead>
-                        <TableHead className="text-xs py-2">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {inventory
-                        .filter(inv => {
-                          const storeName = inv.stores?.name?.toLowerCase() || "";
-                          const isBasementOrAttiko = storeName.includes("basement") || storeName.includes("attiko");
-                          if (!isBasementOrAttiko) return false;
-                          if (inv.status === 'sold' || (inv.quantity ?? 0) <= 0) return false;
-                          if (selectedStore && selectedStore !== 'all' && inv.store_id !== selectedStore) return false;
-                          if (!searchTerm) return true;
+            {/* Card-based List View */}
+            <div className="grid gap-2">
+              {inventory
+                .filter(inv => {
+                  const storeName = inv.stores?.name?.toLowerCase() || "";
+                  const isBasementOrAttiko = storeName.includes("basement") || storeName.includes("attiko");
+                  if (!isBasementOrAttiko) return false;
+                  if (inv.status === 'sold' || (inv.quantity ?? 0) <= 0) return false;
+                  if (selectedStore && selectedStore !== 'all' && inv.store_id !== selectedStore) return false;
+                  if (!searchTerm) return true;
 
-                          const search = searchTerm.toLowerCase();
-                          return (
-                            inv.items?.name?.toLowerCase().includes(search) ||
-                            inv.items?.brand?.toLowerCase().includes(search) ||
-                            inv.stores?.name?.toLowerCase().includes(search)
-                          );
-                        })
-                        .map((inv) => {
-                          const daysUntil = getDaysUntilExpiry(inv.expiration_date);
-                          return (
-                            <TableRow key={inv.id}>
-                              <TableCell className="py-2">
-                                <div className="flex items-center gap-1">
-                                  {inv.items?.color_code && (
-                                    <div 
-                                      className="w-2 h-2 rounded-full flex-shrink-0"
-                                      style={{ backgroundColor: inv.items.color_code }}
-                                    />
-                                  )}
-                                  <span className="text-xs font-medium">{inv.items?.name}</span>
-                                </div>
-                                {inv.items?.brand && (
-                                  <div className="text-xs text-muted-foreground">{inv.items.brand}</div>
-                                )}
-                              </TableCell>
-                              <TableCell className="py-2">
-                                <div className="text-xs font-medium">{inv.stores?.name}</div>
-                                <div className="text-xs text-muted-foreground">{inv.stores?.area}</div>
-                              </TableCell>
-                              <TableCell className="py-2">
-                                <span className="text-sm font-bold">{inv.quantity}</span>
-                              </TableCell>
-                              <TableCell className="py-2">
-                                <div className="text-xs">{new Date(inv.expiration_date).toLocaleDateString()}</div>
-                                <div className={`text-xs ${daysUntil < 7 ? 'text-red-500' : daysUntil < 30 ? 'text-orange-500' : 'text-muted-foreground'}`}>
-                                  {daysUntil} days
-                                </div>
-                              </TableCell>
-                              <TableCell className="py-2">
-                                <Badge 
-                                  className={`${getPriorityBadgeColor(inv.priority_score || 0)} text-white text-xs`}
-                                >
-                                  {inv.priority_score || 0}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="py-2">
-                                <div className="flex gap-1">
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    className="h-7 text-xs"
-                                    onClick={() => setQuickTransferItem(inv)}
-                                    disabled={inv.quantity <= 0}
-                                  >
-                                    <ArrowRightLeft className="w-3 h-3 mr-1" />
-                                    Transfer
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost"
-                                    className="h-7 text-xs"
-                                    onClick={() => handleMarkAsSold(inv.id, inv.quantity)}
-                                    disabled={
-                                      inv.status !== 'available' ||
-                                      inv.stores?.name?.trim().toLowerCase() !== 'attiko'
-                                    }
-                                  >
-                                    Sold
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
+                  const search = searchTerm.toLowerCase();
+                  return (
+                    inv.items?.name?.toLowerCase().includes(search) ||
+                    inv.items?.brand?.toLowerCase().includes(search) ||
+                    inv.stores?.name?.toLowerCase().includes(search)
+                  );
+                })
+                .map((inv) => {
+                  const daysUntilExpiry = getDaysUntilExpiry(inv.expiration_date);
+                  return (
+                    <Card 
+                      key={inv.id} 
+                      className="cursor-pointer hover:bg-accent transition-colors"
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            {inv.items?.color_code && (
+                              <div 
+                                className="w-4 h-4 rounded inline-block mr-2" 
+                                style={{ backgroundColor: inv.items.color_code }}
+                              />
+                            )}
+                            <h3 className="text-sm font-semibold inline">{inv.items?.name}</h3>
+                            {inv.items?.brand && <p className="text-xs text-muted-foreground">Brand: {inv.items.brand}</p>}
+                            {inv.items?.category && <p className="text-xs text-muted-foreground">Category: {inv.items.category}</p>}
+                            <div className="mt-2 space-y-1">
+                              <p className="text-xs">
+                                <span className="font-medium">Store:</span> {inv.stores?.name} ({inv.stores?.area})
+                              </p>
+                              <p className="text-xs">
+                                <span className="font-medium">Qty:</span> {inv.quantity}
+                              </p>
+                              <p className={`text-xs font-medium ${
+                                daysUntilExpiry < 0 ? 'text-red-600' :
+                                daysUntilExpiry <= 3 ? 'text-orange-600' :
+                                daysUntilExpiry <= 7 ? 'text-yellow-600' : 'text-green-600'
+                              }`}>
+                                <span>Expires:</span> {new Date(inv.expiration_date).toLocaleDateString()} 
+                                ({daysUntilExpiry < 0 ? 'EXPIRED' : `${daysUntilExpiry} days left`})
+                              </p>
+                              <Badge className="text-xs" variant={inv.priority_score && inv.priority_score >= 80 ? "destructive" : "secondary"}>
+                                FIFO Priority: {inv.priority_score || 0}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="h-8 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setQuickTransferItem(inv);
+                              }}
+                              disabled={inv.quantity <= 0}
+                            >
+                              <ArrowRightLeft className="w-3 h-3 mr-1" />
+                              Transfer
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              className="h-8 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMarkAsSold(inv.id, inv.quantity);
+                              }}
+                              disabled={
+                                inv.status !== 'available' ||
+                                inv.stores?.name?.trim().toLowerCase() !== 'attiko'
+                              }
+                            >
+                              Sold
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
           </TabsContent>
 
           <TabsContent value="archive" className="space-y-2">
