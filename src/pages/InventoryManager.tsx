@@ -35,7 +35,7 @@ import {
 
 const InventoryManager = () => {
   const { user } = useAuth();
-  const { hasAccess, isLoading: accessLoading } = useInventoryAccess();
+  const { hasAccess, isLoading: accessLoading, refetch: refetchAccess } = useInventoryAccess();
   const { isManager } = useManagerRole();
   const { currentWorkspace, workspaces, switchWorkspace, isLoading: workspaceLoading } = useWorkspace();
   const navigate = useNavigate();
@@ -728,7 +728,25 @@ const InventoryManager = () => {
                 You need approval to access the Inventory Manager. Please scan the QR code provided by your manager or wait for approval.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-2">
+              <Button 
+                onClick={() => {
+                  refetchAccess();
+                  toast.info("Checking access...");
+                }} 
+                className="w-full"
+                variant="outline"
+                disabled={accessLoading}
+              >
+                {accessLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Checking...
+                  </>
+                ) : (
+                  "Check Access Again"
+                )}
+              </Button>
               <Button onClick={() => navigate("/home")} className="w-full">
                 Return to Home
               </Button>
