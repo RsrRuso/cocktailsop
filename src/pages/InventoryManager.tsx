@@ -58,6 +58,7 @@ const InventoryManager = () => {
   const [itemMasterToDelete, setItemMasterToDelete] = useState<any>(null);
   const [pastedText, setPastedText] = useState("");
   const [parsedItems, setParsedItems] = useState<string[]>([]);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1827,42 +1828,65 @@ const InventoryManager = () => {
           <TabsContent value="manage-items">
             <Card>
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">Manage Items</CardTitle>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm font-medium">Manage Items</CardTitle>
+                    <CardDescription className="text-xs">
+                      {items.length} items in master list
+                    </CardDescription>
+                  </div>
+                  {items.length > 0 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setShowDeleteAllDialog(true)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete All
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid gap-2">
-                  {items.map((item) => (
-                    <Card key={item.id}>
-                      <CardContent className="p-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <h3 className="text-sm font-semibold">{item.name}</h3>
-                            {item.brand && <p className="text-xs text-muted-foreground">Brand: {item.brand}</p>}
-                            {item.category && <p className="text-xs text-muted-foreground">Category: {item.category}</p>}
-                            {item.barcode && <p className="text-xs text-muted-foreground">Barcode: {item.barcode}</p>}
+                {items.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No items in master list yet. Add items from the Receiving tab.
+                  </p>
+                ) : (
+                  <div className="grid gap-2">
+                    {items.map((item) => (
+                      <Card key={item.id}>
+                        <CardContent className="p-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <h3 className="text-sm font-semibold">{item.name}</h3>
+                              {item.brand && <p className="text-xs text-muted-foreground">Brand: {item.brand}</p>}
+                              {item.category && <p className="text-xs text-muted-foreground">Category: {item.category}</p>}
+                              {item.barcode && <p className="text-xs text-muted-foreground">Barcode: {item.barcode}</p>}
+                            </div>
+                            <div className="flex gap-1">
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditingItemMaster(item)}>
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                </DialogTrigger>
+                              </Dialog>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                onClick={() => setItemMasterToDelete(item)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex gap-1">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditingItemMaster(item)}>
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                              </DialogTrigger>
-                            </Dialog>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                              onClick={() => setItemMasterToDelete(item)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -2163,6 +2187,47 @@ const InventoryManager = () => {
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteItemMaster} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete All Items Confirmation Dialog */}
+      <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete All Items?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>all {items.length} items</strong> from the master list. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={async () => {
+                try {
+                  const { error } = await supabase
+                    .from("items")
+                    .delete()
+                    .eq("user_id", user?.id)
+                    .eq("workspace_id", currentWorkspace?.id || null);
+
+                  if (error) throw error;
+
+                  toast.success(`All ${items.length} items deleted successfully`);
+                  setShowDeleteAllDialog(false);
+                  fetchData();
+                } catch (error: any) {
+                  toast.error("Failed to delete items");
+                  console.error(error);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete All
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
