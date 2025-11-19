@@ -4,26 +4,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 const ScanAccess = () => {
   const { qrCodeId } = useParams();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<"checking" | "requesting" | "success" | "error">("checking");
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"form" | "checking" | "requesting" | "success" | "error">("form");
 
+  // Check for existing access if user is logged in
   useEffect(() => {
-    const requestAccess = async () => {
-      if (!user || !qrCodeId) {
-        setStatus("error");
-        setLoading(false);
-        return;
-      }
-
+    const checkExistingAccess = async () => {
+      if (!user || !qrCodeId) return;
+      
+      setLoading(true);
       try {
-        // Check if already has an access request
         const { data: existing } = await supabase
           .from("access_requests")
           .select("*")
@@ -40,52 +41,83 @@ const ScanAccess = () => {
           if (existing.status === "pending") {
             setStatus("success");
             toast.info("Your request is pending approval");
-            setLoading(false);
-            return;
           }
         }
-
-        // Create new access request
-        setStatus("requesting");
-        const { error } = await supabase
-          .from("access_requests")
-          .insert({
-            qr_code_id: qrCodeId,
-            user_id: user.id,
-            user_email: user.email,
-            status: "pending"
-          });
-
-        if (error) throw error;
-
-        setStatus("success");
-        toast.success("Access request sent! Waiting for approval...");
       } catch (error) {
-        console.error("Error requesting access:", error);
-        setStatus("error");
-        toast.error("Failed to request access");
+        // No existing request found, show form
       } finally {
         setLoading(false);
       }
     };
 
-    requestAccess();
+    checkExistingAccess();
   }, [user, qrCodeId, navigate]);
 
-  if (!user) {
+  const handleSubmitRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!qrCodeId) {
+      toast.error("Invalid QR code");
+      return;
+    }
+
+    if (!email) {
+      toast.error("Please enter your email");
+      return;
+    }
+
+    setSubmitting(true);
+    setStatus("requesting");
+
+    try {
+      // Check if email already has a pending/approved request for this QR code
+      const { data: existing } = await supabase
+        .from("access_requests")
+        .select("*")
+        .eq("qr_code_id", qrCodeId)
+        .eq("user_email", email)
+        .single();
+
+      if (existing) {
+        if (existing.status === "approved") {
+          toast.info("This email already has approved access");
+          setStatus("success");
+          return;
+        }
+        if (existing.status === "pending") {
+          toast.info("A request from this email is already pending");
+          setStatus("success");
+          return;
+        }
+      }
+
+      // Create new access request
+      const { error } = await supabase
+        .from("access_requests")
+        .insert({
+          qr_code_id: qrCodeId,
+          user_id: user?.id || null,
+          user_email: email,
+          status: "pending"
+        });
+
+      if (error) throw error;
+
+      setStatus("success");
+      toast.success("Access request sent! You'll be notified once approved.");
+    } catch (error: any) {
+      console.error("Error requesting access:", error);
+      setStatus("error");
+      toast.error(error.message || "Failed to request access");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md mx-4">
-          <CardHeader>
-            <CardTitle>Authentication Required</CardTitle>
-            <CardDescription>Please sign in to request access</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/auth")} className="w-full">
-              Sign In
-            </Button>
-          </CardContent>
-        </Card>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -94,13 +126,18 @@ const ScanAccess = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          {status === "checking" || status === "requesting" ? (
+          {status === "form" ? (
+            <>
+              <CardTitle>Request Inventory Access</CardTitle>
+              <CardDescription>
+                Enter your email to request access to the inventory management system
+              </CardDescription>
+            </>
+          ) : status === "requesting" ? (
             <>
               <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-              <CardTitle>Processing Request</CardTitle>
-              <CardDescription>
-                {status === "checking" ? "Verifying access code..." : "Sending access request..."}
-              </CardDescription>
+              <CardTitle>Sending Request</CardTitle>
+              <CardDescription>Please wait...</CardDescription>
             </>
           ) : status === "success" ? (
             <>
@@ -112,18 +149,41 @@ const ScanAccess = () => {
             </>
           ) : (
             <>
-              <XCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
+              <XCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
               <CardTitle>Request Failed</CardTitle>
               <CardDescription>
-                Unable to process your access request. Please try again or contact support.
+                Unable to process your access request. Please try again.
               </CardDescription>
             </>
           )}
         </CardHeader>
-        {!loading && (
+        
+        {status === "form" && (
           <CardContent>
-            <Button onClick={() => navigate("/home")} className="w-full">
-              Return to Home
+            <form onSubmit={handleSubmitRequest} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your.email@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={submitting}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting ? "Submitting..." : "Request Access"}
+              </Button>
+            </form>
+          </CardContent>
+        )}
+
+        {status === "error" && (
+          <CardContent>
+            <Button onClick={() => setStatus("form")} className="w-full">
+              Try Again
             </Button>
           </CardContent>
         )}
