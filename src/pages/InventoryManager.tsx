@@ -941,7 +941,7 @@ const InventoryManager = () => {
                     <TableBody>
                       {inventory
                         .filter(inv => {
-                          if (inv.status === 'sold' || inv.status === 'transferred') return false;
+                          if (inv.status === 'sold' || (inv.quantity ?? 0) <= 0) return false;
                           if (selectedStore && selectedStore !== 'all' && inv.store_id !== selectedStore) return false;
                           if (!searchTerm) return true;
                           
