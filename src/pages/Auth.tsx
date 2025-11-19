@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 
 // Validation schemas
@@ -56,6 +56,7 @@ const resetPasswordSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
@@ -68,7 +69,6 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
 
   // Get redirect URL from query params
-  const searchParams = new URLSearchParams(window.location.search);
   const redirectTo = searchParams.get('redirect') || '/home';
 
   // Check if user is coming from password reset link
