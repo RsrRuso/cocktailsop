@@ -166,10 +166,22 @@ const AccessApproval = () => {
         </Button>
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl">Access Requests</CardTitle>
-            <CardDescription>
-              Approve or reject staff access to inventory management
-            </CardDescription>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-xl">Access Requests</CardTitle>
+                <CardDescription>
+                  Approve or reject staff access to inventory management
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(-1)}
+                aria-label="Go back"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3 pb-4">
             {requests.length === 0 ? (
