@@ -29,20 +29,36 @@ export const useInventoryAccess = () => {
         return;
       }
 
-      // Check if user has approved access request
       try {
-        const { data, error } = await supabase
+        // Check if user is a workspace member
+        const { data: memberData, error: memberError } = await supabase
+          .from('workspace_members')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1);
+
+        if (memberError) throw memberError;
+
+        // If user is a workspace member, grant access
+        if (memberData && memberData.length > 0) {
+          setHasAccess(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // Check if user has approved access request (legacy)
+        const { data: accessData, error: accessError } = await supabase
           .from('access_requests')
           .select('status')
           .eq('user_id', user.id)
           .eq('status', 'approved')
-          .single();
+          .limit(1);
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-          throw error;
+        if (accessError && accessError.code !== 'PGRST116') {
+          throw accessError;
         }
 
-        setHasAccess(!!data);
+        setHasAccess(!!accessData && accessData.length > 0);
       } catch (error) {
         console.error('Error checking access:', error);
         setHasAccess(false);
