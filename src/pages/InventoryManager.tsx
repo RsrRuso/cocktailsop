@@ -1423,11 +1423,11 @@ const InventoryManager = () => {
                         📋 Paste List
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-lg">
                       <DialogHeader>
-                        <DialogTitle>Paste Items from Spreadsheet</DialogTitle>
+                        <DialogTitle>Paste Item Names</DialogTitle>
                         <CardDescription>
-                          Copy cells from Google Sheets/Excel and paste here
+                          Just paste item names, one per line
                         </CardDescription>
                       </DialogHeader>
                       <form onSubmit={async (e) => {
@@ -1436,34 +1436,26 @@ const InventoryManager = () => {
                         const pastedData = formData.get("pastedItems") as string;
                         
                         if (!pastedData?.trim()) {
-                          toast.error("Please paste some data");
+                          toast.error("Please paste some item names");
                           return;
                         }
 
                         try {
-                          // Split by lines
-                          const lines = pastedData.trim().split('\n');
+                          // Split by lines and filter out empty lines
+                          const names = pastedData
+                            .trim()
+                            .split('\n')
+                            .map(line => line.trim())
+                            .filter(name => name.length > 0);
                           
-                          // Parse each line (tab or comma separated)
-                          const itemsToInsert = lines.map(line => {
-                            // Try tab-delimited first (Excel/Sheets default), then comma
-                            const parts = line.includes('\t') 
-                              ? line.split('\t') 
-                              : line.split(',');
-                            
-                            // Map parts to fields: name, brand, category, barcode
-                            return {
-                              user_id: user?.id,
-                              workspace_id: currentWorkspace?.id || null,
-                              name: parts[0]?.trim(),
-                              brand: parts[1]?.trim() || null,
-                              category: parts[2]?.trim() || null,
-                              barcode: parts[3]?.trim() || null,
-                            };
-                          }).filter(item => item.name);
+                          const itemsToInsert = names.map(name => ({
+                            user_id: user?.id,
+                            workspace_id: currentWorkspace?.id || null,
+                            name: name,
+                          }));
 
                           if (itemsToInsert.length === 0) {
-                            toast.error("No valid items found in pasted data");
+                            toast.error("No valid item names found");
                             return;
                           }
 
@@ -1479,25 +1471,17 @@ const InventoryManager = () => {
                         }
                       }} className="space-y-3">
                         <div>
-                          <Label className="text-sm">Paste Data Here</Label>
                           <Textarea 
                             name="pastedItems"
-                            placeholder="Paste from spreadsheet...&#10;Example:&#10;Item Name	Brand	Category	Barcode&#10;Milk	Dairy Co	Dairy	123456&#10;Bread	Bakery Ltd	Bakery	789012"
-                            className="min-h-[200px] font-mono text-xs"
+                            placeholder="Milk&#10;Bread&#10;Eggs&#10;Cheese&#10;Butter"
+                            className="min-h-[250px] text-sm"
                             required
                           />
                         </div>
-                        <Card className="bg-muted/50">
-                          <CardContent className="p-2 text-xs">
-                            <p className="font-medium mb-1">💡 Tips:</p>
-                            <ul className="list-disc list-inside space-y-1">
-                              <li>Copy cells directly from Google Sheets or Excel</li>
-                              <li>Format: Name, Brand, Category, Barcode (tab or comma separated)</li>
-                              <li>Only Name is required, other fields are optional</li>
-                            </ul>
-                          </CardContent>
-                        </Card>
-                        <Button type="submit" className="w-full">Add All Items</Button>
+                        <div className="text-xs text-muted-foreground">
+                          💡 Just paste item names, one per line
+                        </div>
+                        <Button type="submit" className="w-full">Add All Items to Master List</Button>
                       </form>
                     </DialogContent>
                   </Dialog>
