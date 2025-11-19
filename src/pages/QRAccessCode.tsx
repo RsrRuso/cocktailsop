@@ -312,8 +312,83 @@ const QRAccessCode = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Workspace Members */}
+        {currentWorkspace && (
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Workspace Members
+              </CardTitle>
+              <CardDescription>
+                {isOwner ? "Manage members in this workspace" : "View members in this workspace"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingMembers ? (
+                <div className="text-center py-4 text-muted-foreground">Loading members...</div>
+              ) : members.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">No members yet</div>
+              ) : (
+                <div className="space-y-2">
+                  {members.map((member) => (
+                    <div 
+                      key={member.id} 
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={member.profiles?.avatar_url} />
+                          <AvatarFallback>
+                            {member.profiles?.full_name?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{member.profiles?.full_name || 'Unknown User'}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {member.role} • Joined {new Date(member.joined_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      {isOwner && member.user_id !== user?.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setMemberToRemove(member)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </main>
       <BottomNav />
+
+      {/* Remove Member Confirmation Dialog */}
+      <AlertDialog open={!!memberToRemove} onOpenChange={(open) => !open && setMemberToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove {memberToRemove?.profiles?.full_name} from this workspace? 
+              They will lose access to all workspace inventory and data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRemoveMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remove Member
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
