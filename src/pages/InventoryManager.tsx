@@ -1007,7 +1007,7 @@ const InventoryManager = () => {
                                     variant="ghost"
                                     className="h-7 text-xs"
                                     onClick={() => handleMarkAsSold(inv.id, inv.quantity)}
-                                    disabled={inv.status !== 'available'}
+                                    disabled={inv.status !== 'available' || !inv.stores?.name?.toLowerCase().includes('attiko')}
                                   >
                                     Sold
                                   </Button>
