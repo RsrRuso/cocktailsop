@@ -1,7 +1,7 @@
 {
-  "name": "SpecVerse Reborn",
-  "short_name": "SpecVerse",
-  "description": "Professional networking and tools for hospitality industry",
+  "name": "LAB Cocktail SOP Tool",
+  "short_name": "LAB SOP",
+  "description": "Professional cocktail standard operating procedures for mobile",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

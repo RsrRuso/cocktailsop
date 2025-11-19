@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.f6820a3952e742afbcec46bcaaa4573d',
-  appName: 'spec-verse-reborn',
+  appName: 'LAB Cocktail SOP',
   webDir: 'dist',
   plugins: {
     SplashScreen: {
