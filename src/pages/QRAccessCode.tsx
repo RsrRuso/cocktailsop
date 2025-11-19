@@ -1,17 +1,23 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { QRCodeSVG } from "qrcode.react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, TestTube2 } from "lucide-react";
 import { toast } from "sonner";
 
 const QRAccessCode = () => {
+  const navigate = useNavigate();
   const [qrCodeId, setQrCodeId] = useState(crypto.randomUUID());
 
   const generateNewCode = () => {
     setQrCodeId(crypto.randomUUID());
+  };
+
+  const handleTestScan = () => {
+    navigate(`/scan-access/${qrCodeId}`);
   };
 
   const qrCodeUrl = `${window.location.origin}/scan-access/${qrCodeId}`;
@@ -47,26 +53,37 @@ const QRAccessCode = () => {
                   <p className="text-xs text-muted-foreground mt-1">Navigate to this path in your app</p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(qrCodeUrl);
+                      toast.success("Full URL copied!");
+                    }}
+                  >
+                    Copy Full URL
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(scanPath);
+                      toast.success("Path copied!");
+                    }}
+                  >
+                    Copy Path
+                  </Button>
+                </div>
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(qrCodeUrl);
-                    toast.success("Full URL copied!");
-                  }}
+                  onClick={handleTestScan}
+                  className="w-full"
                 >
-                  Copy Full URL
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(scanPath);
-                    toast.success("Path copied!");
-                  }}
-                >
-                  Copy Path
+                  <TestTube2 className="mr-2 h-4 w-4" />
+                  Test Scan (Simulate Employee Access)
                 </Button>
               </div>
             </div>
