@@ -5,7 +5,7 @@ import { useManagerRole } from './useManagerRole';
 
 export const useInventoryAccess = () => {
   const { user } = useAuth();
-  const { isManager } = useManagerRole();
+  const { isManager, isLoading: managerLoading } = useManagerRole();
   const [hasAccess, setHasAccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -14,6 +14,11 @@ export const useInventoryAccess = () => {
       if (!user) {
         setHasAccess(false);
         setIsLoading(false);
+        return;
+      }
+
+      // Wait for manager role to load first
+      if (managerLoading) {
         return;
       }
 
@@ -47,7 +52,7 @@ export const useInventoryAccess = () => {
     };
 
     checkAccess();
-  }, [user, isManager]);
+  }, [user, isManager, managerLoading]);
 
   return { hasAccess, isLoading };
 };
