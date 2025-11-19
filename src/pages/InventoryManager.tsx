@@ -453,7 +453,6 @@ const InventoryManager = () => {
     if (!user) return;
 
     const inventoryId = formData.get("inventoryId") as string;
-    const fromStoreId = formData.get("fromStoreId") as string;
     const toStoreId = formData.get("toStoreId") as string;
     const quantity = parseFloat(formData.get("quantity") as string);
 
@@ -468,8 +467,8 @@ const InventoryManager = () => {
       return;
     }
 
-    // Prevent same-store transfers (both selected stores and actual source store)
-    if (fromStoreId === toStoreId || sourceInv.store_id === toStoreId) {
+    // Prevent same-store transfers
+    if (sourceInv.store_id === toStoreId) {
       toast.error("Cannot transfer to the same store");
       return;
     }
@@ -1067,16 +1066,16 @@ const InventoryManager = () => {
               <CardContent className="space-y-3">
                 <form onSubmit={handleTransfer} className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs">Inventory Item</Label>
+                    <div className="col-span-2">
+                      <Label className="text-xs">Select Item to Transfer</Label>
                       <Select name="inventoryId" required>
                         <SelectTrigger className="h-8 text-sm">
-                          <SelectValue placeholder="Select item" />
+                          <SelectValue placeholder="Select item and source store" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {inventory.filter(inv => inv.status === 'available').map((inv) => (
+                        <SelectContent className="bg-background z-50">
+                          {inventory.filter(inv => inv.status === 'available' && inv.quantity > 0).map((inv) => (
                             <SelectItem key={inv.id} value={inv.id}>
-                              {inv.items?.name} - {inv.stores?.name} (Qty: {inv.quantity})
+                              {inv.items?.name} • From: {inv.stores?.name} • Qty: {inv.quantity}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1087,27 +1086,12 @@ const InventoryManager = () => {
                       <Input name="quantity" type="number" step="0.01" className="h-8 text-sm" required />
                     </div>
                     <div>
-                      <Label className="text-xs">From Store</Label>
-                      <Select name="fromStoreId" required>
-                        <SelectTrigger className="h-8 text-sm">
-                          <SelectValue placeholder="Select store" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {stores.map((store) => (
-                            <SelectItem key={store.id} value={store.id}>
-                              {store.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs">To Store</Label>
+                      <Label className="text-xs">To Store (Destination)</Label>
                       <Select name="toStoreId" required>
                         <SelectTrigger className="h-8 text-sm">
-                          <SelectValue placeholder="Select store" />
+                          <SelectValue placeholder="Select destination" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-background z-50">
                           {stores.map((store) => (
                             <SelectItem key={store.id} value={store.id}>
                               {store.name}
