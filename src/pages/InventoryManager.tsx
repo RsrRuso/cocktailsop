@@ -367,7 +367,7 @@ const InventoryManager = () => {
       .eq("id", inventoryId);
 
     if (!error) {
-      toast.success("Item marked as sold");
+      toast.success("Item archived - moved to Archive tab");
       
       const { data: inv } = await supabase.from("inventory").select("*").eq("id", inventoryId).single();
       
@@ -392,7 +392,7 @@ const InventoryManager = () => {
 
     const inventoryId = formData.get("inventoryId") as string;
     const toStoreId = formData.get("toStoreId") as string;
-    const quantity = parseFloat(formData.get("transferQuantity") as string);
+    const quantity = parseFloat(formData.get("quantity") as string);
 
     const { data: sourceInv } = await supabase
       .from("inventory")
@@ -402,6 +402,17 @@ const InventoryManager = () => {
 
     if (!sourceInv) {
       toast.error("Source inventory not found");
+      return;
+    }
+
+    // Prevent same-store transfers
+    if (sourceInv.store_id === toStoreId) {
+      toast.error("Cannot transfer to the same store");
+      return;
+    }
+
+    if (quantity > sourceInv.quantity) {
+      toast.error(`Cannot transfer ${quantity} items. Only ${sourceInv.quantity} available.`);
       return;
     }
 
@@ -425,11 +436,13 @@ const InventoryManager = () => {
       return;
     }
 
+    const remainingQty = sourceInv.quantity - quantity;
+
     await supabase
       .from("inventory")
       .update({ 
-        quantity: sourceInv.quantity - quantity,
-        status: sourceInv.quantity - quantity <= 0 ? "transferred" : "available"
+        quantity: remainingQty,
+        status: remainingQty <= 0 ? "transferred" : "available"
       })
       .eq("id", inventoryId);
 
@@ -469,7 +482,7 @@ const InventoryManager = () => {
       details: { to_store_id: toStoreId, transfer_id: transfer.id }
     });
 
-    toast.success("Transfer completed successfully");
+    toast.success(`Transfer completed! Transferred: ${quantity}, Remaining: ${remainingQty}`);
     fetchData();
     e.currentTarget.reset();
   };
@@ -534,10 +547,14 @@ const InventoryManager = () => {
         </div>
 
         <Tabs defaultValue="inventory" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 h-auto">
+          <TabsList className="grid w-full grid-cols-7 h-auto">
             <TabsTrigger value="inventory" className="text-xs py-2">
               <Package className="w-3 h-3 sm:mr-1" />
-              <span className="hidden sm:inline">Inventory</span>
+              <span className="hidden sm:inline">Active</span>
+            </TabsTrigger>
+            <TabsTrigger value="archive" className="text-xs py-2">
+              <Package className="w-3 h-3 sm:mr-1" />
+              <span className="hidden sm:inline">Archive</span>
             </TabsTrigger>
             <TabsTrigger value="fifo" className="text-xs py-2">
               <TrendingUp className="w-3 h-3 sm:mr-1" />
@@ -565,7 +582,7 @@ const InventoryManager = () => {
             {/* Compact Table View */}
             <Card>
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">Current Inventory</CardTitle>
+                <CardTitle className="text-sm font-medium">Active Inventory</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
@@ -582,7 +599,10 @@ const InventoryManager = () => {
                     </TableHeader>
                     <TableBody>
                       {inventory
-                        .filter(inv => !selectedStore || selectedStore === 'all' || inv.store_id === selectedStore)
+                        .filter(inv => 
+                          inv.status !== 'sold' && 
+                          (!selectedStore || selectedStore === 'all' || inv.store_id === selectedStore)
+                        )
                         .map((inv) => {
                           const daysUntil = getDaysUntilExpiry(inv.expiration_date);
                           return (
@@ -631,6 +651,59 @@ const InventoryManager = () => {
                                 >
                                   Sold
                                 </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="archive" className="space-y-2">
+            <Card>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">Archived Items (Sold)</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs py-2">Item</TableHead>
+                        <TableHead className="text-xs py-2">Store</TableHead>
+                        <TableHead className="text-xs py-2">Sold Date</TableHead>
+                        <TableHead className="text-xs py-2">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {inventory
+                        .filter((inv) => 
+                          inv.status === 'sold' && 
+                          (!selectedStore || selectedStore === 'all' || inv.store_id === selectedStore)
+                        )
+                        .map((inv) => {
+                          return (
+                            <TableRow key={inv.id}>
+                              <TableCell className="py-2">
+                                <div className="flex items-center gap-2">
+                                  {inv.items?.color_code && (
+                                    <div 
+                                      className="w-3 h-3 rounded flex-shrink-0" 
+                                      style={{ backgroundColor: inv.items.color_code }}
+                                    />
+                                  )}
+                                  <span className="text-xs font-medium">{inv.items?.name}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="py-2 text-xs">{inv.stores?.name}</TableCell>
+                              <TableCell className="py-2 text-xs">
+                                {new Date(inv.updated_at || inv.created_at).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell className="py-2">
+                                <Badge variant="secondary" className="text-xs">Sold</Badge>
                               </TableCell>
                             </TableRow>
                           );
