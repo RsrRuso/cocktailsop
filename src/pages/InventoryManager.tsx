@@ -293,11 +293,19 @@ const InventoryManager = () => {
     }
   };
 
+  const generateUniqueBarcode = () => {
+    const timestamp = Date.now().toString();
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    return `ITM-${timestamp}-${random}`;
+  };
+
   const handleAddItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    const generatedBarcode = generateUniqueBarcode();
 
     const { error } = await supabase.from("items").insert({
       user_id: user.id,
@@ -305,14 +313,14 @@ const InventoryManager = () => {
       brand: formData.get("brand") as string,
       category: formData.get("category") as string,
       color_code: formData.get("colorCode") as string,
-      barcode: formData.get("barcode") as string,
+      barcode: generatedBarcode,
       description: formData.get("description") as string,
     });
 
     if (error) {
       toast.error("Failed to add item");
     } else {
-      toast.success("Item added successfully");
+      toast.success(`Item received with barcode: ${generatedBarcode}`);
       fetchData();
       e.currentTarget.reset();
     }
@@ -478,7 +486,6 @@ const InventoryManager = () => {
         brand: formData.get("brand") as string,
         category: formData.get("category") as string,
         color_code: formData.get("colorCode") as string,
-        barcode: formData.get("barcode") as string,
         description: formData.get("description") as string,
       })
       .eq("id", editingItemMaster.id);
@@ -1040,7 +1047,7 @@ const InventoryManager = () => {
           <TabsContent value="items">
             <Card>
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">Manage Items</CardTitle>
+                <CardTitle className="text-sm font-medium">Receive Items (Auto-Generated Barcodes)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <form onSubmit={handleAddItem} className="space-y-2">
@@ -1061,35 +1068,40 @@ const InventoryManager = () => {
                       <Label className="text-xs">Color Code</Label>
                       <Input name="colorCode" type="color" className="h-8" />
                     </div>
-                    <div>
-                      <Label className="text-xs">Barcode</Label>
-                      <Input name="barcode" className="h-8 text-sm" />
-                    </div>
                   </div>
                   <div>
                     <Label className="text-xs">Description</Label>
                     <Textarea name="description" className="text-sm" rows={2} />
                   </div>
-                  <Button type="submit" size="sm">Add Item</Button>
+                  <Button type="submit" size="sm">Receive Item (Generate Barcode)</Button>
                 </form>
 
                 <div className="grid gap-2 mt-4">
                   {items.map((item) => (
                     <Card key={item.id}>
-                      <CardContent className="p-2 flex items-center gap-2">
-                        {item.color_code && (
-                          <div 
-                            className="w-4 h-4 rounded flex-shrink-0" 
-                            style={{ backgroundColor: item.color_code }}
-                          />
-                        )}
-                        <div className="flex-1">
-                          <h3 className="text-sm font-semibold">{item.name}</h3>
-                          <p className="text-xs text-muted-foreground">
-                            {item.brand && `${item.brand} • `}
-                            {item.category && `${item.category} • `}
-                            {item.barcode && `Barcode: ${item.barcode}`}
-                          </p>
+                      <CardContent className="p-3">
+                        <div className="flex items-start gap-3">
+                          {item.barcode && (
+                            <div className="flex-shrink-0 bg-white p-2 rounded border">
+                              <QRCodeSVG value={item.barcode} size={64} />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            {item.color_code && (
+                              <div 
+                                className="w-4 h-4 rounded inline-block mr-2" 
+                                style={{ backgroundColor: item.color_code }}
+                              />
+                            )}
+                            <h3 className="text-sm font-semibold inline">{item.name}</h3>
+                            {item.brand && <p className="text-xs text-muted-foreground">Brand: {item.brand}</p>}
+                            {item.category && <p className="text-xs text-muted-foreground">Category: {item.category}</p>}
+                            {item.barcode && (
+                              <p className="text-xs font-mono text-primary mt-1 break-all">
+                                {item.barcode}
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <div className="flex gap-1">
                           <Button 
@@ -1344,6 +1356,16 @@ const InventoryManager = () => {
           </DialogHeader>
           {editingItemMaster && (
             <form onSubmit={handleUpdateItemMaster} className="space-y-3">
+              {editingItemMaster.barcode && (
+                <div className="flex justify-center p-3 bg-muted rounded-lg">
+                  <div className="text-center space-y-2">
+                    <div className="bg-white p-2 rounded inline-block">
+                      <QRCodeSVG value={editingItemMaster.barcode} size={80} />
+                    </div>
+                    <p className="text-xs font-mono text-primary">{editingItemMaster.barcode}</p>
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label className="text-xs">Item Name</Label>
@@ -1360,10 +1382,6 @@ const InventoryManager = () => {
                 <div>
                   <Label className="text-xs">Color Code</Label>
                   <Input name="colorCode" type="color" defaultValue={editingItemMaster.color_code || "#000000"} className="h-8" />
-                </div>
-                <div>
-                  <Label className="text-xs">Barcode</Label>
-                  <Input name="barcode" defaultValue={editingItemMaster.barcode} className="h-8 text-sm" />
                 </div>
               </div>
               <div>
