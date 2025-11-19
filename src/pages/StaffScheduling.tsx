@@ -1840,38 +1840,45 @@ export default function StaffScheduling() {
                         });
                       };
 
-                      // First Wave: Earlier shifts (12 PM, 1 PM, 2 PM, 3 PM, 4 PM) - staff who started earlier get first break
-                      const firstWaveStaff = sortByRole(working.filter(s => {
-                        const time = s.timeRange;
+                      // Convert time string to 24-hour format for sorting
+                      const parseTime = (timeRange: string) => {
+                        const time = timeRange.split('-')[0].trim();
                         const startHour = parseInt(time.split(':')[0]);
                         const isPM = time.includes('PM');
                         const isAM = time.includes('AM');
-                        // Convert to 24-hour for comparison
                         let hour24 = startHour;
                         if (isPM && startHour !== 12) hour24 = startHour + 12;
                         if (isAM && startHour === 12) hour24 = 0;
-                        // 12 PM (14h) to 4 PM (16h) all get first wave
-                        return hour24 >= 12 && hour24 <= 16;
-                      }).map(s => {
-                        const staff = staffMembers.find(sm => sm.id === s.staffId);
-                        return { name: staff?.name || 'Unknown', timeRange: s.timeRange, staff };
-                      }));
+                        return hour24;
+                      };
+
+                      // Sort all working staff by start time
+                      const sortedByTime = working.map(s => ({
+                        ...s,
+                        startHour24: parseTime(s.timeRange),
+                        staff: staffMembers.find(sm => sm.id === s.staffId)
+                      })).sort((a, b) => a.startHour24 - b.startHour24);
+
+                      // Split into two waves: earlier shifts (first half) and later shifts (second half)
+                      const midPoint = Math.ceil(sortedByTime.length / 2);
                       
-                      // Second Wave: Later shifts (5 PM onwards) - staff who started later break after first wave
-                      const secondWaveStaff = sortByRole(working.filter(s => {
-                        const time = s.timeRange;
-                        const startHour = parseInt(time.split(':')[0]);
-                        const isPM = time.includes('PM');
-                        const isAM = time.includes('AM');
-                        let hour24 = startHour;
-                        if (isPM && startHour !== 12) hour24 = startHour + 12;
-                        if (isAM && startHour === 12) hour24 = 0;
-                        // 5 PM (17h) and later get second wave
-                        return hour24 >= 17;
-                      }).map(s => {
-                        const staff = staffMembers.find(sm => sm.id === s.staffId);
-                        return { name: staff?.name || 'Unknown', timeRange: s.timeRange, staff };
-                      }));
+                      // First Wave: Earlier shifts - staff who started earlier get first break
+                      const firstWaveStaff = sortByRole(
+                        sortedByTime.slice(0, midPoint).map(s => ({
+                          name: s.staff?.name || 'Unknown',
+                          timeRange: s.timeRange,
+                          staff: s.staff
+                        }))
+                      );
+                      
+                      // Second Wave: Later shifts - staff who started later break after first wave
+                      const secondWaveStaff = sortByRole(
+                        sortedByTime.slice(midPoint).map(s => ({
+                          name: s.staff?.name || 'Unknown',
+                          timeRange: s.timeRange,
+                          staff: s.staff
+                        }))
+                      );
                       
                       return (firstWaveStaff.length > 0 || secondWaveStaff.length > 0) && (
                         <div className="space-y-1.5 mb-2 bg-gradient-to-r from-orange-950/30 to-amber-950/20 rounded-lg p-2 border border-orange-800/40">
