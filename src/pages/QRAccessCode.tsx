@@ -15,6 +15,7 @@ const QRAccessCode = () => {
   };
 
   const qrCodeUrl = `${window.location.origin}/scan-access/${qrCodeId}`;
+  const scanPath = `/scan-access/${qrCodeId}`;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -35,20 +36,39 @@ const QRAccessCode = () => {
               <p className="text-sm text-muted-foreground">
                 Staff can scan this code to request access
               </p>
-              <div className="bg-muted p-3 rounded-md">
-                <p className="text-xs font-semibold mb-1">Share this link:</p>
-                <p className="text-xs font-mono break-all">{qrCodeUrl}</p>
+              <div className="space-y-2">
+                <div className="bg-muted p-3 rounded-md">
+                  <p className="text-xs font-semibold mb-1">Full URL:</p>
+                  <p className="text-xs font-mono break-all">{qrCodeUrl}</p>
+                </div>
+                <div className="bg-muted p-3 rounded-md">
+                  <p className="text-xs font-semibold mb-1">Or use this path:</p>
+                  <p className="text-xs font-mono break-all">{scanPath}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Navigate to this path in your app</p>
+                </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  navigator.clipboard.writeText(qrCodeUrl);
-                  toast.success("Link copied to clipboard!");
-                }}
-              >
-                Copy Link
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(qrCodeUrl);
+                    toast.success("Full URL copied!");
+                  }}
+                >
+                  Copy Full URL
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(scanPath);
+                    toast.success("Path copied!");
+                  }}
+                >
+                  Copy Path
+                </Button>
+              </div>
             </div>
             <Button onClick={generateNewCode} variant="outline">
               <RefreshCw className="mr-2 h-4 w-4" />
