@@ -243,16 +243,18 @@ const QRAccessCode = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <TopNav />
-      <main className="flex-1 container mx-auto px-4 py-4 pb-20 max-w-2xl">
-        <Button
-          variant="outline"
-          size="default"
-          onClick={() => navigate(-1)}
-          className="mb-6"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
+      <main className="flex-1 container mx-auto px-4 py-8 pb-20 max-w-2xl">
+        <div className="mb-8">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => navigate(-1)}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            Back
+          </Button>
+        </div>
 
         <Card>
           <CardHeader>
