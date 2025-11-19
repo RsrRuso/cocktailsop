@@ -262,7 +262,7 @@ const QRAccessCode = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => navigate(-1)}
+                  onClick={() => navigate('/inventory-manager')}
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
