@@ -296,7 +296,7 @@ const InventoryManager = () => {
   const generateUniqueBarcode = () => {
     const timestamp = Date.now().toString();
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    return `ITM-${timestamp}-${random}`;
+    return `${timestamp}${random}`;
   };
 
   const handleAddItem = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -306,8 +306,17 @@ const InventoryManager = () => {
     if (!user) return;
 
     const generatedBarcode = generateUniqueBarcode();
+    const storeId = formData.get("storeId") as string;
+    const quantity = parseFloat(formData.get("quantity") as string);
+    const expirationDate = formData.get("expirationDate") as string;
 
-    const { error } = await supabase.from("items").insert({
+    if (!storeId) {
+      toast.error("Please select a store");
+      return;
+    }
+
+    // First, create the item
+    const { data: newItem, error: itemError } = await supabase.from("items").insert({
       user_id: user.id,
       name: formData.get("itemName") as string,
       brand: formData.get("brand") as string,
@@ -315,15 +324,33 @@ const InventoryManager = () => {
       color_code: formData.get("colorCode") as string,
       barcode: generatedBarcode,
       description: formData.get("description") as string,
+    }).select().single();
+
+    if (itemError || !newItem) {
+      toast.error("Failed to receive item");
+      return;
+    }
+
+    // Then create inventory entry
+    const { error: inventoryError } = await supabase.from("inventory").insert({
+      user_id: user.id,
+      item_id: newItem.id,
+      store_id: storeId,
+      quantity: quantity,
+      expiration_date: expirationDate,
+      received_date: new Date().toISOString(),
+      batch_number: generatedBarcode,
+      status: "available"
     });
 
-    if (error) {
-      toast.error("Failed to add item");
-    } else {
-      toast.success(`Item received with barcode: ${generatedBarcode}`);
-      fetchData();
-      e.currentTarget.reset();
+    if (inventoryError) {
+      toast.error("Failed to add to inventory");
+      return;
     }
+
+    toast.success(`Item received! Barcode: ${generatedBarcode}`);
+    fetchData();
+    e.currentTarget.reset();
   };
 
   const handleAddEmployee = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -1052,6 +1079,21 @@ const InventoryManager = () => {
               <CardContent className="space-y-3">
                 <form onSubmit={handleAddItem} className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
+                    <div className="col-span-2">
+                      <Label className="text-xs">Store Location</Label>
+                      <Select name="storeId" required>
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue placeholder="Select store" />
+                        </SelectTrigger>
+                        <SelectContent position="popper" className="bg-popover border z-[100]">
+                          {stores.map((store) => (
+                            <SelectItem key={store.id} value={store.id}>
+                              {store.name} - {store.area}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div>
                       <Label className="text-xs">Item Name</Label>
                       <Input name="itemName" className="h-8 text-sm" required />
@@ -1063,6 +1105,14 @@ const InventoryManager = () => {
                     <div>
                       <Label className="text-xs">Category</Label>
                       <Input name="category" className="h-8 text-sm" placeholder="e.g., Dairy, Meat" />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Quantity</Label>
+                      <Input name="quantity" type="number" step="0.01" className="h-8 text-sm" required />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Expiration Date</Label>
+                      <Input name="expirationDate" type="date" className="h-8 text-sm" required />
                     </div>
                     <div>
                       <Label className="text-xs">Color Code</Label>
@@ -1081,11 +1131,6 @@ const InventoryManager = () => {
                     <Card key={item.id}>
                       <CardContent className="p-3">
                         <div className="flex items-start gap-3">
-                          {item.barcode && (
-                            <div className="flex-shrink-0 bg-white p-2 rounded border">
-                              <QRCodeSVG value={item.barcode} size={64} />
-                            </div>
-                          )}
                           <div className="flex-1 min-w-0">
                             {item.color_code && (
                               <div 
@@ -1097,9 +1142,18 @@ const InventoryManager = () => {
                             {item.brand && <p className="text-xs text-muted-foreground">Brand: {item.brand}</p>}
                             {item.category && <p className="text-xs text-muted-foreground">Category: {item.category}</p>}
                             {item.barcode && (
-                              <p className="text-xs font-mono text-primary mt-1 break-all">
-                                {item.barcode}
-                              </p>
+                              <div className="mt-2 p-2 bg-white border rounded">
+                                <div className="flex flex-col items-center gap-1">
+                                  <div className="flex gap-[1px]">
+                                    {item.barcode.split('').map((char, i) => (
+                                      <div key={i} className="w-[2px] h-12 bg-black" style={{ 
+                                        opacity: parseInt(char) % 2 === 0 ? 1 : 0.3 
+                                      }} />
+                                    ))}
+                                  </div>
+                                  <p className="text-xs font-mono tracking-wider">{item.barcode}</p>
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -1359,10 +1413,16 @@ const InventoryManager = () => {
               {editingItemMaster.barcode && (
                 <div className="flex justify-center p-3 bg-muted rounded-lg">
                   <div className="text-center space-y-2">
-                    <div className="bg-white p-2 rounded inline-block">
-                      <QRCodeSVG value={editingItemMaster.barcode} size={80} />
+                    <div className="bg-white p-2 rounded inline-block border">
+                      <div className="flex gap-[1px]">
+                        {editingItemMaster.barcode.split('').map((char: string, i: number) => (
+                          <div key={i} className="w-[2px] h-12 bg-black" style={{ 
+                            opacity: parseInt(char) % 2 === 0 ? 1 : 0.3 
+                          }} />
+                        ))}
+                      </div>
                     </div>
-                    <p className="text-xs font-mono text-primary">{editingItemMaster.barcode}</p>
+                    <p className="text-xs font-mono tracking-wider">{editingItemMaster.barcode}</p>
                   </div>
                 </div>
               )}
