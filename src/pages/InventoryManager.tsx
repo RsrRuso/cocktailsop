@@ -961,13 +961,22 @@ const InventoryManager = () => {
             <div className="grid gap-2">
               {inventory
                 .filter(inv => {
-                  const storeName = inv.stores?.name?.toLowerCase() || "";
-                  const isBasementOrAttiko = storeName.includes("basement") || storeName.includes("attiko");
-                  if (!isBasementOrAttiko) return false;
+                  // First check status and quantity
                   if (inv.status === 'sold' || (inv.quantity ?? 0) <= 0) return false;
-                  if (selectedStore && selectedStore !== 'all' && inv.store_id !== selectedStore) return false;
+                  
+                  // Apply store filter
+                  if (selectedStore && selectedStore !== 'all') {
+                    // If specific store selected, show only that store
+                    if (inv.store_id !== selectedStore) return false;
+                  } else {
+                    // If "All Stores" selected, show only Basement and Attiko
+                    const storeName = inv.stores?.name?.toLowerCase() || "";
+                    const isBasementOrAttiko = storeName.includes("basement") || storeName.includes("attiko");
+                    if (!isBasementOrAttiko) return false;
+                  }
+                  
+                  // Apply search filter
                   if (!searchTerm) return true;
-
                   const search = searchTerm.toLowerCase();
                   return (
                     inv.items?.name?.toLowerCase().includes(search) ||
@@ -1071,11 +1080,18 @@ const InventoryManager = () => {
                     <TableBody>
                       {inventory
                         .filter((inv) => {
-                          const storeName = inv.stores?.name?.toLowerCase() || "";
-                          const isBasementOrAttiko = storeName.includes("basement") || storeName.includes("attiko");
-                          return inv.status === 'sold' && 
-                            isBasementOrAttiko &&
-                            (!selectedStore || selectedStore === 'all' || inv.store_id === selectedStore);
+                          // Only show sold items
+                          if (inv.status !== 'sold') return false;
+                          
+                          // Apply store filter
+                          if (selectedStore && selectedStore !== 'all') {
+                            // If specific store selected, show only that store
+                            return inv.store_id === selectedStore;
+                          } else {
+                            // If "All Stores" selected, show only Basement and Attiko
+                            const storeName = inv.stores?.name?.toLowerCase() || "";
+                            return storeName.includes("basement") || storeName.includes("attiko");
+                          }
                         })
                         .map((inv) => {
                           return (
