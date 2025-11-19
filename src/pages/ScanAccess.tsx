@@ -34,22 +34,44 @@ const ScanAccess = () => {
             .select("*")
             .eq("qr_code_id", qrCodeId)
             .eq("user_id", user.id)
-            .single();
+            .maybeSingle();
 
-          if (!existing || existing.status !== "approved") {
-            // Create or update to approved status
-            await supabase
+          if (!existing) {
+            // Create new approved access request
+            const { error } = await supabase
               .from("access_requests")
-              .upsert({
+              .insert({
                 qr_code_id: qrCodeId,
                 user_id: user.id,
                 user_email: user.email,
                 status: "approved",
                 approved_by: user.id,
                 approved_at: new Date().toISOString()
-              }, {
-                onConflict: 'id'
               });
+
+            if (error) {
+              console.error("Error auto-approving access:", error);
+              toast.error("Failed to grant access automatically");
+              setLoading(false);
+              return;
+            }
+          } else if (existing.status !== "approved") {
+            // Update existing request to approved
+            const { error } = await supabase
+              .from("access_requests")
+              .update({
+                status: "approved",
+                approved_by: user.id,
+                approved_at: new Date().toISOString()
+              })
+              .eq("id", existing.id);
+
+            if (error) {
+              console.error("Error updating access:", error);
+              toast.error("Failed to update access");
+              setLoading(false);
+              return;
+            }
           }
 
           toast.success("Access automatically granted!");
