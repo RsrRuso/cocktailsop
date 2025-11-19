@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { QRCodeSVG } from "qrcode.react";
-import { RefreshCw, TestTube2 } from "lucide-react";
+import { RefreshCw, TestTube2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 const QRAccessCode = () => {
@@ -27,6 +27,15 @@ const QRAccessCode = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <TopNav />
       <main className="flex-1 container mx-auto px-4 py-4 pb-20 max-w-2xl">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(-1)}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-xl">Inventory Access QR Code</CardTitle>

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Check, X, Clock, Loader2 } from "lucide-react";
+import { Check, X, Clock, Loader2, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface AccessRequest {
@@ -155,6 +155,15 @@ const AccessApproval = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <TopNav />
       <main className="flex-1 container mx-auto px-4 py-4 pb-20 max-w-4xl">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(-1)}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-xl">Access Requests</CardTitle>
