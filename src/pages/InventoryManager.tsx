@@ -1348,9 +1348,75 @@ const InventoryManager = () => {
             <Card>
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium">Receiving</CardTitle>
+                <CardDescription className="text-xs">Select from master list or add new items</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                 <form onSubmit={handleAddItem} className="space-y-2">
+                {/* Quick Add to Master List Button */}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="outline" size="sm" className="w-full">
+                      <Package className="w-3 h-3 mr-2" />
+                      Quick Add New Item to Master List
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Item to Master List</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      const name = formData.get("newItemName") as string;
+                      const brand = formData.get("newItemBrand") as string;
+                      const category = formData.get("newItemCategory") as string;
+                      const barcode = formData.get("newItemBarcode") as string;
+                      const colorCode = formData.get("newItemColorCode") as string;
+
+                      try {
+                        const { error } = await supabase.from("items").insert({
+                          user_id: user?.id,
+                          workspace_id: currentWorkspace?.id || null,
+                          name,
+                          brand: brand || null,
+                          category: category || null,
+                          barcode: barcode || null,
+                          color_code: colorCode || null,
+                        });
+
+                        if (error) throw error;
+                        toast.success("Item added to master list");
+                        fetchData();
+                        e.currentTarget.reset();
+                      } catch (error: any) {
+                        toast.error(error.message);
+                      }
+                    }} className="space-y-3">
+                      <div>
+                        <Label className="text-sm">Item Name *</Label>
+                        <Input name="newItemName" required className="h-9" />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Brand</Label>
+                        <Input name="newItemBrand" className="h-9" />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Category</Label>
+                        <Input name="newItemCategory" className="h-9" />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Barcode</Label>
+                        <Input name="newItemBarcode" className="h-9" />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Color Code</Label>
+                        <Input name="newItemColorCode" type="color" className="h-9" />
+                      </div>
+                      <Button type="submit" className="w-full">Add to Master List</Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+
+                <form onSubmit={handleAddItem} className="space-y-2">
                   {/* Workspace indicator */}
                   <div className="col-span-2 p-2 bg-muted rounded text-xs">
                     <strong>Adding to:</strong> {currentWorkspace?.name || 'Personal Inventory'}
@@ -1371,32 +1437,58 @@ const InventoryManager = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="col-span-2">
+                      <Label className="text-xs">Select from Master List</Label>
+                      <Select 
+                        onValueChange={(value) => {
+                          const selectedItem = items.find(item => item.id === value);
+                          if (selectedItem) {
+                            const form = document.querySelector('form[onsubmit*="handleAddItem"]') as HTMLFormElement;
+                            if (form) {
+                              (form.elements.namedItem('itemName') as HTMLInputElement).value = selectedItem.name;
+                              (form.elements.namedItem('brand') as HTMLInputElement).value = selectedItem.brand || '';
+                              (form.elements.namedItem('category') as HTMLInputElement).value = selectedItem.category || '';
+                              (form.elements.namedItem('colorCode') as HTMLInputElement).value = selectedItem.color_code || '#3b82f6';
+                            }
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue placeholder="Choose from master list..." />
+                        </SelectTrigger>
+                        <SelectContent position="popper" className="bg-popover border z-[100]">
+                          {items.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              <div className="flex items-center gap-2">
+                                {item.color_code && (
+                                  <div 
+                                    className="w-3 h-3 rounded flex-shrink-0" 
+                                    style={{ backgroundColor: item.color_code }}
+                                  />
+                                )}
+                                <span>{item.name}</span>
+                                {item.brand && <span className="text-xs text-muted-foreground">({item.brand})</span>}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div>
                       <Label className="text-xs">Item Name</Label>
                       <Input 
                         name="itemName" 
                         className="h-8 text-sm" 
                         required 
-                        list="item-names"
+                        placeholder="Or type new item name"
                       />
-                      <datalist id="item-names">
-                        {Array.from(new Set(items.map(item => item.name).filter(Boolean))).map((name) => (
-                          <option key={name} value={name} />
-                        ))}
-                      </datalist>
                     </div>
                     <div>
                       <Label className="text-xs">Brand</Label>
                       <Input 
                         name="brand" 
                         className="h-8 text-sm" 
-                        list="item-brands"
                       />
-                      <datalist id="item-brands">
-                        {Array.from(new Set(items.map(item => item.brand).filter(Boolean))).map((brand) => (
-                          <option key={brand} value={brand} />
-                        ))}
-                      </datalist>
                     </div>
                     <div>
                       <Label className="text-xs">Category</Label>
@@ -1404,13 +1496,7 @@ const InventoryManager = () => {
                         name="category" 
                         className="h-8 text-sm" 
                         placeholder="e.g., Dairy, Meat" 
-                        list="item-categories"
                       />
-                      <datalist id="item-categories">
-                        {Array.from(new Set(items.map(item => item.category).filter(Boolean))).map((category) => (
-                          <option key={category} value={category} />
-                        ))}
-                      </datalist>
                     </div>
                     <div>
                       <Label className="text-xs">Quantity</Label>
