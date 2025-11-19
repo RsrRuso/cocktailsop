@@ -255,24 +255,26 @@ const QRAccessCode = () => {
 
         <Card>
           <CardHeader>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <CardTitle>Workspace Access QR Code</CardTitle>
-                <CardDescription>
-                  {currentWorkspace 
-                    ? `Share this QR code to invite people to ${currentWorkspace.name}`
-                    : "Create or select a workspace to generate a QR code"
-                  }
-                </CardDescription>
-              </div>
-              <div className="flex gap-2 min-w-[300px]">
+            <CardTitle>Workspace Access QR Code</CardTitle>
+            <CardDescription>
+              {currentWorkspace 
+                ? `Share this QR code to invite people to ${currentWorkspace.name}`
+                : "Create or select a workspace to generate a QR code"
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Workspace Selection */}
+            <div className="space-y-2">
+              <Label>Select Workspace</Label>
+              <div className="flex gap-2">
                 <Select 
                   value={currentWorkspace?.id || ""} 
                   onValueChange={switchWorkspace}
                   disabled={workspaces.length === 0}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select workspace" />
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select a workspace" />
                   </SelectTrigger>
                   <SelectContent>
                     {workspaces.map((workspace) => (
@@ -319,8 +321,6 @@ const QRAccessCode = () => {
                 </Dialog>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
 
             {currentWorkspace && (
               <>
