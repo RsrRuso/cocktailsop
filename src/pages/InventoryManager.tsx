@@ -1072,7 +1072,7 @@ const InventoryManager = () => {
                         <SelectTrigger className="h-8 text-sm">
                           <SelectValue placeholder="Select item and source store" />
                         </SelectTrigger>
-                        <SelectContent className="bg-background z-50">
+                        <SelectContent position="popper" className="bg-popover border z-[100] max-h-[300px]">
                           {inventory.filter(inv => inv.status === 'available' && inv.quantity > 0).map((inv) => (
                             <SelectItem key={inv.id} value={inv.id}>
                               {inv.items?.name} • From: {inv.stores?.name} • Qty: {inv.quantity}
@@ -1091,7 +1091,7 @@ const InventoryManager = () => {
                         <SelectTrigger className="h-8 text-sm">
                           <SelectValue placeholder="Select destination" />
                         </SelectTrigger>
-                        <SelectContent className="bg-background z-50">
+                        <SelectContent position="popper" className="bg-popover border z-[100]">
                           {stores.map((store) => (
                             <SelectItem key={store.id} value={store.id}>
                               {store.name}
@@ -1107,7 +1107,7 @@ const InventoryManager = () => {
                       <SelectTrigger className="h-8 text-sm">
                         <SelectValue placeholder="Select employee" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" className="bg-popover border z-[100]">
                         {employees.map((emp) => (
                           <SelectItem key={emp.id} value={emp.id}>
                             {emp.name}
