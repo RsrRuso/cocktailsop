@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInventoryAccess } from "@/hooks/useInventoryAccess";
+import { useManagerRole } from "@/hooks/useManagerRole";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -34,6 +35,7 @@ import {
 const InventoryManager = () => {
   const { user } = useAuth();
   const { hasAccess, isLoading: accessLoading } = useInventoryAccess();
+  const { isManager } = useManagerRole();
   const navigate = useNavigate();
   const [stores, setStores] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
@@ -730,6 +732,18 @@ const InventoryManager = () => {
 
         {/* Quick Actions - Compact horizontal bar */}
         <div className="flex flex-wrap gap-2 bg-card p-2 rounded-lg border">
+          {isManager && (
+            <Button onClick={() => navigate("/qr-access-code")} size="sm" variant="default">
+              <QRCodeSVG value="qr" className="w-3 h-3 mr-1 opacity-0" />
+              <span className="ml-[-16px]">QR Code</span>
+            </Button>
+          )}
+          {isManager && (
+            <Button onClick={() => navigate("/access-approval")} size="sm" variant="outline">
+              <Lock className="w-3 h-3 mr-1" />
+              Approvals
+            </Button>
+          )}
           <Button onClick={() => fileInputRef.current?.click()} size="sm" variant="outline">
             <Upload className="w-3 h-3 mr-1" />
             Excel
