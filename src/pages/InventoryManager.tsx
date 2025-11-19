@@ -799,36 +799,35 @@ const InventoryManager = () => {
           </div>
         </div>
 
-        {/* Workspace Selector */}
-        {workspaces.length > 0 && (
-          <Card className="p-4">
-            <div className="flex items-center gap-4">
-              <Label className="text-sm font-medium whitespace-nowrap">Workspace:</Label>
-              <Select
-                value={currentWorkspace?.id || "personal"}
-                onValueChange={(value) => {
-                  if (value === "personal") {
-                    switchWorkspace("");
-                  } else {
-                    switchWorkspace(value);
-                  }
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="personal">Personal Inventory</SelectItem>
-                  {workspaces.map((workspace) => (
-                    <SelectItem key={workspace.id} value={workspace.id}>
-                      {workspace.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </Card>
-        )}
+        {/* Workspace Selector - Always visible */}
+        <Card className="p-4">
+          <div className="flex items-center gap-4">
+            <Label className="text-sm font-medium whitespace-nowrap">Workspace:</Label>
+            <Select
+              value={currentWorkspace?.id || "personal"}
+              onValueChange={(value) => {
+                console.log('Switching workspace to:', value);
+                if (value === "personal") {
+                  switchWorkspace("");
+                } else {
+                  switchWorkspace(value);
+                }
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select workspace" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="personal">📁 Personal Inventory</SelectItem>
+                {workspaces.map((workspace) => (
+                  <SelectItem key={workspace.id} value={workspace.id}>
+                    🏢 {workspace.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </Card>
 
         {/* Quick Actions - Compact horizontal bar */}
         <div className="flex flex-wrap gap-2 bg-card p-2 rounded-lg border">
