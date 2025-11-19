@@ -1,4 +1,7 @@
-# LAB Cocktail SOP - Mobile Build Guide
+# LAB Cocktail SOP - Mobile Build Guide (Web/PWA/Capacitor)
+
+⚠️ **Note**: This guide is for the **WEB-BASED** mobile app (PWA + Capacitor).  
+For the **NATIVE EXPO APP**, see [EXPO_NATIVE_APP_GUIDE.md](./EXPO_NATIVE_APP_GUIDE.md)
 
 Your LAB Cocktail SOP tool is now mobile-ready with **PWA** and **Native App** support.
 
