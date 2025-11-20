@@ -106,15 +106,18 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const imageWidth = 68;
   const metricsWidth = contentWidth - imageWidth - blockSpacing;
   
-  // Image block - same height as specifications
+  // Image block - same height as specifications with card background
   if (recipe.mainImage) {
-    const imgPadding = 5;
     const imgX = margin;
     const imgY = yPos;
     const imgWidth = imageWidth;
     const imgHeight = sectionHeight;
     
-    // Calculate square image size to fit within the block
+    // Draw card background for image block
+    drawModernCard(imgX, imgY, imgWidth, imgHeight, true);
+    
+    // Calculate image size to fill most of the block
+    const imgPadding = 8;
     const imgDisplaySize = Math.min(imgWidth, imgHeight) - (imgPadding * 2);
     const imgCenterX = imgX + (imgWidth - imgDisplaySize) / 2;
     const imgCenterY = imgY + (imgHeight - imgDisplaySize) / 2;
