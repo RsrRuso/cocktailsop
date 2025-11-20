@@ -90,6 +90,24 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const margin = 12;
   const contentWidth = pageWidth - (margin * 2);
   
+  // Add image if available
+  if (recipe.mainImage) {
+    const imgWidth = 50;
+    const imgHeight = 35;
+    const imgX = pageWidth - margin - imgWidth;
+    
+    try {
+      doc.addImage(recipe.mainImage, 'JPEG', imgX, yPos, imgWidth, imgHeight);
+      
+      // Add border around image
+      doc.setDrawColor(mediumGray[0], mediumGray[1], mediumGray[2]);
+      doc.setLineWidth(0.3);
+      doc.rect(imgX, yPos, imgWidth, imgHeight);
+    } catch (e) {
+      console.error('Failed to add image to PDF:', e);
+    }
+  }
+  
   // Specs section - modern badges layout - BIGGER
   drawModernCard(margin, yPos, contentWidth, 38, true);
   
@@ -243,20 +261,21 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   doc.setTextColor(darkText[0], darkText[1], darkText[2]);
   doc.text(methodLines.slice(0, 16), margin + 4, yPos + 13);
   
-  // Service Notes
-  if (recipe.serviceNotes && recipe.serviceNotes.trim()) {
-    drawModernCard(margin + methodWidth + 3, yPos, methodWidth, methodNotesHeight);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-    doc.text("SERVICE NOTES", margin + methodWidth + 7, yPos + 7);
-    
-    const notesLines = doc.splitTextToSize(recipe.serviceNotes, methodWidth - 10);
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-    doc.text(notesLines.slice(0, 16), margin + methodWidth + 7, yPos + 13);
-  }
+  // Service Notes - always show
+  drawModernCard(margin + methodWidth + 3, yPos, methodWidth, methodNotesHeight);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
+  doc.text("SERVICE NOTES", margin + methodWidth + 7, yPos + 7);
+  
+  const serviceText = recipe.serviceNotes && recipe.serviceNotes.trim() 
+    ? recipe.serviceNotes 
+    : 'No service notes specified';
+  const notesLines = doc.splitTextToSize(serviceText, methodWidth - 10);
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(darkText[0], darkText[1], darkText[2]);
+  doc.text(notesLines.slice(0, 16), margin + methodWidth + 7, yPos + 13);
   
   yPos += methodNotesHeight + 4;
   
