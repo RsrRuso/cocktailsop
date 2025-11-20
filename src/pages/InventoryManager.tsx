@@ -135,7 +135,7 @@ const InventoryManager = () => {
       const itemsQuery = supabase.from("items").select("*");
       const inventoryQuery = supabase.from("inventory").select(`
         *,
-        stores(name, area),
+        stores(name, area, store_type),
         items(name, brand, color_code, category)
       `);
       const transfersQuery = supabase.from("inventory_transfers").select(`
@@ -1077,8 +1077,8 @@ const InventoryManager = () => {
                               }}
                               disabled={
                                 inv.status !== 'available' ||
-                                (!stores.find(s => s.id === inv.store_id)?.store_type || 
-                                 !['sell', 'both'].includes(stores.find(s => s.id === inv.store_id)?.store_type))
+                                !inv.stores?.store_type ||
+                                !['sell', 'both'].includes(inv.stores.store_type)
                               }
                             >
                               Sold
