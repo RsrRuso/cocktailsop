@@ -1017,6 +1017,9 @@ export default function StaffScheduling() {
 
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     
     // Dark theme color palette
     const colors = {
@@ -1031,11 +1034,11 @@ export default function StaffScheduling() {
     
     // Dark background for entire page
     doc.setFillColor(...colors.background);
-    doc.rect(0, 0, 297, 210, 'F');
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
     
     // Header background - darker grey
     doc.setFillColor(...colors.primary);
-    doc.rect(0, 0, 297, 28, 'F');
+    doc.rect(0, 0, pageWidth, 28, 'F');
     
     // Title with light text
     doc.setFontSize(22);
@@ -1145,7 +1148,7 @@ export default function StaffScheduling() {
 
     // Event Info Section - Enhanced with full details
     let finalY = (doc as any).lastAutoTable.finalY + 5;
-    const pageHeight = 200; // Landscape page height limit
+    // Use pageHeight from the current PDF page as limit for later sections
     
     const hasEvents = Object.values(dailyEvents).some(event => event && event.trim() !== '');
     
@@ -1234,6 +1237,8 @@ export default function StaffScheduling() {
         const order = ['head_bartender', 'senior_bartender', 'bartender', 'bar_back', 'support'];
         return order.indexOf(a) - order.indexOf(b);
       });
+
+    const bottomMargin = 10;
     
     uniqueTitles.forEach(title => {
       const roleTitle = title === 'head_bartender' ? 'Head Bartender' :
@@ -1249,6 +1254,28 @@ export default function StaffScheduling() {
       const splitText = doc.splitTextToSize(description, maxWidth);
       const contentHeight = splitText.length * lineHeight;
       const boxHeight = Math.max(10, contentHeight + 4); // padding inside box
+
+      // If the next box would go past the page bottom, add a new page and redraw background + header
+      if (finalY + boxHeight + bottomMargin > pageHeight) {
+        doc.addPage();
+
+        // Dark background for new page
+        doc.setFillColor(...colors.background);
+        doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+        // Section header on new page (continued)
+        finalY = 20;
+        doc.setFillColor(...colors.accent);
+        doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...colors.white);
+        doc.text('ROLE RESPONSIBILITIES (CONTINUED)', 18, finalY + 3);
+
+        finalY += 10;
+        doc.setFontSize(7);
+        doc.setTextColor(...colors.lightGrey);
+      }
       
       // Dark grey box sized to content
       doc.setFillColor(...colors.darkGrey);
