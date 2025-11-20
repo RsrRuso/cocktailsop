@@ -1599,6 +1599,17 @@ export default function StaffScheduling() {
     toast.info('Generating complete daily breakdown PDF...');
     
     try {
+      // First, temporarily expand the accordion to ensure all days are rendered
+      const accordionTrigger = document.querySelector('[data-state="closed"]') as HTMLElement;
+      let wasExpanded = false;
+      
+      if (accordionTrigger) {
+        accordionTrigger.click();
+        wasExpanded = true;
+        // Wait for accordion to expand and render
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -1658,6 +1669,14 @@ export default function StaffScheduling() {
       const filename = `${(venueName || 'schedule').replace(/\s+/g, '-')}-daily-breakdown-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
       pdf.save(filename);
       toast.success('All daily breakdowns exported to PDF!');
+      
+      // Collapse accordion again if it was originally closed
+      if (wasExpanded) {
+        const accordionTrigger = document.querySelector('[data-state="open"]') as HTMLElement;
+        if (accordionTrigger) {
+          accordionTrigger.click();
+        }
+      }
       
     } catch (error) {
       console.error('Error exporting all daily breakdowns:', error);
