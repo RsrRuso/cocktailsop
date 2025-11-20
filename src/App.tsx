@@ -106,8 +106,8 @@ const PageLoader = () => (
 );
 
 const App = () => (
-  <BrowserRouter>
-    <QueryClientProvider client={queryClient}>
+  <QueryClientProvider client={queryClient}>
+    <BrowserRouter>
       <TooltipProvider>
         <InAppNotificationProvider>
           <AuthProvider>
