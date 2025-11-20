@@ -193,28 +193,28 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   
   yPos += sectionHeight + blockSpacing;
   
-  // Profiles section - side by side - BIGGER
-  const profileWidth = (contentWidth - 3) / 2;
+  // Profiles section - side by side with better spacing
+  const profileWidth = (contentWidth - blockSpacing) / 2;
   
   // Taste Profile
-  drawModernCard(margin, yPos, profileWidth, 52);
+  drawModernCard(margin, yPos, profileWidth, 58);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
   doc.text("TASTE PROFILE", margin + 5, yPos + 7);
   
-  drawRadarChart(doc, margin + (profileWidth / 2), yPos + 28, 20, recipe.tasteProfile, 'Taste');
+  drawRadarChart(doc, margin + (profileWidth / 2), yPos + 30, 20, recipe.tasteProfile, 'Taste');
   
   // Texture Profile
-  drawModernCard(margin + profileWidth + blockSpacing, yPos, profileWidth, 52);
+  drawModernCard(margin + profileWidth + blockSpacing, yPos, profileWidth, 58);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
   doc.text("TEXTURE PROFILE", margin + profileWidth + blockSpacing + 5, yPos + 7);
   
-  drawRadarChart(doc, margin + profileWidth + blockSpacing + (profileWidth / 2), yPos + 28, 20, recipe.textureProfile, 'Texture');
+  drawRadarChart(doc, margin + profileWidth + blockSpacing + (profileWidth / 2), yPos + 30, 20, recipe.textureProfile, 'Texture');
   
-  yPos += 52 + blockSpacing;
+  yPos += 58 + blockSpacing;
   
   // Recipe section - modern visual list with better content padding
   const recipeHeight = Math.min(recipe.ingredients.length * 7 + 22, 110);
