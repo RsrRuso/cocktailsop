@@ -1513,12 +1513,12 @@ export default function StaffScheduling() {
           </div>
         </Card>
 
-        {/* Special Events Section */}
+        {/* Daily Tasks Section */}
         <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
           <div className="absolute bottom-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl" />
           <div className="relative">
             <Accordion type="single" collapsible>
-              <AccordionItem value="special-events" className="border-none">
+              <AccordionItem value="daily-tasks" className="border-none">
                 <AccordionTrigger className="hover:no-underline pb-4">
                   <div className="flex items-center justify-between w-full pr-4">
                     <div className="flex items-center gap-3">
@@ -1526,7 +1526,7 @@ export default function StaffScheduling() {
                         <Calendar className="w-5 h-5 text-amber-400" />
                       </div>
                       <div className="text-left">
-                        <h2 className="text-lg font-bold text-gray-100">Special Events</h2>
+                        <h2 className="text-lg font-bold text-gray-100">Daily Tasks</h2>
                         <p className="text-xs text-gray-400 mt-0.5">Hygiene clearance, training, or special tasks</p>
                       </div>
                     </div>
@@ -2438,7 +2438,7 @@ export default function StaffScheduling() {
               ) : (
                 <div className="p-3 border-2 rounded-lg bg-muted/50 border-border">
                   <strong className="text-sm">ℹ️ No event days configured</strong>
-                  <div className="text-sm mt-1">Add events in the Daily Events section above</div>
+                  <div className="text-sm mt-1">Add events in the Special Event section above</div>
                 </div>
               )}
               <div className="p-3 border-2 rounded-lg bg-green-500/10 border-green-500/30">
