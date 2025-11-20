@@ -93,13 +93,13 @@ const CocktailSOPLibrary = () => {
       tasteProfile: recipe.taste_profile || {
         sweet: 0, sour: 0, bitter: 0, salty: 0, umami: 0
       },
-      textureProfile: {
+      textureProfile: (recipe as any).texture_profile || {
         body: 0, foam: 0, bubbles: 0, oiliness: 0, creaminess: 0, astringency: 0
       },
       ratio: recipe.ratio || "",
       ph: recipe.ph?.toString() || "",
       brix: recipe.brix?.toString() || "",
-      allergens: ""
+      allergens: (recipe as any).allergens || ""
     };
     
     exportToPDF(cocktailRecipe);
@@ -113,14 +113,12 @@ const CocktailSOPLibrary = () => {
     }
 
     setDownloading(true);
-    toast.loading("Generating PDFs...");
+    const toastId = toast.loading("Generating PDFs...");
 
     try {
-      const doc = new jsPDF();
-      
-      recipes.forEach((recipe, index) => {
-        if (index > 0) doc.addPage();
-        
+      // Download each recipe as a separate PDF file
+      for (let i = 0; i < recipes.length; i++) {
+        const recipe = recipes[i];
         const cocktailRecipe: CocktailRecipe = {
           drinkName: recipe.drink_name,
           glass: recipe.glass,
@@ -134,44 +132,33 @@ const CocktailSOPLibrary = () => {
           tasteProfile: recipe.taste_profile || {
             sweet: 0, sour: 0, bitter: 0, salty: 0, umami: 0
           },
-          textureProfile: {
+          textureProfile: (recipe as any).texture_profile || {
             body: 0, foam: 0, bubbles: 0, oiliness: 0, creaminess: 0, astringency: 0
           },
           ratio: recipe.ratio || "",
           ph: recipe.ph?.toString() || "",
           brix: recipe.brix?.toString() || "",
-          allergens: ""
+          allergens: (recipe as any).allergens || ""
         };
         
-    // Generate each recipe page directly
-    generateRecipePage(doc, cocktailRecipe, index + 1, recipes.length);
-      });
+        // Small delay between downloads to prevent browser blocking
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        exportToPDF(cocktailRecipe);
+      }
 
-      doc.save("Cocktail_SOPs_Collection.pdf");
+      toast.dismiss(toastId);
       toast.success(`Downloaded ${recipes.length} recipes!`);
     } catch (error) {
       console.error("Error generating PDFs:", error);
+      toast.dismiss(toastId);
       toast.error("Failed to generate PDFs");
     } finally {
       setDownloading(false);
     }
   };
 
-  const generateRecipePage = (doc: jsPDF, recipe: CocktailRecipe, pageNum: number, totalPages: number) => {
-    const darkerBg: [number, number, number] = [30, 35, 45];
-    const lightText: [number, number, number] = [236, 240, 241];
-    
-    doc.setFillColor(darkerBg[0], darkerBg[1], darkerBg[2]);
-    doc.rect(0, 0, 210, 28, 'F');
-    
-    doc.setTextColor(lightText[0], lightText[1], lightText[2]);
-    doc.setFontSize(9);
-    doc.text(`Recipe ${pageNum} of ${totalPages}`, 15, 10);
-    
-    doc.setFontSize(20);
-    doc.setFont("helvetica", "bold");
-    doc.text(recipe.drinkName.toUpperCase(), 15, 22);
-  };
 
   if (!user) {
     navigate("/auth");
