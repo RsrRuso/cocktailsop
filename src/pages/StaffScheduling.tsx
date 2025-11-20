@@ -960,17 +960,17 @@ export default function StaffScheduling() {
     }
 
     try {
-      // Save schedule as JSON
+      // Save schedule as JSON to weekly_schedules table
       const { error } = await supabase
-        .from('staff_schedules')
-        .upsert({
+        .from('weekly_schedules')
+        .upsert([{
           user_id: user.id,
           week_start_date: weekStartDate,
-          schedule_data: schedule,
+          schedule_data: schedule as any,
           venue_name: venueName || null,
-          daily_events: dailyEvents,
+          daily_events: dailyEvents as any,
           updated_at: new Date().toISOString()
-        }, {
+        }], {
           onConflict: 'user_id,week_start_date'
         });
 
@@ -1432,52 +1432,67 @@ export default function StaffScheduling() {
                         <p className="text-xs text-gray-500">{staffMembers.length} active staff</p>
                       </div>
                     </div>
-                    <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
-                      <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button size="sm" className="h-9 px-4 font-medium shadow-lg shadow-primary/10">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Staff
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Add Staff Member</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label>Name</Label>
-                            <Input
-                              value={newStaff.name}
-                              onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
-                              placeholder="Staff name"
-                            />
-                          </div>
-                          <div>
-                            <Label>Title/Role</Label>
-                            <Select
-                              value={newStaff.title}
-                              onValueChange={(value) => setNewStaff({ ...newStaff, title: value as StaffMember['title'] })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="head_bartender">Head Bartender</SelectItem>
-                                <SelectItem value="senior_bartender">Senior Bartender</SelectItem>
-                                <SelectItem value="bartender">Bartender</SelectItem>
-                                <SelectItem value="bar_back">Bar Back</SelectItem>
-                                <SelectItem value="support">Support</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {ROLE_RESPONSIBILITIES[newStaff.title]}
-                            </p>
-                          </div>
-                          <Button onClick={addStaffMember} className="w-full">Add Staff Member</Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                      <Button 
+                        onClick={saveSchedule}
+                        size="sm" 
+                        variant="outline"
+                        className="h-9 px-4 font-medium shadow-lg"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Schedule
+                      </Button>
+                      <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" className="h-9 px-4 font-medium shadow-lg shadow-primary/10">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Staff
+                          </Button>
+                        </DialogTrigger>
+                      </Dialog>
+                    </div>
                   </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Staff Member</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Name</Label>
+                          <Input
+                            value={newStaff.name}
+                            onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                            placeholder="Staff name"
+                          />
+                        </div>
+                        <div>
+                          <Label>Title/Role</Label>
+                          <Select
+                            value={newStaff.title}
+                            onValueChange={(value) => setNewStaff({ ...newStaff, title: value as StaffMember['title'] })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="head_bartender">Head Bartender</SelectItem>
+                              <SelectItem value="senior_bartender">Senior Bartender</SelectItem>
+                              <SelectItem value="bartender">Bartender</SelectItem>
+                              <SelectItem value="bar_back">Bar Back</SelectItem>
+                              <SelectItem value="support">Support</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {ROLE_RESPONSIBILITIES[newStaff.title]}
+                          </p>
+                        </div>
+                        <Button onClick={addStaffMember} className="w-full">Add Staff Member</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-3">

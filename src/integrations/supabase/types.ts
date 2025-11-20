@@ -4045,6 +4045,39 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_schedules: {
+        Row: {
+          created_at: string | null
+          daily_events: Json | null
+          id: string
+          schedule_data: Json
+          updated_at: string | null
+          user_id: string
+          venue_name: string | null
+          week_start_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          daily_events?: Json | null
+          id?: string
+          schedule_data: Json
+          updated_at?: string | null
+          user_id: string
+          venue_name?: string | null
+          week_start_date: string
+        }
+        Update: {
+          created_at?: string | null
+          daily_events?: Json | null
+          id?: string
+          schedule_data?: Json
+          updated_at?: string | null
+          user_id?: string
+          venue_name?: string | null
+          week_start_date?: string
+        }
+        Relationships: []
+      }
       work_experiences: {
         Row: {
           company_name: string
