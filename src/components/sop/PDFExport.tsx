@@ -116,8 +116,8 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     // Draw card background for image block - matching other blocks
     drawModernCard(imgX, imgY, imgWidth, imgHeight);
     
-    // Calculate image size to fill the block with minimal padding
-    const imgPadding = 3;
+    // Calculate image size to fill the block with very minimal padding
+    const imgPadding = 1.5;
     const imgDisplaySize = Math.min(imgWidth, imgHeight) - (imgPadding * 2);
     const imgCenterX = imgX + (imgWidth - imgDisplaySize) / 2;
     const imgCenterY = imgY + (imgHeight - imgDisplaySize) / 2;
