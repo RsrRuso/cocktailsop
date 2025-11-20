@@ -31,7 +31,21 @@ const RecipeView = ({ recipe }: RecipeViewProps) => {
       )}
 
       {/* Metrics */}
-      <RecipeMetrics ingredients={recipe.ingredients} />
+      <RecipeMetrics 
+        ingredients={recipe.ingredients} 
+        ph={recipe.ph}
+        brix={recipe.brix}
+      />
+
+      {/* Ratio */}
+      {recipe.ratio && (
+        <Card className="p-4">
+          <div className="text-center">
+            <div className="text-xs text-muted-foreground mb-1">Ratio</div>
+            <div className="text-lg font-semibold">{recipe.ratio}</div>
+          </div>
+        </Card>
+      )}
 
       {/* Recipe */}
       <Card className="p-4">

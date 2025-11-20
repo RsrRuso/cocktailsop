@@ -1,12 +1,14 @@
 import { Card } from "@/components/ui/card";
 import { RecipeIngredient } from "@/types/cocktail-recipe";
-import { Droplets, Zap, Activity, Flame } from "lucide-react";
+import { Droplets, Zap, Flame } from "lucide-react";
 
 interface RecipeMetricsProps {
   ingredients: RecipeIngredient[];
+  ph?: string;
+  brix?: string;
 }
 
-const RecipeMetrics = ({ ingredients }: RecipeMetricsProps) => {
+const RecipeMetrics = ({ ingredients, ph, brix }: RecipeMetricsProps) => {
   const totalVolume = ingredients.reduce(
     (sum, ing) => sum + (parseFloat(ing.amount) || 0),
     0
@@ -19,7 +21,6 @@ const RecipeMetrics = ({ ingredients }: RecipeMetricsProps) => {
   );
 
   const abvPercentage = totalVolume > 0 ? (pureAlcohol / totalVolume) * 100 : 0;
-  const standardDrinks = pureAlcohol / 14;
   const estimatedCalories = Math.round(pureAlcohol * 7 + totalVolume * 0.5);
 
   const metrics = [
@@ -36,18 +37,32 @@ const RecipeMetrics = ({ ingredients }: RecipeMetricsProps) => {
       color: "text-yellow-500",
     },
     {
-      label: "Std Drinks",
-      value: standardDrinks.toFixed(1),
-      icon: Activity,
-      color: "text-green-500",
-    },
-    {
       label: "Calories",
       value: `${estimatedCalories}`,
       icon: Flame,
       color: "text-orange-500",
     },
   ];
+
+  // Add pH if provided
+  if (ph && parseFloat(ph) > 0) {
+    metrics.push({
+      label: "pH",
+      value: parseFloat(ph).toFixed(1),
+      icon: Droplets,
+      color: "text-purple-500",
+    });
+  }
+
+  // Add Brix if provided
+  if (brix && parseFloat(brix) > 0) {
+    metrics.push({
+      label: "Brix",
+      value: parseFloat(brix).toFixed(1),
+      icon: Droplets,
+      color: "text-pink-500",
+    });
+  }
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
