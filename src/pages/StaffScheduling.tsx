@@ -79,6 +79,7 @@ export default function StaffScheduling() {
   const [staffToDelete, setStaffToDelete] = useState<string | null>(null);
   const [savedSchedules, setSavedSchedules] = useState<any[]>([]);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [expiringItems, setExpiringItems] = useState<any[]>([]);
   
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -90,10 +91,50 @@ export default function StaffScheduling() {
       console.log('User authenticated:', user.id);
       fetchStaffMembers();
       fetchSavedSchedules();
+      fetchExpiringInventory();
     } else {
       console.log('No user authenticated');
     }
   }, [user]);
+
+  const fetchExpiringInventory = async () => {
+    if (!user?.id) return;
+
+    try {
+      // Fetch items expiring in the next 7 days with high priority
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+
+      const { data, error } = await supabase
+        .from('inventory')
+        .select(`
+          *,
+          items (
+            name,
+            category,
+            brand
+          ),
+          stores (
+            name
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'available')
+        .lte('expiration_date', sevenDaysFromNow.toISOString().split('T')[0])
+        .gte('priority_score', 70)
+        .order('priority_score', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error fetching expiring inventory:', error);
+        return;
+      }
+
+      setExpiringItems(data || []);
+    } catch (error) {
+      console.error('Error fetching expiring inventory:', error);
+    }
+  };
 
   const fetchStaffMembers = async () => {
     if (!user?.id) {
@@ -1219,6 +1260,38 @@ export default function StaffScheduling() {
       finalY += 3;
     }
     
+    // FIFO Inventory Warnings Section
+    if (expiringItems.length > 0) {
+      doc.setFillColor(239, 68, 68); // Red color for warnings
+      doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...colors.white);
+      doc.text('⚠️ FIFO INVENTORY WARNINGS', 18, finalY + 3);
+      
+      finalY += 10;
+      doc.setFontSize(6);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...colors.lightGrey);
+      
+      expiringItems.slice(0, 5).forEach((item: any) => {
+        const itemName = item.items?.name || 'Unknown Item';
+        const expiryDate = format(new Date(item.expiration_date), 'MMM dd');
+        const priority = item.priority_score;
+        const storeName = item.stores?.name || 'Store';
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(239, 68, 68); // Red
+        doc.text(`Priority ${priority}:`, 18, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...colors.lightGrey);
+        doc.text(`${itemName} - Expires ${expiryDate} (${storeName})`, 45, finalY);
+        finalY += 3.5;
+      });
+      
+      finalY += 3;
+    }
+    
     // Role Responsibilities Section - Based on titles only
     doc.setFillColor(30, 58, 138); // Dark blue color
     doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
@@ -1513,6 +1586,61 @@ export default function StaffScheduling() {
           </div>
         </Card>
 
+        {/* FIFO Inventory Warnings */}
+        {expiringItems.length > 0 && (
+          <Card className="p-5 bg-gradient-to-br from-red-900/30 to-red-950/20 border-red-800 shadow-xl overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-96 h-96 bg-red-500/10 rounded-full blur-3xl" />
+            <div className="relative">
+              <Accordion type="single" collapsible defaultValue="fifo-warnings">
+                <AccordionItem value="fifo-warnings" className="border-none">
+                  <AccordionTrigger className="hover:no-underline pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-red-500/20 rounded-lg animate-pulse">
+                        <Calendar className="w-5 h-5 text-red-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-red-100">⚠️ FIFO Inventory Warnings</h3>
+                        <p className="text-xs text-red-300">{expiringItems.length} items expiring soon</p>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2">
+                      {expiringItems.map((item: any) => (
+                        <div key={item.id} className="p-3 bg-red-950/40 border border-red-800/50 rounded-lg">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="font-bold text-red-100 text-sm">
+                                {item.items?.name || 'Unknown Item'}
+                              </div>
+                              <div className="text-xs text-red-300 mt-1">
+                                {item.items?.brand && `${item.items.brand} • `}
+                                {item.items?.category || 'Uncategorized'}
+                              </div>
+                              <div className="text-xs text-red-400 mt-1">
+                                Store: {item.stores?.name || 'Unknown'} • Qty: {item.quantity}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-red-400">
+                                {item.priority_score}
+                              </div>
+                              <div className="text-[9px] text-red-300 uppercase">Priority</div>
+                              <div className="text-xs text-red-300 mt-1">
+                                Expires: {format(new Date(item.expiration_date), 'MMM dd, yyyy')}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+          </Card>
+        )}
+        
         {/* Daily Tasks Section */}
         <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
           <div className="absolute bottom-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl" />
