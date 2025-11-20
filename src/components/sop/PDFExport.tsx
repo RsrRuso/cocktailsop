@@ -106,19 +106,11 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const imageWidth = 68;
   const metricsWidth = contentWidth - imageWidth - blockSpacing;
   
-  // Image block - elegant square aspect with 3D effect
+  // Image with dark background shading - no block
   if (recipe.mainImage) {
-    drawModernCard(margin, yPos, imageWidth, sectionHeight, true);
-    
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-    doc.text("COCKTAIL", margin + 6, yPos + 7);
-    
-    const imgPadding = 8;
-    const imgSize = imageWidth - (imgPadding * 2);
-    const imgX = margin + imgPadding;
-    const imgY = yPos + 12;
+    const imgSize = imageWidth;
+    const imgX = margin;
+    const imgY = yPos;
     
     try {
       let format: 'PNG' | 'JPEG' = 'JPEG';
@@ -126,29 +118,27 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
         format = 'PNG';
       }
       
-      // Draw deep 3D shadows for elevation effect
-      doc.setFillColor(140, 145, 150);
-      doc.roundedRect(imgX + 3, imgY + 3, imgSize, imgSize, 3, 3, 'F');
+      // Dark shaded background
+      doc.setFillColor(60, 65, 70);
+      doc.rect(imgX + 2, imgY + 2, imgSize, sectionHeight, 'F');
       
-      doc.setFillColor(170, 175, 180);
-      doc.roundedRect(imgX + 2, imgY + 2, imgSize, imgSize, 3, 3, 'F');
+      doc.setFillColor(45, 50, 55);
+      doc.rect(imgX + 1, imgY + 1, imgSize, sectionHeight, 'F');
       
-      doc.setFillColor(200, 205, 210);
-      doc.roundedRect(imgX + 1, imgY + 1, imgSize, imgSize, 3, 3, 'F');
+      doc.setFillColor(30, 35, 40);
+      doc.rect(imgX, imgY, imgSize, sectionHeight, 'F');
       
-      // High-quality image rendering with rounded corners effect
-      doc.addImage(recipe.mainImage, format, imgX, imgY, imgSize, imgSize, undefined, 'NONE');
-      
-      // Optional: Subtle white highlight on top-left for 3D pop
-      doc.setFillColor(255, 255, 255, 0.1);
-      doc.roundedRect(imgX, imgY, imgSize * 0.3, imgSize * 0.3, 2, 2, 'F');
+      // High-quality image rendering centered
+      const imgPadding = 5;
+      const actualImgSize = imgSize - (imgPadding * 2);
+      doc.addImage(recipe.mainImage, format, imgX + imgPadding, imgY + imgPadding, actualImgSize, actualImgSize, undefined, 'NONE');
       
     } catch (e) {
       console.error('Failed to add image to PDF:', e);
       doc.setFontSize(7);
       doc.setFont("helvetica", "italic");
-      doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
-      doc.text("Image unavailable", imgX + 8, imgY + 25);
+      doc.setTextColor(200, 200, 200);
+      doc.text("Image unavailable", imgX + 20, imgY + 30);
     }
   }
   
