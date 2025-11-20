@@ -90,6 +90,48 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const margin = 12;
   const contentWidth = pageWidth - (margin * 2);
   
+  // Image section - separate high-quality block
+  if (recipe.mainImage) {
+    const imgCardHeight = 70;
+    drawModernCard(margin, yPos, contentWidth, imgCardHeight, true);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
+    doc.text("DRINK IMAGE", margin + 5, yPos + 7);
+    
+    const imgWidth = contentWidth - 10;
+    const imgHeight = imgCardHeight - 15;
+    const imgX = margin + 5;
+    const imgY = yPos + 10;
+    
+    try {
+      // Detect image format from base64 data
+      let format: 'PNG' | 'JPEG' = 'JPEG';
+      if (recipe.mainImage.startsWith('data:image/png')) {
+        format = 'PNG';
+      } else if (recipe.mainImage.startsWith('data:image/webp')) {
+        format = 'JPEG'; // jsPDF doesn't support webp, convert to JPEG
+      }
+      
+      // Add image with maximum quality
+      doc.addImage(recipe.mainImage, format, imgX, imgY, imgWidth, imgHeight, undefined, 'FAST');
+      
+      // Add elegant border
+      doc.setDrawColor(accentGold[0], accentGold[1], accentGold[2]);
+      doc.setLineWidth(0.5);
+      doc.rect(imgX, imgY, imgWidth, imgHeight);
+    } catch (e) {
+      console.error('Failed to add image to PDF:', e);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
+      doc.text("Image could not be loaded", margin + 5, imgY + 20);
+    }
+    
+    yPos += imgCardHeight + 5;
+  }
+  
   // Specs section - modern badges layout - BIGGER
   drawModernCard(margin, yPos, contentWidth, 38, true);
   
@@ -129,26 +171,6 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     const valueText = spec.value.length > 12 ? spec.value.substring(0, 12) + '...' : spec.value;
     doc.text(valueText, x, y + 6);
   });
-  
-  // Add image if available (drawn after specs so it's on top)
-  if (recipe.mainImage) {
-    const imgWidth = 50;
-    const imgHeight = 35;
-    const imgX = pageWidth - margin - imgWidth;
-    const imgY = yPos;
-    
-    try {
-      const format = recipe.mainImage.startsWith("data:image/png") ? "PNG" : "JPEG";
-      doc.addImage(recipe.mainImage, format, imgX, imgY, imgWidth, imgHeight);
-      
-      // Add border around image
-      doc.setDrawColor(mediumGray[0], mediumGray[1], mediumGray[2]);
-      doc.setLineWidth(0.3);
-      doc.rect(imgX, imgY, imgWidth, imgHeight);
-    } catch (e) {
-      console.error('Failed to add image to PDF:', e);
-    }
-  }
   
   yPos += 42;
   
