@@ -1212,8 +1212,47 @@ export default function StaffScheduling() {
         }
       }
 
+      // Send a copy to the manager with all staff schedules
+      try {
+        const managerEmail = user?.email;
+        if (managerEmail) {
+          // Build complete schedule data for manager
+          const fullScheduleData: { [key: string]: any } = {};
+          
+          staffMembers.forEach(staff => {
+            DAYS_OF_WEEK.forEach(day => {
+              const cell = getScheduleCell(staff.id, day);
+              const key = `${staff.name} - ${day}`;
+              fullScheduleData[key] = {
+                shift: cell?.timeRange || 'OFF',
+                type: cell?.type || 'off',
+                station: cell?.station || ''
+              };
+            });
+          });
+
+          const { error: managerEmailError } = await supabase.functions.invoke('send-schedule-email', {
+            body: {
+              staffEmail: managerEmail,
+              staffName: 'Manager',
+              weekRange,
+              scheduleData: fullScheduleData
+            }
+          });
+
+          if (!managerEmailError) {
+            console.log('Manager copy sent successfully');
+            emailsSent++;
+          } else {
+            console.error('Failed to send manager copy:', managerEmailError);
+          }
+        }
+      } catch (error) {
+        console.error('Error sending manager copy:', error);
+      }
+
       if (emailsSent > 0) {
-        toast.success(`📧 Schedule sent to ${emailsSent} staff member${emailsSent > 1 ? 's' : ''}`);
+        toast.success(`📧 Schedule sent to ${emailsSent} recipient${emailsSent > 1 ? 's' : ''} (including you)`);
       }
       
       if (emailsFailed > 0) {
