@@ -105,10 +105,10 @@ const PageLoader = () => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <InAppNotificationProvider>
-        <BrowserRouter>
+  <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <InAppNotificationProvider>
           <AuthProvider>
             <WorkspaceProvider>
               <CartProvider>
@@ -198,12 +198,12 @@ const App = () => (
                 </Routes>
               </Suspense>
             </CartProvider>
-            </WorkspaceProvider>
-          </AuthProvider>
-        </BrowserRouter>
+          </WorkspaceProvider>
+        </AuthProvider>
       </InAppNotificationProvider>
     </TooltipProvider>
   </QueryClientProvider>
+  </BrowserRouter>
 );
 
 export default App;
