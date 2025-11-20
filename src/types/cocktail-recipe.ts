@@ -43,6 +43,7 @@ export interface CocktailRecipe {
   allergens: string;
   pdfOptions?: {
     showBrandName?: boolean;
+    showAmount?: boolean;
     showUnit?: boolean;
     showType?: boolean;
     showABV?: boolean;

@@ -180,12 +180,14 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     doc.text(ing.name.toUpperCase(), margin + 7, ingredientY);
     
     // Amount and unit on same line - handle optional amount
-    const amountText = ing.amount ? 
-      `${ing.amount}${pdfOpts.showUnit !== false ? ' ' + ing.unit : ''}` : 
-      '—';
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(accentGold[0], accentGold[1], accentGold[2]);
-    doc.text(amountText, margin + 85, ingredientY);
+    if (pdfOpts.showAmount !== false) {
+      const amountText = ing.amount ? 
+        `${ing.amount}${pdfOpts.showUnit !== false ? ' ' + ing.unit : ''}` : 
+        '—';
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(accentGold[0], accentGold[1], accentGold[2]);
+      doc.text(amountText, margin + 85, ingredientY);
+    }
     
     // Type and ABV if enabled
     let metaText = '';
