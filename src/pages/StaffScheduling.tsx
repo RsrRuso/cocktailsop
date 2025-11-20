@@ -77,6 +77,8 @@ export default function StaffScheduling() {
   const [specialEvents, setSpecialEvents] = useState<Record<string, string>>({});
   const [isEditingEvents, setIsEditingEvents] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState<string | null>(null);
+  const [savedSchedules, setSavedSchedules] = useState<any[]>([]);
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
   
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -87,6 +89,7 @@ export default function StaffScheduling() {
     if (user?.id) {
       console.log('User authenticated:', user.id);
       fetchStaffMembers();
+      fetchSavedSchedules();
     } else {
       console.log('No user authenticated');
     }
@@ -126,6 +129,33 @@ export default function StaffScheduling() {
       });
       setStaffMembers(staffWithBreaks);
     }
+  };
+
+  const fetchSavedSchedules = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('weekly_schedules')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('week_start_date', { ascending: false });
+
+      if (error) throw error;
+      setSavedSchedules(data || []);
+    } catch (error) {
+      console.error('Error fetching saved schedules:', error);
+    }
+  };
+
+  const loadSchedule = (savedSchedule: any) => {
+    setVenueName(savedSchedule.venue_name || '');
+    setSchedule(savedSchedule.schedule_data || {});
+    setDailyEvents(savedSchedule.daily_events || {});
+    setSpecialEvents(savedSchedule.special_events || {});
+    setWeekStartDate(savedSchedule.week_start_date);
+    setShowLoadDialog(false);
+    toast.success('Schedule loaded successfully!');
   };
 
   const saveBreakTimings = async (staffId: string, breakTimings: any) => {
@@ -1375,6 +1405,37 @@ export default function StaffScheduling() {
             </div>
             
             <div className="flex gap-2">
+              <Dialog open={showLoadDialog} onOpenChange={setShowLoadDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="h-11 px-6 border-gray-600 hover:bg-gray-800/80 hover:border-primary/50 transition-all">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Load Schedule
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Load Saved Schedule</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    {savedSchedules.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No saved schedules found</p>
+                    ) : (
+                      savedSchedules.map((schedule) => (
+                        <Card key={schedule.id} className="p-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => loadSchedule(schedule)}>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-semibold">{schedule.venue_name || 'Untitled Schedule'}</h3>
+                              <p className="text-sm text-muted-foreground">Week of {format(new Date(schedule.week_start_date), 'MMM dd, yyyy')}</p>
+                              <p className="text-xs text-muted-foreground mt-1">Last updated: {format(new Date(schedule.updated_at), 'MMM dd, yyyy HH:mm')}</p>
+                            </div>
+                            <Button size="sm" variant="ghost">Load</Button>
+                          </div>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
               <Button onClick={autoGenerateSchedule} variant="default" className="h-11 px-6 font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
                 <Wand2 className="w-4 h-4 mr-2" />
                 Generate Schedule
