@@ -1,4 +1,4 @@
-export interface Ingredient {
+export interface RecipeIngredient {
   name: string;
   amount: string;
   unit: string;
@@ -14,14 +14,14 @@ export interface TasteProfile {
   umami: number;
 }
 
-export interface CocktailData {
+export interface CocktailRecipe {
   drinkName: string;
   glass: string;
   ice: string;
   garnish: string;
   technique: string;
   mainImage: string | null;
-  ingredients: Ingredient[];
+  ingredients: RecipeIngredient[];
   methodSOP: string;
   serviceNotes: string;
   tasteProfile: TasteProfile;

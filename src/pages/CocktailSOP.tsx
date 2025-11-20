@@ -5,18 +5,17 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import CocktailEditor from "@/components/cocktail-sop/CocktailEditor";
-import CocktailBible from "@/components/cocktail-sop/CocktailBible";
-import { CocktailData, Ingredient } from "@/types/cocktail";
+import RecipeEditor from "@/components/sop/RecipeEditor";
+import RecipeView from "@/components/sop/RecipeView";
+import { CocktailRecipe } from "@/types/cocktail-recipe";
 
 const CocktailSOP = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [currentView, setCurrentView] = useState<"editor" | "bible">("editor");
-  const [isSaving, setIsSaving] = useState(false);
+  const [view, setView] = useState<"editor" | "view">("editor");
+  const [saving, setSaving] = useState(false);
 
-  // Cocktail state
-  const [cocktailData, setCocktailData] = useState<CocktailData>({
+  const [recipe, setRecipe] = useState<CocktailRecipe>({
     drinkName: "",
     glass: "",
     ice: "",
@@ -37,59 +36,57 @@ const CocktailSOP = () => {
 
   const handleSave = async () => {
     if (!user) {
-      toast.error("Please login to save");
+      toast.error("Please login");
       navigate("/auth");
       return;
     }
 
-    if (!cocktailData.drinkName.trim()) {
-      toast.error("Please enter a drink name");
+    if (!recipe.drinkName.trim()) {
+      toast.error("Enter drink name");
       return;
     }
 
-    setIsSaving(true);
+    setSaving(true);
 
     try {
-      // Calculate metrics
-      const totalVolume = cocktailData.ingredients.reduce(
+      const totalVolume = recipe.ingredients.reduce(
         (sum, ing) => sum + (parseFloat(ing.amount) || 0),
         0
       );
-      const pureAlcohol = cocktailData.ingredients.reduce(
+      const pureAlcohol = recipe.ingredients.reduce(
         (sum, ing) =>
           sum + (parseFloat(ing.amount) || 0) * ((parseFloat(ing.abv) || 0) / 100),
         0
       );
       const abvPercentage = totalVolume > 0 ? (pureAlcohol / totalVolume) * 100 : 0;
-      const standardDrinks = pureAlcohol / 14;
       const estimatedCalories = pureAlcohol * 7 + totalVolume * 0.5;
 
-      const { error } = await supabase.from("cocktail_sops").insert({
+      const { error } = await supabase.from("cocktail_sops").insert([{
         user_id: user.id,
-        drink_name: cocktailData.drinkName,
-        glass: cocktailData.glass,
-        ice: cocktailData.ice,
-        garnish: cocktailData.garnish,
-        technique: cocktailData.technique,
-        main_image: cocktailData.mainImage,
-        recipe: cocktailData.ingredients,
-        method_sop: cocktailData.methodSOP,
-        service_notes: cocktailData.serviceNotes,
-        taste_profile: cocktailData.tasteProfile,
+        drink_name: recipe.drinkName,
+        glass: recipe.glass,
+        ice: recipe.ice,
+        garnish: recipe.garnish,
+        technique: recipe.technique,
+        main_image: recipe.mainImage,
+        recipe: recipe.ingredients as any,
+        method_sop: recipe.methodSOP,
+        service_notes: recipe.serviceNotes || null,
+        taste_profile: recipe.tasteProfile as any,
         total_ml: totalVolume,
         abv_percentage: abvPercentage,
         kcal: estimatedCalories,
-      });
+      }]);
 
       if (error) throw error;
 
-      toast.success("Cocktail SOP saved successfully!");
-      setCurrentView("bible");
+      toast.success("Recipe saved!");
+      setView("view");
     } catch (error) {
-      console.error("Error saving cocktail:", error);
-      toast.error("Failed to save cocktail");
+      console.error("Save error:", error);
+      toast.error("Failed to save");
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
   };
 
@@ -100,45 +97,43 @@ const CocktailSOP = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="flex items-center justify-between p-4">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
+        <div className="flex items-center justify-between p-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/ops-tools")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
 
           <div className="flex gap-2">
             <Button
-              variant={currentView === "editor" ? "default" : "outline"}
+              variant={view === "editor" ? "default" : "outline"}
               size="sm"
-              onClick={() => setCurrentView("editor")}
+              onClick={() => setView("editor")}
             >
-              <Edit3 className="h-4 w-4 mr-2" />
-              Editor
+              <Edit3 className="h-4 w-4 mr-1" />
+              Edit
             </Button>
             <Button
-              variant={currentView === "bible" ? "default" : "outline"}
+              variant={view === "view" ? "default" : "outline"}
               size="sm"
-              onClick={() => setCurrentView("bible")}
+              onClick={() => setView("view")}
             >
-              <BookOpen className="h-4 w-4 mr-2" />
-              Bible
+              <BookOpen className="h-4 w-4 mr-1" />
+              View
             </Button>
           </div>
 
-          <Button onClick={handleSave} disabled={isSaving} size="sm">
-            <Save className="h-4 w-4 mr-2" />
-            {isSaving ? "Saving..." : "Save"}
+          <Button onClick={handleSave} disabled={saving} size="sm">
+            <Save className="h-4 w-4 mr-1" />
+            {saving ? "Saving..." : "Save"}
           </Button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4">
-        {currentView === "editor" ? (
-          <CocktailEditor data={cocktailData} onChange={setCocktailData} />
+      <div className="p-4 max-w-2xl mx-auto">
+        {view === "editor" ? (
+          <RecipeEditor recipe={recipe} onChange={setRecipe} />
         ) : (
-          <CocktailBible data={cocktailData} />
+          <RecipeView recipe={recipe} />
         )}
       </div>
     </div>
