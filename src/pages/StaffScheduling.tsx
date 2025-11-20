@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Download, Plus, Trash2, Wand2, Calendar, Users, Save } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
+import { FIFOAlertSettings } from '@/components/FIFOAlertSettings';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -2548,6 +2549,9 @@ export default function StaffScheduling() {
             </div>
           </Card>
         )}
+
+        {/* FIFO Alert Settings */}
+        <FIFOAlertSettings />
 
         {/* Legend - Enhanced */}
         <Card className="p-6 bg-gray-900 border-gray-800">

@@ -1389,6 +1389,47 @@ export type Database = {
         }
         Relationships: []
       }
+      fifo_alert_settings: {
+        Row: {
+          alert_recipients: string[]
+          created_at: string
+          days_before_expiry: number
+          enabled: boolean
+          id: string
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          alert_recipients?: string[]
+          created_at?: string
+          days_before_expiry?: number
+          enabled?: boolean
+          id?: string
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          alert_recipients?: string[]
+          created_at?: string
+          days_before_expiry?: number
+          enabled?: boolean
+          id?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fifo_alert_settings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           created_at: string | null
