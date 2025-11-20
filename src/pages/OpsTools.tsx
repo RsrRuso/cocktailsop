@@ -90,15 +90,6 @@ const OpsTools = () => {
     ],
     mixing: [
       {
-        name: "Cocktail SOP",
-        description: "Smart cocktail standard operating procedures",
-        details: "Create detailed cocktail SOPs with recipes, techniques, metrics (ABV, pH, Brix), taste profiles, and service notes. Export to PDF for team training.",
-        icon: FileText,
-        gradient: "from-slate-600 to-zinc-500",
-        premium: false,
-        path: "/cocktail-sop",
-      },
-      {
         name: "Batch Calculator Pro",
         description: "Calculate precise batch quantities for any recipe",
         details: "Perfect for scaling cocktails and batch production. Enter your recipe and target batch size to get exact measurements. Supports metric and imperial units.",
