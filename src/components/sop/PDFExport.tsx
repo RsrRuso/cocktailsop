@@ -26,11 +26,19 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     doc.line(x, y, x + width, y);
   };
   
-  // Modern card-style block with better contrast
-  const drawModernCard = (x: number, y: number, width: number, height: number) => {
-    // Subtle shadow for depth
-    doc.setFillColor(220, 222, 225);
-    doc.roundedRect(x + 0.5, y + 0.5, width, height, 2, 2, 'F');
+  // Modern card-style block with better contrast and 3D depth
+  const drawModernCard = (x: number, y: number, width: number, height: number, is3D = false) => {
+    if (is3D) {
+      // Deep 3D shadow for image
+      doc.setFillColor(180, 185, 190);
+      doc.roundedRect(x + 2, y + 2, width, height, 2, 2, 'F');
+      doc.setFillColor(200, 205, 210);
+      doc.roundedRect(x + 1, y + 1, width, height, 2, 2, 'F');
+    } else {
+      // Subtle shadow for depth
+      doc.setFillColor(220, 222, 225);
+      doc.roundedRect(x + 0.5, y + 0.5, width, height, 2, 2, 'F');
+    }
     
     // Main card with better contrast
     doc.setFillColor(248, 249, 251);
@@ -98,14 +106,14 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const imageWidth = 68;
   const metricsWidth = contentWidth - imageWidth - blockSpacing;
   
-  // Image block - elegant square aspect
+  // Image block - elegant square aspect with 3D effect
   if (recipe.mainImage) {
-    drawModernCard(margin, yPos, imageWidth, sectionHeight);
+    drawModernCard(margin, yPos, imageWidth, sectionHeight, true);
     
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-    doc.text("COCKTAIL", margin + 5, yPos + 6);
+    doc.text("COCKTAIL", margin + 6, yPos + 7);
     
     const imgPadding = 5;
     const frameThickness = 0.8;
@@ -162,14 +170,14 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     { label: 'ABV', value: abvPercentage.toFixed(1) + '%' },
   ];
   
-  const specsStartY = yPos + 13;
-  const colWidth = (metricsWidth - 10) / 2;
-  const rowHeight = 14;
+  const specsStartY = yPos + 14;
+  const colWidth = (metricsWidth - 14) / 2;
+  const rowHeight = 13;
   
   specs.forEach((spec, i) => {
     const row = Math.floor(i / 2);
     const col = i % 2;
-    const x = metricsX + 5 + (col * colWidth);
+    const x = metricsX + 7 + (col * colWidth);
     const y = specsStartY + (row * rowHeight);
     
     doc.setFontSize(6);
@@ -177,11 +185,12 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
     doc.text(spec.label, x, y);
     
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-    const valueText = spec.value.length > 18 ? spec.value.substring(0, 18) + '...' : spec.value;
-    doc.text(valueText, x, y + 5);
+    const maxWidth = colWidth - 4;
+    const valueText = spec.value.length > 15 ? spec.value.substring(0, 15) + '...' : spec.value;
+    doc.text(valueText, x, y + 4.5);
   });
   
   yPos += sectionHeight + blockSpacing;
@@ -224,15 +233,20 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   let ingredientY = recipeStartY;
   const ingredientLeftMargin = margin + 6;
   
-  // Modern ingredient list with proper padding
-  recipe.ingredients.slice(0, 12).forEach((ing, index) => {
-    if (ingredientY > yPos + recipeHeight - 8) return; // Stop if running out of space
+  // Modern ingredient list with proper padding and text wrapping
+  const maxNameWidth = 70;
+  const maxMetaWidth = 75;
+  
+  recipe.ingredients.slice(0, 10).forEach((ing, index) => {
+    if (ingredientY > yPos + recipeHeight - 10) return; // Stop if running out of space
     
     // Ingredient line with visual hierarchy
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-    doc.text(ing.name.toUpperCase(), ingredientLeftMargin, ingredientY);
+    const ingredientName = ing.name.toUpperCase();
+    const nameLines = doc.splitTextToSize(ingredientName, maxNameWidth);
+    doc.text(nameLines[0], ingredientLeftMargin, ingredientY);
     
     // Amount and unit on same line - handle optional amount
     if (pdfOpts.showAmount !== false) {
@@ -241,7 +255,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
         '—';
       doc.setFont("helvetica", "normal");
       doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-      doc.text(amountText, margin + 85, ingredientY);
+      doc.text(amountText, margin + 80, ingredientY);
     }
     
     // Type and ABV if enabled
@@ -253,21 +267,22 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
       metaText += (metaText ? ' • ' : '') + ing.abv + '%';
     }
     if (metaText) {
-      doc.setFontSize(6.5);
+      doc.setFontSize(6);
       doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
-      doc.text(metaText, margin + 120, ingredientY);
+      const metaLines = doc.splitTextToSize(metaText, maxMetaWidth);
+      doc.text(metaLines[0], margin + 120, ingredientY);
     }
     
-    // Notes if enabled
+    // Notes if enabled - with wrapping
     if (pdfOpts.showNotes !== false && ing.notes) {
       doc.setFontSize(6);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
-      const noteText = ing.notes.length > 50 ? ing.notes.substring(0, 50) + '...' : ing.notes;
-      doc.text(noteText, ingredientLeftMargin, ingredientY + 3.5);
-      ingredientY += 7.5;
+      const noteLines = doc.splitTextToSize(ing.notes, contentWidth - 16);
+      doc.text(noteLines.slice(0, 1), ingredientLeftMargin, ingredientY + 3.5);
+      ingredientY += 7;
     } else {
-      ingredientY += 6.5;
+      ingredientY += 6;
     }
   });
   
@@ -278,34 +293,34 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const methodWidth = (contentWidth - blockSpacing) / 2;
   const methodNotesHeight = 55;
   
-  // Method with better padding
+  // Method with better padding and text containment
   drawModernCard(margin, yPos, methodWidth, methodNotesHeight);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("METHOD", margin + 5, yPos + 7);
+  doc.text("METHOD", margin + 7, yPos + 8);
   
-  const methodLines = doc.splitTextToSize(recipe.methodSOP || 'No method specified', methodWidth - 12);
-  doc.setFontSize(7);
+  const methodLines = doc.splitTextToSize(recipe.methodSOP || 'No method specified', methodWidth - 14);
+  doc.setFontSize(6.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-  doc.text(methodLines.slice(0, 16), margin + 5, yPos + 13);
+  doc.text(methodLines.slice(0, 14), margin + 7, yPos + 14);
   
-  // Service Notes with better padding
+  // Service Notes with better padding and text containment
   drawModernCard(margin + methodWidth + blockSpacing, yPos, methodWidth, methodNotesHeight);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("SERVICE NOTES", margin + methodWidth + blockSpacing + 5, yPos + 7);
+  doc.text("SERVICE NOTES", margin + methodWidth + blockSpacing + 7, yPos + 8);
   
   const serviceText = recipe.serviceNotes && recipe.serviceNotes.trim() 
     ? recipe.serviceNotes 
     : 'No service notes specified';
-  const notesLines = doc.splitTextToSize(serviceText, methodWidth - 12);
-  doc.setFontSize(7);
+  const notesLines = doc.splitTextToSize(serviceText, methodWidth - 14);
+  doc.setFontSize(6.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-  doc.text(notesLines.slice(0, 16), margin + methodWidth + blockSpacing + 5, yPos + 13);
+  doc.text(notesLines.slice(0, 14), margin + methodWidth + blockSpacing + 7, yPos + 14);
   
   yPos += methodNotesHeight + 4;
   
