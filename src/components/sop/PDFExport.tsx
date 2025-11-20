@@ -303,7 +303,10 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   doc.setFontSize(6.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-  doc.text(methodLines.slice(0, 14), margin + 7, yPos + 14);
+  doc.text(methodLines.slice(0, 14), margin + 7, yPos + 14, { 
+    maxWidth: methodWidth - 14,
+    align: 'left'
+  });
   
   // Service Notes with better padding and text containment
   drawModernCard(margin + methodWidth + blockSpacing, yPos, methodWidth, methodNotesHeight);
@@ -319,7 +322,10 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   doc.setFontSize(6.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-  doc.text(notesLines.slice(0, 14), margin + methodWidth + blockSpacing + 7, yPos + 14);
+  doc.text(notesLines.slice(0, 14), margin + methodWidth + blockSpacing + 7, yPos + 14, {
+    maxWidth: methodWidth - 14,
+    align: 'left'
+  });
   
   yPos += methodNotesHeight + 4;
   
