@@ -195,6 +195,14 @@ export const FIFOAlertSettings = () => {
   };
 
   const handleTestAlert = async () => {
+    if (!currentWorkspace) {
+      toast({
+        title: 'Select a workspace',
+        description: 'Please choose a workspace before sending a test alert.',
+      });
+      return;
+    }
+
     setTesting(true);
     try {
       const response = await fetch(
@@ -205,6 +213,10 @@ export const FIFOAlertSettings = () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
+          body: JSON.stringify({
+            workspaceId: currentWorkspace.id,
+            test: true,
+          }),
         }
       );
 
