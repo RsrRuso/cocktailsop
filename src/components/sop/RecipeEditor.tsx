@@ -286,7 +286,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
               id="garnish"
               value={recipe.garnish}
               onChange={(e) => updateField("garnish", e.target.value)}
-              placeholder="e.g., Orange peel, Candied edamame"
+              placeholder="e.g., Orange peel"
               className="mt-1 text-base bg-muted text-foreground placeholder:text-muted-foreground"
               maxLength={100}
             />
