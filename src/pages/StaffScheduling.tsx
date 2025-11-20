@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWorkspace } from '@/hooks/useWorkspace';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,6 +64,7 @@ const ROLE_RESPONSIBILITIES = {
 
 export default function StaffScheduling() {
   const { user } = useAuth();
+  const { currentWorkspace } = useWorkspace();
   const [venueName, setVenueName] = useState('');
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
   const [schedule, setSchedule] = useState<Record<string, ScheduleCell>>({});
@@ -91,34 +93,32 @@ export default function StaffScheduling() {
       console.log('User authenticated:', user.id);
       fetchStaffMembers();
       fetchSavedSchedules();
-      fetchExpiringInventory();
     } else {
       console.log('No user authenticated');
     }
   }, [user]);
 
+  // Re-fetch inventory when workspace changes
+  useEffect(() => {
+    if (user?.id) {
+      fetchExpiringInventory();
+    }
+  }, [user, currentWorkspace]);
+
   const fetchExpiringInventory = async () => {
     if (!user?.id) return;
 
+    // Only fetch if we have a current workspace selected
+    if (!currentWorkspace) {
+      console.log('No workspace selected - skipping FIFO inventory fetch');
+      setExpiringItems([]);
+      return;
+    }
+
     try {
-      // First, get the ATTIKO FIFO workspace
-      const { data: workspace, error: workspaceError } = await supabase
-        .from('workspaces')
-        .select('id')
-        .eq('name', 'ATTIKO FIFO')
-        .single();
-
-      if (workspaceError) {
-        console.error('Error fetching ATTIKO FIFO workspace:', workspaceError);
-        return;
-      }
-
-      if (!workspace) {
-        console.log('ATTIKO FIFO workspace not found');
-        return;
-      }
-
-      // Fetch items expiring in the next 7 days with high priority from ATTIKO workspace only
+      console.log('Fetching FIFO inventory for workspace:', currentWorkspace.name);
+      
+      // Fetch items expiring in the next 7 days with high priority from current workspace
       const sevenDaysFromNow = new Date();
       sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 
@@ -135,7 +135,7 @@ export default function StaffScheduling() {
             name
           )
         `)
-        .eq('workspace_id', workspace.id)
+        .eq('workspace_id', currentWorkspace.id)
         .eq('status', 'available')
         .lte('expiration_date', sevenDaysFromNow.toISOString().split('T')[0])
         .gte('priority_score', 70)
@@ -147,6 +147,7 @@ export default function StaffScheduling() {
         return;
       }
 
+      console.log('Found expiring items:', data?.length || 0);
       setExpiringItems(data || []);
     } catch (error) {
       console.error('Error fetching expiring inventory:', error);
