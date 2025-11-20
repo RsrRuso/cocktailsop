@@ -43,25 +43,25 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   
   let yPos = startY || 8;
   
-  // Modern header with gold accent
+  // Modern header with gold accent - BIGGER
   const brandName = recipe.brandName || "COCKTAIL SOP";
   doc.setFillColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.rect(0, 0, 210, 20, 'F');
+  doc.rect(0, 0, 210, 28, 'F');
   
   doc.setFillColor(accentGold[0], accentGold[1], accentGold[2]);
-  doc.rect(0, 18, 210, 2, 'F');
+  doc.rect(0, 26, 210, 2, 'F');
   
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text(brandName.toUpperCase(), 15, 9);
+  doc.text(brandName.toUpperCase(), 15, 11);
   
-  doc.setFontSize(20);
+  doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
   const titleText = recipe.drinkName.toUpperCase() || "UNTITLED COCKTAIL";
-  doc.text(titleText, 15, 16);
+  doc.text(titleText, 15, 22);
   
-  yPos = 24;
+  yPos = 32;
   
   // Calculate metrics
   const totalVolume = recipe.ingredients.reduce(
@@ -78,15 +78,15 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const margin = 12;
   const contentWidth = pageWidth - (margin * 2);
   
-  // Specs section - modern badges layout
-  drawModernCard(margin, yPos, contentWidth, 30, true);
+  // Specs section - modern badges layout - BIGGER
+  drawModernCard(margin, yPos, contentWidth, 38, true);
   
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("SPECIFICATIONS", margin + 5, yPos + 6);
+  doc.text("SPECIFICATIONS", margin + 5, yPos + 7);
   
-  const specsY = yPos + 12;
+  const specsY = yPos + 16;
   const badgeWidth = 28;
   const badgeHeight = 16;
   const badgeSpacing = 31;
@@ -106,70 +106,72 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     const x = margin + 5 + (col * badgeSpacing);
     const y = specsY;
     
-    doc.setFontSize(5);
+    doc.setFontSize(6);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
     doc.text(spec.label, x, y);
     
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(darkText[0], darkText[1], darkText[2]);
     const valueText = spec.value.length > 12 ? spec.value.substring(0, 12) + '...' : spec.value;
-    doc.text(valueText, x, y + 5);
+    doc.text(valueText, x, y + 6);
   });
   
-  yPos += 34;
+  yPos += 42;
   
-  // Profiles section - side by side
+  // Profiles section - side by side - BIGGER
   const profileWidth = (contentWidth - 3) / 2;
   
   // Taste Profile
-  drawModernCard(margin, yPos, profileWidth, 40);
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("TASTE PROFILE", margin + 4, yPos + 6);
-  
-  drawRadarChart(doc, margin + (profileWidth / 2), yPos + 23, 17, recipe.tasteProfile, 'Taste');
-  
-  // Texture Profile
-  drawModernCard(margin + profileWidth + 3, yPos, profileWidth, 40);
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("TEXTURE PROFILE", margin + profileWidth + 7, yPos + 6);
-  
-  drawRadarChart(doc, margin + profileWidth + 3 + (profileWidth / 2), yPos + 23, 17, recipe.textureProfile, 'Texture');
-  
-  yPos += 44;
-  
-  // Recipe section - modern visual list with better height
-  const recipeHeight = Math.min(recipe.ingredients.length * 6 + 18, 100);
-  drawModernCard(margin, yPos, contentWidth, recipeHeight, true);
-  
+  drawModernCard(margin, yPos, profileWidth, 52);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("RECIPE", margin + 5, yPos + 6);
+  doc.text("TASTE PROFILE", margin + 4, yPos + 7);
   
-  drawAccentLine(margin + 5, yPos + 8, 25, 0.8);
+  drawRadarChart(doc, margin + (profileWidth / 2), yPos + 28, 20, recipe.tasteProfile, 'Taste');
   
-  const recipeStartY = yPos + 13;
+  // Texture Profile
+  drawModernCard(margin + profileWidth + 3, yPos, profileWidth, 52);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
+  doc.text("TEXTURE PROFILE", margin + profileWidth + 7, yPos + 7);
+  
+  drawRadarChart(doc, margin + profileWidth + 3 + (profileWidth / 2), yPos + 28, 20, recipe.textureProfile, 'Texture');
+  
+  yPos += 56;
+  
+  // Recipe section - modern visual list - BIGGER HEIGHT
+  const recipeHeight = Math.min(recipe.ingredients.length * 7 + 22, 110);
+  drawModernCard(margin, yPos, contentWidth, recipeHeight, true);
+  
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
+  doc.text("RECIPE", margin + 5, yPos + 7);
+  
+  drawAccentLine(margin + 5, yPos + 10, 30, 0.8);
+  
+  const recipeStartY = yPos + 16;
   let ingredientY = recipeStartY;
   const pdfOpts = recipe.pdfOptions || {};
   
   // Modern ingredient list (no table)
   recipe.ingredients.slice(0, 12).forEach((ing, index) => {
-    if (ingredientY > yPos + recipeHeight - 5) return; // Stop if running out of space
+    if (ingredientY > yPos + recipeHeight - 6) return; // Stop if running out of space
     
     // Ingredient line with visual hierarchy
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(darkText[0], darkText[1], darkText[2]);
     doc.text(ing.name.toUpperCase(), margin + 7, ingredientY);
     
-    // Amount and unit on same line
-    const amountText = `${ing.amount}${pdfOpts.showUnit !== false ? ' ' + ing.unit : ''}`;
+    // Amount and unit on same line - handle optional amount
+    const amountText = ing.amount ? 
+      `${ing.amount}${pdfOpts.showUnit !== false ? ' ' + ing.unit : ''}` : 
+      '—';
     doc.setFont("helvetica", "normal");
     doc.setTextColor(accentGold[0], accentGold[1], accentGold[2]);
     doc.text(amountText, margin + 85, ingredientY);
@@ -183,126 +185,126 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
       metaText += (metaText ? ' • ' : '') + ing.abv + '%';
     }
     if (metaText) {
-      doc.setFontSize(5.5);
+      doc.setFontSize(6.5);
       doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
       doc.text(metaText, margin + 120, ingredientY);
     }
     
     // Notes if enabled
     if (pdfOpts.showNotes !== false && ing.notes) {
-      doc.setFontSize(5);
+      doc.setFontSize(6);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
       const noteText = ing.notes.length > 50 ? ing.notes.substring(0, 50) + '...' : ing.notes;
-      doc.text(noteText, margin + 7, ingredientY + 3);
-      ingredientY += 6.5;
+      doc.text(noteText, margin + 7, ingredientY + 3.5);
+      ingredientY += 7.5;
     } else {
-      ingredientY += 5.5;
+      ingredientY += 6.5;
     }
     
     // Subtle divider
-    if (index < recipe.ingredients.length - 1 && ingredientY < yPos + recipeHeight - 5) {
+    if (index < recipe.ingredients.length - 1 && ingredientY < yPos + recipeHeight - 6) {
       doc.setDrawColor(mediumGray[0], mediumGray[1], mediumGray[2]);
       doc.setLineWidth(0.1);
-      doc.line(margin + 7, ingredientY - 1, margin + contentWidth - 7, ingredientY - 1);
+      doc.line(margin + 7, ingredientY - 1.5, margin + contentWidth - 7, ingredientY - 1.5);
     }
   });
   
-  yPos += recipeHeight + 4;
+  yPos += recipeHeight + 5;
   
   
-  // Method & Notes section - side by side with better height
+  // Method & Notes section - side by side - BIGGER HEIGHT
   const methodWidth = (contentWidth - 3) / 2;
-  const methodNotesHeight = 45;
+  const methodNotesHeight = 55;
   
   // Method
   drawModernCard(margin, yPos, methodWidth, methodNotesHeight);
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("METHOD", margin + 4, yPos + 6);
+  doc.text("METHOD", margin + 4, yPos + 7);
   
   const methodLines = doc.splitTextToSize(recipe.methodSOP || 'No method specified', methodWidth - 10);
-  doc.setFontSize(6);
+  doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-  doc.text(methodLines.slice(0, 14), margin + 4, yPos + 11);
+  doc.text(methodLines.slice(0, 16), margin + 4, yPos + 13);
   
   // Service Notes
   if (recipe.serviceNotes && recipe.serviceNotes.trim()) {
     drawModernCard(margin + methodWidth + 3, yPos, methodWidth, methodNotesHeight);
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-    doc.text("SERVICE NOTES", margin + methodWidth + 7, yPos + 6);
+    doc.text("SERVICE NOTES", margin + methodWidth + 7, yPos + 7);
     
     const notesLines = doc.splitTextToSize(recipe.serviceNotes, methodWidth - 10);
-    doc.setFontSize(6);
+    doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-    doc.text(notesLines.slice(0, 14), margin + methodWidth + 7, yPos + 11);
+    doc.text(notesLines.slice(0, 16), margin + methodWidth + 7, yPos + 13);
   }
   
-  yPos += methodNotesHeight + 3;
+  yPos += methodNotesHeight + 4;
   
-  // Footer with metrics and allergens - positioned at bottom
-  const footerY = 282;
+  // Footer with metrics and allergens - positioned at bottom with more space
+  const footerY = 285;
   doc.setDrawColor(accentGold[0], accentGold[1], accentGold[2]);
-  doc.setLineWidth(0.4);
+  doc.setLineWidth(0.5);
   doc.line(margin, footerY, pageWidth - margin, footerY);
   
   // Metrics badges in footer
   const metricsStartX = margin;
-  const metricsY = footerY + 4;
+  const metricsY = footerY + 5;
   
-  doc.setFontSize(5);
+  doc.setFontSize(6);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
   doc.text("RATIO", metricsStartX, metricsY);
-  doc.setFontSize(6);
+  doc.setFontSize(7);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-  doc.text(recipe.ratio || '—', metricsStartX, metricsY + 4);
+  doc.text(recipe.ratio || '—', metricsStartX, metricsY + 5);
   
-  doc.setFontSize(5);
+  doc.setFontSize(6);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
   doc.text("pH", metricsStartX + 25, metricsY);
-  doc.setFontSize(6);
+  doc.setFontSize(7);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-  doc.text(recipe.ph || '0', metricsStartX + 25, metricsY + 4);
+  doc.text(recipe.ph || '0', metricsStartX + 25, metricsY + 5);
   
-  doc.setFontSize(5);
+  doc.setFontSize(6);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
   doc.text("BRIX", metricsStartX + 40, metricsY);
-  doc.setFontSize(6);
+  doc.setFontSize(7);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-  doc.text(recipe.brix || '0', metricsStartX + 40, metricsY + 4);
+  doc.text(recipe.brix || '0', metricsStartX + 40, metricsY + 5);
   
-  doc.setFontSize(5);
+  doc.setFontSize(6);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
   doc.text("KCAL", metricsStartX + 60, metricsY);
-  doc.setFontSize(6);
+  doc.setFontSize(7);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-  doc.text(estimatedCalories.toString(), metricsStartX + 60, metricsY + 4);
+  doc.text(estimatedCalories.toString(), metricsStartX + 60, metricsY + 5);
   
   // Allergens
   if (recipe.allergens && recipe.allergens.trim()) {
-    doc.setFontSize(5);
+    doc.setFontSize(6);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
     doc.text("ALLERGENS:", metricsStartX + 85, metricsY);
     
-    doc.setFontSize(5.5);
+    doc.setFontSize(6.5);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(darkText[0], darkText[1], darkText[2]);
     const allergenText = recipe.allergens.length > 55 ? recipe.allergens.substring(0, 55) + '...' : recipe.allergens;
-    doc.text(allergenText, metricsStartX + 85, metricsY + 4);
+    doc.text(allergenText, metricsStartX + 85, metricsY + 5);
   }
   
   // Save PDF only if it's a new document
@@ -397,13 +399,13 @@ const drawRadarChart = (
   });
   
   // Clean labels
-  doc.setFontSize(4.5);
+  doc.setFontSize(5.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(100, 105, 115);
   
   for (let i = 0; i < numPoints; i++) {
     const angle = i * angleStep - Math.PI / 2;
-    const labelRadius = radius + 5;
+    const labelRadius = radius + 6;
     const x = centerX + labelRadius * Math.cos(angle);
     const y = centerY + labelRadius * Math.sin(angle);
     
@@ -411,7 +413,7 @@ const drawRadarChart = (
     const textWidth = doc.getTextWidth(label);
     
     let xOffset = -textWidth / 2;
-    let yOffset = 1.3;
+    let yOffset = 1.5;
     
     if (angle > -Math.PI / 4 && angle < Math.PI / 4) xOffset = 1;
     else if (angle > (3 * Math.PI) / 4 || angle < -(3 * Math.PI) / 4) xOffset = -textWidth - 1;
