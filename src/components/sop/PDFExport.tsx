@@ -106,11 +106,12 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const imageWidth = 68;
   const metricsWidth = contentWidth - imageWidth - blockSpacing;
   
-  // Clean image without block or shading
+  // Clean image without block or shading - organic sizing
   if (recipe.mainImage) {
-    const imgSize = imageWidth;
-    const imgX = margin;
-    const imgY = yPos;
+    const imgPadding = 4;
+    const imgSize = imageWidth - (imgPadding * 2);
+    const imgX = margin + imgPadding;
+    const imgY = yPos + imgPadding;
     
     try {
       let format: 'PNG' | 'JPEG' = 'JPEG';
@@ -118,7 +119,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
         format = 'PNG';
       }
       
-      // High-quality image rendering
+      // High-quality image rendering - organic size
       doc.addImage(recipe.mainImage, format, imgX, imgY, imgSize, imgSize, undefined, 'NONE');
       
     } catch (e) {
@@ -126,7 +127,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
       doc.setFontSize(7);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
-      doc.text("Image unavailable", imgX + 20, imgY + 30);
+      doc.text("Image unavailable", imgX + 20, imgY + 25);
     }
   }
   
