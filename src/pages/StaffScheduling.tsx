@@ -101,7 +101,24 @@ export default function StaffScheduling() {
     if (!user?.id) return;
 
     try {
-      // Fetch items expiring in the next 7 days with high priority
+      // First, get the ATTIKO workspace
+      const { data: workspace, error: workspaceError } = await supabase
+        .from('workspaces')
+        .select('id')
+        .eq('name', 'ATTIKO')
+        .single();
+
+      if (workspaceError) {
+        console.error('Error fetching ATTIKO workspace:', workspaceError);
+        return;
+      }
+
+      if (!workspace) {
+        console.log('ATTIKO workspace not found');
+        return;
+      }
+
+      // Fetch items expiring in the next 7 days with high priority from ATTIKO workspace only
       const sevenDaysFromNow = new Date();
       sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 
@@ -118,7 +135,7 @@ export default function StaffScheduling() {
             name
           )
         `)
-        .eq('user_id', user.id)
+        .eq('workspace_id', workspace.id)
         .eq('status', 'available')
         .lte('expiration_date', sevenDaysFromNow.toISOString().split('T')[0])
         .gte('priority_score', 70)
