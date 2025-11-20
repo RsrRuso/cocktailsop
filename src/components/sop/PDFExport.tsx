@@ -473,7 +473,7 @@ const drawRadarChart = (
   
   for (let i = 0; i < numPoints; i++) {
     const angle = i * angleStep - Math.PI / 2;
-    const labelRadius = radius + 6;
+    const labelRadius = radius + 3;
     const x = centerX + labelRadius * Math.cos(angle);
     const y = centerY + labelRadius * Math.sin(angle);
     
