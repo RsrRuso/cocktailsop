@@ -138,16 +138,17 @@ export default function StaffScheduling() {
         .eq('workspace_id', currentWorkspace.id)
         .eq('status', 'available')
         .lte('expiration_date', sevenDaysFromNow.toISOString().split('T')[0])
-        .gte('priority_score', 70)
+        .order('expiration_date', { ascending: true })
         .order('priority_score', { ascending: false })
-        .limit(10);
+        .limit(20);
 
       if (error) {
         console.error('Error fetching expiring inventory:', error);
         return;
       }
 
-      console.log('Found expiring items:', data?.length || 0);
+      console.log('Found expiring items:', data?.length || 0, 'items');
+      console.log('Expiring items details:', data);
       setExpiringItems(data || []);
     } catch (error) {
       console.error('Error fetching expiring inventory:', error);
