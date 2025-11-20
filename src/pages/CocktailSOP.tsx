@@ -395,40 +395,40 @@ export default function CocktailSOP() {
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
       
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <div className="flex items-center justify-between mb-6">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-7xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">LAB - SOP</h1>
-            <p className="text-muted-foreground">Smart Cocktail Standard Operating Procedures</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">LAB - SOP</h1>
+            <p className="text-sm text-muted-foreground">Smart Cocktail Standard Operating Procedures</p>
           </div>
-          <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button onClick={() => { resetForm(); setIsModalOpen(true); }} className="h-9 w-full sm:w-auto">
+            <Plus className="mr-2 h-3 w-3" />
             New SOP
           </Button>
         </div>
 
         {sops.length === 0 ? (
-          <Card className="p-12 text-center">
-            <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-xl font-semibold mb-2">No SOPs yet</h3>
-            <p className="text-muted-foreground mb-6">Create your first cocktail SOP to get started</p>
-            <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>
-              <Plus className="mr-2 h-4 w-4" />
+          <Card className="p-8 sm:p-12 text-center">
+            <FileText className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
+            <h3 className="text-lg sm:text-xl font-semibold mb-2">No SOPs yet</h3>
+            <p className="text-sm text-muted-foreground mb-4 sm:mb-6">Create your first cocktail SOP to get started</p>
+            <Button onClick={() => { resetForm(); setIsModalOpen(true); }} className="h-9">
+              <Plus className="mr-2 h-3 w-3" />
               Create First SOP
             </Button>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {sops.map((sop) => (
-              <Card key={sop.id} className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="font-bold text-lg">{sop.drink_name}</h3>
-                    <p className="text-sm text-muted-foreground">{sop.technique} • {sop.glass}</p>
+              <Card key={sop.id} className="p-4 sm:p-5 hover:shadow-lg transition-shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-base sm:text-lg truncate">{sop.drink_name}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{sop.technique} • {sop.glass}</p>
                   </div>
                 </div>
                 
-                <div className="space-y-2 mb-4 text-sm">
+                <div className="space-y-1.5 mb-3 text-xs sm:text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Volume:</span>
                     <span className="font-medium">{sop.total_ml}ml</span>
@@ -443,27 +443,29 @@ export default function CocktailSOP() {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="flex-1 h-8 text-xs"
                     onClick={() => { setSelectedSOP(sop); setIsDetailOpen(true); }}
                   >
-                    <Eye className="h-4 w-4 mr-1" />
+                    <Eye className="h-3 w-3 mr-1" />
                     View
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => exportToPDF(sop)}
+                    className="h-8 px-2"
                   >
-                    <Download className="h-4 w-4" />
+                    <Download className="h-3 w-3" />
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleEdit(sop)}
+                    className="h-8 px-3 text-xs"
                   >
                     Edit
                   </Button>
@@ -471,8 +473,9 @@ export default function CocktailSOP() {
                     variant="destructive"
                     size="sm"
                     onClick={() => handleDelete(sop.id)}
+                    className="h-8 px-2"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </Card>
@@ -483,34 +486,35 @@ export default function CocktailSOP() {
 
       {/* Create/Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-5xl h-[95vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{editingId ? 'Edit' : 'Create'} Cocktail SOP</DialogTitle>
+        <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-4 sm:p-6">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="text-xl">{editingId ? 'Edit' : 'Create'} Cocktail SOP</DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto pr-2">
+          <div className="flex-1 overflow-y-auto pr-1 -mr-1">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="basic">Basic Info</TabsTrigger>
-              <TabsTrigger value="recipe">Recipe</TabsTrigger>
-              <TabsTrigger value="method">Method</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 h-9">
+              <TabsTrigger value="basic" className="text-xs sm:text-sm">Basic Info</TabsTrigger>
+              <TabsTrigger value="recipe" className="text-xs sm:text-sm">Recipe</TabsTrigger>
+              <TabsTrigger value="method" className="text-xs sm:text-sm">Method</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="basic" className="space-y-4">
+            <TabsContent value="basic" className="space-y-3 pt-3">
               <div>
-                <Label>Drink Name *</Label>
+                <Label className="text-sm">Drink Name *</Label>
                 <Input
                   value={drinkName}
                   onChange={(e) => setDrinkName(e.target.value)}
                   placeholder="e.g., Classic Margarita"
+                  className="h-9"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label>Technique</Label>
+                  <Label className="text-sm">Technique</Label>
                   <Select value={technique} onValueChange={setTechnique}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -522,9 +526,9 @@ export default function CocktailSOP() {
                 </div>
 
                 <div>
-                  <Label>Glass</Label>
+                  <Label className="text-sm">Glass</Label>
                   <Select value={glass} onValueChange={setGlass}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -536,11 +540,11 @@ export default function CocktailSOP() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label>Ice</Label>
+                  <Label className="text-sm">Ice</Label>
                   <Select value={ice} onValueChange={setIce}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -552,58 +556,60 @@ export default function CocktailSOP() {
                 </div>
 
                 <div>
-                  <Label>Garnish</Label>
+                  <Label className="text-sm">Garnish</Label>
                   <Input
                     value={garnish}
                     onChange={(e) => setGarnish(e.target.value)}
                     placeholder="e.g., Lime wheel"
+                    className="h-9"
                   />
                 </div>
               </div>
 
-              <Card className="p-4 bg-secondary/50">
-                <div className="grid grid-cols-2 gap-4 text-center">
+              <Card className="p-3 sm:p-4 bg-secondary/50">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 text-center">
                   <div>
-                    <div className="text-2xl font-bold">{metrics.totalMl}ml</div>
-                    <div className="text-sm text-muted-foreground">Total Volume</div>
+                    <div className="text-xl sm:text-2xl font-bold text-primary">{metrics.totalMl}ml</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Total Volume</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">{metrics.abvPercentage}%</div>
-                    <div className="text-sm text-muted-foreground">ABV</div>
+                    <div className="text-xl sm:text-2xl font-bold text-primary">{metrics.abvPercentage}%</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">ABV</div>
                   </div>
                 </div>
               </Card>
             </TabsContent>
 
-            <TabsContent value="recipe" className="space-y-4">
+            <TabsContent value="recipe" className="space-y-3 pt-3">
               <div className="flex items-center justify-between">
-                <Label>Ingredients</Label>
-                <Button onClick={addIngredient} size="sm">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Ingredient
+                <Label className="text-sm font-semibold">Ingredients</Label>
+                <Button onClick={addIngredient} size="sm" className="h-8">
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add
                 </Button>
               </div>
 
               {ingredients.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground mb-4">No ingredients yet</p>
-                  <Button onClick={addIngredient} variant="outline">
+                <Card className="p-6 text-center">
+                  <p className="text-sm text-muted-foreground mb-3">No ingredients yet</p>
+                  <Button onClick={addIngredient} variant="outline" size="sm">
                     <Plus className="h-4 w-4 mr-2" />
                     Add First Ingredient
                   </Button>
                 </Card>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {ingredients.map((ing) => (
-                    <Card key={ing.id} className="p-4">
+                    <Card key={ing.id} className="p-3">
                       <div className="grid grid-cols-12 gap-2 items-end">
-                        <div className="col-span-5">
-                          <Label className="text-xs">Ingredient</Label>
+                        <div className="col-span-12 sm:col-span-5">
+                          <Label className="text-xs font-medium">Ingredient</Label>
                           <Input
                             value={ing.ingredient}
                             onChange={(e) => updateIngredient(ing.id, 'ingredient', e.target.value)}
                             placeholder="e.g., Tequila"
                             list="ingredient-suggestions"
+                            className="h-8 text-sm"
                           />
                           <datalist id="ingredient-suggestions">
                             {Object.keys(INGREDIENT_DB).map(name => (
@@ -611,21 +617,22 @@ export default function CocktailSOP() {
                             ))}
                           </datalist>
                         </div>
-                        <div className="col-span-2">
-                          <Label className="text-xs">Amount</Label>
+                        <div className="col-span-4 sm:col-span-2">
+                          <Label className="text-xs font-medium">Amount</Label>
                           <Input
                             type="number"
                             value={ing.amount}
                             onChange={(e) => updateIngredient(ing.id, 'amount', parseFloat(e.target.value) || 0)}
+                            className="h-8 text-sm"
                           />
                         </div>
-                        <div className="col-span-2">
-                          <Label className="text-xs">Unit</Label>
+                        <div className="col-span-3 sm:col-span-2">
+                          <Label className="text-xs font-medium">Unit</Label>
                           <Select
                             value={ing.unit}
                             onValueChange={(val) => updateIngredient(ing.id, 'unit', val)}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="h-8 text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -635,21 +642,23 @@ export default function CocktailSOP() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="col-span-2">
-                          <Label className="text-xs">ABV %</Label>
+                        <div className="col-span-3 sm:col-span-2">
+                          <Label className="text-xs font-medium">ABV %</Label>
                           <Input
                             type="number"
                             value={ing.abv}
                             onChange={(e) => updateIngredient(ing.id, 'abv', parseFloat(e.target.value) || 0)}
+                            className="h-8 text-sm"
                           />
                         </div>
-                        <div className="col-span-1">
+                        <div className="col-span-2 sm:col-span-1">
                           <Button
                             variant="destructive"
                             size="sm"
                             onClick={() => removeIngredient(ing.id)}
+                            className="h-8 w-full"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
@@ -659,26 +668,27 @@ export default function CocktailSOP() {
               )}
             </TabsContent>
 
-            <TabsContent value="method" className="space-y-4">
+            <TabsContent value="method" className="space-y-3 pt-3">
               <div>
-                <Label>Preparation Method</Label>
+                <Label className="text-sm font-semibold">Preparation Method</Label>
                 <Textarea
                   value={methodSop}
                   onChange={(e) => setMethodSop(e.target.value)}
                   placeholder="Describe the step-by-step preparation method..."
-                  rows={10}
+                  rows={8}
+                  className="text-sm resize-none"
                 />
               </div>
             </TabsContent>
           </Tabs>
           </div>
 
-          <div className="flex gap-2 justify-end pt-4 border-t">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+          <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end pt-3 border-t mt-2">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)} className="h-9">
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              <Save className="mr-2 h-4 w-4" />
+            <Button onClick={handleSave} className="h-9">
+              <Save className="mr-2 h-3 w-3" />
               Save SOP
             </Button>
           </div>
@@ -687,68 +697,68 @@ export default function CocktailSOP() {
 
       {/* Detail View Modal */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{selectedSOP?.drink_name}</DialogTitle>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="text-xl">{selectedSOP?.drink_name}</DialogTitle>
           </DialogHeader>
 
           {selectedSOP && (
-            <div className="space-y-6">
-              <Card className="p-4 bg-secondary/50">
-                <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <Card className="p-3 bg-secondary/50">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <div className="text-sm text-muted-foreground">Technique</div>
-                    <div className="font-medium">{selectedSOP.technique}</div>
+                    <div className="text-xs text-muted-foreground">Technique</div>
+                    <div className="font-medium text-sm">{selectedSOP.technique}</div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Glass</div>
-                    <div className="font-medium">{selectedSOP.glass}</div>
+                    <div className="text-xs text-muted-foreground">Glass</div>
+                    <div className="font-medium text-sm">{selectedSOP.glass}</div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Ice</div>
-                    <div className="font-medium">{selectedSOP.ice}</div>
+                    <div className="text-xs text-muted-foreground">Ice</div>
+                    <div className="font-medium text-sm">{selectedSOP.ice}</div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Garnish</div>
-                    <div className="font-medium">{selectedSOP.garnish}</div>
+                    <div className="text-xs text-muted-foreground">Garnish</div>
+                    <div className="font-medium text-sm">{selectedSOP.garnish}</div>
                   </div>
                 </div>
               </Card>
 
               <div>
-                <h3 className="font-semibold mb-3">Recipe</h3>
-                <div className="space-y-2">
+                <h3 className="font-semibold text-sm mb-2">Recipe</h3>
+                <div className="space-y-1.5">
                   {Array.isArray(selectedSOP.recipe) && selectedSOP.recipe.map((ing: any, idx: number) => (
-                    <div key={idx} className="flex justify-between items-center py-2 border-b">
-                      <span>{ing.ingredient}</span>
-                      <span className="font-medium">{ing.amount}{ing.unit}</span>
+                    <div key={idx} className="flex justify-between items-center py-1.5 px-2 bg-muted/50 rounded-sm">
+                      <span className="text-sm">{ing.ingredient}</span>
+                      <span className="font-medium text-sm">{ing.amount}{ing.unit}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <Card className="p-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
+              <Card className="p-3">
+                <div className="grid grid-cols-2 gap-3 text-center">
                   <div>
-                    <div className="text-3xl font-bold text-primary">{selectedSOP.total_ml}ml</div>
-                    <div className="text-sm text-muted-foreground">Total Volume</div>
+                    <div className="text-2xl font-bold text-primary">{selectedSOP.total_ml}ml</div>
+                    <div className="text-xs text-muted-foreground">Total Volume</div>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-primary">{selectedSOP.abv_percentage}%</div>
-                    <div className="text-sm text-muted-foreground">ABV</div>
+                    <div className="text-2xl font-bold text-primary">{selectedSOP.abv_percentage}%</div>
+                    <div className="text-xs text-muted-foreground">ABV</div>
                   </div>
                 </div>
               </Card>
 
               {selectedSOP.method_sop && (
                 <div>
-                  <h3 className="font-semibold mb-3">Method</h3>
-                  <p className="text-sm whitespace-pre-wrap">{selectedSOP.method_sop}</p>
+                  <h3 className="font-semibold text-sm mb-2">Method</h3>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground/90">{selectedSOP.method_sop}</p>
                 </div>
               )}
 
-              <Button onClick={() => exportToPDF(selectedSOP)} className="w-full">
-                <Download className="mr-2 h-4 w-4" />
+              <Button onClick={() => exportToPDF(selectedSOP)} className="w-full h-9">
+                <Download className="mr-2 h-3 w-3" />
                 Export to PDF
               </Button>
             </div>
