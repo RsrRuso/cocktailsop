@@ -1392,6 +1392,7 @@ export type Database = {
       fifo_alert_settings: {
         Row: {
           alert_recipients: string[]
+          alert_time: string | null
           created_at: string
           days_before_expiry: number
           enabled: boolean
@@ -1402,6 +1403,7 @@ export type Database = {
         }
         Insert: {
           alert_recipients?: string[]
+          alert_time?: string | null
           created_at?: string
           days_before_expiry?: number
           enabled?: boolean
@@ -1412,6 +1414,7 @@ export type Database = {
         }
         Update: {
           alert_recipients?: string[]
+          alert_time?: string | null
           created_at?: string
           days_before_expiry?: number
           enabled?: boolean

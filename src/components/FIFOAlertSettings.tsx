@@ -16,6 +16,7 @@ interface AlertSettings {
   days_before_expiry: number;
   alert_recipients: string[];
   enabled: boolean;
+  alert_time?: string;
 }
 
 interface WorkspaceMember {
@@ -36,6 +37,7 @@ export const FIFOAlertSettings = () => {
     days_before_expiry: 30,
     alert_recipients: [],
     enabled: true,
+    alert_time: '09:00',
   });
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
 
@@ -64,6 +66,7 @@ export const FIFOAlertSettings = () => {
           days_before_expiry: data.days_before_expiry,
           alert_recipients: data.alert_recipients || [],
           enabled: data.enabled,
+          alert_time: data.alert_time || '09:00',
         });
       }
     } catch (error) {
@@ -107,6 +110,7 @@ export const FIFOAlertSettings = () => {
         days_before_expiry: settings.days_before_expiry,
         alert_recipients: settings.alert_recipients,
         enabled: settings.enabled,
+        alert_time: settings.alert_time || '09:00',
         updated_at: new Date().toISOString(),
       };
 
@@ -227,12 +231,12 @@ export const FIFOAlertSettings = () => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="days">Days Before Expiry</Label>
+          <Label htmlFor="days">Days Before Expiry Alert</Label>
           <Input
             id="days"
             type="number"
             min="1"
-            max="365"
+            max="90"
             value={settings.days_before_expiry}
             onChange={(e) =>
               setSettings({
@@ -240,44 +244,90 @@ export const FIFOAlertSettings = () => {
                 days_before_expiry: parseInt(e.target.value) || 30,
               })
             }
+            disabled={!settings.enabled}
+            className="bg-background"
           />
-          <p className="text-sm text-muted-foreground">
-            Get alerts for items expiring within this many days
+          <p className="text-xs text-muted-foreground">
+            Get alerts {settings.days_before_expiry} days before items expire
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="time">Daily Alert Time</Label>
+          <Input
+            id="time"
+            type="time"
+            value={settings.alert_time || '09:00'}
+            onChange={(e) => setSettings({ ...settings, alert_time: e.target.value })}
+            disabled={!settings.enabled}
+            className="bg-background"
+          />
+          <p className="text-xs text-muted-foreground">
+            Time of day to send daily alerts (in your local timezone)
           </p>
         </div>
 
         <div className="space-y-3">
-          <Label className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Alert Recipients
-          </Label>
-          <p className="text-sm text-muted-foreground">
-            Select workspace members who should receive alerts (leave empty for all managers)
-          </p>
-          <div className="space-y-2">
-            {members.map((member) => (
-              <div
-                key={member.user_id}
-                className="flex items-center justify-between p-3 border rounded-lg"
+          <div className="flex items-center justify-between">
+            <Label className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Alert Recipients ({settings.alert_recipients.length} selected)
+            </Label>
+            {settings.alert_recipients.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSettings({ ...settings, alert_recipients: [] })}
+                disabled={!settings.enabled}
               >
-                <div className="flex items-center gap-3">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">
-                      {member.profiles.full_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {member.profiles.email}
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  checked={settings.alert_recipients.includes(member.user_id)}
-                  onCheckedChange={() => toggleRecipient(member.user_id)}
-                />
-              </div>
-            ))}
+                Clear All
+              </Button>
+            )}
           </div>
+          <p className="text-sm text-muted-foreground">
+            Select workspace members who will receive daily expiry alert emails
+          </p>
+          
+          {members.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic py-4 text-center border rounded-md">
+              No workspace members found. Invite members to your workspace first.
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-80 overflow-y-auto border rounded-md p-3 bg-accent/5">
+              {members.map((member) => (
+                <div
+                  key={member.user_id}
+                  className="flex items-center justify-between py-2 hover:bg-accent/50 rounded px-2 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold border-2 border-primary/20">
+                      {member.profiles.full_name?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{member.profiles.full_name}</p>
+                      <p className="text-xs text-muted-foreground">{member.profiles.email}</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={settings.alert_recipients.includes(member.user_id)}
+                    onCheckedChange={() => toggleRecipient(member.user_id)}
+                    disabled={!settings.enabled}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {settings.alert_recipients.length > 0 && (
+            <div className="mt-2 p-3 bg-primary/5 rounded-md border">
+              <p className="text-xs font-medium mb-1">Selected recipients will receive:</p>
+              <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                <li>Daily email alerts at {settings.alert_time || '09:00'}</li>
+                <li>Details of items expiring within {settings.days_before_expiry} days</li>
+                <li>Priority scores and recommended actions</li>
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3">
