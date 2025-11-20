@@ -1450,12 +1450,12 @@ export default function StaffScheduling() {
           </div>
         </div>
 
-        {/* Daily Events Management */}
+        {/* Special Events Management */}
         <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl" />
           <div className="relative">
-            <Accordion type="single" collapsible defaultValue="daily-events">
-              <AccordionItem value="daily-events" className="border-none">
+            <Accordion type="single" collapsible defaultValue="special-events">
+              <AccordionItem value="special-events" className="border-none">
                 <AccordionTrigger className="hover:no-underline pb-4">
                   <div className="flex items-center justify-between w-full pr-4">
                     <div className="flex items-center gap-3">
@@ -1463,7 +1463,7 @@ export default function StaffScheduling() {
                         <Calendar className="w-5 h-5 text-accent" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold text-gray-100">Daily Events</h3>
+                        <h3 className="text-lg font-bold text-gray-100">Special Events</h3>
                         <p className="text-xs text-gray-500">No offs scheduled on event days</p>
                       </div>
                     </div>
