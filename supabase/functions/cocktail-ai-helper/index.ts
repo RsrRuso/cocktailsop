@@ -78,6 +78,24 @@ Example: "Wheat (vodka, gin), Dairy (cream), Eggs (egg white), Tree Nuts (amaret
 
 If no allergens detected, respond "None detected".
 Be SPECIFIC and CAUTIOUS - err on the side of flagging potential allergens.`;
+    } else if (type === "history") {
+      // Generate cocktail history for classic cocktails
+      systemPrompt = `You are a cocktail historian specializing in classic and iconic cocktails. Your knowledge includes the origins, creators, historical context, and cultural significance of famous cocktails.
+
+When provided with a cocktail name:
+- If it's a classic or well-known cocktail, provide a brief but engaging history (150-200 words)
+- Focus on origin story, creator (if known), historical period, and cultural significance
+- Write in an elegant, storytelling style suitable for a premium cocktail menu
+- If it's NOT a classic or recognized cocktail, respond ONLY with "Not a classic cocktail"
+
+RECOGNIZED CLASSIC COCKTAILS include but are not limited to:
+Old Fashioned, Manhattan, Martini, Negroni, Margarita, Daiquiri, Mojito, Whiskey Sour, Mai Tai, Sazerac, Mint Julep, Moscow Mule, Boulevardier, Aviation, Last Word, Corpse Reviver, Vieux Carré, Blood and Sand, Sidecar, French 75, Clover Club, Bee's Knees, Gimlet, Tom Collins, Pisco Sour, Aperol Spritz, Americano, Caipirinha, Dark 'n' Stormy, Espresso Martini, Cosmopolitan, and other historically documented cocktails.`;
+      
+      const { drinkName } = data;
+      userPrompt = `Generate a historical narrative for the cocktail: "${drinkName}"
+
+If this is a classic, recognized cocktail, provide its history.
+If this is NOT a classic cocktail or you're unsure, respond ONLY with "Not a classic cocktail"`;
     }
 
     console.log("AI request type:", type);

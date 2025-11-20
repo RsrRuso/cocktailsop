@@ -5,10 +5,29 @@ import autoTable from "jspdf-autotable";
 export const exportToPDF = (recipe: CocktailRecipe) => {
   const doc = new jsPDF();
   
-  // Clean professional colors
+  // 3D effect colors
   const textColor: [number, number, number] = [0, 0, 0];
   const headerColor: [number, number, number] = [100, 100, 100];
-  const borderColor: [number, number, number] = [200, 200, 200];
+  const borderColor: [number, number, number] = [150, 150, 150];
+  const shadowColor: [number, number, number] = [220, 220, 220];
+  const blockBg: [number, number, number] = [245, 245, 245];
+  const shadowOffset = 2;
+  
+  // Helper to draw 3D block
+  const draw3DBlock = (x: number, y: number, width: number, height: number) => {
+    // Shadow
+    doc.setFillColor(shadowColor[0], shadowColor[1], shadowColor[2]);
+    doc.rect(x + shadowOffset, y + shadowOffset, width, height, 'F');
+    
+    // Main block
+    doc.setFillColor(blockBg[0], blockBg[1], blockBg[2]);
+    doc.rect(x, y, width, height, 'F');
+    
+    // Border
+    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setLineWidth(0.5);
+    doc.rect(x, y, width, height, 'S');
+  };
   
   let yPos = 15;
   
@@ -39,9 +58,11 @@ export const exportToPDF = (recipe: CocktailRecipe) => {
   const abvPercentage = totalVolume > 0 ? (pureAlcohol / totalVolume) * 100 : 0;
   const estimatedCalories = Math.round(pureAlcohol * 7 + totalVolume * 0.5);
   
-  // Identity & Metrics table
+  // Identity & Metrics 3D block
+  draw3DBlock(13, yPos, 184, 70);
+  
   autoTable(doc, {
-    startY: yPos,
+    startY: yPos + 2 as any,
     head: [['Identity', 'Metrics']],
     body: [
       ['Drink Name', recipe.drinkName || '-'],
@@ -56,13 +77,13 @@ export const exportToPDF = (recipe: CocktailRecipe) => {
       ['Brix', recipe.brix || '0'],
       ['Kcal', estimatedCalories.toString()],
     ],
-    theme: 'grid',
+    theme: 'plain',
     styles: {
       fontSize: 9,
       cellPadding: 3,
       textColor: textColor,
-      lineColor: borderColor,
-      lineWidth: 0.1,
+      lineColor: [0, 0, 0, 0],
+      lineWidth: 0,
     },
     headStyles: {
       fillColor: [255, 255, 255],
@@ -74,36 +95,42 @@ export const exportToPDF = (recipe: CocktailRecipe) => {
       0: { fontStyle: 'normal', cellWidth: 40 },
       1: { fontStyle: 'normal', cellWidth: 'auto' },
     },
-    margin: { left: 15 },
-  });
+    margin: { left: 17 },
+  } as any);
   
-  yPos = (doc as any).lastAutoTable.finalY + 10;
+  yPos = (doc as any).lastAutoTable.finalY + 15;
   
-  // Method (SOP)
+  // Method (SOP) 3D block
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(textColor[0], textColor[1], textColor[2]);
   doc.text("Method (SOP)", 15, yPos);
   yPos += 7;
   
+  const methodLines = doc.splitTextToSize(recipe.methodSOP || 'No method specified', 174);
+  const methodHeight = methodLines.length * 5 + 8;
+  draw3DBlock(13, yPos - 3, 184, methodHeight);
+  
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  const methodLines = doc.splitTextToSize(recipe.methodSOP || 'No method specified', 180);
-  doc.text(methodLines, 15, yPos);
-  yPos += methodLines.length * 5 + 10;
+  doc.text(methodLines, 17, yPos + 2);
+  yPos += methodHeight + 7;
   
-  // Service Notes
+  // Service Notes 3D block
   if (recipe.serviceNotes) {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("Service Notes", 15, yPos);
     yPos += 7;
     
+    const notesLines = doc.splitTextToSize(recipe.serviceNotes, 174);
+    const notesHeight = notesLines.length * 5 + 8;
+    draw3DBlock(13, yPos - 3, 184, notesHeight);
+    
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    const notesLines = doc.splitTextToSize(recipe.serviceNotes, 180);
-    doc.text(notesLines, 15, yPos);
-    yPos += notesLines.length * 5 + 10;
+    doc.text(notesLines, 17, yPos + 2);
+    yPos += notesHeight + 7;
   }
   
   // Check if we need a new page
@@ -276,8 +303,15 @@ const drawRadarChart = (
   const numPoints = labels.length;
   const angleStep = (2 * Math.PI) / numPoints;
   
-  // Draw concentric circles (grid)
-  doc.setDrawColor(220, 220, 220);
+  // Draw 3D concentric circles (grid)
+  const shadowColor: [number, number, number] = [220, 220, 220];
+  doc.setFillColor(shadowColor[0], shadowColor[1], shadowColor[2]);
+  for (let i = 1; i <= 5; i++) {
+    const r = (radius / 5) * i;
+    doc.circle(centerX + 1, centerY + 1, r, 'S');
+  }
+  
+  doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.1);
   for (let i = 1; i <= 5; i++) {
     const r = (radius / 5) * i;
