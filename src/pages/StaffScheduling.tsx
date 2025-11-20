@@ -198,6 +198,28 @@ export default function StaffScheduling() {
     return schedule[key];
   };
 
+  // Helper function to calculate break end time (1 hour after start)
+  const calculateBreakEnd = (startTime: string): string => {
+    if (!startTime) return '';
+    
+    const [time, period] = startTime.split(' ');
+    const [hours, minutes] = time.split(':').map(Number);
+    
+    let hour24 = hours;
+    if (period === 'PM' && hours !== 12) hour24 += 12;
+    if (period === 'AM' && hours === 12) hour24 = 0;
+    
+    // Add 1 hour
+    let endHour = hour24 + 1;
+    
+    // Convert back to 12-hour format
+    let endPeriod = endHour >= 12 ? 'PM' : 'AM';
+    let endHour12 = endHour % 12;
+    if (endHour12 === 0) endHour12 = 12;
+    
+    return `${endHour12}:${minutes.toString().padStart(2, '0')} ${endPeriod}`;
+  };
+
   // Helper function to shuffle array (Fisher-Yates algorithm)
   const shuffleArray = <T,>(array: T[]): T[] => {
     const shuffled = [...array];
@@ -216,7 +238,8 @@ export default function StaffScheduling() {
       return;
     }
 
-    const newSchedule: Record<string, ScheduleCell> = {};
+    // PRESERVE EXISTING SCHEDULE - Start with current data instead of wiping it
+    const newSchedule: Record<string, ScheduleCell> = { ...schedule };
     
     // Get staff by role and SHUFFLE them for randomized allocation
     const headBartenders = shuffleArray(staffMembers.filter(s => s.title === 'head_bartender'));
@@ -2104,7 +2127,11 @@ export default function StaffScheduling() {
                               <div className="flex gap-0.5 mt-0.5">
                                 <Select
                                   value={cell?.breakStart || ''}
-                                  onValueChange={(value) => updateScheduleCell(staff.id, day, cell.timeRange, cell.type, cell.station, value, cell?.breakEnd)}
+                                  onValueChange={(value) => {
+                                    // Auto-calculate break end time (1 hour after start)
+                                    const autoBreakEnd = calculateBreakEnd(value);
+                                    updateScheduleCell(staff.id, day, cell.timeRange, cell.type, cell.station, value, autoBreakEnd);
+                                  }}
                                 >
                                   <SelectTrigger className="text-[7px] h-4 bg-orange-500/10 border-orange-500/30 px-0.5">
                                     <SelectValue placeholder="Break Start" />
