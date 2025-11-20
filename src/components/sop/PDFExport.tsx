@@ -26,21 +26,20 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     doc.line(x, y, x + width, y);
   };
   
-  // Modern card-style block
-  const drawModernCard = (x: number, y: number, width: number, height: number, withAccent = false) => {
-    // Subtle shadow
-    doc.setFillColor(235, 237, 240);
-    doc.roundedRect(x + 0.8, y + 0.8, width, height, 1.5, 1.5, 'F');
+  // Modern card-style block with better contrast
+  const drawModernCard = (x: number, y: number, width: number, height: number) => {
+    // Subtle shadow for depth
+    doc.setFillColor(220, 222, 225);
+    doc.roundedRect(x + 0.5, y + 0.5, width, height, 2, 2, 'F');
     
-    // Main card
-    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-    doc.roundedRect(x, y, width, height, 1.5, 1.5, 'F');
+    // Main card with better contrast
+    doc.setFillColor(248, 249, 251);
+    doc.roundedRect(x, y, width, height, 2, 2, 'F');
     
-    if (withAccent) {
-      // Black accent bar on left
-      doc.setFillColor(blackFrame[0], blackFrame[1], blackFrame[2]);
-      doc.roundedRect(x, y, 2, height, 1.5, 1.5, 'F');
-    }
+    // Light border for separation
+    doc.setDrawColor(230, 232, 235);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(x, y, width, height, 2, 2, 'S');
   };
   
   
@@ -93,21 +92,22 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const margin = 12;
   const contentWidth = pageWidth - (margin * 2);
   
-  // Harmonious side-by-side layout: Image + Metrics
+  // Harmonious side-by-side layout: Image + Metrics with better spacing
+  const blockSpacing = 5;
   const sectionHeight = 60;
   const imageWidth = 68;
-  const metricsWidth = contentWidth - imageWidth - 4;
+  const metricsWidth = contentWidth - imageWidth - blockSpacing;
   
   // Image block - elegant square aspect
   if (recipe.mainImage) {
-    drawModernCard(margin, yPos, imageWidth, sectionHeight, true);
+    drawModernCard(margin, yPos, imageWidth, sectionHeight);
     
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-    doc.text("COCKTAIL", margin + 4, yPos + 6);
+    doc.text("COCKTAIL", margin + 5, yPos + 6);
     
-    const imgPadding = 4;
+    const imgPadding = 5;
     const frameThickness = 0.8;
     const imgSize = imageWidth - (imgPadding * 2);
     const imgX = margin + imgPadding;
@@ -142,15 +142,15 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   }
   
   // Metrics block - balanced companion
-  const metricsX = margin + imageWidth + 4;
+  const metricsX = margin + imageWidth + blockSpacing;
   drawModernCard(metricsX, yPos, metricsWidth, sectionHeight);
   
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("SPECIFICATIONS", metricsX + 4, yPos + 6);
+  doc.text("SPECIFICATIONS", metricsX + 5, yPos + 6);
   
-  drawAccentLine(metricsX + 4, yPos + 8, 35, 0.6);
+  drawAccentLine(metricsX + 5, yPos + 8, 35, 0.6);
   
   // Elegant metric grid - 2 columns, 3 rows
   const specs = [
@@ -163,13 +163,13 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   ];
   
   const specsStartY = yPos + 13;
-  const colWidth = (metricsWidth - 8) / 2;
+  const colWidth = (metricsWidth - 10) / 2;
   const rowHeight = 14;
   
   specs.forEach((spec, i) => {
     const row = Math.floor(i / 2);
     const col = i % 2;
-    const x = metricsX + 4 + (col * colWidth);
+    const x = metricsX + 5 + (col * colWidth);
     const y = specsStartY + (row * rowHeight);
     
     doc.setFontSize(6);
@@ -184,7 +184,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     doc.text(valueText, x, y + 5);
   });
   
-  yPos += sectionHeight + 5;
+  yPos += sectionHeight + blockSpacing;
   
   // Profiles section - side by side - BIGGER
   const profileWidth = (contentWidth - 3) / 2;
@@ -194,24 +194,24 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("TASTE PROFILE", margin + 4, yPos + 7);
+  doc.text("TASTE PROFILE", margin + 5, yPos + 7);
   
   drawRadarChart(doc, margin + (profileWidth / 2), yPos + 28, 20, recipe.tasteProfile, 'Taste');
   
   // Texture Profile
-  drawModernCard(margin + profileWidth + 3, yPos, profileWidth, 52);
+  drawModernCard(margin + profileWidth + blockSpacing, yPos, profileWidth, 52);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("TEXTURE PROFILE", margin + profileWidth + 7, yPos + 7);
+  doc.text("TEXTURE PROFILE", margin + profileWidth + blockSpacing + 5, yPos + 7);
   
-  drawRadarChart(doc, margin + profileWidth + 3 + (profileWidth / 2), yPos + 28, 20, recipe.textureProfile, 'Texture');
+  drawRadarChart(doc, margin + profileWidth + blockSpacing + (profileWidth / 2), yPos + 28, 20, recipe.textureProfile, 'Texture');
   
-  yPos += 56;
+  yPos += 52 + blockSpacing;
   
-  // Recipe section - modern visual list - BIGGER HEIGHT
+  // Recipe section - modern visual list with better content padding
   const recipeHeight = Math.min(recipe.ingredients.length * 7 + 22, 110);
-  drawModernCard(margin, yPos, contentWidth, recipeHeight, true);
+  drawModernCard(margin, yPos, contentWidth, recipeHeight);
   
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
@@ -222,16 +222,17 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   
   const recipeStartY = yPos + 16;
   let ingredientY = recipeStartY;
+  const ingredientLeftMargin = margin + 6;
   
-  // Modern ingredient list (no table, no dividers)
+  // Modern ingredient list with proper padding
   recipe.ingredients.slice(0, 12).forEach((ing, index) => {
-    if (ingredientY > yPos + recipeHeight - 6) return; // Stop if running out of space
+    if (ingredientY > yPos + recipeHeight - 8) return; // Stop if running out of space
     
     // Ingredient line with visual hierarchy
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-    doc.text(ing.name.toUpperCase(), margin + 7, ingredientY);
+    doc.text(ing.name.toUpperCase(), ingredientLeftMargin, ingredientY);
     
     // Amount and unit on same line - handle optional amount
     if (pdfOpts.showAmount !== false) {
@@ -263,48 +264,48 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
       doc.setFont("helvetica", "italic");
       doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
       const noteText = ing.notes.length > 50 ? ing.notes.substring(0, 50) + '...' : ing.notes;
-      doc.text(noteText, margin + 7, ingredientY + 3.5);
+      doc.text(noteText, ingredientLeftMargin, ingredientY + 3.5);
       ingredientY += 7.5;
     } else {
       ingredientY += 6.5;
     }
   });
   
-  yPos += recipeHeight + 5;
+  yPos += recipeHeight + blockSpacing;
   
   
-  // Method & Notes section - side by side - BIGGER HEIGHT
-  const methodWidth = (contentWidth - 3) / 2;
+  // Method & Notes section - side by side with better spacing
+  const methodWidth = (contentWidth - blockSpacing) / 2;
   const methodNotesHeight = 55;
   
-  // Method
+  // Method with better padding
   drawModernCard(margin, yPos, methodWidth, methodNotesHeight);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("METHOD", margin + 4, yPos + 7);
+  doc.text("METHOD", margin + 5, yPos + 7);
   
-  const methodLines = doc.splitTextToSize(recipe.methodSOP || 'No method specified', methodWidth - 10);
+  const methodLines = doc.splitTextToSize(recipe.methodSOP || 'No method specified', methodWidth - 12);
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-  doc.text(methodLines.slice(0, 16), margin + 4, yPos + 13);
+  doc.text(methodLines.slice(0, 16), margin + 5, yPos + 13);
   
-  // Service Notes - always show
-  drawModernCard(margin + methodWidth + 3, yPos, methodWidth, methodNotesHeight);
+  // Service Notes with better padding
+  drawModernCard(margin + methodWidth + blockSpacing, yPos, methodWidth, methodNotesHeight);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("SERVICE NOTES", margin + methodWidth + 7, yPos + 7);
+  doc.text("SERVICE NOTES", margin + methodWidth + blockSpacing + 5, yPos + 7);
   
   const serviceText = recipe.serviceNotes && recipe.serviceNotes.trim() 
     ? recipe.serviceNotes 
     : 'No service notes specified';
-  const notesLines = doc.splitTextToSize(serviceText, methodWidth - 10);
+  const notesLines = doc.splitTextToSize(serviceText, methodWidth - 12);
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-  doc.text(notesLines.slice(0, 16), margin + methodWidth + 7, yPos + 13);
+  doc.text(notesLines.slice(0, 16), margin + methodWidth + blockSpacing + 5, yPos + 13);
   
   yPos += methodNotesHeight + 4;
   
