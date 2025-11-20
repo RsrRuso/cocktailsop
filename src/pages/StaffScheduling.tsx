@@ -74,6 +74,7 @@ export default function StaffScheduling() {
     'Friday': 'Weekend',
     'Saturday': 'Brunch'
   });
+  const [specialEvents, setSpecialEvents] = useState<Record<string, string>>({});
   const [isEditingEvents, setIsEditingEvents] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState<string | null>(null);
   
@@ -969,6 +970,7 @@ export default function StaffScheduling() {
           schedule_data: schedule as any,
           venue_name: venueName || null,
           daily_events: dailyEvents as any,
+          special_events: specialEvents as any,
           updated_at: new Date().toISOString()
         }], {
           onConflict: 'user_id,week_start_date'
@@ -1123,7 +1125,7 @@ export default function StaffScheduling() {
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...colors.white);
-      doc.text('SPECIAL EVENTS THIS WEEK', 18, finalY + 3);
+      doc.text('DAILY EVENTS THIS WEEK', 18, finalY + 3);
       
       finalY += 10;
       doc.setFontSize(6.5);
@@ -1145,6 +1147,38 @@ export default function StaffScheduling() {
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(...colors.lightGrey);
           doc.text(`${event}${staffInfo}`, 40, finalY);
+          finalY += 3.5;
+        }
+      });
+      
+      finalY += 2;
+    }
+
+    // Special Events Section
+    const hasSpecialEvents = Object.values(specialEvents).some(event => event && event.trim() !== '');
+    
+    if (hasSpecialEvents) {
+      doc.setFillColor(255, 215, 0); // Gold color
+      doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0); // Black text on gold
+      doc.text('SPECIAL EVENTS THIS WEEK', 18, finalY + 3);
+      
+      finalY += 10;
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...colors.lightGrey);
+      
+      DAYS_OF_WEEK.forEach(day => {
+        const event = specialEvents[day];
+        if (event && event.trim() !== '') {
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 215, 0); // Gold color
+          doc.text(`${day}:`, 18, finalY);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...colors.lightGrey);
+          doc.text(event, 40, finalY);
           finalY += 3.5;
         }
       });
@@ -1198,6 +1232,8 @@ export default function StaffScheduling() {
       finalY += 12;
     });
     
+    
+    // This old section has been removed - special events now integrated earlier in the PDF
     
     // Add spacing at the bottom for readability
     finalY += 20;
@@ -1405,6 +1441,48 @@ export default function StaffScheduling() {
                             {dailyEvents[day] || '—'}
                           </div>
                         )}
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        </Card>
+
+        {/* Special Events Section */}
+        <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
+          <div className="absolute bottom-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl" />
+          <div className="relative">
+            <Accordion type="single" collapsible>
+              <AccordionItem value="special-events" className="border-none">
+                <AccordionTrigger className="hover:no-underline pb-4">
+                  <div className="flex items-center justify-between w-full pr-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
+                        <Calendar className="w-5 h-5 text-amber-400" />
+                      </div>
+                      <div className="text-left">
+                        <h2 className="text-lg font-bold text-gray-100">Special Events</h2>
+                        <p className="text-xs text-gray-400 mt-0.5">Hygiene clearance, training, or special tasks</p>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <div key={day} className="space-y-2">
+                        <Label className="text-xs font-bold text-gray-300 uppercase tracking-wide">{day}</Label>
+                        <Input
+                          value={specialEvents[day] || ''}
+                          onChange={(e) => setSpecialEvents(prev => ({
+                            ...prev,
+                            [day]: e.target.value
+                          }))}
+                          placeholder="e.g., Hygiene Clearance, Training"
+                          className="text-sm bg-gray-800 border-gray-700 text-gray-100"
+                        />
                       </div>
                     ))}
                   </div>
