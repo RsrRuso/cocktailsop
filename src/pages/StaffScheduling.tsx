@@ -82,8 +82,6 @@ export default function StaffScheduling() {
   const [savedSchedules, setSavedSchedules] = useState<any[]>([]);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [expiringItems, setExpiringItems] = useState<any[]>([]);
-  const [zapierWebhookUrl, setZapierWebhookUrl] = useState('');
-  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
   
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -1625,59 +1623,33 @@ export default function StaffScheduling() {
                         </div>
                       </div>
                       <Button
-                        onClick={async (e) => {
+                        onClick={(e) => {
                           e.stopPropagation();
-                          if (!zapierWebhookUrl) {
-                            toast.error('Please set your Zapier webhook URL below first');
-                            return;
-                          }
-                          setIsSendingWhatsApp(true);
-                          try {
-                            const message = `🚨 *FIFO INVENTORY WARNINGS*\n\n${expiringItems.map((item: any, i: number) => 
-                              `${i + 1}. ${item.items?.name || 'Unknown'}\n   Store: ${item.stores?.name || 'Unknown'}\n   Qty: ${item.quantity}\n   Expires: ${format(new Date(item.expiration_date), 'MMM dd, yyyy')}\n   Priority: ${item.priority_score}`
-                            ).join('\n\n')}`;
+                          const message = `🚨 *FIFO INVENTORY WARNINGS*\n\n${expiringItems.map((item: any, i: number) => 
+                            `${i + 1}. ${item.items?.name || 'Unknown'}\n   Store: ${item.stores?.name || 'Unknown'}\n   Qty: ${item.quantity}\n   Expires: ${format(new Date(item.expiration_date), 'MMM dd, yyyy')}\n   Priority: ${item.priority_score}`
+                          ).join('\n\n')}`;
 
-                            await fetch(zapierWebhookUrl, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              mode: 'no-cors',
-                              body: JSON.stringify({
-                                message,
-                                timestamp: new Date().toISOString(),
-                                workspace: currentWorkspace?.name || 'Personal',
-                                itemCount: expiringItems.length
-                              })
-                            });
-                            toast.success('FIFO warnings sent to WhatsApp via Zapier');
-                          } catch (error) {
-                            console.error('Error sending to Zapier:', error);
-                            toast.error('Failed to send to WhatsApp');
-                          } finally {
-                            setIsSendingWhatsApp(false);
-                          }
+                          const encodedMessage = encodeURIComponent(message);
+                          const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+                          window.open(whatsappUrl, '_blank');
+                          
+                          toast.success('Opening WhatsApp with FIFO warnings!');
                         }}
                         variant="outline"
                         size="sm"
-                        disabled={isSendingWhatsApp || !zapierWebhookUrl}
                         className="border-green-600 hover:bg-green-800 hover:border-green-500 transition-all h-9 px-4"
                       >
-                        {isSendingWhatsApp ? 'Sending...' : '📱 Send to WhatsApp'}
+                        📱 Send to WhatsApp
                       </Button>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="mb-4 p-3 bg-green-950/30 border border-green-800/50 rounded-lg">
-                      <Label className="text-sm font-semibold text-green-300 mb-2 block">
-                        Zapier Webhook URL (for WhatsApp)
-                      </Label>
-                      <Input
-                        value={zapierWebhookUrl}
-                        onChange={(e) => setZapierWebhookUrl(e.target.value)}
-                        placeholder="https://hooks.zapier.com/hooks/catch/..."
-                        className="bg-gray-800 border-gray-700 text-gray-100"
-                      />
-                      <p className="text-xs text-gray-400 mt-2">
-                        Create a Zap with a webhook trigger and connect it to WhatsApp to receive FIFO warnings
+                      <p className="text-sm text-green-300 font-medium">
+                        ✅ Direct WhatsApp Integration
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Click "Send to WhatsApp" above to share these FIFO warnings instantly via WhatsApp. No setup required!
                       </p>
                     </div>
                     <div className="space-y-2">
