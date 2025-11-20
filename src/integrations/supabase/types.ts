@@ -426,21 +426,29 @@ export type Database = {
       cocktail_sops: {
         Row: {
           abv_percentage: number | null
+          batch_size: number | null
           brix: number | null
+          cost_per_serving: number | null
           created_at: string
           drink_name: string
           garnish: string
           glass: string
           ice: string
           id: string
+          ingredient_costs: Json | null
+          is_active: boolean | null
           kcal: number | null
           main_image: string | null
           method_sop: string
+          nutritional_info: Json | null
+          parent_version_id: string | null
           ph: number | null
           ratio: string | null
           recipe: Json
+          selling_price: number | null
           service_notes: string | null
           taste_bitter: number | null
+          taste_profile: Json | null
           taste_salty: number | null
           taste_sour: number | null
           taste_sweet: number | null
@@ -449,24 +457,33 @@ export type Database = {
           total_ml: number
           updated_at: string
           user_id: string
+          version: number | null
         }
         Insert: {
           abv_percentage?: number | null
+          batch_size?: number | null
           brix?: number | null
+          cost_per_serving?: number | null
           created_at?: string
           drink_name: string
           garnish: string
           glass: string
           ice: string
           id?: string
+          ingredient_costs?: Json | null
+          is_active?: boolean | null
           kcal?: number | null
           main_image?: string | null
           method_sop: string
+          nutritional_info?: Json | null
+          parent_version_id?: string | null
           ph?: number | null
           ratio?: string | null
           recipe?: Json
+          selling_price?: number | null
           service_notes?: string | null
           taste_bitter?: number | null
+          taste_profile?: Json | null
           taste_salty?: number | null
           taste_sour?: number | null
           taste_sweet?: number | null
@@ -475,24 +492,33 @@ export type Database = {
           total_ml: number
           updated_at?: string
           user_id: string
+          version?: number | null
         }
         Update: {
           abv_percentage?: number | null
+          batch_size?: number | null
           brix?: number | null
+          cost_per_serving?: number | null
           created_at?: string
           drink_name?: string
           garnish?: string
           glass?: string
           ice?: string
           id?: string
+          ingredient_costs?: Json | null
+          is_active?: boolean | null
           kcal?: number | null
           main_image?: string | null
           method_sop?: string
+          nutritional_info?: Json | null
+          parent_version_id?: string | null
           ph?: number | null
           ratio?: string | null
           recipe?: Json
+          selling_price?: number | null
           service_notes?: string | null
           taste_bitter?: number | null
+          taste_profile?: Json | null
           taste_salty?: number | null
           taste_sour?: number | null
           taste_sweet?: number | null
@@ -501,8 +527,17 @@ export type Database = {
           total_ml?: number
           updated_at?: string
           user_id?: string
+          version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cocktail_sops_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "cocktail_sops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       competitions: {
         Row: {
@@ -1447,6 +1482,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ingredient_prices: {
+        Row: {
+          cost_per_unit: number
+          created_at: string | null
+          id: string
+          ingredient_name: string
+          last_updated: string | null
+          supplier: string | null
+          unit: string
+          user_id: string
+        }
+        Insert: {
+          cost_per_unit: number
+          created_at?: string | null
+          id?: string
+          ingredient_name: string
+          last_updated?: string | null
+          supplier?: string | null
+          unit?: string
+          user_id: string
+        }
+        Update: {
+          cost_per_unit?: number
+          created_at?: string | null
+          id?: string
+          ingredient_name?: string
+          last_updated?: string | null
+          supplier?: string | null
+          unit?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       inventory: {
         Row: {
