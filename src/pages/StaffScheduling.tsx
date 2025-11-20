@@ -1705,22 +1705,22 @@ export default function StaffScheduling() {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {Array.from(new Set(staffMembers.map(s => s.title)))
                       .sort((a, b) => {
                         const order = ['head_bartender', 'senior_bartender', 'bartender', 'bar_back', 'support'];
                         return order.indexOf(a) - order.indexOf(b);
                       })
                       .map(title => (
-                        <div key={title} className="p-4 bg-gray-800/50 border border-gray-700/50 rounded-lg">
-                          <h4 className="text-base font-bold text-gray-100 mb-2">
-                            {title === 'head_bartender' && 'Head Bartender:'}
-                            {title === 'senior_bartender' && 'Senior Bartender:'}
-                            {title === 'bartender' && 'Bartender:'}
-                            {title === 'bar_back' && 'Bar Back:'}
-                            {title === 'support' && 'Support:'}
+                        <div key={title} className="p-4 bg-gray-800/50 border border-gray-700/50 rounded-lg flex flex-col">
+                          <h4 className="text-sm font-bold text-gray-100 mb-2 flex-shrink-0">
+                            {title === 'head_bartender' && 'Head Bartender'}
+                            {title === 'senior_bartender' && 'Senior Bartender'}
+                            {title === 'bartender' && 'Bartender'}
+                            {title === 'bar_back' && 'Bar Back'}
+                            {title === 'support' && 'Support'}
                           </h4>
-                          <p className="text-sm text-gray-300">
+                          <p className="text-xs text-gray-300 leading-relaxed break-words">
                             {ROLE_RESPONSIBILITIES[title]}
                           </p>
                         </div>
