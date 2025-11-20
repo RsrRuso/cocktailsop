@@ -2166,20 +2166,45 @@ export default function StaffScheduling() {
                             )}
                             {cell?.timeRange && cell.timeRange !== 'OFF' && (
                               <div className="flex gap-0.5 mt-0.5">
-                                <Input
-                                  placeholder="5:30 PM"
+                                <Select
                                   value={cell?.breakStart || ''}
-                                  onChange={(e) => updateScheduleCell(staff.id, day, cell.timeRange, cell.type, cell.station, e.target.value, cell?.breakEnd)}
-                                  className="text-[7px] h-4 bg-orange-500/10 border-orange-500/30 px-0.5 text-center"
-                                  title="Break Start"
-                                />
-                                <Input
-                                  placeholder="6:30 PM"
+                                  onValueChange={(value) => updateScheduleCell(staff.id, day, cell.timeRange, cell.type, cell.station, value, cell?.breakEnd)}
+                                >
+                                  <SelectTrigger className="text-[7px] h-4 bg-orange-500/10 border-orange-500/30 px-0.5">
+                                    <SelectValue placeholder="Break Start" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-gray-900 border-gray-700 z-[100]">
+                                    <SelectItem value="5:00 PM" className="text-gray-100 text-[9px]">5:00 PM</SelectItem>
+                                    <SelectItem value="5:30 PM" className="text-gray-100 text-[9px]">5:30 PM</SelectItem>
+                                    <SelectItem value="6:00 PM" className="text-gray-100 text-[9px]">6:00 PM</SelectItem>
+                                    <SelectItem value="6:30 PM" className="text-gray-100 text-[9px]">6:30 PM</SelectItem>
+                                    <SelectItem value="7:00 PM" className="text-gray-100 text-[9px]">7:00 PM</SelectItem>
+                                    <SelectItem value="7:30 PM" className="text-gray-100 text-[9px]">7:30 PM</SelectItem>
+                                    <SelectItem value="8:00 PM" className="text-gray-100 text-[9px]">8:00 PM</SelectItem>
+                                    <SelectItem value="8:30 PM" className="text-gray-100 text-[9px]">8:30 PM</SelectItem>
+                                    <SelectItem value="9:00 PM" className="text-gray-100 text-[9px]">9:00 PM</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <Select
                                   value={cell?.breakEnd || ''}
-                                  onChange={(e) => updateScheduleCell(staff.id, day, cell.timeRange, cell.type, cell.station, cell?.breakStart, e.target.value)}
-                                  className="text-[7px] h-4 bg-orange-500/10 border-orange-500/30 px-0.5 text-center"
-                                  title="Break End"
-                                />
+                                  onValueChange={(value) => updateScheduleCell(staff.id, day, cell.timeRange, cell.type, cell.station, cell?.breakStart, value)}
+                                >
+                                  <SelectTrigger className="text-[7px] h-4 bg-orange-500/10 border-orange-500/30 px-0.5">
+                                    <SelectValue placeholder="Break End" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-gray-900 border-gray-700 z-[100]">
+                                    <SelectItem value="5:30 PM" className="text-gray-100 text-[9px]">5:30 PM</SelectItem>
+                                    <SelectItem value="6:00 PM" className="text-gray-100 text-[9px]">6:00 PM</SelectItem>
+                                    <SelectItem value="6:30 PM" className="text-gray-100 text-[9px]">6:30 PM</SelectItem>
+                                    <SelectItem value="7:00 PM" className="text-gray-100 text-[9px]">7:00 PM</SelectItem>
+                                    <SelectItem value="7:30 PM" className="text-gray-100 text-[9px]">7:30 PM</SelectItem>
+                                    <SelectItem value="8:00 PM" className="text-gray-100 text-[9px]">8:00 PM</SelectItem>
+                                    <SelectItem value="8:30 PM" className="text-gray-100 text-[9px]">8:30 PM</SelectItem>
+                                    <SelectItem value="9:00 PM" className="text-gray-100 text-[9px]">9:00 PM</SelectItem>
+                                    <SelectItem value="9:30 PM" className="text-gray-100 text-[9px]">9:30 PM</SelectItem>
+                                    <SelectItem value="10:00 PM" className="text-gray-100 text-[9px]">10:00 PM</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
                             )}
                           </td>
