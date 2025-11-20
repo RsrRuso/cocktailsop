@@ -216,7 +216,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
               id="drinkName"
               value={recipe.drinkName}
               onChange={(e) => updateField("drinkName", e.target.value)}
-              placeholder="e.g., The Atatakai"
+              placeholder="e.g., Negroni"
               className="mt-1 text-base bg-muted text-foreground placeholder:text-muted-foreground"
               maxLength={100}
             />

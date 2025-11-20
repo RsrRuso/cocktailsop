@@ -2,6 +2,9 @@ import { CocktailRecipe, TasteProfile, TextureProfile } from "@/types/cocktail-r
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+// Color palette constants
+const darkGrey: [number, number, number] = [60, 65, 70];
+
 export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number) => {
   const isNewDoc = !doc;
   if (!doc) {
@@ -12,13 +15,14 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const darkText: [number, number, number] = [30, 30, 35];
   const accentGold: [number, number, number] = [180, 140, 70];
   const accentDeep: [number, number, number] = [45, 55, 75];
+  const darkGrey: [number, number, number] = [60, 65, 70];
   const lightGray: [number, number, number] = [245, 247, 250];
   const mediumGray: [number, number, number] = [200, 205, 210];
   const subtleText: [number, number, number] = [100, 105, 115];
   
   // Modern decorative line
   const drawAccentLine = (x: number, y: number, width: number, thickness = 0.5) => {
-    doc.setDrawColor(accentGold[0], accentGold[1], accentGold[2]);
+    doc.setDrawColor(darkGrey[0], darkGrey[1], darkGrey[2]);
     doc.setLineWidth(thickness);
     doc.line(x, y, x + width, y);
   };
@@ -34,8 +38,8 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     doc.roundedRect(x, y, width, height, 1.5, 1.5, 'F');
     
     if (withAccent) {
-      // Gold accent bar on left
-      doc.setFillColor(accentGold[0], accentGold[1], accentGold[2]);
+      // Dark grey accent bar on left
+      doc.setFillColor(darkGrey[0], darkGrey[1], darkGrey[2]);
       doc.roundedRect(x, y, 2, height, 1.5, 1.5, 'F');
     }
   };
@@ -51,7 +55,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   doc.setFillColor(accentDeep[0], accentDeep[1], accentDeep[2]);
   doc.rect(0, 0, 210, 28, 'F');
   
-  doc.setFillColor(accentGold[0], accentGold[1], accentGold[2]);
+  doc.setFillColor(darkGrey[0], darkGrey[1], darkGrey[2]);
   doc.rect(0, 26, 210, 2, 'F');
   
   doc.setTextColor(255, 255, 255);
@@ -118,9 +122,9 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
       // High-quality image rendering
       doc.addImage(recipe.mainImage, format, imgX, imgY, imgSize, imgSize, undefined, 'FAST');
       
-      // Subtle gold frame
-      doc.setDrawColor(accentGold[0], accentGold[1], accentGold[2]);
-      doc.setLineWidth(0.4);
+      // Refined dark grey frame
+      doc.setDrawColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+      doc.setLineWidth(0.5);
       doc.rect(imgX, imgY, imgSize, imgSize);
     } catch (e) {
       console.error('Failed to add image to PDF:', e);
@@ -307,7 +311,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   
   // Footer with metrics and allergens - positioned at bottom with more space
   const footerY = 285;
-  doc.setDrawColor(accentGold[0], accentGold[1], accentGold[2]);
+  doc.setDrawColor(darkGrey[0], darkGrey[1], darkGrey[2]);
   doc.setLineWidth(0.5);
   doc.line(margin, footerY, pageWidth - margin, footerY);
   
@@ -436,10 +440,10 @@ const drawRadarChart = (
     points.push([x, y]);
   }
   
-  // Gold filled polygon
+  // Dark grey filled polygon
   if (points.length > 0) {
-    doc.setDrawColor(180, 140, 70);
-    doc.setFillColor(180, 140, 70, 0.15);
+    doc.setDrawColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+    doc.setFillColor(darkGrey[0], darkGrey[1], darkGrey[2], 0.2);
     doc.setLineWidth(0.6);
     doc.lines(
       points.slice(1).map((p, i) => [p[0] - points[i][0], p[1] - points[i][1]]),
@@ -450,9 +454,9 @@ const drawRadarChart = (
     );
   }
   
-  // Gold points
+  // Dark grey points
   points.forEach(([x, y]) => {
-    doc.setFillColor(180, 140, 70);
+    doc.setFillColor(darkGrey[0], darkGrey[1], darkGrey[2]);
     doc.circle(x, y, 0.7, 'F');
   });
   
