@@ -56,6 +56,7 @@ const InventoryManager = () => {
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [editingItemMaster, setEditingItemMaster] = useState<any>(null);
   const [itemMasterToDelete, setItemMasterToDelete] = useState<any>(null);
+  const [selectedMasterItemId, setSelectedMasterItemId] = useState<string>("");
   const [pastedText, setPastedText] = useState("");
   const [parsedItems, setParsedItems] = useState<string[]>([]);
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
@@ -429,29 +430,16 @@ const InventoryManager = () => {
       return;
     }
 
-    // First, create the item with explicit workspace_id
-    const { data: newItem, error: itemError } = await supabase.from("items").insert({
-      user_id: user.id,
-      workspace_id: workspaceId,
-      name: formData.get("itemName") as string,
-      brand: formData.get("brand") as string,
-      category: formData.get("category") as string,
-      color_code: formData.get("colorCode") as string,
-      barcode: generatedBarcode,
-      description: formData.get("description") as string,
-    }).select().single();
-
-    if (itemError || !newItem) {
-      console.error('Failed to create item:', itemError);
-      toast.error("Failed to receive item");
+    if (!selectedMasterItemId) {
+      toast.error("Please select an item from the master list");
       return;
     }
 
-    // Then create inventory entry with explicit workspace_id
+    // Use the selected item from master list directly
     const { error: inventoryError } = await supabase.from("inventory").insert({
       user_id: user.id,
       workspace_id: workspaceId,
-      item_id: newItem.id,
+      item_id: selectedMasterItemId,
       store_id: storeId,
       quantity: quantity,
       expiration_date: expirationDate,
@@ -468,6 +456,7 @@ const InventoryManager = () => {
     toast.success(`Item received! Barcode: ${generatedBarcode}`);
     fetchData();
     e.currentTarget.reset();
+    setSelectedMasterItemId("");
   };
 
   const handleAddEmployee = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -1352,7 +1341,7 @@ const InventoryManager = () => {
             <Card>
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium">Receiving</CardTitle>
-                <CardDescription className="text-xs">Select from master list or add new items</CardDescription>
+                <CardDescription className="text-xs">Select items from master list to receive inventory</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {/* Master List Management Buttons */}
@@ -1660,20 +1649,13 @@ const InventoryManager = () => {
                       </Select>
                     </div>
                     <div className="col-span-2">
-                      <Label className="text-xs">Select from Master List</Label>
+                      <Label className="text-xs">Select Item from Master List *</Label>
                       <Select 
+                        value={selectedMasterItemId}
                         onValueChange={(value) => {
-                          const selectedItem = items.find(item => item.id === value);
-                          if (selectedItem) {
-                            const form = document.querySelector('form[onsubmit*="handleAddItem"]') as HTMLFormElement;
-                            if (form) {
-                              (form.elements.namedItem('itemName') as HTMLInputElement).value = selectedItem.name;
-                              (form.elements.namedItem('brand') as HTMLInputElement).value = selectedItem.brand || '';
-                              (form.elements.namedItem('category') as HTMLInputElement).value = selectedItem.category || '';
-                              (form.elements.namedItem('colorCode') as HTMLInputElement).value = selectedItem.color_code || '#3b82f6';
-                            }
-                          }
+                          setSelectedMasterItemId(value);
                         }}
+                        required
                       >
                         <SelectTrigger className="h-8 text-sm">
                           <SelectValue placeholder="Choose from master list..." />
@@ -1697,30 +1679,6 @@ const InventoryManager = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-xs">Item Name</Label>
-                      <Input 
-                        name="itemName" 
-                        className="h-8 text-sm" 
-                        required 
-                        placeholder="Or type new item name"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Brand</Label>
-                      <Input 
-                        name="brand" 
-                        className="h-8 text-sm" 
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Category</Label>
-                      <Input 
-                        name="category" 
-                        className="h-8 text-sm" 
-                        placeholder="e.g., Dairy, Meat" 
-                      />
-                    </div>
-                    <div>
                       <Label className="text-xs">Quantity</Label>
                       <Input name="quantity" type="number" step="0.01" className="h-8 text-sm" required />
                     </div>
@@ -1728,14 +1686,6 @@ const InventoryManager = () => {
                       <Label className="text-xs">Expiration Date</Label>
                       <Input name="expirationDate" type="date" className="h-8 text-sm" required />
                     </div>
-                    <div>
-                      <Label className="text-xs">Color Code</Label>
-                      <Input name="colorCode" type="color" className="h-8" />
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Description</Label>
-                    <Textarea name="description" className="text-sm" rows={2} />
                   </div>
                   <Button type="submit" size="sm">Receive Item (Generate Barcode)</Button>
                 </form>
