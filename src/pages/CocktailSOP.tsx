@@ -45,6 +45,12 @@ const CocktailSOP = () => {
     ph: "",
     brix: "",
     allergens: "",
+    pdfOptions: {
+      showUnit: true,
+      showType: true,
+      showABV: true,
+      showNotes: true,
+    },
   });
 
   const handleSave = async () => {

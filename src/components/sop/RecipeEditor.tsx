@@ -24,9 +24,60 @@ const iceTypes = ["Block Ice", "Large Cube", "Cubed Ice", "Crushed Ice", "No Ice
 
 const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [bulkRecipeInput, setBulkRecipeInput] = useState("");
 
   const updateField = (field: keyof CocktailRecipe, value: any) => {
     onChange({ ...recipe, [field]: value });
+  };
+
+  const parseBulkRecipe = () => {
+    if (!bulkRecipeInput.trim()) {
+      toast.error("Please enter recipe text");
+      return;
+    }
+
+    const lines = bulkRecipeInput.trim().split('\n').filter(line => line.trim());
+    const newIngredients: RecipeIngredient[] = [];
+
+    for (const line of lines) {
+      // Parse format: "amount unit ingredient name | type | abv% | notes"
+      // Example: "60 ml Bourbon | Spirit | 40 | Woodford Reserve"
+      const parts = line.split('|').map(p => p.trim());
+      const firstPart = parts[0] || '';
+      
+      // Extract amount, unit, and name from first part
+      const match = firstPart.match(/^(\d+(?:\.\d+)?)\s*(\S+)\s+(.+)$/);
+      
+      if (match) {
+        const [, amount, unit, name] = match;
+        newIngredients.push({
+          name: name,
+          amount: amount,
+          unit: unit,
+          type: parts[1] || 'Spirit',
+          abv: parts[2] || '',
+          notes: parts[3] || '',
+        });
+      } else {
+        // If parsing fails, just add the line as ingredient name
+        newIngredients.push({
+          name: firstPart,
+          amount: '',
+          unit: 'ml',
+          type: 'Spirit',
+          abv: '',
+          notes: '',
+        });
+      }
+    }
+
+    if (newIngredients.length > 0) {
+      onChange({ ...recipe, ingredients: newIngredients });
+      setBulkRecipeInput("");
+      toast.success(`Added ${newIngredients.length} ingredients`);
+    } else {
+      toast.error("Could not parse recipe");
+    }
   };
 
   const addIngredient = () => {
@@ -373,10 +424,73 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
       <Card className="p-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Recipe</h2>
-          <Button onClick={addIngredient} size="sm">
-            <Plus className="mr-1 h-4 w-4" /> Add
+          <Button onClick={addIngredient} size="sm" variant="outline">
+            <Plus className="mr-1 h-4 w-4" /> Add One
           </Button>
         </div>
+
+        {/* Bulk Recipe Input */}
+        <div className="mb-4 p-3 bg-muted/50 rounded-lg border">
+          <Label className="text-foreground font-medium mb-2 block">Paste Recipe (One per line)</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Format: amount unit name | type | abv% | notes<br/>
+            Example: 60 ml Bourbon | Spirit | 40 | Woodford Reserve
+          </p>
+          <Textarea
+            value={bulkRecipeInput}
+            onChange={(e) => setBulkRecipeInput(e.target.value)}
+            placeholder="60 ml Bourbon | Spirit | 40&#10;30 ml Sweet Vermouth | Liqueur | 18&#10;2 dash Angostura Bitters | Bitters | 45"
+            className="mb-2 font-mono text-sm min-h-[100px]"
+            rows={4}
+          />
+          <Button onClick={parseBulkRecipe} size="sm" className="w-full">
+            <Plus className="mr-1 h-4 w-4" /> Insert Recipe
+          </Button>
+        </div>
+
+        {/* PDF Display Options */}
+        <div className="mb-4 p-3 bg-accent/10 rounded-lg border border-accent/20">
+          <Label className="text-foreground font-medium mb-2 block">PDF Display Options</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={recipe.pdfOptions?.showUnit !== false}
+                onChange={(e) => updateField('pdfOptions', { ...recipe.pdfOptions, showUnit: e.target.checked })}
+                className="rounded"
+              />
+              <span className="text-sm">Show Unit</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={recipe.pdfOptions?.showType !== false}
+                onChange={(e) => updateField('pdfOptions', { ...recipe.pdfOptions, showType: e.target.checked })}
+                className="rounded"
+              />
+              <span className="text-sm">Show Type</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={recipe.pdfOptions?.showABV !== false}
+                onChange={(e) => updateField('pdfOptions', { ...recipe.pdfOptions, showABV: e.target.checked })}
+                className="rounded"
+              />
+              <span className="text-sm">Show ABV%</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={recipe.pdfOptions?.showNotes !== false}
+                onChange={(e) => updateField('pdfOptions', { ...recipe.pdfOptions, showNotes: e.target.checked })}
+                className="rounded"
+              />
+              <span className="text-sm">Show Notes</span>
+            </label>
+          </div>
+        </div>
+
         <div className="space-y-4">
           {recipe.ingredients.map((ingredient, index) => (
             <Card key={index} className="p-4 bg-muted/50 border-2">

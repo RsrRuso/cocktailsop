@@ -98,7 +98,13 @@ const CocktailSOPLibrary = () => {
       ratio: recipe.ratio || "",
       ph: recipe.ph?.toString() || "",
       brix: recipe.brix?.toString() || "",
-      allergens: (recipe as any).allergens || ""
+      allergens: (recipe as any).allergens || "",
+      pdfOptions: {
+        showUnit: true,
+        showType: true,
+        showABV: true,
+        showNotes: true,
+      },
     };
     
     exportToPDF(cocktailRecipe);
@@ -141,7 +147,13 @@ const CocktailSOPLibrary = () => {
           ratio: recipe.ratio || "",
           ph: recipe.ph?.toString() || "",
           brix: recipe.brix?.toString() || "",
-          allergens: (recipe as any).allergens || ""
+          allergens: (recipe as any).allergens || "",
+          pdfOptions: {
+            showUnit: true,
+            showType: true,
+            showABV: true,
+            showNotes: true,
+          },
         };
         
         // Add recipe to existing doc
