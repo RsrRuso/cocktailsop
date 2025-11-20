@@ -47,6 +47,8 @@ const CocktailSOP = () => {
     brix: "",
     allergens: "",
     pdfOptions: {
+      showBrandName: true,
+      showAmount: true,
       showUnit: true,
       showType: true,
       showABV: true,
