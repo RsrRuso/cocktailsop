@@ -1,774 +1,868 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, Download, Eye, Save, FileText } from 'lucide-react';
-import TopNav from '@/components/TopNav';
-import BottomNav from '@/components/BottomNav';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Trash2 } from "lucide-react";
+import { Chart, registerables } from "chart.js";
+
+Chart.register(...registerables);
 
 interface Ingredient {
   id: string;
-  ingredient: string;
-  amount: number | string;
-  unit: string;
+  name: string;
+  ml: number;
+  type: string;
   abv: number;
+  notes: string;
 }
 
-interface CocktailSOP {
-  id: string;
-  drink_name: string;
-  technique: string;
-  glass: string;
-  ice: string;
-  garnish: string;
-  main_image?: string | null;
-  total_ml: number;
-  abv_percentage: number;
-  ratio?: string | null;
-  ph?: number | null;
-  brix?: number | null;
-  kcal?: number | null;
-  method_sop: string;
-  service_notes?: string | null;
-  taste_sweet?: number | null;
-  taste_sour?: number | null;
-  taste_salty?: number | null;
-  taste_umami?: number | null;
-  taste_bitter?: number | null;
-  recipe: any;
-  created_at: string;
-  updated_at?: string;
-  user_id?: string;
+interface TasteProfile {
+  sweet: number;
+  sour: number;
+  bitter: number;
+  umami: number;
+  salty: number;
 }
-
-const TECHNIQUES = ['Shake', 'Stir', 'Build', 'Blend', 'Muddle'];
-const GLASS_TYPES = ['Rocks', 'Coupe', 'Highball', 'Collins', 'Martini', 'Nick & Nora'];
-const ICE_TYPES = ['Cubed', 'Block', 'Crushed', 'None'];
-
-// Smart ingredient database with common spirits and modifiers
-const INGREDIENT_DB: Record<string, { abv: number; unit: string }> = {
-  'Vodka': { abv: 40, unit: 'ml' },
-  'Gin': { abv: 40, unit: 'ml' },
-  'Rum': { abv: 40, unit: 'ml' },
-  'Whiskey': { abv: 40, unit: 'ml' },
-  'Tequila': { abv: 40, unit: 'ml' },
-  'Mezcal': { abv: 40, unit: 'ml' },
-  'Cognac': { abv: 40, unit: 'ml' },
-  'Campari': { abv: 25, unit: 'ml' },
-  'Vermouth': { abv: 18, unit: 'ml' },
-  'Lime Juice': { abv: 0, unit: 'ml' },
-  'Lemon Juice': { abv: 0, unit: 'ml' },
-  'Simple Syrup': { abv: 0, unit: 'ml' },
-  'Egg White': { abv: 0, unit: 'ml' },
-  'Bitters': { abv: 0, unit: 'dash' },
-};
 
 export default function CocktailSOP() {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { user } = useAuth();
+  const [currentView, setCurrentView] = useState<"editor" | "bible">("editor");
   
-  const [sops, setSops] = useState<CocktailSOP[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedSOP, setSelectedSOP] = useState<CocktailSOP | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  // Form state - simplified
-  const [drinkName, setDrinkName] = useState('');
-  const [technique, setTechnique] = useState('Shake');
-  const [glass, setGlass] = useState('Coupe');
-  const [ice, setIce] = useState('Cubed');
-  const [garnish, setGarnish] = useState('');
-  const [methodSop, setMethodSop] = useState('');
+  // Identity & Service
+  const [drinkName, setDrinkName] = useState("");
+  const [technique, setTechnique] = useState("");
+  const [glass, setGlass] = useState("");
+  const [ice, setIce] = useState("");
+  const [garnish, setGarnish] = useState("");
+  const [serviceNotes, setServiceNotes] = useState("");
+  const [author, setAuthor] = useState("");
+  const [batchSize, setBatchSize] = useState(1);
+  
+  // Images
+  const [mainImage, setMainImage] = useState("");
+  const [extraImages, setExtraImages] = useState<string[]>([]);
+  
+  // Recipe
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [dilutionPct, setDilutionPct] = useState(15);
+  const [stdGrams, setStdGrams] = useState(10);
+  const [brix, setBrix] = useState<number | null>(null);
+  
+  // SOP
+  const [sop, setSop] = useState("");
+  
+  // Taste Profile
+  const [tasteProfile, setTasteProfile] = useState<TasteProfile>({
+    sweet: 5,
+    sour: 5,
+    bitter: 5,
+    umami: 5,
+    salty: 5,
+  });
+  
+  // Refs for charts
+  const radarRef = useRef<HTMLCanvasElement>(null);
+  const tasteBarRef = useRef<HTMLCanvasElement>(null);
+  const radarOutRef = useRef<HTMLCanvasElement>(null);
+  const tasteBarOutRef = useRef<HTMLCanvasElement>(null);
+  
+  const radarChartRef = useRef<Chart | null>(null);
+  const tasteBarChartRef = useRef<Chart | null>(null);
+  const radarOutChartRef = useRef<Chart | null>(null);
+  const tasteBarOutChartRef = useRef<Chart | null>(null);
+
+  const ingredientTypes = [
+    "Spirit",
+    "Fortified",
+    "Liqueur",
+    "Wine/Beer",
+    "Mixer/NA",
+    "Citrus",
+    "Syrup",
+    "Bitters",
+    "Tincture",
+    "Other",
+  ];
 
   useEffect(() => {
     if (!user) {
-      navigate('/auth');
-      return;
+      navigate("/auth");
     }
-    fetchSOPs();
   }, [user, navigate]);
 
-  const fetchSOPs = async () => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from('cocktail_sops')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+  // Calculations
+  const totalMl = ingredients.reduce((sum, ing) => sum + (ing.ml || 0), 0);
+  const pureMl = ingredients.reduce((sum, ing) => sum + (ing.ml || 0) * (ing.abv || 0) / 100, 0);
+  const pureG = pureMl * 0.789;
+  const drinkAbv = totalMl > 0 ? (pureMl / totalMl) * 100 : 0;
+  const stdDrinks = pureG / stdGrams;
+  const totalOz = totalMl * 0.033814;
+  const caloriesEst = pureG * 7;
 
-    if (error) {
-      toast({ title: 'Error loading SOPs', variant: 'destructive' });
-    } else {
-      setSops(data || []);
-    }
-  };
+  // Draw charts
+  useEffect(() => {
+    drawCharts();
+  }, [tasteProfile, ingredients]);
 
-  // Smart auto-calculation of ABV and total volume
-  const calculateMetrics = () => {
-    const totalVolume = ingredients.reduce((sum, ing) => {
-      const amount = typeof ing.amount === 'number' ? ing.amount : parseFloat(ing.amount) || 0;
-      return ing.unit === 'ml' ? sum + amount : sum;
-    }, 0);
+  const drawCharts = () => {
+    // Radar Chart
+    const drawRadar = (canvasRef: React.RefObject<HTMLCanvasElement>, chartRef: React.MutableRefObject<Chart | null>) => {
+      if (!canvasRef.current) return;
+      
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
 
-    const totalAlcohol = ingredients.reduce((sum, ing) => {
-      const amount = typeof ing.amount === 'number' ? ing.amount : parseFloat(ing.amount) || 0;
-      return ing.unit === 'ml' ? sum + (amount * ing.abv / 100) : sum;
-    }, 0);
+      const ctx = canvasRef.current.getContext("2d");
+      if (!ctx) return;
 
-    const abv = totalVolume > 0 ? (totalAlcohol / totalVolume) * 100 : 0;
-
-    return {
-      totalMl: Math.round(totalVolume),
-      abvPercentage: Math.round(abv * 10) / 10,
+      chartRef.current = new Chart(ctx, {
+        type: "radar",
+        data: {
+          labels: ["Sweet", "Sour", "Bitter", "Umami", "Salty"],
+          datasets: [{
+            label: "Taste Profile",
+            data: [
+              tasteProfile.sweet,
+              tasteProfile.sour,
+              tasteProfile.bitter,
+              tasteProfile.umami,
+              tasteProfile.salty,
+            ],
+            backgroundColor: "rgba(212, 175, 55, 0.2)",
+            borderColor: "#d4af37",
+            borderWidth: 2,
+            pointBackgroundColor: "#d4af37",
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: {
+            r: {
+              min: 0,
+              max: 10,
+              ticks: { stepSize: 2, color: "#a7acb9" },
+              grid: { color: "#2a3040" },
+              pointLabels: { color: "#a7acb9", font: { size: 12 } },
+            },
+          },
+          plugins: {
+            legend: { display: false },
+          },
+        },
+      });
     };
+
+    // Taste Bars
+    const drawTasteBars = (canvasRef: React.RefObject<HTMLCanvasElement>, chartRef: React.MutableRefObject<Chart | null>) => {
+      if (!canvasRef.current) return;
+      
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
+
+      const ctx = canvasRef.current.getContext("2d");
+      if (!ctx) return;
+
+      chartRef.current = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: ["Sweet", "Sour", "Bitter", "Umami", "Salty"],
+          datasets: [{
+            label: "Intensity",
+            data: [
+              tasteProfile.sweet,
+              tasteProfile.sour,
+              tasteProfile.bitter,
+              tasteProfile.umami,
+              tasteProfile.salty,
+            ],
+            backgroundColor: "#d4af37",
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: {
+            y: {
+              min: 0,
+              max: 10,
+              ticks: { color: "#a7acb9" },
+              grid: { color: "#2a3040" },
+            },
+            x: {
+              ticks: { color: "#a7acb9" },
+              grid: { display: false },
+            },
+          },
+          plugins: {
+            legend: { display: false },
+          },
+        },
+      });
+    };
+
+    drawRadar(radarRef, radarChartRef);
+    drawTasteBars(tasteBarRef, tasteBarChartRef);
+    
+    if (currentView === "bible") {
+      drawRadar(radarOutRef, radarOutChartRef);
+      drawTasteBars(tasteBarOutRef, tasteBarOutChartRef);
+    }
   };
 
   const addIngredient = () => {
     setIngredients([
       ...ingredients,
       {
-        id: crypto.randomUUID(),
-        ingredient: '',
-        amount: '',
-        unit: 'ml',
+        id: Math.random().toString(36).substr(2, 9),
+        name: "",
+        ml: 0,
+        type: "Spirit",
         abv: 0,
+        notes: "",
       },
     ]);
-  };
-
-  const updateIngredient = (id: string, field: keyof Ingredient, value: any) => {
-    setIngredients(
-      ingredients.map((ing) => {
-        if (ing.id === id) {
-          const updated = { ...ing, [field]: value };
-          
-          // Smart ABV suggestion based on ingredient name
-          if (field === 'ingredient') {
-            const match = Object.entries(INGREDIENT_DB).find(
-              ([key]) => key.toLowerCase() === value.toLowerCase()
-            );
-            if (match) {
-              updated.abv = match[1].abv;
-              updated.unit = match[1].unit;
-            }
-          }
-          
-          return updated;
-        }
-        return ing;
-      })
-    );
   };
 
   const removeIngredient = (id: string) => {
     setIngredients(ingredients.filter((ing) => ing.id !== id));
   };
 
-  const resetForm = () => {
-    setDrinkName('');
-    setTechnique('Shake');
-    setGlass('Coupe');
-    setIce('Cubed');
-    setGarnish('');
-    setMethodSop('');
+  const updateIngredient = (id: string, field: keyof Ingredient, value: any) => {
+    setIngredients(
+      ingredients.map((ing) =>
+        ing.id === id ? { ...ing, [field]: value } : ing
+      )
+    );
+  };
+
+  const clearIngredients = () => {
     setIngredients([]);
-    setEditingId(null);
   };
 
-  const handleSave = async () => {
-    if (!user || !drinkName) {
-      toast({ title: 'Please fill in drink name', variant: 'destructive' });
-      return;
-    }
+  const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const metrics = calculateMetrics();
-    
-    const sopData = {
-      user_id: user.id,
-      drink_name: drinkName,
-      technique,
-      glass,
-      ice,
-      garnish,
-      total_ml: metrics.totalMl,
-      abv_percentage: metrics.abvPercentage,
-      method_sop: methodSop,
-      recipe: ingredients as any,
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      if (ev.target?.result) {
+        setMainImage(ev.target.result as string);
+      }
     };
-
-    if (editingId) {
-      const { error } = await supabase
-        .from('cocktail_sops')
-        .update(sopData)
-        .eq('id', editingId);
-
-      if (error) {
-        toast({ title: 'Error updating SOP', variant: 'destructive' });
-      } else {
-        toast({ title: 'SOP updated successfully' });
-        setIsModalOpen(false);
-        resetForm();
-        fetchSOPs();
-      }
-    } else {
-      const { error } = await supabase.from('cocktail_sops').insert([sopData as any]);
-
-      if (error) {
-        toast({ title: 'Error creating SOP', variant: 'destructive' });
-      } else {
-        toast({ title: 'SOP created successfully' });
-        setIsModalOpen(false);
-        resetForm();
-        fetchSOPs();
-      }
-    }
+    reader.readAsDataURL(file);
   };
 
-  const handleEdit = (sop: CocktailSOP) => {
-    setEditingId(sop.id);
-    setDrinkName(sop.drink_name);
-    setTechnique(sop.technique);
-    setGlass(sop.glass);
-    setIce(sop.ice);
-    setGarnish(sop.garnish);
-    setMethodSop(sop.method_sop);
-    const recipeData = Array.isArray(sop.recipe) ? sop.recipe : [];
-    setIngredients(recipeData);
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase
-      .from('cocktail_sops')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      toast({ title: 'Error deleting SOP', variant: 'destructive' });
-    } else {
-      toast({ title: 'SOP deleted' });
-      fetchSOPs();
-    }
-  };
-
-  const exportToPDF = (sop: CocktailSOP) => {
-    const doc = new jsPDF();
-    const recipeData = Array.isArray(sop.recipe) ? sop.recipe : [];
+  const handleExtraImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
     
-    // Header
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text('ATTIKO — COCKTAIL SOP', 15, 15);
-    
-    // Main Title
-    doc.setFontSize(24);
-    doc.setTextColor(0);
-    doc.setFont('helvetica', 'bold');
-    doc.text(sop.drink_name.toUpperCase(), 15, 28);
-    
-    // Identity Table (Left Column)
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Identity', 15, 42);
-    doc.text('Metrics', 75, 42);
-    
-    autoTable(doc, {
-      startY: 45,
-      head: [],
-      body: [
-        ['Drink Name', sop.drink_name],
-        ['Technique', sop.technique],
-        ['Glass', sop.glass],
-        ['Ice', sop.ice],
-        ['Garnish', sop.garnish],
-        ['Total (ml)', sop.total_ml.toString()],
-        ['ABV (%)', sop.abv_percentage.toFixed(1)],
-        ['Ratio', sop.ratio || '—'],
-        ['pH', sop.ph?.toString() || '0'],
-        ['Brix', sop.brix?.toString() || '0'],
-        ['Kcal', sop.kcal?.toString() || '0'],
-      ],
-      theme: 'plain',
-      styles: {
-        fontSize: 9,
-        cellPadding: 2,
-        lineColor: [200, 200, 200],
-        lineWidth: 0.1,
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 40 },
-        1: { cellWidth: 50 },
-      },
-      margin: { left: 15, right: 105 },
+    const readers = files.map((file) => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          resolve(ev.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      });
     });
 
-    // Method (SOP) - Right Column
-    let rightColY = 45;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Method (SOP)', 110, rightColY);
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    rightColY += 5;
-    
-    if (sop.method_sop) {
-      const methodLines = doc.splitTextToSize(sop.method_sop, 85);
-      doc.text(methodLines, 110, rightColY);
-      rightColY += methodLines.length * 4 + 8;
-    }
-
-    // Service Notes - Right Column
-    if (sop.service_notes) {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('Service Notes', 110, rightColY);
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      rightColY += 5;
-      
-      const notesLines = doc.splitTextToSize(sop.service_notes, 85);
-      doc.text(notesLines, 110, rightColY);
-      rightColY += notesLines.length * 4 + 8;
-    }
-
-    // Recipe Table (Full Width at Bottom)
-    const recipeStartY = Math.max((doc as any).lastAutoTable.finalY + 15, rightColY);
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Recipe', 15, recipeStartY);
-    
-    autoTable(doc, {
-      startY: recipeStartY + 3,
-      head: [['INGREDIENT', 'AMOUNT', 'UNIT', 'TYPE', '%ABV', 'NOTES']],
-      body: recipeData.map((ing: any) => [
-        (ing.ingredient || '').toUpperCase(),
-        ing.amount?.toString() || '0',
-        ing.unit || 'ml',
-        '', // Type field (empty for now)
-        ing.abv?.toString() || '0',
-        '', // Notes field (empty for now)
-      ]),
-      theme: 'grid',
-      styles: {
-        fontSize: 9,
-        cellPadding: 3,
-        lineColor: [200, 200, 200],
-        lineWidth: 0.1,
-      },
-      headStyles: {
-        fillColor: [240, 240, 240],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        fontSize: 8,
-      },
-      margin: { left: 15, right: 15 },
-    });
-
-    // Add page number at bottom
-    const pageCount = (doc as any).internal.getNumberOfPages();
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text(`Page 1 of ${pageCount}`, 15, 285);
-    
-    doc.save(`${sop.drink_name.replace(/\s+/g, '_')}_SOP.pdf`);
-    toast({ title: 'PDF exported successfully' });
+    const images = await Promise.all(readers);
+    setExtraImages([...extraImages, ...images]);
   };
 
-  const metrics = calculateMetrics();
+  const saveSOP = async () => {
+    if (!user) return;
+
+    try {
+      const sopData = {
+        user_id: user.id,
+        drink_name: drinkName,
+        technique,
+        glass,
+        ice,
+        garnish: garnish,
+        main_image: mainImage,
+        method_sop: sop,
+        recipe: ingredients,
+        total_ml: totalMl,
+        abv_percentage: drinkAbv,
+        taste_profile: tasteProfile,
+        taste_sweet: tasteProfile.sweet,
+        taste_sour: tasteProfile.sour,
+        taste_bitter: tasteProfile.bitter,
+        taste_umami: tasteProfile.umami,
+        taste_salty: tasteProfile.salty,
+        service_notes: serviceNotes,
+        batch_size: batchSize,
+        brix,
+      };
+
+      const { error } = await supabase.from("cocktail_sops").insert([sopData]);
+
+      if (error) throw error;
+
+      toast.success("Cocktail SOP saved successfully!");
+    } catch (error: any) {
+      console.error("Error saving SOP:", error);
+      toast.error("Failed to save SOP");
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <TopNav />
-      
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-7xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">LAB - SOP</h1>
-            <p className="text-sm text-muted-foreground">Smart Cocktail Standard Operating Procedures</p>
-          </div>
-          <Button onClick={() => { resetForm(); setIsModalOpen(true); }} className="h-9 w-full sm:w-auto">
-            <Plus className="mr-2 h-3 w-3" />
-            New SOP
-          </Button>
+    <div className="min-h-screen bg-[#0f1115] text-[#e6e8ef]">
+      <header className="sticky top-0 z-20 bg-gradient-to-b from-[#0b0d12] to-[#0f1115] px-3 py-2.5 border-b border-[#202536] flex gap-2.5 items-center">
+        <div className="flex items-center gap-2.5">
+          <div className="text-[#d4af37] font-bold tracking-wide">Cocktail SOP & Bible</div>
         </div>
+        <div className="flex-1" />
+        <Button
+          onClick={() => setCurrentView("editor")}
+          className={`${
+            currentView === "editor"
+              ? "bg-[#2a2f3a] text-[#e6e8ef]"
+              : "bg-transparent text-[#e6e8ef]"
+          } border border-[#2f3643] rounded-lg px-3.5 py-2.5`}
+        >
+          Input Page
+        </Button>
+        <Button
+          onClick={() => setCurrentView("bible")}
+          className={`${
+            currentView === "bible"
+              ? "bg-[#2a2f3a] text-[#e6e8ef]"
+              : "bg-transparent text-[#e6e8ef]"
+          } border border-[#2f3643] rounded-lg px-3.5 py-2.5`}
+        >
+          Cocktail Bible
+        </Button>
+        <Button
+          onClick={saveSOP}
+          className="bg-[#d4af37] text-[#0f1115] hover:bg-[#c9a332] rounded-lg px-3.5 py-2.5"
+        >
+          Save SOP
+        </Button>
+      </header>
 
-        {sops.length === 0 ? (
-          <Card className="p-8 sm:p-12 text-center">
-            <FileText className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
-            <h3 className="text-lg sm:text-xl font-semibold mb-2">No SOPs yet</h3>
-            <p className="text-sm text-muted-foreground mb-4 sm:mb-6">Create your first cocktail SOP to get started</p>
-            <Button onClick={() => { resetForm(); setIsModalOpen(true); }} className="h-9">
-              <Plus className="mr-2 h-3 w-3" />
-              Create First SOP
-            </Button>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {sops.map((sop) => (
-              <Card key={sop.id} className="p-4 sm:p-5 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-base sm:text-lg truncate">{sop.drink_name}</h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground">{sop.technique} • {sop.glass}</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-1.5 mb-3 text-xs sm:text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Volume:</span>
-                    <span className="font-medium">{sop.total_ml}ml</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">ABV:</span>
-                    <span className="font-medium">{sop.abv_percentage}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Ingredients:</span>
-                    <span className="font-medium">{Array.isArray(sop.recipe) ? sop.recipe.length : 0}</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 h-8 text-xs"
-                    onClick={() => { setSelectedSOP(sop); setIsDetailOpen(true); }}
-                  >
-                    <Eye className="h-3 w-3 mr-1" />
-                    View
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => exportToPDF(sop)}
-                    className="h-8 px-2"
-                  >
-                    <Download className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(sop)}
-                    className="h-8 px-3 text-xs"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(sop.id)}
-                    className="h-8 px-2"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Create/Edit Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-4 sm:p-6">
-          <DialogHeader className="pb-3">
-            <DialogTitle className="text-xl">{editingId ? 'Edit' : 'Create'} Cocktail SOP</DialogTitle>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto pr-1 -mr-1">
-          <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 h-9">
-              <TabsTrigger value="basic" className="text-xs sm:text-sm">Basic Info</TabsTrigger>
-              <TabsTrigger value="recipe" className="text-xs sm:text-sm">Recipe</TabsTrigger>
-              <TabsTrigger value="method" className="text-xs sm:text-sm">Method</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="basic" className="space-y-3 pt-3">
+      {/* INPUT PAGE */}
+      {currentView === "editor" && (
+        <div className="p-3 grid gap-3">
+          {/* Identity & Service */}
+          <section className="bg-[#171a21] border border-[#232836] rounded-[14px] p-3">
+            <h2 className="text-[15px] text-[#d4af37] font-semibold tracking-wide mb-2.5">
+              Identity & Service
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 mb-2.5">
               <div>
-                <Label className="text-sm">Drink Name *</Label>
+                <label className="text-xs text-[#a7acb9] block mb-1">Drink Name</label>
                 <Input
                   value={drinkName}
                   onChange={(e) => setDrinkName(e.target.value)}
-                  placeholder="e.g., Classic Margarita"
-                  className="h-9"
+                  placeholder="e.g., Signature Highball"
+                  className="bg-[#0e1117] border-[#2a3040] text-[#e6e8ef] rounded-xl"
                 />
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-sm">Technique</Label>
-                  <Select value={technique} onValueChange={setTechnique}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TECHNIQUES.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-sm">Glass</Label>
-                  <Select value={glass} onValueChange={setGlass}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GLASS_TYPES.map((g) => (
-                        <SelectItem key={g} value={g}>{g}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <label className="text-xs text-[#a7acb9] block mb-1">Technique</label>
+                <Input
+                  value={technique}
+                  onChange={(e) => setTechnique(e.target.value)}
+                  placeholder="Stirred / Shaken / Built"
+                  className="bg-[#0e1117] border-[#2a3040] text-[#e6e8ef] rounded-xl"
+                />
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-sm">Ice</Label>
-                  <Select value={ice} onValueChange={setIce}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ICE_TYPES.map((i) => (
-                        <SelectItem key={i} value={i}>{i}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-sm">Garnish</Label>
-                  <Input
-                    value={garnish}
-                    onChange={(e) => setGarnish(e.target.value)}
-                    placeholder="e.g., Lime wheel"
-                    className="h-9"
-                  />
-                </div>
+              <div>
+                <label className="text-xs text-[#a7acb9] block mb-1">Glass</label>
+                <Input
+                  value={glass}
+                  onChange={(e) => setGlass(e.target.value)}
+                  placeholder="Nick & Nora"
+                  className="bg-[#0e1117] border-[#2a3040] text-[#e6e8ef] rounded-xl"
+                />
               </div>
+              <div>
+                <label className="text-xs text-[#a7acb9] block mb-1">Ice Type</label>
+                <Input
+                  value={ice}
+                  onChange={(e) => setIce(e.target.value)}
+                  placeholder="Large clear cube"
+                  className="bg-[#0e1117] border-[#2a3040] text-[#e6e8ef] rounded-xl"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5">
+              <div>
+                <label className="text-xs text-[#a7acb9] block mb-1">Garnish</label>
+                <Input
+                  value={garnish}
+                  onChange={(e) => setGarnish(e.target.value)}
+                  placeholder="Orange coin, expressed"
+                  className="bg-[#0e1117] border-[#2a3040] text-[#e6e8ef] rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[#a7acb9] block mb-1">Service Notes</label>
+                <Input
+                  value={serviceNotes}
+                  onChange={(e) => setServiceNotes(e.target.value)}
+                  placeholder="Pre-chill glass; atomize table-side"
+                  className="bg-[#0e1117] border-[#2a3040] text-[#e6e8ef] rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[#a7acb9] block mb-1">Author</label>
+                <Input
+                  value={author}
+                  onChange={(e) => setAuthor(e.target.value)}
+                  placeholder="Your Name / Team"
+                  className="bg-[#0e1117] border-[#2a3040] text-[#e6e8ef] rounded-xl"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[#a7acb9] block mb-1">Batch Size</label>
+                <Input
+                  type="number"
+                  value={batchSize}
+                  onChange={(e) => setBatchSize(Number(e.target.value))}
+                  min={1}
+                  className="bg-[#0e1117] border-[#2a3040] text-[#e6e8ef] rounded-xl"
+                />
+              </div>
+            </div>
+          </section>
 
-              <Card className="p-3 sm:p-4 bg-secondary/50">
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 text-center">
-                  <div>
-                    <div className="text-xl sm:text-2xl font-bold text-primary">{metrics.totalMl}ml</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Total Volume</div>
-                  </div>
-                  <div>
-                    <div className="text-xl sm:text-2xl font-bold text-primary">{metrics.abvPercentage}%</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">ABV</div>
-                  </div>
-                </div>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="recipe" className="space-y-3 pt-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-semibold">Ingredients</Label>
-                <Button onClick={addIngredient} size="sm" className="h-8">
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add
+          {/* Images */}
+          <section className="bg-[#171a21] border border-[#232836] rounded-[14px] p-3">
+            <h2 className="text-[15px] text-[#d4af37] font-semibold tracking-wide mb-2.5">
+              Images
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              <div>
+                <Button
+                  onClick={() => document.getElementById("fileMain")?.click()}
+                  variant="ghost"
+                  className="w-full border border-[#364057] mb-2"
+                >
+                  Upload main cocktail image
                 </Button>
-              </div>
-
-              {ingredients.length === 0 ? (
-                <Card className="p-6 text-center">
-                  <p className="text-sm text-muted-foreground mb-3">No ingredients yet</p>
-                  <Button onClick={addIngredient} variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add First Ingredient
-                  </Button>
-                </Card>
-              ) : (
-                <div className="space-y-2">
-                  {ingredients.map((ing) => (
-                    <Card key={ing.id} className="p-3">
-                      <div className="grid grid-cols-12 gap-2 items-end">
-                        <div className="col-span-12 sm:col-span-5">
-                          <Label className="text-xs font-medium">Ingredient</Label>
-                          <Input
-                            value={ing.ingredient}
-                            onChange={(e) => updateIngredient(ing.id, 'ingredient', e.target.value)}
-                            placeholder="e.g., Tequila"
-                            list="ingredient-suggestions"
-                            className="h-8 text-sm"
-                          />
-                          <datalist id="ingredient-suggestions">
-                            {Object.keys(INGREDIENT_DB).map(name => (
-                              <option key={name} value={name} />
-                            ))}
-                          </datalist>
-                        </div>
-                        <div className="col-span-4 sm:col-span-2">
-                          <Label className="text-xs font-medium">Amount</Label>
-                          <Input
-                            type="number"
-                            value={typeof ing.amount === 'number' ? (ing.amount === 0 ? '' : ing.amount.toString()) : ing.amount}
-                            onChange={(e) => updateIngredient(ing.id, 'amount', e.target.value)}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="col-span-3 sm:col-span-2">
-                          <Label className="text-xs font-medium">Unit</Label>
-                          <Select
-                            value={ing.unit}
-                            onValueChange={(val) => updateIngredient(ing.id, 'unit', val)}
-                          >
-                            <SelectTrigger className="h-8 text-sm">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="ml">ml</SelectItem>
-                              <SelectItem value="oz">oz</SelectItem>
-                              <SelectItem value="dash">dash</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="col-span-3 sm:col-span-2">
-                          <Label className="text-xs font-medium">ABV %</Label>
-                          <Input
-                            type="number"
-                            value={ing.abv}
-                            onChange={(e) => updateIngredient(ing.id, 'abv', parseFloat(e.target.value) || 0)}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <div className="col-span-2 sm:col-span-1">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => removeIngredient(ing.id)}
-                            className="h-8 w-full"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="method" className="space-y-3 pt-3">
-              <div>
-                <Label className="text-sm font-semibold">Preparation Method</Label>
-                <Textarea
-                  value={methodSop}
-                  onChange={(e) => setMethodSop(e.target.value)}
-                  placeholder="Describe the step-by-step preparation method..."
-                  rows={8}
-                  className="text-sm resize-none"
+                <input
+                  id="fileMain"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleMainImageUpload}
+                  className="hidden"
                 />
+                {mainImage && (
+                  <img
+                    src={mainImage}
+                    alt="Main"
+                    className="w-[180px] rounded-lg border border-[#2a3040]"
+                  />
+                )}
               </div>
-            </TabsContent>
-          </Tabs>
-          </div>
-
-          <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end pt-3 border-t mt-2">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)} className="h-9">
-              Cancel
-            </Button>
-            <Button onClick={handleSave} className="h-9">
-              <Save className="mr-2 h-3 w-3" />
-              Save SOP
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Detail View Modal */}
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-          <DialogHeader className="pb-3">
-            <DialogTitle className="text-xl">{selectedSOP?.drink_name}</DialogTitle>
-          </DialogHeader>
-
-          {selectedSOP && (
-            <div className="space-y-4">
-              <Card className="p-3 bg-secondary/50">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="text-xs text-muted-foreground">Technique</div>
-                    <div className="font-medium text-sm">{selectedSOP.technique}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground">Glass</div>
-                    <div className="font-medium text-sm">{selectedSOP.glass}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground">Ice</div>
-                    <div className="font-medium text-sm">{selectedSOP.ice}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground">Garnish</div>
-                    <div className="font-medium text-sm">{selectedSOP.garnish}</div>
-                  </div>
-                </div>
-              </Card>
-
               <div>
-                <h3 className="font-semibold text-sm mb-2">Recipe</h3>
-                <div className="space-y-1.5">
-                  {Array.isArray(selectedSOP.recipe) && selectedSOP.recipe.map((ing: any, idx: number) => (
-                    <div key={idx} className="flex justify-between items-center py-1.5 px-2 bg-muted/50 rounded-sm">
-                      <span className="text-sm">{ing.ingredient}</span>
-                      <span className="font-medium text-sm">{ing.amount}{ing.unit}</span>
-                    </div>
+                <Button
+                  onClick={() => document.getElementById("fileExtra")?.click()}
+                  variant="ghost"
+                  className="w-full border border-[#364057] mb-2"
+                >
+                  Upload extra images
+                </Button>
+                <input
+                  id="fileExtra"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleExtraImagesUpload}
+                  className="hidden"
+                />
+                <div className="flex gap-2 flex-wrap">
+                  {extraImages.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img}
+                      alt={`Extra ${idx}`}
+                      className="w-[100px] rounded-lg border border-[#2a3040]"
+                    />
                   ))}
                 </div>
               </div>
+            </div>
+          </section>
 
-              <Card className="p-3">
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-primary">{selectedSOP.total_ml}ml</div>
-                    <div className="text-xs text-muted-foreground">Total Volume</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-primary">{selectedSOP.abv_percentage}%</div>
-                    <div className="text-xs text-muted-foreground">ABV</div>
-                  </div>
-                </div>
-              </Card>
-
-              {selectedSOP.method_sop && (
-                <div>
-                  <h3 className="font-semibold text-sm mb-2">Method</h3>
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground/90">{selectedSOP.method_sop}</p>
-                </div>
-              )}
-
-              <Button onClick={() => exportToPDF(selectedSOP)} className="w-full h-9">
-                <Download className="mr-2 h-3 w-3" />
-                Export to PDF
+          {/* Recipe */}
+          <section className="bg-[#171a21] border border-[#232836] rounded-[14px] p-3">
+            <h2 className="text-[15px] text-[#d4af37] font-semibold tracking-wide mb-2.5">
+              Recipe — Specs (ml only)
+            </h2>
+            <p className="text-xs text-[#a7acb9] mb-3">
+              Use Type + %ABV for correct alcohol math. Non-alcoholic: choose Mixer/NA, Citrus, Syrup.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full border-separate border-spacing-y-2">
+                <thead>
+                  <tr className="text-[#a7acb9] font-semibold text-sm">
+                    <th className="text-left p-2">Ingredient</th>
+                    <th className="text-left p-2">ml</th>
+                    <th className="text-left p-2">Type</th>
+                    <th className="text-left p-2">%ABV</th>
+                    <th className="text-left p-2">Prep / Notes</th>
+                    <th className="text-left p-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ingredients.map((ing) => (
+                    <tr key={ing.id} className="bg-[#0e1117] border border-[#2a3040]">
+                      <td className="p-2 rounded-l-lg">
+                        <Input
+                          value={ing.name}
+                          onChange={(e) => updateIngredient(ing.id, "name", e.target.value)}
+                          placeholder="Ingredient name"
+                          className="bg-transparent border-0 p-1"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <Input
+                          type="number"
+                          value={ing.ml}
+                          onChange={(e) => updateIngredient(ing.id, "ml", Number(e.target.value))}
+                          className="bg-transparent border-0 p-1 w-16"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <Select
+                          value={ing.type}
+                          onValueChange={(value) => updateIngredient(ing.id, "type", value)}
+                        >
+                          <SelectTrigger className="bg-transparent border-0 p-1 w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ingredientTypes.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {type}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="p-2">
+                        <Input
+                          type="number"
+                          value={ing.abv}
+                          onChange={(e) => updateIngredient(ing.id, "abv", Number(e.target.value))}
+                          className="bg-transparent border-0 p-1 w-16"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <Input
+                          value={ing.notes}
+                          onChange={(e) => updateIngredient(ing.id, "notes", e.target.value)}
+                          placeholder="Notes"
+                          className="bg-transparent border-0 p-1"
+                        />
+                      </td>
+                      <td className="p-2 rounded-r-lg">
+                        <Button
+                          onClick={() => removeIngredient(ing.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex gap-2 mt-2 flex-wrap">
+              <Button
+                onClick={addIngredient}
+                className="bg-[#121622] border border-[#2a3040] text-[#e9ecf4] text-sm"
+              >
+                + Add Ingredient
+              </Button>
+              <Button
+                onClick={clearIngredients}
+                variant="ghost"
+                className="bg-[#121622] border border-[#2a3040] text-[#e9ecf4] text-sm"
+              >
+                Clear
               </Button>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
-      <BottomNav />
+            {/* Metrics Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
+              <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                <div className="text-xs text-[#a7acb9] mb-1">Total Volume</div>
+                <div className="text-lg">
+                  {totalMl.toFixed(0)} ml · {totalOz.toFixed(2)} oz
+                </div>
+              </div>
+              <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                <div className="text-xs text-[#a7acb9] mb-1">Pure Alcohol</div>
+                <div className="text-lg">
+                  {pureMl.toFixed(1)} ml · {pureG.toFixed(1)} g
+                </div>
+              </div>
+              <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                <div className="text-xs text-[#a7acb9] mb-1">Est. Cocktail %ABV</div>
+                <div className="text-lg">{drinkAbv.toFixed(1)}%</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+              <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                <label className="text-xs text-[#a7acb9] block mb-1">Dilution %</label>
+                <Input
+                  type="number"
+                  value={dilutionPct}
+                  onChange={(e) => setDilutionPct(Number(e.target.value))}
+                  className="bg-transparent border-0 p-1"
+                />
+              </div>
+              <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                <label className="text-xs text-[#a7acb9] block mb-1">Std Drinks (g per drink)</label>
+                <Input
+                  type="number"
+                  value={stdGrams}
+                  onChange={(e) => setStdGrams(Number(e.target.value))}
+                  className="bg-transparent border-0 p-1 w-24 mb-1"
+                />
+                <div className="text-lg mt-1.5">{stdDrinks.toFixed(2)} drinks</div>
+              </div>
+              <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                <label className="text-xs text-[#a7acb9] block mb-1">Measured Brix</label>
+                <Input
+                  type="number"
+                  step={0.1}
+                  value={brix || ""}
+                  onChange={(e) => setBrix(e.target.value ? Number(e.target.value) : null)}
+                  placeholder="e.g., 12.5"
+                  className="bg-transparent border-0 p-1"
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* SOP Steps */}
+          <section className="bg-[#171a21] border border-[#232836] rounded-[14px] p-3">
+            <h2 className="text-[15px] text-[#d4af37] font-semibold tracking-wide mb-2.5">
+              SOP — Steps
+            </h2>
+            <Textarea
+              value={sop}
+              onChange={(e) => setSop(e.target.value)}
+              placeholder="1) Chill glass.&#10;2) Add ingredients...&#10;3) Shake 12s...&#10;4) Double strain..."
+              className="min-h-[90px] bg-[#0e1117] border-[#2a3040] text-[#e6e8ef] rounded-xl resize-y"
+            />
+          </section>
+
+          {/* Graphics */}
+          <section className="bg-[#171a21] border border-[#232836] rounded-[14px] p-3">
+            <h2 className="text-[15px] text-[#d4af37] font-semibold tracking-wide mb-2.5">
+              Graphics
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <canvas ref={radarRef} className="w-full h-[320px] bg-[#0e1117] border border-[#2a3040] rounded-xl p-1" />
+              <canvas ref={tasteBarRef} className="w-full h-[320px] bg-[#0e1117] border border-[#2a3040] rounded-xl p-1" />
+            </div>
+          </section>
+
+          {/* Taste Profile Sliders */}
+          <section className="bg-[#171a21] border border-[#232836] rounded-[14px] p-3">
+            <h2 className="text-[15px] text-[#d4af37] font-semibold tracking-wide mb-2.5">
+              Taste Profile (0-10)
+            </h2>
+            {(["sweet", "sour", "bitter", "umami", "salty"] as const).map((taste) => (
+              <div key={taste} className="mb-3">
+                <label className="text-sm text-[#a7acb9] capitalize block mb-1">
+                  {taste}: {tasteProfile[taste]}
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={10}
+                  value={tasteProfile[taste]}
+                  onChange={(e) =>
+                    setTasteProfile({ ...tasteProfile, [taste]: Number(e.target.value) })
+                  }
+                  className="w-full h-2 bg-[#2a3040] rounded-lg appearance-none cursor-pointer accent-[#d4af37]"
+                />
+              </div>
+            ))}
+          </section>
+        </div>
+      )}
+
+      {/* COCKTAIL BIBLE PAGE */}
+      {currentView === "bible" && (
+        <div className="p-3 grid gap-3">
+          {/* Header & Identity */}
+          <section className="bg-[#171a21] border border-[#232836] rounded-[14px] p-3">
+            <h1 className="text-2xl text-[#d4af37] font-bold mb-4">{drinkName || "Untitled Cocktail"}</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                    <div className="text-xs text-[#a7acb9] mb-1">Technique</div>
+                    <div className="text-sm">{technique || "—"}</div>
+                  </div>
+                  <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                    <div className="text-xs text-[#a7acb9] mb-1">Glass</div>
+                    <div className="text-sm">{glass || "—"}</div>
+                  </div>
+                  <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                    <div className="text-xs text-[#a7acb9] mb-1">Ice</div>
+                    <div className="text-sm">{ice || "—"}</div>
+                  </div>
+                  <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                    <div className="text-xs text-[#a7acb9] mb-1">Garnish</div>
+                    <div className="text-sm">{garnish || "—"}</div>
+                  </div>
+                  <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                    <div className="text-xs text-[#a7acb9] mb-1">Author</div>
+                    <div className="text-sm">{author || "—"}</div>
+                  </div>
+                  <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                    <div className="text-xs text-[#a7acb9] mb-1">Batch</div>
+                    <div className="text-sm">{batchSize}</div>
+                  </div>
+                </div>
+                <div className="mt-2.5">
+                  <b className="text-sm">Service Notes:</b> <span className="text-sm">{serviceNotes || "—"}</span>
+                </div>
+              </div>
+              <div>
+                {mainImage && (
+                  <img
+                    src={mainImage}
+                    alt="Cocktail"
+                    className="w-full rounded-xl border border-[#2a3040] bg-[#0e1117] aspect-[4/3] object-cover"
+                  />
+                )}
+                <div className="flex gap-2 flex-wrap mt-2">
+                  {extraImages.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img}
+                      alt={`Extra ${idx}`}
+                      className="w-[80px] rounded-lg border border-[#2a3040]"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Recipe & Metrics */}
+          <section className="bg-[#171a21] border border-[#232836] rounded-[14px] p-3 grid grid-cols-1 md:grid-cols-[1.6fr_1fr] gap-4">
+            <div>
+              <h2 className="text-[15px] text-[#d4af37] font-semibold tracking-wide mb-2.5">
+                Recipe (ml)
+              </h2>
+              <div className="overflow-x-auto">
+                <table className="w-full border-separate border-spacing-y-2">
+                  <thead>
+                    <tr className="text-[#a7acb9] font-semibold text-sm">
+                      <th className="text-left p-2">Ingredient</th>
+                      <th className="text-left p-2">ml</th>
+                      <th className="text-left p-2">Type</th>
+                      <th className="text-left p-2">%ABV</th>
+                      <th className="text-left p-2">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ingredients.map((ing) => (
+                      <tr key={ing.id} className="bg-[#0e1117] text-sm">
+                        <td className="p-2 rounded-l-lg">{ing.name}</td>
+                        <td className="p-2">{ing.ml}</td>
+                        <td className="p-2">{ing.type}</td>
+                        <td className="p-2">{ing.abv}</td>
+                        <td className="p-2 rounded-r-lg">{ing.notes}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <h2 className="text-[15px] text-[#d4af37] font-semibold tracking-wide mb-2.5">
+                Metrics
+              </h2>
+              <div className="grid grid-cols-1 gap-2">
+                <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                  <div className="text-xs text-[#a7acb9] mb-1">Total Volume</div>
+                  <div className="text-lg">
+                    {totalMl.toFixed(0)} ml · {totalOz.toFixed(2)} oz
+                  </div>
+                </div>
+                <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                  <div className="text-xs text-[#a7acb9] mb-1">Pure Alcohol</div>
+                  <div className="text-lg">
+                    {pureMl.toFixed(1)} ml · {pureG.toFixed(1)} g
+                  </div>
+                </div>
+                <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                  <div className="text-xs text-[#a7acb9] mb-1">Estimated %ABV</div>
+                  <div className="text-lg">{drinkAbv.toFixed(1)}%</div>
+                </div>
+                <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                  <div className="text-xs text-[#a7acb9] mb-1">Dilution %</div>
+                  <div className="text-lg">{dilutionPct}%</div>
+                </div>
+                <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                  <div className="text-xs text-[#a7acb9] mb-1">Calories (est.)</div>
+                  <div className="text-lg">{caloriesEst.toFixed(0)} kcal</div>
+                  <div className="text-xs text-[#a7acb9] mt-1">Alcohol-only estimate ≈ 7 kcal/g</div>
+                </div>
+                <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                  <div className="text-xs text-[#a7acb9] mb-1">Measured Brix</div>
+                  <div className="text-lg">{brix !== null ? brix : "—"}</div>
+                </div>
+                <div className="bg-[#0e1117] border border-[#2a3040] rounded-xl p-2.5">
+                  <div className="text-xs text-[#a7acb9] mb-1">Std Drinks</div>
+                  <div className="text-lg">{stdDrinks.toFixed(2)}</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Method (SOP) */}
+          <section className="bg-[#171a21] border border-[#232836] rounded-[14px] p-3">
+            <h2 className="text-[15px] text-[#d4af37] font-semibold tracking-wide mb-2.5">
+              Method (SOP)
+            </h2>
+            <div className="whitespace-pre-wrap leading-relaxed">{sop || "No method specified"}</div>
+          </section>
+
+          {/* Graphics */}
+          <section className="bg-[#171a21] border border-[#232836] rounded-[14px] p-3">
+            <h2 className="text-[15px] text-[#d4af37] font-semibold tracking-wide mb-2.5">
+              Graphics
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <canvas ref={radarOutRef} className="w-full h-[320px] bg-[#0e1117] border border-[#2a3040] rounded-xl p-1" />
+              <canvas ref={tasteBarOutRef} className="w-full h-[320px] bg-[#0e1117] border border-[#2a3040] rounded-xl p-1" />
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
