@@ -1153,37 +1153,7 @@ export default function StaffScheduling() {
     const hasDailyEvents = Object.values(dailyEvents).some(event => event && event.trim() !== '');
     const hasSpecialEvents = Object.values(specialEvents).some(event => event && event.trim() !== '');
     
-    // SPECIAL EVENTS FIRST
-    if (hasSpecialEvents) {
-      doc.setFillColor(255, 215, 0); // Gold color
-      doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0); // Black text on gold
-      doc.text('DAILY TASKS', 18, finalY + 3);
-      
-      finalY += 10;
-      doc.setFontSize(6.5);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...colors.lightGrey);
-      
-      DAYS_OF_WEEK.forEach(day => {
-        const event = specialEvents[day];
-        if (event && event.trim() !== '') {
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(255, 215, 0); // Gold color
-          doc.text(`${day}:`, 18, finalY);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(...colors.lightGrey);
-          doc.text(event, 40, finalY);
-          finalY += 3.5;
-        }
-      });
-      
-      finalY += 3;
-    }
-
-    // DAILY EVENTS AFTER SPECIAL
+    // SPECIAL EVENTS FIRST (blue section - dailyEvents data)
     if (hasDailyEvents) {
       doc.setFillColor(...colors.accent);
       doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
@@ -1217,6 +1187,36 @@ export default function StaffScheduling() {
       });
       
       finalY += 2;
+    }
+
+    // DAILY TASKS SECOND (gold section - specialEvents data)
+    if (hasSpecialEvents) {
+      doc.setFillColor(255, 215, 0); // Gold color
+      doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0); // Black text on gold
+      doc.text('DAILY TASKS', 18, finalY + 3);
+      
+      finalY += 10;
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...colors.lightGrey);
+      
+      DAYS_OF_WEEK.forEach(day => {
+        const event = specialEvents[day];
+        if (event && event.trim() !== '') {
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 215, 0); // Gold color
+          doc.text(`${day}:`, 18, finalY);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...colors.lightGrey);
+          doc.text(event, 40, finalY);
+          finalY += 3.5;
+        }
+      });
+      
+      finalY += 3;
     }
     
     // Role Responsibilities Section - Based on titles only
