@@ -1285,7 +1285,7 @@ export default function StaffScheduling() {
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...colors.white);
-      doc.text('⚠️ FIFO INVENTORY WARNINGS', 18, finalY + 3);
+      doc.text('FIFO INVENTORY WARNINGS', 18, finalY + 3);
       
       finalY += 10;
       doc.setFontSize(6);
