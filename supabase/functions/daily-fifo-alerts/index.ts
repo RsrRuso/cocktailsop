@@ -28,16 +28,35 @@ Deno.serve(async (req) => {
     
     console.log(`Current time: ${currentHour}:${currentMinute.toString().padStart(2, '0')}`);
 
-    // Get alert settings for all workspaces
-    const { data: alertSettings, error: settingsError } = await supabase
+    // Parse optional request body (used for test mode)
+    let isTest = false;
+    let testWorkspaceId: string | null = null;
+
+    if (req.method === 'POST') {
+      try {
+        const body = await req.json();
+        if (body && typeof body === 'object') {
+          isTest = body.test === true;
+          if (body.workspaceId && typeof body.workspaceId === 'string') {
+            testWorkspaceId = body.workspaceId;
+          }
+        }
+      } catch (_) {
+        // Ignore JSON parse errors for non-test invocations
+      }
+    }
+
+    // Get alert settings for all workspaces (or a single one in test mode)
+    let settingsQuery = supabase
       .from('fifo_alert_settings')
       .select('*')
       .eq('enabled', true);
 
-    if (settingsError) {
-      console.error('Error fetching alert settings:', settingsError);
-      throw settingsError;
+    if (isTest && testWorkspaceId) {
+      settingsQuery = settingsQuery.eq('workspace_id', testWorkspaceId);
     }
+
+    const { data: alertSettings, error: settingsError } = await settingsQuery;
 
     if (!alertSettings || alertSettings.length === 0) {
       console.log('No active alert settings found');
@@ -58,11 +77,15 @@ Deno.serve(async (req) => {
       // Parse the alert time (format: "HH:MM")
       const [alertHour, alertMinute] = alertTime.split(':').map(Number);
       
-      // Check if it's time to send alert (within 1 hour window)
-      const timeDiff = Math.abs((currentHour * 60 + currentMinute) - (alertHour * 60 + alertMinute));
-      if (timeDiff > 60) {
-        console.log(`Skipping workspace ${workspaceId} - not alert time yet (scheduled for ${alertTime})`);
-        continue;
+      // Check if it's time to send alert (skip this check in test mode)
+      if (!isTest) {
+        const timeDiff = Math.abs((currentHour * 60 + currentMinute) - (alertHour * 60 + alertMinute));
+        if (timeDiff > 60) {
+          console.log(`Skipping workspace ${workspaceId} - not alert time yet (scheduled for ${alertTime})`);
+          continue;
+        }
+      } else {
+        console.log(`Test mode: skipping alert time check for workspace ${workspaceId}`);
       }
 
       console.log(`Processing workspace ${workspaceId} with ${daysBeforeExpiry} days threshold at ${alertTime}`);
