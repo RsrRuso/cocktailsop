@@ -66,7 +66,7 @@ const ROLE_RESPONSIBILITIES = {
 
 export default function StaffScheduling() {
   const { user } = useAuth();
-  const { currentWorkspace } = useWorkspace();
+  const { currentWorkspace, workspaces, switchWorkspace } = useWorkspace();
   const [venueName, setVenueName] = useState('');
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
   const [schedule, setSchedule] = useState<Record<string, ScheduleCell>>({});
@@ -1712,6 +1712,37 @@ export default function StaffScheduling() {
       <TopNav />
       
       <div className="container mx-auto p-4 space-y-4">
+        {/* Workspace Selector */}
+        <Card className="p-4 bg-gray-800/50 border-gray-700">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              <Label className="text-sm font-medium text-gray-300">Current Workspace:</Label>
+            </div>
+            <Select
+              value={currentWorkspace?.id || 'personal'}
+              onValueChange={(value) => switchWorkspace(value === 'personal' ? '' : value)}
+            >
+              <SelectTrigger className="w-[300px] bg-gray-900/50 border-gray-600 text-gray-100">
+                <SelectValue placeholder="Select workspace..." />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectItem value="personal" className="text-gray-100 hover:bg-gray-800">
+                  Personal Inventory
+                </SelectItem>
+                {workspaces.map((workspace) => (
+                  <SelectItem 
+                    key={workspace.id} 
+                    value={workspace.id}
+                    className="text-gray-100 hover:bg-gray-800"
+                  >
+                    {workspace.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </Card>
         {/* Header Section */}
         <div className="relative overflow-hidden rounded-2xl bg-gray-800 border border-gray-700 p-6 mb-6">
           <div className="absolute inset-0 bg-grid-white/[0.02]" />
