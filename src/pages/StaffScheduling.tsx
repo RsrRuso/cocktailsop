@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { toast } from 'sonner';
-import { Download, Plus, Trash2, Wand2, Calendar, Users } from 'lucide-react';
+import { Download, Plus, Trash2, Wand2, Calendar, Users, Save } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
 
@@ -946,6 +946,41 @@ export default function StaffScheduling() {
     toast.success(`✅ Schedule generated! Bartenders: Alternating 1-2 days off week-to-week. Support: 2 days off per month (10h shifts). Min 3 bartenders working daily.`, {
       duration: 7000
     });
+  };
+
+  const saveSchedule = async () => {
+    if (!user?.id) {
+      toast.error('Please log in to save schedule');
+      return;
+    }
+
+    if (Object.keys(schedule).length === 0) {
+      toast.error('No schedule to save');
+      return;
+    }
+
+    try {
+      // Save schedule as JSON
+      const { error } = await supabase
+        .from('staff_schedules')
+        .upsert({
+          user_id: user.id,
+          week_start_date: weekStartDate,
+          schedule_data: schedule,
+          venue_name: venueName || null,
+          daily_events: dailyEvents,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,week_start_date'
+        });
+
+      if (error) throw error;
+
+      toast.success('Schedule saved successfully');
+    } catch (error) {
+      console.error('Error saving schedule:', error);
+      toast.error('Failed to save schedule');
+    }
   };
 
   const exportToPDF = () => {
