@@ -75,22 +75,22 @@ export const FIFOAlertSettings = () => {
   };
 
   const fetchMembers = async () => {
-    if (!currentWorkspace || !user) return;
+    if (!currentWorkspace) return;
 
     try {
-      // Fetch workspace owner profile
+      // Fetch workspace owner profile with email
       const { data: ownerProfile, error: ownerError } = await supabase
         .from('profiles')
-        .select('id, full_name')
+        .select('id, full_name, email')
         .eq('id', currentWorkspace.owner_id)
         .single();
 
       if (ownerError) throw ownerError;
 
-      // Fetch workspace members
+      // Fetch workspace members with emails
       const { data: membersData, error: membersError } = await supabase
         .from('workspace_members')
-        .select('user_id, profiles!inner(full_name)')
+        .select('user_id, profiles!inner(full_name, email)')
         .eq('workspace_id', currentWorkspace.id)
         .neq('user_id', currentWorkspace.owner_id);
 
@@ -104,7 +104,7 @@ export const FIFOAlertSettings = () => {
           user_id: ownerProfile.id,
           profiles: {
             full_name: ownerProfile.full_name || 'Workspace Owner',
-            email: ownerProfile.id === user.id ? (user.email || '') : `User ${ownerProfile.id.slice(0, 8)}`,
+            email: ownerProfile.email || '',
           },
         });
       }
@@ -114,7 +114,7 @@ export const FIFOAlertSettings = () => {
         user_id: item.user_id,
         profiles: {
           full_name: item.profiles.full_name || 'Team Member',
-          email: item.user_id === user.id ? (user.email || '') : `User ${item.user_id.slice(0, 8)}`,
+          email: item.profiles.email || '',
         },
       }));
 
