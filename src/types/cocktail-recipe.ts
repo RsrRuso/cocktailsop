@@ -26,6 +26,7 @@ export interface TextureProfile {
 
 export interface CocktailRecipe {
   drinkName: string;
+  brandName?: string;
   glass: string;
   ice: string;
   garnish: string;
