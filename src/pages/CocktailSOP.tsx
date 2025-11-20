@@ -622,7 +622,10 @@ export default function CocktailSOP() {
                           <Input
                             type="number"
                             value={ing.amount}
-                            onChange={(e) => updateIngredient(ing.id, 'amount', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                              updateIngredient(ing.id, 'amount', isNaN(value) ? 0 : value);
+                            }}
                             className="h-8 text-sm"
                           />
                         </div>
