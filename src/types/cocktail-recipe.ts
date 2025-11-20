@@ -40,4 +40,10 @@ export interface CocktailRecipe {
   ph: string;
   brix: string;
   allergens: string;
+  pdfOptions?: {
+    showUnit?: boolean;
+    showType?: boolean;
+    showABV?: boolean;
+    showNotes?: boolean;
+  };
 }

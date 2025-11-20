@@ -180,28 +180,62 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   
   yPos = Math.max(yPos, textureY + 48 + 3);
   
-  // Recipe table - Full width, compact
+  // Recipe table - Full width, compact - respects PDF options
   doc.setFontSize(7);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
   doc.text("RECIPE", leftColX + 2, yPos);
   yPos += 2.5;
   
-  // Limit to first 7 ingredients to ensure fit
-  const recipeData = recipe.ingredients.slice(0, 7).map(ing => [
-    ing.name.toUpperCase(),
-    ing.amount,
-    ing.unit,
-    ing.type.toUpperCase(),
-    ing.abv || '',
-  ]);
+  // Build table columns based on PDF options (default all true)
+  const pdfOpts = recipe.pdfOptions || {};
+  const showUnit = pdfOpts.showUnit !== false;
+  const showType = pdfOpts.showType !== false;
+  const showABV = pdfOpts.showABV !== false;
+  const showNotes = pdfOpts.showNotes !== false;
+  
+  // Build headers dynamically
+  const headers = ['INGREDIENT', 'AMT'];
+  if (showUnit) headers.push('UNIT');
+  if (showType) headers.push('TYPE');
+  if (showABV) headers.push('ABV%');
+  if (showNotes) headers.push('NOTES');
+  
+  // Build data rows dynamically
+  const recipeData = recipe.ingredients.slice(0, 7).map(ing => {
+    const row = [ing.name.toUpperCase(), ing.amount];
+    if (showUnit) row.push(ing.unit);
+    if (showType) row.push(ing.type.toUpperCase());
+    if (showABV) row.push(ing.abv || '');
+    if (showNotes) row.push(ing.notes || '');
+    return row;
+  });
+  
+  // Calculate column widths dynamically
+  const totalWidth = 170;
+  const nameWidth = 65;
+  const amtWidth = 15;
+  const remainingWidth = totalWidth - nameWidth - amtWidth;
+  const visibleOptionalCols = [showUnit, showType, showABV, showNotes].filter(Boolean).length;
+  const optionalColWidth = visibleOptionalCols > 0 ? remainingWidth / visibleOptionalCols : 0;
+  
+  const columnStyles: any = {
+    0: { cellWidth: nameWidth },
+    1: { cellWidth: amtWidth, halign: 'center' },
+  };
+  
+  let colIndex = 2;
+  if (showUnit) columnStyles[colIndex++] = { cellWidth: optionalColWidth, halign: 'center' };
+  if (showType) columnStyles[colIndex++] = { cellWidth: optionalColWidth };
+  if (showABV) columnStyles[colIndex++] = { cellWidth: optionalColWidth, halign: 'center' };
+  if (showNotes) columnStyles[colIndex++] = { cellWidth: optionalColWidth };
   
   const recipeTableHeight = Math.min(recipeData.length * 4 + 8, 32);
   draw3DBlock(leftColX, yPos, 184, recipeTableHeight);
   
   autoTable(doc, {
     startY: yPos + 1 as any,
-    head: [['INGREDIENT', 'AMT', 'UNIT', 'TYPE', 'ABV%']],
+    head: [headers],
     body: recipeData,
     theme: 'plain',
     styles: {
@@ -217,13 +251,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
       fontStyle: 'bold',
       fontSize: 6,
     },
-    columnStyles: {
-      0: { cellWidth: 68 },
-      1: { cellWidth: 18, halign: 'center' },
-      2: { cellWidth: 18, halign: 'center' },
-      3: { cellWidth: 38 },
-      4: { cellWidth: 18, halign: 'center' },
-    },
+    columnStyles: columnStyles,
     margin: { left: leftColX + 2, right: 15 },
   });
   
