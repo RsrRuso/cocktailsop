@@ -42,6 +42,7 @@ export interface CocktailRecipe {
   brix: string;
   allergens: string;
   pdfOptions?: {
+    showBrandName?: boolean;
     showUnit?: boolean;
     showType?: boolean;
     showABV?: boolean;

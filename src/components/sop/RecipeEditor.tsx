@@ -397,6 +397,15 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
+                checked={recipe.pdfOptions?.showBrandName !== false}
+                onChange={(e) => updateField('pdfOptions', { ...recipe.pdfOptions, showBrandName: e.target.checked })}
+                className="rounded"
+              />
+              <span className="text-sm">Show Brand Name</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
                 checked={recipe.pdfOptions?.showUnit !== false}
                 onChange={(e) => updateField('pdfOptions', { ...recipe.pdfOptions, showUnit: e.target.checked })}
                 className="rounded"
