@@ -8,7 +8,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { CocktailRecipe } from "@/types/cocktail-recipe";
 import { exportToPDF } from "@/components/sop/PDFExport";
-import jsPDF from "jspdf";
 
 interface SavedRecipe {
   id: string;
