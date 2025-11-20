@@ -90,24 +90,6 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const margin = 12;
   const contentWidth = pageWidth - (margin * 2);
   
-  // Add image if available
-  if (recipe.mainImage) {
-    const imgWidth = 50;
-    const imgHeight = 35;
-    const imgX = pageWidth - margin - imgWidth;
-    
-    try {
-      doc.addImage(recipe.mainImage, 'JPEG', imgX, yPos, imgWidth, imgHeight);
-      
-      // Add border around image
-      doc.setDrawColor(mediumGray[0], mediumGray[1], mediumGray[2]);
-      doc.setLineWidth(0.3);
-      doc.rect(imgX, yPos, imgWidth, imgHeight);
-    } catch (e) {
-      console.error('Failed to add image to PDF:', e);
-    }
-  }
-  
   // Specs section - modern badges layout - BIGGER
   drawModernCard(margin, yPos, contentWidth, 38, true);
   
@@ -147,6 +129,26 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     const valueText = spec.value.length > 12 ? spec.value.substring(0, 12) + '...' : spec.value;
     doc.text(valueText, x, y + 6);
   });
+  
+  // Add image if available (drawn after specs so it's on top)
+  if (recipe.mainImage) {
+    const imgWidth = 50;
+    const imgHeight = 35;
+    const imgX = pageWidth - margin - imgWidth;
+    const imgY = yPos;
+    
+    try {
+      const format = recipe.mainImage.startsWith("data:image/png") ? "PNG" : "JPEG";
+      doc.addImage(recipe.mainImage, format, imgX, imgY, imgWidth, imgHeight);
+      
+      // Add border around image
+      doc.setDrawColor(mediumGray[0], mediumGray[1], mediumGray[2]);
+      doc.setLineWidth(0.3);
+      doc.rect(imgX, imgY, imgWidth, imgHeight);
+    } catch (e) {
+      console.error('Failed to add image to PDF:', e);
+    }
+  }
   
   yPos += 42;
   
