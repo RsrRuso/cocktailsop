@@ -1220,7 +1220,7 @@ export default function StaffScheduling() {
     }
     
     // Role Responsibilities Section - Based on titles only
-    doc.setFillColor(...colors.accent);
+    doc.setFillColor(30, 58, 138); // Dark blue color
     doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
