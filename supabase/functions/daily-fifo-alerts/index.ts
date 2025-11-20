@@ -20,6 +20,13 @@ Deno.serve(async (req) => {
     const resend = new Resend(resendApiKey);
 
     console.log('Starting daily FIFO alerts check');
+    
+    // Get current hour (24-hour format)
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    console.log(`Current time: ${currentHour}:${currentMinute.toString().padStart(2, '0')}`);
 
     // Get alert settings for all workspaces
     const { data: alertSettings, error: settingsError } = await supabase
@@ -46,8 +53,19 @@ Deno.serve(async (req) => {
     for (const settings of alertSettings) {
       const daysBeforeExpiry = settings.days_before_expiry || 30;
       const workspaceId = settings.workspace_id;
+      const alertTime = settings.alert_time || '09:00'; // Default to 9 AM
+      
+      // Parse the alert time (format: "HH:MM")
+      const [alertHour, alertMinute] = alertTime.split(':').map(Number);
+      
+      // Check if it's time to send alert (within 1 hour window)
+      const timeDiff = Math.abs((currentHour * 60 + currentMinute) - (alertHour * 60 + alertMinute));
+      if (timeDiff > 60) {
+        console.log(`Skipping workspace ${workspaceId} - not alert time yet (scheduled for ${alertTime})`);
+        continue;
+      }
 
-      console.log(`Processing workspace ${workspaceId} with ${daysBeforeExpiry} days threshold`);
+      console.log(`Processing workspace ${workspaceId} with ${daysBeforeExpiry} days threshold at ${alertTime}`);
 
       // Calculate expiry threshold for this workspace
       const expiryThreshold = new Date();

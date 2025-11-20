@@ -2143,6 +2143,43 @@ export default function StaffScheduling() {
                       </div>
                     )}
                     
+                    {/* FIFO Inventory Warnings */}
+                    {expiringItems.length > 0 && (
+                      <div className="mb-3 p-3 bg-red-950/30 border border-red-800/40 rounded-lg">
+                        <div className="text-xs font-bold text-red-400 mb-2 flex items-center gap-2">
+                          ⚠️ FIFO Warnings ({expiringItems.length} items)
+                        </div>
+                        <div className="space-y-1 max-h-32 overflow-y-auto">
+                          {expiringItems.slice(0, 3).map((item: any, idx: number) => {
+                            const itemName = item.items?.name || 'Unknown';
+                            const expiryDate = format(new Date(item.expiration_date), 'MMM dd');
+                            const priority = item.priority_score;
+                            const daysLeft = Math.ceil((new Date(item.expiration_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                            
+                            return (
+                              <div key={idx} className="text-[9px] text-red-300/90 flex justify-between items-center py-1 border-b border-red-800/20 last:border-0">
+                                <span className="truncate flex-1">
+                                  <span className="font-semibold">P{priority}:</span> {itemName}
+                                </span>
+                                <span className={`ml-2 px-1.5 py-0.5 rounded text-[8px] font-medium ${
+                                  daysLeft <= 7 ? 'bg-red-500/20 text-red-300' : 
+                                  daysLeft <= 14 ? 'bg-yellow-500/20 text-yellow-300' : 
+                                  'bg-blue-500/20 text-blue-300'
+                                }`}>
+                                  {daysLeft}d
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {expiringItems.length > 3 && (
+                          <div className="text-[8px] text-red-400/70 mt-1 text-center">
+                            +{expiringItems.length - 3} more items
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
                     {/* Summary Numbers */}
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div className="text-center p-2 bg-gradient-to-br from-green-950/40 to-green-900/20 rounded-lg border border-green-800/30">
