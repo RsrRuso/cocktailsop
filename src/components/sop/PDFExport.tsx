@@ -106,7 +106,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const imageWidth = 68;
   const metricsWidth = contentWidth - imageWidth - blockSpacing;
   
-  // Image with dark background shading - no block
+  // Clean image without block or shading
   if (recipe.mainImage) {
     const imgSize = imageWidth;
     const imgX = margin;
@@ -118,26 +118,14 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
         format = 'PNG';
       }
       
-      // Dark shaded background
-      doc.setFillColor(60, 65, 70);
-      doc.rect(imgX + 2, imgY + 2, imgSize, sectionHeight, 'F');
-      
-      doc.setFillColor(45, 50, 55);
-      doc.rect(imgX + 1, imgY + 1, imgSize, sectionHeight, 'F');
-      
-      doc.setFillColor(30, 35, 40);
-      doc.rect(imgX, imgY, imgSize, sectionHeight, 'F');
-      
-      // High-quality image rendering centered
-      const imgPadding = 5;
-      const actualImgSize = imgSize - (imgPadding * 2);
-      doc.addImage(recipe.mainImage, format, imgX + imgPadding, imgY + imgPadding, actualImgSize, actualImgSize, undefined, 'NONE');
+      // High-quality image rendering
+      doc.addImage(recipe.mainImage, format, imgX, imgY, imgSize, imgSize, undefined, 'NONE');
       
     } catch (e) {
       console.error('Failed to add image to PDF:', e);
       doc.setFontSize(7);
       doc.setFont("helvetica", "italic");
-      doc.setTextColor(200, 200, 200);
+      doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
       doc.text("Image unavailable", imgX + 20, imgY + 30);
     }
   }
