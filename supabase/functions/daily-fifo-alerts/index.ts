@@ -6,19 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface InventoryItem {
-  id: string;
-  quantity: number;
-  expiration_date: string;
-  priority_score: number;
-  items: {
-    name: string;
-  };
-  stores: {
-    name: string;
-  };
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -71,7 +58,7 @@ Deno.serve(async (req) => {
     // Fetch workspace owners/managers to send emails
     const { data: workspaceMembers, error: membersError } = await supabase
       .from('workspace_members')
-      .select('user_id, role, profiles(email, full_name)')
+      .select('user_id, role, profiles!inner(email, full_name)')
       .in('role', ['owner', 'manager']);
 
     if (membersError) {
@@ -79,23 +66,26 @@ Deno.serve(async (req) => {
     }
 
     const recipients = workspaceMembers
-      ?.filter(m => m.profiles?.email)
-      .map(m => ({
+      ?.filter((m: any) => m.profiles?.email)
+      .map((m: any) => ({
         email: m.profiles.email,
         name: m.profiles.full_name
       })) || [];
 
     // Format email content
-    const itemsList = (expiringItems as InventoryItem[])
-      .map((item, i) => {
+    const itemsList = expiringItems
+      .map((item: any, i: number) => {
         const daysUntilExpiry = Math.ceil(
           (new Date(item.expiration_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
         );
+        const itemName = Array.isArray(item.items) ? item.items[0]?.name : item.items?.name;
+        const storeName = Array.isArray(item.stores) ? item.stores[0]?.name : item.stores?.name;
+        
         return `
           <tr>
             <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${i + 1}</td>
-            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">${item.items?.name || 'Unknown'}</td>
-            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.stores?.name || 'Unknown'}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">${itemName || 'Unknown'}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${storeName || 'Unknown'}</td>
             <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.quantity}</td>
             <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${new Date(item.expiration_date).toLocaleDateString()}</td>
             <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
@@ -166,7 +156,15 @@ Deno.serve(async (req) => {
     `;
 
     // Send emails to all recipients
-    const emailPromises = recipients.map(recipient =>
+    if (recipients.length === 0) {
+      console.log('No recipients found');
+      return new Response(
+        JSON.stringify({ message: 'No recipients to send emails', itemsFound: expiringItems.length }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const emailPromises = recipients.map((recipient: any) =>
       resend.emails.send({
         from: 'Inventory System <onboarding@resend.dev>',
         to: recipient.email,
@@ -192,8 +190,9 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error in daily-fifo-alerts:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
