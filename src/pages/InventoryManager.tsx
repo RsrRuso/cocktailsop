@@ -279,7 +279,8 @@ const InventoryManager = () => {
               expiration_date: rowData.expiration_date || rowData.expiry_date,
               received_date: rowData.received_date || new Date().toISOString(),
               batch_number: rowData.batch_number,
-              notes: rowData.notes
+              notes: rowData.notes,
+              status: "available"
             });
             successCount++;
           }
@@ -1006,8 +1007,8 @@ const InventoryManager = () => {
             <div className="grid gap-2">
               {inventory
                 .filter(inv => {
-                  // First check status and quantity
-                  if (inv.status === 'sold' || (inv.quantity ?? 0) <= 0) return false;
+                  // First check status and quantity - only show available items
+                  if (inv.status !== 'available' || (inv.quantity ?? 0) <= 0) return false;
                   
                   // Apply store filter
                   if (selectedStore && selectedStore !== 'all') {
