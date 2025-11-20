@@ -265,7 +265,8 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
       metaText += (metaText ? ' • ' : '') + ing.abv + '%';
     }
     if (metaText) {
-      doc.setFontSize(6);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
       doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
       const metaLines = doc.splitTextToSize(metaText, maxMetaWidth);
       doc.text(metaLines[0], margin + 120, ingredientY);
