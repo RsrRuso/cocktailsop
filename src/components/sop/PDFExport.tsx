@@ -8,63 +8,59 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     doc = new jsPDF();
   }
   
-  // Enhanced 3D effect colors with gradients
-  const textColor: [number, number, number] = [20, 20, 20];
-  const headerColor: [number, number, number] = [52, 73, 94];
-  const accentColor: [number, number, number] = [41, 128, 185];
-  const borderColor: [number, number, number] = [127, 140, 141];
-  const shadowColor: [number, number, number] = [189, 195, 199];
-  const blockBg: [number, number, number] = [236, 240, 241];
-  const shadowOffset = 1.5;
+  // Modern color palette - sophisticated and clean
+  const darkText: [number, number, number] = [30, 30, 35];
+  const accentGold: [number, number, number] = [180, 140, 70];
+  const accentDeep: [number, number, number] = [45, 55, 75];
+  const lightGray: [number, number, number] = [245, 247, 250];
+  const mediumGray: [number, number, number] = [200, 205, 210];
+  const subtleText: [number, number, number] = [100, 105, 115];
   
-  // Enhanced 3D block with gradient effect
-  const draw3DBlock = (x: number, y: number, width: number, height: number, accent = false) => {
-    // Multi-layer shadow for depth
-    doc.setFillColor(shadowColor[0] - 30, shadowColor[1] - 30, shadowColor[2] - 30);
-    doc.rect(x + shadowOffset * 2, y + shadowOffset * 2, width, height, 'F');
-    
-    doc.setFillColor(shadowColor[0], shadowColor[1], shadowColor[2]);
-    doc.rect(x + shadowOffset, y + shadowOffset, width, height, 'F');
-    
-    // Main block with optional accent
-    if (accent) {
-      doc.setFillColor(accentColor[0] + 40, accentColor[1] + 40, accentColor[2] + 40);
-    } else {
-      doc.setFillColor(blockBg[0], blockBg[1], blockBg[2]);
-    }
-    doc.rect(x, y, width, height, 'F');
-    
-    // Highlight for 3D effect
-    doc.setDrawColor(255, 255, 255);
-    doc.setLineWidth(0.3);
+  // Modern decorative line
+  const drawAccentLine = (x: number, y: number, width: number, thickness = 0.5) => {
+    doc.setDrawColor(accentGold[0], accentGold[1], accentGold[2]);
+    doc.setLineWidth(thickness);
     doc.line(x, y, x + width, y);
-    doc.line(x, y, x, y + height);
-    
-    // Border
-    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setLineWidth(0.4);
-    doc.rect(x, y, width, height, 'S');
   };
   
-  let yPos = startY || 10;
+  // Modern card-style block
+  const drawModernCard = (x: number, y: number, width: number, height: number, withAccent = false) => {
+    // Subtle shadow
+    doc.setFillColor(235, 237, 240);
+    doc.roundedRect(x + 0.8, y + 0.8, width, height, 1.5, 1.5, 'F');
+    
+    // Main card
+    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+    doc.roundedRect(x, y, width, height, 1.5, 1.5, 'F');
+    
+    if (withAccent) {
+      // Gold accent bar on left
+      doc.setFillColor(accentGold[0], accentGold[1], accentGold[2]);
+      doc.roundedRect(x, y, 2, height, 1.5, 1.5, 'F');
+    }
+  };
   
-  // Compact header with accent bar
-  draw3DBlock(13, yPos, 184, 7, true);
+  
+  let yPos = startY || 8;
+  
+  // Modern header with gold accent
+  doc.setFillColor(accentDeep[0], accentDeep[1], accentDeep[2]);
+  doc.rect(0, 0, 210, 18, 'F');
+  
+  doc.setFillColor(accentGold[0], accentGold[1], accentGold[2]);
+  doc.rect(0, 16, 210, 2, 'F');
+  
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.text("ATTIKO", 15, 8);
+  
+  doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text("ATTIKO — COCKTAIL SOP", 15, yPos + 4);
+  const titleText = recipe.drinkName.toUpperCase() || "UNTITLED COCKTAIL";
+  doc.text(titleText, 15, 15);
   
-  yPos += 9;
-  
-  // Drink name title - more compact
-  doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  const titleText = recipe.drinkName.toUpperCase() || "UNTITLED";
-  doc.text(titleText, 15, yPos);
-  
-  yPos += 7;
+  yPos = 22;
   
   // Calculate metrics
   const totalVolume = recipe.ingredients.reduce(
@@ -76,199 +72,234 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const abvPercentage = totalVolume > 0 ? (pureAlcohol / totalVolume) * 100 : 0;
   const estimatedCalories = Math.round(pureAlcohol * 7 + totalVolume * 0.5);
   
-  // Two-column layout: Left column for details, Right column for profiles
-  const leftColX = 13;
-  const leftColWidth = 90;
-  const rightColX = 107;
-  const rightColWidth = 90;
+  // Modern layout - full width sections
+  const pageWidth = 210;
+  const margin = 15;
+  const contentWidth = pageWidth - (margin * 2);
   
-  // Left Column - Identity & Metrics in compact 3D block
-  draw3DBlock(leftColX, yPos, leftColWidth, 48);
+  // Specs section - modern badges layout
+  drawModernCard(margin, yPos, contentWidth, 32, true);
   
-  autoTable(doc, {
-    startY: yPos + 1 as any,
-    head: [['Identity', 'Value']],
-    body: [
-      ['Technique', recipe.technique || '-'],
-      ['Glass', recipe.glass || '-'],
-      ['Ice', recipe.ice || '-'],
-      ['Garnish', recipe.garnish || '-'],
-      ['Volume', totalVolume.toFixed(0) + ' ml'],
-      ['ABV', abvPercentage.toFixed(1) + '%'],
-      ['Ratio', recipe.ratio || '—'],
-      ['pH', recipe.ph || '0'],
-      ['Brix', recipe.brix || '0'],
-      ['Kcal', estimatedCalories.toString()],
-    ],
-    theme: 'plain',
-    styles: {
-      fontSize: 5.5,
-      cellPadding: 1.2,
-      textColor: textColor,
-      lineColor: [0, 0, 0, 0],
-      lineWidth: 0,
-    },
-    headStyles: {
-      fillColor: [255, 255, 255],
-      textColor: headerColor,
-      fontStyle: 'bold',
-      halign: 'left',
-      fontSize: 6.5,
-    },
-    columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 28, fontSize: 5.5 },
-      1: { fontStyle: 'normal', cellWidth: 'auto', fontSize: 5.5 },
-    },
-    margin: { left: leftColX + 2, right: 0 },
-  } as any);
-  
-  const detailEndY = yPos + 48;
-  
-  // Right Column - Texture Profile with 3D radar
-  doc.setFontSize(7);
+  doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
-  doc.text("TEXTURE PROFILE", rightColX + 2, yPos + 3);
+  doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
+  doc.text("SPECIFICATIONS", margin + 5, yPos + 6);
   
-  drawRadarChart(doc, rightColX + 45, yPos + 22, 20, recipe.textureProfile, 'Texture');
+  const specsY = yPos + 12;
+  const badgeWidth = 28;
+  const badgeHeight = 16;
+  const badgeSpacing = 30;
   
-  const textureY = yPos + 48;
+  // Draw spec badges
+  const specs = [
+    { label: 'TECHNIQUE', value: recipe.technique || '-' },
+    { label: 'GLASS', value: recipe.glass || '-' },
+    { label: 'ICE', value: recipe.ice || '-' },
+    { label: 'GARNISH', value: recipe.garnish || '-' },
+    { label: 'VOLUME', value: totalVolume.toFixed(0) + 'ml' },
+    { label: 'ABV', value: abvPercentage.toFixed(1) + '%' },
+  ];
   
-  // Taste Profile below texture with 3D radar
-  doc.setFontSize(7);
-  doc.text("TASTE PROFILE", rightColX + 2, textureY + 3);
-  
-  drawRadarChart(doc, rightColX + 45, textureY + 22, 20, recipe.tasteProfile, 'Taste');
-  
-  yPos = detailEndY + 3;
-  
-  // Method (SOP) - Compact and adaptive
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
-  doc.text("METHOD (SOP)", leftColX + 2, yPos);
-  yPos += 2.5;
-  
-  const methodLines = doc.splitTextToSize(recipe.methodSOP || 'No method specified', leftColWidth - 6);
-  const methodHeight = Math.min(methodLines.length * 2.8 + 5, 26);
-  draw3DBlock(leftColX, yPos, leftColWidth, methodHeight);
-  
-  doc.setFontSize(5.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-  doc.text(methodLines.slice(0, 9), leftColX + 2, yPos + 2.5);
-  yPos += methodHeight + 2.5;
-  
-  // Service Notes - Compact and adaptive
-  if (recipe.serviceNotes && recipe.serviceNotes.trim()) {
+  specs.forEach((spec, i) => {
+    const col = i % 6;
+    const x = margin + 5 + (col * badgeSpacing);
+    const y = specsY;
+    
+    doc.setFontSize(5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
+    doc.text(spec.label, x, y);
+    
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
-    doc.text("SERVICE NOTES", leftColX + 2, yPos);
-    yPos += 2.5;
+    doc.setTextColor(darkText[0], darkText[1], darkText[2]);
+    const valueText = spec.value.length > 12 ? spec.value.substring(0, 12) + '...' : spec.value;
+    doc.text(valueText, x, y + 5);
+  });
+  
+  yPos += 36;
+  
+  // Profiles section - side by side
+  const profileWidth = (contentWidth - 4) / 2;
+  
+  // Taste Profile
+  drawModernCard(margin, yPos, profileWidth, 42);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
+  doc.text("TASTE PROFILE", margin + 4, yPos + 6);
+  
+  drawRadarChart(doc, margin + (profileWidth / 2), yPos + 24, 18, recipe.tasteProfile, 'Taste');
+  
+  // Texture Profile
+  drawModernCard(margin + profileWidth + 4, yPos, profileWidth, 42);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
+  doc.text("TEXTURE PROFILE", margin + profileWidth + 8, yPos + 6);
+  
+  drawRadarChart(doc, margin + profileWidth + 4 + (profileWidth / 2), yPos + 24, 18, recipe.textureProfile, 'Texture');
+  
+  yPos += 46;
+  
+  // Recipe section - modern visual list
+  drawModernCard(margin, yPos, contentWidth, 85, true);
+  
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
+  doc.text("RECIPE", margin + 5, yPos + 6);
+  
+  drawAccentLine(margin + 5, yPos + 8, 30, 0.8);
+  
+  const recipeStartY = yPos + 12;
+  let ingredientY = recipeStartY;
+  const pdfOpts = recipe.pdfOptions || {};
+  
+  // Modern ingredient list (no table)
+  recipe.ingredients.slice(0, 10).forEach((ing, index) => {
+    if (ingredientY > 260) return; // Stop if running out of space
     
-    const notesLines = doc.splitTextToSize(recipe.serviceNotes, leftColWidth - 6);
-    const notesHeight = Math.min(notesLines.length * 2.8 + 5, 26);
-    draw3DBlock(leftColX, yPos, leftColWidth, notesHeight);
+    // Ingredient line with visual hierarchy
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(darkText[0], darkText[1], darkText[2]);
+    doc.text(ing.name.toUpperCase(), margin + 7, ingredientY);
     
-    doc.setFontSize(5.5);
+    // Amount and unit on same line
+    const amountText = `${ing.amount}${pdfOpts.showUnit !== false ? ' ' + ing.unit : ''}`;
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-    doc.text(notesLines.slice(0, 9), leftColX + 2, yPos + 2.5);
-    yPos += notesHeight + 2.5;
+    doc.setTextColor(accentGold[0], accentGold[1], accentGold[2]);
+    doc.text(amountText, margin + 75, ingredientY);
+    
+    // Type and ABV if enabled
+    let metaText = '';
+    if (pdfOpts.showType !== false && ing.type) {
+      metaText += ing.type;
+    }
+    if (pdfOpts.showABV !== false && ing.abv) {
+      metaText += (metaText ? ' • ' : '') + ing.abv + '%';
+    }
+    if (metaText) {
+      doc.setFontSize(5.5);
+      doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
+      doc.text(metaText, margin + 110, ingredientY);
+    }
+    
+    // Notes if enabled
+    if (pdfOpts.showNotes !== false && ing.notes) {
+      doc.setFontSize(5);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
+      const noteText = ing.notes.length > 45 ? ing.notes.substring(0, 45) + '...' : ing.notes;
+      doc.text(noteText, margin + 7, ingredientY + 3);
+      ingredientY += 7;
+    } else {
+      ingredientY += 6;
+    }
+    
+    // Subtle divider
+    if (index < recipe.ingredients.length - 1 && ingredientY < 260) {
+      doc.setDrawColor(mediumGray[0], mediumGray[1], mediumGray[2]);
+      doc.setLineWidth(0.1);
+      doc.line(margin + 7, ingredientY - 1, margin + contentWidth - 7, ingredientY - 1);
+    }
+  });
+  
+  yPos += 89;
+  
+  
+  // Method & Notes section - side by side
+  const methodWidth = (contentWidth - 4) / 2;
+  
+  // Method
+  drawModernCard(margin, yPos, methodWidth, 40);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
+  doc.text("METHOD", margin + 4, yPos + 6);
+  
+  const methodLines = doc.splitTextToSize(recipe.methodSOP || 'No method specified', methodWidth - 10);
+  doc.setFontSize(6);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(darkText[0], darkText[1], darkText[2]);
+  doc.text(methodLines.slice(0, 12), margin + 4, yPos + 11);
+  
+  // Service Notes
+  if (recipe.serviceNotes && recipe.serviceNotes.trim()) {
+    drawModernCard(margin + methodWidth + 4, yPos, methodWidth, 40);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
+    doc.text("SERVICE NOTES", margin + methodWidth + 8, yPos + 6);
+    
+    const notesLines = doc.splitTextToSize(recipe.serviceNotes, methodWidth - 10);
+    doc.setFontSize(6);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(darkText[0], darkText[1], darkText[2]);
+    doc.text(notesLines.slice(0, 12), margin + methodWidth + 8, yPos + 11);
   }
   
-  yPos = Math.max(yPos, textureY + 48 + 3);
+  yPos += 44;
   
-  // Recipe table - Full width, compact - respects PDF options
-  doc.setFontSize(7);
+  // Footer with metrics and allergens
+  const footerY = 280;
+  doc.setDrawColor(accentGold[0], accentGold[1], accentGold[2]);
+  doc.setLineWidth(0.3);
+  doc.line(margin, footerY, pageWidth - margin, footerY);
+  
+  // Metrics badges in footer
+  const metricsStartX = margin;
+  const metricsY = footerY + 5;
+  
+  doc.setFontSize(5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
+  doc.text("RATIO", metricsStartX, metricsY);
+  doc.setFontSize(6);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
-  doc.text("RECIPE", leftColX + 2, yPos);
-  yPos += 2.5;
+  doc.setTextColor(darkText[0], darkText[1], darkText[2]);
+  doc.text(recipe.ratio || '—', metricsStartX, metricsY + 4);
   
-  // Build table columns based on PDF options (default all true)
-  const pdfOpts = recipe.pdfOptions || {};
-  const showUnit = pdfOpts.showUnit !== false;
-  const showType = pdfOpts.showType !== false;
-  const showABV = pdfOpts.showABV !== false;
-  const showNotes = pdfOpts.showNotes !== false;
+  doc.setFontSize(5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
+  doc.text("pH", metricsStartX + 25, metricsY);
+  doc.setFontSize(6);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(darkText[0], darkText[1], darkText[2]);
+  doc.text(recipe.ph || '0', metricsStartX + 25, metricsY + 4);
   
-  // Build headers dynamically
-  const headers = ['INGREDIENT', 'AMT'];
-  if (showUnit) headers.push('UNIT');
-  if (showType) headers.push('TYPE');
-  if (showABV) headers.push('ABV%');
-  if (showNotes) headers.push('NOTES');
+  doc.setFontSize(5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
+  doc.text("BRIX", metricsStartX + 40, metricsY);
+  doc.setFontSize(6);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(darkText[0], darkText[1], darkText[2]);
+  doc.text(recipe.brix || '0', metricsStartX + 40, metricsY + 4);
   
-  // Build data rows dynamically
-  const recipeData = recipe.ingredients.slice(0, 7).map(ing => {
-    const row = [ing.name.toUpperCase(), ing.amount];
-    if (showUnit) row.push(ing.unit);
-    if (showType) row.push(ing.type.toUpperCase());
-    if (showABV) row.push(ing.abv || '');
-    if (showNotes) row.push(ing.notes || '');
-    return row;
-  });
+  doc.setFontSize(5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
+  doc.text("KCAL", metricsStartX + 60, metricsY);
+  doc.setFontSize(6);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(darkText[0], darkText[1], darkText[2]);
+  doc.text(estimatedCalories.toString(), metricsStartX + 60, metricsY + 4);
   
-  // Calculate column widths dynamically
-  const totalWidth = 170;
-  const nameWidth = 65;
-  const amtWidth = 15;
-  const remainingWidth = totalWidth - nameWidth - amtWidth;
-  const visibleOptionalCols = [showUnit, showType, showABV, showNotes].filter(Boolean).length;
-  const optionalColWidth = visibleOptionalCols > 0 ? remainingWidth / visibleOptionalCols : 0;
-  
-  const columnStyles: any = {
-    0: { cellWidth: nameWidth },
-    1: { cellWidth: amtWidth, halign: 'center' },
-  };
-  
-  let colIndex = 2;
-  if (showUnit) columnStyles[colIndex++] = { cellWidth: optionalColWidth, halign: 'center' };
-  if (showType) columnStyles[colIndex++] = { cellWidth: optionalColWidth };
-  if (showABV) columnStyles[colIndex++] = { cellWidth: optionalColWidth, halign: 'center' };
-  if (showNotes) columnStyles[colIndex++] = { cellWidth: optionalColWidth };
-  
-  const recipeTableHeight = Math.min(recipeData.length * 4 + 8, 32);
-  draw3DBlock(leftColX, yPos, 184, recipeTableHeight);
-  
-  autoTable(doc, {
-    startY: yPos + 1 as any,
-    head: [headers],
-    body: recipeData,
-    theme: 'plain',
-    styles: {
-      fontSize: 5.5,
-      cellPadding: 0.8,
-      textColor: textColor,
-      lineColor: borderColor,
-      lineWidth: 0.1,
-    },
-    headStyles: {
-      fillColor: blockBg,
-      textColor: headerColor,
-      fontStyle: 'bold',
-      fontSize: 6,
-    },
-    columnStyles: columnStyles,
-    margin: { left: leftColX + 2, right: 15 },
-  });
-  
-  yPos += recipeTableHeight + 2;
-  
-  // Allergens - compact, only if exists
+  // Allergens
   if (recipe.allergens && recipe.allergens.trim()) {
-    doc.setFontSize(6);
+    doc.setFontSize(5);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
-    doc.text("ALLERGENS:", leftColX + 2, yPos);
+    doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
+    doc.text("ALLERGENS:", metricsStartX + 85, metricsY);
     
     doc.setFontSize(5.5);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-    const allergenText = doc.splitTextToSize(recipe.allergens, 160);
-    doc.text(allergenText[0] || '', leftColX + 20, yPos);
+    doc.setTextColor(darkText[0], darkText[1], darkText[2]);
+    const allergenText = recipe.allergens.length > 50 ? recipe.allergens.substring(0, 50) + '...' : recipe.allergens;
+    doc.text(allergenText, metricsStartX + 85, metricsY + 4);
   }
   
   // Save PDF only if it's a new document
@@ -280,7 +311,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   return doc;
 };
 
-// Enhanced 3D radar chart
+// Modern minimalist radar chart
 const drawRadarChart = (
   doc: jsPDF,
   centerX: number,
@@ -313,25 +344,16 @@ const drawRadarChart = (
   const numPoints = labels.length;
   const angleStep = (2 * Math.PI) / numPoints;
   
-  // 3D shadow layer
-  doc.setDrawColor(180, 180, 180);
-  doc.setLineWidth(0.15);
+  // Minimal grid circles
   for (let i = 1; i <= 5; i++) {
     const r = (radius / 5) * i;
-    doc.circle(centerX + 0.5, centerY + 0.5, r, 'S');
-  }
-  
-  // Grid circles with gradient effect
-  for (let i = 1; i <= 5; i++) {
-    const r = (radius / 5) * i;
-    const grayVal = 240 - i * 10;
-    doc.setDrawColor(grayVal, grayVal, grayVal);
+    doc.setDrawColor(230, 233, 238);
     doc.setLineWidth(0.2);
     doc.circle(centerX, centerY, r, 'S');
   }
   
-  // Axes with subtle styling
-  doc.setDrawColor(220, 220, 220);
+  // Subtle axes
+  doc.setDrawColor(230, 233, 238);
   doc.setLineWidth(0.15);
   for (let i = 0; i < numPoints; i++) {
     const angle = i * angleStep - Math.PI / 2;
@@ -340,7 +362,7 @@ const drawRadarChart = (
     doc.line(centerX, centerY, x, y);
   }
   
-  // 3D data polygon with shadow
+  // Data polygon
   const points: [number, number][] = [];
   for (let i = 0; i < numPoints; i++) {
     const angle = i * angleStep - Math.PI / 2;
@@ -351,25 +373,11 @@ const drawRadarChart = (
     points.push([x, y]);
   }
   
-  // Shadow polygon
+  // Gold filled polygon
   if (points.length > 0) {
-    doc.setDrawColor(100, 100, 100);
-    doc.setFillColor(100, 100, 100, 0.1);
-    doc.setLineWidth(0.3);
-    doc.lines(
-      points.slice(1).map((p, i) => [p[0] - points[i][0] + 0.5, p[1] - points[i][1] + 0.5]),
-      points[0][0] + 0.5,
-      points[0][1] + 0.5,
-      [1, 1],
-      'FD'
-    );
-  }
-  
-  // Main polygon with gradient effect
-  if (points.length > 0) {
-    doc.setDrawColor(41, 128, 185);
-    doc.setFillColor(52, 152, 219, 0.3);
-    doc.setLineWidth(0.5);
+    doc.setDrawColor(180, 140, 70);
+    doc.setFillColor(180, 140, 70, 0.15);
+    doc.setLineWidth(0.6);
     doc.lines(
       points.slice(1).map((p, i) => [p[0] - points[i][0], p[1] - points[i][1]]),
       points[0][0],
@@ -379,24 +387,20 @@ const drawRadarChart = (
     );
   }
   
-  // 3D points
+  // Gold points
   points.forEach(([x, y]) => {
-    doc.setFillColor(100, 100, 100);
-    doc.circle(x + 0.3, y + 0.3, 0.8, 'F');
-    doc.setFillColor(52, 152, 219);
-    doc.circle(x, y, 0.8, 'F');
-    doc.setFillColor(255, 255, 255);
-    doc.circle(x - 0.2, y - 0.2, 0.3, 'F');
+    doc.setFillColor(180, 140, 70);
+    doc.circle(x, y, 0.7, 'F');
   });
   
-  // Compact labels with better sizing
+  // Clean labels
   doc.setFontSize(4.5);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(60, 60, 60);
+  doc.setTextColor(100, 105, 115);
   
   for (let i = 0; i < numPoints; i++) {
     const angle = i * angleStep - Math.PI / 2;
-    const labelRadius = radius + 4.5;
+    const labelRadius = radius + 5;
     const x = centerX + labelRadius * Math.cos(angle);
     const y = centerY + labelRadius * Math.sin(angle);
     
@@ -406,8 +410,8 @@ const drawRadarChart = (
     let xOffset = -textWidth / 2;
     let yOffset = 1.3;
     
-    if (angle > -Math.PI / 4 && angle < Math.PI / 4) xOffset = 0.8;
-    else if (angle > (3 * Math.PI) / 4 || angle < -(3 * Math.PI) / 4) xOffset = -textWidth - 0.8;
+    if (angle > -Math.PI / 4 && angle < Math.PI / 4) xOffset = 1;
+    else if (angle > (3 * Math.PI) / 4 || angle < -(3 * Math.PI) / 4) xOffset = -textWidth - 1;
     
     doc.text(label, x + xOffset, y + yOffset);
   }
