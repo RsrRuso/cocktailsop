@@ -98,7 +98,7 @@ const CocktailSOP = () => {
       if (error) throw error;
 
       toast.success("Recipe saved successfully!");
-      navigate("/ops-tools");
+      navigate("/cocktail-sop-library");
     } catch (error: any) {
       console.error("Error saving recipe:", error);
       toast.error(error.message || "Failed to save recipe");
