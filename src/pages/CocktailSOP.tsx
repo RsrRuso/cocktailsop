@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, BookOpen, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { ArrowLeft, Edit, Eye, Save, Download } from "lucide-react";
 import RecipeEditor from "@/components/sop/RecipeEditor";
 import RecipeView from "@/components/sop/RecipeView";
 import { CocktailRecipe } from "@/types/cocktail-recipe";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { exportToPDF } from "@/components/sop/PDFExport";
 
 const CocktailSOP = () => {
   const navigate = useNavigate();
@@ -32,34 +33,47 @@ const CocktailSOP = () => {
       salty: 0,
       umami: 0,
     },
+    textureProfile: {
+      body: 0,
+      foam: 0,
+      bubbles: 0,
+      oiliness: 0,
+      creaminess: 0,
+      astringency: 0,
+    },
+    ratio: "",
+    ph: "",
+    brix: "",
+    allergens: "",
   });
 
   const handleSave = async () => {
     if (!user) {
-      toast.error("Please login");
+      toast.error("Please sign in to save recipes");
       navigate("/auth");
       return;
     }
 
     if (!recipe.drinkName.trim()) {
-      toast.error("Enter drink name");
+      toast.error("Please enter a drink name");
       return;
     }
 
     setSaving(true);
-
     try {
       const totalVolume = recipe.ingredients.reduce(
         (sum, ing) => sum + (parseFloat(ing.amount) || 0),
         0
       );
+
       const pureAlcohol = recipe.ingredients.reduce(
         (sum, ing) =>
           sum + (parseFloat(ing.amount) || 0) * ((parseFloat(ing.abv) || 0) / 100),
         0
       );
+
       const abvPercentage = totalVolume > 0 ? (pureAlcohol / totalVolume) * 100 : 0;
-      const estimatedCalories = pureAlcohol * 7 + totalVolume * 0.5;
+      const estimatedCalories = Math.round(pureAlcohol * 7 + totalVolume * 0.5);
 
       const { error } = await supabase.from("cocktail_sops").insert([{
         user_id: user.id,
@@ -71,23 +85,35 @@ const CocktailSOP = () => {
         main_image: recipe.mainImage,
         recipe: recipe.ingredients as any,
         method_sop: recipe.methodSOP,
-        service_notes: recipe.serviceNotes || null,
+        service_notes: recipe.serviceNotes,
         taste_profile: recipe.tasteProfile as any,
         total_ml: totalVolume,
         abv_percentage: abvPercentage,
         kcal: estimatedCalories,
+        ratio: recipe.ratio,
+        ph: recipe.ph ? parseFloat(recipe.ph) : null,
+        brix: recipe.brix ? parseFloat(recipe.brix) : null,
       }]);
 
       if (error) throw error;
 
-      toast.success("Recipe saved!");
-      setView("view");
-    } catch (error) {
-      console.error("Save error:", error);
-      toast.error("Failed to save");
+      toast.success("Recipe saved successfully!");
+      navigate("/ops-tools");
+    } catch (error: any) {
+      console.error("Error saving recipe:", error);
+      toast.error(error.message || "Failed to save recipe");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleExportPDF = () => {
+    if (!recipe.drinkName.trim()) {
+      toast.error("Please enter a drink name first");
+      return;
+    }
+    exportToPDF(recipe);
+    toast.success("PDF downloaded!");
   };
 
   if (!user) {
@@ -96,40 +122,59 @@ const CocktailSOP = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
-        <div className="flex items-center justify-between p-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/ops-tools")}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-
-          <div className="flex gap-2">
+    <div className="min-h-screen bg-background">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/ops-tools")}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-sm font-semibold">Cocktail SOP</h1>
+            <div className="w-10" />
+          </div>
+          
+          <div className="flex items-center gap-2">
             <Button
               variant={view === "editor" ? "default" : "outline"}
               size="sm"
               onClick={() => setView("editor")}
+              className="flex-1"
             >
-              <Edit3 className="h-4 w-4 mr-1" />
+              <Edit className="h-4 w-4 mr-1" />
               Edit
             </Button>
             <Button
               variant={view === "view" ? "default" : "outline"}
               size="sm"
               onClick={() => setView("view")}
+              className="flex-1"
             >
-              <BookOpen className="h-4 w-4 mr-1" />
+              <Eye className="h-4 w-4 mr-1" />
               View
             </Button>
+            <Button 
+              onClick={handleExportPDF} 
+              size="sm" 
+              variant="secondary"
+              className="flex-1"
+            >
+              <Download className="h-4 w-4 mr-1" />
+              PDF
+            </Button>
+            <Button 
+              onClick={handleSave} 
+              disabled={saving} 
+              size="sm"
+              className="flex-1"
+            >
+              <Save className="h-4 w-4 mr-1" />
+              {saving ? "..." : "Save"}
+            </Button>
           </div>
-
-          <Button onClick={handleSave} disabled={saving} size="sm">
-            <Save className="h-4 w-4 mr-1" />
-            {saving ? "Saving..." : "Save"}
-          </Button>
         </div>
       </div>
 
-      <div className="p-4 max-w-2xl mx-auto">
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
         {view === "editor" ? (
           <RecipeEditor recipe={recipe} onChange={setRecipe} />
         ) : (
