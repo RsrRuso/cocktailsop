@@ -190,6 +190,7 @@ export default function StaffScheduling() {
           id: staff.id,
           name: staff.name,
           title: staff.title as StaffMember['title'],
+          email: staff.email,
           breakTimings: breakTimings || {
             firstWaveStart: '5:30 PM',
             firstWaveEnd: '6:30 PM',
