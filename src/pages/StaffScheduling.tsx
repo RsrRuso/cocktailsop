@@ -1222,7 +1222,7 @@ export default function StaffScheduling() {
       doc.setTextColor(...colors.white);
       doc.text('SPECIAL EVENTS', 18, finalY + 2.5);
       
-      finalY += 10;
+      finalY += 8;
       doc.setFontSize(6.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...colors.lightGrey);
@@ -1242,7 +1242,7 @@ export default function StaffScheduling() {
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(...colors.lightGrey);
           doc.text(`${event}${staffInfo}`, 40, finalY);
-          finalY += 3.5;
+          finalY += 3;
         }
       });
       
@@ -1258,7 +1258,7 @@ export default function StaffScheduling() {
       doc.setTextColor(0, 0, 0); // Black text on gold
       doc.text('DAILY TASKS', 18, finalY + 2.5);
       
-      finalY += 10;
+      finalY += 8;
       doc.setFontSize(6.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...colors.lightGrey);
@@ -1272,11 +1272,11 @@ export default function StaffScheduling() {
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(...colors.lightGrey);
           doc.text(event, 40, finalY);
-          finalY += 3.5;
+          finalY += 3;
         }
       });
       
-      finalY += 3;
+      finalY += 2;
     }
     
     // FIFO Inventory Warnings Section
@@ -1288,7 +1288,7 @@ export default function StaffScheduling() {
       doc.setTextColor(...colors.white);
       doc.text('FIFO INVENTORY WARNINGS', 18, finalY + 2.5);
       
-      finalY += 10;
+      finalY += 8;
       doc.setFontSize(6);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...colors.lightGrey);
@@ -1305,10 +1305,10 @@ export default function StaffScheduling() {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...colors.lightGrey);
         doc.text(`${itemName} - Expires ${expiryDate} (${storeName})`, 45, finalY);
-        finalY += 3.5;
+        finalY += 3;
       });
       
-      finalY += 3;
+      finalY += 2;
     }
     
     // Role Responsibilities Section - Two-column layout to fit on one page
@@ -1319,7 +1319,7 @@ export default function StaffScheduling() {
     doc.setTextColor(...colors.white);
     doc.text('ROLE RESPONSIBILITIES', 18, finalY + 2.5);
     
-    finalY += 10;
+    finalY += 8;
     doc.setFontSize(6);
     doc.setTextColor(...colors.lightGrey);
     
@@ -1338,7 +1338,7 @@ export default function StaffScheduling() {
     const leftColumnX = 18;
     const rightColumnX = 152; // Middle of page
     const columnWidth = 128; // Width for each column
-    const roleLineHeight = 3.5;
+    const roleLineHeight = 3;
     
     // Render left column
     let leftY = finalY;
@@ -1363,7 +1363,7 @@ export default function StaffScheduling() {
       const wrapped = doc.splitTextToSize(description, columnWidth);
       doc.text(wrapped, leftColumnX, leftY + 3);
       
-      leftY += 3 + (wrapped.length * roleLineHeight) + 2;
+      leftY += 3 + (wrapped.length * roleLineHeight) + 1.5;
     });
     
     // Render right column
@@ -1389,7 +1389,7 @@ export default function StaffScheduling() {
       const wrapped = doc.splitTextToSize(description, columnWidth);
       doc.text(wrapped, rightColumnX, rightY + 3);
       
-      rightY += 3 + (wrapped.length * roleLineHeight) + 2;
+      rightY += 3 + (wrapped.length * roleLineHeight) + 1.5;
     });
     
     // Update finalY to the maximum of both columns
