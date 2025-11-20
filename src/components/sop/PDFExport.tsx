@@ -90,22 +90,23 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const margin = 12;
   const contentWidth = pageWidth - (margin * 2);
   
-  // Side-by-side layout: Image (smaller square) + Metrics (bigger square)
-  const imageSquareSize = 55;
-  const metricsSquareSize = 70;
-  const spacing = 3;
+  // Harmonious side-by-side layout: Image + Metrics
+  const sectionHeight = 60;
+  const imageWidth = 68;
+  const metricsWidth = contentWidth - imageWidth - 4;
   
-  // Image square - smaller
+  // Image block - elegant square aspect
   if (recipe.mainImage) {
-    drawModernCard(margin, yPos, imageSquareSize, imageSquareSize, true);
+    drawModernCard(margin, yPos, imageWidth, sectionHeight, true);
     
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-    doc.text("IMAGE", margin + 4, yPos + 6);
+    doc.text("COCKTAIL", margin + 4, yPos + 6);
     
-    const imgSize = imageSquareSize - 12;
-    const imgX = margin + 4;
+    const imgPadding = 4;
+    const imgSize = imageWidth - (imgPadding * 2);
+    const imgX = margin + imgPadding;
     const imgY = yPos + 9;
     
     try {
@@ -114,30 +115,34 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
         format = 'PNG';
       }
       
+      // High-quality image rendering
       doc.addImage(recipe.mainImage, format, imgX, imgY, imgSize, imgSize, undefined, 'FAST');
       
+      // Subtle gold frame
       doc.setDrawColor(accentGold[0], accentGold[1], accentGold[2]);
-      doc.setLineWidth(0.5);
+      doc.setLineWidth(0.4);
       doc.rect(imgX, imgY, imgSize, imgSize);
     } catch (e) {
       console.error('Failed to add image to PDF:', e);
       doc.setFontSize(7);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
-      doc.text("Image unavailable", imgX + 5, imgY + 20);
+      doc.text("Image unavailable", imgX + 8, imgY + 25);
     }
   }
   
-  // Metrics square - bigger
-  const metricsX = margin + imageSquareSize + spacing;
-  drawModernCard(metricsX, yPos, metricsSquareSize, metricsSquareSize, true);
+  // Metrics block - balanced companion
+  const metricsX = margin + imageWidth + 4;
+  drawModernCard(metricsX, yPos, metricsWidth, sectionHeight);
   
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("SPECIFICATIONS", metricsX + 4, yPos + 7);
+  doc.text("SPECIFICATIONS", metricsX + 4, yPos + 6);
   
-  // Draw spec badges in metrics square
+  drawAccentLine(metricsX + 4, yPos + 8, 35, 0.6);
+  
+  // Elegant metric grid - 2 columns, 3 rows
   const specs = [
     { label: 'TECHNIQUE', value: recipe.technique || '-' },
     { label: 'GLASS', value: recipe.glass || '-' },
@@ -147,28 +152,29 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     { label: 'ABV', value: abvPercentage.toFixed(1) + '%' },
   ];
   
-  const specsStartY = yPos + 14;
-  const badgeSpacing = 10;
+  const specsStartY = yPos + 13;
+  const colWidth = (metricsWidth - 8) / 2;
+  const rowHeight = 14;
   
   specs.forEach((spec, i) => {
     const row = Math.floor(i / 2);
     const col = i % 2;
-    const x = metricsX + 4 + (col * 33);
-    const y = specsStartY + (row * badgeSpacing);
+    const x = metricsX + 4 + (col * colWidth);
+    const y = specsStartY + (row * rowHeight);
     
     doc.setFontSize(6);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
     doc.text(spec.label, x, y);
     
-    doc.setFontSize(8);
+    doc.setFontSize(8.5);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-    const valueText = spec.value.length > 15 ? spec.value.substring(0, 15) + '...' : spec.value;
+    const valueText = spec.value.length > 18 ? spec.value.substring(0, 18) + '...' : spec.value;
     doc.text(valueText, x, y + 5);
   });
   
-  yPos += Math.max(imageSquareSize, metricsSquareSize) + 5;
+  yPos += sectionHeight + 5;
   
   // Profiles section - side by side - BIGGER
   const profileWidth = (contentWidth - 3) / 2;
