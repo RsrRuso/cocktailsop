@@ -1842,44 +1842,62 @@ export default function StaffScheduling() {
                         });
                       };
 
-                      // Convert time string to 24-hour format for sorting
-                      const parseTime = (timeRange: string) => {
-                        const time = timeRange.split('-')[0].trim();
-                        const startHour = parseInt(time.split(':')[0]);
-                        const isPM = time.includes('PM');
-                        const isAM = time.includes('AM');
-                        let hour24 = startHour;
-                        if (isPM && startHour !== 12) hour24 = startHour + 12;
-                        if (isAM && startHour === 12) hour24 = 0;
-                        return hour24;
+                      // Parse time string to minutes since midnight for comparison
+                      const parseTimeToMinutes = (timeStr: string) => {
+                        if (!timeStr) return 0;
+                        const [time, period] = timeStr.split(' ');
+                        const [hours, minutes] = time.split(':').map(Number);
+                        let hour24 = hours;
+                        if (period === 'PM' && hours !== 12) hour24 = hours + 12;
+                        if (period === 'AM' && hours === 12) hour24 = 0;
+                        return hour24 * 60 + minutes;
                       };
 
-                      // Sort all working staff by start time
-                      const sortedByTime = working.map(s => ({
-                        ...s,
-                        startHour24: parseTime(s.timeRange),
-                        staff: staffMembers.find(sm => sm.id === s.staffId)
-                      })).sort((a, b) => a.startHour24 - b.startHour24);
+                      // Get all working staff with their break times
+                      const staffWithBreaks = working.map(s => {
+                        const staff = staffMembers.find(sm => sm.id === s.staffId);
+                        const scheduleCell = schedule[`${s.staffId}-${day}`];
+                        
+                        // Use manually set break times if available, otherwise use defaults
+                        const breakStart = scheduleCell?.breakStart || staff?.breakTimings?.firstWaveStart || '5:30 PM';
+                        const breakEnd = scheduleCell?.breakEnd || staff?.breakTimings?.firstWaveEnd || '6:30 PM';
+                        
+                        return {
+                          ...s,
+                          staff,
+                          breakStart,
+                          breakEnd,
+                          breakStartMinutes: parseTimeToMinutes(breakStart)
+                        };
+                      });
 
-                      // Split into two waves: earlier shifts (first half) and later shifts (second half)
-                      const midPoint = Math.ceil(sortedByTime.length / 2);
-                      
-                      // First Wave: Earlier shifts - staff who started earlier get first break
+                      // Sort by break start time
+                      const sortedByBreakTime = staffWithBreaks.sort((a, b) => a.breakStartMinutes - b.breakStartMinutes);
+
+                      // Split into waves based on break start time
+                      // If break starts before 6:00 PM (18:00 = 1080 minutes), it's first wave
                       const firstWaveStaff = sortByRole(
-                        sortedByTime.slice(0, midPoint).map(s => ({
-                          name: s.staff?.name || 'Unknown',
-                          timeRange: s.timeRange,
-                          staff: s.staff
-                        }))
+                        sortedByBreakTime
+                          .filter(s => s.breakStartMinutes < 1080)
+                          .map(s => ({
+                            name: s.staff?.name || 'Unknown',
+                            timeRange: s.timeRange,
+                            staff: s.staff,
+                            breakStart: s.breakStart,
+                            breakEnd: s.breakEnd
+                          }))
                       );
                       
-                      // Second Wave: Later shifts - staff who started later break after first wave
                       const secondWaveStaff = sortByRole(
-                        sortedByTime.slice(midPoint).map(s => ({
-                          name: s.staff?.name || 'Unknown',
-                          timeRange: s.timeRange,
-                          staff: s.staff
-                        }))
+                        sortedByBreakTime
+                          .filter(s => s.breakStartMinutes >= 1080)
+                          .map(s => ({
+                            name: s.staff?.name || 'Unknown',
+                            timeRange: s.timeRange,
+                            staff: s.staff,
+                            breakStart: s.breakStart,
+                            breakEnd: s.breakEnd
+                          }))
                       );
                       
                       return (firstWaveStaff.length > 0 || secondWaveStaff.length > 0) && (
@@ -1893,16 +1911,12 @@ export default function StaffScheduling() {
                                 <span className="font-semibold text-orange-400">First Wave Break</span>
                                 <div className="text-gray-300 mt-1 space-y-0.5">
                                    {firstWaveStaff.map((s, idx) => {
-                                     const staff = staffMembers.find(sm => sm.name === s.name);
-                                     const scheduleCell = schedule[`${staff?.id}-${day}`];
-                                     const breakStart = scheduleCell?.breakStart || staff?.breakTimings?.firstWaveStart || '5:30 PM';
-                                     const breakEnd = scheduleCell?.breakEnd || staff?.breakTimings?.firstWaveEnd || '6:30 PM';
                                      return (
                                        <div key={idx} className="pl-2">
                                          • <span className={s.staff?.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
                                          {s.staff?.title === 'head_bartender' && <span className="text-[8px] text-yellow-500 ml-1">(HEAD)</span>}
                                          {s.staff?.title === 'senior_bartender' && <span className="text-[8px] text-blue-400 ml-1">(SENIOR)</span>}
-                                         <span className="text-gray-500 text-[9px]"> ({breakStart}-{breakEnd})</span>
+                                         <span className="text-gray-500 text-[9px]"> ({s.breakStart}-{s.breakEnd})</span>
                                        </div>
                                      );
                                    })}
@@ -1917,15 +1931,12 @@ export default function StaffScheduling() {
                                 <span className="font-semibold text-teal-400">Second Wave Break</span>
                                 <div className="text-gray-300 mt-1 space-y-0.5">
                                    {secondWaveStaff.map((s, idx) => {
-                                     const staff = staffMembers.find(sm => sm.name === s.name);
-                                     const scheduleCell = schedule[`${staff?.id}-${day}`];
-                                     const breakStart = scheduleCell?.breakStart || staff?.breakTimings?.secondWaveStart || '6:30 PM';
                                      return (
                                        <div key={idx} className="pl-2">
                                          • <span className={s.staff?.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
                                          {s.staff?.title === 'head_bartender' && <span className="text-[8px] text-yellow-500 ml-1">(HEAD)</span>}
                                          {s.staff?.title === 'senior_bartender' && <span className="text-[8px] text-blue-400 ml-1">(SENIOR)</span>}
-                                         <span className="text-gray-500 text-[9px]"> (After {breakStart})</span>
+                                         <span className="text-gray-500 text-[9px]"> ({s.breakStart}-{s.breakEnd})</span>
                                        </div>
                                      );
                                    })}
