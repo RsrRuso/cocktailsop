@@ -1190,7 +1190,7 @@ export default function StaffScheduling() {
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...colors.white);
-      doc.text('SPECIAL EVENT', 18, finalY + 3);
+      doc.text('SPECIAL EVENTS', 18, finalY + 3);
       
       finalY += 10;
       doc.setFontSize(6.5);
@@ -2438,7 +2438,7 @@ export default function StaffScheduling() {
               ) : (
                 <div className="p-3 border-2 rounded-lg bg-muted/50 border-border">
                   <strong className="text-sm">ℹ️ No event days configured</strong>
-                  <div className="text-sm mt-1">Add events in the Special Event section above</div>
+                  <div className="text-sm mt-1">Add events in the Special Events section above</div>
                 </div>
               )}
               <div className="p-3 border-2 rounded-lg bg-green-500/10 border-green-500/30">
