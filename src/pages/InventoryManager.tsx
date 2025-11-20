@@ -1077,7 +1077,8 @@ const InventoryManager = () => {
                               }}
                               disabled={
                                 inv.status !== 'available' ||
-                                inv.stores?.name?.trim().toLowerCase() !== 'attiko'
+                                (!stores.find(s => s.id === inv.store_id)?.store_type || 
+                                 !['sell', 'both'].includes(stores.find(s => s.id === inv.store_id)?.store_type))
                               }
                             >
                               Sold
