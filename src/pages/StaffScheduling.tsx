@@ -118,9 +118,9 @@ export default function StaffScheduling() {
     try {
       console.log('Fetching FIFO inventory for workspace:', currentWorkspace.name);
       
-      // Fetch items expiring in the next 7 days with high priority from current workspace
-      const sevenDaysFromNow = new Date();
-      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+      // Fetch items expiring in the next 30 days from current workspace
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
       const { data, error } = await supabase
         .from('inventory')
@@ -137,10 +137,9 @@ export default function StaffScheduling() {
         `)
         .eq('workspace_id', currentWorkspace.id)
         .eq('status', 'available')
-        .lte('expiration_date', sevenDaysFromNow.toISOString().split('T')[0])
+        .lte('expiration_date', thirtyDaysFromNow.toISOString().split('T')[0])
         .order('expiration_date', { ascending: true })
-        .order('priority_score', { ascending: false })
-        .limit(20);
+        .order('priority_score', { ascending: false });
 
       if (error) {
         console.error('Error fetching expiring inventory:', error);
