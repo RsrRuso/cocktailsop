@@ -1622,25 +1622,19 @@ export default function StaffScheduling() {
                           <p className="text-xs text-red-300">{expiringItems.length} items expiring within 30 days</p>
                         </div>
                       </div>
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const message = `🚨 *FIFO INVENTORY WARNINGS*\n\n${expiringItems.map((item: any, i: number) => 
+                      <a
+                        href={`https://wa.me/?text=${encodeURIComponent(
+                          `🚨 *FIFO INVENTORY WARNINGS*\n\n${expiringItems.map((item: any, i: number) => 
                             `${i + 1}. ${item.items?.name || 'Unknown'}\n   Store: ${item.stores?.name || 'Unknown'}\n   Qty: ${item.quantity}\n   Expires: ${format(new Date(item.expiration_date), 'MMM dd, yyyy')}\n   Priority: ${item.priority_score}`
-                          ).join('\n\n')}`;
-
-                          const encodedMessage = encodeURIComponent(message);
-                          const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-                          window.open(whatsappUrl, '_blank');
-                          
-                          toast.success('Opening WhatsApp with FIFO warnings!');
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="border-green-600 hover:bg-green-800 hover:border-green-500 transition-all h-9 px-4"
+                          ).join('\n\n')}`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center justify-center gap-2 h-9 px-4 text-sm font-medium border border-green-600 hover:bg-green-800 hover:border-green-500 transition-all rounded-md"
                       >
                         📱 Send to WhatsApp
-                      </Button>
+                      </a>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
