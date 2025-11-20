@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { toast } from 'sonner';
-import { Download, Plus, Trash2, Wand2, Calendar, Users, Save } from 'lucide-react';
+import { Download, Plus, Trash2, Wand2, Calendar, Users, Save, Edit } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
 import { FIFOAlertSettings } from '@/components/FIFOAlertSettings';
@@ -25,6 +25,7 @@ interface StaffMember {
   id: string;
   name: string;
   title: 'head_bartender' | 'senior_bartender' | 'bartender' | 'bar_back' | 'support';
+  email?: string | null;
   breakTimings?: {
     firstWaveStart: string;
     firstWaveEnd: string;
@@ -89,6 +90,14 @@ export default function StaffScheduling() {
     title: 'bartender' as StaffMember['title'],
     email: '',
   });
+  
+  const [editingStaff, setEditingStaff] = useState<{
+    id: string;
+    name: string;
+    title: StaffMember['title'];
+    email: string;
+  } | null>(null);
+  const [isEditStaffOpen, setIsEditStaffOpen] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -268,6 +277,46 @@ export default function StaffScheduling() {
     toast.success('Staff member added successfully');
     setNewStaff({ name: '', title: 'bartender', email: '' });
     setIsAddStaffOpen(false);
+    fetchStaffMembers();
+  };
+
+  const updateStaffMember = async () => {
+    if (!editingStaff) return;
+
+    if (!editingStaff.name) {
+      toast.error('Please enter staff name');
+      return;
+    }
+
+    if (!editingStaff.email) {
+      toast.error('Please enter staff email address');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editingStaff.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('staff_members')
+      .update({
+        name: editingStaff.name,
+        title: editingStaff.title,
+        email: editingStaff.email,
+      })
+      .eq('id', editingStaff.id);
+
+    if (error) {
+      toast.error('Failed to update staff member');
+      return;
+    }
+
+    toast.success('Staff member updated successfully');
+    setEditingStaff(null);
+    setIsEditStaffOpen(false);
     fetchStaffMembers();
   };
 
@@ -1929,6 +1978,61 @@ export default function StaffScheduling() {
                           </div>
                         </DialogContent>
                       </Dialog>
+                      
+                      {/* Edit Staff Dialog */}
+                      <Dialog open={isEditStaffOpen} onOpenChange={setIsEditStaffOpen}>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Edit Staff Member</DialogTitle>
+                          </DialogHeader>
+                          {editingStaff && (
+                            <div className="space-y-4">
+                              <div>
+                                <Label>Name</Label>
+                                <Input
+                                  value={editingStaff.name}
+                                  onChange={(e) => setEditingStaff({ ...editingStaff, name: e.target.value })}
+                                  placeholder="Staff name"
+                                />
+                              </div>
+                              <div>
+                                <Label>Email Address</Label>
+                                <Input
+                                  type="email"
+                                  value={editingStaff.email}
+                                  onChange={(e) => setEditingStaff({ ...editingStaff, email: e.target.value })}
+                                  placeholder="staff@example.com"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Staff will receive schedule notifications at this email
+                                </p>
+                              </div>
+                              <div>
+                                <Label>Title/Role</Label>
+                                <Select
+                                  value={editingStaff.title}
+                                  onValueChange={(value) => setEditingStaff({ ...editingStaff, title: value as StaffMember['title'] })}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="head_bartender">Head Bartender</SelectItem>
+                                    <SelectItem value="senior_bartender">Senior Bartender</SelectItem>
+                                    <SelectItem value="bartender">Bartender</SelectItem>
+                                    <SelectItem value="bar_back">Bar Back</SelectItem>
+                                    <SelectItem value="support">Support</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {ROLE_RESPONSIBILITIES[editingStaff.title]}
+                                </p>
+                              </div>
+                              <Button onClick={updateStaffMember} className="w-full">Update Staff Member</Button>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
                 </AccordionTrigger>
@@ -1942,16 +2046,39 @@ export default function StaffScheduling() {
                         </h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                           {headBartenders.map(staff => (
-                            <div key={staff.id} className="flex items-center justify-between p-2 border border-gray-800 rounded-lg bg-gray-800">
-                              <span className="font-medium text-gray-100">{staff.name}</span>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setStaffToDelete(staff.id)}
-                                className="hover:bg-gray-700"
-                              >
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
+                            <div key={staff.id} className="flex items-center justify-between p-3 border border-gray-800 rounded-lg bg-gray-800">
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-100">{staff.name}</div>
+                                <div className="text-xs text-gray-400 mt-0.5">
+                                  {staff.email || 'No email set'}
+                                </div>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingStaff({
+                                      id: staff.id,
+                                      name: staff.name,
+                                      title: staff.title,
+                                      email: staff.email || '',
+                                    });
+                                    setIsEditStaffOpen(true);
+                                  }}
+                                  className="hover:bg-gray-700 h-8 w-8 p-0"
+                                >
+                                  <Edit className="w-4 h-4 text-primary" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setStaffToDelete(staff.id)}
+                                  className="hover:bg-gray-700 h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1966,16 +2093,39 @@ export default function StaffScheduling() {
                         </h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                           {members.map(staff => (
-                            <div key={staff.id} className="flex items-center justify-between p-2 border border-gray-800 rounded-lg bg-gray-800">
-                              <span className="font-medium text-gray-100">{staff.name}</span>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setStaffToDelete(staff.id)}
-                                className="hover:bg-gray-700"
-                              >
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
+                            <div key={staff.id} className="flex items-center justify-between p-3 border border-gray-800 rounded-lg bg-gray-800">
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-100">{staff.name}</div>
+                                <div className="text-xs text-gray-400 mt-0.5">
+                                  {staff.email || 'No email set'}
+                                </div>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingStaff({
+                                      id: staff.id,
+                                      name: staff.name,
+                                      title: staff.title,
+                                      email: staff.email || '',
+                                    });
+                                    setIsEditStaffOpen(true);
+                                  }}
+                                  className="hover:bg-gray-700 h-8 w-8 p-0"
+                                >
+                                  <Edit className="w-4 h-4 text-primary" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setStaffToDelete(staff.id)}
+                                  className="hover:bg-gray-700 h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
