@@ -87,6 +87,7 @@ export default function StaffScheduling() {
   const [newStaff, setNewStaff] = useState({
     name: '',
     title: 'bartender' as StaffMember['title'],
+    email: '',
   });
 
   useEffect(() => {
@@ -237,12 +238,26 @@ export default function StaffScheduling() {
       return;
     }
 
+    if (!newStaff.email) {
+      toast.error('Please enter staff email address');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newStaff.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
     const { error } = await supabase
       .from('staff_members')
       .insert({
         user_id: user?.id,
         name: newStaff.name,
         title: newStaff.title,
+        email: newStaff.email,
+        invitation_status: 'pending',
       });
 
     if (error) {
@@ -250,8 +265,8 @@ export default function StaffScheduling() {
       return;
     }
 
-    toast.success('Staff member added');
-    setNewStaff({ name: '', title: 'bartender' });
+    toast.success('Staff member added successfully');
+    setNewStaff({ name: '', title: 'bartender', email: '' });
     setIsAddStaffOpen(false);
     fetchStaffMembers();
   };
@@ -1069,9 +1084,95 @@ export default function StaffScheduling() {
       if (error) throw error;
 
       toast.success('Schedule saved successfully');
+
+      // Send email notifications to staff members
+      await sendScheduleEmails();
+      
     } catch (error) {
       console.error('Error saving schedule:', error);
       toast.error('Failed to save schedule');
+    }
+  };
+
+  const sendScheduleEmails = async () => {
+    try {
+      console.log('Sending schedule emails to staff...');
+      
+      const startDate = new Date(weekStartDate);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 6);
+      const weekRange = `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d, yyyy')}`;
+      
+      // Get staff members with emails
+      const staffWithEmails = await supabase
+        .from('staff_members')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('is_active', true)
+        .not('email', 'is', null);
+
+      if (staffWithEmails.error) {
+        console.error('Error fetching staff emails:', staffWithEmails.error);
+        return;
+      }
+
+      if (!staffWithEmails.data || staffWithEmails.data.length === 0) {
+        console.log('No staff members with email addresses found');
+        toast.info('Schedule saved. Add staff email addresses to send notifications.');
+        return;
+      }
+
+      let emailsSent = 0;
+      let emailsFailed = 0;
+
+      // Send email to each staff member
+      for (const staff of staffWithEmails.data) {
+        try {
+          // Build schedule data for this staff member
+          const staffScheduleData: { [key: string]: any } = {};
+          
+          DAYS_OF_WEEK.forEach(day => {
+            const cell = getScheduleCell(staff.id, day);
+            staffScheduleData[day] = {
+              shift: cell?.timeRange || 'OFF',
+              type: cell?.type || 'off',
+              station: cell?.station || ''
+            };
+          });
+
+          // Call edge function to send email
+          const { error: emailError } = await supabase.functions.invoke('send-schedule-email', {
+            body: {
+              staffEmail: staff.email,
+              staffName: staff.name,
+              weekRange,
+              scheduleData: staffScheduleData
+            }
+          });
+
+          if (emailError) {
+            console.error(`Failed to send email to ${staff.name}:`, emailError);
+            emailsFailed++;
+          } else {
+            console.log(`Email sent successfully to ${staff.name}`);
+            emailsSent++;
+          }
+        } catch (error) {
+          console.error(`Error sending email to ${staff.name}:`, error);
+          emailsFailed++;
+        }
+      }
+
+      if (emailsSent > 0) {
+        toast.success(`📧 Schedule sent to ${emailsSent} staff member${emailsSent > 1 ? 's' : ''}`);
+      }
+      
+      if (emailsFailed > 0) {
+        toast.warning(`⚠️ Failed to send ${emailsFailed} email${emailsFailed > 1 ? 's' : ''}`);
+      }
+
+    } catch (error) {
+      console.error('Error in sendScheduleEmails:', error);
     }
   };
 
@@ -1790,6 +1891,18 @@ export default function StaffScheduling() {
                                 onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
                                 placeholder="Staff name"
                               />
+                            </div>
+                            <div>
+                              <Label>Email Address</Label>
+                              <Input
+                                type="email"
+                                value={newStaff.email}
+                                onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+                                placeholder="staff@example.com"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Staff will receive schedule notifications at this email
+                              </p>
                             </div>
                             <div>
                               <Label>Title/Role</Label>

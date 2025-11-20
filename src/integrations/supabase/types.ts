@@ -3039,8 +3039,12 @@ export type Database = {
         Row: {
           break_timings: Json | null
           created_at: string | null
+          email: string | null
           id: string
+          invitation_sent_at: string | null
+          invitation_status: string | null
           is_active: boolean | null
+          linked_user_id: string | null
           name: string
           title: string
           updated_at: string | null
@@ -3049,8 +3053,12 @@ export type Database = {
         Insert: {
           break_timings?: Json | null
           created_at?: string | null
+          email?: string | null
           id?: string
+          invitation_sent_at?: string | null
+          invitation_status?: string | null
           is_active?: boolean | null
+          linked_user_id?: string | null
           name: string
           title: string
           updated_at?: string | null
@@ -3059,8 +3067,12 @@ export type Database = {
         Update: {
           break_timings?: Json | null
           created_at?: string | null
+          email?: string | null
           id?: string
+          invitation_sent_at?: string | null
+          invitation_status?: string | null
           is_active?: boolean | null
+          linked_user_id?: string | null
           name?: string
           title?: string
           updated_at?: string | null
