@@ -42,9 +42,12 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   
   
   let yPos = startY || 8;
+  const pdfOpts = recipe.pdfOptions || {};
   
   // Modern header with gold accent - BIGGER
   const brandName = recipe.brandName || "COCKTAIL SOP";
+  const showBrandName = pdfOpts.showBrandName !== false;
+  
   doc.setFillColor(accentDeep[0], accentDeep[1], accentDeep[2]);
   doc.rect(0, 0, 210, 28, 'F');
   
@@ -52,14 +55,23 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   doc.rect(0, 26, 210, 2, 'F');
   
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.text(brandName.toUpperCase(), 15, 11);
   
-  doc.setFontSize(24);
-  doc.setFont("helvetica", "bold");
-  const titleText = recipe.drinkName.toUpperCase() || "UNTITLED COCKTAIL";
-  doc.text(titleText, 15, 22);
+  if (showBrandName) {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(brandName.toUpperCase(), 15, 11);
+    
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    const titleText = recipe.drinkName.toUpperCase() || "UNTITLED COCKTAIL";
+    doc.text(titleText, 15, 22);
+  } else {
+    // If brand name is hidden, center the drink name
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    const titleText = recipe.drinkName.toUpperCase() || "UNTITLED COCKTAIL";
+    doc.text(titleText, 15, 17);
+  }
   
   yPos = 32;
   
@@ -156,7 +168,6 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   
   const recipeStartY = yPos + 16;
   let ingredientY = recipeStartY;
-  const pdfOpts = recipe.pdfOptions || {};
   
   // Modern ingredient list (no table)
   recipe.ingredients.slice(0, 12).forEach((ing, index) => {
