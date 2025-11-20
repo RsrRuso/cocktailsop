@@ -20,7 +20,7 @@ import autoTable from 'jspdf-autotable';
 interface Ingredient {
   id: string;
   ingredient: string;
-  amount: number;
+  amount: number | string;
   unit: string;
   abv: number;
 }
@@ -120,11 +120,13 @@ export default function CocktailSOP() {
   // Smart auto-calculation of ABV and total volume
   const calculateMetrics = () => {
     const totalVolume = ingredients.reduce((sum, ing) => {
-      return ing.unit === 'ml' ? sum + ing.amount : sum;
+      const amount = typeof ing.amount === 'number' ? ing.amount : parseFloat(ing.amount) || 0;
+      return ing.unit === 'ml' ? sum + amount : sum;
     }, 0);
 
     const totalAlcohol = ingredients.reduce((sum, ing) => {
-      return ing.unit === 'ml' ? sum + (ing.amount * ing.abv / 100) : sum;
+      const amount = typeof ing.amount === 'number' ? ing.amount : parseFloat(ing.amount) || 0;
+      return ing.unit === 'ml' ? sum + (amount * ing.abv / 100) : sum;
     }, 0);
 
     const abv = totalVolume > 0 ? (totalAlcohol / totalVolume) * 100 : 0;
@@ -141,7 +143,7 @@ export default function CocktailSOP() {
       {
         id: crypto.randomUUID(),
         ingredient: '',
-        amount: 0,
+        amount: '',
         unit: 'ml',
         abv: 0,
       },
@@ -621,11 +623,8 @@ export default function CocktailSOP() {
                           <Label className="text-xs font-medium">Amount</Label>
                           <Input
                             type="number"
-                            value={ing.amount}
-                            onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              updateIngredient(ing.id, 'amount', isNaN(value) ? 0 : value);
-                            }}
+                            value={typeof ing.amount === 'number' ? (ing.amount === 0 ? '' : ing.amount.toString()) : ing.amount}
+                            onChange={(e) => updateIngredient(ing.id, 'amount', e.target.value)}
                             className="h-8 text-sm"
                           />
                         </div>
