@@ -82,6 +82,8 @@ export default function StaffScheduling() {
   const [savedSchedules, setSavedSchedules] = useState<any[]>([]);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [expiringItems, setExpiringItems] = useState<any[]>([]);
+  const [zapierWebhookUrl, setZapierWebhookUrl] = useState('');
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
   
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -1612,17 +1614,72 @@ export default function StaffScheduling() {
               <Accordion type="single" collapsible defaultValue="fifo-warnings">
                 <AccordionItem value="fifo-warnings" className="border-none">
                   <AccordionTrigger className="hover:no-underline pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-red-500/20 rounded-lg animate-pulse">
-                        <Calendar className="w-5 h-5 text-red-400" />
+                    <div className="flex items-center justify-between w-full pr-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-500/20 rounded-lg animate-pulse">
+                          <Calendar className="w-5 h-5 text-red-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-red-100">⚠️ FIFO Inventory Warnings</h3>
+                          <p className="text-xs text-red-300">{expiringItems.length} items expiring within 30 days</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-red-100">⚠️ FIFO Inventory Warnings</h3>
-                        <p className="text-xs text-red-300">{expiringItems.length} items expiring soon</p>
-                      </div>
+                      <Button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!zapierWebhookUrl) {
+                            toast.error('Please set your Zapier webhook URL below first');
+                            return;
+                          }
+                          setIsSendingWhatsApp(true);
+                          try {
+                            const message = `🚨 *FIFO INVENTORY WARNINGS*\n\n${expiringItems.map((item: any, i: number) => 
+                              `${i + 1}. ${item.items?.name || 'Unknown'}\n   Store: ${item.stores?.name || 'Unknown'}\n   Qty: ${item.quantity}\n   Expires: ${format(new Date(item.expiration_date), 'MMM dd, yyyy')}\n   Priority: ${item.priority_score}`
+                            ).join('\n\n')}`;
+
+                            await fetch(zapierWebhookUrl, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              mode: 'no-cors',
+                              body: JSON.stringify({
+                                message,
+                                timestamp: new Date().toISOString(),
+                                workspace: currentWorkspace?.name || 'Personal',
+                                itemCount: expiringItems.length
+                              })
+                            });
+                            toast.success('FIFO warnings sent to WhatsApp via Zapier');
+                          } catch (error) {
+                            console.error('Error sending to Zapier:', error);
+                            toast.error('Failed to send to WhatsApp');
+                          } finally {
+                            setIsSendingWhatsApp(false);
+                          }
+                        }}
+                        variant="outline"
+                        size="sm"
+                        disabled={isSendingWhatsApp || !zapierWebhookUrl}
+                        className="border-green-600 hover:bg-green-800 hover:border-green-500 transition-all h-9 px-4"
+                      >
+                        {isSendingWhatsApp ? 'Sending...' : '📱 Send to WhatsApp'}
+                      </Button>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
+                    <div className="mb-4 p-3 bg-green-950/30 border border-green-800/50 rounded-lg">
+                      <Label className="text-sm font-semibold text-green-300 mb-2 block">
+                        Zapier Webhook URL (for WhatsApp)
+                      </Label>
+                      <Input
+                        value={zapierWebhookUrl}
+                        onChange={(e) => setZapierWebhookUrl(e.target.value)}
+                        placeholder="https://hooks.zapier.com/hooks/catch/..."
+                        className="bg-gray-800 border-gray-700 text-gray-100"
+                      />
+                      <p className="text-xs text-gray-400 mt-2">
+                        Create a Zap with a webhook trigger and connect it to WhatsApp to receive FIFO warnings
+                      </p>
+                    </div>
                     <div className="space-y-2">
                       {expiringItems.map((item: any) => (
                         <div key={item.id} className="p-3 bg-red-950/40 border border-red-800/50 rounded-lg">
