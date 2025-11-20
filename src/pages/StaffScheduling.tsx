@@ -2196,6 +2196,12 @@ export default function StaffScheduling() {
               <table className="w-full border-collapse text-[10px]">
                 <thead>
                   <tr>
+                    <th className="border-2 border-gray-600 p-1 bg-gray-900 font-semibold text-center min-w-[80px] z-10 text-gray-100">
+                      DAILY
+                    </th>
+                    <th className="border-2 border-gray-600 p-1 bg-gray-900 font-semibold text-center min-w-[80px] z-10 text-gray-100">
+                      SPECIAL
+                    </th>
                     <th className="border-2 border-gray-600 p-1 bg-gray-900 font-semibold text-left min-w-[100px] sticky left-0 z-10 text-gray-100">
                       STAFF
                     </th>
@@ -2226,6 +2232,12 @@ export default function StaffScheduling() {
                     })
                     .map(staff => (
                     <tr key={staff.id} className="hover:bg-gray-800/50">
+                      <td className="border-2 border-gray-600 p-1 font-medium bg-gray-900 min-w-[80px]">
+                        <div className="text-[9px] text-gray-100 leading-tight text-center">—</div>
+                      </td>
+                      <td className="border-2 border-gray-600 p-1 font-medium bg-gray-900 min-w-[80px]">
+                        <div className="text-[9px] text-gray-100 leading-tight text-center">—</div>
+                      </td>
                       <td className="border-2 border-gray-600 p-1 font-medium bg-gray-900 sticky left-0 z-10 min-w-[100px]">
                         <div className="text-[10px] text-gray-100 leading-tight">{staff.name}</div>
                         <div className="text-[8px] text-gray-400 capitalize leading-tight">
