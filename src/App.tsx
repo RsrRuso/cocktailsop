@@ -56,7 +56,6 @@ const VarianceReport = lazy(() => import("./pages/VarianceReport"));
 const RecipeVault = lazy(() => import("./pages/RecipeVault"));
 const CocktailSpecs = lazy(() => import("./pages/CocktailSpecs"));
 const CocktailSOP = lazy(() => import("./pages/CocktailSOP"));
-const CocktailSOPBible = lazy(() => import("./pages/CocktailSOPBible"));
 const CRM = lazy(() => import("./pages/CRM"));
 const CRMLeads = lazy(() => import("./pages/CRMLeads"));
 const CRMContacts = lazy(() => import("./pages/CRMContacts"));
@@ -161,7 +160,6 @@ const App = () => (
           <Route path="/recipe-vault" element={<RecipeVault />} />
           <Route path="/cocktail-specs" element={<CocktailSpecs />} />
           <Route path="/cocktail-sop" element={<CocktailSOP />} />
-          <Route path="/cocktail-sop-bible" element={<CocktailSOPBible />} />
           <Route path="/crm" element={<CRM />} />
           <Route path="/crm/leads" element={<CRMLeads />} />
           <Route path="/crm/contacts" element={<CRMContacts />} />
