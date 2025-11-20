@@ -27,6 +27,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
       unit: "ml",
       abv: "",
       type: "Spirit",
+      notes: "",
     };
     onChange({ ...recipe, ingredients: [...recipe.ingredients, newIngredient] });
   };

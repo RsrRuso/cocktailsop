@@ -4,6 +4,7 @@ export interface RecipeIngredient {
   unit: string;
   abv: string;
   type: string;
+  notes: string;
 }
 
 export interface TasteProfile {
@@ -12,6 +13,15 @@ export interface TasteProfile {
   bitter: number;
   salty: number;
   umami: number;
+}
+
+export interface TextureProfile {
+  body: number;
+  foam: number;
+  bubbles: number;
+  oiliness: number;
+  creaminess: number;
+  astringency: number;
 }
 
 export interface CocktailRecipe {
@@ -25,4 +35,9 @@ export interface CocktailRecipe {
   methodSOP: string;
   serviceNotes: string;
   tasteProfile: TasteProfile;
+  textureProfile: TextureProfile;
+  ratio: string;
+  ph: string;
+  brix: string;
+  allergens: string;
 }
