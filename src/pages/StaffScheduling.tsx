@@ -1623,30 +1623,9 @@ export default function StaffScheduling() {
                           <p className="text-xs text-red-300">{expiringItems.length} items expiring within 30 days</p>
                         </div>
                       </div>
-                      <a
-                        href={`https://wa.me/?text=${encodeURIComponent(
-                          `🚨 *FIFO INVENTORY WARNINGS*\n\n${expiringItems.map((item: any, i: number) => 
-                            `${i + 1}. ${item.items?.name || 'Unknown'}\n   Store: ${item.stores?.name || 'Unknown'}\n   Qty: ${item.quantity}\n   Expires: ${format(new Date(item.expiration_date), 'MMM dd, yyyy')}\n   Priority: ${item.priority_score}`
-                          ).join('\n\n')}`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center justify-center gap-2 h-9 px-4 text-sm font-medium border border-green-600 hover:bg-green-800 hover:border-green-500 transition-all rounded-md"
-                      >
-                        📱 Send to WhatsApp
-                      </a>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="mb-4 p-3 bg-green-950/30 border border-green-800/50 rounded-lg">
-                      <p className="text-sm text-green-300 font-medium">
-                        ✅ Direct WhatsApp Integration
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Click "Send to WhatsApp" above to share these FIFO warnings instantly via WhatsApp. No setup required!
-                      </p>
-                    </div>
                     <div className="space-y-2">
                       {expiringItems.map((item: any) => (
                         <div key={item.id} className="p-3 bg-red-950/40 border border-red-800/50 rounded-lg">
