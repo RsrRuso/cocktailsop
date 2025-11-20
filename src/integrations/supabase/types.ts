@@ -426,6 +426,7 @@ export type Database = {
       cocktail_sops: {
         Row: {
           abv_percentage: number | null
+          allergens: string | null
           batch_size: number | null
           brix: number | null
           cost_per_serving: number | null
@@ -454,6 +455,7 @@ export type Database = {
           taste_sweet: number | null
           taste_umami: number | null
           technique: string
+          texture_profile: Json | null
           total_ml: number
           updated_at: string
           user_id: string
@@ -461,6 +463,7 @@ export type Database = {
         }
         Insert: {
           abv_percentage?: number | null
+          allergens?: string | null
           batch_size?: number | null
           brix?: number | null
           cost_per_serving?: number | null
@@ -489,6 +492,7 @@ export type Database = {
           taste_sweet?: number | null
           taste_umami?: number | null
           technique: string
+          texture_profile?: Json | null
           total_ml: number
           updated_at?: string
           user_id: string
@@ -496,6 +500,7 @@ export type Database = {
         }
         Update: {
           abv_percentage?: number | null
+          allergens?: string | null
           batch_size?: number | null
           brix?: number | null
           cost_per_serving?: number | null
@@ -524,6 +529,7 @@ export type Database = {
           taste_sweet?: number | null
           taste_umami?: number | null
           technique?: string
+          texture_profile?: Json | null
           total_ml?: number
           updated_at?: string
           user_id?: string
