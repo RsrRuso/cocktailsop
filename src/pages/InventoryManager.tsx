@@ -756,7 +756,10 @@ const InventoryManager = () => {
     if (destInv) {
       await supabase
         .from("inventory")
-        .update({ quantity: destInv.quantity + quantity })
+        .update({ 
+          quantity: destInv.quantity + quantity,
+          status: "available"
+        })
         .eq("id", destInv.id);
     } else {
       await supabase.from("inventory").insert({
