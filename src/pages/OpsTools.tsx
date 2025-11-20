@@ -90,7 +90,7 @@ const OpsTools = () => {
     ],
     mixing: [
       {
-        name: "LAB - SOP",
+        name: "Cocktail SOP",
         description: "Smart cocktail standard operating procedures",
         details: "Create detailed cocktail SOPs with recipes, techniques, metrics (ABV, pH, Brix), taste profiles, and service notes. Export to PDF for team training.",
         icon: FileText,
