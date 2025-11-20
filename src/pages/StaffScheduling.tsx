@@ -1595,6 +1595,76 @@ export default function StaffScheduling() {
     toast.success('Schedule exported to PDF');
   };
 
+  const exportAllDailyBreakdownsToPDF = async () => {
+    toast.info('Generating complete daily breakdown PDF...');
+    
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let isFirstPage = true;
+
+      for (const day of DAYS_OF_WEEK) {
+        const element = document.getElementById(`day-${day}`);
+        
+        if (!element) {
+          console.warn(`Element not found for ${day}, skipping...`);
+          continue;
+        }
+
+        const dataUrl = await toPng(element, {
+          pixelRatio: 6,
+          cacheBust: true,
+          quality: 1.0,
+          backgroundColor: '#1a1a1a',
+        });
+
+        if (!isFirstPage) {
+          pdf.addPage();
+        }
+        isFirstPage = false;
+
+        // Add dark background
+        pdf.setFillColor(26, 26, 26);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        
+        // Calculate dimensions to fit on page with padding
+        const padding = 10;
+        const maxWidth = pageWidth - (padding * 2);
+        const maxHeight = pageHeight - (padding * 2);
+        
+        const img = new Image();
+        img.src = dataUrl;
+        await new Promise((resolve) => { img.onload = resolve; });
+        
+        const imgRatio = img.width / img.height;
+        const pageRatio = maxWidth / maxHeight;
+        
+        let finalWidth, finalHeight;
+        if (imgRatio > pageRatio) {
+          finalWidth = maxWidth;
+          finalHeight = maxWidth / imgRatio;
+        } else {
+          finalHeight = maxHeight;
+          finalWidth = maxHeight * imgRatio;
+        }
+        
+        const xPos = (pageWidth - finalWidth) / 2;
+        const yPos = (pageHeight - finalHeight) / 2;
+        
+        pdf.addImage(dataUrl, 'PNG', xPos, yPos, finalWidth, finalHeight);
+      }
+
+      const filename = `${(venueName || 'schedule').replace(/\s+/g, '-')}-daily-breakdown-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      pdf.save(filename);
+      toast.success('All daily breakdowns exported to PDF!');
+      
+    } catch (error) {
+      console.error('Error exporting all daily breakdowns:', error);
+      toast.error('Failed to export daily breakdowns. Please try again.');
+    }
+  };
+
   const exportDayToPNG = async (day: string) => {
     const element = document.getElementById(`day-${day}`);
     
@@ -2360,8 +2430,22 @@ export default function StaffScheduling() {
                           <p className="text-xs text-gray-500">Staff schedule by day</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                        <span className="text-xs text-orange-400 font-semibold">☕ Individual break times per staff</span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                          <span className="text-xs text-orange-400 font-semibold">☕ Individual break times per staff</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            exportAllDailyBreakdownsToPDF();
+                          }}
+                          className="h-8 px-3 text-xs border-gray-600 hover:bg-gray-800/80 hover:border-primary/50 transition-all"
+                        >
+                          <Download className="h-3 w-3 mr-1.5" />
+                          Export All Days
+                        </Button>
                       </div>
                     </div>
                   </AccordionTrigger>
