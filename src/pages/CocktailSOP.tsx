@@ -65,7 +65,7 @@ const CocktailSOP = () => {
       setEditingId(editRecipe.id);
       setRecipe({
         drinkName: editRecipe.drink_name,
-        brandName: editRecipe.brand_name || "",
+        brandName: "",
         glass: editRecipe.glass,
         ice: editRecipe.ice,
         garnish: editRecipe.garnish,
@@ -127,7 +127,6 @@ const CocktailSOP = () => {
       const recipeData = {
         user_id: user.id,
         drink_name: recipe.drinkName,
-        brand_name: recipe.brandName || null,
         glass: recipe.glass,
         ice: recipe.ice,
         garnish: recipe.garnish,
