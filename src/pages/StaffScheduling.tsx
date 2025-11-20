@@ -1134,9 +1134,6 @@ export default function StaffScheduling() {
       if (error) throw error;
 
       toast.success('Schedule saved successfully');
-
-      // Send email notifications to staff members
-      await sendScheduleEmails();
       
     } catch (error) {
       console.error('Error saving schedule:', error);
@@ -1144,126 +1141,6 @@ export default function StaffScheduling() {
     }
   };
 
-  const sendScheduleEmails = async () => {
-    try {
-      console.log('Sending schedule emails to staff...');
-      
-      const startDate = new Date(weekStartDate);
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 6);
-      const weekRange = `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d, yyyy')}`;
-      
-      // Get staff members with emails
-      const staffWithEmails = await supabase
-        .from('staff_members')
-        .select('*')
-        .eq('user_id', user?.id)
-        .eq('is_active', true)
-        .not('email', 'is', null);
-
-      if (staffWithEmails.error) {
-        console.error('Error fetching staff emails:', staffWithEmails.error);
-        return;
-      }
-
-      if (!staffWithEmails.data || staffWithEmails.data.length === 0) {
-        console.log('No staff members with email addresses found');
-        toast.info('Schedule saved. Add staff email addresses to send notifications.');
-        return;
-      }
-
-      let emailsSent = 0;
-      let emailsFailed = 0;
-
-      // Send email to each staff member
-      for (const staff of staffWithEmails.data) {
-        try {
-          // Build schedule data for this staff member
-          const staffScheduleData: { [key: string]: any } = {};
-          
-          DAYS_OF_WEEK.forEach(day => {
-            const cell = getScheduleCell(staff.id, day);
-            staffScheduleData[day] = {
-              shift: cell?.timeRange || 'OFF',
-              type: cell?.type || 'off',
-              station: cell?.station || ''
-            };
-          });
-
-          // Call edge function to send email
-          const { error: emailError } = await supabase.functions.invoke('send-schedule-email', {
-            body: {
-              staffEmail: staff.email,
-              staffName: staff.name,
-              weekRange,
-              scheduleData: staffScheduleData
-            }
-          });
-
-          if (emailError) {
-            console.error(`Failed to send email to ${staff.name}:`, emailError);
-            emailsFailed++;
-          } else {
-            console.log(`Email sent successfully to ${staff.name}`);
-            emailsSent++;
-          }
-        } catch (error) {
-          console.error(`Error sending email to ${staff.name}:`, error);
-          emailsFailed++;
-        }
-      }
-
-      // Send a copy to the manager with all staff schedules
-      try {
-        const managerEmail = user?.email;
-        if (managerEmail) {
-          // Build complete schedule data for manager
-          const fullScheduleData: { [key: string]: any } = {};
-          
-          staffMembers.forEach(staff => {
-            DAYS_OF_WEEK.forEach(day => {
-              const cell = getScheduleCell(staff.id, day);
-              const key = `${staff.name} - ${day}`;
-              fullScheduleData[key] = {
-                shift: cell?.timeRange || 'OFF',
-                type: cell?.type || 'off',
-                station: cell?.station || ''
-              };
-            });
-          });
-
-          const { error: managerEmailError } = await supabase.functions.invoke('send-schedule-email', {
-            body: {
-              staffEmail: managerEmail,
-              staffName: 'Manager',
-              weekRange,
-              scheduleData: fullScheduleData
-            }
-          });
-
-          if (!managerEmailError) {
-            console.log('Manager copy sent successfully');
-            emailsSent++;
-          } else {
-            console.error('Failed to send manager copy:', managerEmailError);
-          }
-        }
-      } catch (error) {
-        console.error('Error sending manager copy:', error);
-      }
-
-      if (emailsSent > 0) {
-        toast.success(`📧 Schedule sent to ${emailsSent} recipient${emailsSent > 1 ? 's' : ''} (including you)`);
-      }
-      
-      if (emailsFailed > 0) {
-        toast.warning(`⚠️ Failed to send ${emailsFailed} email${emailsFailed > 1 ? 's' : ''}`);
-      }
-
-    } catch (error) {
-      console.error('Error in sendScheduleEmails:', error);
-    }
-  };
 
   const exportToPDF = () => {
     const doc = new jsPDF('landscape');
