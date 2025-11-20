@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useInventoryAccess } from "@/hooks/useInventoryAccess";
 import { useManagerRole } from "@/hooks/useManagerRole";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { usePendingAccessRequests } from "@/hooks/usePendingAccessRequests";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -39,6 +40,7 @@ const InventoryManager = () => {
   const { hasAccess, isLoading: accessLoading, refetch: refetchAccess } = useInventoryAccess();
   const { isManager } = useManagerRole();
   const { currentWorkspace, workspaces, switchWorkspace, isLoading: workspaceLoading } = useWorkspace();
+  const { count: pendingRequestsCount } = usePendingAccessRequests();
   const navigate = useNavigate();
   const [stores, setStores] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
@@ -904,9 +906,19 @@ const InventoryManager = () => {
             </Button>
           )}
           {isManager && (
-            <Button onClick={() => navigate("/access-approval")} size="sm" variant="outline">
+            <Button 
+              onClick={() => navigate("/access-approval")} 
+              size="sm" 
+              variant="outline"
+              className="relative"
+            >
               <Lock className="w-3 h-3 mr-1" />
               Approvals
+              {pendingRequestsCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground animate-pulse">
+                  {pendingRequestsCount}
+                </span>
+              )}
             </Button>
           )}
           <Button onClick={() => fileInputRef.current?.click()} size="sm" variant="outline">
