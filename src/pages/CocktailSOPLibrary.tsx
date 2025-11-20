@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Download, Trash2, FileText } from "lucide-react";
+import { ArrowLeft, Download, Trash2, FileText, Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -100,6 +100,8 @@ const CocktailSOPLibrary = () => {
       brix: recipe.brix?.toString() || "",
       allergens: (recipe as any).allergens || "",
       pdfOptions: {
+        showBrandName: true,
+        showAmount: true,
         showUnit: true,
         showType: true,
         showABV: true,
@@ -109,6 +111,10 @@ const CocktailSOPLibrary = () => {
     
     exportToPDF(cocktailRecipe);
     toast.success("PDF downloaded!");
+  };
+
+  const editRecipe = (recipe: SavedRecipe) => {
+    navigate("/cocktail-sop", { state: { editRecipe: recipe } });
   };
 
   const downloadAllPDFs = async () => {
@@ -261,10 +267,17 @@ const CocktailSOPLibrary = () => {
                     variant="outline"
                     size="sm"
                     className="flex-1"
+                    onClick={() => editRecipe(recipe)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => downloadSinglePDF(recipe)}
                   >
-                    <Download className="h-4 w-4 mr-1" />
-                    PDF
+                    <Download className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="destructive"
