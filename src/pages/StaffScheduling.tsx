@@ -1096,23 +1096,23 @@ export default function StaffScheduling() {
     doc.setFillColor(...colors.background);
     doc.rect(0, 0, pageWidth, pageHeight, 'F');
     
-    // Header background - darker grey
+    // Header background - darker grey (SMALLER)
     doc.setFillColor(...colors.primary);
-    doc.rect(0, 0, pageWidth, 28, 'F');
+    doc.rect(0, 0, pageWidth, 18, 'F');
     
-    // Title with light text
-    doc.setFontSize(22);
+    // Title with light text (SMALLER)
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...colors.white);
-    doc.text((venueName || 'STAFF SCHEDULE').toUpperCase(), 148, 14, { align: 'center' });
+    doc.text((venueName || 'STAFF SCHEDULE').toUpperCase(), 148, 10, { align: 'center' });
     
-    // Subtitle with light text
-    doc.setFontSize(10);
+    // Subtitle with light text (SMALLER)
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...colors.lightGrey);
     const weekStart = new Date(weekStartDate);
     const weekEnd = addDays(weekStart, 6);
-    doc.text(`WEEK: ${format(weekStart, 'MMM dd').toUpperCase()} - ${format(weekEnd, 'MMM dd, yyyy').toUpperCase()}`, 148, 22, { align: 'center' });
+    doc.text(`WEEK: ${format(weekStart, 'MMM dd').toUpperCase()} - ${format(weekEnd, 'MMM dd, yyyy').toUpperCase()}`, 148, 15, { align: 'center' });
     
     // Reset text color for table
     doc.setTextColor(...colors.white);
@@ -1134,7 +1134,7 @@ export default function StaffScheduling() {
     autoTable(doc, {
       head: headers,
       body: rows,
-      startY: 32,
+      startY: 22,
       styles: { 
         fontSize: 6, 
         cellPadding: 1.2, 
@@ -1319,18 +1319,19 @@ export default function StaffScheduling() {
     doc.setTextColor(...colors.white);
     doc.text('ROLE RESPONSIBILITIES', 18, finalY + 3);
     
-    finalY += 8;
-    doc.setFontSize(6.5);
+    finalY += 10;
+    doc.setFontSize(6);
     doc.setTextColor(...colors.lightGrey);
     
-    // Compact single-page role responsibilities: simple text list
+    // Compact single-page role responsibilities with proper text wrapping
     const uniqueTitles = Array.from(new Set(staffMembers.map(s => s.title)))
       .sort((a, b) => {
         const order = ['head_bartender', 'senior_bartender', 'bartender', 'bar_back', 'support'];
         return order.indexOf(a) - order.indexOf(b);
       });
 
-    const roleLineHeight = 3;
+    const roleLineHeight = 3.5;
+    const maxTextWidth = 260; // Wider text area to prevent cutoff
     
     uniqueTitles.forEach(title => {
       const roleTitle = title === 'head_bartender' ? 'Head Bartender' :
@@ -1340,20 +1341,28 @@ export default function StaffScheduling() {
       
       const description = ROLE_RESPONSIBILITIES[title];
       
+      // Check if we need a new page
+      if (finalY > pageHeight - 30) {
+        doc.addPage();
+        doc.setFillColor(...colors.background);
+        doc.rect(0, 0, pageWidth, pageHeight, 'F');
+        finalY = 20;
+      }
+      
       // Role title
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(6.5);
       doc.setTextColor(...colors.white);
       doc.text(`${roleTitle.toUpperCase()}:`, 18, finalY);
       
-      // Wrapped description directly under the title
+      // Wrapped description with proper line spacing
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(5.8);
+      doc.setFontSize(5.5);
       doc.setTextColor(...colors.lightGrey);
-      const wrapped = doc.splitTextToSize(description, 240);
-      doc.text(wrapped, 18, finalY + 2.5);
+      const wrapped = doc.splitTextToSize(description, maxTextWidth);
+      doc.text(wrapped, 18, finalY + 3);
       
-      finalY += 2.5 + wrapped.length * roleLineHeight;
+      finalY += 3 + (wrapped.length * roleLineHeight);
     });
     
     
