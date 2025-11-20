@@ -1980,9 +1980,6 @@ export default function StaffScheduling() {
                     <th className="border border-gray-700 p-1 bg-gray-800 font-semibold text-left min-w-[100px] sticky left-0 z-10 text-gray-100">
                       STAFF
                     </th>
-                    <th className="border border-gray-700 p-1 bg-orange-900/20 font-semibold text-center min-w-[140px] text-orange-300 text-[9px]">
-                      ☕ BREAK TIMES
-                    </th>
                     {DAYS_OF_WEEK.map((day, dayIndex) => {
                       const isBusyDay = !!dailyEvents[day];
                       const dayLabel = dailyEvents[day] || '';
@@ -2014,78 +2011,6 @@ export default function StaffScheduling() {
                         <div className="text-[10px] text-gray-100 leading-tight">{staff.name}</div>
                         <div className="text-[8px] text-gray-400 capitalize leading-tight">
                           {staff.title.replace('_', ' ')}
-                        </div>
-                      </td>
-                      <td className="border border-gray-700 p-0.5 bg-orange-950/10">
-                        <div className="flex gap-0.5 items-center justify-center">
-                          <Input
-                            type="time"
-                            value={(() => {
-                              const breaks = staff.breakTimings || { firstWaveStart: '5:30 PM' };
-                              const [time, period] = breaks.firstWaveStart.split(' ');
-                              const [hours, minutes] = time.split(':');
-                              let hour = parseInt(hours);
-                              if (period === 'PM' && hour !== 12) hour += 12;
-                              if (period === 'AM' && hour === 12) hour = 0;
-                              return `${hour.toString().padStart(2, '0')}:${minutes}`;
-                            })()}
-                            onChange={(e) => {
-                              const time = e.target.value;
-                              const [hours, minutes] = time.split(':');
-                              const hour = parseInt(hours);
-                              const ampm = hour >= 12 ? 'PM' : 'AM';
-                              const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                              const newBreakTimings = { 
-                                ...(staff.breakTimings || {}), 
-                                firstWaveStart: `${displayHour}:${minutes} ${ampm}`, 
-                                firstWaveEnd: staff.breakTimings?.firstWaveEnd || '6:30 PM', 
-                                secondWaveStart: staff.breakTimings?.secondWaveStart || '6:30 PM' 
-                              };
-                              const updated = staffMembers.map(s => 
-                                s.id === staff.id 
-                                  ? { ...s, breakTimings: newBreakTimings }
-                                  : s
-                              );
-                              setStaffMembers(updated);
-                              saveBreakTimings(staff.id, newBreakTimings);
-                            }}
-                            className="h-5 w-14 text-[8px] bg-gray-900 border-gray-700 text-gray-100 font-mono p-0.5"
-                            title="First Wave Start"
-                          />
-                          <span className="text-[8px] text-gray-500">-</span>
-                          <Input
-                            type="time"
-                            value={(() => {
-                              const breaks = staff.breakTimings || { firstWaveEnd: '6:30 PM' };
-                              const [time, period] = breaks.firstWaveEnd.split(' ');
-                              const [hours, minutes] = time.split(':');
-                              let hour = parseInt(hours);
-                              if (period === 'PM' && hour !== 12) hour += 12;
-                              if (period === 'AM' && hour === 12) hour = 0;
-                              return `${hour.toString().padStart(2, '0')}:${minutes}`;
-                            })()}
-                            onChange={(e) => {
-                              const time = e.target.value;
-                              const [hours, minutes] = time.split(':');
-                              const hour = parseInt(hours);
-                              const ampm = hour >= 12 ? 'PM' : 'AM';
-                              const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                              const newBreakTimings = { 
-                                firstWaveStart: staff.breakTimings?.firstWaveStart || '5:30 PM', 
-                                firstWaveEnd: `${displayHour}:${minutes} ${ampm}`, 
-                                secondWaveStart: `${displayHour}:${minutes} ${ampm}` 
-                              };
-                              const updated = staffMembers.map(s => 
-                                s.id === staff.id 
-                                  ? { ...s, breakTimings: newBreakTimings }
-                                  : s
-                              );
-                              setStaffMembers(updated);
-                              saveBreakTimings(staff.id, newBreakTimings);
-                            }}
-                            className="h-5 w-14 text-[8px] bg-gray-900 border-gray-700 text-gray-100 font-mono p-0.5"
-                            title="First Wave End / Second Wave Start"
-                          />
                         </div>
                       </td>
                       {DAYS_OF_WEEK.map(day => {
