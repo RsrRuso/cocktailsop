@@ -206,7 +206,6 @@ const InventoryManager = () => {
         stores(name)
       `)
       .eq("store_id", storeId)
-      .eq("status", "available")
       .gt("quantity", 0)
       .order("priority_score", { ascending: false })
       .limit(10);
@@ -1007,8 +1006,8 @@ const InventoryManager = () => {
             <div className="grid gap-2">
               {inventory
                 .filter(inv => {
-                  // First check status and quantity - only show available items
-                  if (inv.status !== 'available' || (inv.quantity ?? 0) <= 0) return false;
+                  // First check quantity only - show any items with stock
+                  if ((inv.quantity ?? 0) <= 0) return false;
                   
                   // Apply store filter
                   if (selectedStore && selectedStore !== 'all') {
