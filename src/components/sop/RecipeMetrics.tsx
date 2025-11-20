@@ -1,12 +1,12 @@
 import { Card } from "@/components/ui/card";
-import { Ingredient } from "@/types/cocktail";
+import { RecipeIngredient } from "@/types/cocktail-recipe";
 import { Droplets, Zap, Activity, Flame } from "lucide-react";
 
-interface CocktailMetricsProps {
-  ingredients: Ingredient[];
+interface RecipeMetricsProps {
+  ingredients: RecipeIngredient[];
 }
 
-const CocktailMetrics = ({ ingredients }: CocktailMetricsProps) => {
+const RecipeMetrics = ({ ingredients }: RecipeMetricsProps) => {
   const totalVolume = ingredients.reduce(
     (sum, ing) => sum + (parseFloat(ing.amount) || 0),
     0
@@ -24,7 +24,7 @@ const CocktailMetrics = ({ ingredients }: CocktailMetricsProps) => {
 
   const metrics = [
     {
-      label: "Total Volume",
+      label: "Volume",
       value: `${totalVolume.toFixed(0)}ml`,
       icon: Droplets,
       color: "text-blue-500",
@@ -43,17 +43,17 @@ const CocktailMetrics = ({ ingredients }: CocktailMetricsProps) => {
     },
     {
       label: "Calories",
-      value: `${estimatedCalories} kcal`,
+      value: `${estimatedCalories}`,
       icon: Flame,
       color: "text-orange-500",
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {metrics.map((metric) => (
         <Card key={metric.label} className="p-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <metric.icon className={`h-5 w-5 ${metric.color}`} />
             <div>
               <p className="text-xs text-muted-foreground">{metric.label}</p>
@@ -66,4 +66,4 @@ const CocktailMetrics = ({ ingredients }: CocktailMetricsProps) => {
   );
 };
 
-export default CocktailMetrics;
+export default RecipeMetrics;
