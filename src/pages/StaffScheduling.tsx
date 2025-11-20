@@ -1160,7 +1160,7 @@ export default function StaffScheduling() {
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 0, 0); // Black text on gold
-      doc.text('SPECIAL EVENTS THIS WEEK', 18, finalY + 3);
+      doc.text('DAILY TASKS', 18, finalY + 3);
       
       finalY += 10;
       doc.setFontSize(6.5);
@@ -1190,7 +1190,7 @@ export default function StaffScheduling() {
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...colors.white);
-      doc.text('DAILY EVENTS THIS WEEK', 18, finalY + 3);
+      doc.text('SPECIAL EVENT', 18, finalY + 3);
       
       finalY += 10;
       doc.setFontSize(6.5);
