@@ -4051,6 +4051,7 @@ export type Database = {
           daily_events: Json | null
           id: string
           schedule_data: Json
+          special_events: Json | null
           updated_at: string | null
           user_id: string
           venue_name: string | null
@@ -4061,6 +4062,7 @@ export type Database = {
           daily_events?: Json | null
           id?: string
           schedule_data: Json
+          special_events?: Json | null
           updated_at?: string | null
           user_id: string
           venue_name?: string | null
@@ -4071,6 +4073,7 @@ export type Database = {
           daily_events?: Json | null
           id?: string
           schedule_data?: Json
+          special_events?: Json | null
           updated_at?: string | null
           user_id?: string
           venue_name?: string | null
