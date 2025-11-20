@@ -112,10 +112,14 @@ const CocktailSOPLibrary = () => {
     }
 
     setDownloading(true);
-    const toastId = toast.loading("Generating PDFs...");
+    const toastId = toast.loading("Generating combined PDF...");
 
     try {
-      // Download each recipe as a separate PDF file
+      // Import jsPDF to create a single document
+      const jsPDF = (await import('jspdf')).default;
+      const doc = new jsPDF();
+      
+      // Add each recipe to the same PDF document
       for (let i = 0; i < recipes.length; i++) {
         const recipe = recipes[i];
         const cocktailRecipe: CocktailRecipe = {
@@ -140,19 +144,23 @@ const CocktailSOPLibrary = () => {
           allergens: (recipe as any).allergens || ""
         };
         
-        // Small delay between downloads to prevent browser blocking
-        if (i > 0) {
-          await new Promise(resolve => setTimeout(resolve, 300));
+        // Add recipe to existing doc
+        exportToPDF(cocktailRecipe, doc);
+        
+        // Add new page for next recipe (except for the last one)
+        if (i < recipes.length - 1) {
+          doc.addPage();
         }
-        exportToPDF(cocktailRecipe);
+        
+        toast.loading(`Processing ${i + 1} of ${recipes.length}...`, { id: toastId });
       }
 
-      toast.dismiss(toastId);
-      toast.success(`Downloaded ${recipes.length} recipes!`);
+      // Save the combined PDF
+      doc.save(`Cocktail_SOP_Collection_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success(`Downloaded ${recipes.length} recipes in one PDF!`, { id: toastId });
     } catch (error) {
-      console.error("Error generating PDFs:", error);
-      toast.dismiss(toastId);
-      toast.error("Failed to generate PDFs");
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF", { id: toastId });
     } finally {
       setDownloading(false);
     }
