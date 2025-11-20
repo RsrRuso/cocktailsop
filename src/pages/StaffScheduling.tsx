@@ -36,6 +36,8 @@ interface ScheduleCell {
   timeRange: string;
   type: 'opening' | 'closing' | 'pickup' | 'brunch' | 'off' | 'regular' | 'early_shift' | 'late_shift';
   station?: string;
+  breakStart?: string;
+  breakEnd?: string;
 }
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -183,11 +185,11 @@ export default function StaffScheduling() {
 
 
 
-  const updateScheduleCell = (staffId: string, day: string, timeRange: string, type: ScheduleCell['type'], station?: string) => {
+  const updateScheduleCell = (staffId: string, day: string, timeRange: string, type: ScheduleCell['type'], station?: string, breakStart?: string, breakEnd?: string) => {
     const key = `${staffId}-${day}`;
     setSchedule(prev => ({
       ...prev,
-      [key]: { staffId, day, timeRange, type, station }
+      [key]: { staffId, day, timeRange, type, station, breakStart, breakEnd }
     }));
   };
 
@@ -1890,18 +1892,20 @@ export default function StaffScheduling() {
                               <div className="bg-orange-950/20 rounded p-1.5 border border-orange-900/30">
                                 <span className="font-semibold text-orange-400">First Wave Break</span>
                                 <div className="text-gray-300 mt-1 space-y-0.5">
-                                  {firstWaveStaff.map((s, idx) => {
-                                    const staff = staffMembers.find(sm => sm.name === s.name);
-                                    const breaks = staff?.breakTimings || { firstWaveStart: '5:30 PM', firstWaveEnd: '6:30 PM' };
-                                    return (
-                                      <div key={idx} className="pl-2">
-                                        • <span className={s.staff?.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
-                                        {s.staff?.title === 'head_bartender' && <span className="text-[8px] text-yellow-500 ml-1">(HEAD)</span>}
-                                        {s.staff?.title === 'senior_bartender' && <span className="text-[8px] text-blue-400 ml-1">(SENIOR)</span>}
-                                        <span className="text-gray-500 text-[9px]"> ({breaks.firstWaveStart}-{breaks.firstWaveEnd})</span>
-                                      </div>
-                                    );
-                                  })}
+                                   {firstWaveStaff.map((s, idx) => {
+                                     const staff = staffMembers.find(sm => sm.name === s.name);
+                                     const scheduleCell = schedule[`${staff?.id}-${day}`];
+                                     const breakStart = scheduleCell?.breakStart || staff?.breakTimings?.firstWaveStart || '5:30 PM';
+                                     const breakEnd = scheduleCell?.breakEnd || staff?.breakTimings?.firstWaveEnd || '6:30 PM';
+                                     return (
+                                       <div key={idx} className="pl-2">
+                                         • <span className={s.staff?.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
+                                         {s.staff?.title === 'head_bartender' && <span className="text-[8px] text-yellow-500 ml-1">(HEAD)</span>}
+                                         {s.staff?.title === 'senior_bartender' && <span className="text-[8px] text-blue-400 ml-1">(SENIOR)</span>}
+                                         <span className="text-gray-500 text-[9px]"> ({breakStart}-{breakEnd})</span>
+                                       </div>
+                                     );
+                                   })}
                                 </div>
                                 <div className="text-amber-400/80 mt-1.5 text-[9px] bg-amber-950/20 rounded p-1">
                                   ⚠️ Coverage: 2 Indoor + 1 Support remain
@@ -1912,18 +1916,19 @@ export default function StaffScheduling() {
                               <div className="bg-teal-950/20 rounded p-1.5 border border-teal-900/30">
                                 <span className="font-semibold text-teal-400">Second Wave Break</span>
                                 <div className="text-gray-300 mt-1 space-y-0.5">
-                                  {secondWaveStaff.map((s, idx) => {
-                                    const staff = staffMembers.find(sm => sm.name === s.name);
-                                    const breaks = staff?.breakTimings || { secondWaveStart: '6:30 PM' };
-                                    return (
-                                      <div key={idx} className="pl-2">
-                                        • <span className={s.staff?.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
-                                        {s.staff?.title === 'head_bartender' && <span className="text-[8px] text-yellow-500 ml-1">(HEAD)</span>}
-                                        {s.staff?.title === 'senior_bartender' && <span className="text-[8px] text-blue-400 ml-1">(SENIOR)</span>}
-                                        <span className="text-gray-500 text-[9px]"> (After {breaks.secondWaveStart})</span>
-                                      </div>
-                                    );
-                                  })}
+                                   {secondWaveStaff.map((s, idx) => {
+                                     const staff = staffMembers.find(sm => sm.name === s.name);
+                                     const scheduleCell = schedule[`${staff?.id}-${day}`];
+                                     const breakStart = scheduleCell?.breakStart || staff?.breakTimings?.secondWaveStart || '6:30 PM';
+                                     return (
+                                       <div key={idx} className="pl-2">
+                                         • <span className={s.staff?.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
+                                         {s.staff?.title === 'head_bartender' && <span className="text-[8px] text-yellow-500 ml-1">(HEAD)</span>}
+                                         {s.staff?.title === 'senior_bartender' && <span className="text-[8px] text-blue-400 ml-1">(SENIOR)</span>}
+                                         <span className="text-gray-500 text-[9px]"> (After {breakStart})</span>
+                                       </div>
+                                     );
+                                   })}
                                 </div>
                                 <div className="text-teal-400/80 mt-1 text-[9px]">
                                   First wave returns to provide relief
@@ -2101,7 +2106,7 @@ export default function StaffScheduling() {
                                 else if (value === '3:00 PM - 1:00 AM') type = 'regular'; // Support 10h shift
                                 else if (value.includes('4:00 PM')) type = 'early_shift';
                                 else if (value.includes('5:00 PM')) type = 'late_shift';
-                                updateScheduleCell(staff.id, day, value, type, cell?.station);
+                                updateScheduleCell(staff.id, day, value, type, cell?.station, cell?.breakStart, cell?.breakEnd);
                               }}
                             >
                               <SelectTrigger className="text-[9px] h-6 bg-gray-900 border-gray-700 text-gray-100 px-1">
@@ -2142,7 +2147,7 @@ export default function StaffScheduling() {
                                     newStation = `Support - ${area === 'outdoor' ? 'Outdoor' : 'Indoor'}: Glassware Polishing, General Support`;
                                   }
                                   
-                                  updateScheduleCell(staff.id, day, cell.timeRange, cell.type, newStation);
+                                  updateScheduleCell(staff.id, day, cell.timeRange, cell.type, newStation, cell?.breakStart, cell?.breakEnd);
                                 }}
                               >
                                 <SelectTrigger className="text-[8px] h-5 bg-gray-800 border-gray-600 text-gray-100 px-1 mt-0.5">
@@ -2157,6 +2162,24 @@ export default function StaffScheduling() {
                             {cell?.station && (
                               <div className="text-[8px] text-gray-400 text-center mt-0.5 leading-none truncate px-0.5">
                                 {cell.station}
+                              </div>
+                            )}
+                            {cell?.timeRange && cell.timeRange !== 'OFF' && (
+                              <div className="flex gap-0.5 mt-0.5">
+                                <Input
+                                  placeholder="5:30 PM"
+                                  value={cell?.breakStart || ''}
+                                  onChange={(e) => updateScheduleCell(staff.id, day, cell.timeRange, cell.type, cell.station, e.target.value, cell?.breakEnd)}
+                                  className="text-[7px] h-4 bg-orange-500/10 border-orange-500/30 px-0.5 text-center"
+                                  title="Break Start"
+                                />
+                                <Input
+                                  placeholder="6:30 PM"
+                                  value={cell?.breakEnd || ''}
+                                  onChange={(e) => updateScheduleCell(staff.id, day, cell.timeRange, cell.type, cell.station, cell?.breakStart, e.target.value)}
+                                  className="text-[7px] h-4 bg-orange-500/10 border-orange-500/30 px-0.5 text-center"
+                                  title="Break End"
+                                />
                               </div>
                             )}
                           </td>
