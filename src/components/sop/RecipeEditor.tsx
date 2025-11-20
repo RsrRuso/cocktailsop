@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Plus, Trash2, Camera } from "lucide-react";
 import { CocktailRecipe, RecipeIngredient } from "@/types/cocktail-recipe";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface RecipeEditorProps {
   recipe: CocktailRecipe;
@@ -14,6 +15,7 @@ interface RecipeEditorProps {
 }
 
 const ingredientTypes = ["Spirit", "Liqueur", "Mixer", "Syrup", "Bitters", "Juice", "Other"];
+const units = ["ml", "oz", "dash", "drops", "barspoon", "piece"];
 
 const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
   const updateField = (field: keyof CocktailRecipe, value: any) => {
@@ -62,182 +64,305 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
     });
   };
 
-  const tastes: { key: keyof typeof recipe.tasteProfile; label: string; color: string }[] = [
-    { key: "sweet", label: "Sweet", color: "text-pink-500" },
-    { key: "sour", label: "Sour", color: "text-yellow-500" },
-    { key: "bitter", label: "Bitter", color: "text-orange-500" },
-    { key: "salty", label: "Salty", color: "text-blue-500" },
-    { key: "umami", label: "Umami", color: "text-purple-500" },
+  const updateTexture = (key: keyof typeof recipe.textureProfile, value: number) => {
+    onChange({ 
+      ...recipe, 
+      textureProfile: { ...recipe.textureProfile, [key]: value } 
+    });
+  };
+
+  const tastes: { key: keyof typeof recipe.tasteProfile; label: string }[] = [
+    { key: "sweet", label: "Sweet" },
+    { key: "sour", label: "Sour" },
+    { key: "bitter", label: "Bitter" },
+    { key: "salty", label: "Salty" },
+    { key: "umami", label: "Umami" },
+  ];
+
+  const textures: { key: keyof typeof recipe.textureProfile; label: string }[] = [
+    { key: "body", label: "Body" },
+    { key: "foam", label: "Foam" },
+    { key: "bubbles", label: "Bubbles" },
+    { key: "oiliness", label: "Oiliness" },
+    { key: "creaminess", label: "Creaminess" },
+    { key: "astringency", label: "Astringency" },
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-20">
       {/* Basic Info */}
       <Card className="p-4">
-        <h2 className="text-lg font-semibold mb-3">Basic Info</h2>
-        <div className="space-y-3">
+        <h2 className="text-lg font-semibold mb-4">Basic Info</h2>
+        <div className="space-y-4">
           <div>
-            <Label>Drink Name</Label>
+            <Label htmlFor="drinkName" className="text-foreground">Drink Name *</Label>
             <Input
+              id="drinkName"
               value={recipe.drinkName}
               onChange={(e) => updateField("drinkName", e.target.value)}
-              placeholder="e.g., Negroni"
+              placeholder="e.g., The Atatakai"
+              className="mt-1 text-base bg-muted text-foreground placeholder:text-muted-foreground"
+              maxLength={100}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Glass</Label>
-              <Input
-                value={recipe.glass}
-                onChange={(e) => updateField("glass", e.target.value)}
-                placeholder="Rocks glass"
-              />
-            </div>
-            <div>
-              <Label>Ice</Label>
-              <Input
-                value={recipe.ice}
-                onChange={(e) => updateField("ice", e.target.value)}
-                placeholder="Large cube"
-              />
-            </div>
+          
+          <div>
+            <Label htmlFor="technique" className="text-foreground">Technique *</Label>
+            <Select value={recipe.technique} onValueChange={(v) => updateField("technique", v)}>
+              <SelectTrigger id="technique" className="mt-1 bg-muted text-foreground">
+                <SelectValue placeholder="Select technique" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Stir">Stir</SelectItem>
+                <SelectItem value="Shake">Shake</SelectItem>
+                <SelectItem value="Build">Build</SelectItem>
+                <SelectItem value="Blend">Blend</SelectItem>
+                <SelectItem value="Muddle">Muddle</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Garnish</Label>
-              <Input
-                value={recipe.garnish}
-                onChange={(e) => updateField("garnish", e.target.value)}
-                placeholder="Orange peel"
-              />
-            </div>
-            <div>
-              <Label>Technique</Label>
-              <Input
-                value={recipe.technique}
-                onChange={(e) => updateField("technique", e.target.value)}
-                placeholder="Stirred"
-              />
-            </div>
-          </div>
-        </div>
 
-        {/* Image Upload */}
-        <div className="mt-4">
-          <Label>Photo</Label>
-          <div className="flex items-center gap-3 mt-2">
-            {recipe.mainImage && (
-              <img
-                src={recipe.mainImage}
-                alt="Cocktail"
-                className="w-20 h-20 object-cover rounded-lg"
+          <div>
+            <Label htmlFor="glass" className="text-foreground">Glass</Label>
+            <Input
+              id="glass"
+              value={recipe.glass}
+              onChange={(e) => updateField("glass", e.target.value)}
+              placeholder="e.g., Rock glass"
+              className="mt-1 text-base bg-muted text-foreground placeholder:text-muted-foreground"
+              maxLength={50}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="ice" className="text-foreground">Ice</Label>
+            <Input
+              id="ice"
+              value={recipe.ice}
+              onChange={(e) => updateField("ice", e.target.value)}
+              placeholder="e.g., Block ice"
+              className="mt-1 text-base bg-muted text-foreground placeholder:text-muted-foreground"
+              maxLength={50}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="garnish" className="text-foreground">Garnish</Label>
+            <Input
+              id="garnish"
+              value={recipe.garnish}
+              onChange={(e) => updateField("garnish", e.target.value)}
+              placeholder="e.g., Orange peel"
+              className="mt-1 text-base bg-muted text-foreground placeholder:text-muted-foreground"
+              maxLength={100}
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label htmlFor="ratio" className="text-foreground text-xs">Ratio</Label>
+              <Input
+                id="ratio"
+                value={recipe.ratio}
+                onChange={(e) => updateField("ratio", e.target.value)}
+                placeholder="2:1:1"
+                className="mt-1 text-sm bg-muted text-foreground placeholder:text-muted-foreground"
+                maxLength={20}
               />
+            </div>
+            <div>
+              <Label htmlFor="ph" className="text-foreground text-xs">pH</Label>
+              <Input
+                id="ph"
+                type="number"
+                step="0.1"
+                value={recipe.ph}
+                onChange={(e) => updateField("ph", e.target.value)}
+                placeholder="3.5"
+                className="mt-1 text-sm bg-muted text-foreground placeholder:text-muted-foreground"
+              />
+            </div>
+            <div>
+              <Label htmlFor="brix" className="text-foreground text-xs">Brix</Label>
+              <Input
+                id="brix"
+                type="number"
+                step="0.1"
+                value={recipe.brix}
+                onChange={(e) => updateField("brix", e.target.value)}
+                placeholder="15"
+                className="mt-1 text-sm bg-muted text-foreground placeholder:text-muted-foreground"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="allergens" className="text-foreground">Allergens</Label>
+            <Input
+              id="allergens"
+              value={recipe.allergens}
+              onChange={(e) => updateField("allergens", e.target.value)}
+              placeholder="e.g., Soy, Nuts"
+              className="mt-1 text-base bg-muted text-foreground placeholder:text-muted-foreground"
+              maxLength={200}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="image" className="text-foreground">Image</Label>
+            <div className="flex items-center gap-3 mt-1">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById("imageInput")?.click()}
+                className="flex-1"
+              >
+                <Camera className="mr-2 h-4 w-4" />
+                {recipe.mainImage ? "Change Image" : "Add Image"}
+              </Button>
+              <input
+                id="imageInput"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </div>
+            {recipe.mainImage && (
+              <img src={recipe.mainImage} alt="Preview" className="mt-3 w-full h-32 object-cover rounded" />
             )}
-            <Button variant="outline" size="sm" asChild>
-              <label className="cursor-pointer">
-                <Camera className="h-4 w-4 mr-2" />
-                {recipe.mainImage ? "Change" : "Upload"}
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                />
-              </label>
-            </Button>
           </div>
         </div>
       </Card>
 
-      {/* Ingredients */}
+      {/* Recipe Ingredients */}
       <Card className="p-4">
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Recipe</h2>
           <Button onClick={addIngredient} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Add
+            <Plus className="mr-1 h-4 w-4" /> Add
           </Button>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-4">
           {recipe.ingredients.map((ingredient, index) => (
-            <div key={index} className="flex gap-2 items-start">
-              <Input
-                placeholder="Name"
-                value={ingredient.name}
-                onChange={(e) => updateIngredient(index, "name", e.target.value)}
-                className="flex-1"
-              />
-              <Input
-                placeholder="Amt"
-                value={ingredient.amount}
-                onChange={(e) => updateIngredient(index, "amount", e.target.value)}
-                className="w-16"
-                type="number"
-              />
-              <Input
-                placeholder="Unit"
-                value={ingredient.unit}
-                onChange={(e) => updateIngredient(index, "unit", e.target.value)}
-                className="w-14"
-              />
-              <Input
-                placeholder="ABV"
-                value={ingredient.abv}
-                onChange={(e) => updateIngredient(index, "abv", e.target.value)}
-                className="w-16"
-                type="number"
-              />
-              <select
-                value={ingredient.type}
-                onChange={(e) => updateIngredient(index, "type", e.target.value)}
-                className="h-10 px-2 py-2 rounded-md border border-input bg-background text-sm"
-              >
-                {ingredientTypes.map((type) => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-              <Button
-                variant="destructive"
-                size="icon"
-                onClick={() => removeIngredient(index)}
-              >
-                <Trash2 className="h-4 w-4" />
+            <Card key={index} className="p-4 bg-muted/50 border-2">
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor={`ing-name-${index}`} className="text-foreground font-medium">Ingredient Name *</Label>
+                  <Input
+                    id={`ing-name-${index}`}
+                    value={ingredient.name}
+                    onChange={(e) => updateIngredient(index, "name", e.target.value)}
+                    placeholder="e.g., Bourbon"
+                    className="mt-1 text-base bg-background text-foreground placeholder:text-muted-foreground font-medium"
+                    maxLength={100}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <Label htmlFor={`ing-amount-${index}`} className="text-foreground text-xs">Amount</Label>
+                    <Input
+                      id={`ing-amount-${index}`}
+                      type="number"
+                      step="0.1"
+                      value={ingredient.amount}
+                      onChange={(e) => updateIngredient(index, "amount", e.target.value)}
+                      placeholder="60"
+                      className="mt-1 text-sm bg-background text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor={`ing-unit-${index}`} className="text-foreground text-xs">Unit</Label>
+                    <Select 
+                      value={ingredient.unit} 
+                      onValueChange={(v) => updateIngredient(index, "unit", v)}
+                    >
+                      <SelectTrigger id={`ing-unit-${index}`} className="mt-1 bg-background text-foreground">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {units.map(u => (
+                          <SelectItem key={u} value={u}>{u}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor={`ing-abv-${index}`} className="text-foreground text-xs">ABV %</Label>
+                    <Input
+                      id={`ing-abv-${index}`}
+                      type="number"
+                      step="0.1"
+                      value={ingredient.abv}
+                      onChange={(e) => updateIngredient(index, "abv", e.target.value)}
+                      placeholder="40"
+                      className="mt-1 text-sm bg-background text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor={`ing-type-${index}`} className="text-foreground text-xs">Type</Label>
+                  <Select 
+                    value={ingredient.type} 
+                    onValueChange={(v) => updateIngredient(index, "type", v)}
+                  >
+                    <SelectTrigger id={`ing-type-${index}`} className="mt-1 bg-background text-foreground">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ingredientTypes.map(t => (
+                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor={`ing-notes-${index}`} className="text-foreground text-xs">Notes (optional)</Label>
+                  <Input
+                    id={`ing-notes-${index}`}
+                    value={ingredient.notes}
+                    onChange={(e) => updateIngredient(index, "notes", e.target.value)}
+                    placeholder="Additional details"
+                    className="mt-1 text-sm bg-background text-foreground placeholder:text-muted-foreground"
+                    maxLength={200}
+                  />
+                </div>
+
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => removeIngredient(index)}
+                  className="w-full"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Remove Ingredient
+                </Button>
+              </div>
+            </Card>
+          ))}
+          {recipe.ingredients.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="mb-2">No ingredients added yet</p>
+              <Button onClick={addIngredient} variant="outline" size="sm">
+                <Plus className="mr-1 h-4 w-4" /> Add First Ingredient
               </Button>
             </div>
-          ))}
+          )}
         </div>
       </Card>
 
       {/* Method */}
       <Card className="p-4">
-        <h2 className="text-lg font-semibold mb-3">Method</h2>
+        <h2 className="text-lg font-semibold mb-3">Method (SOP)</h2>
         <Textarea
           value={recipe.methodSOP}
           onChange={(e) => updateField("methodSOP", e.target.value)}
-          placeholder="Step-by-step instructions..."
-          rows={4}
+          placeholder="Describe the preparation method step by step..."
+          className="min-h-[120px] text-base bg-muted text-foreground placeholder:text-muted-foreground"
+          maxLength={2000}
         />
-      </Card>
-
-      {/* Taste Profile */}
-      <Card className="p-4">
-        <h2 className="text-lg font-semibold mb-3">Taste Profile</h2>
-        <div className="space-y-4">
-          {tastes.map(({ key, label, color }) => (
-            <div key={key}>
-              <div className="flex justify-between mb-1">
-                <Label className={color}>{label}</Label>
-                <span className="text-sm text-muted-foreground">{recipe.tasteProfile[key]}/10</span>
-              </div>
-              <Slider
-                value={[recipe.tasteProfile[key]]}
-                onValueChange={([value]) => updateTaste(key, value)}
-                max={10}
-                step={1}
-              />
-            </div>
-          ))}
-        </div>
       </Card>
 
       {/* Service Notes */}
@@ -246,9 +371,54 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
         <Textarea
           value={recipe.serviceNotes}
           onChange={(e) => updateField("serviceNotes", e.target.value)}
-          placeholder="Temperature, presentation, timing..."
-          rows={3}
+          placeholder="Add any service notes, story, or presentation details..."
+          className="min-h-[120px] text-base bg-muted text-foreground placeholder:text-muted-foreground"
+          maxLength={2000}
         />
+      </Card>
+
+      {/* Taste Profile */}
+      <Card className="p-4">
+        <h2 className="text-lg font-semibold mb-4">Taste Profile</h2>
+        <div className="space-y-4">
+          {tastes.map(({ key, label }) => (
+            <div key={key}>
+              <div className="flex justify-between mb-2">
+                <Label className="text-foreground">{label}</Label>
+                <span className="text-sm text-muted-foreground font-mono">{recipe.tasteProfile[key]}/10</span>
+              </div>
+              <Slider
+                value={[recipe.tasteProfile[key]]}
+                onValueChange={([v]) => updateTaste(key, v)}
+                max={10}
+                step={1}
+                className="w-full"
+              />
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Texture Profile */}
+      <Card className="p-4">
+        <h2 className="text-lg font-semibold mb-4">Texture Profile</h2>
+        <div className="space-y-4">
+          {textures.map(({ key, label }) => (
+            <div key={key}>
+              <div className="flex justify-between mb-2">
+                <Label className="text-foreground">{label}</Label>
+                <span className="text-sm text-muted-foreground font-mono">{recipe.textureProfile[key]}/10</span>
+              </div>
+              <Slider
+                value={[recipe.textureProfile[key]]}
+                onValueChange={([v]) => updateTexture(key, v)}
+                max={10}
+                step={1}
+                className="w-full"
+              />
+            </div>
+          ))}
+        </div>
       </Card>
     </div>
   );
