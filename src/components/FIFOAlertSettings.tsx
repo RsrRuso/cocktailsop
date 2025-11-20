@@ -29,7 +29,7 @@ interface WorkspaceMember {
 
 export const FIFOAlertSettings = () => {
   const { user } = useAuth();
-  const { currentWorkspace } = useWorkspace();
+  const { currentWorkspace, workspaces, switchWorkspace } = useWorkspace();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -120,6 +120,8 @@ export const FIFOAlertSettings = () => {
 
       allMembers.push(...formattedMembers);
       setMembers(allMembers);
+      
+      console.log('Fetched members for workspace:', currentWorkspace.name, allMembers);
     } catch (error) {
       console.error('Error fetching members:', error);
       toast({
@@ -225,9 +227,47 @@ export const FIFOAlertSettings = () => {
   if (!currentWorkspace) {
     return (
       <Card>
-        <CardContent className="pt-6">
-          <p className="text-muted-foreground text-center">
-            Select a workspace to configure FIFO alerts
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            FIFO Alert Settings
+          </CardTitle>
+          <CardDescription>
+            Configure expiration alerts for your inventory
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Workspace Selector */}
+          <div className="flex items-center justify-between gap-4 p-4 bg-accent/5 rounded-lg border border-border">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              <Label className="text-sm font-medium">Current Workspace:</Label>
+            </div>
+            <Select
+              value={currentWorkspace?.id || 'personal'}
+              onValueChange={(value) => switchWorkspace(value === 'personal' ? '' : value)}
+            >
+              <SelectTrigger className="w-[300px] bg-background border-border">
+                <SelectValue placeholder="Select workspace..." />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border z-50">
+                <SelectItem value="personal">
+                  Personal Inventory
+                </SelectItem>
+                {workspaces.map((workspace) => (
+                  <SelectItem 
+                    key={workspace.id} 
+                    value={workspace.id}
+                  >
+                    {workspace.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <p className="text-muted-foreground text-center py-4">
+            Select a workspace above to configure FIFO alerts
           </p>
         </CardContent>
       </Card>
@@ -246,6 +286,34 @@ export const FIFOAlertSettings = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Workspace Selector */}
+        <div className="flex items-center justify-between gap-4 p-4 bg-accent/5 rounded-lg border border-border">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary" />
+            <Label className="text-sm font-medium">Current Workspace:</Label>
+          </div>
+          <Select
+            value={currentWorkspace?.id || 'personal'}
+            onValueChange={(value) => switchWorkspace(value === 'personal' ? '' : value)}
+          >
+            <SelectTrigger className="w-[300px] bg-background border-border">
+              <SelectValue placeholder="Select workspace..." />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border z-50">
+              <SelectItem value="personal">
+                Personal Inventory
+              </SelectItem>
+              {workspaces.map((workspace) => (
+                <SelectItem 
+                  key={workspace.id} 
+                  value={workspace.id}
+                >
+                  {workspace.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <Label>Enable Alerts</Label>
@@ -320,9 +388,17 @@ export const FIFOAlertSettings = () => {
           </p>
           
           {members.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic py-4 text-center border rounded-md">
-              No workspace members found. Invite members to your workspace first.
-            </p>
+            <div className="text-center py-8 space-y-3">
+              <p className="text-sm text-muted-foreground italic border rounded-md p-4 bg-muted/20">
+                No workspace members found.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Invite members to your workspace to send them alert emails.
+              </p>
+              <p className="text-xs text-primary/80">
+                Current workspace: <span className="font-semibold">{currentWorkspace.name}</span>
+              </p>
+            </div>
           ) : (
             <div className="space-y-2 max-h-80 overflow-y-auto border rounded-md p-3 bg-accent/5">
               {members.map((member) => (
