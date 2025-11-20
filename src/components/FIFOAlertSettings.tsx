@@ -75,27 +75,58 @@ export const FIFOAlertSettings = () => {
   };
 
   const fetchMembers = async () => {
-    if (!currentWorkspace) return;
+    if (!currentWorkspace || !user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('workspace_members')
-        .select('user_id, profiles!inner(full_name, email)')
-        .eq('workspace_id', currentWorkspace.id);
+      // Fetch workspace owner profile
+      const { data: ownerProfile, error: ownerError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('id', currentWorkspace.owner_id)
+        .single();
 
-      if (error) throw error;
+      if (ownerError) throw ownerError;
+
+      // Fetch workspace members
+      const { data: membersData, error: membersError } = await supabase
+        .from('workspace_members')
+        .select('user_id, profiles!inner(full_name)')
+        .eq('workspace_id', currentWorkspace.id)
+        .neq('user_id', currentWorkspace.owner_id);
+
+      if (membersError) throw membersError;
+
+      const allMembers: WorkspaceMember[] = [];
       
-      const formattedMembers = (data || []).map((item: any) => ({
+      // Add owner first
+      if (ownerProfile) {
+        allMembers.push({
+          user_id: ownerProfile.id,
+          profiles: {
+            full_name: ownerProfile.full_name || 'Workspace Owner',
+            email: ownerProfile.id === user.id ? (user.email || '') : `User ${ownerProfile.id.slice(0, 8)}`,
+          },
+        });
+      }
+
+      // Add other members
+      const formattedMembers = (membersData || []).map((item: any) => ({
         user_id: item.user_id,
         profiles: {
-          full_name: item.profiles.full_name || '',
-          email: item.profiles.email || '',
+          full_name: item.profiles.full_name || 'Team Member',
+          email: item.user_id === user.id ? (user.email || '') : `User ${item.user_id.slice(0, 8)}`,
         },
       }));
-      
-      setMembers(formattedMembers);
+
+      allMembers.push(...formattedMembers);
+      setMembers(allMembers);
     } catch (error) {
       console.error('Error fetching members:', error);
+      toast({
+        title: 'Error loading members',
+        description: 'Failed to load workspace members',
+        variant: 'destructive',
+      });
     }
   };
 
