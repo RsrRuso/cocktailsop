@@ -106,12 +106,18 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const imageWidth = 68;
   const metricsWidth = contentWidth - imageWidth - blockSpacing;
   
-  // Clean image without block or shading - organic sizing
+  // Image block - same height as specifications
   if (recipe.mainImage) {
-    const imgPadding = 4;
-    const imgSize = imageWidth - (imgPadding * 2);
-    const imgX = margin + imgPadding;
-    const imgY = yPos + imgPadding;
+    const imgPadding = 5;
+    const imgX = margin;
+    const imgY = yPos;
+    const imgWidth = imageWidth;
+    const imgHeight = sectionHeight;
+    
+    // Calculate square image size to fit within the block
+    const imgDisplaySize = Math.min(imgWidth, imgHeight) - (imgPadding * 2);
+    const imgCenterX = imgX + (imgWidth - imgDisplaySize) / 2;
+    const imgCenterY = imgY + (imgHeight - imgDisplaySize) / 2;
     
     try {
       let format: 'PNG' | 'JPEG' = 'JPEG';
@@ -119,15 +125,15 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
         format = 'PNG';
       }
       
-      // High-quality image rendering - organic size
-      doc.addImage(recipe.mainImage, format, imgX, imgY, imgSize, imgSize, undefined, 'NONE');
+      // High-quality image rendering - centered in block
+      doc.addImage(recipe.mainImage, format, imgCenterX, imgCenterY, imgDisplaySize, imgDisplaySize, undefined, 'NONE');
       
     } catch (e) {
       console.error('Failed to add image to PDF:', e);
       doc.setFontSize(7);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
-      doc.text("Image unavailable", imgX + 20, imgY + 25);
+      doc.text("Image unavailable", imgX + 20, imgY + 30);
     }
   }
   
