@@ -180,8 +180,15 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     doc.setFont("helvetica", "bold");
     doc.setTextColor(darkText[0], darkText[1], darkText[2]);
     const maxWidth = colWidth - 4;
-    const valueText = spec.value.length > 15 ? spec.value.substring(0, 15) + '...' : spec.value;
-    doc.text(valueText, x, y + 4.5);
+    
+    // Allow full text wrapping for GARNISH, truncate others
+    if (spec.label === 'GARNISH') {
+      const wrappedText = doc.splitTextToSize(spec.value, maxWidth);
+      doc.text(wrappedText.slice(0, 2), x, y + 4.5);
+    } else {
+      const valueText = spec.value.length > 15 ? spec.value.substring(0, 15) + '...' : spec.value;
+      doc.text(valueText, x, y + 4.5);
+    }
   });
   
   yPos += sectionHeight + blockSpacing;
