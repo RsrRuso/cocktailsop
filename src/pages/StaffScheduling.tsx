@@ -1243,23 +1243,33 @@ export default function StaffScheduling() {
       
       const description = ROLE_RESPONSIBILITIES[title];
       
-      // Dark grey box for each role
-      doc.setFillColor(...colors.darkGrey);
-      doc.roundedRect(18, finalY - 2, 260, 10, 1, 1, 'F');
+      // Prepare wrapped description text so nothing gets cut
+      const maxWidth = 230; // allow description to span most of the page width
+      const lineHeight = 3; // line spacing in mm
+      const splitText = doc.splitTextToSize(description, maxWidth);
+      const contentHeight = splitText.length * lineHeight;
+      const boxHeight = Math.max(10, contentHeight + 4); // padding inside box
       
+      // Dark grey box sized to content
+      doc.setFillColor(...colors.darkGrey);
+      doc.roundedRect(18, finalY - 2, 260, boxHeight, 1, 1, 'F');
+      
+      // Role title
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7);
       doc.setTextColor(...colors.white);
-      doc.text(`${roleTitle.toUpperCase()}:`, 22, finalY + 2);
+      doc.text(`${roleTitle.toUpperCase()}:`, 22, finalY + 3);
       
+      // Multi-line description inside the box
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.2);
+      doc.setFontSize(6);
       doc.setTextColor(...colors.lightGrey);
-      // Split long text into multiple lines if needed
-      const splitText = doc.splitTextToSize(description, 185);
-      doc.text(splitText, 70, finalY + 2);
+      let textY = finalY + 7;
+      splitText.forEach((line, index) => {
+        doc.text(line, 22, textY + index * lineHeight);
+      });
       
-      finalY += 12;
+      finalY += boxHeight + 3;
     });
     
     
