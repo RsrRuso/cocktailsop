@@ -28,7 +28,7 @@ interface WorkspaceMember {
 }
 
 export const FIFOAlertSettings = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { currentWorkspace, workspaces, switchWorkspace } = useWorkspace();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -75,53 +75,69 @@ export const FIFOAlertSettings = () => {
   };
 
   const fetchMembers = async () => {
-    if (!currentWorkspace) return;
+    if (!currentWorkspace || !user) return;
 
     try {
-      // Fetch workspace owner profile with email
-      const { data: ownerProfile, error: ownerError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .eq('id', currentWorkspace.owner_id)
-        .single();
-
-      if (ownerError) throw ownerError;
-
-      // Fetch workspace members with emails
+      // Fetch workspace members with their profiles
       const { data: membersData, error: membersError } = await supabase
         .from('workspace_members')
-        .select('user_id, profiles!inner(full_name, email)')
-        .eq('workspace_id', currentWorkspace.id)
-        .neq('user_id', currentWorkspace.owner_id);
+        .select('user_id, profiles(full_name, email)')
+        .eq('workspace_id', currentWorkspace.id);
 
       if (membersError) throw membersError;
 
-      const allMembers: WorkspaceMember[] = [];
-      
-      // Add owner first
-      if (ownerProfile) {
-        allMembers.push({
-          user_id: ownerProfile.id,
+      const memberMap = new Map<string, WorkspaceMember>();
+
+      // Add all workspace members from the join
+      (membersData || []).forEach((item: any) => {
+        memberMap.set(item.user_id, {
+          user_id: item.user_id,
           profiles: {
-            full_name: ownerProfile.full_name || 'Workspace Owner',
-            email: ownerProfile.email || '',
+            full_name: item.profiles?.full_name || 'Team Member',
+            email: item.profiles?.email || '',
+          },
+        });
+      });
+
+      // Ensure workspace owner is included
+      if (currentWorkspace.owner_id) {
+        const { data: ownerProfile } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .eq('id', currentWorkspace.owner_id)
+          .maybeSingle();
+
+        if (ownerProfile) {
+          memberMap.set(ownerProfile.id, {
+            user_id: ownerProfile.id,
+            profiles: {
+              full_name: ownerProfile.full_name || 'Workspace Owner',
+              email: ownerProfile.email || '',
+            },
+          });
+        }
+      }
+
+      // Ensure current user is included as a fallback recipient
+      if (!memberMap.has(user.id)) {
+        memberMap.set(user.id, {
+          user_id: user.id,
+          profiles: {
+            full_name: (profile as any)?.full_name || user.email || 'You',
+            email: (profile as any)?.email || user.email || '',
           },
         });
       }
 
-      // Add other members
-      const formattedMembers = (membersData || []).map((item: any) => ({
-        user_id: item.user_id,
-        profiles: {
-          full_name: item.profiles.full_name || 'Team Member',
-          email: item.profiles.email || '',
-        },
-      }));
-
-      allMembers.push(...formattedMembers);
+      const allMembers = Array.from(memberMap.values());
       setMembers(allMembers);
-      
-      console.log('Fetched members for workspace:', currentWorkspace.name, allMembers);
+
+      if (allMembers.length === 0) {
+        toast({
+          title: 'No recipients found',
+          description: 'Add members to this workspace to select them as recipients.',
+        });
+      }
     } catch (error) {
       console.error('Error fetching members:', error);
       toast({
