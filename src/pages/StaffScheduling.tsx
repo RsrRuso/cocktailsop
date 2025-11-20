@@ -1150,9 +1150,41 @@ export default function StaffScheduling() {
     let finalY = (doc as any).lastAutoTable.finalY + 5;
     // Use pageHeight from the current PDF page as limit for later sections
     
-    const hasEvents = Object.values(dailyEvents).some(event => event && event.trim() !== '');
+    const hasDailyEvents = Object.values(dailyEvents).some(event => event && event.trim() !== '');
+    const hasSpecialEvents = Object.values(specialEvents).some(event => event && event.trim() !== '');
     
-    if (hasEvents) {
+    // SPECIAL EVENTS FIRST
+    if (hasSpecialEvents) {
+      doc.setFillColor(255, 215, 0); // Gold color
+      doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0); // Black text on gold
+      doc.text('SPECIAL EVENTS THIS WEEK', 18, finalY + 3);
+      
+      finalY += 10;
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...colors.lightGrey);
+      
+      DAYS_OF_WEEK.forEach(day => {
+        const event = specialEvents[day];
+        if (event && event.trim() !== '') {
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 215, 0); // Gold color
+          doc.text(`${day}:`, 18, finalY);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...colors.lightGrey);
+          doc.text(event, 40, finalY);
+          finalY += 3.5;
+        }
+      });
+      
+      finalY += 3;
+    }
+
+    // DAILY EVENTS AFTER SPECIAL
+    if (hasDailyEvents) {
       doc.setFillColor(...colors.accent);
       doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
       doc.setFontSize(9);
@@ -1186,38 +1218,6 @@ export default function StaffScheduling() {
       
       finalY += 2;
     }
-
-    // Special Events Section
-    const hasSpecialEvents = Object.values(specialEvents).some(event => event && event.trim() !== '');
-    
-    if (hasSpecialEvents) {
-      doc.setFillColor(255, 215, 0); // Gold color
-      doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0); // Black text on gold
-      doc.text('SPECIAL EVENTS THIS WEEK', 18, finalY + 3);
-      
-      finalY += 10;
-      doc.setFontSize(6.5);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...colors.lightGrey);
-      
-      DAYS_OF_WEEK.forEach(day => {
-        const event = specialEvents[day];
-        if (event && event.trim() !== '') {
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(255, 215, 0); // Gold color
-          doc.text(`${day}:`, 18, finalY);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(...colors.lightGrey);
-          doc.text(event, 40, finalY);
-          finalY += 3.5;
-        }
-      });
-      
-      finalY += 3;
-    }
     
     // Role Responsibilities Section - Based on titles only
     doc.setFillColor(...colors.accent);
@@ -1227,18 +1227,18 @@ export default function StaffScheduling() {
     doc.setTextColor(...colors.white);
     doc.text('ROLE RESPONSIBILITIES', 18, finalY + 3);
     
-    finalY += 10;
-    doc.setFontSize(7);
+    finalY += 8;
+    doc.setFontSize(6.5);
     doc.setTextColor(...colors.lightGrey);
     
-    // Get unique titles from staff members
+    // Compact single-page role responsibilities: simple text list
     const uniqueTitles = Array.from(new Set(staffMembers.map(s => s.title)))
       .sort((a, b) => {
         const order = ['head_bartender', 'senior_bartender', 'bartender', 'bar_back', 'support'];
         return order.indexOf(a) - order.indexOf(b);
       });
 
-    const bottomMargin = 10;
+    const roleLineHeight = 3;
     
     uniqueTitles.forEach(title => {
       const roleTitle = title === 'head_bartender' ? 'Head Bartender' :
@@ -1248,55 +1248,20 @@ export default function StaffScheduling() {
       
       const description = ROLE_RESPONSIBILITIES[title];
       
-      // Prepare wrapped description text so nothing gets cut
-      const maxWidth = 230; // allow description to span most of the page width
-      const lineHeight = 3; // line spacing in mm
-      const splitText = doc.splitTextToSize(description, maxWidth);
-      const contentHeight = splitText.length * lineHeight;
-      const boxHeight = Math.max(10, contentHeight + 4); // padding inside box
-
-      // If the next box would go past the page bottom, add a new page and redraw background + header
-      if (finalY + boxHeight + bottomMargin > pageHeight) {
-        doc.addPage();
-
-        // Dark background for new page
-        doc.setFillColor(...colors.background);
-        doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-        // Section header on new page (continued)
-        finalY = 20;
-        doc.setFillColor(...colors.accent);
-        doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...colors.white);
-        doc.text('ROLE RESPONSIBILITIES (CONTINUED)', 18, finalY + 3);
-
-        finalY += 10;
-        doc.setFontSize(7);
-        doc.setTextColor(...colors.lightGrey);
-      }
-      
-      // Dark grey box sized to content
-      doc.setFillColor(...colors.darkGrey);
-      doc.roundedRect(18, finalY - 2, 260, boxHeight, 1, 1, 'F');
-      
       // Role title
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
+      doc.setFontSize(6.5);
       doc.setTextColor(...colors.white);
-      doc.text(`${roleTitle.toUpperCase()}:`, 22, finalY + 3);
+      doc.text(`${roleTitle.toUpperCase()}:`, 18, finalY);
       
-      // Multi-line description inside the box
+      // Wrapped description directly under the title
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6);
+      doc.setFontSize(5.8);
       doc.setTextColor(...colors.lightGrey);
-      let textY = finalY + 7;
-      splitText.forEach((line, index) => {
-        doc.text(line, 22, textY + index * lineHeight);
-      });
+      const wrapped = doc.splitTextToSize(description, 240);
+      doc.text(wrapped, 18, finalY + 2.5);
       
-      finalY += boxHeight + 3;
+      finalY += 2.5 + wrapped.length * roleLineHeight;
     });
     
     
