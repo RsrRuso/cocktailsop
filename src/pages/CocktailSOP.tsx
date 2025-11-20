@@ -87,6 +87,8 @@ const CocktailSOP = () => {
         method_sop: recipe.methodSOP,
         service_notes: recipe.serviceNotes,
         taste_profile: recipe.tasteProfile as any,
+        texture_profile: recipe.textureProfile as any,
+        allergens: recipe.allergens,
         total_ml: totalVolume,
         abv_percentage: abvPercentage,
         kcal: estimatedCalories,
