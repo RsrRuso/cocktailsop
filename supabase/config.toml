@@ -18,6 +18,4 @@ verify_jwt = false
 [functions.cocktail-ai-assistant]
 verify_jwt = false
 
-[functions.cocktail-ai-helper]
-verify_jwt = false
 
