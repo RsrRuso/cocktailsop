@@ -5,52 +5,29 @@ import autoTable from "jspdf-autotable";
 export const exportToPDF = (recipe: CocktailRecipe) => {
   const doc = new jsPDF();
   
-  // Dark theme colors with high contrast
-  const darkBg: [number, number, number] = [45, 52, 64];
-  const darkerBg: [number, number, number] = [30, 35, 45];
-  const accentBlue: [number, number, number] = [52, 152, 219];
-  const lightText: [number, number, number] = [236, 240, 241];
-  const mediumText: [number, number, number] = [189, 195, 199];
-  const borderColor: [number, number, number] = [108, 117, 125];
+  // Clean professional colors
+  const textColor: [number, number, number] = [0, 0, 0];
+  const headerColor: [number, number, number] = [100, 100, 100];
+  const borderColor: [number, number, number] = [200, 200, 200];
   
-  // 3D shadow offsets for depth
-  const shadowOffset = 1.5;
+  let yPos = 15;
   
-  // Helper to draw 3D block with shadow
-  const draw3DBlock = (x: number, y: number, width: number, height: number, fillColor: [number, number, number]) => {
-    // Shadow
-    doc.setFillColor(20, 25, 35);
-    doc.rect(x + shadowOffset, y + shadowOffset, width, height, 'F');
-    
-    // Main block
-    doc.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
-    doc.rect(x, y, width, height, 'F');
-    
-    // Border for depth
-    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setLineWidth(0.3);
-    doc.rect(x, y, width, height, 'S');
-  };
-  
-  // Header block with 3D effect
-  doc.setFillColor(20, 25, 35);
-  doc.rect(shadowOffset, shadowOffset, 210, 28, 'F');
-  doc.setFillColor(darkerBg[0], darkerBg[1], darkerBg[2]);
-  doc.rect(0, 0, 210, 28, 'F');
-  doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-  doc.setLineWidth(0.5);
-  doc.rect(0, 0, 210, 28, 'S');
-  
-  doc.setTextColor(lightText[0], lightText[1], lightText[2]);
+  // Header
+  doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("COCKTAIL SOP", 15, 10);
+  doc.text("ATTIKO — COCKTAIL SOP", 15, yPos);
   
-  doc.setFontSize(20);
+  yPos += 15;
+  
+  // Drink name title
+  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+  doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
-  doc.text(recipe.drinkName.toUpperCase() || "UNTITLED", 15, 22);
+  const titleText = recipe.drinkName.toUpperCase() || "UNTITLED";
+  doc.text(titleText, 15, yPos);
   
-  let yPos = 35;
+  yPos += 15;
   
   // Calculate metrics
   const totalVolume = recipe.ingredients.reduce(
@@ -62,347 +39,312 @@ export const exportToPDF = (recipe: CocktailRecipe) => {
   const abvPercentage = totalVolume > 0 ? (pureAlcohol / totalVolume) * 100 : 0;
   const estimatedCalories = Math.round(pureAlcohol * 7 + totalVolume * 0.5);
   
-  // Identity block with 3D effect
-  draw3DBlock(10, yPos - 5, 190, 8, darkBg);
-  doc.setTextColor(accentBlue[0], accentBlue[1], accentBlue[2]);
-  doc.setFontSize(11);
+  // Identity & Metrics table
+  autoTable(doc, {
+    startY: yPos,
+    head: [['Identity', 'Metrics']],
+    body: [
+      ['Drink Name', recipe.drinkName || '-'],
+      ['Technique', recipe.technique || '-'],
+      ['Glass', recipe.glass || '-'],
+      ['Ice', recipe.ice || '-'],
+      ['Garnish', recipe.garnish || '-'],
+      ['Total (ml)', totalVolume.toFixed(0)],
+      ['ABV (%)', abvPercentage.toFixed(1)],
+      ['Ratio', recipe.ratio || '—'],
+      ['pH', recipe.ph || '0'],
+      ['Brix', recipe.brix || '0'],
+      ['Kcal', estimatedCalories.toString()],
+    ],
+    theme: 'grid',
+    styles: {
+      fontSize: 9,
+      cellPadding: 3,
+      textColor: textColor,
+      lineColor: borderColor,
+      lineWidth: 0.1,
+    },
+    headStyles: {
+      fillColor: [255, 255, 255],
+      textColor: textColor,
+      fontStyle: 'bold',
+      halign: 'left',
+    },
+    columnStyles: {
+      0: { fontStyle: 'normal', cellWidth: 40 },
+      1: { fontStyle: 'normal', cellWidth: 'auto' },
+    },
+    margin: { left: 15 },
+  });
+  
+  yPos = (doc as any).lastAutoTable.finalY + 10;
+  
+  // Method (SOP)
+  doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("Identity & Metrics", 15, yPos);
-  yPos += 8;
+  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+  doc.text("Method (SOP)", 15, yPos);
+  yPos += 7;
   
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(lightText[0], lightText[1], lightText[2]);
+  const methodLines = doc.splitTextToSize(recipe.methodSOP || 'No method specified', 180);
+  doc.text(methodLines, 15, yPos);
+  yPos += methodLines.length * 5 + 10;
   
-  // Two-column layout for identity
-  const leftCol = 15;
-  const rightCol = 110;
-  const lineHeight = 5;
-  
-  doc.setFont("helvetica", "bold");
-  doc.text("Drink:", leftCol, yPos);
-  doc.setFont("helvetica", "normal");
-  doc.text(recipe.drinkName || '-', leftCol + 20, yPos);
-  
-  doc.setFont("helvetica", "bold");
-  doc.text("Volume:", rightCol, yPos);
-  doc.setFont("helvetica", "normal");
-  doc.text(`${totalVolume.toFixed(0)} ml`, rightCol + 20, yPos);
-  yPos += lineHeight;
-  
-  doc.setFont("helvetica", "bold");
-  doc.text("Glass:", leftCol, yPos);
-  doc.setFont("helvetica", "normal");
-  doc.text(recipe.glass || '-', leftCol + 20, yPos);
-  
-  doc.setFont("helvetica", "bold");
-  doc.text("ABV:", rightCol, yPos);
-  doc.setFont("helvetica", "normal");
-  doc.text(`${abvPercentage.toFixed(1)}%`, rightCol + 20, yPos);
-  yPos += lineHeight;
-  
-  doc.setFont("helvetica", "bold");
-  doc.text("Ice:", leftCol, yPos);
-  doc.setFont("helvetica", "normal");
-  doc.text(recipe.ice || '-', leftCol + 20, yPos);
-  
-  doc.setFont("helvetica", "bold");
-  doc.text("Calories:", rightCol, yPos);
-  doc.setFont("helvetica", "normal");
-  doc.text(`${estimatedCalories} kcal`, rightCol + 20, yPos);
-  yPos += lineHeight;
-  
-  doc.setFont("helvetica", "bold");
-  doc.text("Technique:", leftCol, yPos);
-  doc.setFont("helvetica", "normal");
-  doc.text(recipe.technique || '-', leftCol + 20, yPos);
-  
-  if (recipe.ph && parseFloat(recipe.ph) > 0) {
+  // Service Notes
+  if (recipe.serviceNotes) {
+    doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("pH:", rightCol, yPos);
+    doc.text("Service Notes", 15, yPos);
+    yPos += 7;
+    
+    doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(parseFloat(recipe.ph).toFixed(1), rightCol + 20, yPos);
+    const notesLines = doc.splitTextToSize(recipe.serviceNotes, 180);
+    doc.text(notesLines, 15, yPos);
+    yPos += notesLines.length * 5 + 10;
   }
-  yPos += lineHeight;
   
-  doc.setFont("helvetica", "bold");
-  doc.text("Garnish:", leftCol, yPos);
-  doc.setFont("helvetica", "normal");
-  doc.text(recipe.garnish || '-', leftCol + 20, yPos);
-  
-  if (recipe.brix && parseFloat(recipe.brix) > 0) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Brix:", rightCol, yPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(parseFloat(recipe.brix).toFixed(1), rightCol + 20, yPos);
+  // Check if we need a new page
+  if (yPos > 240) {
+    doc.addPage();
+    yPos = 20;
   }
-  yPos += 8;
   
-  // Ingredients section with 3D effect
-  draw3DBlock(10, yPos - 5, 190, 8, darkBg);
-  doc.setTextColor(accentBlue[0], accentBlue[1], accentBlue[2]);
-  doc.setFontSize(11);
+  // Texture Radar section title
+  doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("Ingredients", 15, yPos);
-  yPos += 8;
+  doc.text("Texture Radar", 15, yPos);
+  yPos += 10;
   
-  const tableData = recipe.ingredients.map(ing => [
-    ing.name,
-    `${ing.amount} ${ing.unit}`,
-    `${ing.abv}%`
+  // Draw texture radar chart
+  drawRadarChart(doc, 105, yPos + 30, 35, recipe.textureProfile, 'Texture');
+  
+  // Texture profile table next to chart
+  const textureData = [
+    ['BODY', recipe.textureProfile.body.toString()],
+    ['FOAM', recipe.textureProfile.foam.toString()],
+    ['BUBBLES', recipe.textureProfile.bubbles.toString()],
+    ['OILINESS', recipe.textureProfile.oiliness.toString()],
+    ['CREAMINESS', recipe.textureProfile.creaminess.toString()],
+    ['ASTRINGENCY', recipe.textureProfile.astringency.toString()],
+  ];
+  
+  autoTable(doc, {
+    startY: yPos,
+    body: textureData,
+    theme: 'grid',
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      textColor: textColor,
+      lineColor: borderColor,
+      lineWidth: 0.1,
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 35 },
+      1: { halign: 'center', cellWidth: 15 },
+    },
+    margin: { left: 15 },
+  });
+  
+  yPos = (doc as any).lastAutoTable.finalY + 10;
+  
+  // Taste Profile section
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("Taste Profile", 15, yPos);
+  yPos += 10;
+  
+  // Draw taste radar chart
+  drawRadarChart(doc, 105, yPos + 30, 35, recipe.tasteProfile, 'Taste');
+  
+  // Taste profile table next to chart
+  const tasteData = [
+    ['SWEET', recipe.tasteProfile.sweet.toString()],
+    ['SOUR', recipe.tasteProfile.sour.toString()],
+    ['BITTER', recipe.tasteProfile.bitter.toString()],
+    ['SALTY', recipe.tasteProfile.salty.toString()],
+    ['UMAMI', recipe.tasteProfile.umami.toString()],
+  ];
+  
+  autoTable(doc, {
+    startY: yPos,
+    body: tasteData,
+    theme: 'grid',
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+      textColor: textColor,
+      lineColor: borderColor,
+      lineWidth: 0.1,
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 35 },
+      1: { halign: 'center', cellWidth: 15 },
+    },
+    margin: { left: 15 },
+  });
+  
+  yPos = (doc as any).lastAutoTable.finalY + 10;
+  
+  // Recipe table
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("Recipe", 15, yPos);
+  yPos += 7;
+  
+  const recipeData = recipe.ingredients.map(ing => [
+    ing.name.toUpperCase(),
+    ing.amount,
+    ing.unit,
+    ing.type.toUpperCase(),
+    ing.abv || '',
+    ing.notes || '',
   ]);
   
   autoTable(doc, {
     startY: yPos,
-    head: [['Ingredient', 'Amount', 'ABV']],
-    body: tableData,
-    theme: 'plain',
+    head: [['INGREDIENT', 'AMOUNT', 'UNIT', 'TYPE', '%ABV', 'NOTES']],
+    body: recipeData,
+    theme: 'grid',
     styles: {
       fontSize: 8,
       cellPadding: 2,
-      textColor: lightText,
+      textColor: textColor,
       lineColor: borderColor,
-      lineWidth: 0.2,
+      lineWidth: 0.1,
     },
     headStyles: {
-      fillColor: darkerBg,
-      textColor: lightText,
+      fillColor: [255, 255, 255],
+      textColor: textColor,
       fontStyle: 'bold',
-      halign: 'left',
     },
-    bodyStyles: {
-      fillColor: darkBg,
-    },
-    alternateRowStyles: {
-      fillColor: [40, 47, 59],
-    },
-    margin: { left: 10, right: 10 },
-    tableWidth: 190,
+    margin: { left: 15, right: 15 },
   });
   
-  yPos = (doc as any).lastAutoTable.finalY + 8;
-
-  // Ensure the lower sections are visually balanced on the page
-  if (yPos < 120) {
-    yPos = 120;
-  }
+  yPos = (doc as any).lastAutoTable.finalY + 10;
   
-  // Method section with 3D effect
-  draw3DBlock(10, yPos - 5, 190, 8, darkBg);
-  doc.setTextColor(accentBlue[0], accentBlue[1], accentBlue[2]);
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text("Method", 15, yPos);
-  yPos += 8;
-  
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(lightText[0], lightText[1], lightText[2]);
-  
-  const methodLines = doc.splitTextToSize(recipe.methodSOP || 'No method specified', 180);
-  const methodHeight = Math.max(24, methodLines.length * 4);
-  
-  draw3DBlock(10, yPos - 3, 190, methodHeight + 4, [40, 47, 59]);
-  doc.text(methodLines, 15, yPos);
-  yPos += methodHeight + 10;
-  
-  // Profile charts side by side with 3D radar charts
-  const chartWidth = 90;
-  const chartHeight = 45;
-  const chartCenterX1 = 55;
-  const chartCenterX2 = 155;
-  const chartCenterY = yPos + 25;
-  const chartRadius = 18;
-  
-  // Taste Profile 3D Radar
-  draw3DBlock(10, yPos - 5, chartWidth, 8, darkBg);
-  doc.setTextColor(accentBlue[0], accentBlue[1], accentBlue[2]);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("Taste Profile", 15, yPos);
-  
-  draw3DBlock(10, yPos + 3, chartWidth, chartHeight - 8, [40, 47, 59]);
-  
-  const taste: TasteProfile = recipe.tasteProfile;
-  
-  draw3DRadarChart(
-    doc,
-    chartCenterX1,
-    chartCenterY,
-    chartRadius,
-    taste as unknown as Record<string, number>,
-    ['Sweet', 'Sour', 'Bitter', 'Salty', 'Umami'],
-    accentBlue,
-    lightText,
-    lightText
-  );
-  
-  // Texture Profile 3D Radar
-  draw3DBlock(110, yPos - 5, chartWidth, 8, darkBg);
-  doc.setTextColor(accentBlue[0], accentBlue[1], accentBlue[2]);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("Texture Profile", 115, yPos);
-  
-  draw3DBlock(110, yPos + 3, chartWidth, chartHeight - 8, [40, 47, 59]);
-  
-  const texture: TextureProfile = recipe.textureProfile;
-  
-  draw3DRadarChart(
-    doc,
-    chartCenterX2,
-    chartCenterY,
-    chartRadius,
-    texture as unknown as Record<string, number>,
-    ['Body', 'Foam', 'Bubbles', 'Oily', 'Creamy', 'Astringent'],
-    accentBlue,
-    lightText,
-    lightText
-  );
-  
-  yPos += chartHeight + 8;
-  
-  // Allergens section with 3D effect
-  if (recipe.allergens && recipe.allergens.trim().length > 0) {
-    draw3DBlock(10, yPos - 5, 190, 8, [220, 53, 69]);
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
+  // Allergens
+  if (recipe.allergens) {
+    doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("⚠ ALLERGEN WARNING", 15, yPos);
-    yPos += 8;
+    doc.text("Allergens", 15, yPos);
+    yPos += 7;
     
-    draw3DBlock(10, yPos - 3, 190, 12, [40, 47, 59]);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(lightText[0], lightText[1], lightText[2]);
-    const allergenText = `Contains: ${recipe.allergens}`;
-    doc.text(allergenText, 15, yPos + 3);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(recipe.allergens, 15, yPos);
   }
   
-  doc.save(`${recipe.drinkName || 'cocktail'}_sop.pdf`);
+  // Save PDF
+  const fileName = `${recipe.drinkName.replace(/\s+/g, '_')}_SOP.pdf`;
+  doc.save(fileName);
 };
 
-// Advanced 3D radar chart with depth and gradient effect
-const draw3DRadarChart = (
+// Helper function to draw radar chart
+const drawRadarChart = (
   doc: jsPDF,
   centerX: number,
   centerY: number,
   radius: number,
-  data: Record<string, number>,
-  labels: string[],
-  fillColor: [number, number, number],
-  textColor: [number, number, number],
-  axisColor: [number, number, number]
+  profile: TasteProfile | TextureProfile,
+  type: 'Taste' | 'Texture'
 ) => {
-  const values = Object.values(data);
-  const numAxes = values.length;
-  const angleStep = (2 * Math.PI) / numAxes;
+  const labels = type === 'Taste' 
+    ? ['Sweet', 'Sour', 'Bitter', 'Salty', 'Umami']
+    : ['Body', 'Foam', 'Bubbles', 'Oiliness', 'Creaminess', 'Astringency'];
   
-  // Draw concentric circles for grid with 3D depth
-  const levels = 5;
-  doc.setDrawColor(axisColor[0], axisColor[1], axisColor[2]);
-  doc.setLineWidth(0.15);
+  const values = type === 'Taste'
+    ? [
+        (profile as TasteProfile).sweet,
+        (profile as TasteProfile).sour,
+        (profile as TasteProfile).bitter,
+        (profile as TasteProfile).salty,
+        (profile as TasteProfile).umami,
+      ]
+    : [
+        (profile as TextureProfile).body,
+        (profile as TextureProfile).foam,
+        (profile as TextureProfile).bubbles,
+        (profile as TextureProfile).oiliness,
+        (profile as TextureProfile).creaminess,
+        (profile as TextureProfile).astringency,
+      ];
   
-  for (let i = 1; i <= levels; i++) {
-    const r = (radius / levels) * i;
-    // Shadow circle
-    doc.setDrawColor(20, 25, 35);
-    doc.circle(centerX + 0.5, centerY + 0.5, r);
-    // Main circle
-    doc.setDrawColor(axisColor[0], axisColor[1], axisColor[2]);
-    doc.circle(centerX, centerY, r);
+  const numPoints = labels.length;
+  const angleStep = (2 * Math.PI) / numPoints;
+  
+  // Draw concentric circles (grid)
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.1);
+  for (let i = 1; i <= 5; i++) {
+    const r = (radius / 5) * i;
+    doc.circle(centerX, centerY, r, 'S');
   }
   
-  // Draw axes with 3D depth
-  for (let i = 0; i < numAxes; i++) {
+  // Draw axes
+  doc.setDrawColor(200, 200, 200);
+  for (let i = 0; i < numPoints; i++) {
     const angle = i * angleStep - Math.PI / 2;
     const x = centerX + radius * Math.cos(angle);
     const y = centerY + radius * Math.sin(angle);
-    
-    // Shadow line
-    doc.setDrawColor(20, 25, 35);
-    doc.line(centerX + 0.5, centerY + 0.5, x + 0.5, y + 0.5);
-    // Main line
-    doc.setDrawColor(axisColor[0], axisColor[1], axisColor[2]);
     doc.line(centerX, centerY, x, y);
   }
   
-  // Draw data polygon with 3D shadow
+  // Draw data polygon
+  doc.setDrawColor(52, 152, 219);
+  doc.setFillColor(52, 152, 219, 0.2);
+  doc.setLineWidth(0.5);
+  
   const points: [number, number][] = [];
-  for (let i = 0; i < numAxes; i++) {
+  for (let i = 0; i < numPoints; i++) {
     const angle = i * angleStep - Math.PI / 2;
-    const value = Math.min(Math.max(values[i], 0), 5) / 5;
-    const r = radius * value;
+    const value = values[i];
+    const r = (radius / 10) * value;
     const x = centerX + r * Math.cos(angle);
     const y = centerY + r * Math.sin(angle);
     points.push([x, y]);
   }
   
-  // Shadow polygon
-  doc.setFillColor(20, 25, 35);
-  doc.setDrawColor(20, 25, 35);
-  doc.setLineWidth(1);
+  // Draw polygon
   if (points.length > 0) {
-    doc.moveTo(points[0][0] + 1, points[0][1] + 1);
-    for (let i = 1; i < points.length; i++) {
-      doc.lineTo(points[i][0] + 1, points[i][1] + 1);
-    }
-    doc.lineTo(points[0][0] + 1, points[0][1] + 1);
-    doc.fill();
+    doc.lines(
+      points.slice(1).map((p, i) => [p[0] - points[i][0], p[1] - points[i][1]]),
+      points[0][0],
+      points[0][1],
+      [1, 1],
+      'FD'
+    );
   }
   
-  // Main data polygon with gradient effect (simulated)
-  doc.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
-  doc.setGState(new (doc as any).GState({ opacity: 0.4 }));
-  doc.setDrawColor(fillColor[0], fillColor[1], fillColor[2]);
-  doc.setLineWidth(1.5);
+  // Draw points
+  doc.setFillColor(52, 152, 219);
+  points.forEach(([x, y]) => {
+    doc.circle(x, y, 1, 'F');
+  });
   
-  if (points.length > 0) {
-    doc.moveTo(points[0][0], points[0][1]);
-    for (let i = 1; i < points.length; i++) {
-      doc.lineTo(points[i][0], points[i][1]);
-    }
-    doc.lineTo(points[0][0], points[0][1]);
-    doc.fillStroke();
-  }
-  
-  // Reset opacity
-  doc.setGState(new (doc as any).GState({ opacity: 1 }));
-  
-  // Draw data points with 3D effect
-  doc.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
-  doc.setDrawColor(textColor[0], textColor[1], textColor[2]);
-  doc.setLineWidth(0.5);
-  for (const [x, y] of points) {
-    // Shadow
-    doc.setFillColor(20, 25, 35);
-    doc.circle(x + 0.5, y + 0.5, 1.2, 'F');
-    // Main point
-    doc.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
-    doc.circle(x, y, 1.2, 'FD');
-  }
-  
-  // Draw labels with better positioning
+  // Draw labels
   doc.setFontSize(7);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(0, 0, 0);
   
-  for (let i = 0; i < numAxes; i++) {
+  for (let i = 0; i < numPoints; i++) {
     const angle = i * angleStep - Math.PI / 2;
-    const labelRadius = radius + 6;
-    let x = centerX + labelRadius * Math.cos(angle);
-    let y = centerY + labelRadius * Math.sin(angle);
+    const labelRadius = radius + 8;
+    const x = centerX + labelRadius * Math.cos(angle);
+    const y = centerY + labelRadius * Math.sin(angle);
     
-    const label = labels[i];
+    const label = labels[i].toUpperCase();
     const textWidth = doc.getTextWidth(label);
     
-    // Adjust x position based on angle
-    if (Math.abs(Math.cos(angle)) > 0.5) {
-      x = Math.cos(angle) > 0 ? x : x - textWidth;
-    } else {
-      x = x - textWidth / 2;
-    }
+    let xOffset = -textWidth / 2;
+    let yOffset = 2;
     
-    doc.text(label, x, y);
+    if (angle > -Math.PI / 4 && angle < Math.PI / 4) xOffset = 2;
+    else if (angle > (3 * Math.PI) / 4 || angle < -(3 * Math.PI) / 4) xOffset = -textWidth - 2;
+    
+    doc.text(label, x + xOffset, y + yOffset);
   }
 };
