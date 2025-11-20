@@ -44,15 +44,40 @@ Write step-by-step instructions that include:
 
 Use professional but clear language.`;
     } else if (type === "allergen") {
-      // Detect allergens from ingredients
-      systemPrompt = "You are a food safety expert specializing in allergen identification. Analyze ingredients and identify common allergens. Be thorough and list all potential allergens.";
+      // Detect allergens from ingredients with heightened sensitivity
+      systemPrompt = `You are a highly trained food safety expert specializing in allergen identification for cocktails and spirits. 
+
+CRITICAL ALLERGEN KNOWLEDGE:
+- Many spirits and liqueurs contain WHEAT (vodka, gin, whisky, some neutral spirits)
+- Cream liqueurs contain DAIRY and may contain EGGS
+- Amaretto and orgeat often contain TREE NUTS (almond)
+- Some bitters contain TREE NUTS
+- Egg whites are a common allergen in cocktails
+- Any "cream of" liqueur likely contains DAIRY
+- Vermouth and fortified wines may contain sulfites
+- Syrups may contain SOY (lecithin as emulsifier)
+
+Be EXTREMELY thorough and cautious. When in doubt about an ingredient containing wheat (spirits/liqueurs) or other allergens, FLAG IT.`;
       
       const { ingredients } = data;
-      userPrompt = `Analyze these cocktail ingredients and identify any allergens from the common allergen list (dairy, eggs, fish, shellfish, tree nuts, peanuts, wheat, soybeans, sesame):
+      userPrompt = `Carefully analyze these cocktail ingredients and identify ALL potential allergens. Pay special attention to spirits and liqueurs that may contain wheat:
 
 ${ingredients.map((ing: any) => `- ${ing.name} (${ing.type})`).join('\n')}
 
-List ONLY the allergens present, separated by commas. If no allergens, respond with "None". Be specific (e.g., "Soy (from syrup)", "Eggs (from foam)").`;
+Common allergen categories to check:
+1. WHEAT - Check ALL spirits (vodka, gin, whisky, bourbon, etc.) and grain-based liqueurs
+2. DAIRY - Cream liqueurs, milk, cream, butter
+3. EGGS - Egg whites, egg-based liqueurs, some foams
+4. TREE NUTS - Amaretto, orgeat, nut liqueurs, some bitters
+5. SOY - Syrups with lecithin
+6. GLUTEN - Overlaps with wheat in spirits
+7. SULFITES - Wine, vermouth
+
+List ALL identified allergens separated by commas with source in parentheses.
+Example: "Wheat (vodka, gin), Dairy (cream), Eggs (egg white), Tree Nuts (amaretto)"
+
+If no allergens detected, respond "None detected".
+Be SPECIFIC and CAUTIOUS - err on the side of flagging potential allergens.`;
     }
 
     console.log("AI request type:", type);
@@ -69,7 +94,7 @@ List ONLY the allergens present, separated by commas. If no allergens, respond w
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.7,
+        temperature: 0.3,
       }),
     });
 

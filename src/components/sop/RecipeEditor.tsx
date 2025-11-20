@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import GarnishCanvas from "./GarnishCanvas";
+
 
 interface RecipeEditorProps {
   recipe: CocktailRecipe;
@@ -472,14 +472,6 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
           maxLength={2000}
         />
       </Card>
-
-      {/* Garnish Canvas */}
-      <GarnishCanvas
-        garnishImage={recipe.mainImage}
-        onUpdate={(imageData) => {
-          // Store canvas drawing
-        }}
-      />
 
       {/* Service Notes */}
       <Card className="p-4">
