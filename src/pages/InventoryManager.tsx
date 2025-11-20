@@ -1091,7 +1091,7 @@ const InventoryManager = () => {
                                 handleMarkAsSold(inv.id, inv.quantity);
                               }}
                               disabled={
-                                inv.status !== 'available' ||
+                                (inv.quantity ?? 0) <= 0 ||
                                 !inv.stores?.store_type ||
                                 !['sell', 'both'].includes(inv.stores.store_type)
                               }
