@@ -108,6 +108,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     doc.text("COCKTAIL", margin + 4, yPos + 6);
     
     const imgPadding = 4;
+    const frameThickness = 0.8;
     const imgSize = imageWidth - (imgPadding * 2);
     const imgX = margin + imgPadding;
     const imgY = yPos + 9;
@@ -118,13 +119,19 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
         format = 'PNG';
       }
       
-      // High-quality image rendering with optimal compression
-      doc.addImage(recipe.mainImage, format, imgX, imgY, imgSize, imgSize, undefined, 'NONE');
-      
-      // Refined black frame
+      // Draw black frame first
       doc.setDrawColor(blackFrame[0], blackFrame[1], blackFrame[2]);
-      doc.setLineWidth(0.8);
+      doc.setLineWidth(frameThickness);
       doc.rect(imgX, imgY, imgSize, imgSize);
+      
+      // Calculate image dimensions to fit perfectly within frame (with inner padding)
+      const innerPadding = frameThickness * 2.5;
+      const actualImgSize = imgSize - innerPadding;
+      const actualImgX = imgX + innerPadding / 2;
+      const actualImgY = imgY + innerPadding / 2;
+      
+      // High-quality image rendering - fits perfectly inside frame
+      doc.addImage(recipe.mainImage, format, actualImgX, actualImgY, actualImgSize, actualImgSize, undefined, 'NONE');
     } catch (e) {
       console.error('Failed to add image to PDF:', e);
       doc.setFontSize(7);
