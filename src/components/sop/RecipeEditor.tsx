@@ -451,7 +451,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <Label htmlFor={`ing-amount-${index}`} className="text-foreground text-xs">Amt</Label>
+                    <Label htmlFor={`ing-amount-${index}`} className="text-foreground text-xs">Amt (Optional)</Label>
                     <Input
                       id={`ing-amount-${index}`}
                       type="number"
