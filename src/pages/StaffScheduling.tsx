@@ -101,20 +101,20 @@ export default function StaffScheduling() {
     if (!user?.id) return;
 
     try {
-      // First, get the ATTIKO workspace
+      // First, get the ATTIKO FIFO workspace
       const { data: workspace, error: workspaceError } = await supabase
         .from('workspaces')
         .select('id')
-        .eq('name', 'ATTIKO')
+        .eq('name', 'ATTIKO FIFO')
         .single();
 
       if (workspaceError) {
-        console.error('Error fetching ATTIKO workspace:', workspaceError);
+        console.error('Error fetching ATTIKO FIFO workspace:', workspaceError);
         return;
       }
 
       if (!workspace) {
-        console.log('ATTIKO workspace not found');
+        console.log('ATTIKO FIFO workspace not found');
         return;
       }
 
