@@ -1977,14 +1977,14 @@ export default function StaffScheduling() {
               <table className="w-full border-collapse text-[10px]">
                 <thead>
                   <tr>
-                    <th className="border border-gray-700 p-1 bg-gray-800 font-semibold text-left min-w-[100px] sticky left-0 z-10 text-gray-100">
+                    <th className="border-2 border-gray-600 p-1 bg-gray-900 font-semibold text-left min-w-[100px] sticky left-0 z-10 text-gray-100">
                       STAFF
                     </th>
                     {DAYS_OF_WEEK.map((day, dayIndex) => {
                       const isBusyDay = !!dailyEvents[day];
                       const dayLabel = dailyEvents[day] || '';
                       return (
-                        <th key={day} className={`border border-gray-700 p-1 font-semibold text-center min-w-[65px] ${isBusyDay ? 'bg-orange-900/30' : 'bg-gray-800'} text-gray-100`}>
+                        <th key={day} className={`border-2 border-gray-600 p-1 font-semibold text-center min-w-[65px] ${isBusyDay ? 'bg-orange-900/40 border-orange-700' : 'bg-gray-900'} text-gray-100`}>
                           <div className="text-[11px]">{day}</div>
                           {dayLabel && <div className="text-[9px] font-normal text-gray-400">{dayLabel}</div>}
                         </th>
@@ -2006,8 +2006,8 @@ export default function StaffScheduling() {
                       return order[a.title] - order[b.title];
                     })
                     .map(staff => (
-                    <tr key={staff.id}>
-                      <td className="border border-gray-700 p-1 font-medium bg-gray-800 sticky left-0 z-10 min-w-[100px]">
+                    <tr key={staff.id} className="hover:bg-gray-800/50">
+                      <td className="border-2 border-gray-600 p-1 font-medium bg-gray-900 sticky left-0 z-10 min-w-[100px]">
                         <div className="text-[10px] text-gray-100 leading-tight">{staff.name}</div>
                         <div className="text-[8px] text-gray-400 capitalize leading-tight">
                           {staff.title.replace('_', ' ')}
@@ -2018,7 +2018,7 @@ export default function StaffScheduling() {
                         return (
                           <td
                             key={day}
-                            className={`border border-gray-700 p-0.5 ${cell ? CELL_COLORS[cell.type] : 'bg-gray-850'}`}
+                            className={`border-2 ${cell && CELL_COLORS[cell.type]} ${cell?.type === 'off' ? 'border-gray-500' : 'border-gray-600'} p-0.5`}
                           >
                             <Select
                               value={cell?.timeRange || ''}
