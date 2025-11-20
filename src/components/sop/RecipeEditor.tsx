@@ -228,7 +228,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
               id="brandName"
               value={recipe.brandName || ""}
               onChange={(e) => updateField("brandName", e.target.value)}
-              placeholder="e.g., Attiko, Your Bar Name"
+              placeholder="e.g., Your Bar Name"
               className="mt-1 text-base bg-muted text-foreground placeholder:text-muted-foreground"
               maxLength={50}
             />

@@ -319,7 +319,7 @@ const OpsTools = () => {
       {
         name: "Cocktail SOP",
         description: "Professional SOP with PDF export",
-        details: "Generate detailed cocktail SOPs matching Attiko format. Include identity, metrics, taste profiles, recipes with allergens, and export to professional PDFs.",
+        details: "Generate detailed cocktail SOPs with identity, metrics, taste profiles, recipes with allergens, and export to professional PDFs.",
         icon: FileText,
         gradient: "from-indigo-600 to-purple-500",
         premium: false,
