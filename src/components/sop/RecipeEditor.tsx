@@ -4,10 +4,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Plus, Trash2, Camera } from "lucide-react";
+import { Plus, Trash2, Camera, Sparkles } from "lucide-react";
 import { CocktailRecipe, RecipeIngredient } from "@/types/cocktail-recipe";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import GarnishCanvas from "./GarnishCanvas";
 
 interface RecipeEditorProps {
   recipe: CocktailRecipe;
@@ -16,8 +19,12 @@ interface RecipeEditorProps {
 
 const ingredientTypes = ["Spirit", "Liqueur", "Mixer", "Syrup", "Bitters", "Juice", "Other"];
 const units = ["ml", "oz", "dash", "drops", "barspoon", "piece"];
+const glassTypes = ["Rock Glass", "Coupe", "Martini Glass", "Highball", "Collins", "Nick & Nora", "Wine Glass", "Shot Glass", "Hurricane", "Copper Mug"];
+const iceTypes = ["Block Ice", "Large Cube", "Cubed Ice", "Crushed Ice", "No Ice", "Pebble Ice"];
 
 const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
+  const [isGenerating, setIsGenerating] = useState(false);
+
   const updateField = (field: keyof CocktailRecipe, value: any) => {
     onChange({ ...recipe, [field]: value });
   };
@@ -55,6 +62,77 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
       toast.success("Image loaded");
     };
     reader.readAsDataURL(file);
+  };
+
+  const generateMethod = async () => {
+    if (recipe.ingredients.length === 0) {
+      toast.error("Add ingredients first");
+      return;
+    }
+
+    if (!recipe.technique) {
+      toast.error("Select a technique first");
+      return;
+    }
+
+    setIsGenerating(true);
+    toast.loading("Generating method...");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("cocktail-ai-helper", {
+        body: {
+          type: "method",
+          data: {
+            ingredients: recipe.ingredients,
+            technique: recipe.technique,
+            glass: recipe.glass,
+            ice: recipe.ice,
+            garnish: recipe.garnish,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      updateField("methodSOP", data.result);
+      toast.success("Method generated!");
+    } catch (error: any) {
+      console.error("Error generating method:", error);
+      toast.error(error.message || "Failed to generate method");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const detectAllergens = async () => {
+    if (recipe.ingredients.length === 0) {
+      toast.error("Add ingredients first");
+      return;
+    }
+
+    setIsGenerating(true);
+    toast.loading("Detecting allergens...");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("cocktail-ai-helper", {
+        body: {
+          type: "allergen",
+          data: {
+            ingredients: recipe.ingredients,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      updateField("allergens", data.result);
+      toast.success("Allergens detected!");
+    } catch (error: any) {
+      console.error("Error detecting allergens:", error);
+      toast.error(error.message || "Failed to detect allergens");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const updateTaste = (key: keyof typeof recipe.tasteProfile, value: number) => {
@@ -118,32 +196,38 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
                 <SelectItem value="Build">Build</SelectItem>
                 <SelectItem value="Blend">Blend</SelectItem>
                 <SelectItem value="Muddle">Muddle</SelectItem>
+                <SelectItem value="Throw">Throw</SelectItem>
+                <SelectItem value="Swizzle">Swizzle</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
             <Label htmlFor="glass" className="text-foreground">Glass</Label>
-            <Input
-              id="glass"
-              value={recipe.glass}
-              onChange={(e) => updateField("glass", e.target.value)}
-              placeholder="e.g., Rock glass"
-              className="mt-1 text-base bg-muted text-foreground placeholder:text-muted-foreground"
-              maxLength={50}
-            />
+            <Select value={recipe.glass} onValueChange={(v) => updateField("glass", v)}>
+              <SelectTrigger id="glass" className="mt-1 bg-muted text-foreground">
+                <SelectValue placeholder="Select glass" />
+              </SelectTrigger>
+              <SelectContent>
+                {glassTypes.map(g => (
+                  <SelectItem key={g} value={g}>{g}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
             <Label htmlFor="ice" className="text-foreground">Ice</Label>
-            <Input
-              id="ice"
-              value={recipe.ice}
-              onChange={(e) => updateField("ice", e.target.value)}
-              placeholder="e.g., Block ice"
-              className="mt-1 text-base bg-muted text-foreground placeholder:text-muted-foreground"
-              maxLength={50}
-            />
+            <Select value={recipe.ice} onValueChange={(v) => updateField("ice", v)}>
+              <SelectTrigger id="ice" className="mt-1 bg-muted text-foreground">
+                <SelectValue placeholder="Select ice" />
+              </SelectTrigger>
+              <SelectContent>
+                {iceTypes.map(i => (
+                  <SelectItem key={i} value={i}>{i}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -152,7 +236,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
               id="garnish"
               value={recipe.garnish}
               onChange={(e) => updateField("garnish", e.target.value)}
-              placeholder="e.g., Orange peel"
+              placeholder="e.g., Orange peel, Candied edamame"
               className="mt-1 text-base bg-muted text-foreground placeholder:text-muted-foreground"
               maxLength={100}
             />
@@ -197,7 +281,19 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
           </div>
 
           <div>
-            <Label htmlFor="allergens" className="text-foreground">Allergens</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label htmlFor="allergens" className="text-foreground">Allergens</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={detectAllergens}
+                disabled={isGenerating || recipe.ingredients.length === 0}
+              >
+                <Sparkles className="h-3 w-3 mr-1" />
+                Auto Detect
+              </Button>
+            </div>
             <Input
               id="allergens"
               value={recipe.allergens}
@@ -218,7 +314,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
                 className="flex-1"
               >
                 <Camera className="mr-2 h-4 w-4" />
-                {recipe.mainImage ? "Change Image" : "Add Image"}
+                {recipe.mainImage ? "Change" : "Add"}
               </Button>
               <input
                 id="imageInput"
@@ -248,12 +344,12 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
             <Card key={index} className="p-4 bg-muted/50 border-2">
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor={`ing-name-${index}`} className="text-foreground font-medium">Ingredient Name *</Label>
+                  <Label htmlFor={`ing-name-${index}`} className="text-foreground font-medium">Ingredient *</Label>
                   <Input
                     id={`ing-name-${index}`}
                     value={ingredient.name}
                     onChange={(e) => updateIngredient(index, "name", e.target.value)}
-                    placeholder="e.g., Bourbon"
+                    placeholder="e.g., Bourbon, Woodford Reserve"
                     className="mt-1 text-base bg-background text-foreground placeholder:text-muted-foreground font-medium"
                     maxLength={100}
                   />
@@ -261,7 +357,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <Label htmlFor={`ing-amount-${index}`} className="text-foreground text-xs">Amount</Label>
+                    <Label htmlFor={`ing-amount-${index}`} className="text-foreground text-xs">Amt</Label>
                     <Input
                       id={`ing-amount-${index}`}
                       type="number"
@@ -289,7 +385,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor={`ing-abv-${index}`} className="text-foreground text-xs">ABV %</Label>
+                    <Label htmlFor={`ing-abv-${index}`} className="text-foreground text-xs">ABV</Label>
                     <Input
                       id={`ing-abv-${index}`}
                       type="number"
@@ -320,12 +416,12 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
                 </div>
 
                 <div>
-                  <Label htmlFor={`ing-notes-${index}`} className="text-foreground text-xs">Notes (optional)</Label>
+                  <Label htmlFor={`ing-notes-${index}`} className="text-foreground text-xs">Notes</Label>
                   <Input
                     id={`ing-notes-${index}`}
                     value={ingredient.notes}
                     onChange={(e) => updateIngredient(index, "notes", e.target.value)}
-                    placeholder="Additional details"
+                    placeholder="e.g., Infused with edamame"
                     className="mt-1 text-sm bg-background text-foreground placeholder:text-muted-foreground"
                     maxLength={200}
                   />
@@ -337,16 +433,16 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
                   onClick={() => removeIngredient(index)}
                   className="w-full"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" /> Remove Ingredient
+                  <Trash2 className="mr-2 h-4 w-4" /> Remove
                 </Button>
               </div>
             </Card>
           ))}
           {recipe.ingredients.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              <p className="mb-2">No ingredients added yet</p>
+              <p className="mb-2">No ingredients added</p>
               <Button onClick={addIngredient} variant="outline" size="sm">
-                <Plus className="mr-1 h-4 w-4" /> Add First Ingredient
+                <Plus className="mr-1 h-4 w-4" /> Add Ingredient
               </Button>
             </div>
           )}
@@ -355,7 +451,19 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
 
       {/* Method */}
       <Card className="p-4">
-        <h2 className="text-lg font-semibold mb-3">Method (SOP)</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Method (SOP)</h2>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={generateMethod}
+            disabled={isGenerating || recipe.ingredients.length === 0 || !recipe.technique}
+          >
+            <Sparkles className="h-3 w-3 mr-1" />
+            AI Generate
+          </Button>
+        </div>
         <Textarea
           value={recipe.methodSOP}
           onChange={(e) => updateField("methodSOP", e.target.value)}
@@ -365,13 +473,21 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
         />
       </Card>
 
+      {/* Garnish Canvas */}
+      <GarnishCanvas
+        garnishImage={recipe.mainImage}
+        onUpdate={(imageData) => {
+          // Store canvas drawing
+        }}
+      />
+
       {/* Service Notes */}
       <Card className="p-4">
         <h2 className="text-lg font-semibold mb-3">Service Notes</h2>
         <Textarea
           value={recipe.serviceNotes}
           onChange={(e) => updateField("serviceNotes", e.target.value)}
-          placeholder="Add any service notes, story, or presentation details..."
+          placeholder="Add service notes, story, or presentation details..."
           className="min-h-[120px] text-base bg-muted text-foreground placeholder:text-muted-foreground"
           maxLength={2000}
         />
