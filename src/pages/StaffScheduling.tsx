@@ -1216,11 +1216,11 @@ export default function StaffScheduling() {
     // SPECIAL EVENTS FIRST (green section - dailyEvents data)
     if (hasDailyEvents) {
       doc.setFillColor(34, 197, 94); // Green color
-      doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
-      doc.setFontSize(9);
+      doc.roundedRect(14, finalY - 2, 270, 6, 2, 2, 'F');
+      doc.setFontSize(7);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...colors.white);
-      doc.text('SPECIAL EVENTS', 18, finalY + 3);
+      doc.text('SPECIAL EVENTS', 18, finalY + 2.5);
       
       finalY += 10;
       doc.setFontSize(6.5);
@@ -1252,11 +1252,11 @@ export default function StaffScheduling() {
     // DAILY TASKS SECOND (gold section - specialEvents data)
     if (hasSpecialEvents) {
       doc.setFillColor(255, 215, 0); // Gold color
-      doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
-      doc.setFontSize(9);
+      doc.roundedRect(14, finalY - 2, 270, 6, 2, 2, 'F');
+      doc.setFontSize(7);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 0, 0); // Black text on gold
-      doc.text('DAILY TASKS', 18, finalY + 3);
+      doc.text('DAILY TASKS', 18, finalY + 2.5);
       
       finalY += 10;
       doc.setFontSize(6.5);
@@ -1282,11 +1282,11 @@ export default function StaffScheduling() {
     // FIFO Inventory Warnings Section
     if (expiringItems.length > 0) {
       doc.setFillColor(239, 68, 68); // Red color for warnings
-      doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
-      doc.setFontSize(9);
+      doc.roundedRect(14, finalY - 2, 270, 6, 2, 2, 'F');
+      doc.setFontSize(7);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...colors.white);
-      doc.text('FIFO INVENTORY WARNINGS', 18, finalY + 3);
+      doc.text('FIFO INVENTORY WARNINGS', 18, finalY + 2.5);
       
       finalY += 10;
       doc.setFontSize(6);
@@ -1313,11 +1313,11 @@ export default function StaffScheduling() {
     
     // Role Responsibilities Section - Two-column layout to fit on one page
     doc.setFillColor(30, 58, 138); // Dark blue color
-    doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
-    doc.setFontSize(9);
+    doc.roundedRect(14, finalY - 2, 270, 6, 2, 2, 'F');
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...colors.white);
-    doc.text('ROLE RESPONSIBILITIES', 18, finalY + 3);
+    doc.text('ROLE RESPONSIBILITIES', 18, finalY + 2.5);
     
     finalY += 10;
     doc.setFontSize(6);
