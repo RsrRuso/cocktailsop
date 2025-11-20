@@ -76,7 +76,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
     }
 
     setIsGenerating(true);
-    toast.loading("Generating method...");
+    const toastId = toast.loading("Generating method...");
 
     try {
       const { data, error } = await supabase.functions.invoke("cocktail-ai-helper", {
@@ -100,6 +100,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
       console.error("Error generating method:", error);
       toast.error(error.message || "Failed to generate method");
     } finally {
+      toast.dismiss(toastId);
       setIsGenerating(false);
     }
   };
@@ -111,7 +112,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
     }
 
     setIsGenerating(true);
-    toast.loading("Detecting allergens...");
+    const toastId = toast.loading("Detecting allergens...");
 
     try {
       const { data, error } = await supabase.functions.invoke("cocktail-ai-helper", {
@@ -131,6 +132,7 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
       console.error("Error detecting allergens:", error);
       toast.error(error.message || "Failed to detect allergens");
     } finally {
+      toast.dismiss(toastId);
       setIsGenerating(false);
     }
   };

@@ -166,7 +166,7 @@ export const exportToPDF = (recipe: CocktailRecipe) => {
     },
     headStyles: {
       fillColor: darkerBg,
-      textColor: mediumText,
+      textColor: lightText,
       fontStyle: 'bold',
       halign: 'left',
     },
@@ -181,6 +181,11 @@ export const exportToPDF = (recipe: CocktailRecipe) => {
   });
   
   yPos = (doc as any).lastAutoTable.finalY + 8;
+
+  // Ensure the lower sections are visually balanced on the page
+  if (yPos < 120) {
+    yPos = 120;
+  }
   
   // Method section with 3D effect
   draw3DBlock(10, yPos - 5, 190, 8, darkBg);
@@ -195,7 +200,7 @@ export const exportToPDF = (recipe: CocktailRecipe) => {
   doc.setTextColor(lightText[0], lightText[1], lightText[2]);
   
   const methodLines = doc.splitTextToSize(recipe.methodSOP || 'No method specified', 180);
-  const methodHeight = methodLines.length * 4;
+  const methodHeight = Math.max(24, methodLines.length * 4);
   
   draw3DBlock(10, yPos - 3, 190, methodHeight + 4, [40, 47, 59]);
   doc.text(methodLines, 15, yPos);
@@ -229,7 +234,7 @@ export const exportToPDF = (recipe: CocktailRecipe) => {
     ['Sweet', 'Sour', 'Bitter', 'Salty', 'Umami'],
     accentBlue,
     lightText,
-    mediumText
+    lightText
   );
   
   // Texture Profile 3D Radar
@@ -252,7 +257,7 @@ export const exportToPDF = (recipe: CocktailRecipe) => {
     ['Body', 'Foam', 'Bubbles', 'Oily', 'Creamy', 'Astringent'],
     accentBlue,
     lightText,
-    mediumText
+    lightText
   );
   
   yPos += chartHeight + 8;
