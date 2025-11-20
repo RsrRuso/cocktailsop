@@ -115,11 +115,10 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
     doc.text("COCKTAIL", margin + 6, yPos + 7);
     
-    const imgPadding = 5;
-    const frameThickness = 0.8;
+    const imgPadding = 8;
     const imgSize = imageWidth - (imgPadding * 2);
     const imgX = margin + imgPadding;
-    const imgY = yPos + 9;
+    const imgY = yPos + 12;
     
     try {
       let format: 'PNG' | 'JPEG' = 'JPEG';
@@ -127,19 +126,23 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
         format = 'PNG';
       }
       
-      // Draw black frame first
-      doc.setDrawColor(blackFrame[0], blackFrame[1], blackFrame[2]);
-      doc.setLineWidth(frameThickness);
-      doc.rect(imgX, imgY, imgSize, imgSize);
+      // Draw deep 3D shadows for elevation effect
+      doc.setFillColor(140, 145, 150);
+      doc.roundedRect(imgX + 3, imgY + 3, imgSize, imgSize, 3, 3, 'F');
       
-      // Calculate image dimensions to fit perfectly within frame (with inner padding)
-      const innerPadding = frameThickness * 2.5;
-      const actualImgSize = imgSize - innerPadding;
-      const actualImgX = imgX + innerPadding / 2;
-      const actualImgY = imgY + innerPadding / 2;
+      doc.setFillColor(170, 175, 180);
+      doc.roundedRect(imgX + 2, imgY + 2, imgSize, imgSize, 3, 3, 'F');
       
-      // High-quality image rendering - fits perfectly inside frame
-      doc.addImage(recipe.mainImage, format, actualImgX, actualImgY, actualImgSize, actualImgSize, undefined, 'NONE');
+      doc.setFillColor(200, 205, 210);
+      doc.roundedRect(imgX + 1, imgY + 1, imgSize, imgSize, 3, 3, 'F');
+      
+      // High-quality image rendering with rounded corners effect
+      doc.addImage(recipe.mainImage, format, imgX, imgY, imgSize, imgSize, undefined, 'NONE');
+      
+      // Optional: Subtle white highlight on top-left for 3D pop
+      doc.setFillColor(255, 255, 255, 0.1);
+      doc.roundedRect(imgX, imgY, imgSize * 0.3, imgSize * 0.3, 2, 2, 'F');
+      
     } catch (e) {
       console.error('Failed to add image to PDF:', e);
       doc.setFontSize(7);
