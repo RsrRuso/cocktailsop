@@ -1449,50 +1449,46 @@ export default function StaffScheduling() {
                             Add Staff
                           </Button>
                         </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Add Staff Member</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label>Name</Label>
+                              <Input
+                                value={newStaff.name}
+                                onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                                placeholder="Staff name"
+                              />
+                            </div>
+                            <div>
+                              <Label>Title/Role</Label>
+                              <Select
+                                value={newStaff.title}
+                                onValueChange={(value) => setNewStaff({ ...newStaff, title: value as StaffMember['title'] })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="head_bartender">Head Bartender</SelectItem>
+                                  <SelectItem value="senior_bartender">Senior Bartender</SelectItem>
+                                  <SelectItem value="bartender">Bartender</SelectItem>
+                                  <SelectItem value="bar_back">Bar Back</SelectItem>
+                                  <SelectItem value="support">Support</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {ROLE_RESPONSIBILITIES[newStaff.title]}
+                              </p>
+                            </div>
+                            <Button onClick={addStaffMember} className="w-full">Add Staff Member</Button>
+                          </div>
+                        </DialogContent>
                       </Dialog>
                     </div>
                   </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add Staff Member</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label>Name</Label>
-                          <Input
-                            value={newStaff.name}
-                            onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
-                            placeholder="Staff name"
-                          />
-                        </div>
-                        <div>
-                          <Label>Title/Role</Label>
-                          <Select
-                            value={newStaff.title}
-                            onValueChange={(value) => setNewStaff({ ...newStaff, title: value as StaffMember['title'] })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="head_bartender">Head Bartender</SelectItem>
-                              <SelectItem value="senior_bartender">Senior Bartender</SelectItem>
-                              <SelectItem value="bartender">Bartender</SelectItem>
-                              <SelectItem value="bar_back">Bar Back</SelectItem>
-                              <SelectItem value="support">Support</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {ROLE_RESPONSIBILITIES[newStaff.title]}
-                          </p>
-                        </div>
-                        <Button onClick={addStaffMember} className="w-full">Add Staff Member</Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-3">
