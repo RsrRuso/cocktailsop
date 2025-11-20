@@ -24,21 +24,38 @@ const iceTypes = ["Block Ice", "Large Cube", "Cubed Ice", "Crushed Ice", "No Ice
 
 const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [newIngredient, setNewIngredient] = useState<RecipeIngredient>({
+    name: "",
+    amount: "",
+    unit: "ml",
+    abv: "",
+    type: "Spirit",
+    notes: "",
+  });
 
   const updateField = (field: keyof CocktailRecipe, value: any) => {
     onChange({ ...recipe, [field]: value });
   };
 
   const addIngredient = () => {
-    const newIngredient: RecipeIngredient = {
+    if (!newIngredient.name.trim()) {
+      toast.error("Please enter ingredient name");
+      return;
+    }
+    
+    onChange({ ...recipe, ingredients: [...recipe.ingredients, newIngredient] });
+    
+    // Reset the form
+    setNewIngredient({
       name: "",
       amount: "",
       unit: "ml",
       abv: "",
       type: "Spirit",
       notes: "",
-    };
-    onChange({ ...recipe, ingredients: [...recipe.ingredients, newIngredient] });
+    });
+    
+    toast.success("Ingredient added");
   };
 
   const removeIngredient = (index: number) => {
@@ -46,10 +63,8 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
     onChange({ ...recipe, ingredients: newIngredients });
   };
 
-  const updateIngredient = (index: number, field: keyof RecipeIngredient, value: string) => {
-    const newIngredients = [...recipe.ingredients];
-    newIngredients[index] = { ...newIngredients[index], [field]: value };
-    onChange({ ...recipe, ingredients: newIngredients });
+  const updateNewIngredient = (field: keyof RecipeIngredient, value: string) => {
+    setNewIngredient({ ...newIngredient, [field]: value });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -451,114 +466,141 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
           </div>
         </div>
 
-        <div className="space-y-4">
-          {recipe.ingredients.map((ingredient, index) => (
-            <Card key={index} className="p-4 bg-muted/50 border-2">
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor={`ing-name-${index}`} className="text-foreground font-medium">Ingredient *</Label>
-                  <Input
-                    id={`ing-name-${index}`}
-                    value={ingredient.name}
-                    onChange={(e) => updateIngredient(index, "name", e.target.value)}
-                    placeholder="e.g., Bourbon, Woodford Reserve"
-                    className="mt-1 text-base bg-background text-foreground placeholder:text-muted-foreground font-medium"
-                    maxLength={100}
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <Label htmlFor={`ing-amount-${index}`} className="text-foreground text-xs">Amt (Optional)</Label>
-                    <Input
-                      id={`ing-amount-${index}`}
-                      type="number"
-                      step="0.1"
-                      value={ingredient.amount}
-                      onChange={(e) => updateIngredient(index, "amount", e.target.value)}
-                      placeholder="60"
-                      className="mt-1 text-sm bg-background text-foreground placeholder:text-muted-foreground"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor={`ing-unit-${index}`} className="text-foreground text-xs">Unit</Label>
-                    <Select 
-                      value={ingredient.unit} 
-                      onValueChange={(v) => updateIngredient(index, "unit", v)}
-                    >
-                      <SelectTrigger id={`ing-unit-${index}`} className="mt-1 bg-background text-foreground">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {units.map(u => (
-                          <SelectItem key={u} value={u}>{u}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor={`ing-abv-${index}`} className="text-foreground text-xs">ABV</Label>
-                    <Input
-                      id={`ing-abv-${index}`}
-                      type="number"
-                      step="0.1"
-                      value={ingredient.abv}
-                      onChange={(e) => updateIngredient(index, "abv", e.target.value)}
-                      placeholder="40"
-                      className="mt-1 text-sm bg-background text-foreground placeholder:text-muted-foreground"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor={`ing-type-${index}`} className="text-foreground text-xs">Type</Label>
-                  <Select 
-                    value={ingredient.type} 
-                    onValueChange={(v) => updateIngredient(index, "type", v)}
-                  >
-                    <SelectTrigger id={`ing-type-${index}`} className="mt-1 bg-background text-foreground">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ingredientTypes.map(t => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor={`ing-notes-${index}`} className="text-foreground text-xs">Notes</Label>
-                  <Input
-                    id={`ing-notes-${index}`}
-                    value={ingredient.notes}
-                    onChange={(e) => updateIngredient(index, "notes", e.target.value)}
-                    placeholder="e.g., Infused with edamame"
-                    className="mt-1 text-sm bg-background text-foreground placeholder:text-muted-foreground"
-                    maxLength={200}
-                  />
-                </div>
-
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => removeIngredient(index)}
-                  className="w-full"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Remove
-                </Button>
-              </div>
-            </Card>
-          ))}
-          {recipe.ingredients.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <p className="mb-2">No ingredients added</p>
-              <Button onClick={addIngredient} variant="outline" size="sm">
-                <Plus className="mr-1 h-4 w-4" /> Add Ingredient
-              </Button>
+        {/* Add Ingredient Form - Single reusable form */}
+        <Card className="p-4 bg-accent/10 border-2 border-accent">
+          <div className="flex items-center gap-2 mb-3">
+            <Plus className="h-5 w-5 text-accent" />
+            <Label className="text-foreground font-bold text-lg">Add Ingredient</Label>
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="new-ing-name" className="text-foreground font-medium">Ingredient *</Label>
+              <Input
+                id="new-ing-name"
+                value={newIngredient.name}
+                onChange={(e) => updateNewIngredient("name", e.target.value)}
+                placeholder="e.g., Bourbon, Woodford Reserve"
+                className="mt-1 text-base bg-background text-foreground placeholder:text-muted-foreground font-medium"
+                maxLength={100}
+                onKeyDown={(e) => e.key === 'Enter' && addIngredient()}
+              />
             </div>
-          )}
-        </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <Label htmlFor="new-ing-amount" className="text-foreground text-xs">Amt (Optional)</Label>
+                <Input
+                  id="new-ing-amount"
+                  type="number"
+                  step="0.1"
+                  value={newIngredient.amount}
+                  onChange={(e) => updateNewIngredient("amount", e.target.value)}
+                  placeholder="60"
+                  className="mt-1 text-sm bg-background text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+              <div>
+                <Label htmlFor="new-ing-unit" className="text-foreground text-xs">Unit</Label>
+                <Select 
+                  value={newIngredient.unit} 
+                  onValueChange={(v) => updateNewIngredient("unit", v)}
+                >
+                  <SelectTrigger id="new-ing-unit" className="mt-1 bg-background text-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {units.map(u => (
+                      <SelectItem key={u} value={u}>{u}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="new-ing-abv" className="text-foreground text-xs">ABV</Label>
+                <Input
+                  id="new-ing-abv"
+                  type="number"
+                  step="0.1"
+                  value={newIngredient.abv}
+                  onChange={(e) => updateNewIngredient("abv", e.target.value)}
+                  placeholder="40"
+                  className="mt-1 text-sm bg-background text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="new-ing-type" className="text-foreground text-xs">Type</Label>
+              <Select 
+                value={newIngredient.type} 
+                onValueChange={(v) => updateNewIngredient("type", v)}
+              >
+                <SelectTrigger id="new-ing-type" className="mt-1 bg-background text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ingredientTypes.map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="new-ing-notes" className="text-foreground text-xs">Notes</Label>
+              <Input
+                id="new-ing-notes"
+                value={newIngredient.notes}
+                onChange={(e) => updateNewIngredient("notes", e.target.value)}
+                placeholder="Optional notes"
+                className="mt-1 text-sm bg-background text-foreground placeholder:text-muted-foreground"
+                maxLength={200}
+              />
+            </div>
+
+            <Button
+              onClick={addIngredient}
+              className="w-full"
+              type="button"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add to Recipe
+            </Button>
+          </div>
+        </Card>
+
+        {/* List of added ingredients */}
+        {recipe.ingredients.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-foreground font-medium">Recipe Ingredients ({recipe.ingredients.length})</Label>
+            {recipe.ingredients.map((ingredient, index) => (
+              <Card key={index} className="p-3 bg-muted/30 border">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="font-medium text-foreground">{ingredient.name}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {ingredient.amount && `${ingredient.amount} ${ingredient.unit}`}
+                      {ingredient.abv && ` • ${ingredient.abv}% ABV`}
+                      {ingredient.type && ` • ${ingredient.type}`}
+                    </div>
+                    {ingredient.notes && (
+                      <div className="text-xs text-muted-foreground italic mt-1">{ingredient.notes}</div>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeIngredient(index)}
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* Method */}

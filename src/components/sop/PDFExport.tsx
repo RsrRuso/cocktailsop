@@ -3,7 +3,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 // Color palette constants
-const darkGrey: [number, number, number] = [60, 65, 70];
+const blackFrame: [number, number, number] = [0, 0, 0];
 
 export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number) => {
   const isNewDoc = !doc;
@@ -15,14 +15,13 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const darkText: [number, number, number] = [30, 30, 35];
   const accentGold: [number, number, number] = [180, 140, 70];
   const accentDeep: [number, number, number] = [45, 55, 75];
-  const darkGrey: [number, number, number] = [60, 65, 70];
   const lightGray: [number, number, number] = [245, 247, 250];
   const mediumGray: [number, number, number] = [200, 205, 210];
   const subtleText: [number, number, number] = [100, 105, 115];
   
   // Modern decorative line
   const drawAccentLine = (x: number, y: number, width: number, thickness = 0.5) => {
-    doc.setDrawColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+    doc.setDrawColor(blackFrame[0], blackFrame[1], blackFrame[2]);
     doc.setLineWidth(thickness);
     doc.line(x, y, x + width, y);
   };
@@ -38,8 +37,8 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     doc.roundedRect(x, y, width, height, 1.5, 1.5, 'F');
     
     if (withAccent) {
-      // Dark grey accent bar on left
-      doc.setFillColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+      // Black accent bar on left
+      doc.setFillColor(blackFrame[0], blackFrame[1], blackFrame[2]);
       doc.roundedRect(x, y, 2, height, 1.5, 1.5, 'F');
     }
   };
@@ -55,7 +54,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   doc.setFillColor(accentDeep[0], accentDeep[1], accentDeep[2]);
   doc.rect(0, 0, 210, 28, 'F');
   
-  doc.setFillColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+  doc.setFillColor(blackFrame[0], blackFrame[1], blackFrame[2]);
   doc.rect(0, 26, 210, 2, 'F');
   
   doc.setTextColor(255, 255, 255);
@@ -119,12 +118,12 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
         format = 'PNG';
       }
       
-      // High-quality image rendering
-      doc.addImage(recipe.mainImage, format, imgX, imgY, imgSize, imgSize, undefined, 'FAST');
+      // High-quality image rendering with optimal compression
+      doc.addImage(recipe.mainImage, format, imgX, imgY, imgSize, imgSize, undefined, 'NONE');
       
-      // Refined dark grey frame
-      doc.setDrawColor(darkGrey[0], darkGrey[1], darkGrey[2]);
-      doc.setLineWidth(0.5);
+      // Refined black frame
+      doc.setDrawColor(blackFrame[0], blackFrame[1], blackFrame[2]);
+      doc.setLineWidth(0.8);
       doc.rect(imgX, imgY, imgSize, imgSize);
     } catch (e) {
       console.error('Failed to add image to PDF:', e);
@@ -217,7 +216,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const recipeStartY = yPos + 16;
   let ingredientY = recipeStartY;
   
-  // Modern ingredient list (no table)
+  // Modern ingredient list (no table, no dividers)
   recipe.ingredients.slice(0, 12).forEach((ing, index) => {
     if (ingredientY > yPos + recipeHeight - 6) return; // Stop if running out of space
     
@@ -233,7 +232,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
         `${ing.amount}${pdfOpts.showUnit !== false ? ' ' + ing.unit : ''}` : 
         '—';
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(accentGold[0], accentGold[1], accentGold[2]);
+      doc.setTextColor(darkText[0], darkText[1], darkText[2]);
       doc.text(amountText, margin + 85, ingredientY);
     }
     
@@ -261,13 +260,6 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
       ingredientY += 7.5;
     } else {
       ingredientY += 6.5;
-    }
-    
-    // Subtle divider
-    if (index < recipe.ingredients.length - 1 && ingredientY < yPos + recipeHeight - 6) {
-      doc.setDrawColor(mediumGray[0], mediumGray[1], mediumGray[2]);
-      doc.setLineWidth(0.1);
-      doc.line(margin + 7, ingredientY - 1.5, margin + contentWidth - 7, ingredientY - 1.5);
     }
   });
   
@@ -311,7 +303,7 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   
   // Footer with metrics and allergens - positioned at bottom with more space
   const footerY = 285;
-  doc.setDrawColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+  doc.setDrawColor(blackFrame[0], blackFrame[1], blackFrame[2]);
   doc.setLineWidth(0.5);
   doc.line(margin, footerY, pageWidth - margin, footerY);
   
@@ -440,10 +432,10 @@ const drawRadarChart = (
     points.push([x, y]);
   }
   
-  // Dark grey filled polygon
+  // Black filled polygon
   if (points.length > 0) {
-    doc.setDrawColor(darkGrey[0], darkGrey[1], darkGrey[2]);
-    doc.setFillColor(darkGrey[0], darkGrey[1], darkGrey[2], 0.2);
+    doc.setDrawColor(blackFrame[0], blackFrame[1], blackFrame[2]);
+    doc.setFillColor(blackFrame[0], blackFrame[1], blackFrame[2], 0.15);
     doc.setLineWidth(0.6);
     doc.lines(
       points.slice(1).map((p, i) => [p[0] - points[i][0], p[1] - points[i][1]]),
@@ -454,9 +446,9 @@ const drawRadarChart = (
     );
   }
   
-  // Dark grey points
+  // Black points
   points.forEach(([x, y]) => {
-    doc.setFillColor(darkGrey[0], darkGrey[1], darkGrey[2]);
+    doc.setFillColor(blackFrame[0], blackFrame[1], blackFrame[2]);
     doc.circle(x, y, 0.7, 'F');
   });
   
