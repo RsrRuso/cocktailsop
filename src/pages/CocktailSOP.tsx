@@ -17,7 +17,7 @@ const CocktailSOP = () => {
   const [saving, setSaving] = useState(false);
 
   const [recipe, setRecipe] = useState<CocktailRecipe>({
-    drinkName: "",
+    drinkName: "Negroni",
     brandName: "",
     glass: "",
     ice: "",
