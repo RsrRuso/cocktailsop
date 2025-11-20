@@ -2603,6 +2603,18 @@ export default function StaffScheduling() {
                         )}
                       </div>
                     )}
+
+                    {/* Daily Tasks */}
+                    {specialEvents[day] && specialEvents[day].trim() !== '' && (
+                      <div className="mb-3 p-3 bg-amber-950/30 border border-amber-500/40 rounded-lg">
+                        <div className="text-xs font-bold text-amber-400 mb-1.5 flex items-center gap-2">
+                          📋 Daily Task
+                        </div>
+                        <div className="text-xs text-amber-200/90 leading-relaxed">
+                          {specialEvents[day]}
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Summary Numbers */}
                     <div className="grid grid-cols-2 gap-2 mb-3">
