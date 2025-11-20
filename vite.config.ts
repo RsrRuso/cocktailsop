@@ -14,16 +14,8 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    dedupe: ["react", "react-dom", "react/jsx-runtime"],
-  },
-  optimizeDeps: {
-    include: ["react", "react-dom", "react/jsx-runtime"],
-    force: true,
   },
   build: {
-    commonjsOptions: {
-      include: [/node_modules/],
-    },
     rollupOptions: {
       output: {
         manualChunks: {
@@ -33,6 +25,6 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
-    minify: 'esbuild',
+    minify: 'esbuild', // Use esbuild for faster builds
   },
 }));
