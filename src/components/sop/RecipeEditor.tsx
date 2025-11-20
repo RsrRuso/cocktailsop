@@ -17,7 +17,7 @@ interface RecipeEditorProps {
   onChange: (recipe: CocktailRecipe) => void;
 }
 
-const ingredientTypes = ["Spirit", "Liqueur", "Mixer", "Syrup", "Bitters", "Juice", "Other"];
+const ingredientTypes = ["Spirit", "Liqueur", "Fortified Wine", "Vermouth", "Amaro", "Aperitif", "Mixer", "Syrup", "Cordial", "Shrub", "Bitters", "Tincture", "Juice", "Soda", "Tonic", "Cream", "Milk", "Egg", "Fruit", "Herb", "Spice", "Garnish", "Ice", "Other"];
 const units = ["ml", "oz", "dash", "drops", "barspoon", "piece"];
 const glassTypes = ["Rock Glass", "Coupe", "Martini Glass", "Highball", "Collins", "Nick & Nora", "Wine Glass", "Shot Glass", "Hurricane", "Copper Mug"];
 const iceTypes = ["Block Ice", "Large Cube", "Cubed Ice", "Crushed Ice", "No Ice", "Pebble Ice"];
