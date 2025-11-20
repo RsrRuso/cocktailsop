@@ -228,6 +228,9 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Log recipients before sending
+      console.log(`Sending emails to ${recipients.length} recipients:`, recipients.map(r => r.email).join(', '));
+
       const emailPromises = recipients.map((recipient: any) =>
         resend.emails.send({
           from: 'Inventory System <onboarding@resend.dev>',
@@ -238,6 +241,17 @@ Deno.serve(async (req) => {
       );
 
       const emailResults = await Promise.allSettled(emailPromises);
+      
+      // Log detailed results
+      emailResults.forEach((result, index) => {
+        const recipient = recipients[index];
+        if (result.status === 'fulfilled') {
+          console.log(`✅ Email sent successfully to: ${recipient.email}`);
+        } else {
+          console.error(`❌ Failed to send email to: ${recipient.email}`, result.reason);
+        }
+      });
+
       const successCount = emailResults.filter(r => r.status === 'fulfilled').length;
       const failureCount = emailResults.filter(r => r.status === 'rejected').length;
 
