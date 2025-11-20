@@ -1153,9 +1153,9 @@ export default function StaffScheduling() {
     const hasDailyEvents = Object.values(dailyEvents).some(event => event && event.trim() !== '');
     const hasSpecialEvents = Object.values(specialEvents).some(event => event && event.trim() !== '');
     
-    // SPECIAL EVENTS FIRST (blue section - dailyEvents data)
+    // SPECIAL EVENTS FIRST (green section - dailyEvents data)
     if (hasDailyEvents) {
-      doc.setFillColor(...colors.accent);
+      doc.setFillColor(34, 197, 94); // Green color
       doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
@@ -1177,7 +1177,7 @@ export default function StaffScheduling() {
           
           const staffInfo = openingStaff ? ` | Opening: ${openingStaff.name}` : '';
           doc.setFont('helvetica', 'bold');
-          doc.setTextColor(...colors.accent);
+          doc.setTextColor(34, 197, 94); // Green color
           doc.text(`${day}:`, 18, finalY);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(...colors.lightGrey);
