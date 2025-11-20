@@ -1311,7 +1311,7 @@ export default function StaffScheduling() {
       finalY += 3;
     }
     
-    // Role Responsibilities Section - Based on titles only
+    // Role Responsibilities Section - Two-column layout to fit on one page
     doc.setFillColor(30, 58, 138); // Dark blue color
     doc.roundedRect(14, finalY - 2, 270, 8, 2, 2, 'F');
     doc.setFontSize(9);
@@ -1323,17 +1323,26 @@ export default function StaffScheduling() {
     doc.setFontSize(6);
     doc.setTextColor(...colors.lightGrey);
     
-    // Compact single-page role responsibilities with proper text wrapping
+    // Get unique titles sorted by hierarchy
     const uniqueTitles = Array.from(new Set(staffMembers.map(s => s.title)))
       .sort((a, b) => {
         const order = ['head_bartender', 'senior_bartender', 'bartender', 'bar_back', 'support'];
         return order.indexOf(a) - order.indexOf(b);
       });
 
-    const roleLineHeight = 3.5;
-    const maxTextWidth = 260; // Wider text area to prevent cutoff
+    // Split into two columns
+    const midPoint = Math.ceil(uniqueTitles.length / 2);
+    const leftColumnTitles = uniqueTitles.slice(0, midPoint);
+    const rightColumnTitles = uniqueTitles.slice(midPoint);
     
-    uniqueTitles.forEach(title => {
+    const leftColumnX = 18;
+    const rightColumnX = 152; // Middle of page
+    const columnWidth = 128; // Width for each column
+    const roleLineHeight = 3.5;
+    
+    // Render left column
+    let leftY = finalY;
+    leftColumnTitles.forEach(title => {
       const roleTitle = title === 'head_bartender' ? 'Head Bartender' :
                         title === 'senior_bartender' ? 'Senior Bartender' :
                         title === 'bartender' ? 'Bartender' :
@@ -1341,29 +1350,50 @@ export default function StaffScheduling() {
       
       const description = ROLE_RESPONSIBILITIES[title];
       
-      // Check if we need a new page
-      if (finalY > pageHeight - 30) {
-        doc.addPage();
-        doc.setFillColor(...colors.background);
-        doc.rect(0, 0, pageWidth, pageHeight, 'F');
-        finalY = 20;
-      }
+      // Role title
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.5);
+      doc.setTextColor(...colors.white);
+      doc.text(`${roleTitle.toUpperCase()}:`, leftColumnX, leftY);
+      
+      // Wrapped description
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(5.5);
+      doc.setTextColor(...colors.lightGrey);
+      const wrapped = doc.splitTextToSize(description, columnWidth);
+      doc.text(wrapped, leftColumnX, leftY + 3);
+      
+      leftY += 3 + (wrapped.length * roleLineHeight) + 2;
+    });
+    
+    // Render right column
+    let rightY = finalY;
+    rightColumnTitles.forEach(title => {
+      const roleTitle = title === 'head_bartender' ? 'Head Bartender' :
+                        title === 'senior_bartender' ? 'Senior Bartender' :
+                        title === 'bartender' ? 'Bartender' :
+                        title === 'bar_back' ? 'Bar Back' : 'Support';
+      
+      const description = ROLE_RESPONSIBILITIES[title];
       
       // Role title
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(6.5);
       doc.setTextColor(...colors.white);
-      doc.text(`${roleTitle.toUpperCase()}:`, 18, finalY);
+      doc.text(`${roleTitle.toUpperCase()}:`, rightColumnX, rightY);
       
-      // Wrapped description with proper line spacing
+      // Wrapped description
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(5.5);
       doc.setTextColor(...colors.lightGrey);
-      const wrapped = doc.splitTextToSize(description, maxTextWidth);
-      doc.text(wrapped, 18, finalY + 3);
+      const wrapped = doc.splitTextToSize(description, columnWidth);
+      doc.text(wrapped, rightColumnX, rightY + 3);
       
-      finalY += 3 + (wrapped.length * roleLineHeight);
+      rightY += 3 + (wrapped.length * roleLineHeight) + 2;
     });
+    
+    // Update finalY to the maximum of both columns
+    finalY = Math.max(leftY, rightY);
     
     
     // This old section has been removed - special events now integrated earlier in the PDF
