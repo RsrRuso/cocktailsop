@@ -137,6 +137,42 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
     }
   };
 
+  const generateHistory = async () => {
+    if (!recipe.drinkName.trim()) {
+      toast.error("Enter a drink name first");
+      return;
+    }
+
+    setIsGenerating(true);
+    const toastId = toast.loading("Generating cocktail history...");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("cocktail-ai-helper", {
+        body: {
+          type: "history",
+          data: {
+            drinkName: recipe.drinkName,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.result && data.result !== "Not a classic cocktail") {
+        updateField("serviceNotes", data.result);
+        toast.success("History generated!");
+      } else {
+        toast.info("Not a classic cocktail - no history available");
+      }
+    } catch (error: any) {
+      console.error("Error generating history:", error);
+      toast.error(error.message || "Failed to generate history");
+    } finally {
+      toast.dismiss(toastId);
+      setIsGenerating(false);
+    }
+  };
+
   const updateTaste = (key: keyof typeof recipe.tasteProfile, value: number) => {
     onChange({ 
       ...recipe, 
@@ -477,7 +513,19 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
 
       {/* Service Notes */}
       <Card className="p-4">
-        <h2 className="text-lg font-semibold mb-3">Service Notes</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Service Notes</h2>
+          <Button
+            onClick={generateHistory}
+            disabled={isGenerating || !recipe.drinkName.trim()}
+            size="sm"
+            variant="outline"
+            className="gap-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            Generate History
+          </Button>
+        </div>
         <Textarea
           value={recipe.serviceNotes}
           onChange={(e) => updateField("serviceNotes", e.target.value)}
