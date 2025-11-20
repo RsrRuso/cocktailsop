@@ -274,6 +274,18 @@ const RecipeEditor = ({ recipe, onChange }: RecipeEditorProps) => {
           </div>
           
           <div>
+            <Label htmlFor="brandName" className="text-foreground">Brand Name</Label>
+            <Input
+              id="brandName"
+              value={recipe.brandName || ""}
+              onChange={(e) => updateField("brandName", e.target.value)}
+              placeholder="e.g., Attiko, Your Bar Name"
+              className="mt-1 text-base bg-muted text-foreground placeholder:text-muted-foreground"
+              maxLength={50}
+            />
+          </div>
+          
+          <div>
             <Label htmlFor="technique" className="text-foreground">Technique *</Label>
             <Select value={recipe.technique} onValueChange={(v) => updateField("technique", v)}>
               <SelectTrigger id="technique" className="mt-1 bg-muted text-foreground">

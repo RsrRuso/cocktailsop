@@ -18,6 +18,7 @@ const CocktailSOP = () => {
 
   const [recipe, setRecipe] = useState<CocktailRecipe>({
     drinkName: "",
+    brandName: "",
     glass: "",
     ice: "",
     garnish: "",
