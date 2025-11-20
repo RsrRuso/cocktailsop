@@ -90,62 +90,54 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
   const margin = 12;
   const contentWidth = pageWidth - (margin * 2);
   
-  // Image section - separate high-quality block
+  // Side-by-side layout: Image (smaller square) + Metrics (bigger square)
+  const imageSquareSize = 55;
+  const metricsSquareSize = 70;
+  const spacing = 3;
+  
+  // Image square - smaller
   if (recipe.mainImage) {
-    const imgCardHeight = 70;
-    drawModernCard(margin, yPos, contentWidth, imgCardHeight, true);
+    drawModernCard(margin, yPos, imageSquareSize, imageSquareSize, true);
     
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-    doc.text("DRINK IMAGE", margin + 5, yPos + 7);
+    doc.text("IMAGE", margin + 4, yPos + 6);
     
-    const imgWidth = contentWidth - 10;
-    const imgHeight = imgCardHeight - 15;
-    const imgX = margin + 5;
-    const imgY = yPos + 10;
+    const imgSize = imageSquareSize - 12;
+    const imgX = margin + 4;
+    const imgY = yPos + 9;
     
     try {
-      // Detect image format from base64 data
       let format: 'PNG' | 'JPEG' = 'JPEG';
       if (recipe.mainImage.startsWith('data:image/png')) {
         format = 'PNG';
-      } else if (recipe.mainImage.startsWith('data:image/webp')) {
-        format = 'JPEG'; // jsPDF doesn't support webp, convert to JPEG
       }
       
-      // Add image with maximum quality
-      doc.addImage(recipe.mainImage, format, imgX, imgY, imgWidth, imgHeight, undefined, 'FAST');
+      doc.addImage(recipe.mainImage, format, imgX, imgY, imgSize, imgSize, undefined, 'FAST');
       
-      // Add elegant border
       doc.setDrawColor(accentGold[0], accentGold[1], accentGold[2]);
       doc.setLineWidth(0.5);
-      doc.rect(imgX, imgY, imgWidth, imgHeight);
+      doc.rect(imgX, imgY, imgSize, imgSize);
     } catch (e) {
       console.error('Failed to add image to PDF:', e);
-      doc.setFontSize(8);
+      doc.setFontSize(7);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(subtleText[0], subtleText[1], subtleText[2]);
-      doc.text("Image could not be loaded", margin + 5, imgY + 20);
+      doc.text("Image unavailable", imgX + 5, imgY + 20);
     }
-    
-    yPos += imgCardHeight + 5;
   }
   
-  // Specs section - modern badges layout - BIGGER
-  drawModernCard(margin, yPos, contentWidth, 38, true);
+  // Metrics square - bigger
+  const metricsX = margin + imageSquareSize + spacing;
+  drawModernCard(metricsX, yPos, metricsSquareSize, metricsSquareSize, true);
   
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(accentDeep[0], accentDeep[1], accentDeep[2]);
-  doc.text("SPECIFICATIONS", margin + 5, yPos + 7);
+  doc.text("SPECIFICATIONS", metricsX + 4, yPos + 7);
   
-  const specsY = yPos + 16;
-  const badgeWidth = 28;
-  const badgeHeight = 16;
-  const badgeSpacing = 31;
-  
-  // Draw spec badges
+  // Draw spec badges in metrics square
   const specs = [
     { label: 'TECHNIQUE', value: recipe.technique || '-' },
     { label: 'GLASS', value: recipe.glass || '-' },
@@ -155,10 +147,14 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     { label: 'ABV', value: abvPercentage.toFixed(1) + '%' },
   ];
   
+  const specsStartY = yPos + 14;
+  const badgeSpacing = 10;
+  
   specs.forEach((spec, i) => {
-    const col = i % 6;
-    const x = margin + 5 + (col * badgeSpacing);
-    const y = specsY;
+    const row = Math.floor(i / 2);
+    const col = i % 2;
+    const x = metricsX + 4 + (col * 33);
+    const y = specsStartY + (row * badgeSpacing);
     
     doc.setFontSize(6);
     doc.setFont("helvetica", "normal");
@@ -168,11 +164,11 @@ export const exportToPDF = (recipe: CocktailRecipe, doc?: jsPDF, startY?: number
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(darkText[0], darkText[1], darkText[2]);
-    const valueText = spec.value.length > 12 ? spec.value.substring(0, 12) + '...' : spec.value;
-    doc.text(valueText, x, y + 6);
+    const valueText = spec.value.length > 15 ? spec.value.substring(0, 15) + '...' : spec.value;
+    doc.text(valueText, x, y + 5);
   });
   
-  yPos += 42;
+  yPos += Math.max(imageSquareSize, metricsSquareSize) + 5;
   
   // Profiles section - side by side - BIGGER
   const profileWidth = (contentWidth - 3) / 2;
