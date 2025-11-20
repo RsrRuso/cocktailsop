@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     }
 
     // Use Lovable AI to analyze the product image
-    const aiResponse = await fetch('https://lovable.app/api/ai/chat', {
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
