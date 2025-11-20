@@ -62,8 +62,14 @@ const InventoryManager = () => {
   const [pastedText, setPastedText] = useState("");
   const [parsedItems, setParsedItems] = useState<string[]>([]);
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [aiPhotoDialogOpen, setAiPhotoDialogOpen] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [recognizedProduct, setRecognizedProduct] = useState<any>(null);
   const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (hasAccess && !workspaceLoading) {
@@ -541,6 +547,66 @@ const InventoryManager = () => {
     } else {
       toast.success("Employee deleted successfully");
       fetchData();
+    }
+  };
+
+  const analyzeProductPhoto = async (imageData: string) => {
+    setIsAnalyzing(true);
+    try {
+      const response = await fetch('https://cbfqwaqwliehgxsdueem.supabase.co/functions/v1/analyze-product-photo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({ imageData })
+      });
+
+      if (!response.ok) throw new Error('Failed to analyze photo');
+      
+      const result = await response.json();
+      setRecognizedProduct(result);
+      toast.success('Product recognized!');
+    } catch (error) {
+      console.error('Error analyzing photo:', error);
+      toast.error('Failed to analyze photo. Please try again.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0);
+        const imageData = canvas.toDataURL('image/jpeg');
+        setCapturedImage(imageData);
+        analyzeProductPhoto(imageData);
+        // Stop video stream
+        const stream = video.srcObject as MediaStream;
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
+      }
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast.error('Could not access camera');
     }
   };
 
@@ -1360,6 +1426,167 @@ const InventoryManager = () => {
                 <CardDescription className="text-xs">Select items from master list to receive inventory</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
+                {/* AI Photo Recognition Button */}
+                <Dialog open={aiPhotoDialogOpen} onOpenChange={(open) => {
+                  setAiPhotoDialogOpen(open);
+                  if (!open) {
+                    setCapturedImage(null);
+                    setRecognizedProduct(null);
+                    const stream = videoRef.current?.srcObject as MediaStream;
+                    if (stream) {
+                      stream.getTracks().forEach(track => track.stop());
+                    }
+                  } else {
+                    startCamera();
+                  }
+                }}>
+                  <DialogTrigger asChild>
+                    <Button variant="default" className="w-full mb-3 bg-gradient-to-r from-blue-600 to-purple-600">
+                      <Camera className="w-4 h-4 mr-2" />
+                      📸 Snap & Receive - AI Recognition
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                      <DialogTitle>AI Product Recognition</DialogTitle>
+                    </DialogHeader>
+                    {!capturedImage ? (
+                      <div className="space-y-4">
+                        <video 
+                          ref={videoRef} 
+                          autoPlay 
+                          playsInline 
+                          className="w-full rounded-lg"
+                        />
+                        <canvas ref={canvasRef} className="hidden" />
+                        <Button onClick={capturePhoto} className="w-full">
+                          <Camera className="w-4 h-4 mr-2" />
+                          Capture Photo
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <img src={capturedImage} alt="Captured product" className="w-full rounded-lg" />
+                        {isAnalyzing ? (
+                          <div className="text-center py-8">
+                            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">Analyzing product...</p>
+                          </div>
+                        ) : recognizedProduct ? (
+                          <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.currentTarget);
+                            const { data: { user } } = await supabase.auth.getUser();
+                            if (!user) return;
+
+                            // First, create or find the item in master list
+                            let itemId = selectedMasterItemId;
+                            
+                            if (!itemId) {
+                              // Create new item from AI recognition
+                              const { data: newItem, error: itemError } = await supabase
+                                .from("items")
+                                .insert({
+                                  user_id: user.id,
+                                  workspace_id: currentWorkspace?.id || null,
+                                  name: recognizedProduct.name,
+                                  brand: recognizedProduct.brand || null,
+                                  category: recognizedProduct.category || null,
+                                  description: recognizedProduct.description || null,
+                                })
+                                .select()
+                                .single();
+
+                              if (itemError) {
+                                toast.error("Failed to create item");
+                                return;
+                              }
+                              itemId = newItem.id;
+                            }
+
+                            // Add to inventory
+                            const { error } = await supabase.from("inventory").insert({
+                              user_id: user.id,
+                              workspace_id: currentWorkspace?.id || null,
+                              store_id: formData.get("storeId") as string,
+                              item_id: itemId,
+                              quantity: parseFloat(formData.get("quantity") as string),
+                              expiration_date: formData.get("expirationDate") as string,
+                              received_date: new Date().toISOString(),
+                              status: "available"
+                            });
+
+                            if (error) {
+                              toast.error("Failed to add inventory");
+                            } else {
+                              toast.success("Product received successfully!");
+                              fetchData();
+                              setAiPhotoDialogOpen(false);
+                              setCapturedImage(null);
+                              setRecognizedProduct(null);
+                            }
+                          }} className="space-y-3">
+                            <div className="p-3 bg-muted rounded-lg">
+                              <p className="text-sm font-medium">Recognized Product:</p>
+                              <p className="text-lg font-bold">{recognizedProduct.name}</p>
+                              {recognizedProduct.brand && (
+                                <p className="text-sm text-muted-foreground">Brand: {recognizedProduct.brand}</p>
+                              )}
+                              {recognizedProduct.category && (
+                                <p className="text-sm text-muted-foreground">Category: {recognizedProduct.category}</p>
+                              )}
+                            </div>
+                            
+                            <div>
+                              <Label className="text-sm">Store Location *</Label>
+                              <Select name="storeId" required>
+                                <SelectTrigger className="h-9">
+                                  <SelectValue placeholder="Select store" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {stores.filter(s => s.store_type === 'receive' || s.store_type === 'both').map((store) => (
+                                    <SelectItem key={store.id} value={store.id}>
+                                      {store.name} - {store.area}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div>
+                              <Label className="text-sm">Quantity *</Label>
+                              <Input name="quantity" type="number" step="0.01" className="h-9" required />
+                            </div>
+
+                            <div>
+                              <Label className="text-sm">Expiry Date *</Label>
+                              <Input name="expirationDate" type="date" className="h-9" required />
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                className="flex-1"
+                                onClick={() => {
+                                  setCapturedImage(null);
+                                  setRecognizedProduct(null);
+                                  startCamera();
+                                }}
+                              >
+                                Retake Photo
+                              </Button>
+                              <Button type="submit" className="flex-1">
+                                Receive Inventory
+                              </Button>
+                            </div>
+                          </form>
+                        ) : null}
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+
                 {/* Master List Management Buttons */}
                 <div className="grid grid-cols-3 gap-2">
                   <Dialog>
