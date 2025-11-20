@@ -204,8 +204,8 @@ const App = () => (
         </AuthProvider>
       </InAppNotificationProvider>
     </TooltipProvider>
+    </BrowserRouter>
   </QueryClientProvider>
-  </BrowserRouter>
 );
 
 export default App;
