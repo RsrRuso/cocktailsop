@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield, DollarSign, Trash2, Target, ClipboardCheck, Percent, FileBarChart, Download, BarChart3, PieChart, Users, Clock, AlertTriangle, CheckCircle2, Flame, Sparkles, TestTube, Timer, Thermometer, Container, BoxSelect, Tags, TrendingDown, Calendar, UserCheck, GraduationCap, Briefcase, LineChart, Activity, Edit3, Store, ArrowRightLeft } from "lucide-react";
+import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield, DollarSign, Trash2, Target, ClipboardCheck, Percent, FileBarChart, Download, BarChart3, PieChart, Users, Clock, AlertTriangle, CheckCircle2, Flame, Sparkles, TestTube, Timer, Thermometer, Container, BoxSelect, Tags, TrendingDown, Calendar, UserCheck, GraduationCap, Briefcase, LineChart, Activity, Edit3, Store, ArrowRightLeft, Building2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
@@ -166,6 +166,15 @@ const OpsTools = () => {
         gradient: "from-blue-600 to-purple-500",
         premium: false,
         path: "/store-management",
+      },
+      {
+        name: "Workspace Management",
+        description: "Organize stores into workspaces",
+        details: "Create and manage workspaces to organize your stores. View workspace members, store counts, and easily switch between different workspaces.",
+        icon: Building2,
+        gradient: "from-indigo-600 to-blue-500",
+        premium: false,
+        path: "/workspace-management",
       },
       {
         name: "FIFO Recording Manager",
