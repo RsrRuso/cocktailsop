@@ -832,7 +832,7 @@ const StoreManagement = () => {
               Store Management
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {currentWorkspace.name}
+              {currentWorkspace ? currentWorkspace.name : 'Personal Inventory'}
             </p>
           </div>
           <Badge variant="outline" className="gap-2">
