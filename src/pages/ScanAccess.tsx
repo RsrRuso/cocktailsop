@@ -135,46 +135,62 @@ const ScanAccess = () => {
         return;
       }
 
-      // Check for existing requests
-      const { data: existingRequests } = await supabase
+      // Check for existing request for this workspace and user
+      const { data: existingRequest, error: existingError } = await supabase
         .from("access_requests")
         .select("*")
         .eq("workspace_id", workspaceId)
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .maybeSingle();
 
-      const pendingRequest = existingRequests?.find(r => r.status === "pending");
-      
-      if (pendingRequest) {
-        toast.info("You already have a pending access request");
-        setStatus("success");
-        return;
+      if (existingError) {
+        console.error("Error checking existing access request:", existingError);
+        throw new Error(existingError.message || "Failed to check existing access request");
       }
 
-      // Delete any old rejected/approved requests to avoid duplicate key errors
-      if (existingRequests && existingRequests.length > 0) {
-        const oldRequestIds = existingRequests.map(r => r.id);
-        await supabase
+      if (existingRequest) {
+        if (existingRequest.status === "pending") {
+          toast.info("You already have a pending access request");
+          setStatus("success");
+          return;
+        }
+
+        // Reuse existing request row to avoid unique constraint issues
+        const { error: updateError } = await supabase
           .from("access_requests")
-          .delete()
-          .in("id", oldRequestIds);
+          .update({
+            status: "pending",
+            approved_at: null,
+            approved_by: null,
+            user_email: user.email,
+            qr_code_id: workspaceId,
+          })
+          .eq("id", existingRequest.id);
+
+        if (updateError) {
+          console.error("Error updating access request:", updateError);
+          throw new Error(updateError.message || "Failed to update access request");
+        }
+      } else {
+        // Create new access request
+        const { error: requestError } = await supabase
+          .from("access_requests")
+          .insert([
+            {
+              workspace_id: workspaceId,
+              user_id: user.id,
+              user_email: user.email,
+              status: "pending",
+              qr_code_id: workspaceId,
+            },
+          ]);
+
+        if (requestError) {
+          console.error("Access request error:", requestError);
+          throw new Error(requestError.message || "Failed to create access request");
+        }
       }
 
-      // Create new access request
-      const { error: requestError } = await supabase
-        .from("access_requests")
-        .insert([{
-          workspace_id: workspaceId,
-          user_id: user.id,
-          user_email: user.email,
-          status: "pending",
-          qr_code_id: workspaceId
-        }]);
-
-      if (requestError) {
-        console.error("Access request error:", requestError);
-        throw new Error(requestError.message || "Failed to create access request");
-      }
 
       setStatus("success");
       toast.success("Access request sent! You'll be notified when approved.");
