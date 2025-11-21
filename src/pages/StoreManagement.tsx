@@ -831,6 +831,32 @@ const StoreManagement = () => {
     }
   };
 
+  const handleDeleteFeedTransaction = async (transaction: Transaction) => {
+    if (!user) return;
+
+    if (transaction.type === 'transfer') {
+      setDeleteTransferId(transaction.id);
+      return;
+    }
+
+    if (transaction.type === 'receiving') {
+      const receiving = receivings.find((r) => r.id === transaction.id);
+      if (!receiving) {
+        toast.error("Receiving record not found");
+        return;
+      }
+
+      const confirmDelete = window.confirm(
+        "Delete this receiving? This will also adjust inventory."
+      );
+      if (!confirmDelete) return;
+
+      await handleDeleteReceiving(receiving);
+      return;
+    }
+
+    toast.info("This type of activity can't be deleted from the feed yet.");
+  };
   const handleEditReceiving = (receiving: any) => {
     const quantityBefore = typeof receiving.quantity_before === 'number' ? receiving.quantity_before : 0;
     const quantityAfter = typeof receiving.quantity_after === 'number' ? receiving.quantity_after : 0;
@@ -1274,17 +1300,31 @@ const StoreManagement = () => {
                                 </div>
                               </div>
                               
-                              {/* Status Badge */}
-                              <Badge 
-                                variant={
-                                  transaction.status === 'completed' ? 'default' :
-                                  transaction.status === 'pending' ? 'secondary' : 
-                                  'destructive'
-                                }
-                                className="self-start sm:self-auto flex-shrink-0 px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold"
-                              >
-                                {transaction.status}
-                              </Badge>
+                              {/* Status + actions */}
+                              <div className="flex flex-row sm:flex-col items-center sm:items-end gap-1.5 sm:gap-2 self-start sm:self-auto flex-shrink-0">
+                                <Badge 
+                                  variant={
+                                    transaction.status === 'completed' ? 'default' :
+                                    transaction.status === 'pending' ? 'secondary' : 
+                                    'destructive'
+                                  }
+                                  className="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold whitespace-nowrap"
+                                >
+                                  {transaction.status}
+                                </Badge>
+                                {(transaction.type === 'transfer' || transaction.type === 'receiving') && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleDeleteFeedTransaction(transaction)}
+                                    title="Delete activity"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         );
