@@ -152,19 +152,71 @@ const WorkspaceManagement = () => {
   };
 
   const handleDelete = async (workspace: Workspace) => {
-    if (!confirm(`Are you sure you want to delete "${workspace.name}"? This action cannot be undone.`)) {
+    if (!confirm(`Delete "${workspace.name}"?\n\nAll stores and inventory will be kept safe and moved to your personal account.\n\nThis action cannot be undone.`)) {
       return;
     }
 
     try {
-      const { error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Step 1: Make all stores personal (remove workspace_id)
+      const { error: storesError } = await supabase
+        .from("stores")
+        .update({ workspace_id: null })
+        .eq("workspace_id", workspace.id);
+
+      if (storesError) throw storesError;
+
+      // Step 2: Make all inventory personal
+      const { error: inventoryError } = await supabase
+        .from("inventory")
+        .update({ workspace_id: null })
+        .eq("workspace_id", workspace.id);
+
+      if (inventoryError) throw inventoryError;
+
+      // Step 3: Make all items personal
+      const { error: itemsError } = await supabase
+        .from("items")
+        .update({ workspace_id: null })
+        .eq("workspace_id", workspace.id);
+
+      if (itemsError) throw itemsError;
+
+      // Step 4: Make all activity logs personal
+      const { error: activityError } = await supabase
+        .from("inventory_activity_log")
+        .update({ workspace_id: null })
+        .eq("workspace_id", workspace.id);
+
+      if (activityError) throw activityError;
+
+      // Step 5: Make all transfers personal
+      const { error: transfersError } = await supabase
+        .from("inventory_transfers")
+        .update({ workspace_id: null })
+        .eq("workspace_id", workspace.id);
+
+      if (transfersError) throw transfersError;
+
+      // Step 6: Delete workspace members
+      const { error: membersError } = await supabase
+        .from("workspace_members")
+        .delete()
+        .eq("workspace_id", workspace.id);
+
+      if (membersError) throw membersError;
+
+      // Step 7: Finally delete the workspace
+      const { error: workspaceError } = await supabase
         .from("workspaces")
         .delete()
         .eq("id", workspace.id);
 
-      if (error) throw error;
+      if (workspaceError) throw workspaceError;
 
-      toast.success("Workspace deleted successfully");
+      toast.success("Workspace deleted - All your data has been safely preserved!");
       fetchWorkspaces();
     } catch (error) {
       console.error("Error deleting workspace:", error);
