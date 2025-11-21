@@ -773,7 +773,11 @@ const StoreManagement = () => {
 
       if (spotCheckError) throw spotCheckError;
 
-      // Create spot check items and update inventory
+      // Create spot check items, update inventory, and build variance summary
+      const itemSummaries: any[] = [];
+      let totalVarianceValue = 0;
+      let itemsWithVariance = 0;
+
       for (const item of filledItems) {
         const actualQty = parseFloat(item.actual_quantity);
         const variance = actualQty - item.expected_quantity;
@@ -820,7 +824,36 @@ const StoreManagement = () => {
               variance_percentage: variancePercentage
             }
           });
+
+        // Build variance summary for this item
+        itemSummaries.push({
+          inventory_id: item.inventory_id,
+          item_id: item.item_id,
+          item_name: item.item_name,
+          expected_quantity: item.expected_quantity,
+          actual_quantity: actualQty,
+          variance,
+          variance_percentage: variancePercentage,
+          final_quantity: actualQty
+        });
+
+        totalVarianceValue += Math.abs(variance);
+        if (variance !== 0) itemsWithVariance += 1;
       }
+
+      // Create variance report record
+      await supabase
+        .from("variance_reports")
+        .insert({
+          workspace_id: workspaceId,
+          store_id: spotCheckStore,
+          user_id: user.id,
+          report_date: new Date().toISOString().split('T')[0],
+          total_variance_value: totalVarianceValue,
+          total_items_checked: filledItems.length,
+          items_with_variance: itemsWithVariance,
+          report_data: itemSummaries
+        });
 
       toast.success(`Spot check completed! ${filledItems.length} items adjusted.`);
       setShowSpotCheckDialog(false);
