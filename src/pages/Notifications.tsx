@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, Calendar, CalendarCheck, UserCog } from "lucide-react";
+import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, Calendar, CalendarCheck, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
@@ -162,7 +162,7 @@ const Notifications = () => {
       case 'new_user':
         return <UserCheck className="w-5 h-5 text-emerald-500" />;
       case 'access_request':
-        return <UserCog className="w-5 h-5 text-orange-500" />;
+        return <Settings className="w-5 h-5 text-orange-500" />;
       default:
         return <Bell className="w-5 h-5 text-primary" />;
     }
