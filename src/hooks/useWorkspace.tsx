@@ -47,19 +47,17 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // Fetch workspaces user owns (only store_management type)
+      // Fetch workspaces user owns
       const { data: ownedWorkspaces } = await supabase
         .from('workspaces')
         .select('*')
-        .eq('owner_id', user.id)
-        .eq('workspace_type', 'store_management');
+        .eq('owner_id', user.id);
 
-      // Fetch workspaces user is member of (only store_management type)
+      // Fetch workspaces user is member of
       const { data: memberWorkspaces } = await supabase
         .from('workspace_members')
-        .select('workspace:workspaces!inner(*)')
-        .eq('user_id', user.id)
-        .eq('workspace.workspace_type', 'store_management');
+        .select('workspace:workspaces(*)')
+        .eq('user_id', user.id);
 
       const memberWorkspacesData = memberWorkspaces?.map((m: any) => m.workspace).filter(Boolean) || [];
       const allWorkspaces = [...(ownedWorkspaces || []), ...memberWorkspacesData];
@@ -113,7 +111,6 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
           name,
           description,
           owner_id: user.id,
-          workspace_type: 'store_management',
         })
         .select()
         .single();

@@ -4512,7 +4512,6 @@ export type Database = {
           owner_id: string
           settings: Json | null
           updated_at: string | null
-          workspace_type: string | null
         }
         Insert: {
           created_at?: string | null
@@ -4522,7 +4521,6 @@ export type Database = {
           owner_id: string
           settings?: Json | null
           updated_at?: string | null
-          workspace_type?: string | null
         }
         Update: {
           created_at?: string | null
@@ -4532,7 +4530,6 @@ export type Database = {
           owner_id?: string
           settings?: Json | null
           updated_at?: string | null
-          workspace_type?: string | null
         }
         Relationships: []
       }

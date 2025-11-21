@@ -35,7 +35,6 @@ const BusinessHub = lazy(() => import("./pages/BusinessHub"));
 const OpsTools = lazy(() => import("./pages/OpsTools"));
 const TaskManager = lazy(() => import("./pages/TaskManager"));
 const TeamManagement = lazy(() => import("./pages/TeamManagement"));
-const Workspaces = lazy(() => import("./pages/Workspaces"));
 const TeamDashboard = lazy(() => import("./pages/TeamDashboard"));
 const AdvancedEditor = lazy(() => import("./pages/AdvancedEditor"));
 const ReelEditor = lazy(() => import("./pages/ReelEditor"));
@@ -145,7 +144,6 @@ const App = () => (
           <Route path="/ops-tools" element={<OpsTools />} />
           <Route path="/task-manager" element={<TaskManager />} />
           <Route path="/team-management" element={<TeamManagement />} />
-          <Route path="/workspaces" element={<Workspaces />} />
           <Route path="/team-dashboard" element={<TeamDashboard />} />
           <Route path="/advanced-editor" element={<AdvancedEditor />} />
           <Route path="/reel-editor" element={<ReelEditor />} />
