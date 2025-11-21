@@ -134,19 +134,19 @@ export default function StaffScheduling() {
       const expiryThreshold = fourteenDaysFromNow.toISOString().split('T')[0];
 
       const { data, error } = await supabase
-        .from('fifo_inventory')
+        .from('inventory')
         .select(`
           *,
-          fifo_items!inner (
+          items!inner (
             name,
             category,
             brand
           ),
-          fifo_stores!inner (
+          stores!inner (
             name
           )
         `)
-        .eq('user_id', user.id)
+        .eq('workspace_id', currentWorkspace.id)
         .lte('expiration_date', expiryThreshold)
         .gt('quantity', 0)
         .order('expiration_date', { ascending: true })
@@ -1829,14 +1829,14 @@ export default function StaffScheduling() {
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="font-bold text-red-100 text-sm">
-                                  {item.fifo_items?.name || 'Unknown Item'}
+                                  {item.items?.name || 'Unknown Item'}
                                 </div>
                                 <div className="text-xs text-red-300 mt-1">
-                                  {item.fifo_items?.brand && `${item.fifo_items.brand} • `}
-                                  {item.fifo_items?.category || 'Uncategorized'}
+                                  {item.items?.brand && `${item.items.brand} • `}
+                                  {item.items?.category || 'Uncategorized'}
                                 </div>
                                 <div className="text-xs text-red-400 mt-1">
-                                  Store: {item.fifo_stores?.name || 'Unknown'} • Qty: {item.quantity}
+                                  Store: {item.stores?.name || 'Unknown'} • Qty: {item.quantity}
                                 </div>
                               </div>
                               <div className="text-right">
@@ -2462,7 +2462,7 @@ export default function StaffScheduling() {
                         </div>
                         <div className="space-y-1.5 max-h-40 overflow-y-auto">
                           {expiringItems.slice(0, 3).map((item: any, idx: number) => {
-                            const itemName = item.fifo_items?.name || 'Unknown';
+                            const itemName = item.items?.name || 'Unknown';
                             const expiryDate = format(new Date(item.expiration_date), 'MMM dd');
                             const daysLeft = Math.ceil((new Date(item.expiration_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                             
