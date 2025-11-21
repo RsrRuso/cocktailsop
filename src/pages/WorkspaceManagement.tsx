@@ -25,6 +25,7 @@ interface Workspace {
 const WorkspaceManagement = () => {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
@@ -152,10 +153,11 @@ const WorkspaceManagement = () => {
   };
 
   const handleDeleteAll = async () => {
-    if (!confirm(`Delete ALL workspaces?\n\nAll stores, inventory, and data will be safely moved to your personal account.\n\nThis action cannot be undone.`)) {
+    if (!confirm(`Delete ALL ${workspaces.length} workspace(s)?\n\nAll stores, inventory, and data will be safely moved to your personal account.\n\nThis action cannot be undone.`)) {
       return;
     }
 
+    setDeleting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -174,6 +176,8 @@ const WorkspaceManagement = () => {
       await supabase.from("items").update({ workspace_id: null }).in("workspace_id", workspaceIds);
       await supabase.from("inventory_activity_log").update({ workspace_id: null }).in("workspace_id", workspaceIds);
       await supabase.from("inventory_transfers").update({ workspace_id: null }).in("workspace_id", workspaceIds);
+      await supabase.from("inventory_spot_checks").update({ workspace_id: null }).in("workspace_id", workspaceIds);
+      await supabase.from("variance_reports").update({ workspace_id: null }).in("workspace_id", workspaceIds);
       
       // Delete all workspace members
       await supabase.from("workspace_members").delete().in("workspace_id", workspaceIds);
@@ -187,10 +191,12 @@ const WorkspaceManagement = () => {
       if (workspaceError) throw workspaceError;
 
       toast.success(`${workspaceIds.length} workspace(s) deleted - All data preserved!`);
-      fetchWorkspaces();
+      await fetchWorkspaces();
     } catch (error) {
       console.error("Error deleting all workspaces:", error);
       toast.error("Failed to delete workspaces");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -298,9 +304,10 @@ const WorkspaceManagement = () => {
                 onClick={handleDeleteAll} 
                 variant="destructive"
                 className="gap-2"
+                disabled={deleting}
               >
                 <Trash2 className="w-4 h-4" />
-                Delete All
+                {deleting ? "Deleting..." : `Delete All (${workspaces.length})`}
               </Button>
             )}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
