@@ -79,6 +79,7 @@ const LowStockInventory = () => {
         `)
         .eq("workspace_id", workspaceId)
         .lte("quantity", minimumQuantity)
+        .gte("expiration_date", new Date().toISOString().split('T')[0])
         .order("quantity", { ascending: true });
 
       if (error) throw error;
