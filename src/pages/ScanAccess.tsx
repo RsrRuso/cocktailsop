@@ -135,62 +135,29 @@ const ScanAccess = () => {
         return;
       }
 
-      // Check for existing request for this workspace and user
-      const { data: existingRequest, error: existingError } = await supabase
+      // Upsert access request to avoid duplicate key issues on unique (workspace_id, user_id)
+      const { error: requestError } = await supabase
         .from("access_requests")
-        .select("*")
-        .eq("workspace_id", workspaceId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (existingError) {
-        console.error("Error checking existing access request:", existingError);
-        throw new Error(existingError.message || "Failed to check existing access request");
-      }
-
-      if (existingRequest) {
-        if (existingRequest.status === "pending") {
-          toast.info("You already have a pending access request");
-          setStatus("success");
-          return;
-        }
-
-        // Reuse existing request row to avoid unique constraint issues
-        const { error: updateError } = await supabase
-          .from("access_requests")
-          .update({
+        .upsert(
+          {
+            workspace_id: workspaceId,
+            user_id: user.id,
+            user_email: user.email,
             status: "pending",
+            qr_code_id: workspaceId,
             approved_at: null,
             approved_by: null,
-            user_email: user.email,
-            qr_code_id: workspaceId,
-          })
-          .eq("id", existingRequest.id);
+          },
+          {
+            onConflict: "workspace_id,user_id",
+            ignoreDuplicates: false,
+          }
+        );
 
-        if (updateError) {
-          console.error("Error updating access request:", updateError);
-          throw new Error(updateError.message || "Failed to update access request");
-        }
-      } else {
-        // Create new access request
-        const { error: requestError } = await supabase
-          .from("access_requests")
-          .insert([
-            {
-              workspace_id: workspaceId,
-              user_id: user.id,
-              user_email: user.email,
-              status: "pending",
-              qr_code_id: workspaceId,
-            },
-          ]);
-
-        if (requestError) {
-          console.error("Access request error:", requestError);
-          throw new Error(requestError.message || "Failed to create access request");
-        }
+      if (requestError) {
+        console.error("Access request error:", requestError);
+        throw new Error(requestError.message || "Failed to create access request");
       }
-
 
       setStatus("success");
       toast.success("Access request sent! You'll be notified when approved.");
