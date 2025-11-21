@@ -856,8 +856,8 @@ const StoreManagement = () => {
                   <AlertCircle className="h-5 w-5 text-orange-500" />
                 </div>
                 <div>
-                  <p className="font-semibold">Expiring</p>
-                  <p className="text-xs text-muted-foreground">FIFO alerts</p>
+                  <p className="font-semibold">Low Stock</p>
+                  <p className="text-xs text-muted-foreground">Stock alerts</p>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
               </div>
