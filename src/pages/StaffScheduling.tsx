@@ -134,19 +134,19 @@ export default function StaffScheduling() {
       const expiryThreshold = fourteenDaysFromNow.toISOString().split('T')[0];
 
       const { data, error } = await supabase
-        .from('inventory')
+        .from('fifo_inventory')
         .select(`
           *,
-          items (
+          fifo_items!inner (
             name,
             category,
             brand
           ),
-          stores (
+          fifo_stores!inner (
             name
           )
         `)
-        .eq('workspace_id', currentWorkspace.id)
+        .eq('user_id', user.id)
         .lte('expiration_date', expiryThreshold)
         .gt('quantity', 0)
         .order('expiration_date', { ascending: true })
