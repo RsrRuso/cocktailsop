@@ -33,17 +33,23 @@ const VarianceReport = () => {
   const fetchVarianceData = async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data } = await (supabase as any).auth.getUser();
+      const user = data?.user;
+      if (!user) {
+        setVariances([]);
+        setLoading(false);
+        return;
+      }
 
       // Fetch spot check items with related data
-      const { data: spotCheckItems, error: spotError } = await supabase
+      const { data: spotCheckItems, error: spotError } = await (supabase as any)
         .from("spot_check_items")
         .select(`
           *,
           items (name),
           inventory (quantity)
         `)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (spotError) throw spotError;
