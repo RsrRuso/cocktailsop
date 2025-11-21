@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ZoomableImage } from "@/components/ZoomableImage";
 import { toast } from "sonner";
 import { 
   Store, ArrowRightLeft, ClipboardCheck, TrendingDown, 
@@ -1000,13 +1001,13 @@ const StoreManagement = () => {
                     return selectedItem?.photo_url ? (
                       <div className="space-y-1.5">
                         <Label className="text-sm">Item Photo</Label>
-                        <div className="relative w-full h-32 rounded-lg overflow-hidden border">
-                          <img 
-                            src={selectedItem.photo_url} 
-                            alt={selectedItem.name}
-                            className="w-full h-full object-contain bg-muted"
-                          />
-                        </div>
+                        <ZoomableImage
+                          src={selectedItem.photo_url}
+                          alt={selectedItem.name}
+                          containerClassName="w-full h-32 rounded-lg border"
+                          className="w-full h-full bg-muted"
+                          objectFit="contain"
+                        />
                       </div>
                     ) : null;
                   })()}
@@ -1070,13 +1071,13 @@ const StoreManagement = () => {
                         return (
                           <div key={receiving.id} className="glass rounded-lg p-4 hover:glass-hover transition-all">
                             {item?.photo_url && (
-                              <div className="mb-4 rounded-lg overflow-hidden border-2 border-border/50">
-                                <img 
-                                  src={item.photo_url} 
-                                  alt={item.name}
-                                  className="w-full h-32 object-contain bg-muted"
-                                />
-                              </div>
+                              <ZoomableImage
+                                src={item.photo_url}
+                                alt={item.name}
+                                containerClassName="mb-4 rounded-lg border-2 border-border/50"
+                                className="w-full h-32 bg-muted"
+                                objectFit="contain"
+                              />
                             )}
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1">

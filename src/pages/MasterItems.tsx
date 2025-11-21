@@ -17,6 +17,7 @@ import JsBarcode from "jsbarcode";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { ZoomableImage } from "@/components/ZoomableImage";
 
 const MasterItems = () => {
   const navigate = useNavigate();
@@ -748,10 +749,13 @@ const MasterItems = () => {
                         </TableCell>
                         <TableCell className="p-2">
                           {item.photo_url ? (
-                            <img 
-                              src={item.photo_url} 
+                            <ZoomableImage
+                              src={item.photo_url}
                               alt={item.name}
-                              className="w-10 h-10 object-cover rounded"
+                              containerClassName="w-10 h-10 rounded"
+                              className="w-full h-full"
+                              objectFit="cover"
+                              showZoomIcon={false}
                             />
                           ) : (
                             <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
