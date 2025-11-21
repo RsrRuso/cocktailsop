@@ -74,7 +74,7 @@ const LowStockInventory = () => {
           quantity,
           expiration_date,
           item_id,
-          items(name, category),
+          items!inner(name, category),
           stores(name)
         `)
         .eq("workspace_id", workspaceId)
