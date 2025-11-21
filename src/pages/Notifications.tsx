@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, Calendar, CalendarCheck } from "lucide-react";
+import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, Calendar, CalendarCheck, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
@@ -161,6 +161,8 @@ const Notifications = () => {
         return <CalendarCheck className="w-5 h-5 text-indigo-500" />;
       case 'new_user':
         return <UserCheck className="w-5 h-5 text-emerald-500" />;
+      case 'access_request':
+        return <UserCog className="w-5 h-5 text-orange-500" />;
       default:
         return <Bell className="w-5 h-5 text-primary" />;
     }
@@ -177,7 +179,9 @@ const Notifications = () => {
     }
 
     // Navigate based on notification type and reference IDs
-    if (notification.post_id) {
+    if (notification.type === 'access_request') {
+      navigate('/access-approval');
+    } else if (notification.post_id) {
       navigate(`/post/${notification.post_id}`);
     } else if (notification.reel_id) {
       navigate('/reels');
