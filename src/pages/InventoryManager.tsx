@@ -354,8 +354,8 @@ const InventoryManager = () => {
     const { error } = await supabase.from("fifo_stores").insert({
       user_id: user.id,
       name: formData.get("storeName") as string,
-      area: formData.get("area") as string,
-      address: formData.get("address") as string,
+      location: formData.get("address") as string,
+      store_type: formData.get("storeType") as string,
     });
 
     if (error) {
@@ -442,10 +442,9 @@ const InventoryManager = () => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
-    const { error } = await supabase.from("stores").update({
+    const { error } = await supabase.from("fifo_stores").update({
       name: formData.get("storeName") as string,
-      area: formData.get("area") as string,
-      address: formData.get("address") as string,
+      location: formData.get("location") as string,
       store_type: formData.get("storeType") as string || 'both',
     }).eq("id", storeId);
 
@@ -460,7 +459,7 @@ const InventoryManager = () => {
   const handleDeleteStore = async (storeId: string) => {
     if (!confirm("Are you sure you want to delete this store? All inventory in this store will also be removed.")) return;
     
-    const { error } = await supabase.from("stores").delete().eq("id", storeId);
+    const { error } = await supabase.from("fifo_stores").delete().eq("id", storeId);
 
     if (error) {
       toast.error("Failed to delete store");
@@ -961,7 +960,7 @@ const InventoryManager = () => {
                             {inv.items?.category && <p className="text-xs text-muted-foreground">Category: {inv.items.category}</p>}
                             <div className="mt-2 space-y-1">
                               <p className="text-xs">
-                                <span className="font-medium">Store:</span> {inv.stores?.name} ({inv.stores?.area})
+                                <span className="font-medium">Store:</span> {inv.stores?.name} ({inv.stores?.location})
                               </p>
                               <p className="text-xs">
                                 <span className="font-medium">Qty:</span> {inv.quantity}
@@ -1198,7 +1197,7 @@ const InventoryManager = () => {
                                 {store.store_type === 'receive' ? '📥 Receive' : store.store_type === 'sell' ? '💰 Sell' : '🔄 Both'}
                               </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground">{store.area}</p>
+                            <p className="text-xs text-muted-foreground">{store.location}</p>
                             {store.address && <p className="text-xs mt-0.5">{store.address}</p>}
                           </div>
                           <div className="flex gap-1">
@@ -1218,12 +1217,8 @@ const InventoryManager = () => {
                                     <Input name="storeName" defaultValue={store.name} className="h-8 text-sm" required />
                                   </div>
                                   <div>
-                                    <Label className="text-xs">Area</Label>
-                                    <Input name="area" defaultValue={store.area} className="h-8 text-sm" required />
-                                  </div>
-                                  <div>
-                                    <Label className="text-xs">Address</Label>
-                                    <Input name="address" defaultValue={store.address} className="h-8 text-sm" />
+                                    <Label className="text-xs">Location</Label>
+                                    <Input name="location" defaultValue={store.location} className="h-8 text-sm" />
                                   </div>
                                   <div>
                                     <Label className="text-xs">Store Type</Label>
@@ -1558,7 +1553,7 @@ const InventoryManager = () => {
                         <SelectContent position="popper" className="bg-popover border z-[100]">
                           {stores.filter(s => s.store_type === 'receive' || s.store_type === 'both').map((store) => (
                             <SelectItem key={store.id} value={store.id}>
-                              {store.name} - {store.area} {store.store_type === 'receive' ? '📥' : '🔄'}
+                              {store.name} - {store.location} {store.store_type === 'receive' ? '📥' : '🔄'}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1649,7 +1644,7 @@ const InventoryManager = () => {
                                 {item.category && <p className="text-xs text-muted-foreground">Category: {item.category}</p>}
                                 <div className="mt-2 space-y-1">
                                   <p className="text-xs">
-                                    <span className="font-medium">Store:</span> {inv.stores?.name} ({inv.stores?.area})
+                                    <span className="font-medium">Store:</span> {inv.stores?.name} ({inv.stores?.location})
                                   </p>
                                   <p className="text-xs">
                                     <span className="font-medium">Qty:</span> {inv.quantity}
