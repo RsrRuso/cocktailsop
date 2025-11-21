@@ -55,21 +55,13 @@ const AllInventory = () => {
     try {
       setLoading(true);
 
-      const workspaceFilter = currentWorkspace 
-        ? { workspace_id: currentWorkspace.id }
-        : { user_id: user?.id, workspace_id: null };
-
-      // Fetch all stores
-      const { data: storesData } = await supabase
+      // Build queries conditionally based on workspace
+      let storesQuery = supabase
         .from('stores')
         .select('*')
-        .match({ ...workspaceFilter, is_active: true })
-        .order('name');
+        .eq('is_active', true);
 
-      setStores(storesData || []);
-
-      // Fetch all inventory with store and item details
-      const { data: inventoryData, error } = await supabase
+      let inventoryQuery = supabase
         .from('inventory')
         .select(`
           *,
@@ -78,7 +70,8 @@ const AllInventory = () => {
             name,
             barcode,
             brand,
-            category
+            category,
+            photo_url
           ),
           stores (
             id,
@@ -86,9 +79,20 @@ const AllInventory = () => {
             area,
             store_type
           )
-        `)
-        .match(workspaceFilter)
-        .order('created_at', { ascending: false });
+        `);
+
+      if (currentWorkspace) {
+        storesQuery = storesQuery.eq('workspace_id', currentWorkspace.id);
+        inventoryQuery = inventoryQuery.eq('workspace_id', currentWorkspace.id);
+      } else {
+        storesQuery = storesQuery.eq('user_id', user?.id).is('workspace_id', null);
+        inventoryQuery = inventoryQuery.eq('user_id', user?.id).is('workspace_id', null);
+      }
+
+      const { data: storesData } = await storesQuery.order('name');
+      setStores(storesData || []);
+
+      const { data: inventoryData, error } = await inventoryQuery.order('created_at', { ascending: false });
 
       if (error) throw error;
       setInventory(inventoryData || []);
