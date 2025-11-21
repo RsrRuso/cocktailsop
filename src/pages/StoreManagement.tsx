@@ -48,6 +48,7 @@ const StoreManagement = () => {
   const [stores, setStores] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
+  const [lowStockByStore, setLowStockByStore] = useState<Record<string, number>>({});
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [transfers, setTransfers] = useState<any[]>([]);
@@ -227,6 +228,45 @@ const StoreManagement = () => {
       setSpotChecks(spotChecksData || []);
       setVarianceReports(varianceData || []);
       setMembers(membersData);
+
+      // Calculate low stock items per store
+      const lowStockCounts: Record<string, number> = {};
+      
+      // Group inventory by item and calculate average quantities
+      const itemQuantities: Record<string, number[]> = {};
+      inventoryData?.forEach((inv: any) => {
+        const itemId = inv.item_id;
+        if (!itemQuantities[itemId]) {
+          itemQuantities[itemId] = [];
+        }
+        itemQuantities[itemId].push(inv.quantity);
+      });
+
+      // Calculate average for each item
+      const itemAverages: Record<string, number> = {};
+      Object.keys(itemQuantities).forEach(itemId => {
+        const quantities = itemQuantities[itemId];
+        const avg = quantities.reduce((a, b) => a + b, 0) / quantities.length;
+        itemAverages[itemId] = avg;
+      });
+
+      // Check each store for low stock items
+      filteredStores.forEach((store: any) => {
+        const storeInventory = inventoryData?.filter((inv: any) => inv.store_id === store.id) || [];
+        let lowStockCount = 0;
+
+        storeInventory.forEach((inv: any) => {
+          const avg = itemAverages[inv.item_id] || 0;
+          // Item is low stock if quantity is less than 50% of average across stores
+          if (inv.quantity < avg * 0.5 && avg > 0) {
+            lowStockCount++;
+          }
+        });
+
+        lowStockCounts[store.id] = lowStockCount;
+      });
+
+      setLowStockByStore(lowStockCounts);
 
       // Build live transactions feed
       const allTransactions: Transaction[] = [];
@@ -876,29 +916,46 @@ const StoreManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {stores.map((store) => (
-                <Card 
-                  key={store.id} 
-                  className="cursor-pointer hover:shadow-md transition-all hover:border-primary/50"
-                  onClick={() => navigate(`/store/${store.id}`)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <p className="font-semibold">{store.name}</p>
-                        <p className="text-xs text-muted-foreground">{store.location}</p>
+              {stores.map((store) => {
+                const lowStockCount = lowStockByStore[store.id] || 0;
+                const hasLowStock = lowStockCount > 0;
+                
+                return (
+                  <Card 
+                    key={store.id} 
+                    className={`cursor-pointer hover:shadow-md transition-all ${
+                      hasLowStock 
+                        ? 'border-orange-500/50 hover:border-orange-500' 
+                        : 'hover:border-primary/50'
+                    }`}
+                    onClick={() => navigate(`/store/${store.id}`)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold">{store.name}</p>
+                            {hasLowStock && (
+                              <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/30">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                {lowStockCount} Low
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{store.location}</p>
+                        </div>
+                        <Badge variant={store.store_type === 'warehouse' ? 'default' : 'secondary'} className="text-xs">
+                          {store.store_type}
+                        </Badge>
                       </div>
-                      <Badge variant={store.store_type === 'warehouse' ? 'default' : 'secondary'} className="text-xs">
-                        {store.store_type}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                      <span className="text-xs text-muted-foreground">View Items</span>
-                      <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                        <span className="text-xs text-muted-foreground">View Items</span>
+                        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

@@ -20,6 +20,7 @@ const StoreDetail = () => {
   
   const [store, setStore] = useState<any>(null);
   const [inventory, setInventory] = useState<any[]>([]);
+  const [allInventory, setAllInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,7 +64,7 @@ const StoreDetail = () => {
       if (storeError) throw storeError;
       setStore(storeData);
 
-      // Fetch inventory with item details
+      // Fetch inventory with item details for this store
       const { data: inventoryData, error: invError } = await supabase
         .from('inventory')
         .select(`
@@ -83,6 +84,14 @@ const StoreDetail = () => {
 
       if (invError) throw invError;
       setInventory(inventoryData || []);
+
+      // Fetch all inventory across stores for comparison
+      const { data: allInvData } = await supabase
+        .from('inventory')
+        .select('item_id, quantity')
+        .eq('user_id', user?.id);
+
+      setAllInventory(allInvData || []);
     } catch (error: any) {
       console.error('Error fetching store data:', error);
       toast.error('Failed to load store data');
@@ -162,50 +171,100 @@ const StoreDetail = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {inventory.map((inv) => (
-                  <Card key={inv.id} className="overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02]">
-                    {inv.items?.photo_url && (
-                      <ZoomableImage
-                        src={inv.items.photo_url}
-                        alt={inv.items?.name || 'Item'}
-                        containerClassName="h-48 w-full bg-muted/50 border-b-2 border-border/50"
-                        className="w-full h-full p-2"
-                        objectFit="contain"
-                      />
-                    )}
-                    {!inv.items?.photo_url && (
-                      <div className="h-48 w-full bg-muted/50 flex items-center justify-center border-b-2 border-border/50">
-                        <Package className="h-12 w-12 text-muted-foreground/30" />
-                      </div>
-                    )}
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold text-lg mb-2">
-                        {inv.items?.name || 'Unknown Item'}
-                      </h3>
-                      {inv.items?.brand && (
-                        <p className="text-sm text-muted-foreground mb-1">
-                          Brand: {inv.items.brand}
-                        </p>
+                {inventory.map((inv) => {
+                  // Calculate average quantity for this item across all stores
+                  const itemQuantities = allInventory
+                    .filter((i: any) => i.item_id === inv.item_id)
+                    .map((i: any) => i.quantity);
+                  
+                  const avgQuantity = itemQuantities.length > 0
+                    ? itemQuantities.reduce((a, b) => a + b, 0) / itemQuantities.length
+                    : 0;
+                  
+                  // Determine if item is low stock (less than 50% of average)
+                  const isLowStock = avgQuantity > 0 && inv.quantity < avgQuantity * 0.5;
+                  const isVeryLowStock = avgQuantity > 0 && inv.quantity < avgQuantity * 0.25;
+                  
+                  return (
+                    <Card 
+                      key={inv.id} 
+                      className={`overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02] ${
+                        isVeryLowStock 
+                          ? 'border-red-500/50' 
+                          : isLowStock 
+                            ? 'border-orange-500/50' 
+                            : ''
+                      }`}
+                    >
+                      {inv.items?.photo_url && (
+                        <ZoomableImage
+                          src={inv.items.photo_url}
+                          alt={inv.items?.name || 'Item'}
+                          containerClassName="h-48 w-full bg-muted/50 border-b-2 border-border/50"
+                          className="w-full h-full p-2"
+                          objectFit="contain"
+                        />
                       )}
-                      {inv.items?.category && (
-                        <p className="text-sm text-muted-foreground mb-2">
-                          Category: {inv.items.category}
-                        </p>
+                      {!inv.items?.photo_url && (
+                        <div className="h-48 w-full bg-muted/50 flex items-center justify-center border-b-2 border-border/50">
+                          <Package className="h-12 w-12 text-muted-foreground/30" />
+                        </div>
                       )}
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                        <span className="text-sm text-muted-foreground">Quantity</span>
-                        <Badge variant="outline" className="text-base font-semibold">
-                          {inv.quantity}
-                        </Badge>
-                      </div>
-                      {inv.expiration_date && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Expires: {new Date(inv.expiration_date).toLocaleDateString()}
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-semibold text-lg flex-1">
+                            {inv.items?.name || 'Unknown Item'}
+                          </h3>
+                          {isVeryLowStock && (
+                            <Badge variant="destructive" className="ml-2">
+                              Very Low
+                            </Badge>
+                          )}
+                          {isLowStock && !isVeryLowStock && (
+                            <Badge variant="outline" className="ml-2 bg-orange-500/10 text-orange-600 border-orange-500/30">
+                              Low Stock
+                            </Badge>
+                          )}
+                        </div>
+                        {inv.items?.brand && (
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Brand: {inv.items.brand}
+                          </p>
+                        )}
+                        {inv.items?.category && (
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Category: {inv.items.category}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                          <span className="text-sm text-muted-foreground">Quantity</span>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-base font-semibold ${
+                              isVeryLowStock 
+                                ? 'bg-red-500/10 text-red-600 border-red-500/30' 
+                                : isLowStock 
+                                  ? 'bg-orange-500/10 text-orange-600 border-orange-500/30' 
+                                  : ''
+                            }`}
+                          >
+                            {inv.quantity}
+                          </Badge>
+                        </div>
+                        {avgQuantity > 0 && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Avg across stores: {avgQuantity.toFixed(1)}
+                          </p>
+                        )}
+                        {inv.expiration_date && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Expires: {new Date(inv.expiration_date).toLocaleDateString()}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </CardContent>
