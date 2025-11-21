@@ -1119,58 +1119,99 @@ const StoreManagement = () => {
               <CardContent>
                 <ScrollArea className="h-[500px]">
                   <div className="space-y-3">
-                    {transactions.map((transaction) => (
-                      <div
-                        key={transaction.id}
-                        className="glass rounded-lg p-4 hover:glass-hover transition-all"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-start gap-3 flex-1">
-                            {transaction.type === 'transfer' && (
-                              <ArrowRightLeft className="w-5 h-5 text-blue-500 mt-1" />
-                            )}
-                            {transaction.type === 'spot_check' && (
-                              <ClipboardCheck className="w-5 h-5 text-green-500 mt-1" />
-                            )}
-                            {transaction.type === 'variance' && (
-                              <TrendingDown className="w-5 h-5 text-orange-500 mt-1" />
-                            )}
-                            {transaction.type === 'receiving' && (
-                              <Package className="w-5 h-5 text-purple-500 mt-1" />
+                    {transactions.map((transaction) => {
+                      // Find the item details
+                      const item = items.find(i => i.name === transaction.item_name);
+                      
+                      return (
+                        <div
+                          key={transaction.id}
+                          className="glass rounded-lg p-4 hover:glass-hover transition-all"
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* Item Photo */}
+                            {item?.photo_url ? (
+                              <img 
+                                src={item.photo_url} 
+                                alt={item.name}
+                                className="w-14 h-14 rounded-md object-cover flex-shrink-0 border"
+                              />
+                            ) : (
+                              <div className="w-14 h-14 rounded-md bg-muted flex items-center justify-center flex-shrink-0 border">
+                                <Package className="h-7 w-7 text-muted-foreground" />
+                              </div>
                             )}
                             
-                            <div className="flex-1">
-                              <p className="font-medium">
-                                {transaction.type === 'transfer' && 
-                                  `Transfer: ${transaction.from_store} → ${transaction.to_store}`}
-                                {transaction.type === 'spot_check' && 
-                                  `Spot Check at ${transaction.store}`}
-                                 {transaction.type === 'variance' && 
-                                  `Variance Report - ${transaction.store}`}
-                                {transaction.type === 'receiving' && 
-                                  `Receiving: ${transaction.item_name} at ${transaction.store}`}
+                            <div className="flex-1 min-w-0">
+                              {/* Item Name */}
+                              <p className="font-semibold text-base">
+                                {transaction.item_name || 'Multiple Items'}
                               </p>
-                              <p className="text-sm text-muted-foreground">
-                                {transaction.user_email} • {transaction.item_count} items
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {new Date(transaction.timestamp).toLocaleString()}
-                              </p>
+                              
+                              {/* Transaction Type with Icon and Details */}
+                              <div className="flex items-center gap-2 mt-1">
+                                {transaction.type === 'transfer' && (
+                                  <>
+                                    <ArrowRightLeft className="w-4 h-4 text-blue-500" />
+                                    <span className="text-sm">
+                                      <span className="font-medium">{transaction.item_count} units</span>
+                                      {' from '}<span className="font-medium">{transaction.from_store}</span>
+                                      {' to '}<span className="font-medium">{transaction.to_store}</span>
+                                    </span>
+                                  </>
+                                )}
+                                {transaction.type === 'receiving' && (
+                                  <>
+                                    <Package className="w-4 h-4 text-purple-500" />
+                                    <span className="text-sm">
+                                      <span className="font-medium">{transaction.item_count} units</span>
+                                      {' received at '}<span className="font-medium">{transaction.store}</span>
+                                    </span>
+                                  </>
+                                )}
+                                {transaction.type === 'spot_check' && (
+                                  <>
+                                    <ClipboardCheck className="w-4 h-4 text-green-500" />
+                                    <span className="text-sm">
+                                      Spot check at <span className="font-medium">{transaction.store}</span>
+                                      {' - '}<span className="font-medium">{transaction.item_count} items</span>
+                                    </span>
+                                  </>
+                                )}
+                                {transaction.type === 'variance' && (
+                                  <>
+                                    <TrendingDown className="w-4 h-4 text-orange-500" />
+                                    <span className="text-sm">
+                                      Variance report at <span className="font-medium">{transaction.store}</span>
+                                      {' - '}<span className="font-medium">{transaction.item_count} items</span>
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                              
+                              {/* Who Initiated and When */}
+                              <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
+                                <span>Initiated by {transaction.user_email}</span>
+                                <span>•</span>
+                                <span>{new Date(transaction.timestamp).toLocaleString()}</span>
+                              </div>
                             </div>
+                            
+                            {/* Status Badge */}
+                            <Badge 
+                              variant={
+                                transaction.status === 'completed' ? 'default' :
+                                transaction.status === 'pending' ? 'secondary' : 
+                                'destructive'
+                              }
+                              className="flex-shrink-0"
+                            >
+                              {transaction.status}
+                            </Badge>
                           </div>
-                          
-                          <Badge 
-                            variant={
-                              transaction.status === 'completed' ? 'default' :
-                              transaction.status === 'pending' ? 'secondary' : 
-                              'destructive'
-                            }
-                          >
-                            {transaction.status}
-                          </Badge>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               </CardContent>
