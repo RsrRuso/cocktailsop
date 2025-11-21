@@ -2316,19 +2316,19 @@ export default function StaffScheduling() {
               <Accordion type="single" collapsible defaultValue="daily-breakdown">
                 <AccordionItem value="daily-breakdown" className="border-none">
                   <AccordionTrigger className="hover:no-underline pb-4">
-                    <div className="flex items-center justify-between w-full pr-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full pr-2 sm:pr-4 gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-secondary/20 rounded-lg">
+                        <div className="p-2 bg-secondary/20 rounded-lg flex-shrink-0">
                           <Users className="w-5 h-5 text-secondary" />
                         </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-100">Daily Breakdown</h3>
+                        <div className="min-w-0">
+                          <h3 className="text-base sm:text-lg font-bold text-gray-100">Daily Breakdown</h3>
                           <p className="text-xs text-gray-500">Staff schedule by day</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                          <span className="text-xs text-orange-400 font-semibold">☕ Individual break times per staff</span>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                        <div className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 bg-orange-500/10 rounded-lg border border-orange-500/20 flex-shrink-0">
+                          <span className="text-[10px] sm:text-xs text-orange-400 font-semibold whitespace-nowrap">☕ Individual break times</span>
                         </div>
                         <Button
                           size="sm"
@@ -2337,10 +2337,11 @@ export default function StaffScheduling() {
                             e.stopPropagation();
                             exportAllDailyBreakdownsToPDF();
                           }}
-                          className="h-8 px-3 text-xs border-gray-600 hover:bg-gray-800/80 hover:border-primary/50 transition-all"
+                          className="h-8 px-2.5 sm:px-3 text-[10px] sm:text-xs border-gray-600 hover:bg-gray-800/80 hover:border-primary/50 transition-all whitespace-nowrap flex-shrink-0 w-full sm:w-auto"
                         >
-                          <Download className="h-3 w-3 mr-1.5" />
-                          Export All Days
+                          <Download className="h-3 w-3 mr-1 sm:mr-1.5" />
+                          <span className="hidden sm:inline">Export All Days</span>
+                          <span className="sm:hidden">Export All</span>
                         </Button>
                       </div>
                     </div>
