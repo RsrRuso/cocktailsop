@@ -240,6 +240,11 @@ const StoreManagement = () => {
       receivingsData?.forEach((r: any) => {
         const itemId = r.details?.item_id;
         const item = itemsData?.find((i: any) => i.id === itemId);
+        const quantityBefore = typeof r.quantity_before === 'number' ? r.quantity_before : 0;
+        const quantityAfter = typeof r.quantity_after === 'number' ? r.quantity_after : 0;
+        const receivedQty = typeof r.details?.received_quantity === 'number'
+          ? r.details.received_quantity
+          : (quantityAfter - quantityBefore) || quantityAfter || 0;
         allTransactions.push({
           id: r.id,
           type: 'receiving',
@@ -247,7 +252,7 @@ const StoreManagement = () => {
           user_email: user.email || 'Unknown',
           store: r.stores?.name,
           item_name: item?.name || 'Unknown Item',
-          item_count: r.quantity_after || 0,
+          item_count: receivedQty,
           status: 'completed'
         });
       });
@@ -366,6 +371,15 @@ const StoreManagement = () => {
     try {
       const qty = parseFloat(receivingQuantity);
       console.log("Recording receiving - Quantity entered:", receivingQuantity, "Parsed quantity:", qty);
+
+      if (isNaN(qty) || qty <= 0) {
+        toast.error("Quantity must be greater than 0");
+        return;
+      }
+      
+      let quantityBefore = 0;
+      let quantityAfter = qty;
+      let inventoryId: string | null = null;
       
       // Check if inventory already exists for this item at this store
       const { data: existingInventory } = await supabase
@@ -377,20 +391,24 @@ const StoreManagement = () => {
 
       if (existingInventory) {
         // Update existing inventory
+        quantityBefore = Number(existingInventory.quantity || 0);
+        quantityAfter = quantityBefore + qty;
+
         const { error: updateError } = await supabase
           .from('inventory')
           .update({
-            quantity: existingInventory.quantity + qty,
+            quantity: quantityAfter,
           })
           .eq('id', existingInventory.id);
 
         if (updateError) throw updateError;
+        inventoryId = existingInventory.id;
       } else {
         // Create new inventory record - need expiration date
         const expirationDate = new Date();
         expirationDate.setMonth(expirationDate.getMonth() + 6); // Default 6 months
 
-        const { error: insertError } = await supabase
+        const { data: newInventory, error: insertError } = await supabase
           .from('inventory')
           .insert({
             workspace_id: currentWorkspace.id,
@@ -401,9 +419,15 @@ const StoreManagement = () => {
             expiration_date: expirationDate.toISOString().split('T')[0],
             received_date: new Date().toISOString(),
             notes: receivingNotes || null
-          });
+          })
+          .select('id, quantity')
+          .single();
 
         if (insertError) throw insertError;
+
+        inventoryId = newInventory?.id || null;
+        quantityBefore = 0;
+        quantityAfter = Number(newInventory?.quantity ?? qty);
       }
 
       // Log activity
@@ -411,10 +435,13 @@ const StoreManagement = () => {
         workspace_id: currentWorkspace.id,
         user_id: user.id,
         store_id: selectedReceivingStore,
+        inventory_id: inventoryId,
         action_type: 'received',
-        quantity_after: qty,
+        quantity_before: quantityBefore,
+        quantity_after: quantityAfter,
         details: {
           item_id: selectedReceivingItem,
+          received_quantity: qty,
           notes: receivingNotes
         }
       });
@@ -922,7 +949,17 @@ const StoreManagement = () => {
                                   Store: {receiving.stores?.name}
                                 </p>
                                 <p className="text-base font-semibold mb-1">
-                                  Quantity: {receiving.quantity_after || 0}
+                                  Qty received: {(() => {
+                                    const quantityBefore = typeof receiving.quantity_before === 'number' ? receiving.quantity_before : 0;
+                                    const quantityAfter = typeof receiving.quantity_after === 'number' ? receiving.quantity_after : 0;
+                                    const receivedQty = typeof receiving.details?.received_quantity === 'number'
+                                      ? receiving.details.received_quantity
+                                      : (quantityAfter - quantityBefore) || quantityAfter || 0;
+                                    return receivedQty;
+                                  })()}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  On hand after receiving: {receiving.quantity_after ?? 0}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                   Recorded: {new Date(receiving.created_at).toLocaleString()}

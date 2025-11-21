@@ -857,7 +857,7 @@ const InventoryManager = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
       
       <div className="container mx-auto p-2 sm:p-4 space-y-4">

@@ -119,7 +119,7 @@ const StoreDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
       
       <div className="container mx-auto px-4 py-6 max-w-7xl">
