@@ -342,7 +342,7 @@ const StoreManagement = () => {
 
   const handleCreateTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !currentWorkspace) return;
+    if (!user) return;
 
     if (!selectedFromStore || !selectedToStore || !selectedItem || !transferQuantity) {
       toast.error("Please fill all required fields");
@@ -355,6 +355,9 @@ const StoreManagement = () => {
     }
 
     try {
+      // Use workspace_id or null for personal inventory
+      const workspaceId = currentWorkspace?.id || null;
+
       // Find inventory record for the item at the from_store
       const { data: fromInventory } = await supabase
         .from('inventory')
@@ -408,7 +411,7 @@ const StoreManagement = () => {
         await supabase
           .from('inventory')
           .insert({
-            workspace_id: currentWorkspace.id,
+            workspace_id: workspaceId,
             user_id: user.id,
             store_id: selectedToStore,
             item_id: selectedItem,
@@ -423,7 +426,7 @@ const StoreManagement = () => {
       await supabase
         .from("inventory_transfers")
         .insert({
-          workspace_id: currentWorkspace.id,
+          workspace_id: workspaceId,
           user_id: user.id,
           from_store_id: selectedFromStore,
           to_store_id: selectedToStore,
