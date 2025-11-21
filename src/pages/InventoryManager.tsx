@@ -900,13 +900,13 @@ const InventoryManager = () => {
 
         {/* Quick Actions - Compact horizontal bar */}
         <div className="flex flex-wrap gap-2 bg-card p-2 rounded-lg border">
-          {isManager && (
+          {(isManager || currentWorkspace?.owner_id === user?.id) && (
             <Button onClick={() => navigate("/qr-access-code")} size="sm" variant="default">
               <QRCodeSVG value="qr" className="w-3 h-3 mr-1 opacity-0" />
               <span className="ml-[-16px]">QR Code</span>
             </Button>
           )}
-          {isManager && (
+          {(isManager || currentWorkspace?.owner_id === user?.id || pendingRequestsCount > 0) && (
             <Button 
               onClick={() => navigate("/access-approval")} 
               size="sm" 
