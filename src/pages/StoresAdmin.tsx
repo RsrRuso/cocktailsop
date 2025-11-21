@@ -103,20 +103,15 @@ const StoresAdmin = () => {
 
   const handleDeleteStore = async (storeId: string, storeName: string) => {
     try {
-      // First check if store has inventory
-      const { data: inventoryData, error: checkError } = await supabase
+      // Delete all inventory items in this store first
+      const { error: inventoryError } = await supabase
         .from('inventory')
-        .select('id')
-        .eq('store_id', storeId)
-        .limit(1);
+        .delete()
+        .eq('store_id', storeId);
 
-      if (checkError) throw checkError;
+      if (inventoryError) throw inventoryError;
 
-      if (inventoryData && inventoryData.length > 0) {
-        toast.error("Cannot delete store with existing inventory. Please transfer or remove all items first.");
-        return;
-      }
-
+      // Then delete the store
       const { error } = await supabase
         .from('stores')
         .delete()
@@ -124,7 +119,7 @@ const StoresAdmin = () => {
 
       if (error) throw error;
 
-      toast.success(`Store "${storeName}" deleted successfully`);
+      toast.success(`Store "${storeName}" and all its inventory deleted successfully`);
       fetchStores();
     } catch (error: any) {
       console.error('Error deleting store:', error);
@@ -300,13 +295,21 @@ const StoresAdmin = () => {
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Store</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete "{store.name}"? This action cannot be undone.
+                            <AlertDialogDescription className="space-y-2">
+                              <p>Are you sure you want to delete "{store.name}"?</p>
                               {store.inventory?.[0]?.count > 0 && (
-                                <span className="block mt-2 text-destructive font-semibold">
-                                  Warning: This store has {store.inventory[0].count} inventory items. You must remove all items before deletion.
-                                </span>
+                                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                                  <p className="text-destructive font-semibold">
+                                    ⚠️ Warning: This store has {store.inventory[0].count} inventory items.
+                                  </p>
+                                  <p className="text-sm text-destructive/80 mt-1">
+                                    All inventory items in this store will be permanently deleted.
+                                  </p>
+                                </div>
                               )}
+                              <p className="text-sm text-muted-foreground mt-2">
+                                This action cannot be undone.
+                              </p>
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -315,7 +318,7 @@ const StoresAdmin = () => {
                               onClick={() => handleDeleteStore(store.id, store.name)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              Delete
+                              Delete Store {store.inventory?.[0]?.count > 0 && `& ${store.inventory[0].count} Items`}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
