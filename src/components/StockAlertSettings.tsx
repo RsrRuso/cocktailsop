@@ -8,12 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Loader2, Mail, Users } from 'lucide-react';
+import { Bell, Loader2, Mail, Users, Package } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AlertSettings {
   id?: string;
-  days_before_expiry: number;
+  minimum_quantity_threshold: number;
   alert_recipients: string[];
   enabled: boolean;
   alert_time?: string;
@@ -27,14 +27,14 @@ interface WorkspaceMember {
   };
 }
 
-export const FIFOAlertSettings = () => {
+export const StockAlertSettings = () => {
   const { user, profile } = useAuth();
   const { currentWorkspace, workspaces, switchWorkspace } = useWorkspace();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [settings, setSettings] = useState<AlertSettings>({
-    days_before_expiry: 30,
+    minimum_quantity_threshold: 10,
     alert_recipients: [],
     enabled: true,
     alert_time: '09:00',
@@ -53,7 +53,7 @@ export const FIFOAlertSettings = () => {
 
     try {
       const { data, error } = await supabase
-        .from('fifo_alert_settings')
+        .from('stock_alert_settings')
         .select('*')
         .eq('workspace_id', currentWorkspace.id)
         .single();
@@ -63,7 +63,7 @@ export const FIFOAlertSettings = () => {
       if (data) {
         setSettings({
           id: data.id,
-          days_before_expiry: data.days_before_expiry,
+          minimum_quantity_threshold: data.minimum_quantity_threshold,
           alert_recipients: data.alert_recipients || [],
           enabled: data.enabled,
           alert_time: data.alert_time || '09:00',
@@ -78,7 +78,6 @@ export const FIFOAlertSettings = () => {
     if (!currentWorkspace || !user) return;
 
     try {
-      // Get all user IDs related to this workspace: members + owner + current user
       const { data: memberRows, error: membersError } = await supabase
         .from('workspace_members')
         .select('user_id')
@@ -88,17 +87,14 @@ export const FIFOAlertSettings = () => {
 
       const userIds = new Set<string>();
 
-      // Add workspace members
       (memberRows || []).forEach((row: any) => {
         if (row.user_id) userIds.add(row.user_id);
       });
 
-      // Add workspace owner
       if (currentWorkspace.owner_id) {
         userIds.add(currentWorkspace.owner_id);
       }
 
-      // Add current user as fallback
       userIds.add(user.id);
 
       const idArray = Array.from(userIds);
@@ -112,7 +108,6 @@ export const FIFOAlertSettings = () => {
         return;
       }
 
-      // Fetch profiles for all collected user IDs
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email')
@@ -154,7 +149,7 @@ export const FIFOAlertSettings = () => {
       const payload = {
         workspace_id: currentWorkspace.id,
         user_id: user.id,
-        days_before_expiry: settings.days_before_expiry,
+        minimum_quantity_threshold: settings.minimum_quantity_threshold,
         alert_recipients: settings.alert_recipients,
         enabled: settings.enabled,
         alert_time: settings.alert_time || '09:00',
@@ -163,14 +158,14 @@ export const FIFOAlertSettings = () => {
 
       if (settings.id) {
         const { error } = await supabase
-          .from('fifo_alert_settings')
+          .from('stock_alert_settings')
           .update(payload)
           .eq('id', settings.id);
 
         if (error) throw error;
       } else {
         const { data, error } = await supabase
-          .from('fifo_alert_settings')
+          .from('stock_alert_settings')
           .insert(payload)
           .select()
           .single();
@@ -181,7 +176,7 @@ export const FIFOAlertSettings = () => {
 
       toast({
         title: 'Settings saved',
-        description: 'FIFO alert settings updated successfully',
+        description: 'Stock alert settings updated successfully',
       });
     } catch (error: any) {
       toast({
@@ -206,7 +201,7 @@ export const FIFOAlertSettings = () => {
     setTesting(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/daily-fifo-alerts`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/daily-stock-alerts`,
         {
           method: 'POST',
           headers: {
@@ -255,15 +250,14 @@ export const FIFOAlertSettings = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            FIFO Alert Settings
+            <Package className="h-5 w-5" />
+            Stock Alert Settings
           </CardTitle>
           <CardDescription>
-            Configure expiration alerts for your inventory
+            Configure low stock alerts for your inventory
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Workspace Selector */}
           <div className="flex items-center justify-between gap-4 p-4 bg-accent/5 rounded-lg border border-border">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />
@@ -293,7 +287,7 @@ export const FIFOAlertSettings = () => {
           </div>
           
           <p className="text-muted-foreground text-center py-4">
-            Select a workspace above to configure FIFO alerts
+            Select a workspace above to configure stock alerts
           </p>
         </CardContent>
       </Card>
@@ -304,15 +298,14 @@ export const FIFOAlertSettings = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Bell className="h-5 w-5" />
-          FIFO Alert Settings
+          <Package className="h-5 w-5" />
+          Stock Alert Settings
         </CardTitle>
         <CardDescription>
-          Configure expiration alerts for your inventory
+          Configure low stock alerts for your inventory
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Workspace Selector */}
         <div className="flex items-center justify-between gap-4 p-4 bg-accent/5 rounded-lg border border-border">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
@@ -340,11 +333,12 @@ export const FIFOAlertSettings = () => {
             </SelectContent>
           </Select>
         </div>
+
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <Label>Enable Alerts</Label>
             <p className="text-sm text-muted-foreground">
-              Receive daily email alerts for expiring items
+              Receive daily email alerts for low stock items
             </p>
           </div>
           <Switch
@@ -356,24 +350,24 @@ export const FIFOAlertSettings = () => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="days">Days Before Expiry Alert</Label>
+          <Label htmlFor="threshold">Minimum Quantity Threshold</Label>
           <Input
-            id="days"
+            id="threshold"
             type="number"
             min="1"
-            max="90"
-            value={settings.days_before_expiry}
+            max="100"
+            value={settings.minimum_quantity_threshold}
             onChange={(e) =>
               setSettings({
                 ...settings,
-                days_before_expiry: parseInt(e.target.value) || 30,
+                minimum_quantity_threshold: parseInt(e.target.value) || 10,
               })
             }
             disabled={!settings.enabled}
             className="bg-background"
           />
           <p className="text-xs text-muted-foreground">
-            Get alerts {settings.days_before_expiry} days before items expire
+            Get alerts when item quantity falls to {settings.minimum_quantity_threshold} or below
           </p>
         </div>
 
@@ -410,7 +404,7 @@ export const FIFOAlertSettings = () => {
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            Select workspace members who will receive daily expiry alert emails
+            Select workspace members who will receive low stock alert emails
           </p>
           
           {members.length === 0 ? (
@@ -456,8 +450,8 @@ export const FIFOAlertSettings = () => {
               <p className="text-xs font-medium mb-1">Selected recipients will receive:</p>
               <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
                 <li>Daily email alerts at {settings.alert_time || '09:00'}</li>
-                <li>Details of items expiring within {settings.days_before_expiry} days</li>
-                <li>Priority scores and recommended actions</li>
+                <li>Details of items with quantity ≤ {settings.minimum_quantity_threshold}</li>
+                <li>Sorted by lowest quantities first</li>
               </ul>
             </div>
           )}

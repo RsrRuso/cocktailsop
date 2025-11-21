@@ -163,7 +163,7 @@ const Notifications = () => {
         return <UserCheck className="w-5 h-5 text-emerald-500" />;
       case 'access_request':
         return <Settings className="w-5 h-5 text-orange-500" />;
-      case 'fifo_alert':
+      case 'stock_alert':
         return <Package className="w-5 h-5 text-red-500" />;
       default:
         return <Bell className="w-5 h-5 text-primary" />;
@@ -183,14 +183,14 @@ const Notifications = () => {
     // Navigate based on notification type and reference IDs
     if (notification.type === 'access_request') {
       navigate('/access-approval');
-    } else if (notification.type === 'fifo_alert') {
-      // Navigate to expiring inventory with workspace ID
+    } else if (notification.type === 'stock_alert') {
+      // Navigate to low stock inventory with workspace ID
       const workspaceId = notification.post_id;
       if (!workspaceId) {
         toast.error('Unable to navigate - workspace information missing');
         return;
       }
-      navigate(`/expiring-inventory/${workspaceId}`);
+      navigate(`/low-stock-inventory/${workspaceId}`);
     } else if (notification.post_id) {
       navigate(`/post/${notification.post_id}`);
     } else if (notification.reel_id) {

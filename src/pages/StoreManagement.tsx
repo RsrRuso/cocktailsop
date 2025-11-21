@@ -849,7 +849,7 @@ const StoreManagement = () => {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/expiring-inventory/' + currentWorkspace.id)}>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/low-stock-inventory/' + currentWorkspace.id)}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-orange-500/10">
