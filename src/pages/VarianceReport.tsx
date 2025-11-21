@@ -109,24 +109,27 @@ const VarianceReport = () => {
       <TopNav />
 
       <div className="px-4 py-6 space-y-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/ops-tools")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gradient-primary">
-              Variance Report
-            </h1>
-            <p className="text-muted-foreground">
-              Track expected vs actual usage
-            </p>
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/ops-tools")}
+              className="flex-shrink-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gradient-primary">
+                Variance Report
+              </h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
+                Track expected vs actual usage
+              </p>
+            </div>
           </div>
           {variances.length > 0 && (
-            <Button onClick={generatePDF} className="gap-2">
+            <Button onClick={generatePDF} className="w-full sm:w-auto gap-2">
               <Download className="w-4 h-4" />
               Download PDF
             </Button>
