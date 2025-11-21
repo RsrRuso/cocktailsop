@@ -151,6 +151,49 @@ const WorkspaceManagement = () => {
     }
   };
 
+  const handleDeleteAll = async () => {
+    if (!confirm(`Delete ALL workspaces?\n\nAll stores, inventory, and data will be safely moved to your personal account.\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get all workspace IDs
+      const workspaceIds = workspaces.map(w => w.id);
+
+      if (workspaceIds.length === 0) {
+        toast.info("No workspaces to delete");
+        return;
+      }
+
+      // Make all data personal for all workspaces
+      await supabase.from("stores").update({ workspace_id: null }).in("workspace_id", workspaceIds);
+      await supabase.from("inventory").update({ workspace_id: null }).in("workspace_id", workspaceIds);
+      await supabase.from("items").update({ workspace_id: null }).in("workspace_id", workspaceIds);
+      await supabase.from("inventory_activity_log").update({ workspace_id: null }).in("workspace_id", workspaceIds);
+      await supabase.from("inventory_transfers").update({ workspace_id: null }).in("workspace_id", workspaceIds);
+      
+      // Delete all workspace members
+      await supabase.from("workspace_members").delete().in("workspace_id", workspaceIds);
+      
+      // Delete all workspaces
+      const { error: workspaceError } = await supabase
+        .from("workspaces")
+        .delete()
+        .in("id", workspaceIds);
+
+      if (workspaceError) throw workspaceError;
+
+      toast.success(`${workspaceIds.length} workspace(s) deleted - All data preserved!`);
+      fetchWorkspaces();
+    } catch (error) {
+      console.error("Error deleting all workspaces:", error);
+      toast.error("Failed to delete workspaces");
+    }
+  };
+
   const handleDelete = async (workspace: Workspace) => {
     if (!confirm(`Delete "${workspace.name}"?\n\nAll stores and inventory will be kept safe and moved to your personal account.\n\nThis action cannot be undone.`)) {
       return;
@@ -249,17 +292,28 @@ const WorkspaceManagement = () => {
             </p>
           </div>
 
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                Create Workspace
+          <div className="flex gap-2">
+            {workspaces.length > 0 && (
+              <Button 
+                onClick={handleDeleteAll} 
+                variant="destructive"
+                className="gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete All
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Workspace</DialogTitle>
-              </DialogHeader>
+            )}
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Create Workspace
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Workspace</DialogTitle>
+                </DialogHeader>
               <div className="space-y-4 pt-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Workspace Name *</Label>
@@ -290,6 +344,7 @@ const WorkspaceManagement = () => {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {loading ? (
