@@ -782,7 +782,7 @@ const StoreManagement = () => {
           : 0;
 
         // Insert spot check item
-        await supabase
+        const { error: itemError } = await supabase
           .from("spot_check_items")
           .insert({
             spot_check_id: spotCheckData.id,
@@ -793,6 +793,12 @@ const StoreManagement = () => {
             variance: variance,
             variance_percentage: variancePercentage
           });
+
+        if (itemError) {
+          console.error("Error inserting spot check item:", itemError);
+          toast.error("Some items could not be saved in the spot check.");
+          continue;
+        }
 
         // Update inventory quantity to match physical count
         await supabase
