@@ -135,24 +135,31 @@ const ScanAccess = () => {
         return;
       }
 
-      // Upsert access request to avoid duplicate key issues on unique (workspace_id, user_id)
+      // Check if there's already a pending request
+      const { data: existingPending } = await supabase
+        .from("access_requests")
+        .select("id, status")
+        .eq("workspace_id", workspaceId)
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+        .maybeSingle();
+
+      if (existingPending) {
+        toast.info("You already have a pending access request for this workspace");
+        setStatus("success");
+        return;
+      }
+
+      // Create new access request (no unique constraint blocking anymore)
       const { error: requestError } = await supabase
         .from("access_requests")
-        .upsert(
-          {
-            workspace_id: workspaceId,
-            user_id: user.id,
-            user_email: user.email,
-            status: "pending",
-            qr_code_id: workspaceId,
-            approved_at: null,
-            approved_by: null,
-          },
-          {
-            onConflict: "workspace_id,user_id",
-            ignoreDuplicates: false,
-          }
-        );
+        .insert({
+          workspace_id: workspaceId,
+          user_id: user.id,
+          user_email: user.email,
+          status: "pending",
+          qr_code_id: workspaceId,
+        });
 
       if (requestError) {
         console.error("Access request error:", requestError);
