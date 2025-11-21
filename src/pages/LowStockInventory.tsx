@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Download, Package } from "lucide-react";
+import { Download, Package, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -30,6 +30,7 @@ interface Workspace {
 
 const LowStockInventory = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
+  const navigate = useNavigate();
   const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
   const [itemAverages, setItemAverages] = useState<Record<string, number>>({});
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -246,8 +247,16 @@ const LowStockInventory = () => {
       <TopNav />
 
       <div className="px-4 py-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center gap-3 mb-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="shrink-0"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex-1">
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Package className="w-6 h-6 text-red-500" />
               Low Stock Inventory
@@ -257,7 +266,7 @@ const LowStockInventory = () => {
             </p>
           </div>
           {lowStockItems.length > 0 && (
-            <Button onClick={exportToPDF} className="gap-2">
+            <Button onClick={exportToPDF} className="gap-2 shrink-0">
               <Download className="w-4 h-4" />
               Export PDF
             </Button>
