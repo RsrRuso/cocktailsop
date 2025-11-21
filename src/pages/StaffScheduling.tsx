@@ -219,13 +219,17 @@ export default function StaffScheduling() {
     }
   };
 
-  const loadSchedule = (savedSchedule: any) => {
+  const loadSchedule = async (savedSchedule: any) => {
     setVenueName(savedSchedule.venue_name || '');
     setSchedule(savedSchedule.schedule_data || {});
     setDailyEvents(savedSchedule.daily_events || {});
     setSpecialEvents(savedSchedule.special_events || {});
     setWeekStartDate(savedSchedule.week_start_date);
     setShowLoadDialog(false);
+    
+    // Ensure staff members are loaded
+    await fetchStaffMembers();
+    
     toast.success('Schedule loaded successfully!');
   };
 
