@@ -1716,6 +1716,70 @@ export type Database = {
           },
         ]
       }
+      inventory_spot_checks: {
+        Row: {
+          check_date: string | null
+          checked_by: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          photo_urls: string[] | null
+          status: string | null
+          store_id: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          check_date?: string | null
+          checked_by?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          photo_urls?: string[] | null
+          status?: string | null
+          store_id?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          check_date?: string | null
+          checked_by?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          photo_urls?: string[] | null
+          status?: string | null
+          store_id?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_spot_checks_checked_by_fkey"
+            columns: ["checked_by"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_spot_checks_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_spot_checks_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_transfers: {
         Row: {
           created_at: string | null
@@ -2958,6 +3022,70 @@ export type Database = {
         }
         Relationships: []
       }
+      spot_check_items: {
+        Row: {
+          actual_quantity: number | null
+          created_at: string | null
+          expected_quantity: number | null
+          id: string
+          inventory_id: string | null
+          item_id: string | null
+          photo_url: string | null
+          reason: string | null
+          spot_check_id: string | null
+          variance: number | null
+          variance_percentage: number | null
+        }
+        Insert: {
+          actual_quantity?: number | null
+          created_at?: string | null
+          expected_quantity?: number | null
+          id?: string
+          inventory_id?: string | null
+          item_id?: string | null
+          photo_url?: string | null
+          reason?: string | null
+          spot_check_id?: string | null
+          variance?: number | null
+          variance_percentage?: number | null
+        }
+        Update: {
+          actual_quantity?: number | null
+          created_at?: string | null
+          expected_quantity?: number | null
+          id?: string
+          inventory_id?: string | null
+          item_id?: string | null
+          photo_url?: string | null
+          reason?: string | null
+          spot_check_id?: string | null
+          variance?: number | null
+          variance_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spot_check_items_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spot_check_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spot_check_items_spot_check_id_fkey"
+            columns: ["spot_check_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_spot_checks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spotify_connections: {
         Row: {
           access_token: string
@@ -4056,6 +4184,63 @@ export type Database = {
         }
         Relationships: []
       }
+      variance_reports: {
+        Row: {
+          created_at: string | null
+          id: string
+          items_with_variance: number | null
+          notes: string | null
+          report_data: Json | null
+          report_date: string | null
+          store_id: string | null
+          total_items_checked: number | null
+          total_variance_value: number | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          items_with_variance?: number | null
+          notes?: string | null
+          report_data?: Json | null
+          report_date?: string | null
+          store_id?: string | null
+          total_items_checked?: number | null
+          total_variance_value?: number | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          items_with_variance?: number | null
+          notes?: string | null
+          report_data?: Json | null
+          report_date?: string | null
+          store_id?: string | null
+          total_items_checked?: number | null
+          total_variance_value?: number | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "variance_reports_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "variance_reports_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venues: {
         Row: {
           address: string | null
@@ -4232,6 +4417,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      workspace_member_permissions: {
+        Row: {
+          can_approve_transfers: boolean | null
+          can_manage_members: boolean | null
+          can_receive: boolean | null
+          can_spot_check: boolean | null
+          can_transfer: boolean | null
+          can_view_reports: boolean | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          workspace_member_id: string | null
+        }
+        Insert: {
+          can_approve_transfers?: boolean | null
+          can_manage_members?: boolean | null
+          can_receive?: boolean | null
+          can_spot_check?: boolean | null
+          can_transfer?: boolean | null
+          can_view_reports?: boolean | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          workspace_member_id?: string | null
+        }
+        Update: {
+          can_approve_transfers?: boolean | null
+          can_manage_members?: boolean | null
+          can_receive?: boolean | null
+          can_spot_check?: boolean | null
+          can_transfer?: boolean | null
+          can_view_reports?: boolean | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          workspace_member_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_member_permissions_workspace_member_id_fkey"
+            columns: ["workspace_member_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workspace_members: {
         Row: {
