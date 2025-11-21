@@ -1300,7 +1300,7 @@ const StoreManagement = () => {
                                 </div>
                               </div>
                               
-                               {/* Status + actions - Always visible on mobile */}
+                               {/* Status + actions - Hidden on mobile, visible on hover on desktop */}
                               <div className="flex flex-row items-center gap-2 w-full sm:w-auto sm:flex-col sm:items-end self-start sm:self-auto flex-shrink-0 mt-2 sm:mt-0">
                                 <Badge 
                                   variant={
@@ -1317,11 +1317,11 @@ const StoreManagement = () => {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 sm:h-7 sm:w-7 text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                                    className="hidden sm:flex h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                                     onClick={() => handleDeleteFeedTransaction(transaction)}
                                     title="Delete activity"
                                   >
-                                    <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                                    <Trash2 className="w-3.5 h-3.5" />
                                   </Button>
                                 )}
                               </div>
