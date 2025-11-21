@@ -1,0 +1,4 @@
+
+-- Ensure REPLICA IDENTITY FULL for realtime tables
+ALTER TABLE inventory REPLICA IDENTITY FULL;
+ALTER TABLE inventory_transfers REPLICA IDENTITY FULL;
