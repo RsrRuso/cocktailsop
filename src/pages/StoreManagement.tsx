@@ -60,7 +60,6 @@ const StoreManagement = () => {
   const [selectedItem, setSelectedItem] = useState("");
   const [transferQuantity, setTransferQuantity] = useState("");
   const [transferNotes, setTransferNotes] = useState("");
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
   
   // Receiving form states
   const [selectedReceivingStore, setSelectedReceivingStore] = useState("");
@@ -299,26 +298,29 @@ const StoreManagement = () => {
       return;
     }
 
+    if (selectedFromStore === selectedToStore) {
+      toast.error("Cannot transfer to the same store");
+      return;
+    }
+
     try {
-      let photoUrl = null;
-      
-      // Upload photo if provided
-      if (photoFile) {
-        const fileExt = photoFile.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `transfers/${currentWorkspace.id}/${fileName}`;
+      // Find or create inventory record for the item at the from_store
+      const { data: fromInventory } = await supabase
+        .from('inventory')
+        .select('id, quantity')
+        .eq('item_id', selectedItem)
+        .eq('store_id', selectedFromStore)
+        .maybeSingle();
 
-        const { error: uploadError } = await supabase.storage
-          .from('posts')
-          .upload(filePath, photoFile);
+      if (!fromInventory) {
+        toast.error("Item not found in source store inventory");
+        return;
+      }
 
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('posts')
-          .getPublicUrl(filePath);
-
-        photoUrl = publicUrl;
+      const transferQty = parseFloat(transferQuantity);
+      if (transferQty > fromInventory.quantity) {
+        toast.error(`Only ${fromInventory.quantity} available to transfer`);
+        return;
       }
 
       // Create transfer
@@ -329,23 +331,14 @@ const StoreManagement = () => {
           user_id: user.id,
           from_store_id: selectedFromStore,
           to_store_id: selectedToStore,
-          inventory_id: selectedItem,
-          quantity: parseFloat(transferQuantity),
+          inventory_id: fromInventory.id,
+          quantity: transferQty,
           status: 'pending',
           notes: transferNotes,
-          photo_url: photoUrl,
           transfer_date: new Date().toISOString()
         });
 
       if (error) throw error;
-
-      // Create notification
-      await supabase.from("notifications").insert({
-        user_id: user.id,
-        type: 'transfer',
-        content: `Transfer initiated from ${stores.find(s => s.id === selectedFromStore)?.name} to ${stores.find(s => s.id === selectedToStore)?.name}`,
-        read: false
-      });
 
       toast.success("Transfer created successfully!");
       fetchAllData();
@@ -356,7 +349,6 @@ const StoreManagement = () => {
       setSelectedItem("");
       setTransferQuantity("");
       setTransferNotes("");
-      setPhotoFile(null);
     } catch (error) {
       console.error("Error creating transfer:", error);
       toast.error("Failed to create transfer");
@@ -892,19 +884,22 @@ const StoreManagement = () => {
           {/* Transfers Tab */}
           <TabsContent value="transfers" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Create Transfer</CardTitle>
-                <CardDescription>
+              <CardHeader className="py-4">
+                <CardTitle className="text-lg">Create Transfer</CardTitle>
+                <CardDescription className="text-sm">
                   Transfer items between stores
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleCreateTransfer} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>From Store</Label>
-                      <Select value={selectedFromStore} onValueChange={setSelectedFromStore}>
-                        <SelectTrigger>
+                <form onSubmit={handleCreateTransfer} className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">From Store *</Label>
+                      <Select value={selectedFromStore} onValueChange={(val) => {
+                        setSelectedFromStore(val);
+                        setSelectedItem(""); // Reset item when store changes
+                      }}>
+                        <SelectTrigger className="h-9">
                           <SelectValue placeholder="Select store" />
                         </SelectTrigger>
                         <SelectContent>
@@ -917,14 +912,14 @@ const StoreManagement = () => {
                       </Select>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>To Store</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">To Store *</Label>
                       <Select value={selectedToStore} onValueChange={setSelectedToStore}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9">
                           <SelectValue placeholder="Select store" />
                         </SelectTrigger>
                         <SelectContent>
-                          {stores.map((store) => (
+                          {stores.filter(s => s.id !== selectedFromStore).map((store) => (
                             <SelectItem key={store.id} value={store.id}>
                               {store.name}
                             </SelectItem>
@@ -934,54 +929,73 @@ const StoreManagement = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Item</Label>
-                    <Select value={selectedItem} onValueChange={setSelectedItem}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select item" />
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Item *</Label>
+                    <Select 
+                      value={selectedItem} 
+                      onValueChange={setSelectedItem}
+                      disabled={!selectedFromStore}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder={selectedFromStore ? "Select item" : "Select from store first"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {inventory
-                          .filter(inv => inv.store_id === selectedFromStore)
-                          .map((inv) => (
-                            <SelectItem key={inv.id} value={inv.id}>
-                              {inv.items?.name} - Qty: {inv.quantity}
+                        {items.map((item) => {
+                          const invQty = inventory.find(inv => 
+                            inv.item_id === item.id && inv.store_id === selectedFromStore
+                          )?.quantity || 0;
+                          
+                          return (
+                            <SelectItem 
+                              key={item.id} 
+                              value={item.id}
+                              disabled={invQty === 0}
+                            >
+                              {item.name} {item.brand ? `(${item.brand})` : ''} - Qty: {invQty}
                             </SelectItem>
-                          ))}
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Quantity</Label>
-                    <Input
-                      type="number"
-                      value={transferQuantity}
-                      onChange={(e) => setTransferQuantity(e.target.value)}
-                      placeholder="Enter quantity"
-                      min="1"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Quantity *</Label>
+                      <Input
+                        type="number"
+                        value={transferQuantity}
+                        onChange={(e) => setTransferQuantity(e.target.value)}
+                        placeholder="Qty"
+                        min="1"
+                        step="any"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm text-muted-foreground">Available</Label>
+                      <div className="h-9 flex items-center px-3 border rounded-md bg-muted text-sm">
+                        {selectedItem && selectedFromStore ? (
+                          inventory.find(inv => 
+                            inv.item_id === selectedItem && inv.store_id === selectedFromStore
+                          )?.quantity || 0
+                        ) : '-'}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Notes (Optional)</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Notes (Optional)</Label>
                     <Textarea
                       value={transferNotes}
                       onChange={(e) => setTransferNotes(e.target.value)}
-                      placeholder="Add notes about this transfer..."
+                      placeholder="Transfer notes..."
+                      rows={2}
+                      className="text-sm"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Attach Photo (Optional)</Label>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
-                    />
-                  </div>
-
-                  <Button type="submit" className="w-full">
+                  <Button type="submit" className="w-full h-9">
                     <ArrowRightLeft className="w-4 h-4 mr-2" />
                     Create Transfer
                   </Button>
@@ -1011,12 +1025,10 @@ const StoreManagement = () => {
                             {transfer.status}
                           </Badge>
                         </div>
-                        {transfer.photo_url && (
-                          <img 
-                            src={transfer.photo_url} 
-                            alt="Transfer" 
-                            className="mt-2 rounded-lg w-full h-32 object-cover"
-                          />
+                        {transfer.notes && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {transfer.notes}
+                          </p>
                         )}
                       </div>
                     ))}
