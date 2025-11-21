@@ -495,6 +495,43 @@ const StoreManagement = () => {
         }
       });
 
+      // Auto-sync: If receiving in WAREHOUSE, auto-create in other stores
+      const receivingStore = stores.find(s => s.id === selectedReceivingStore);
+      if (receivingStore?.store_type === 'receive') {
+        const otherStores = stores.filter(s => 
+          s.id !== selectedReceivingStore && 
+          s.is_active && 
+          s.store_type !== 'receive'
+        );
+
+        const expirationDate = new Date();
+        expirationDate.setMonth(expirationDate.getMonth() + 6);
+
+        for (const store of otherStores) {
+          // Check if item already exists in this store
+          const { data: existingInStore } = await supabase
+            .from('inventory')
+            .select('id')
+            .eq('item_id', selectedReceivingItem)
+            .eq('store_id', store.id)
+            .maybeSingle();
+
+          if (!existingInStore) {
+            // Create inventory record with quantity from received amount
+            await supabase.from('inventory').insert({
+              workspace_id: currentWorkspace.id,
+              user_id: user.id,
+              store_id: store.id,
+              item_id: selectedReceivingItem,
+              quantity: qty,
+              expiration_date: expirationDate.toISOString().split('T')[0],
+              received_date: new Date().toISOString(),
+              notes: '(Auto-synced from WAREHOUSE)'
+            });
+          }
+        }
+      }
+
       toast.success("Receiving recorded successfully!");
       fetchAllData();
       
