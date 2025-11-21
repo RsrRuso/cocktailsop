@@ -139,13 +139,18 @@ const StoreManagement = () => {
         ? { workspace_id: currentWorkspace.id }
         : { user_id: user.id, workspace_id: null };
 
-      // Fetch stores - all active stores for this user
+      // Fetch stores - only show ATTIKO, JERRY, and WAREHOUSE
       const { data: storesData } = await supabase
         .from("stores")
         .select("*")
         .eq("user_id", user.id)
         .eq("is_active", true)
         .order("name");
+      
+      // Filter to only show specific stores
+      const filteredStores = storesData?.filter(store => 
+        ['ATTIKO', 'JERRY', 'WAREHOUSE'].includes(store.name.toUpperCase())
+      ) || [];
 
       // Fetch items - all items for this user
       const { data: itemsData } = await supabase
@@ -214,7 +219,7 @@ const StoreManagement = () => {
       // Workspace members not used in personal inventory mode
       const membersData: any[] = [];
 
-      setStores(storesData || []);
+      setStores(filteredStores);
       setItems(itemsData || []);
       setInventory(inventoryData || []);
       setTransfers(transfersData || []);
