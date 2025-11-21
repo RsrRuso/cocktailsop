@@ -1,18 +1,20 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Users, Plus, Settings, Trash2, UserPlus, Shield, Crown, User as UserIcon, Search, Mail, Send, Copy, Link, QrCode } from "lucide-react";
+import { Users, Plus, Settings, Trash2, UserPlus, Shield, Crown, User as UserIcon, Search, Mail, Send, Copy, Link, QrCode, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
 import TopNav from "@/components/TopNav";
@@ -50,8 +52,29 @@ interface PendingInvitation {
   status: string;
 }
 
+interface Profile {
+  id: string;
+  username: string;
+  full_name: string;
+  avatar_url: string | null;
+}
+
+interface WorkspaceMember {
+  id: string;
+  user_id: string;
+  role: string;
+  joined_at: string;
+  user: {
+    id: string;
+    username: string;
+    full_name: string;
+    avatar_url: string | null;
+  };
+}
+
 const TeamManagement = () => {
   const { user } = useAuth();
+  const { currentWorkspace, workspaces, switchWorkspace, createWorkspace, refreshWorkspaces } = useWorkspace();
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -65,12 +88,28 @@ const TeamManagement = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [memberRole, setMemberRole] = useState("member");
   const [memberTitle, setMemberTitle] = useState("Member");
+  
+  // Workspace-related states
+  const [createWorkspaceDialog, setCreateWorkspaceDialog] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState("");
+  const [workspaceDescription, setWorkspaceDescription] = useState("");
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>([]);
+  const [inviteWorkspaceMemberDialog, setInviteWorkspaceMemberDialog] = useState(false);
+  const [workspaceInviteEmail, setWorkspaceInviteEmail] = useState("");
+  const [followers, setFollowers] = useState<Profile[]>([]);
 
   useEffect(() => {
     if (user) {
       fetchTeams();
+      fetchFollowers();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (currentWorkspace) {
+      fetchWorkspaceMembers();
+    }
+  }, [currentWorkspace]);
 
   useEffect(() => {
     if (selectedTeam) {
@@ -88,6 +127,63 @@ const TeamManagement = () => {
     window.addEventListener('invitationSent', handleInvitationSent);
     return () => window.removeEventListener('invitationSent', handleInvitationSent);
   }, [selectedTeam]);
+
+  const fetchFollowers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('follows')
+        .select('following_id, profiles!follows_following_id_fkey(*)')
+        .eq('follower_id', user?.id);
+
+      if (error) throw error;
+      
+      const followerProfiles = data?.map(f => f.profiles).filter(Boolean) as Profile[];
+      setFollowers(followerProfiles);
+    } catch (error) {
+      console.error('Error fetching followers:', error);
+    }
+  };
+
+  const fetchWorkspaceMembers = async () => {
+    if (!currentWorkspace) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('workspace_members')
+        .select(`
+          id,
+          user_id,
+          role,
+          joined_at,
+          profiles:user_id (
+            id,
+            username,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('workspace_id', currentWorkspace.id);
+
+      if (error) throw error;
+
+      const formattedMembers: WorkspaceMember[] = data?.map(m => ({
+        id: m.id,
+        user_id: m.user_id,
+        role: m.role,
+        joined_at: m.joined_at || '',
+        user: {
+          id: (m.profiles as any)?.id || '',
+          username: (m.profiles as any)?.username || '',
+          full_name: (m.profiles as any)?.full_name || '',
+          avatar_url: (m.profiles as any)?.avatar_url || null,
+        }
+      })) || [];
+
+      setWorkspaceMembers(formattedMembers);
+    } catch (error) {
+      console.error('Error fetching workspace members:', error);
+    }
+  };
 
   const fetchTeams = async () => {
     if (!user) return;
@@ -184,6 +280,143 @@ const TeamManagement = () => {
     } catch (error: any) {
       console.error("Resend error:", error);
       toast.error("Failed to resend invitation");
+    }
+  };
+
+  const handleCreateWorkspace = async () => {
+    if (!workspaceName.trim()) {
+      toast.error("Please enter a workspace name");
+      return;
+    }
+
+    try {
+      const workspace = await createWorkspace(workspaceName, workspaceDescription);
+      if (workspace) {
+        toast.success("Workspace created successfully");
+        setCreateWorkspaceDialog(false);
+        setWorkspaceName("");
+        setWorkspaceDescription("");
+        await refreshWorkspaces();
+        switchWorkspace(workspace.id);
+      }
+    } catch (error) {
+      console.error('Error creating workspace:', error);
+      toast.error("Failed to create workspace");
+    }
+  };
+
+  const handleInviteToWorkspace = async () => {
+    if (!currentWorkspace) {
+      toast.error("Please select a workspace first");
+      return;
+    }
+
+    if (!workspaceInviteEmail.trim()) {
+      toast.error("Please enter an email address");
+      return;
+    }
+
+    try {
+      // Check if user exists
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', workspaceInviteEmail)
+        .single();
+
+      if (!profiles) {
+        toast.error("User not found");
+        return;
+      }
+
+      // Check if already a member
+      const { data: existingMember } = await supabase
+        .from('workspace_members')
+        .select('id')
+        .eq('workspace_id', currentWorkspace.id)
+        .eq('user_id', profiles.id)
+        .single();
+
+      if (existingMember) {
+        toast.error("User is already a member of this workspace");
+        return;
+      }
+
+      // Add as member
+      const { error } = await supabase
+        .from('workspace_members')
+        .insert({
+          workspace_id: currentWorkspace.id,
+          user_id: profiles.id,
+          role: 'member'
+        });
+
+      if (error) throw error;
+
+      toast.success("Member added to workspace successfully");
+      setInviteWorkspaceMemberDialog(false);
+      setWorkspaceInviteEmail("");
+      fetchWorkspaceMembers();
+    } catch (error) {
+      console.error('Error inviting to workspace:', error);
+      toast.error("Failed to add member to workspace");
+    }
+  };
+
+  const handleAddFollowerToWorkspace = async (followerId: string) => {
+    if (!currentWorkspace) {
+      toast.error("Please select a workspace first");
+      return;
+    }
+
+    try {
+      // Check if already a member
+      const { data: existingMember } = await supabase
+        .from('workspace_members')
+        .select('id')
+        .eq('workspace_id', currentWorkspace.id)
+        .eq('user_id', followerId)
+        .single();
+
+      if (existingMember) {
+        toast.error("User is already a member of this workspace");
+        return;
+      }
+
+      const { error } = await supabase
+        .from('workspace_members')
+        .insert({
+          workspace_id: currentWorkspace.id,
+          user_id: followerId,
+          role: 'member'
+        });
+
+      if (error) throw error;
+
+      toast.success("Follower added to workspace successfully");
+      fetchWorkspaceMembers();
+    } catch (error) {
+      console.error('Error adding follower to workspace:', error);
+      toast.error("Failed to add follower to workspace");
+    }
+  };
+
+  const handleRemoveFromWorkspace = async (memberId: string) => {
+    if (!currentWorkspace) return;
+
+    try {
+      const { error } = await supabase
+        .from('workspace_members')
+        .delete()
+        .eq('id', memberId);
+
+      if (error) throw error;
+
+      toast.success("Member removed from workspace");
+      fetchWorkspaceMembers();
+    } catch (error) {
+      console.error('Error removing member:', error);
+      toast.error("Failed to remove member");
     }
   };
 
@@ -420,12 +653,183 @@ const TeamManagement = () => {
       <TopNav />
       
       <div className="container mx-auto p-4 pt-20 pb-24 max-w-7xl">
-        <div className="flex items-center justify-between mb-6">
+        {/* Header with Workspace Selector */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Team Management</h1>
-            <p className="text-muted-foreground">Manage your teams and members</p>
+            <h1 className="text-3xl font-bold">Team & Workspace Management</h1>
+            <p className="text-muted-foreground">Manage your workspaces, teams and members</p>
           </div>
-          
+          <div className="flex gap-2 flex-wrap">
+            <Select value={currentWorkspace?.id || 'personal'} onValueChange={switchWorkspace}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select workspace" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="personal">Personal</SelectItem>
+                {workspaces.map(w => (
+                  <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Dialog open={createWorkspaceDialog} onOpenChange={setCreateWorkspaceDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Building2 className="w-4 h-4 mr-2" />
+                  New Workspace
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Workspace</DialogTitle>
+                  <DialogDescription>Create a workspace to organize your team and inventory</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Workspace Name</Label>
+                    <Input
+                      value={workspaceName}
+                      onChange={(e) => setWorkspaceName(e.target.value)}
+                      placeholder="e.g., Main Bar"
+                    />
+                  </div>
+                  <div>
+                    <Label>Description (Optional)</Label>
+                    <Textarea
+                      value={workspaceDescription}
+                      onChange={(e) => setWorkspaceDescription(e.target.value)}
+                      placeholder="Describe your workspace..."
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setCreateWorkspaceDialog(false)}>Cancel</Button>
+                  <Button onClick={handleCreateWorkspace}>Create Workspace</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Workspace Members Section */}
+        {currentWorkspace && (
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="w-5 h-5" />
+                    {currentWorkspace.name} Members
+                  </CardTitle>
+                  <CardDescription>Manage members in this workspace</CardDescription>
+                </div>
+                <Dialog open={inviteWorkspaceMemberDialog} onOpenChange={setInviteWorkspaceMemberDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Mail className="w-4 h-4 mr-2" />
+                      Invite by Email
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Invite Member to Workspace</DialogTitle>
+                      <DialogDescription>Send an invitation to join {currentWorkspace.name}</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Email Address</Label>
+                        <Input
+                          type="email"
+                          value={workspaceInviteEmail}
+                          onChange={(e) => setWorkspaceInviteEmail(e.target.value)}
+                          placeholder="colleague@example.com"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setInviteWorkspaceMemberDialog(false)}>Cancel</Button>
+                      <Button onClick={handleInviteToWorkspace}>
+                        <Send className="w-4 h-4 mr-2" />
+                        Send Invitation
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Followers Section */}
+                {followers.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                      <UserPlus className="w-4 h-4" />
+                      Add from Followers
+                    </h3>
+                    <div className="grid gap-2">
+                      {followers
+                        .filter(f => !workspaceMembers.some(m => m.user_id === f.id))
+                        .map((follower) => (
+                          <div key={follower.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={follower.avatar_url || ''} />
+                                <AvatarFallback>{follower.full_name?.[0] || follower.username?.[0]}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium text-sm">{follower.full_name || follower.username}</p>
+                                <p className="text-xs text-muted-foreground">@{follower.username}</p>
+                              </div>
+                            </div>
+                            <Button size="sm" variant="outline" onClick={() => handleAddFollowerToWorkspace(follower.id)}>
+                              <Plus className="w-4 h-4 mr-1" />
+                              Add
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Current Members */}
+                <div>
+                  <h3 className="text-sm font-medium mb-3">Current Members ({workspaceMembers.length})</h3>
+                  <div className="space-y-2">
+                    {workspaceMembers.map((member) => (
+                      <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={member.user.avatar_url || ''} />
+                            <AvatarFallback>{member.user.full_name?.[0] || member.user.username?.[0]}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{member.user.full_name || member.user.username}</p>
+                            <p className="text-sm text-muted-foreground">@{member.user.username}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
+                            {member.role === 'admin' && <Shield className="w-3 h-3 mr-1" />}
+                            {member.role}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleRemoveFromWorkspace(member.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Create Team Button */}
+        <div className="flex justify-end mb-6">
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
