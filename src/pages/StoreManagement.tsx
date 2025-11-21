@@ -725,7 +725,7 @@ const StoreManagement = () => {
         </div>
 
         {/* Quick Navigation */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/stores-admin')}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -795,6 +795,21 @@ const StoreManagement = () => {
                 <div>
                   <p className="font-semibold">Expiring</p>
                   <p className="text-xs text-muted-foreground">FIFO alerts</p>
+                </div>
+                <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/team-management')}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-indigo-500/10">
+                  <Users className="h-5 w-5 text-indigo-500" />
+                </div>
+                <div>
+                  <p className="font-semibold">Team</p>
+                  <p className="text-xs text-muted-foreground">Workspaces</p>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
               </div>
