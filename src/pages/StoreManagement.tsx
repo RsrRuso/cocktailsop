@@ -169,19 +169,17 @@ const StoreManagement = () => {
         .order("transfer_date", { ascending: false })
         .limit(20);
 
-      // Fetch receivings
-      const receivingsQuery = supabase
-        .from("inventory_receivings" as any)
+      // Fetch receivings from inventory_activity_log
+      const { data: receivingsData } = await supabase
+        .from("inventory_activity_log")
         .select(`
           *,
-          stores(name, store_type),
-          items(name, brand)
+          stores(name, store_type)
         `)
         .eq("workspace_id", workspaceId)
-        .order("received_at", { ascending: false })
+        .eq("action_type", "receiving")
+        .order("created_at", { ascending: false })
         .limit(20);
-      
-      const { data: receivingsData } = await receivingsQuery;
 
       // Fetch spot checks
       const { data: spotChecksData } = await supabase
@@ -240,15 +238,17 @@ const StoreManagement = () => {
       });
 
       receivingsData?.forEach((r: any) => {
+        const itemId = r.details?.item_id;
+        const item = itemsData?.find((i: any) => i.id === itemId);
         allTransactions.push({
           id: r.id,
           type: 'receiving',
-          timestamp: r.received_at || r.created_at,
+          timestamp: r.created_at,
           user_email: user.email || 'Unknown',
           store: r.stores?.name,
-          item_name: r.items?.name,
-          item_count: r.quantity,
-          status: r.status
+          item_name: item?.name || 'Unknown Item',
+          item_count: r.quantity_after || 0,
+          status: 'completed'
         });
       });
 
@@ -823,6 +823,23 @@ const StoreManagement = () => {
                     </Select>
                   </div>
 
+                  {/* Show selected item photo */}
+                  {selectedReceivingItem && (() => {
+                    const selectedItem = items.find(item => item.id === selectedReceivingItem);
+                    return selectedItem?.photo_url ? (
+                      <div className="space-y-1.5">
+                        <Label className="text-sm">Item Photo</Label>
+                        <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                          <img 
+                            src={selectedItem.photo_url} 
+                            alt={selectedItem.name}
+                            className="w-full h-full object-contain bg-muted"
+                          />
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
                   <div className="space-y-1.5">
                     <Label className="text-sm">Quantity Received *</Label>
                     <Input
@@ -862,35 +879,45 @@ const StoreManagement = () => {
               <CardContent>
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-2">
-                    {receivings.map((receiving: any) => (
-                      <div key={receiving.id} className="glass rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">
-                              {receiving.items?.name} at {receiving.stores?.name}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Qty: {receiving.quantity} • {new Date(receiving.received_at).toLocaleString()}
-                            </p>
-                            {receiving.notes && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {receiving.notes}
+                    {receivings.map((receiving: any) => {
+                      const itemId = receiving.details?.item_id;
+                      const item = items.find((i: any) => i.id === itemId);
+                      
+                      return (
+                        <div key={receiving.id} className="glass rounded-lg p-3">
+                          {item?.photo_url && (
+                            <div className="mb-3 rounded-lg overflow-hidden">
+                              <img 
+                                src={item.photo_url} 
+                                alt={item.name}
+                                className="w-full h-40 object-contain bg-muted"
+                              />
+                            </div>
+                          )}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                {item?.name || 'Unknown Item'} {item?.brand && `(${item.brand})`}
                               </p>
-                            )}
+                              <p className="text-sm text-muted-foreground">
+                                Store: {receiving.stores?.name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Qty: {receiving.quantity_after || 0} • {new Date(receiving.created_at).toLocaleString()}
+                              </p>
+                              {receiving.details?.notes && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {receiving.details.notes}
+                                </p>
+                              )}
+                            </div>
+                            <Badge variant="default" className="shrink-0">
+                              Completed
+                            </Badge>
                           </div>
-                          <Badge variant={receiving.status === 'completed' ? 'default' : 'secondary'}>
-                            {receiving.status}
-                          </Badge>
                         </div>
-                        {receiving.photo_url && (
-                          <img 
-                            src={receiving.photo_url} 
-                            alt="Receiving" 
-                            className="mt-2 rounded-lg w-full h-32 object-cover"
-                          />
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               </CardContent>
