@@ -39,62 +39,42 @@ const VarianceReport = () => {
         return;
       }
 
-      // Fetch spot check items with related data
-      const { data: spotCheckItems, error: spotError } = await (supabase as any)
-        .from("spot_check_items")
+      // Fetch latest variance report for this user
+      const { data: varianceReports, error: varianceError } = await supabase
+        .from("variance_reports")
         .select(`
-          *,
-          items (name),
-          inventory (quantity)
+          id,
+          report_date,
+          report_data
         `)
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("report_date", { ascending: false })
+        .limit(1);
 
-      if (spotError) throw spotError;
+      if (varianceError) throw varianceError;
 
-      if (!spotCheckItems || spotCheckItems.length === 0) {
+      if (!varianceReports || varianceReports.length === 0) {
         setVariances([]);
         setLoading(false);
         return;
       }
 
-      // Fetch transfer data for these items (join through inventory to get item_id)
-      const itemIds = spotCheckItems.map(item => item.item_id);
-      const { data: transfers } = await supabase
-        .from("inventory_transfers")
-        .select(`
-          quantity,
-          status,
-          inventory:inventory_id (
-            item_id
-          )
-        `)
-        .eq("status", "completed");
+      const latestReport = varianceReports[0] as any;
+      const reportItems = (latestReport.report_data as any[]) || [];
 
-      // Calculate transferred quantities per item
-      const transferredByItem = (transfers || []).reduce((acc, transfer) => {
-        const itemId = (transfer.inventory as any)?.item_id;
-        if (itemId && itemIds.includes(itemId)) {
-          acc[itemId] = (acc[itemId] || 0) + (transfer.quantity || 0);
-        }
-        return acc;
-      }, {} as Record<string, number>);
-
-      // Build variance data
-      const varianceData: VarianceData[] = spotCheckItems.map(item => {
-        const expected = item.expected_quantity || 0;
-        const systemQty = item.inventory?.quantity || 0;
-        const physical = item.actual_quantity || 0;
-        const transferred = transferredByItem[item.item_id] || 0;
-        const finalQty = physical + transferred;
+      const varianceData: VarianceData[] = reportItems.map((item: any) => {
+        const expected = Number(item.expected_quantity) || 0;
+        const physical = Number(item.actual_quantity) || 0;
+        const finalQty = Number(item.final_quantity ?? physical) || 0;
+        const systemQty = finalQty;
 
         return {
-          item: item.items?.name || "Unknown Item",
+          item: item.item_name || "Unknown Item",
           qty: expected,
           qtyInSystem: systemQty,
           physicalQty: physical,
           finalQty,
-          itemId: item.item_id
+          itemId: item.item_id,
         };
       });
 
