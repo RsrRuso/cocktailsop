@@ -915,10 +915,10 @@ const StoreManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <TopNav />
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">
+        <TopNav />
 
-      <div className="px-4 pt-20 pb-6 space-y-4">
+        <div className="px-3 pt-20 pb-6 space-y-4 max-w-[1600px] mx-auto">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -1298,7 +1298,7 @@ const StoreManagement = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleCreateReceiving} className="space-y-3">
+                 <form onSubmit={handleCreateReceiving} className="space-y-3">
                   <div className="space-y-1.5">
                     <Label className="text-sm">Warehouse / Receiving Store *</Label>
                     <Select value={selectedReceivingStore} onValueChange={setSelectedReceivingStore}>
@@ -1327,7 +1327,10 @@ const StoreManagement = () => {
                         {items.map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             <div className="flex items-center gap-2">
-                              {item.color_code && (
+                              {item.photo_url && (
+                                <img src={item.photo_url} alt={item.name} className="w-6 h-6 rounded object-cover" />
+                              )}
+                              {item.color_code && !item.photo_url && (
                                 <div 
                                   className="w-3 h-3 rounded-full" 
                                   style={{ backgroundColor: item.color_code }}
@@ -1341,16 +1344,16 @@ const StoreManagement = () => {
                     </Select>
                   </div>
 
-                  {/* Show selected item photo */}
+                  {/* Show selected item photo with zoom */}
                   {selectedReceivingItem && (() => {
                     const selectedItem = items.find(item => item.id === selectedReceivingItem);
                     return selectedItem?.photo_url ? (
                       <div className="space-y-1.5">
-                        <Label className="text-sm">Item Photo</Label>
+                        <Label className="text-sm">Item Photo (Click to Zoom)</Label>
                         <ZoomableImage
                           src={selectedItem.photo_url}
                           alt={selectedItem.name}
-                          containerClassName="w-full h-32 rounded-lg border"
+                          containerClassName="w-full h-32 rounded-lg border-2 border-primary/20 overflow-hidden"
                           className="w-full h-full bg-muted"
                           objectFit="contain"
                         />
@@ -1408,37 +1411,39 @@ const StoreManagement = () => {
                     <p className="text-sm">Record your first receiving above to see it here</p>
                   </div>
                 ) : (
-                  <ScrollArea className="h-[400px]">
+                  <ScrollArea className="h-[350px]">
                     <div className="space-y-3">
                       {receivings.map((receiving: any) => {
                         const itemId = receiving.details?.item_id;
                         const item = items.find((i: any) => i.id === itemId);
                         
                         return (
-                          <div key={receiving.id} className="glass rounded-lg p-4 hover:glass-hover transition-all">
-                            {item?.photo_url && (
-                              <ZoomableImage
-                                src={item.photo_url}
-                                alt={item.name}
-                                containerClassName="mb-4 rounded-lg border-2 border-border/50"
-                                className="w-full h-32 bg-muted"
-                                objectFit="contain"
-                              />
-                            )}
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                <p className="font-semibold text-lg mb-1">
+                          <div key={receiving.id} className="group glass rounded-lg p-4 hover:shadow-lg transition-all">
+                            <div className="flex items-start gap-3">
+                              {/* Item Photo with Zoom */}
+                              {item?.photo_url && (
+                                <ZoomableImage
+                                  src={item.photo_url}
+                                  alt={item.name}
+                                  containerClassName="w-16 h-16 rounded-lg border-2 border-border/50 flex-shrink-0"
+                                  className="w-16 h-16"
+                                  objectFit="cover"
+                                />
+                              )}
+                              
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-base mb-1">
                                   {item?.name || 'Unknown Item'}
                                 </p>
                                 {item?.brand && (
-                                  <p className="text-sm text-muted-foreground mb-2">
+                                  <p className="text-xs text-muted-foreground mb-1">
                                     Brand: {item.brand}
                                   </p>
                                 )}
                                 <p className="text-sm font-medium text-primary mb-1">
                                   Store: {receiving.stores?.name}
                                 </p>
-                                <p className="text-base font-semibold mb-1">
+                                <p className="text-sm font-semibold mb-1">
                                   Qty received: {(() => {
                                     const quantityBefore = typeof receiving.quantity_before === 'number' ? receiving.quantity_before : 0;
                                     const quantityAfter = typeof receiving.quantity_after === 'number' ? receiving.quantity_after : 0;
@@ -1449,33 +1454,33 @@ const StoreManagement = () => {
                                   })()}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  On hand after receiving: {receiving.quantity_after ?? 0}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  Recorded: {new Date(receiving.created_at).toLocaleString()}
+                                  On hand after: {receiving.quantity_after ?? 0} • {new Date(receiving.created_at).toLocaleDateString()}
                                 </p>
                                 {receiving.details?.notes && (
-                                  <p className="text-xs text-muted-foreground mt-2 italic">
-                                    Note: {receiving.details.notes}
+                                  <p className="text-xs text-muted-foreground mt-1.5 italic bg-muted/50 rounded px-2 py-1">
+                                    {receiving.details.notes}
                                   </p>
                                 )}
                               </div>
-                              <div className="flex flex-col gap-2">
+                              
+                              <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleEditReceiving(receiving)}
-                                  className="h-8"
+                                  className="h-7 text-xs"
                                 >
+                                  <Edit className="w-3 h-3 mr-1" />
                                   Edit
                                 </Button>
                                 <Button
                                   variant="destructive"
                                   size="sm"
                                   onClick={() => handleDeleteReceiving(receiving)}
-                                  className="h-8"
+                                  className="h-7 text-xs"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  Delete
                                 </Button>
                               </div>
                             </div>
@@ -1561,13 +1566,35 @@ const StoreManagement = () => {
                                 value={item.id}
                                 disabled={invQty === 0}
                               >
-                                {item.name} {item.brand ? `(${item.brand})` : ''} - Qty: {invQty}
+                                <div className="flex items-center gap-2">
+                                  {item.photo_url && (
+                                    <img src={item.photo_url} alt={item.name} className="w-6 h-6 rounded object-cover" />
+                                  )}
+                                  <span>{item.name} {item.brand ? `(${item.brand})` : ''} - Qty: {invQty}</span>
+                                </div>
                               </SelectItem>
                             );
                           })}
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Show selected item photo with zoom */}
+                  {selectedItem && (() => {
+                    const selectedItemData = items.find(item => item.id === selectedItem);
+                    return selectedItemData?.photo_url ? (
+                      <div className="space-y-1.5">
+                        <Label className="text-sm">Item Photo (Click to Zoom)</Label>
+                        <ZoomableImage
+                          src={selectedItemData.photo_url}
+                          alt={selectedItemData.name}
+                          containerClassName="w-full h-32 rounded-lg border-2 border-primary/20 overflow-hidden"
+                          className="w-full h-full bg-muted"
+                          objectFit="contain"
+                        />
+                      </div>
+                    ) : null;
+                  })()}
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
@@ -1614,60 +1641,85 @@ const StoreManagement = () => {
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Recent Transfers</CardTitle>
+              <CardHeader className="py-3">
+                <CardTitle className="text-lg">Recent Transfers</CardTitle>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[400px]">
-                  <div className="space-y-2">
-                    {transfers.map((transfer: any) => (
-                      <div key={transfer.id} className="glass rounded-lg p-3">
-                        <div className="flex items-start gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">
-                              {transfer.inventory?.items?.name || 'Unknown Item'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {transfer.from_store?.name} → {transfer.to_store?.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Qty: {transfer.quantity} • {new Date(transfer.transfer_date).toLocaleDateString()}
-                              {transfer.transferred_by?.name && ` • By ${transfer.transferred_by.name}`}
-                            </p>
-                            {transfer.notes && (
-                              <p className="text-xs text-muted-foreground mt-1 italic">
-                                {transfer.notes}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-end gap-2 shrink-0">
-                            <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'} className="whitespace-nowrap">
-                              {transfer.status}
-                            </Badge>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => handleEditTransfer(transfer)}
-                                title="Edit transfer"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => setDeleteTransferId(transfer.id)}
-                                title="Delete transfer"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                <ScrollArea className="h-[350px]">
+                  <div className="space-y-3">
+                    {transfers.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <ArrowRightLeft className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                        <p className="text-sm">No transfers yet</p>
+                      </div>
+                    ) : (
+                      transfers.map((transfer: any) => {
+                        const item = items.find(i => i.id === transfer.inventory?.item_id);
+                        
+                        return (
+                          <div key={transfer.id} className="group glass rounded-lg p-4 hover:shadow-lg transition-all">
+                            <div className="flex items-start gap-3">
+                              {/* Item Photo with Zoom */}
+                              {item?.photo_url && (
+                                <ZoomableImage
+                                  src={item.photo_url}
+                                  alt={item.name}
+                                  containerClassName="w-16 h-16 rounded-lg border-2 border-border/50 flex-shrink-0"
+                                  className="w-16 h-16"
+                                  objectFit="cover"
+                                />
+                              )}
+                              
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-base mb-1">
+                                  {item?.name || transfer.inventory?.items?.name || 'Unknown Item'}
+                                </p>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                                  <span className="font-medium text-foreground">{transfer.from_store?.name}</span>
+                                  <ArrowRightLeft className="w-3 h-3" />
+                                  <span className="font-medium text-foreground">{transfer.to_store?.name}</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  Qty: <span className="font-semibold text-foreground">{transfer.quantity}</span> • {new Date(transfer.transfer_date).toLocaleDateString()}
+                                  {transfer.transferred_by?.name && ` • By ${transfer.transferred_by.name}`}
+                                </p>
+                                {transfer.notes && (
+                                  <p className="text-xs text-muted-foreground mt-1.5 italic bg-muted/50 rounded px-2 py-1">
+                                    {transfer.notes}
+                                  </p>
+                                )}
+                              </div>
+                              
+                              <div className="flex flex-col items-end gap-2 shrink-0">
+                                <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'} className="whitespace-nowrap">
+                                  {transfer.status}
+                                </Badge>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => handleEditTransfer(transfer)}
+                                    title="Edit transfer"
+                                  >
+                                    <Edit className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => setDeleteTransferId(transfer.id)}
+                                    title="Delete transfer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      })
+                    )}
                   </div>
                 </ScrollArea>
               </CardContent>
