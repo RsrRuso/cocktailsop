@@ -1922,6 +1922,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          photo_url: string | null
           user_id: string
           workspace_id: string | null
         }
@@ -1934,6 +1935,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          photo_url?: string | null
           user_id: string
           workspace_id?: string | null
         }
@@ -1946,6 +1948,7 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          photo_url?: string | null
           user_id?: string
           workspace_id?: string | null
         }
