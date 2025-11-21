@@ -1681,22 +1681,22 @@ export default function StaffScheduling() {
         {/* Header Section */}
         <div className="relative overflow-hidden rounded-2xl bg-gray-800 border border-gray-700 p-6 mb-6">
           <div className="absolute inset-0 bg-grid-white/[0.02]" />
-          <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex-1 max-w-md">
+          <div className="relative space-y-4">
+            <div className="w-full">
               <Label htmlFor="venue-name" className="text-xs uppercase tracking-wider text-gray-400 mb-2 block font-semibold">Venue Name</Label>
               <Input
                 id="venue-name"
                 value={venueName}
                 onChange={(e) => setVenueName(e.target.value)}
                 placeholder="Enter venue name..."
-                className="text-xl font-bold bg-gray-900/50 border-gray-700/50 text-gray-100 h-12 backdrop-blur-sm"
+                className="text-xl font-bold bg-gray-900/50 border-gray-700/50 text-gray-100 h-12 backdrop-blur-sm w-full"
               />
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-3 w-full">
               <Dialog open={showLoadDialog} onOpenChange={setShowLoadDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="h-11 px-6 border-gray-600 hover:bg-gray-800/80 hover:border-primary/50 transition-all">
+                  <Button variant="outline" className="h-11 px-6 border-gray-600 hover:bg-gray-800/80 hover:border-primary/50 transition-all flex-1 sm:flex-initial min-w-[140px]">
                     <Calendar className="w-4 h-4 mr-2" />
                     Load Schedule
                   </Button>
@@ -1725,11 +1725,11 @@ export default function StaffScheduling() {
                   </div>
                 </DialogContent>
               </Dialog>
-              <Button onClick={autoGenerateSchedule} variant="default" className="h-11 px-6 font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
+              <Button onClick={autoGenerateSchedule} variant="default" className="h-11 px-6 font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all flex-1 sm:flex-initial min-w-[160px]">
                 <Wand2 className="w-4 h-4 mr-2" />
                 Generate Schedule
               </Button>
-              <Button onClick={exportToPDF} variant="outline" className="h-11 px-6 border-gray-600 hover:bg-gray-800/80 hover:border-primary/50 transition-all">
+              <Button onClick={exportToPDF} variant="outline" className="h-11 px-6 border-gray-600 hover:bg-gray-800/80 hover:border-primary/50 transition-all flex-1 sm:flex-initial min-w-[140px]">
                 <Download className="w-4 h-4 mr-2" />
                 Export PDF
               </Button>
@@ -1917,19 +1917,19 @@ export default function StaffScheduling() {
                         <p className="text-xs text-gray-500">{staffMembers.length} active staff</p>
                       </div>
                     </div>
-                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button 
                         onClick={saveSchedule}
                         size="sm" 
                         variant="outline"
-                        className="h-9 px-4 font-medium shadow-lg"
+                        className="h-10 px-5 font-medium shadow-lg whitespace-nowrap"
                       >
                         <Save className="w-4 h-4 mr-2" />
                         Save Schedule
                       </Button>
                       <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
                         <DialogTrigger asChild>
-                          <Button size="sm" className="h-9 px-4 font-medium shadow-lg shadow-primary/10">
+                          <Button size="sm" className="h-10 px-5 font-medium shadow-lg shadow-primary/10 whitespace-nowrap">
                             <Plus className="w-4 h-4 mr-2" />
                             Add Staff
                           </Button>
@@ -2050,16 +2050,16 @@ export default function StaffScheduling() {
                         <h4 className="text-sm font-medium text-gray-400 uppercase">
                           Head Bartender ({headBartenders.length})
                         </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           {headBartenders.map(staff => (
-                            <div key={staff.id} className="flex items-center justify-between p-3 border border-gray-800 rounded-lg bg-gray-800">
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-100">{staff.name}</div>
-                                <div className="text-xs text-gray-400 mt-0.5">
+                            <div key={staff.id} className="flex items-center justify-between p-4 border border-gray-800 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors">
+                              <div className="flex-1 min-w-0 mr-3">
+                                <div className="font-medium text-gray-100 truncate">{staff.name}</div>
+                                <div className="text-xs text-gray-400 mt-1 truncate">
                                   {staff.email || 'No email set'}
                                 </div>
                               </div>
-                              <div className="flex gap-1">
+                              <div className="flex gap-2 flex-shrink-0">
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -2072,7 +2072,7 @@ export default function StaffScheduling() {
                                     });
                                     setIsEditStaffOpen(true);
                                   }}
-                                  className="hover:bg-gray-700 h-8 w-8 p-0"
+                                  className="hover:bg-gray-700 h-9 w-9 p-0"
                                 >
                                   <Edit className="w-4 h-4 text-primary" />
                                 </Button>
@@ -2080,7 +2080,7 @@ export default function StaffScheduling() {
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => setStaffToDelete(staff.id)}
-                                  className="hover:bg-gray-700 h-8 w-8 p-0"
+                                  className="hover:bg-gray-700 h-9 w-9 p-0"
                                 >
                                   <Trash2 className="w-4 h-4 text-destructive" />
                                 </Button>
@@ -2097,16 +2097,16 @@ export default function StaffScheduling() {
                         <h4 className="text-sm font-medium text-gray-400 uppercase">
                           {title.replace('_', ' ')} ({members.length})
                         </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           {members.map(staff => (
-                            <div key={staff.id} className="flex items-center justify-between p-3 border border-gray-800 rounded-lg bg-gray-800">
-                              <div className="flex-1">
-                                <div className="font-medium text-gray-100">{staff.name}</div>
-                                <div className="text-xs text-gray-400 mt-0.5">
+                            <div key={staff.id} className="flex items-center justify-between p-4 border border-gray-800 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors">
+                              <div className="flex-1 min-w-0 mr-3">
+                                <div className="font-medium text-gray-100 truncate">{staff.name}</div>
+                                <div className="text-xs text-gray-400 mt-1 truncate">
                                   {staff.email || 'No email set'}
                                 </div>
                               </div>
-                              <div className="flex gap-1">
+                              <div className="flex gap-2 flex-shrink-0">
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -2119,7 +2119,7 @@ export default function StaffScheduling() {
                                     });
                                     setIsEditStaffOpen(true);
                                   }}
-                                  className="hover:bg-gray-700 h-8 w-8 p-0"
+                                  className="hover:bg-gray-700 h-9 w-9 p-0"
                                 >
                                   <Edit className="w-4 h-4 text-primary" />
                                 </Button>
@@ -2127,7 +2127,7 @@ export default function StaffScheduling() {
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => setStaffToDelete(staff.id)}
-                                  className="hover:bg-gray-700 h-8 w-8 p-0"
+                                  className="hover:bg-gray-700 h-9 w-9 p-0"
                                 >
                                   <Trash2 className="w-4 h-4 text-destructive" />
                                 </Button>
@@ -2707,14 +2707,15 @@ export default function StaffScheduling() {
 
         {/* Schedule Table */}
         {staffMembers.length > 0 && (
-          <Card className="p-5 overflow-x-auto bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl">
+          <Card className="p-3 sm:p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl">
             <div className="flex justify-between items-start mb-4 gap-4">
               <div>
                 <h3 className="text-lg font-bold text-gray-100">Weekly Schedule</h3>
                 <p className="text-xs text-gray-500">Staff assignments with individual break times</p>
               </div>
             </div>
-            <div className="min-w-max">
+            <div className="overflow-x-auto -mx-3 sm:-mx-5">
+              <div className="min-w-max px-3 sm:px-5">
               <table className="w-full border-collapse text-[10px]">
                 <thead>
                   <tr>
@@ -2896,6 +2897,7 @@ export default function StaffScheduling() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </Card>
         )}
