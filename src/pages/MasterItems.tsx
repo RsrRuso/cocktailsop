@@ -429,7 +429,12 @@ const MasterItems = () => {
             
             <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
               setIsCreateDialogOpen(open);
-              if (!open) resetForm();
+              if (!open) {
+                resetForm();
+              } else {
+                // Auto-generate barcode when opening dialog
+                setItemBarcode(generateBarcode());
+              }
             }}>
               <DialogTrigger asChild>
                 <Button size="sm">
@@ -480,13 +485,25 @@ const MasterItems = () => {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="barcode" className="text-xs">Barcode (auto-generated)</Label>
+                    <Label htmlFor="barcode" className="text-xs flex items-center justify-between">
+                      <span>Barcode (auto-generated)</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setItemBarcode(generateBarcode())}
+                        className="h-6 px-2 text-xs"
+                      >
+                        Regenerate
+                      </Button>
+                    </Label>
                     <Input
                       id="barcode"
                       value={itemBarcode}
                       onChange={(e) => setItemBarcode(e.target.value)}
                       placeholder="Auto-generated"
-                      className="h-9"
+                      className="h-9 font-mono"
+                      readOnly
                     />
                   </div>
 
@@ -592,13 +609,25 @@ const MasterItems = () => {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-barcode" className="text-xs">Barcode (auto-generated)</Label>
+                    <Label htmlFor="edit-barcode" className="text-xs flex items-center justify-between">
+                      <span>Barcode</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setItemBarcode(generateBarcode())}
+                        className="h-6 px-2 text-xs"
+                      >
+                        Regenerate
+                      </Button>
+                    </Label>
                     <Input
                       id="edit-barcode"
                       value={itemBarcode}
                       onChange={(e) => setItemBarcode(e.target.value)}
-                      placeholder="Auto-generated"
-                      className="h-9"
+                      placeholder="Barcode"
+                      className="h-9 font-mono"
+                      readOnly
                     />
                   </div>
 
