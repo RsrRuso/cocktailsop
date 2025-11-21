@@ -915,21 +915,21 @@ const StoreManagement = () => {
   };
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">
-        <TopNav />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">
+      <TopNav />
 
-        <div className="px-3 pt-20 pb-6 space-y-4 max-w-[1600px] mx-auto">
-        <div className="flex items-center justify-between">
+      <div className="px-2 sm:px-3 pt-20 pb-6 space-y-3 sm:space-y-4 max-w-[1600px] mx-auto">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Store className="w-6 h-6" />
+            <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <Store className="w-5 h-5 sm:w-6 sm:h-6" />
               Store Management
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               All personal stores and inventory
             </p>
           </div>
-          <Badge variant="outline" className="gap-2">
+          <Badge variant="outline" className="gap-2 text-xs">
             <Bell className="w-3 h-3" />
             Live Updates
           </Badge>
@@ -1104,30 +1104,30 @@ const StoreManagement = () => {
         </Card>
 
         <Tabs defaultValue="transactions" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="transactions">
-              <Clock className="w-4 h-4 mr-1" />
-              Live
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1">
+            <TabsTrigger value="transactions" className="text-xs sm:text-sm">
+              <Clock className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Live</span>
             </TabsTrigger>
-            <TabsTrigger value="receivings">
-              <Package className="w-4 h-4 mr-1" />
-              Receive
+            <TabsTrigger value="receivings" className="text-xs sm:text-sm">
+              <Package className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Receive</span>
             </TabsTrigger>
-            <TabsTrigger value="transfers">
-              <ArrowRightLeft className="w-4 h-4 mr-1" />
-              Transfer
+            <TabsTrigger value="transfers" className="text-xs sm:text-sm">
+              <ArrowRightLeft className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Transfer</span>
             </TabsTrigger>
-            <TabsTrigger value="spotchecks">
-              <ClipboardCheck className="w-4 h-4 mr-1" />
-              Checks
+            <TabsTrigger value="spotchecks" className="text-xs sm:text-sm">
+              <ClipboardCheck className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Checks</span>
             </TabsTrigger>
-            <TabsTrigger value="variance">
-              <TrendingDown className="w-4 h-4 mr-1" />
-              Variance
+            <TabsTrigger value="variance" className="text-xs sm:text-sm">
+              <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Variance</span>
             </TabsTrigger>
-            <TabsTrigger value="members">
-              <Users className="w-4 h-4 mr-1" />
-              Team
+            <TabsTrigger value="members" className="text-xs sm:text-sm">
+              <Users className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Team</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1361,7 +1361,7 @@ const StoreManagement = () => {
                         <ZoomableImage
                           src={selectedItem.photo_url}
                           alt={selectedItem.name}
-                          containerClassName="w-full h-32 rounded-lg border-2 border-primary/20 overflow-hidden"
+                          containerClassName="w-full h-40 sm:h-32 rounded-lg border-2 border-primary/20 overflow-hidden"
                           className="w-full h-full bg-muted"
                           objectFit="contain"
                         />
@@ -1426,21 +1426,23 @@ const StoreManagement = () => {
                         const item = items.find((i: any) => i.id === itemId);
                         
                         return (
-                          <div key={receiving.id} className="group glass rounded-lg p-4 hover:shadow-lg transition-all">
-                            <div className="flex items-start gap-3">
-                              {/* Item Photo with Zoom */}
+                          <div key={receiving.id} className="group glass rounded-lg p-3 sm:p-4 hover:shadow-lg transition-all">
+                            <div className="flex flex-col sm:flex-row items-start gap-3">
+                              {/* Item Photo with Zoom - Centered on mobile */}
                               {item?.photo_url && (
-                                <ZoomableImage
-                                  src={item.photo_url}
-                                  alt={item.name}
-                                  containerClassName="w-16 h-16 rounded-lg border-2 border-border/50 flex-shrink-0"
-                                  className="w-16 h-16"
-                                  objectFit="cover"
-                                />
+                                <div className="w-full sm:w-auto flex justify-center sm:block">
+                                  <ZoomableImage
+                                    src={item.photo_url}
+                                    alt={item.name}
+                                    containerClassName="w-20 h-20 sm:w-16 sm:h-16 rounded-lg border-2 border-border/50 flex-shrink-0"
+                                    className="w-20 h-20 sm:w-16 sm:h-16"
+                                    objectFit="cover"
+                                  />
+                                </div>
                               )}
                               
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-base mb-1">
+                              <div className="flex-1 min-w-0 w-full">
+                                <p className="font-semibold text-base sm:text-base mb-1 break-words">
                                   {item?.name || 'Unknown Item'}
                                 </p>
                                 {item?.brand && (
@@ -1448,7 +1450,7 @@ const StoreManagement = () => {
                                     Brand: {item.brand}
                                   </p>
                                 )}
-                                <p className="text-sm font-medium text-primary mb-1">
+                                <p className="text-sm font-medium text-primary mb-1 break-words">
                                   Store: {receiving.stores?.name}
                                 </p>
                                 <p className="text-sm font-semibold mb-1">
@@ -1461,34 +1463,34 @@ const StoreManagement = () => {
                                     return receivedQty;
                                   })()}
                                 </p>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-muted-foreground break-words">
                                   On hand after: {receiving.quantity_after ?? 0} • {new Date(receiving.created_at).toLocaleDateString()}
                                 </p>
                                 {receiving.details?.notes && (
-                                  <p className="text-xs text-muted-foreground mt-1.5 italic bg-muted/50 rounded px-2 py-1">
+                                  <p className="text-xs text-muted-foreground mt-1.5 italic bg-muted/50 rounded px-2 py-1 break-words">
                                     {receiving.details.notes}
                                   </p>
                                 )}
                               </div>
                               
-                              <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex sm:flex-col gap-2 w-full sm:w-auto sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleEditReceiving(receiving)}
-                                  className="h-7 text-xs"
+                                  className="h-8 text-xs flex-1 sm:flex-none"
                                 >
-                                  <Edit className="w-3 h-3 mr-1" />
-                                  Edit
+                                  <Edit className="w-3 h-3 sm:mr-1" />
+                                  <span className="hidden sm:inline">Edit</span>
                                 </Button>
                                 <Button
                                   variant="destructive"
                                   size="sm"
                                   onClick={() => handleDeleteReceiving(receiving)}
-                                  className="h-7 text-xs"
+                                  className="h-8 text-xs flex-1 sm:flex-none"
                                 >
-                                  <Trash2 className="w-3 h-3 mr-1" />
-                                  Delete
+                                  <Trash2 className="w-3 h-3 sm:mr-1" />
+                                  <span className="hidden sm:inline">Delete</span>
                                 </Button>
                               </div>
                             </div>
@@ -1596,7 +1598,7 @@ const StoreManagement = () => {
                         <ZoomableImage
                           src={selectedItemData.photo_url}
                           alt={selectedItemData.name}
-                          containerClassName="w-full h-32 rounded-lg border-2 border-primary/20 overflow-hidden"
+                          containerClassName="w-full h-40 sm:h-32 rounded-lg border-2 border-primary/20 overflow-hidden"
                           className="w-full h-full bg-muted"
                           objectFit="contain"
                         />
@@ -1665,48 +1667,50 @@ const StoreManagement = () => {
                         const item = items.find(i => i.id === transfer.inventory?.item_id);
                         
                         return (
-                          <div key={transfer.id} className="group glass rounded-lg p-4 hover:shadow-lg transition-all">
-                            <div className="flex items-start gap-3">
-                              {/* Item Photo with Zoom */}
+                          <div key={transfer.id} className="group glass rounded-lg p-3 sm:p-4 hover:shadow-lg transition-all">
+                            <div className="flex flex-col sm:flex-row items-start gap-3">
+                              {/* Item Photo with Zoom - Centered on mobile */}
                               {item?.photo_url && (
-                                <ZoomableImage
-                                  src={item.photo_url}
-                                  alt={item.name}
-                                  containerClassName="w-16 h-16 rounded-lg border-2 border-border/50 flex-shrink-0"
-                                  className="w-16 h-16"
-                                  objectFit="cover"
-                                />
+                                <div className="w-full sm:w-auto flex justify-center sm:block">
+                                  <ZoomableImage
+                                    src={item.photo_url}
+                                    alt={item.name}
+                                    containerClassName="w-20 h-20 sm:w-16 sm:h-16 rounded-lg border-2 border-border/50 flex-shrink-0"
+                                    className="w-20 h-20 sm:w-16 sm:h-16"
+                                    objectFit="cover"
+                                  />
+                                </div>
                               )}
                               
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-base mb-1">
+                              <div className="flex-1 min-w-0 w-full">
+                                <p className="font-semibold text-base sm:text-base mb-1 break-words">
                                   {item?.name || transfer.inventory?.items?.name || 'Unknown Item'}
                                 </p>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                                  <span className="font-medium text-foreground">{transfer.from_store?.name}</span>
-                                  <ArrowRightLeft className="w-3 h-3" />
-                                  <span className="font-medium text-foreground">{transfer.to_store?.name}</span>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1 flex-wrap">
+                                  <span className="font-medium text-foreground break-words">{transfer.from_store?.name}</span>
+                                  <ArrowRightLeft className="w-3 h-3 flex-shrink-0" />
+                                  <span className="font-medium text-foreground break-words">{transfer.to_store?.name}</span>
                                 </div>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-muted-foreground break-words">
                                   Qty: <span className="font-semibold text-foreground">{transfer.quantity}</span> • {new Date(transfer.transfer_date).toLocaleDateString()}
                                   {transfer.transferred_by?.name && ` • By ${transfer.transferred_by.name}`}
                                 </p>
                                 {transfer.notes && (
-                                  <p className="text-xs text-muted-foreground mt-1.5 italic bg-muted/50 rounded px-2 py-1">
+                                  <p className="text-xs text-muted-foreground mt-1.5 italic bg-muted/50 rounded px-2 py-1 break-words">
                                     {transfer.notes}
                                   </p>
                                 )}
                               </div>
                               
-                              <div className="flex flex-col items-end gap-2 shrink-0">
-                                <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'} className="whitespace-nowrap">
+                              <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto shrink-0">
+                                <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'} className="whitespace-nowrap text-xs">
                                   {transfer.status}
                                 </Badge>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7"
+                                    className="h-8 w-8 sm:h-7 sm:w-7"
                                     onClick={() => handleEditTransfer(transfer)}
                                     title="Edit transfer"
                                   >
@@ -1715,7 +1719,7 @@ const StoreManagement = () => {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    className="h-8 w-8 sm:h-7 sm:w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                                     onClick={() => setDeleteTransferId(transfer.id)}
                                     title="Delete transfer"
                                   >
