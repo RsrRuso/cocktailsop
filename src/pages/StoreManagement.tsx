@@ -746,8 +746,9 @@ const StoreManagement = () => {
   };
 
   const handleSubmitSpotCheck = async () => {
-    if (!user || !currentWorkspace || !spotCheckStore) return;
+    if (!user || !spotCheckStore) return;
     
+    const workspaceId = currentWorkspace?.id || null;
     const filledItems = spotCheckItems.filter(item => item.actual_quantity !== '');
     
     if (filledItems.length === 0) {
@@ -760,7 +761,7 @@ const StoreManagement = () => {
       const { data: spotCheckData, error: spotCheckError } = await supabase
         .from("inventory_spot_checks")
         .insert({
-          workspace_id: currentWorkspace.id,
+          workspace_id: workspaceId,
           user_id: user.id,
           store_id: spotCheckStore,
           status: 'completed',
@@ -804,7 +805,7 @@ const StoreManagement = () => {
           .from("inventory_activity_log")
           .insert({
             user_id: user.id,
-            workspace_id: currentWorkspace.id,
+            workspace_id: workspaceId,
             store_id: spotCheckStore,
             inventory_id: item.inventory_id,
             action_type: 'spot_check_adjustment',
@@ -827,7 +828,6 @@ const StoreManagement = () => {
       toast.error("Failed to complete spot check");
     }
   };
-
   const handleInviteMember = async (email: string, role: string) => {
     if (!currentWorkspace) return;
 
