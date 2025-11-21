@@ -151,7 +151,7 @@ const StoreManagement = () => {
         .from("inventory")
         .select(`
           *,
-          items(name, brand),
+          items(name, brand, photo_url, color_code),
           stores(name)
         `)
         .eq("workspace_id", workspaceId);

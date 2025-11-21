@@ -72,7 +72,9 @@ const StoreDetail = () => {
             name,
             barcode,
             brand,
-            category
+            category,
+            photo_url,
+            color_code
           )
         `)
         .eq('store_id', id)
@@ -160,14 +162,19 @@ const StoreDetail = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {inventory.map((inv) => (
-                  <Card key={inv.id} className="overflow-hidden">
-                    {inv.photo_url && (
-                      <div className="aspect-square w-full bg-muted">
+                  <Card key={inv.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    {inv.items?.photo_url && (
+                      <div className="aspect-square w-full bg-muted border-b-2 border-border/50">
                         <img 
-                          src={inv.photo_url} 
+                          src={inv.items.photo_url} 
                           alt={inv.items?.name || 'Item'} 
                           className="w-full h-full object-cover"
                         />
+                      </div>
+                    )}
+                    {!inv.items?.photo_url && (
+                      <div className="aspect-square w-full bg-muted flex items-center justify-center border-b-2 border-border/50">
+                        <Package className="h-16 w-16 text-muted-foreground/30" />
                       </div>
                     )}
                     <CardContent className="p-4">
