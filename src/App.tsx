@@ -93,6 +93,7 @@ const StaffScheduling = lazy(() => import("./pages/StaffScheduling"));
 const QRAccessCode = lazy(() => import("./pages/QRAccessCode"));
 const ScanAccess = lazy(() => import("./pages/ScanAccess"));
 const AccessApproval = lazy(() => import("./pages/AccessApproval"));
+const ExpiringInventory = lazy(() => import("./pages/ExpiringInventory"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -145,6 +146,7 @@ const App = () => (
               <Route path="/qr-access-code" element={<QRAccessCode />} />
               <Route path="/scan-access/:workspaceId" element={<ScanAccess />} />
               <Route path="/access-approval" element={<AccessApproval />} />
+              <Route path="/expiring-inventory" element={<ExpiringInventory />} />
               <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
           <Route path="/abv-calculator" element={<ABVCalculator />} />
