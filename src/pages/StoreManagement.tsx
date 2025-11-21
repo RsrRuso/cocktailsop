@@ -170,7 +170,7 @@ const StoreManagement = () => {
         ? { workspace_id: currentWorkspace.id }
         : { user_id: user.id, workspace_id: null };
 
-      // Fetch stores - only show ATTIKO, JERRY, and WAREHOUSE
+      // Fetch stores - show all active stores for this user
       const { data: storesData } = await supabase
         .from("stores")
         .select("*")
@@ -178,10 +178,7 @@ const StoreManagement = () => {
         .eq("is_active", true)
         .order("name");
       
-      // Filter to only show specific stores (case-sensitive)
-      const filteredStores = storesData?.filter(store => 
-        ['ATTIKO', 'JERRY', 'WAREHOUSE'].includes(store.name)
-      ) || [];
+      const filteredStores = storesData || [];
 
       // Fetch items - all items for this user
       const { data: itemsData } = await supabase
