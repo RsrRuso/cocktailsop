@@ -512,14 +512,39 @@ const StoreManagement = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      // First fetch the transfer to see what we're trying to delete
+      const { data: transferData, error: fetchError } = await supabase
         .from("inventory_transfers")
-        .delete()
+        .select("*")
+        .eq("id", transferId)
+        .single();
+
+      console.log("Transfer to delete:", transferData);
+      console.log("Current user ID:", user.id);
+
+      if (fetchError) {
+        console.error("Error fetching transfer:", fetchError);
+        toast.error("Failed to fetch transfer details");
+        return;
+      }
+
+      // Now try to delete
+      const { data, error, count } = await supabase
+        .from("inventory_transfers")
+        .delete({ count: 'exact' })
         .eq("id", transferId);
+
+      console.log("Delete result:", { data, error, count });
 
       if (error) {
         console.error("Error deleting transfer:", error);
         toast.error(`Failed to delete transfer: ${error.message}`);
+        return;
+      }
+
+      if (count === 0) {
+        toast.error("Transfer not deleted - permission denied or not found");
+        console.error("No rows were deleted. This usually means RLS prevented the deletion.");
         return;
       }
 
