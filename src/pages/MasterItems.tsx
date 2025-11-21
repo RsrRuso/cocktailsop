@@ -12,7 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Package, Plus, Trash2, ArrowLeft, Barcode, Tag, Edit, Image as ImageIcon, Trash } from "lucide-react";
+import { Package, Plus, Trash2, ArrowLeft, Barcode, Tag, Edit, Image as ImageIcon, Trash, Search } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -37,8 +38,16 @@ const MasterItems = () => {
   const [itemColorCode, setItemColorCode] = useState("#3b82f6");
   const [itemPhoto, setItemPhoto] = useState<File | null>(null);
   const [itemPhotoUrl, setItemPhotoUrl] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const filteredItems = items.filter(item => 
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     if (user) {
@@ -340,14 +349,15 @@ const MasterItems = () => {
           Back to Store Management
         </Button>
 
-        <div className="flex items-center justify-between mb-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Package className="h-8 w-8" />
-              Master Item List
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Package className="h-6 w-6" />
+              Master Items
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Manage your inventory master list
+            <p className="text-sm text-muted-foreground">
+              {items.length} {items.length === 1 ? 'item' : 'items'} total
             </p>
           </div>
 
@@ -355,19 +365,18 @@ const MasterItems = () => {
             {items.length > 0 && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive">
-                    <Trash className="mr-2 h-4 w-4" />
-                    Delete All
+                  <Button variant="outline" size="sm">
+                    <Trash className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete All Items</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete all {items.length} items? This action cannot be undone.
+                      Delete all {items.length} items? This cannot be undone.
                       {items.some(item => item.inventory?.[0]?.count > 0) && (
                         <span className="block mt-2 text-destructive font-semibold">
-                          Warning: Some items have inventory. You must remove all inventory before deletion.
+                          Warning: Remove all inventory first.
                         </span>
                       )}
                     </AlertDialogDescription>
@@ -378,7 +387,7 @@ const MasterItems = () => {
                       onClick={handleDeleteAllItems}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      Delete All Items
+                      Delete All
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -390,118 +399,109 @@ const MasterItems = () => {
               if (!open) resetForm();
             }}>
               <DialogTrigger asChild>
-                <Button>
+                <Button size="sm">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Item
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Add New Item</DialogTitle>
-                <DialogDescription>
-                  Add a new item to your master inventory list
-                </DialogDescription>
+                <DialogTitle>Add Item</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleCreateItem} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="name">Item Name *</Label>
-                    <Input
-                      id="name"
-                      value={itemName}
-                      onChange={(e) => setItemName(e.target.value)}
-                      placeholder="e.g., Vodka, Tomatoes, Glassware"
-                      required
-                    />
-                  </div>
+              <form onSubmit={handleCreateItem} className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-xs">Item Name *</Label>
+                  <Input
+                    id="name"
+                    value={itemName}
+                    onChange={(e) => setItemName(e.target.value)}
+                    placeholder="Item name"
+                    required
+                    className="h-9"
+                  />
+                </div>
 
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="photo">Item Photo</Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="photo"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={(e) => setItemPhoto(e.target.files?.[0] || null)}
-                        ref={fileInputRef}
-                      />
-                      {itemPhoto && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setItemPhoto(null);
-                            if (fileInputRef.current) fileInputRef.current.value = "";
-                          }}
-                        >
-                          Clear
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
+                <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="brand">Brand</Label>
+                    <Label htmlFor="brand" className="text-xs">Brand</Label>
                     <Input
                       id="brand"
                       value={itemBrand}
                       onChange={(e) => setItemBrand(e.target.value)}
-                      placeholder="e.g., Grey Goose, Heinz"
+                      placeholder="Brand"
+                      className="h-9"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
+                    <Label htmlFor="category" className="text-xs">Category</Label>
                     <Input
                       id="category"
                       value={itemCategory}
                       onChange={(e) => setItemCategory(e.target.value)}
-                      placeholder="e.g., Spirits, Produce, Glassware"
+                      placeholder="Category"
+                      className="h-9"
                     />
                   </div>
+                </div>
 
+                <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="barcode">Barcode</Label>
+                    <Label htmlFor="barcode" className="text-xs">Barcode</Label>
                     <Input
                       id="barcode"
                       value={itemBarcode}
                       onChange={(e) => setItemBarcode(e.target.value)}
-                      placeholder="e.g., 123456789"
+                      placeholder="Barcode"
+                      className="h-9"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="color">Color Code</Label>
+                    <Label htmlFor="color" className="text-xs">Color</Label>
                     <Input
                       id="color"
                       type="color"
                       value={itemColorCode}
                       onChange={(e) => setItemColorCode(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={itemDescription}
-                      onChange={(e) => setItemDescription(e.target.value)}
-                      placeholder="Additional details about this item..."
-                      rows={3}
+                      className="h-9"
                     />
                   </div>
                 </div>
 
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => {
+                <div className="space-y-2">
+                  <Label htmlFor="photo" className="text-xs">Photo</Label>
+                  <Input
+                    id="photo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => setItemPhoto(e.target.files?.[0] || null)}
+                    ref={fileInputRef}
+                    className="h-9"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="text-xs">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={itemDescription}
+                    onChange={(e) => setItemDescription(e.target.value)}
+                    placeholder="Description"
+                    rows={2}
+                    className="text-sm"
+                  />
+                </div>
+
+                <DialogFooter className="gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => {
                     setIsCreateDialogOpen(false);
                     resetForm();
                   }}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={uploading}>
-                    {uploading ? "Uploading..." : "Add Item"}
+                  <Button type="submit" size="sm" disabled={uploading}>
+                    {uploading ? "Saving..." : "Add"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -516,119 +516,108 @@ const MasterItems = () => {
               setEditingItem(null);
             }
           }}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Edit Item</DialogTitle>
-                <DialogDescription>
-                  Update item information
-                </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleEditItem} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="edit-name">Item Name *</Label>
-                    <Input
-                      id="edit-name"
-                      value={itemName}
-                      onChange={(e) => setItemName(e.target.value)}
-                      placeholder="e.g., Vodka, Tomatoes, Glassware"
-                      required
-                    />
-                  </div>
+              <form onSubmit={handleEditItem} className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name" className="text-xs">Item Name *</Label>
+                  <Input
+                    id="edit-name"
+                    value={itemName}
+                    onChange={(e) => setItemName(e.target.value)}
+                    placeholder="Item name"
+                    required
+                    className="h-9"
+                  />
+                </div>
 
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="edit-photo">Item Photo</Label>
-                    {itemPhotoUrl && !itemPhoto && (
-                      <div className="mb-2">
-                        <img src={itemPhotoUrl} alt="Current item" className="h-20 w-20 object-cover rounded" />
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="edit-photo"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={(e) => setItemPhoto(e.target.files?.[0] || null)}
-                        ref={fileInputRef}
-                      />
-                      {itemPhoto && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setItemPhoto(null);
-                            if (fileInputRef.current) fileInputRef.current.value = "";
-                          }}
-                        >
-                          Clear
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
+                <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-brand">Brand</Label>
+                    <Label htmlFor="edit-brand" className="text-xs">Brand</Label>
                     <Input
                       id="edit-brand"
                       value={itemBrand}
                       onChange={(e) => setItemBrand(e.target.value)}
-                      placeholder="e.g., Grey Goose, Heinz"
+                      placeholder="Brand"
+                      className="h-9"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="edit-category">Category</Label>
+                    <Label htmlFor="edit-category" className="text-xs">Category</Label>
                     <Input
                       id="edit-category"
                       value={itemCategory}
                       onChange={(e) => setItemCategory(e.target.value)}
-                      placeholder="e.g., Spirits, Produce, Glassware"
+                      placeholder="Category"
+                      className="h-9"
                     />
                   </div>
+                </div>
 
+                <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-barcode">Barcode</Label>
+                    <Label htmlFor="edit-barcode" className="text-xs">Barcode</Label>
                     <Input
                       id="edit-barcode"
                       value={itemBarcode}
                       onChange={(e) => setItemBarcode(e.target.value)}
-                      placeholder="e.g., 123456789"
+                      placeholder="Barcode"
+                      className="h-9"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="edit-color">Color Code</Label>
+                    <Label htmlFor="edit-color" className="text-xs">Color</Label>
                     <Input
                       id="edit-color"
                       type="color"
                       value={itemColorCode}
                       onChange={(e) => setItemColorCode(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="edit-description">Description</Label>
-                    <Textarea
-                      id="edit-description"
-                      value={itemDescription}
-                      onChange={(e) => setItemDescription(e.target.value)}
-                      placeholder="Additional details about this item..."
-                      rows={3}
+                      className="h-9"
                     />
                   </div>
                 </div>
 
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => {
+                <div className="space-y-2">
+                  <Label htmlFor="edit-photo" className="text-xs">Photo</Label>
+                  {itemPhotoUrl && !itemPhoto && (
+                    <img src={itemPhotoUrl} alt="Current" className="h-16 w-16 object-cover rounded mb-1" />
+                  )}
+                  <Input
+                    id="edit-photo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => setItemPhoto(e.target.files?.[0] || null)}
+                    ref={fileInputRef}
+                    className="h-9"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description" className="text-xs">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={itemDescription}
+                    onChange={(e) => setItemDescription(e.target.value)}
+                    placeholder="Description"
+                    rows={2}
+                    className="text-sm"
+                  />
+                </div>
+
+                <DialogFooter className="gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => {
                     setIsEditDialogOpen(false);
                     resetForm();
                     setEditingItem(null);
                   }}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={uploading}>
-                    {uploading ? "Updating..." : "Update Item"}
+                  <Button type="submit" size="sm" disabled={uploading}>
+                    {uploading ? "Saving..." : "Update"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -637,124 +626,156 @@ const MasterItems = () => {
           </div>
         </div>
 
-        {items.length === 0 ? (
+        {/* Search */}
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+        </div>
+
+        {/* Table */}
+        {filteredItems.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
               <Package className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">No items in master list</h3>
-              <p className="text-muted-foreground mb-4">
-                Add your first item to start tracking inventory
+              <h3 className="text-lg font-semibold mb-2">
+                {searchQuery ? 'No items found' : 'No items yet'}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {searchQuery ? 'Try a different search term' : 'Add your first item to get started'}
               </p>
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add First Item
-              </Button>
+              {!searchQuery && (
+                <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Item
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map((item) => (
-              <Card key={item.id} className="relative overflow-hidden hover:shadow-lg transition-shadow">
-                <div 
-                  className="absolute top-0 left-0 w-1 h-full" 
-                  style={{ backgroundColor: item.color_code || '#3b82f6' }}
-                />
-                {item.photo_url && (
-                  <div className="w-full h-48 overflow-hidden">
-                    <img 
-                      src={item.photo_url} 
-                      alt={item.name} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <CardHeader className="pl-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-xl mb-1">{item.name}</CardTitle>
-                      {item.brand && (
-                        <p className="text-sm text-muted-foreground">
-                          Brand: {item.brand}
-                        </p>
-                      )}
-                      {item.category && (
-                        <Badge variant="secondary" className="mt-2">
-                          <Tag className="h-3 w-3 mr-1" />
-                          {item.category}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pl-6">
-                  {item.description && (
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {item.description}
-                    </p>
-                  )}
-                  
-                  {item.barcode && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                      <Barcode className="h-4 w-4" />
-                      {item.barcode}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between pt-3 border-t">
-                    <div>
-                      <p className="text-xs text-muted-foreground">In Inventory</p>
-                      <p className="text-lg font-bold">
-                        {item.inventory?.[0]?.count || 0}
-                      </p>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(item)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Item</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete "{item.name}"?
-                              {item.inventory?.[0]?.count > 0 && (
-                                <span className="block mt-2 text-destructive font-semibold">
-                                  Warning: This item has {item.inventory[0].count} inventory records. You must remove all inventory before deletion.
-                                </span>
-                              )}
-                              <span className="block mt-2 text-sm text-muted-foreground">
-                                This action cannot be undone.
-                              </span>
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteItem(item.id, item.name)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Barcode</TableHead>
+                      <TableHead className="text-right">Stock</TableHead>
+                      <TableHead className="w-24 text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredItems.map((item) => (
+                      <TableRow key={item.id} className="hover:bg-muted/50">
+                        <TableCell className="p-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: item.color_code || '#3b82f6' }}
+                          />
+                        </TableCell>
+                        <TableCell className="p-2">
+                          {item.photo_url ? (
+                            <img 
+                              src={item.photo_url} 
+                              alt={item.name}
+                              className="w-10 h-10 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
+                              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <div>
+                            <div>{item.name}</div>
+                            {item.description && (
+                              <div className="text-xs text-muted-foreground truncate max-w-xs">
+                                {item.description}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {item.brand || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {item.category ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {item.category}
+                            </Badge>
+                          ) : '-'}
+                        </TableCell>
+                        <TableCell className="text-sm font-mono text-muted-foreground">
+                          {item.barcode || '-'}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {item.inventory?.[0]?.count || 0}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-1 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditDialog(item)}
+                              className="h-8 w-8 p-0"
                             >
-                              Delete Item
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                            
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Item</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Delete "{item.name}"?
+                                    {item.inventory?.[0]?.count > 0 && (
+                                      <span className="block mt-2 text-destructive font-semibold">
+                                        Warning: Has {item.inventory[0].count} inventory records.
+                                      </span>
+                                    )}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteItem(item.id, item.name)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
 
