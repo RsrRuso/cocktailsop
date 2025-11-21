@@ -874,57 +874,74 @@ const StoreManagement = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Recent Receivings</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="w-5 h-5" />
+                  Recent Receivings ({receivings.length})
+                </CardTitle>
+                <CardDescription>
+                  All recorded receiving transactions
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[400px]">
-                  <div className="space-y-3">
-                    {receivings.map((receiving: any) => {
-                      const itemId = receiving.details?.item_id;
-                      const item = items.find((i: any) => i.id === itemId);
-                      
-                      return (
-                        <div key={receiving.id} className="glass rounded-lg p-4 hover:glass-hover transition-all">
-                          {item?.photo_url && (
-                            <div className="mb-4 rounded-lg overflow-hidden border-2 border-border/50">
-                              <img 
-                                src={item.photo_url} 
-                                alt={item.name}
-                                className="w-full h-64 object-cover"
-                              />
-                            </div>
-                          )}
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1">
-                              <p className="font-semibold text-lg mb-1">
-                                {item?.name || 'Unknown Item'}
-                              </p>
-                              {item?.brand && (
-                                <p className="text-sm text-muted-foreground mb-2">
-                                  Brand: {item.brand}
-                                </p>
-                              )}
-                              <p className="text-sm text-muted-foreground">
-                                Store: {receiving.stores?.name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Qty: {receiving.quantity_after || 0} • {new Date(receiving.created_at).toLocaleString()}
-                              </p>
-                              {receiving.details?.notes && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {receiving.details.notes}
-                                </p>
-                              )}
-                            </div>
-                            <Badge variant="default" className="shrink-0">
-                              Completed
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })}
+                {receivings.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="font-medium mb-1">No receivings recorded yet</p>
+                    <p className="text-sm">Record your first receiving above to see it here</p>
                   </div>
-                </ScrollArea>
+                ) : (
+                  <ScrollArea className="h-[400px]">
+                    <div className="space-y-3">
+                      {receivings.map((receiving: any) => {
+                        const itemId = receiving.details?.item_id;
+                        const item = items.find((i: any) => i.id === itemId);
+                        
+                        return (
+                          <div key={receiving.id} className="glass rounded-lg p-4 hover:glass-hover transition-all">
+                            {item?.photo_url && (
+                              <div className="mb-4 rounded-lg overflow-hidden border-2 border-border/50">
+                                <img 
+                                  src={item.photo_url} 
+                                  alt={item.name}
+                                  className="w-full h-64 object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1">
+                                <p className="font-semibold text-lg mb-1">
+                                  {item?.name || 'Unknown Item'}
+                                </p>
+                                {item?.brand && (
+                                  <p className="text-sm text-muted-foreground mb-2">
+                                    Brand: {item.brand}
+                                  </p>
+                                )}
+                                <p className="text-sm font-medium text-primary mb-1">
+                                  Store: {receiving.stores?.name}
+                                </p>
+                                <p className="text-base font-semibold mb-1">
+                                  Quantity: {receiving.quantity_after || 0}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Recorded: {new Date(receiving.created_at).toLocaleString()}
+                                </p>
+                                {receiving.details?.notes && (
+                                  <p className="text-xs text-muted-foreground mt-2 italic">
+                                    Note: {receiving.details.notes}
+                                  </p>
+                                )}
+                              </div>
+                              <Badge variant="default" className="shrink-0">
+                                Completed
+                              </Badge>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
