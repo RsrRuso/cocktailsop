@@ -936,139 +936,166 @@ const StoreManagement = () => {
         </div>
 
         {/* Quick Action Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/stores-admin')}>
-            <CardContent className="p-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-green-500/50 animate-fade-in" onClick={() => navigate('/stores-admin')} style={{ animationDelay: '0ms' }}>
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/10 to-transparent rounded-bl-full" />
+            <CardContent className="p-5 relative">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-green-500/10">
-                  <Store className="h-5 w-5 text-green-500" />
+                <div className="p-3 rounded-xl bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                  <Store className="h-6 w-6 text-green-500" />
                 </div>
-                <div>
-                  <p className="font-semibold">Stores</p>
+                <div className="flex-1">
+                  <p className="font-bold text-base group-hover:text-green-600 transition-colors">Stores</p>
                   <p className="text-xs text-muted-foreground">Create & manage</p>
                 </div>
-                <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
+                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-green-500 group-hover:translate-x-0.5 transition-all" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/master-items')}>
-            <CardContent className="p-4">
+          <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-purple-500/50 animate-fade-in" onClick={() => navigate('/master-items')} style={{ animationDelay: '100ms' }}>
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full" />
+            <CardContent className="p-5 relative">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-purple-500/10">
-                  <Package className="h-5 w-5 text-purple-500" />
+                <div className="p-3 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                  <Package className="h-6 w-6 text-purple-500" />
                 </div>
-                <div>
-                  <p className="font-semibold">Items</p>
+                <div className="flex-1">
+                  <p className="font-bold text-base group-hover:text-purple-600 transition-colors">Items</p>
                   <p className="text-xs text-muted-foreground">Master list</p>
                 </div>
-                <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
+                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/all-inventory')}>
-            <CardContent className="p-4">
+          <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-primary/50 animate-fade-in" onClick={() => navigate('/all-inventory')} style={{ animationDelay: '200ms' }}>
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full" />
+            <CardContent className="p-5 relative">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Package className="h-5 w-5 text-primary" />
+                <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <Package className="h-6 w-6 text-primary" />
                 </div>
-                <div>
-                  <p className="font-semibold">Inventory</p>
+                <div className="flex-1">
+                  <p className="font-bold text-base group-hover:text-primary transition-colors">Inventory</p>
                   <p className="text-xs text-muted-foreground">Combined view</p>
                 </div>
-                <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
+                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/inventory-transactions')}>
-            <CardContent className="p-4">
+          <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-blue-500/50 animate-fade-in" onClick={() => navigate('/inventory-transactions')} style={{ animationDelay: '300ms' }}>
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full" />
+            <CardContent className="p-5 relative">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-500/10">
-                  <ArrowRightLeft className="h-5 w-5 text-blue-500" />
+                <div className="p-3 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                  <ArrowRightLeft className="h-6 w-6 text-blue-500" />
                 </div>
-                <div>
-                  <p className="font-semibold">Transactions</p>
+                <div className="flex-1">
+                  <p className="font-bold text-base group-hover:text-blue-600 transition-colors">Transactions</p>
                   <p className="text-xs text-muted-foreground">Live updates</p>
                 </div>
-                <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
+                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
               </div>
             </CardContent>
           </Card>
 
           <Card 
-            className="cursor-pointer hover:shadow-md transition-shadow" 
+            className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-orange-500/50 animate-fade-in" 
             onClick={() => {
               const workspaceId = currentWorkspace?.id || 'personal';
               navigate(`/low-stock-inventory/${workspaceId}`);
             }}
+            style={{ animationDelay: '400ms' }}
           >
-            <CardContent className="p-4">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-500/10 to-transparent rounded-bl-full" />
+            <CardContent className="p-5 relative">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-orange-500/10">
-                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                <div className="p-3 rounded-xl bg-orange-500/10 group-hover:bg-orange-500/20 transition-colors">
+                  <AlertCircle className="h-6 w-6 text-orange-500 animate-pulse" />
                 </div>
-                <div>
-                  <p className="font-semibold">Low Stock Alerts</p>
-                  <p className="text-xs text-muted-foreground">
+                <div className="flex-1">
+                  <p className="font-bold text-base group-hover:text-orange-600 transition-colors">Low Stock</p>
+                  <p className="text-xs text-orange-600/80 dark:text-orange-400/80 font-medium">
                     {Object.values(lowStockByStore).reduce((sum, count) => sum + count, 0)} items low
                   </p>
                 </div>
-                <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
+                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Stores List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Store className="h-5 w-5" />
+        <Card className="border-none shadow-lg overflow-hidden">
+          <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10">
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <Store className="h-6 w-6 text-primary" />
               Your Stores ({stores.length})
             </CardTitle>
-            <CardDescription>Click on a store to view its inventory</CardDescription>
+            <CardDescription>Click on a store to view detailed inventory</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {stores.map((store) => {
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {stores.map((store, index) => {
                 const lowStockCount = lowStockByStore[store.id] || 0;
                 const hasLowStock = lowStockCount > 0;
                 
                 return (
                   <Card 
                     key={store.id} 
-                    className={`cursor-pointer hover:shadow-md transition-all ${
+                    className={`group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 overflow-hidden animate-fade-in ${
                       hasLowStock 
-                        ? 'border-orange-500/50 hover:border-orange-500' 
-                        : 'hover:border-primary/50'
+                        ? 'border-2 border-orange-500/50 hover:border-orange-500' 
+                        : 'border-2 border-border/50 hover:border-primary/50'
                     }`}
+                    style={{ animationDelay: `${index * 100}ms` }}
                     onClick={() => navigate(`/store/${store.id}`)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/5 to-transparent rounded-bl-full" />
+                    <CardContent className="p-5 relative">
+                      <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold">{store.name}</p>
-                            {hasLowStock && (
-                              <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/30">
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                {lowStockCount} Low
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground">{store.location}</p>
+                          <h3 className="font-bold text-xl mb-1 group-hover:text-primary transition-colors">
+                            {store.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {store.store_type?.replace('_', ' ')} store
+                          </p>
                         </div>
-                        <Badge variant={store.store_type === 'warehouse' ? 'default' : 'secondary'} className="text-xs">
-                          {store.store_type}
-                        </Badge>
+                        <div className={`p-3 rounded-xl ${
+                          hasLowStock 
+                            ? 'bg-orange-500/10' 
+                            : 'bg-primary/10'
+                        }`}>
+                          <Store className={`h-6 w-6 ${
+                            hasLowStock 
+                              ? 'text-orange-500' 
+                              : 'text-primary'
+                          }`} />
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                        <span className="text-xs text-muted-foreground">View Items</span>
-                        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                      
+                      {hasLowStock && (
+                        <div className="flex items-center gap-2 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 animate-pulse">
+                          <AlertCircle className="h-5 w-5 text-orange-500 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">
+                              Low Stock Alert
+                            </p>
+                            <p className="text-xs text-orange-600/80 dark:text-orange-400/80">
+                              {lowStockCount} {lowStockCount === 1 ? 'item needs' : 'items need'} attention
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground group-hover:text-primary transition-colors">
+                        <span className="font-medium">View Inventory</span>
+                        <ArrowRightLeft className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </div>
-                    </CardContent>
+                     </CardContent>
                   </Card>
                 );
               })}
@@ -1106,112 +1133,155 @@ const StoreManagement = () => {
 
           {/* Live Transactions Feed */}
           <TabsContent value="transactions" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
+            <Card className="border-none shadow-lg">
+              <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10">
+                <CardTitle className="flex items-center gap-2 text-2xl">
+                  <Clock className="w-6 h-6 text-primary" />
                   Live Transaction Feed
                 </CardTitle>
                 <CardDescription>
                   Real-time updates from all store activities
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[500px]">
-                  <div className="space-y-3">
-                    {transactions.map((transaction) => {
-                      // Find the item details
-                      const item = items.find(i => i.name === transaction.item_name);
-                      
-                      return (
-                        <div
-                          key={transaction.id}
-                          className="glass rounded-lg p-4 hover:glass-hover transition-all"
-                        >
-                          <div className="flex items-start gap-3">
-                            {/* Item Photo */}
-                            {item?.photo_url ? (
-                              <img 
-                                src={item.photo_url} 
-                                alt={item.name}
-                                className="w-14 h-14 rounded-md object-cover flex-shrink-0 border"
-                              />
-                            ) : (
-                              <div className="w-14 h-14 rounded-md bg-muted flex items-center justify-center flex-shrink-0 border">
-                                <Package className="h-7 w-7 text-muted-foreground" />
-                              </div>
-                            )}
-                            
-                            <div className="flex-1 min-w-0">
-                              {/* Item Name */}
-                              <p className="font-semibold text-base">
-                                {transaction.item_name || 'Multiple Items'}
-                              </p>
-                              
-                              {/* Transaction Type with Icon and Details */}
-                              <div className="flex items-center gap-2 mt-1">
-                                {transaction.type === 'transfer' && (
-                                  <>
-                                    <ArrowRightLeft className="w-4 h-4 text-blue-500" />
-                                    <span className="text-sm">
-                                      <span className="font-medium">{transaction.item_count} units</span>
-                                      {' from '}<span className="font-medium">{transaction.from_store}</span>
-                                      {' to '}<span className="font-medium">{transaction.to_store}</span>
-                                    </span>
-                                  </>
-                                )}
-                                {transaction.type === 'receiving' && (
-                                  <>
-                                    <Package className="w-4 h-4 text-purple-500" />
-                                    <span className="text-sm">
-                                      <span className="font-medium">{transaction.item_count} units</span>
-                                      {' received at '}<span className="font-medium">{transaction.store}</span>
-                                    </span>
-                                  </>
-                                )}
-                                {transaction.type === 'spot_check' && (
-                                  <>
-                                    <ClipboardCheck className="w-4 h-4 text-green-500" />
-                                    <span className="text-sm">
-                                      Spot check at <span className="font-medium">{transaction.store}</span>
-                                      {' - '}<span className="font-medium">{transaction.item_count} items</span>
-                                    </span>
-                                  </>
-                                )}
-                                {transaction.type === 'variance' && (
-                                  <>
-                                    <TrendingDown className="w-4 h-4 text-orange-500" />
-                                    <span className="text-sm">
-                                      Variance report at <span className="font-medium">{transaction.store}</span>
-                                      {' - '}<span className="font-medium">{transaction.item_count} items</span>
-                                    </span>
-                                  </>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[600px]">
+                  <div className="p-6 space-y-4">
+                    {transactions.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <Activity className="w-12 h-12 text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">No transactions yet</p>
+                      </div>
+                    ) : (
+                      transactions.map((transaction, index) => {
+                        // Find the item details
+                        const item = items.find(i => i.name === transaction.item_name);
+                        
+                        return (
+                          <div
+                            key={transaction.id}
+                            className="group relative glass rounded-xl p-5 hover:shadow-xl transition-all duration-300 animate-fade-in border border-border/50"
+                            style={{ animationDelay: `${index * 50}ms` }}
+                          >
+                            <div className="flex items-start gap-4">
+                              {/* Item Photo with Zoom */}
+                              <div className="flex-shrink-0">
+                                {item?.photo_url ? (
+                                  <ZoomableImage
+                                    src={item.photo_url}
+                                    alt={item.name}
+                                    className="w-20 h-20 rounded-lg"
+                                    containerClassName="w-20 h-20 rounded-lg border-2 border-primary/20 shadow-md"
+                                    objectFit="cover"
+                                  />
+                                ) : (
+                                  <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-2 border-primary/20 shadow-md">
+                                    <Package className="h-10 w-10 text-primary/50" />
+                                  </div>
                                 )}
                               </div>
                               
-                              {/* Who Initiated and When */}
-                              <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-                                <span>Initiated by {transaction.user_email}</span>
-                                <span>•</span>
-                                <span>{new Date(transaction.timestamp).toLocaleString()}</span>
+                              <div className="flex-1 min-w-0 space-y-2">
+                                {/* Item Name */}
+                                <h4 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
+                                  {transaction.item_name || 'Multiple Items'}
+                                </h4>
+                                
+                                {/* Transaction Type with Icon and Details */}
+                                <div className="flex items-start gap-2">
+                                  {transaction.type === 'transfer' && (
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                                        <ArrowRightLeft className="w-4 h-4 text-blue-500" />
+                                        <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Transfer</span>
+                                      </div>
+                                      <span className="text-sm text-muted-foreground">
+                                        <span className="font-semibold text-foreground">{transaction.item_count}</span> units
+                                      </span>
+                                      <span className="text-sm text-muted-foreground">•</span>
+                                      <span className="text-sm">
+                                        <span className="font-medium text-foreground">{transaction.from_store}</span>
+                                        <ArrowRightLeft className="inline w-3 h-3 mx-1" />
+                                        <span className="font-medium text-foreground">{transaction.to_store}</span>
+                                      </span>
+                                    </div>
+                                  )}
+                                  {transaction.type === 'receiving' && (
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20">
+                                        <Package className="w-4 h-4 text-purple-500" />
+                                        <span className="text-sm font-medium text-purple-700 dark:text-purple-400">Receiving</span>
+                                      </div>
+                                      <span className="text-sm text-muted-foreground">
+                                        <span className="font-semibold text-foreground">{transaction.item_count}</span> units
+                                      </span>
+                                      <span className="text-sm text-muted-foreground">•</span>
+                                      <span className="text-sm">
+                                        received at <span className="font-medium text-foreground">{transaction.store}</span>
+                                      </span>
+                                    </div>
+                                  )}
+                                  {transaction.type === 'spot_check' && (
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+                                        <ClipboardCheck className="w-4 h-4 text-green-500" />
+                                        <span className="text-sm font-medium text-green-700 dark:text-green-400">Spot Check</span>
+                                      </div>
+                                      <span className="text-sm">
+                                        at <span className="font-medium text-foreground">{transaction.store}</span>
+                                      </span>
+                                      <span className="text-sm text-muted-foreground">•</span>
+                                      <span className="text-sm text-muted-foreground">
+                                        <span className="font-semibold text-foreground">{transaction.item_count}</span> items
+                                      </span>
+                                    </div>
+                                  )}
+                                  {transaction.type === 'variance' && (
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20">
+                                        <TrendingDown className="w-4 h-4 text-orange-500" />
+                                        <span className="text-sm font-medium text-orange-700 dark:text-orange-400">Variance</span>
+                                      </div>
+                                      <span className="text-sm">
+                                        at <span className="font-medium text-foreground">{transaction.store}</span>
+                                      </span>
+                                      <span className="text-sm text-muted-foreground">•</span>
+                                      <span className="text-sm text-muted-foreground">
+                                        <span className="font-semibold text-foreground">{transaction.item_count}</span> items
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Who Initiated and When */}
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Avatar className="w-5 h-5">
+                                    <AvatarFallback className="text-[10px]">
+                                      {transaction.user_email?.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="font-medium">{transaction.user_email}</span>
+                                  <span>•</span>
+                                  <Clock className="w-3 h-3" />
+                                  <span>{new Date(transaction.timestamp).toLocaleString()}</span>
+                                </div>
                               </div>
+                              
+                              {/* Status Badge */}
+                              <Badge 
+                                variant={
+                                  transaction.status === 'completed' ? 'default' :
+                                  transaction.status === 'pending' ? 'secondary' : 
+                                  'destructive'
+                                }
+                                className="flex-shrink-0 px-3 py-1 text-xs font-semibold"
+                              >
+                                {transaction.status}
+                              </Badge>
                             </div>
-                            
-                            {/* Status Badge */}
-                            <Badge 
-                              variant={
-                                transaction.status === 'completed' ? 'default' :
-                                transaction.status === 'pending' ? 'secondary' : 
-                                'destructive'
-                              }
-                              className="flex-shrink-0"
-                            >
-                              {transaction.status}
-                            </Badge>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    )}
                   </div>
                 </ScrollArea>
               </CardContent>
