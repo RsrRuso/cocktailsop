@@ -878,27 +878,32 @@ const StoreManagement = () => {
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[400px]">
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {receivings.map((receiving: any) => {
                       const itemId = receiving.details?.item_id;
                       const item = items.find((i: any) => i.id === itemId);
                       
                       return (
-                        <div key={receiving.id} className="glass rounded-lg p-3">
+                        <div key={receiving.id} className="glass rounded-lg p-4 hover:glass-hover transition-all">
                           {item?.photo_url && (
-                            <div className="mb-3 rounded-lg overflow-hidden">
+                            <div className="mb-4 rounded-lg overflow-hidden border-2 border-border/50">
                               <img 
                                 src={item.photo_url} 
                                 alt={item.name}
-                                className="w-full h-40 object-contain bg-muted"
+                                className="w-full h-64 object-cover"
                               />
                             </div>
                           )}
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1">
-                              <p className="font-medium">
-                                {item?.name || 'Unknown Item'} {item?.brand && `(${item.brand})`}
+                              <p className="font-semibold text-lg mb-1">
+                                {item?.name || 'Unknown Item'}
                               </p>
+                              {item?.brand && (
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  Brand: {item.brand}
+                                </p>
+                              )}
                               <p className="text-sm text-muted-foreground">
                                 Store: {receiving.stores?.name}
                               </p>
