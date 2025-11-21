@@ -280,41 +280,63 @@ Deno.serve(async (req) => {
 
       console.log(`Workspace ${workspaceId}: Emails sent: ${successCount} succeeded, ${failureCount} failed`);
 
-      // Create in-app notifications for all workspace members with alert recipients
-      if (recipients.length > 0) {
-        console.log(`Creating in-app notifications for ${recipients.length} recipients`);
+      // Create in-app notifications for ALL workspace members (not just email recipients)
+      const { data: allWorkspaceMembers, error: membersError } = await supabase
+        .from('workspace_members')
+        .select('user_id')
+        .eq('workspace_id', workspaceId);
+
+      if (!membersError && allWorkspaceMembers && allWorkspaceMembers.length > 0) {
+        console.log(`Creating in-app notifications for ${allWorkspaceMembers.length} workspace members`);
         
-        const notificationPromises = settings.alert_recipients.map(async (userId: string) => {
+        // Get workspace name for notification
+        const { data: workspace } = await supabase
+          .from('workspaces')
+          .select('name')
+          .eq('id', workspaceId)
+          .single();
+
+        const workspaceName = workspace?.name || 'your workspace';
+        
+        const notificationPromises = allWorkspaceMembers.map(async (member: any) => {
           try {
             const { error: notifError } = await supabase
               .from('notifications')
               .insert({
-                user_id: userId,
+                user_id: member.user_id,
                 type: 'fifo_alert',
-                content: `⚠️ ${expiringItems.length} items expiring within ${daysBeforeExpiry} days. Tap to view details.`,
+                content: `⚠️ [${workspaceName}] ${expiringItems.length} items expiring within ${daysBeforeExpiry} days. Tap to view details.`,
                 read: false
               });
             
             if (notifError) {
-              console.error(`Failed to create notification for user ${userId}:`, notifError);
+              console.error(`Failed to create notification for user ${member.user_id}:`, notifError);
             } else {
-              console.log(`✅ Notification created for user ${userId}`);
+              console.log(`✅ Notification created for user ${member.user_id}`);
             }
           } catch (error) {
-            console.error(`Error creating notification for user ${userId}:`, error);
+            console.error(`Error creating notification for user ${member.user_id}:`, error);
           }
         });
 
         await Promise.allSettled(notificationPromises);
-      }
 
-      allResults.push({
-        workspaceId,
-        itemsFound: expiringItems.length,
-        emailsSent: successCount,
-        emailsFailed: failureCount,
-        notificationsSent: recipients.length
-      });
+        allResults.push({
+          workspaceId,
+          itemsFound: expiringItems.length,
+          emailsSent: successCount,
+          emailsFailed: failureCount,
+          notificationsSent: allWorkspaceMembers.length
+        });
+      } else {
+        allResults.push({
+          workspaceId,
+          itemsFound: expiringItems.length,
+          emailsSent: successCount,
+          emailsFailed: failureCount,
+          notificationsSent: 0
+        });
+      }
     }
 
     return new Response(
