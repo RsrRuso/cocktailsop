@@ -138,6 +138,7 @@ const StoreManagement = () => {
         .from("stores")
         .select("*")
         .eq("workspace_id", workspaceId)
+        .eq("is_active", true)
         .order("name");
 
       // Fetch items
@@ -760,17 +761,19 @@ const StoreManagement = () => {
               <CardContent>
                 <form onSubmit={handleCreateReceiving} className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Warehouse Store</Label>
+                    <Label>Warehouse / Receiving Store</Label>
                     <Select value={selectedReceivingStore} onValueChange={setSelectedReceivingStore}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select warehouse" />
+                        <SelectValue placeholder="Select receiving store" />
                       </SelectTrigger>
                       <SelectContent>
-                        {stores.filter(s => s.store_type === 'warehouse').map((store) => (
-                          <SelectItem key={store.id} value={store.id}>
-                            {store.name}
-                          </SelectItem>
-                        ))}
+                        {stores
+                          .filter((s) => s.store_type === 'receive' || s.store_type === 'both')
+                          .map((store) => (
+                            <SelectItem key={store.id} value={store.id}>
+                              {store.name}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>

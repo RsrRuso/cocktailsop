@@ -28,7 +28,7 @@ const StoresAdmin = () => {
   // Form states
   const [storeName, setStoreName] = useState("");
   const [storeLocation, setStoreLocation] = useState("");
-  const [storeType, setStoreType] = useState("warehouse");
+  const [storeType, setStoreType] = useState("receive");
 
   useEffect(() => {
     if (user) {
@@ -50,7 +50,7 @@ const StoresAdmin = () => {
           *,
           inventory(count)
         `)
-        .match(workspaceFilter)
+        .match({ ...workspaceFilter, is_active: true })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -103,23 +103,15 @@ const StoresAdmin = () => {
 
   const handleDeleteStore = async (storeId: string, storeName: string) => {
     try {
-      // Delete all inventory items in this store first
-      const { error: inventoryError } = await supabase
-        .from('inventory')
-        .delete()
-        .eq('store_id', storeId);
-
-      if (inventoryError) throw inventoryError;
-
-      // Then delete the store
+      // Soft-delete: mark store as inactive so it disappears from all views
       const { error } = await supabase
         .from('stores')
-        .delete()
+        .update({ is_active: false })
         .eq('id', storeId);
 
       if (error) throw error;
 
-      toast.success(`Store "${storeName}" and all its inventory deleted successfully`);
+      toast.success(`Store "${storeName}" removed from active stores`);
       fetchStores();
     } catch (error: any) {
       console.error('Error deleting store:', error);
@@ -208,13 +200,9 @@ const StoresAdmin = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="warehouse">Warehouse</SelectItem>
-                      <SelectItem value="outlet">Outlet</SelectItem>
-                      <SelectItem value="kitchen">Kitchen</SelectItem>
-                      <SelectItem value="bar">Bar</SelectItem>
-                      <SelectItem value="storage">Storage</SelectItem>
-                      <SelectItem value="retail">Retail</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="receive">Receiving / Warehouse</SelectItem>
+                      <SelectItem value="sell">Sales / Outlet</SelectItem>
+                      <SelectItem value="both">Both (Send & Receive)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

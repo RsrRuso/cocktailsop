@@ -62,7 +62,7 @@ const AllInventory = () => {
       const { data: storesData } = await supabase
         .from('stores')
         .select('*')
-        .match(workspaceFilter)
+        .match({ ...workspaceFilter, is_active: true })
         .order('name');
 
       setStores(storesData || []);
