@@ -36,11 +36,18 @@ const ScanAccess = () => {
 
       try {
         // Fetch workspace info
-        const { data: workspace } = await supabase
+        const { data: workspace, error: workspaceError } = await supabase
           .from("workspaces")
           .select("name, owner_id")
           .eq("id", workspaceId)
-          .single();
+          .maybeSingle();
+
+        if (workspaceError) {
+          console.error("Error fetching workspace:", workspaceError);
+          toast.error("Error loading workspace");
+          setLoading(false);
+          return;
+        }
 
         if (!workspace) {
           toast.error("Workspace not found");
