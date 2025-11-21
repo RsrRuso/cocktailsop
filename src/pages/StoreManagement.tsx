@@ -365,6 +365,7 @@ const StoreManagement = () => {
 
     try {
       const qty = parseFloat(receivingQuantity);
+      console.log("Recording receiving - Quantity entered:", receivingQuantity, "Parsed quantity:", qty);
       
       // Check if inventory already exists for this item at this store
       const { data: existingInventory } = await supabase
@@ -829,7 +830,7 @@ const StoreManagement = () => {
                     return selectedItem?.photo_url ? (
                       <div className="space-y-1.5">
                         <Label className="text-sm">Item Photo</Label>
-                        <div className="relative w-full h-48 rounded-lg overflow-hidden border">
+                        <div className="relative w-full h-32 rounded-lg overflow-hidden border">
                           <img 
                             src={selectedItem.photo_url} 
                             alt={selectedItem.name}
@@ -903,7 +904,7 @@ const StoreManagement = () => {
                                 <img 
                                   src={item.photo_url} 
                                   alt={item.name}
-                                  className="w-full h-64 object-cover"
+                                  className="w-full h-32 object-contain bg-muted"
                                 />
                               </div>
                             )}
