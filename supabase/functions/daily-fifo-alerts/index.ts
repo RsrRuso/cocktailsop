@@ -276,7 +276,9 @@ Deno.serve(async (req) => {
                 user_id: member.user_id,
                 type: 'fifo_alert',
                 content: `⚠️ [${workspaceName}] ${expiringItems.length} items expiring within ${daysBeforeExpiry} days. Tap to view details.`,
-                read: false
+                read: false,
+                // Store workspace_id in a metadata field (we'll need to add this)
+                post_id: workspaceId // Temporarily use post_id to store workspace_id
               });
             
             if (notifError) {

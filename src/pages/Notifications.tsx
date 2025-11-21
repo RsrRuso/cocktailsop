@@ -184,7 +184,9 @@ const Notifications = () => {
     if (notification.type === 'access_request') {
       navigate('/access-approval');
     } else if (notification.type === 'fifo_alert') {
-      navigate('/expiring-inventory');
+      // Navigate to expiring inventory with workspace ID
+      const workspaceId = notification.post_id; // We stored workspace_id in post_id
+      navigate(`/expiring-inventory/${workspaceId}`);
     } else if (notification.post_id) {
       navigate(`/post/${notification.post_id}`);
     } else if (notification.reel_id) {
