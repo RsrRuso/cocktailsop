@@ -8,7 +8,8 @@ export const useInAppNotifications = () => {
   const showNotification = useCallback((
     title: string,
     message: string,
-    type?: 'message' | 'like' | 'comment' | 'follow' | 'new_user' | 'default'
+    type?: 'message' | 'like' | 'comment' | 'follow' | 'new_user' | 'transaction' | 'receiving' | 'default',
+    onClick?: () => void
   ) => {
     const notification: NotificationData = {
       id: Date.now().toString(),
@@ -16,6 +17,7 @@ export const useInAppNotifications = () => {
       message,
       type: type || 'default',
       timestamp: new Date(),
+      onClick,
     };
 
     setCurrentNotification(notification);

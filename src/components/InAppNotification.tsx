@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { X, Bell, MessageCircle, Heart, UserPlus, UserCheck } from 'lucide-react';
+import { X, Bell, MessageCircle, Heart, UserPlus, UserCheck, ArrowRightLeft, PackageCheck } from 'lucide-react';
 
 export interface NotificationData {
   id: string;
   title: string;
   message: string;
-  type?: 'message' | 'like' | 'comment' | 'follow' | 'new_user' | 'default';
+  type?: 'message' | 'like' | 'comment' | 'follow' | 'new_user' | 'transaction' | 'receiving' | 'default';
   timestamp: Date;
+  onClick?: () => void;
 }
 
 interface InAppNotificationProps {
@@ -53,8 +54,23 @@ export const InAppNotification = ({
         return <UserPlus className="w-5 h-5 text-purple-500" />;
       case 'new_user':
         return <UserCheck className="w-5 h-5 text-emerald-500" />;
+      case 'transaction':
+        return <ArrowRightLeft className="w-5 h-5 text-orange-500" />;
+      case 'receiving':
+        return <PackageCheck className="w-5 h-5 text-cyan-500" />;
       default:
         return <Bell className="w-5 h-5 text-primary" />;
+    }
+  };
+
+  const handleNotificationClick = () => {
+    if (notification?.onClick) {
+      notification.onClick();
+      setIsVisible(false);
+      setTimeout(() => {
+        setShouldRender(false);
+        onClose();
+      }, 300);
     }
   };
 
@@ -68,7 +84,12 @@ export const InAppNotification = ({
           : '-translate-y-full opacity-0 scale-95'
       }`}
     >
-      <div className="glass rounded-2xl p-4 shadow-2xl border border-primary/20 backdrop-blur-xl animate-fade-in">
+      <div 
+        className={`glass rounded-2xl p-4 shadow-2xl border border-primary/20 backdrop-blur-xl animate-fade-in ${
+          notification?.onClick ? 'cursor-pointer hover:border-primary/40 transition-all' : ''
+        }`}
+        onClick={handleNotificationClick}
+      >
         <div className="flex items-start gap-3">
           <div className="shrink-0 mt-0.5">
             {getIcon()}
@@ -84,7 +105,8 @@ export const InAppNotification = ({
           </div>
 
           <button
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               setIsVisible(false);
               setTimeout(() => {
                 setShouldRender(false);

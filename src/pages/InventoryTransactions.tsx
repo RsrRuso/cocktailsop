@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ const InventoryTransactions = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { currentWorkspace } = useWorkspace();
+  const { showNotification } = useInAppNotificationContext();
   
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,36 +50,46 @@ const InventoryTransactions = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'inventory_transfers'
         },
-        () => {
+        (payload) => {
           fetchTransactions();
-          toast.info("New transaction", { duration: 2000 });
+          showNotification(
+            '📦 New Transfer',
+            'Inventory transfer initiated',
+            'transaction',
+            () => navigate('/inventory-transactions')
+          );
         }
       )
       .subscribe();
 
-    const receivingChannel = supabase
-      .channel('receivings-realtime')
+    const inventoryChannel = supabase
+      .channel('inventory-realtime')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
-          table: 'inventory_receivings'
+          table: 'inventory'
         },
-        () => {
+        (payload) => {
           fetchTransactions();
-          toast.info("New receiving", { duration: 2000 });
+          showNotification(
+            '✅ New Receiving',
+            'Inventory received successfully',
+            'receiving',
+            () => navigate('/inventory-transactions')
+          );
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(transferChannel);
-      supabase.removeChannel(receivingChannel);
+      supabase.removeChannel(inventoryChannel);
     };
   };
 
