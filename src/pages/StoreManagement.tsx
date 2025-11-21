@@ -1480,7 +1480,7 @@ const StoreManagement = () => {
                   <div className="space-y-2">
                     {transfers.map((transfer: any) => (
                       <div key={transfer.id} className="glass rounded-lg p-3">
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">
                               {transfer.inventory?.items?.name || 'Unknown Item'}
@@ -1498,26 +1498,30 @@ const StoreManagement = () => {
                               </p>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'}>
+                          <div className="flex flex-col items-end gap-2 shrink-0">
+                            <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'} className="whitespace-nowrap">
                               {transfer.status}
                             </Badge>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => handleEditTransfer(transfer)}
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => setDeleteTransferId(transfer.id)}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleEditTransfer(transfer)}
+                                title="Edit transfer"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setDeleteTransferId(transfer.id)}
+                                title="Delete transfer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
