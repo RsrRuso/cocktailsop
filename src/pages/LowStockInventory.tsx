@@ -13,8 +13,14 @@ interface LowStockItem {
   id: string;
   quantity: number;
   expiration_date: string;
-  items: { name: string } | null;
+  item_id: string;
+  items: { name: string; category: string } | null;
   stores: { name: string } | null;
+}
+
+interface ItemAverage {
+  itemId: string;
+  avgQuantity: number;
 }
 
 interface Workspace {
@@ -25,6 +31,7 @@ interface Workspace {
 const LowStockInventory = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
+  const [itemAverages, setItemAverages] = useState<Record<string, number>>({});
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -66,6 +73,7 @@ const LowStockInventory = () => {
           id,
           quantity,
           expiration_date,
+          item_id,
           items(name, category),
           stores(name)
         `)
@@ -74,6 +82,29 @@ const LowStockInventory = () => {
         .order("quantity", { ascending: true });
 
       if (error) throw error;
+      
+      // Fetch all inventory for this workspace to calculate averages
+      const { data: allInventoryData } = await supabase
+        .from("inventory")
+        .select("item_id, quantity")
+        .eq("workspace_id", workspaceId);
+
+      // Calculate average quantity per item across all stores
+      const itemQuantities: Record<string, number[]> = {};
+      allInventoryData?.forEach((inv: any) => {
+        if (!itemQuantities[inv.item_id]) {
+          itemQuantities[inv.item_id] = [];
+        }
+        itemQuantities[inv.item_id].push(inv.quantity);
+      });
+
+      const averages: Record<string, number> = {};
+      Object.keys(itemQuantities).forEach(itemId => {
+        const quantities = itemQuantities[itemId];
+        averages[itemId] = quantities.reduce((a, b) => a + b, 0) / quantities.length;
+      });
+
+      setItemAverages(averages);
       
       // Filter to only show glassware items
       const glasswareItems = (data || []).filter((item: any) => 
@@ -89,10 +120,22 @@ const LowStockInventory = () => {
     }
   };
 
-  const getStockColor = (quantity: number) => {
-    if (quantity === 0) return "text-red-500 bg-red-50 dark:bg-red-900/20";
-    if (quantity <= 3) return "text-orange-500 bg-orange-50 dark:bg-orange-900/20";
-    return "text-blue-500 bg-blue-50 dark:bg-blue-900/20";
+  const getStockLevel = (quantity: number, itemId: string) => {
+    const avgQuantity = itemAverages[itemId] || 0;
+    
+    if (quantity === 0) {
+      return { level: 'out', label: 'OUT OF STOCK', color: 'text-red-600 bg-red-100 dark:bg-red-900/30 border border-red-500/50' };
+    }
+    
+    if (avgQuantity > 0 && quantity < avgQuantity * 0.25) {
+      return { level: 'very-low', label: 'VERY LOW', color: 'text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-400/40' };
+    }
+    
+    if (avgQuantity > 0 && quantity < avgQuantity * 0.5) {
+      return { level: 'low', label: 'LOW', color: 'text-orange-500 bg-orange-50 dark:bg-orange-900/20 border border-orange-400/40' };
+    }
+    
+    return { level: 'warning', label: 'WARNING', color: 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-400/40' };
   };
 
   const exportToPDF = () => {
@@ -113,18 +156,20 @@ const LowStockInventory = () => {
       doc.text(`Total Low Stock Items: ${lowStockItems.length}`, 14, 47);
 
       const tableData = lowStockItems.map((item, index) => {
+        const stockLevel = getStockLevel(item.quantity, item.item_id);
         return [
           index + 1,
           item.items?.name || "Unknown",
           item.stores?.name || "Unknown",
           item.quantity,
+          stockLevel.label,
           new Date(item.expiration_date).toLocaleDateString(),
         ];
       });
 
       autoTable(doc, {
         startY: 55,
-        head: [["#", "Item", "Store", "Quantity", "Expires"]],
+        head: [["#", "Item", "Store", "Quantity", "Status", "Expires"]],
         body: tableData,
         theme: "striped",
         headStyles: {
@@ -137,11 +182,12 @@ const LowStockInventory = () => {
           cellPadding: 5,
         },
         columnStyles: {
-          0: { cellWidth: 15 },
-          1: { cellWidth: 60 },
-          2: { cellWidth: 45 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 35 },
+          0: { cellWidth: 12 },
+          1: { cellWidth: 50 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 20 },
+          4: { cellWidth: 28 },
+          5: { cellWidth: 30 },
         },
       });
 
@@ -210,10 +256,19 @@ const LowStockInventory = () => {
         ) : (
           <div className="space-y-3">
             {lowStockItems.map((item, index) => {
+              const stockLevel = getStockLevel(item.quantity, item.item_id);
+              const avgQuantity = itemAverages[item.item_id] || 0;
+              
               return (
                 <div
                   key={item.id}
-                  className="glass rounded-xl p-4 hover:glass-hover transition-all"
+                  className={`glass rounded-xl p-4 hover:glass-hover transition-all ${
+                    stockLevel.level === 'very-low' || stockLevel.level === 'out' 
+                      ? 'border-2 border-red-500/50' 
+                      : stockLevel.level === 'low'
+                        ? 'border border-orange-500/40'
+                        : ''
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
@@ -224,6 +279,9 @@ const LowStockInventory = () => {
                         <h3 className="font-semibold">
                           {item.items?.name || "Unknown Item"}
                         </h3>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${stockLevel.color}`}>
+                          {stockLevel.label}
+                        </span>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
@@ -238,12 +296,18 @@ const LowStockInventory = () => {
                             {new Date(item.expiration_date).toLocaleDateString()}
                           </span>
                         </div>
+                        {avgQuantity > 0 && (
+                          <div className="col-span-2">
+                            <span className="text-muted-foreground">Avg across stores:</span>{" "}
+                            <span className="font-medium">
+                              {avgQuantity.toFixed(1)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div
-                      className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${getStockColor(
-                        item.quantity
-                      )}`}
+                      className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${stockLevel.color}`}
                     >
                       Qty: {item.quantity}
                     </div>
