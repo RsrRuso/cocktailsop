@@ -177,7 +177,8 @@ const StoreManagement = () => {
           *,
           from_store:stores!from_store_id(name),
           to_store:stores!to_store_id(name),
-          transferred_by:employees(name)
+          transferred_by:employees(name),
+          inventory:inventory(items(name))
         `)
         .eq("user_id", user.id)
         .order("transfer_date", { ascending: false })
@@ -1407,12 +1408,16 @@ const StoreManagement = () => {
                     {transfers.map((transfer: any) => (
                       <div key={transfer.id} className="glass rounded-lg p-3">
                         <div className="flex items-center justify-between">
-                          <div>
+                          <div className="flex-1">
                             <p className="font-medium">
-                              {transfer.from_store?.name} → {transfer.to_store?.name}
+                              {transfer.inventory?.items?.name || 'Unknown Item'}
                             </p>
                             <p className="text-sm text-muted-foreground">
+                              {transfer.from_store?.name} → {transfer.to_store?.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
                               Qty: {transfer.quantity} • {new Date(transfer.transfer_date).toLocaleDateString()}
+                              {transfer.transferred_by?.name && ` • By ${transfer.transferred_by.name}`}
                             </p>
                           </div>
                           <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'}>
