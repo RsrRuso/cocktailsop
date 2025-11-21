@@ -2352,7 +2352,7 @@ export default function StaffScheduling() {
         )}
 
         {/* Daily Summary */}
-        {staffMembers.length > 0 && Object.keys(schedule).length > 0 && (
+        {Object.keys(schedule).length > 0 && (
           <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
             <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/3 rounded-full blur-3xl" />
             <div className="relative">
