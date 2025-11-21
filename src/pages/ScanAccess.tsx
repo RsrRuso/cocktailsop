@@ -78,18 +78,25 @@ const ScanAccess = () => {
           return;
         }
 
-        // Check for pending request
+        // Check for any existing request
         const { data: existing } = await supabase
           .from("access_requests")
           .select("*")
           .eq("workspace_id", workspaceId)
           .eq("user_id", user.id)
-          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+          .limit(1)
           .maybeSingle();
 
         if (existing) {
-          setStatus("success");
-          toast.info("Your access request is pending approval");
+          if (existing.status === "pending") {
+            setStatus("success");
+            toast.info("Your access request is pending approval");
+          } else if (existing.status === "rejected") {
+            // Allow them to submit a new request
+            setStatus("form");
+          }
+          // If approved but not in workspace_members, they still need to request
         }
       } catch (error) {
         console.error("Error checking access:", error);
@@ -114,25 +121,34 @@ const ScanAccess = () => {
     setStatus("requesting");
 
     try {
-      // Check if user already has a pending/approved request for this workspace
-      const { data: existing } = await supabase
-        .from("access_requests")
+      // Check if user is already a workspace member first
+      const { data: membership } = await supabase
+        .from("workspace_members")
         .select("*")
         .eq("workspace_id", workspaceId)
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (existing) {
-        if (existing.status === "approved") {
-          toast.info("Your access has been approved!");
-          setStatus("success");
-          return;
-        }
-        if (existing.status === "pending") {
-          toast.info("You already have a pending access request");
-          setStatus("success");
-          return;
-        }
+      if (membership) {
+        toast.success("You already have access to this workspace!");
+        navigate("/inventory-manager");
+        return;
+      }
+
+      // Check for existing requests
+      const { data: existing } = await supabase
+        .from("access_requests")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existing && existing.status === "pending") {
+        toast.info("You already have a pending access request");
+        setStatus("success");
+        return;
       }
 
       // Create access request using logged-in user's info

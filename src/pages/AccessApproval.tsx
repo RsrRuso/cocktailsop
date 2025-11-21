@@ -31,6 +31,7 @@ const AccessApproval = () => {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [isWorkspaceOwner, setIsWorkspaceOwner] = useState(false);
+  const [filter, setFilter] = useState<'pending' | 'all'>('pending');
 
   // Check if user is a workspace owner
   useEffect(() => {
@@ -81,7 +82,7 @@ const AccessApproval = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [isManager, isWorkspaceOwner]);
+  }, [isManager, isWorkspaceOwner, filter]);
 
   const fetchRequests = async () => {
     try {
@@ -90,6 +91,11 @@ const AccessApproval = () => {
       let query = supabase
         .from("access_requests")
         .select("*, workspaces(name)");
+
+      // Filter by status
+      if (filter === 'pending') {
+        query = query.eq('status', 'pending');
+      }
 
       // If not a manager, only show requests for their workspaces
       if (!isManager) {
@@ -235,11 +241,27 @@ const AccessApproval = () => {
         <Card>
           <CardHeader className="pb-4">
             <div className="flex items-start justify-between gap-2">
-              <div>
+              <div className="flex-1">
                 <CardTitle className="text-xl">Access Requests</CardTitle>
                 <CardDescription>
                   Approve or reject staff access to inventory management
                 </CardDescription>
+                <div className="flex gap-2 mt-3">
+                  <Button
+                    size="sm"
+                    variant={filter === 'pending' ? 'default' : 'outline'}
+                    onClick={() => setFilter('pending')}
+                  >
+                    Pending
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={filter === 'all' ? 'default' : 'outline'}
+                    onClick={() => setFilter('all')}
+                  >
+                    All Requests
+                  </Button>
+                </div>
               </div>
               <Button
                 variant="ghost"
@@ -254,7 +276,7 @@ const AccessApproval = () => {
           <CardContent className="space-y-3 pb-4">
             {requests.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
-                No access requests yet
+                {filter === 'pending' ? 'No pending requests' : 'No access requests yet'}
               </p>
             ) : (
               requests.map((request) => (
