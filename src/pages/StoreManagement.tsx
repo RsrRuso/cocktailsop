@@ -53,7 +53,6 @@ const StoreManagement = () => {
   const [receivings, setReceivings] = useState<any[]>([]);
   const [spotChecks, setSpotChecks] = useState<any[]>([]);
   const [varianceReports, setVarianceReports] = useState<any[]>([]);
-  const [followers, setFollowers] = useState<any[]>([]);
   
   // Form states
   const [selectedFromStore, setSelectedFromStore] = useState("");
@@ -218,12 +217,6 @@ const StoreManagement = () => {
         `)
         .eq("workspace_id", workspaceId);
 
-      // Fetch followers
-      const { data: followersData } = await supabase
-        .from('follows')
-        .select('following_id, profiles!follows_following_id_fkey(id, username, full_name, email, avatar_url)')
-        .eq('follower_id', user.id);
-
       setStores(storesData || []);
       setItems(itemsData || []);
       setInventory(inventoryData || []);
@@ -232,7 +225,6 @@ const StoreManagement = () => {
       setSpotChecks(spotChecksData || []);
       setVarianceReports(varianceData || []);
       setMembers(membersData || []);
-      setFollowers(followersData?.map((f: any) => f.profiles).filter(Boolean) || []);
 
       // Build live transactions feed
       const allTransactions: Transaction[] = [];
@@ -554,44 +546,6 @@ const StoreManagement = () => {
     }
   };
 
-  const handleAddFollowerToWorkspace = async (followerId: string) => {
-    if (!currentWorkspace) {
-      toast.error("Please select a workspace first");
-      return;
-    }
-
-    try {
-      // Check if already a member
-      const { data: existingMember } = await supabase
-        .from('workspace_members')
-        .select('id')
-        .eq('workspace_id', currentWorkspace.id)
-        .eq('user_id', followerId)
-        .single();
-
-      if (existingMember) {
-        toast.error("User is already a member of this workspace");
-        return;
-      }
-
-      const { error } = await supabase
-        .from('workspace_members')
-        .insert({
-          workspace_id: currentWorkspace.id,
-          user_id: followerId,
-          role: 'member'
-        });
-
-      if (error) throw error;
-
-      toast.success("Follower added to workspace successfully!");
-      fetchAllData();
-    } catch (error) {
-      console.error('Error adding follower to workspace:', error);
-      toast.error("Failed to add follower to workspace");
-    }
-  };
-
   const handleDeleteReceiving = async (receiving: any) => {
     if (!user || !currentWorkspace) return;
 
@@ -771,7 +725,7 @@ const StoreManagement = () => {
         </div>
 
         {/* Quick Navigation */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/stores-admin')}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -841,21 +795,6 @@ const StoreManagement = () => {
                 <div>
                   <p className="font-semibold">Expiring</p>
                   <p className="text-xs text-muted-foreground">FIFO alerts</p>
-                </div>
-                <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/team-management')}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-indigo-500/10">
-                  <Users className="h-5 w-5 text-indigo-500" />
-                </div>
-                <div>
-                  <p className="font-semibold">Team</p>
-                  <p className="text-xs text-muted-foreground">Workspaces</p>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
               </div>
@@ -1462,12 +1401,11 @@ const StoreManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Invite by Email */}
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button className="w-full">
                         <UserPlus className="w-4 h-4 mr-2" />
-                        Invite Member by Email
+                        Invite Member
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -1512,97 +1450,45 @@ const StoreManagement = () => {
                     </DialogContent>
                   </Dialog>
 
-                  {/* Add from Followers */}
-                  {followers.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-muted-foreground" />
-                        <h4 className="font-medium">Add from Followers</h4>
-                      </div>
-                      <ScrollArea className="h-[200px]">
-                        <div className="space-y-2">
-                          {followers
-                            .filter((f: any) => !members.some((m: any) => m.user_id === f.id))
-                            .map((follower: any) => (
-                              <div key={follower.id} className="glass rounded-lg p-3">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-3">
-                                    <Avatar>
-                                      <AvatarFallback>
-                                        {follower.full_name?.charAt(0) || follower.username?.charAt(0) || '?'}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                      <p className="font-medium text-sm">
-                                        {follower.full_name || follower.username}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {follower.email}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleAddFollowerToWorkspace(follower.id)}
-                                  >
-                                    <UserPlus className="w-3 h-3 mr-1" />
-                                    Add
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      </ScrollArea>
-                    </div>
-                  )}
-
-                  {/* Current Members */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-muted-foreground" />
-                      <h4 className="font-medium">Current Members ({members.length})</h4>
-                    </div>
-                    <ScrollArea className="h-[300px]">
-                      <div className="space-y-2">
-                        {members.map((member: any) => (
-                          <div key={member.id} className="glass rounded-lg p-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <Avatar>
-                                  <AvatarFallback>
-                                    {member.profiles?.email?.charAt(0).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <p className="font-medium">
-                                    {member.profiles?.full_name || member.profiles?.username}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {member.profiles?.email}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline">
-                                  {member.role}
-                                </Badge>
-                                {member.role !== 'owner' && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemoveMember(member.id)}
-                                  >
-                                    <UserMinus className="w-4 h-4" />
-                                  </Button>
-                                )}
+                  <ScrollArea className="h-[400px]">
+                    <div className="space-y-2">
+                      {members.map((member: any) => (
+                        <div key={member.id} className="glass rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Avatar>
+                                <AvatarFallback>
+                                  {member.profiles?.email?.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">
+                                  {member.profiles?.full_name || member.profiles?.username}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {member.profiles?.email}
+                                </p>
                               </div>
                             </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">
+                                {member.role}
+                              </Badge>
+                              {member.role !== 'owner' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveMember(member.id)}
+                                >
+                                  <UserMinus className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </div>
               </CardContent>
             </Card>
