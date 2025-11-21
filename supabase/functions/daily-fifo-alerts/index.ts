@@ -267,9 +267,16 @@ Deno.serve(async (req) => {
 
       if (!membersError && allWorkspaceMembers && allWorkspaceMembers.length > 0) {
         console.log(`Creating in-app notifications for ${allWorkspaceMembers.length} workspace members`);
+        console.log(`Using workspace ID: ${workspaceId} for notifications`);
         
         const notificationPromises = allWorkspaceMembers.map(async (member: any) => {
           try {
+            // Ensure workspaceId is a valid string
+            if (!workspaceId || typeof workspaceId !== 'string') {
+              console.error(`Invalid workspace ID: ${workspaceId}`);
+              return;
+            }
+            
             const { error: notifError } = await supabase
               .from('notifications')
               .insert({
@@ -277,8 +284,7 @@ Deno.serve(async (req) => {
                 type: 'fifo_alert',
                 content: `⚠️ [${workspaceName}] ${expiringItems.length} items expiring within ${daysBeforeExpiry} days. Tap to view details.`,
                 read: false,
-                // Store workspace_id in a metadata field (we'll need to add this)
-                post_id: workspaceId // Temporarily use post_id to store workspace_id
+                post_id: workspaceId // Store workspace_id here for navigation
               });
             
             if (notifError) {
