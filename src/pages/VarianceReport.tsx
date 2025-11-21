@@ -1,66 +1,114 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Download, TrendingUp, TrendingDown } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Download, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VarianceData {
   item: string;
-  expectedUsage: number;
-  actualUsage: number;
+  expectedQuantity: number;
+  spotCheckQty: number;
+  transferredQty: number;
   variance: number;
   variancePercent: number;
-  costImpact: number;
-  unit: string;
+  finalQty: number;
+  itemId: string;
 }
 
 const VarianceReport = () => {
   const navigate = useNavigate();
   const [variances, setVariances] = useState<VarianceData[]>([]);
-  const [item, setItem] = useState("");
-  const [expectedUsage, setExpectedUsage] = useState("");
-  const [actualUsage, setActualUsage] = useState("");
-  const [costPerUnit, setCostPerUnit] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const handleAddItem = () => {
-    if (!item || !expectedUsage || !actualUsage || !costPerUnit) {
-      toast.error("Please fill in all fields");
-      return;
+  useEffect(() => {
+    fetchVarianceData();
+  }, []);
+
+  const fetchVarianceData = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch spot check items with related data
+      const { data: spotCheckItems, error: spotError } = await supabase
+        .from("spot_check_items")
+        .select(`
+          *,
+          items (name),
+          inventory (quantity)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (spotError) throw spotError;
+
+      if (!spotCheckItems || spotCheckItems.length === 0) {
+        setVariances([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch transfer data for these items (join through inventory to get item_id)
+      const itemIds = spotCheckItems.map(item => item.item_id);
+      const { data: transfers } = await supabase
+        .from("inventory_transfers")
+        .select(`
+          quantity,
+          status,
+          inventory:inventory_id (
+            item_id
+          )
+        `)
+        .eq("status", "completed");
+
+      // Calculate transferred quantities per item
+      const transferredByItem = (transfers || []).reduce((acc, transfer) => {
+        const itemId = (transfer.inventory as any)?.item_id;
+        if (itemId && itemIds.includes(itemId)) {
+          acc[itemId] = (acc[itemId] || 0) + (transfer.quantity || 0);
+        }
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Build variance data
+      const varianceData: VarianceData[] = spotCheckItems.map(item => {
+        const expected = item.expected_quantity || 0;
+        const actual = item.actual_quantity || 0;
+        const transferred = transferredByItem[item.item_id] || 0;
+        const variance = item.variance || 0;
+        const variancePercent = expected > 0 ? (variance / expected) * 100 : 0;
+        const finalQty = actual + transferred;
+
+        return {
+          item: item.items?.name || "Unknown Item",
+          expectedQuantity: expected,
+          spotCheckQty: actual,
+          transferredQty: transferred,
+          variance,
+          variancePercent,
+          finalQty,
+          itemId: item.item_id
+        };
+      });
+
+      setVariances(varianceData);
+    } catch (error: any) {
+      console.error("Error fetching variance data:", error);
+      toast.error("Failed to load variance data");
+    } finally {
+      setLoading(false);
     }
-
-    const expected = parseFloat(expectedUsage);
-    const actual = parseFloat(actualUsage);
-    const cost = parseFloat(costPerUnit);
-    const variance = actual - expected;
-    const variancePercent = (variance / expected) * 100;
-    const costImpact = variance * cost;
-
-    setVariances([...variances, {
-      item,
-      expectedUsage: expected,
-      actualUsage: actual,
-      variance,
-      variancePercent,
-      costImpact,
-      unit: "units"
-    }]);
-
-    setItem("");
-    setExpectedUsage("");
-    setActualUsage("");
-    setCostPerUnit("");
-    toast.success("Variance added to report");
   };
 
   const generatePDF = () => {
     if (variances.length === 0) {
-      toast.error("Add some variance data first");
+      toast.error("No variance data to export");
       return;
     }
 
@@ -72,27 +120,28 @@ const VarianceReport = () => {
     doc.setFontSize(10);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 28);
     
-    const totalCostImpact = variances.reduce((sum, item) => sum + item.costImpact, 0);
+    const totalVariance = variances.reduce((sum, item) => sum + Math.abs(item.variance), 0);
     const overages = variances.filter(v => v.variance > 0).length;
     const shortages = variances.filter(v => v.variance < 0).length;
     
     doc.setFontSize(12);
     doc.text("Summary", 14, 38);
     doc.setFontSize(10);
-    doc.text(`Total Cost Impact: $${Math.abs(totalCostImpact).toFixed(2)}`, 14, 45);
+    doc.text(`Total Variance: ${totalVariance.toFixed(2)}`, 14, 45);
     doc.text(`Items Over: ${overages}`, 14, 51);
     doc.text(`Items Under: ${shortages}`, 14, 57);
     
     (doc as any).autoTable({
       startY: 65,
-      head: [['Item', 'Expected', 'Actual', 'Variance', 'Variance %', 'Cost Impact']],
+      head: [['Item', 'Expected', 'Spot Check', 'Transferred', 'Variance', 'Variance %', 'Final Qty']],
       body: variances.map(item => [
         item.item,
-        item.expectedUsage.toFixed(2),
-        item.actualUsage.toFixed(2),
+        item.expectedQuantity.toFixed(2),
+        item.spotCheckQty.toFixed(2),
+        item.transferredQty.toFixed(2),
         item.variance.toFixed(2),
         `${item.variancePercent.toFixed(1)}%`,
-        `$${item.costImpact.toFixed(2)}`
+        item.finalQty.toFixed(2)
       ]),
       theme: 'striped',
       headStyles: { fillColor: [99, 102, 241] }
@@ -102,7 +151,19 @@ const VarianceReport = () => {
     toast.success("Report downloaded");
   };
 
-  const totalCostImpact = variances.reduce((sum, item) => sum + Math.abs(item.costImpact), 0);
+  const totalVariance = variances.reduce((sum, item) => sum + Math.abs(item.variance), 0);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background pb-20 pt-16">
+        <TopNav />
+        <div className="flex items-center justify-center h-[60vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
@@ -124,7 +185,7 @@ const VarianceReport = () => {
                 Variance Report
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground">
-                Track expected vs actual usage
+                Track spot checks, transfers & variance
               </p>
             </div>
           </div>
@@ -136,68 +197,25 @@ const VarianceReport = () => {
           )}
         </div>
 
-        <Card className="glass">
-          <CardHeader>
-            <CardTitle>Add Variance Data</CardTitle>
-            <CardDescription>Compare expected vs actual usage</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Item Name</label>
-              <Input
-                placeholder="e.g., Gin - London Dry"
-                value={item}
-                onChange={(e) => setItem(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Expected Usage</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="10.00"
-                  value={expectedUsage}
-                  onChange={(e) => setExpectedUsage(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Actual Usage</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="12.50"
-                  value={actualUsage}
-                  onChange={(e) => setActualUsage(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Cost/Unit ($)</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="35.00"
-                  value={costPerUnit}
-                  onChange={(e) => setCostPerUnit(e.target.value)}
-                />
-              </div>
-            </div>
-            <Button onClick={handleAddItem} className="w-full">
-              Add Variance
-            </Button>
-          </CardContent>
-        </Card>
-
-        {variances.length > 0 && (
+        {variances.length === 0 ? (
+          <Card className="glass">
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">No variance data available</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Complete spot checks to see variance reports
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
           <>
             <Card className="glass">
               <CardHeader>
-                <CardTitle>Impact Summary</CardTitle>
+                <CardTitle>Variance Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="p-6 rounded-lg bg-red-500/10 border border-red-500/20 text-center">
-                  <div className="text-sm text-muted-foreground mb-2">Total Cost Impact</div>
-                  <div className="text-4xl font-bold text-red-500">${totalCostImpact.toFixed(2)}</div>
+                <div className="p-6 rounded-lg bg-primary/10 border border-primary/20 text-center">
+                  <div className="text-sm text-muted-foreground mb-2">Total Variance</div>
+                  <div className="text-4xl font-bold text-primary">{totalVariance.toFixed(2)}</div>
                 </div>
               </CardContent>
             </Card>
@@ -226,7 +244,7 @@ const VarianceReport = () => {
                               <span className={`text-sm font-medium ${
                                 isOver ? 'text-red-500' : 'text-blue-500'
                               }`}>
-                                {isOver ? 'Overage' : 'Under'}
+                                {isOver ? 'Overage' : 'Shortage'}
                               </span>
                             </div>
                           </div>
@@ -241,22 +259,30 @@ const VarianceReport = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
                           <div>
-                            <span className="text-muted-foreground">Expected:</span>
-                            <div className="font-medium">{data.expectedUsage.toFixed(2)}</div>
+                            <span className="text-muted-foreground block">Expected:</span>
+                            <div className="font-medium">{data.expectedQuantity.toFixed(2)}</div>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Actual:</span>
-                            <div className="font-medium">{data.actualUsage.toFixed(2)}</div>
+                            <span className="text-muted-foreground block">Spot Check:</span>
+                            <div className="font-medium">{data.spotCheckQty.toFixed(2)}</div>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Cost Impact:</span>
+                            <span className="text-muted-foreground block">Transferred:</span>
+                            <div className="font-medium">{data.transferredQty.toFixed(2)}</div>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground block">Variance:</span>
                             <div className={`font-bold ${
                               isOver ? 'text-red-500' : 'text-blue-500'
                             }`}>
-                              ${Math.abs(data.costImpact).toFixed(2)}
+                              {data.variance.toFixed(2)}
                             </div>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground block">Final Qty:</span>
+                            <div className="font-bold text-primary">{data.finalQty.toFixed(2)}</div>
                           </div>
                         </div>
                       </div>
