@@ -280,11 +280,40 @@ Deno.serve(async (req) => {
 
       console.log(`Workspace ${workspaceId}: Emails sent: ${successCount} succeeded, ${failureCount} failed`);
 
+      // Create in-app notifications for all workspace members with alert recipients
+      if (recipients.length > 0) {
+        console.log(`Creating in-app notifications for ${recipients.length} recipients`);
+        
+        const notificationPromises = settings.alert_recipients.map(async (userId: string) => {
+          try {
+            const { error: notifError } = await supabase
+              .from('notifications')
+              .insert({
+                user_id: userId,
+                type: 'fifo_alert',
+                content: `⚠️ ${expiringItems.length} items expiring within ${daysBeforeExpiry} days. Tap to view details.`,
+                read: false
+              });
+            
+            if (notifError) {
+              console.error(`Failed to create notification for user ${userId}:`, notifError);
+            } else {
+              console.log(`✅ Notification created for user ${userId}`);
+            }
+          } catch (error) {
+            console.error(`Error creating notification for user ${userId}:`, error);
+          }
+        });
+
+        await Promise.allSettled(notificationPromises);
+      }
+
       allResults.push({
         workspaceId,
         itemsFound: expiringItems.length,
         emailsSent: successCount,
-        emailsFailed: failureCount
+        emailsFailed: failureCount,
+        notificationsSent: recipients.length
       });
     }
 
