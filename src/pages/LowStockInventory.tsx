@@ -66,7 +66,7 @@ const LowStockInventory = () => {
           id,
           quantity,
           expiration_date,
-          items(name),
+          items(name, category),
           stores(name)
         `)
         .eq("workspace_id", workspaceId)
@@ -74,7 +74,13 @@ const LowStockInventory = () => {
         .order("quantity", { ascending: true });
 
       if (error) throw error;
-      setLowStockItems(data || []);
+      
+      // Filter to only show glassware items
+      const glasswareItems = (data || []).filter((item: any) => 
+        item.items?.category?.toLowerCase() === 'glassware'
+      );
+      
+      setLowStockItems(glasswareItems);
     } catch (error) {
       console.error("Error fetching low stock items:", error);
       toast.error("Failed to load low stock items");
@@ -95,7 +101,7 @@ const LowStockInventory = () => {
 
       doc.setFontSize(20);
       doc.setTextColor(220, 38, 38);
-      doc.text("Low Stock Inventory Report", 14, 20);
+      doc.text("Low Stock Inventory Report (Glassware)", 14, 20);
 
       doc.setFontSize(12);
       doc.setTextColor(100);
@@ -171,7 +177,7 @@ const LowStockInventory = () => {
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Package className="w-6 h-6 text-red-500" />
-              Low Stock Inventory
+              Low Stock Inventory (Glassware)
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
               {workspace?.name || "Loading..."}
@@ -195,9 +201,9 @@ const LowStockInventory = () => {
               <Package className="w-10 h-10 text-muted-foreground" />
             </div>
             <div>
-              <p className="font-medium">All Stock Levels Good</p>
+              <p className="font-medium">All Glassware Stock Levels Good</p>
               <p className="text-sm text-muted-foreground mt-1">
-                No items are running low on stock
+                No glassware items are running low on stock
               </p>
             </div>
           </div>
