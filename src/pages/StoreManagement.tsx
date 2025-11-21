@@ -547,7 +547,22 @@ const StoreManagement = () => {
         </div>
 
         {/* Quick Navigation */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/stores-admin')}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-500/10">
+                  <Store className="h-5 w-5 text-green-500" />
+                </div>
+                <div>
+                  <p className="font-semibold">Manage Stores</p>
+                  <p className="text-xs text-muted-foreground">Create & delete stores</p>
+                </div>
+                <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/all-inventory')}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -571,7 +586,7 @@ const StoreManagement = () => {
                 </div>
                 <div>
                   <p className="font-semibold">Transactions</p>
-                  <p className="text-xs text-muted-foreground">View all transfers & receivings</p>
+                  <p className="text-xs text-muted-foreground">Live transfers & receivings</p>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
               </div>

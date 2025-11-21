@@ -135,7 +135,7 @@ const StoreDetail = () => {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-2xl">{store.name}</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">{store.location}</p>
+                <p className="text-sm text-muted-foreground mt-1">{store.area}</p>
               </div>
               <Badge variant={store.store_type === 'warehouse' ? 'default' : 'secondary'}>
                 {store.store_type}

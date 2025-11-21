@@ -82,7 +82,7 @@ const AllInventory = () => {
           stores (
             id,
             name,
-            location,
+            area,
             store_type
           )
         `)
