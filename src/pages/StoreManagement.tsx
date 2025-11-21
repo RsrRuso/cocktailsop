@@ -18,7 +18,7 @@ import {
   Store, ArrowRightLeft, ClipboardCheck, TrendingDown, 
   Users, Camera, Bell, Clock, Package, Upload, 
   CheckCircle2, AlertCircle, UserPlus, UserMinus, Shield,
-  ExternalLink, BarChart3, Trash2, Activity
+  ExternalLink, BarChart3, Trash2, Activity, Edit, X
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,6 +26,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 
 interface Transaction {
   id: string;
@@ -73,6 +83,15 @@ const StoreManagement = () => {
   const [editReceivingDialog, setEditReceivingDialog] = useState(false);
   const [editingReceiving, setEditingReceiving] = useState<any>(null);
   const [editReceivingQuantity, setEditReceivingQuantity] = useState("");
+
+  // Edit transfer state
+  const [editTransferDialog, setEditTransferDialog] = useState(false);
+  const [editingTransfer, setEditingTransfer] = useState<any>(null);
+  const [editTransferQuantity, setEditTransferQuantity] = useState("");
+  const [editTransferNotes, setEditTransferNotes] = useState("");
+  
+  // Delete transfer confirmation
+  const [deleteTransferId, setDeleteTransferId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -450,6 +469,60 @@ const StoreManagement = () => {
     } catch (error) {
       console.error("Error creating transfer:", error);
       toast.error("Failed to create transfer");
+    }
+  };
+
+  const handleEditTransfer = (transfer: any) => {
+    setEditingTransfer(transfer);
+    setEditTransferQuantity(transfer.quantity.toString());
+    setEditTransferNotes(transfer.notes || "");
+    setEditTransferDialog(true);
+  };
+
+  const handleUpdateTransfer = async () => {
+    if (!editingTransfer || !user) return;
+
+    try {
+      const newQuantity = parseFloat(editTransferQuantity);
+      if (isNaN(newQuantity) || newQuantity <= 0) {
+        toast.error("Invalid quantity");
+        return;
+      }
+
+      // Update the transfer record
+      await supabase
+        .from("inventory_transfers")
+        .update({
+          quantity: newQuantity,
+          notes: editTransferNotes
+        })
+        .eq("id", editingTransfer.id);
+
+      toast.success("Transfer updated successfully");
+      setEditTransferDialog(false);
+      setEditingTransfer(null);
+      fetchAllData();
+    } catch (error) {
+      console.error("Error updating transfer:", error);
+      toast.error("Failed to update transfer");
+    }
+  };
+
+  const handleDeleteTransfer = async (transferId: string) => {
+    if (!user) return;
+
+    try {
+      await supabase
+        .from("inventory_transfers")
+        .delete()
+        .eq("id", transferId);
+
+      toast.success("Transfer deleted successfully");
+      setDeleteTransferId(null);
+      fetchAllData();
+    } catch (error) {
+      console.error("Error deleting transfer:", error);
+      toast.error("Failed to delete transfer");
     }
   };
 
@@ -1407,9 +1480,9 @@ const StoreManagement = () => {
                   <div className="space-y-2">
                     {transfers.map((transfer: any) => (
                       <div key={transfer.id} className="glass rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">
                               {transfer.inventory?.items?.name || 'Unknown Item'}
                             </p>
                             <p className="text-sm text-muted-foreground">
@@ -1419,16 +1492,34 @@ const StoreManagement = () => {
                               Qty: {transfer.quantity} • {new Date(transfer.transfer_date).toLocaleDateString()}
                               {transfer.transferred_by?.name && ` • By ${transfer.transferred_by.name}`}
                             </p>
+                            {transfer.notes && (
+                              <p className="text-xs text-muted-foreground mt-1 italic">
+                                {transfer.notes}
+                              </p>
+                            )}
                           </div>
-                          <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'}>
-                            {transfer.status}
-                          </Badge>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'}>
+                              {transfer.status}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => handleEditTransfer(transfer)}
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={() => setDeleteTransferId(transfer.id)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
                         </div>
-                        {transfer.notes && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {transfer.notes}
-                          </p>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -1863,6 +1954,79 @@ const StoreManagement = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Transfer Dialog */}
+      <Dialog open={editTransferDialog} onOpenChange={setEditTransferDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Transfer</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handleUpdateTransfer(); }} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Item</Label>
+              <p className="text-sm font-medium">
+                {editingTransfer?.inventory?.items?.name || 'Unknown Item'}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Route</Label>
+              <p className="text-sm font-medium">
+                {editingTransfer?.from_store?.name} → {editingTransfer?.to_store?.name}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-transfer-quantity">Quantity *</Label>
+              <Input
+                id="edit-transfer-quantity"
+                type="number"
+                value={editTransferQuantity}
+                onChange={(e) => setEditTransferQuantity(e.target.value)}
+                placeholder="Qty"
+                min="1"
+                step="any"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-transfer-notes">Notes</Label>
+              <Textarea
+                id="edit-transfer-notes"
+                value={editTransferNotes}
+                onChange={(e) => setEditTransferNotes(e.target.value)}
+                placeholder="Optional notes"
+                rows={3}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1">Save Changes</Button>
+              <Button type="button" variant="outline" onClick={() => setEditTransferDialog(false)}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Transfer Confirmation */}
+      <AlertDialog open={!!deleteTransferId} onOpenChange={(open) => !open && setDeleteTransferId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Transfer</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this transfer? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTransferId && handleDeleteTransfer(deleteTransferId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav />
     </div>
