@@ -118,48 +118,83 @@ export default function StaffScheduling() {
   const fetchExpiringItems = async () => {
     if (!user?.id) return;
 
-    // Only fetch if we have a current workspace selected
-    if (!currentWorkspace) {
-      console.log('No workspace selected - skipping expiring items fetch');
-      setExpiringItems([]);
-      return;
-    }
-
     try {
-      console.log('Fetching expiring items for workspace:', currentWorkspace.name);
+      console.log('Fetching expiring items for user:', user.id);
       
       // Calculate date 14 days from now
       const fourteenDaysFromNow = new Date();
       fourteenDaysFromNow.setDate(fourteenDaysFromNow.getDate() + 14);
       const expiryThreshold = fourteenDaysFromNow.toISOString().split('T')[0];
 
-      const { data, error } = await supabase
-        .from('inventory')
+      // Fetch from FIFO inventory
+      const { data: fifoData, error: fifoError } = await supabase
+        .from('fifo_inventory')
         .select(`
           *,
-          items!inner (
+          fifo_items!inner (
             name,
             category,
             brand
           ),
-          stores!inner (
+          fifo_stores!inner (
             name
           )
         `)
-        .eq('workspace_id', currentWorkspace.id)
+        .eq('user_id', user.id)
         .lte('expiration_date', expiryThreshold)
         .gt('quantity', 0)
-        .order('expiration_date', { ascending: true })
-        .order('priority_score', { ascending: false });
+        .order('expiration_date', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching expiring items:', error);
-        return;
+      if (fifoError) {
+        console.error('Error fetching FIFO expiring items:', fifoError);
       }
 
-      console.log('Found expiring items:', data?.length || 0, 'items');
-      console.log('Expiring items details:', data);
-      setExpiringItems(data || []);
+      // Fetch from regular inventory (if workspace exists)
+      let regularData: any[] = [];
+      if (currentWorkspace) {
+        const { data, error } = await supabase
+          .from('inventory')
+          .select(`
+            *,
+            items!inner (
+              name,
+              category,
+              brand
+            ),
+            stores!inner (
+              name
+            )
+          `)
+          .eq('workspace_id', currentWorkspace.id)
+          .lte('expiration_date', expiryThreshold)
+          .gt('quantity', 0)
+          .order('expiration_date', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching regular inventory expiring items:', error);
+        } else {
+          regularData = data || [];
+        }
+      }
+
+      // Combine both sources and normalize the data structure
+      const allItems = [
+        ...(fifoData || []).map(item => ({
+          ...item,
+          items: item.fifo_items,
+          stores: item.fifo_stores,
+          source: 'fifo'
+        })),
+        ...(regularData || []).map(item => ({
+          ...item,
+          source: 'regular'
+        }))
+      ].sort((a, b) => 
+        new Date(a.expiration_date).getTime() - new Date(b.expiration_date).getTime()
+      );
+
+      console.log('Found expiring items:', allItems.length, 'items (FIFO:', fifoData?.length || 0, ', Regular:', regularData.length, ')');
+      setExpiringItems(allItems);
     } catch (error) {
       console.error('Error fetching expiring items:', error);
     }
