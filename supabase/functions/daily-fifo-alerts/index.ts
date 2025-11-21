@@ -46,33 +46,52 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get alert settings for all workspaces (or a single one in test mode)
-    let settingsQuery = supabase
-      .from('fifo_alert_settings')
-      .select('*')
-      .eq('enabled', true);
-
+    // Get ALL workspaces (or a single one in test mode)
+    let workspacesQuery = supabase.from('workspaces').select('id, name');
+    
     if (isTest && testWorkspaceId) {
-      settingsQuery = settingsQuery.eq('workspace_id', testWorkspaceId);
+      workspacesQuery = workspacesQuery.eq('id', testWorkspaceId);
     }
 
-    const { data: alertSettings, error: settingsError } = await settingsQuery;
+    const { data: workspaces, error: workspacesError } = await workspacesQuery;
 
-    if (!alertSettings || alertSettings.length === 0) {
-      console.log('No active alert settings found');
+    if (!workspaces || workspaces.length === 0) {
+      console.log('No workspaces found');
       return new Response(
-        JSON.stringify({ message: 'No active alert settings' }),
+        JSON.stringify({ message: 'No workspaces found' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log(`Found ${workspaces.length} workspace(s) to process`);
+
     const allResults = [];
 
-    // Process each workspace's settings
-    for (const settings of alertSettings) {
-      const daysBeforeExpiry = settings.days_before_expiry || 30;
-      const workspaceId = settings.workspace_id;
-      const alertTime = settings.alert_time || '09:00'; // Default to 9 AM
+    // Process each workspace
+    for (const workspace of workspaces) {
+      const workspaceId = workspace.id;
+      const workspaceName = workspace.name;
+
+      console.log(`Processing workspace: ${workspaceName} (${workspaceId})`);
+
+      // Try to get alert settings for this workspace, use defaults if none exist
+      const { data: settingsData } = await supabase
+        .from('fifo_alert_settings')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .maybeSingle();
+
+      // Use settings if available and enabled, otherwise use defaults
+      const isEnabled = settingsData ? settingsData.enabled : true; // Default enabled
+      
+      if (!isEnabled && !isTest) {
+        console.log(`Skipping workspace ${workspaceName} - alerts disabled`);
+        continue;
+      }
+
+      const daysBeforeExpiry = settingsData?.days_before_expiry || 30;
+      const alertTime = settingsData?.alert_time || '09:00';
+      const alertRecipients = settingsData?.alert_recipients || [];
       
       // Parse the alert time (format: "HH:MM")
       const [alertHour, alertMinute] = alertTime.split(':').map(Number);
@@ -125,12 +144,12 @@ Deno.serve(async (req) => {
       // Get recipients from alert settings or default to workspace owners/managers
       let recipients: Array<{ email: string; name: string }> = [];
       
-      if (settings.alert_recipients && settings.alert_recipients.length > 0) {
+      if (alertRecipients && alertRecipients.length > 0) {
         // Use custom recipients from settings
         const { data: customRecipients, error: recipientsError } = await supabase
           .from('profiles')
           .select('id, email, full_name')
-          .in('id', settings.alert_recipients);
+          .in('id', alertRecipients);
 
         if (!recipientsError && customRecipients) {
           recipients = customRecipients
@@ -240,13 +259,47 @@ Deno.serve(async (req) => {
         </html>
       `;
 
-      // Send emails to recipients
+      // Create in-app notifications for ALL workspace members (ALWAYS, even if no email recipients)
+      const { data: allWorkspaceMembers, error: membersError } = await supabase
+        .from('workspace_members')
+        .select('user_id')
+        .eq('workspace_id', workspaceId);
+
+      if (!membersError && allWorkspaceMembers && allWorkspaceMembers.length > 0) {
+        console.log(`Creating in-app notifications for ${allWorkspaceMembers.length} workspace members`);
+        
+        const notificationPromises = allWorkspaceMembers.map(async (member: any) => {
+          try {
+            const { error: notifError } = await supabase
+              .from('notifications')
+              .insert({
+                user_id: member.user_id,
+                type: 'fifo_alert',
+                content: `⚠️ [${workspaceName}] ${expiringItems.length} items expiring within ${daysBeforeExpiry} days. Tap to view details.`,
+                read: false
+              });
+            
+            if (notifError) {
+              console.error(`Failed to create notification for user ${member.user_id}:`, notifError);
+            } else {
+              console.log(`✅ Notification created for user ${member.user_id}`);
+            }
+          } catch (error) {
+            console.error(`Error creating notification for user ${member.user_id}:`, error);
+          }
+        });
+
+        await Promise.allSettled(notificationPromises);
+      }
+
+      // Send emails to recipients (if any)
       if (recipients.length === 0) {
         console.log(`No recipients found for workspace ${workspaceId}`);
         allResults.push({
           workspaceId,
-          message: 'No recipients to send emails',
-          itemsFound: expiringItems.length
+          message: 'No email recipients, but notifications sent',
+          itemsFound: expiringItems.length,
+          notificationsSent: allWorkspaceMembers?.length || 0
         });
         continue;
       }
@@ -280,63 +333,13 @@ Deno.serve(async (req) => {
 
       console.log(`Workspace ${workspaceId}: Emails sent: ${successCount} succeeded, ${failureCount} failed`);
 
-      // Create in-app notifications for ALL workspace members (not just email recipients)
-      const { data: allWorkspaceMembers, error: membersError } = await supabase
-        .from('workspace_members')
-        .select('user_id')
-        .eq('workspace_id', workspaceId);
-
-      if (!membersError && allWorkspaceMembers && allWorkspaceMembers.length > 0) {
-        console.log(`Creating in-app notifications for ${allWorkspaceMembers.length} workspace members`);
-        
-        // Get workspace name for notification
-        const { data: workspace } = await supabase
-          .from('workspaces')
-          .select('name')
-          .eq('id', workspaceId)
-          .single();
-
-        const workspaceName = workspace?.name || 'your workspace';
-        
-        const notificationPromises = allWorkspaceMembers.map(async (member: any) => {
-          try {
-            const { error: notifError } = await supabase
-              .from('notifications')
-              .insert({
-                user_id: member.user_id,
-                type: 'fifo_alert',
-                content: `⚠️ [${workspaceName}] ${expiringItems.length} items expiring within ${daysBeforeExpiry} days. Tap to view details.`,
-                read: false
-              });
-            
-            if (notifError) {
-              console.error(`Failed to create notification for user ${member.user_id}:`, notifError);
-            } else {
-              console.log(`✅ Notification created for user ${member.user_id}`);
-            }
-          } catch (error) {
-            console.error(`Error creating notification for user ${member.user_id}:`, error);
-          }
-        });
-
-        await Promise.allSettled(notificationPromises);
-
-        allResults.push({
-          workspaceId,
-          itemsFound: expiringItems.length,
-          emailsSent: successCount,
-          emailsFailed: failureCount,
-          notificationsSent: allWorkspaceMembers.length
-        });
-      } else {
-        allResults.push({
-          workspaceId,
-          itemsFound: expiringItems.length,
-          emailsSent: successCount,
-          emailsFailed: failureCount,
-          notificationsSent: 0
-        });
-      }
+      allResults.push({
+        workspaceId,
+        itemsFound: expiringItems.length,
+        emailsSent: successCount,
+        emailsFailed: failureCount,
+        notificationsSent: allWorkspaceMembers?.length || 0
+      });
     }
 
     return new Response(
