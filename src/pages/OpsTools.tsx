@@ -168,7 +168,7 @@ const OpsTools = () => {
         path: "/store-management",
       },
       {
-        name: "Inventory Manager",
+        name: "FIFO Recording Manager",
         description: "Track stock levels and expiration dates",
         details: "Full inventory control system. Add items, set stores/areas, track quantities, monitor expiration dates, and manage transfers between locations.",
         icon: Package,
