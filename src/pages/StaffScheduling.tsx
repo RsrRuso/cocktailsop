@@ -219,17 +219,13 @@ export default function StaffScheduling() {
     }
   };
 
-  const loadSchedule = async (savedSchedule: any) => {
+  const loadSchedule = (savedSchedule: any) => {
     setVenueName(savedSchedule.venue_name || '');
     setSchedule(savedSchedule.schedule_data || {});
     setDailyEvents(savedSchedule.daily_events || {});
     setSpecialEvents(savedSchedule.special_events || {});
     setWeekStartDate(savedSchedule.week_start_date);
     setShowLoadDialog(false);
-    
-    // Ensure staff members are loaded
-    await fetchStaffMembers();
-    
     toast.success('Schedule loaded successfully!');
   };
 
@@ -1477,126 +1473,87 @@ export default function StaffScheduling() {
   };
 
   const exportAllDailyBreakdownsToPDF = async () => {
-    // Check if schedule exists first
-    if (Object.keys(schedule).length === 0) {
-      toast.error('Please generate a schedule first before exporting');
-      return;
-    }
-
-    toast.info('Preparing daily breakdown export...', { duration: 2000 });
+    toast.info('Generating complete daily breakdown PDF...');
     
     try {
-      // Find and open the Daily Breakdown accordion
-      const accordionItem = document.querySelector('[value="daily-breakdown"]');
+      // First, temporarily expand the accordion to ensure all days are rendered
+      const accordionTrigger = document.querySelector('[data-state="closed"]') as HTMLElement;
+      let wasExpanded = false;
       
-      if (!accordionItem) {
-        toast.error('Cannot find Daily Breakdown section');
-        return;
-      }
-
-      const isOpen = accordionItem.getAttribute('data-state') === 'open';
-      
-      // If accordion is closed, open it
-      if (!isOpen) {
-        const trigger = accordionItem.querySelector('button');
-        if (trigger) {
-          trigger.click();
-          toast.info('Opening Daily Breakdown section...', { duration: 1000 });
-          // Wait for accordion animation and rendering
-          await new Promise(resolve => setTimeout(resolve, 1500));
-        }
-      } else {
-        // Even if open, wait a bit to ensure everything is rendered
+      if (accordionTrigger) {
+        accordionTrigger.click();
+        wasExpanded = true;
+        // Wait for accordion to expand and render
         await new Promise(resolve => setTimeout(resolve, 500));
       }
-
-      // Verify all day elements exist
-      const missingDays: string[] = [];
-      for (const day of DAYS_OF_WEEK) {
-        const element = document.getElementById(`day-${day}`);
-        if (!element) {
-          missingDays.push(day);
-        }
-      }
-
-      if (missingDays.length > 0) {
-        toast.error(`Missing day cards: ${missingDays.join(', ')}. Please ensure schedule is generated and visible.`);
-        return;
-      }
-
-      toast.info('Capturing all days to PDF...', { duration: 3000 });
 
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       let isFirstPage = true;
-      let capturedDays = 0;
 
       for (const day of DAYS_OF_WEEK) {
         const element = document.getElementById(`day-${day}`);
         
         if (!element) {
-          console.warn(`Skipping ${day} - element not found`);
+          console.warn(`Element not found for ${day}, skipping...`);
           continue;
         }
 
-        try {
-          const dataUrl = await toPng(element, {
-            pixelRatio: 6,
-            cacheBust: true,
-            quality: 1.0,
-            backgroundColor: '#1a1a1a',
-          });
+        const dataUrl = await toPng(element, {
+          pixelRatio: 6,
+          cacheBust: true,
+          quality: 1.0,
+          backgroundColor: '#1a1a1a',
+        });
 
-          if (!isFirstPage) {
-            pdf.addPage();
-          }
-          isFirstPage = false;
-
-          // Add dark background
-          pdf.setFillColor(26, 26, 26);
-          pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-          
-          // Calculate dimensions to fit on page with padding
-          const padding = 10;
-          const maxWidth = pageWidth - (padding * 2);
-          const maxHeight = pageHeight - (padding * 2);
-          
-          const img = new Image();
-          img.src = dataUrl;
-          await new Promise((resolve) => { img.onload = resolve; });
-          
-          const imgRatio = img.width / img.height;
-          const pageRatio = maxWidth / maxHeight;
-          
-          let finalWidth, finalHeight;
-          if (imgRatio > pageRatio) {
-            finalWidth = maxWidth;
-            finalHeight = maxWidth / imgRatio;
-          } else {
-            finalHeight = maxHeight;
-            finalWidth = maxHeight * imgRatio;
-          }
-          
-          const xPos = (pageWidth - finalWidth) / 2;
-          const yPos = (pageHeight - finalHeight) / 2;
-          
-          pdf.addImage(dataUrl, 'PNG', xPos, yPos, finalWidth, finalHeight);
-          capturedDays++;
-          console.log(`✓ Captured ${day} (${capturedDays}/${DAYS_OF_WEEK.length})`);
-        } catch (err) {
-          console.error(`Error capturing ${day}:`, err);
+        if (!isFirstPage) {
+          pdf.addPage();
         }
-      }
+        isFirstPage = false;
 
-      if (capturedDays === 0) {
-        toast.error('No days were captured. Please try again.');
-        return;
+        // Add dark background
+        pdf.setFillColor(26, 26, 26);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        
+        // Calculate dimensions to fit on page with padding
+        const padding = 10;
+        const maxWidth = pageWidth - (padding * 2);
+        const maxHeight = pageHeight - (padding * 2);
+        
+        const img = new Image();
+        img.src = dataUrl;
+        await new Promise((resolve) => { img.onload = resolve; });
+        
+        const imgRatio = img.width / img.height;
+        const pageRatio = maxWidth / maxHeight;
+        
+        let finalWidth, finalHeight;
+        if (imgRatio > pageRatio) {
+          finalWidth = maxWidth;
+          finalHeight = maxWidth / imgRatio;
+        } else {
+          finalHeight = maxHeight;
+          finalWidth = maxHeight * imgRatio;
+        }
+        
+        const xPos = (pageWidth - finalWidth) / 2;
+        const yPos = (pageHeight - finalHeight) / 2;
+        
+        pdf.addImage(dataUrl, 'PNG', xPos, yPos, finalWidth, finalHeight);
       }
 
       const filename = `${(venueName || 'schedule').replace(/\s+/g, '-')}-daily-breakdown-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
       pdf.save(filename);
-      toast.success(`Successfully exported ${capturedDays} days to PDF!`);
+      toast.success('All daily breakdowns exported to PDF!');
+      
+      // Collapse accordion again if it was originally closed
+      if (wasExpanded) {
+        const accordionTrigger = document.querySelector('[data-state="open"]') as HTMLElement;
+        if (accordionTrigger) {
+          accordionTrigger.click();
+        }
+      }
       
     } catch (error) {
       console.error('Error exporting all daily breakdowns:', error);
@@ -2352,7 +2309,7 @@ export default function StaffScheduling() {
         )}
 
         {/* Daily Summary */}
-        {Object.keys(schedule).length > 0 && (
+        {staffMembers.length > 0 && Object.keys(schedule).length > 0 && (
           <Card className="p-5 bg-gradient-to-br from-gray-900 to-gray-900/80 border-gray-800 shadow-xl overflow-hidden relative">
             <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/3 rounded-full blur-3xl" />
             <div className="relative">
