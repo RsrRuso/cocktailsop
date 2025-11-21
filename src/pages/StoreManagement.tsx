@@ -17,7 +17,7 @@ import {
   Store, ArrowRightLeft, ClipboardCheck, TrendingDown, 
   Users, Camera, Bell, Clock, Package, Upload, 
   CheckCircle2, AlertCircle, UserPlus, UserMinus, Shield,
-  ExternalLink, BarChart3
+  ExternalLink, BarChart3, Trash2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -66,6 +66,11 @@ const StoreManagement = () => {
   const [selectedReceivingItem, setSelectedReceivingItem] = useState("");
   const [receivingQuantity, setReceivingQuantity] = useState("");
   const [receivingNotes, setReceivingNotes] = useState("");
+  
+  // Edit receiving state
+  const [editReceivingDialog, setEditReceivingDialog] = useState(false);
+  const [editingReceiving, setEditingReceiving] = useState<any>(null);
+  const [editReceivingQuantity, setEditReceivingQuantity] = useState("");
 
   useEffect(() => {
     if (user && currentWorkspace) {
@@ -541,6 +546,130 @@ const StoreManagement = () => {
     }
   };
 
+  const handleDeleteReceiving = async (receiving: any) => {
+    if (!user || !currentWorkspace) return;
+
+    try {
+      const quantityBefore = typeof receiving.quantity_before === 'number' ? receiving.quantity_before : 0;
+      const quantityAfter = typeof receiving.quantity_after === 'number' ? receiving.quantity_after : 0;
+      const receivedQty = typeof receiving.details?.received_quantity === 'number'
+        ? receiving.details.received_quantity
+        : (quantityAfter - quantityBefore) || quantityAfter || 0;
+
+      // Find the inventory record for this item at this store
+      const { data: inventoryRecord } = await supabase
+        .from('inventory')
+        .select('id, quantity')
+        .eq('item_id', receiving.details?.item_id)
+        .eq('store_id', receiving.store_id)
+        .maybeSingle();
+
+      if (inventoryRecord) {
+        const newQuantity = Math.max(0, inventoryRecord.quantity - receivedQty);
+        
+        if (newQuantity === 0) {
+          // Delete the inventory record if quantity reaches 0
+          await supabase
+            .from('inventory')
+            .delete()
+            .eq('id', inventoryRecord.id);
+        } else {
+          // Update the inventory quantity
+          await supabase
+            .from('inventory')
+            .update({ quantity: newQuantity })
+            .eq('id', inventoryRecord.id);
+        }
+      }
+
+      // Delete the activity log entry
+      const { error } = await supabase
+        .from('inventory_activity_log')
+        .delete()
+        .eq('id', receiving.id);
+
+      if (error) throw error;
+
+      toast.success("Receiving deleted successfully");
+      fetchAllData();
+    } catch (error) {
+      console.error("Error deleting receiving:", error);
+      toast.error("Failed to delete receiving");
+    }
+  };
+
+  const handleEditReceiving = (receiving: any) => {
+    const quantityBefore = typeof receiving.quantity_before === 'number' ? receiving.quantity_before : 0;
+    const quantityAfter = typeof receiving.quantity_after === 'number' ? receiving.quantity_after : 0;
+    const receivedQty = typeof receiving.details?.received_quantity === 'number'
+      ? receiving.details.received_quantity
+      : (quantityAfter - quantityBefore) || quantityAfter || 0;
+    
+    setEditingReceiving(receiving);
+    setEditReceivingQuantity(receivedQty.toString());
+    setEditReceivingDialog(true);
+  };
+
+  const handleUpdateReceiving = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !currentWorkspace || !editingReceiving) return;
+
+    try {
+      const oldQty = typeof editingReceiving.details?.received_quantity === 'number'
+        ? editingReceiving.details.received_quantity
+        : (editingReceiving.quantity_after - (editingReceiving.quantity_before || 0)) || editingReceiving.quantity_after || 0;
+      
+      const newQty = parseFloat(editReceivingQuantity);
+
+      if (isNaN(newQty) || newQty <= 0) {
+        toast.error("Quantity must be greater than 0");
+        return;
+      }
+
+      const qtyDiff = newQty - oldQty;
+
+      // Find the inventory record
+      const { data: inventoryRecord } = await supabase
+        .from('inventory')
+        .select('id, quantity')
+        .eq('item_id', editingReceiving.details?.item_id)
+        .eq('store_id', editingReceiving.store_id)
+        .maybeSingle();
+
+      if (inventoryRecord) {
+        const updatedQuantity = Math.max(0, inventoryRecord.quantity + qtyDiff);
+        
+        // Update inventory quantity
+        await supabase
+          .from('inventory')
+          .update({ quantity: updatedQuantity })
+          .eq('id', inventoryRecord.id);
+
+        // Update activity log
+        await supabase
+          .from('inventory_activity_log')
+          .update({
+            quantity_after: (editingReceiving.quantity_before || 0) + newQty,
+            details: {
+              ...editingReceiving.details,
+              received_quantity: newQty
+            }
+          })
+          .eq('id', editingReceiving.id);
+
+        toast.success("Receiving updated successfully");
+        setEditReceivingDialog(false);
+        setEditingReceiving(null);
+        fetchAllData();
+      } else {
+        toast.error("Inventory record not found");
+      }
+    } catch (error) {
+      console.error("Error updating receiving:", error);
+      toast.error("Failed to update receiving");
+    }
+  };
+
   if (!currentWorkspace) {
     return (
       <div className="min-h-screen bg-background pb-20 pt-16">
@@ -970,9 +1099,24 @@ const StoreManagement = () => {
                                   </p>
                                 )}
                               </div>
-                              <Badge variant="default" className="shrink-0">
-                                Completed
-                              </Badge>
+                              <div className="flex flex-col gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditReceiving(receiving)}
+                                  className="h-8"
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleDeleteReceiving(receiving)}
+                                  className="h-8"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         );
@@ -1337,6 +1481,46 @@ const StoreManagement = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit Receiving Dialog */}
+      <Dialog open={editReceivingDialog} onOpenChange={setEditReceivingDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Receiving</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateReceiving} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Item</Label>
+              <p className="text-sm font-medium">
+                {items.find(i => i.id === editingReceiving?.details?.item_id)?.name || 'Unknown Item'}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Store</Label>
+              <p className="text-sm font-medium">{editingReceiving?.stores?.name}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-quantity">Quantity Received *</Label>
+              <Input
+                id="edit-quantity"
+                type="number"
+                value={editReceivingQuantity}
+                onChange={(e) => setEditReceivingQuantity(e.target.value)}
+                placeholder="Qty"
+                min="1"
+                step="any"
+                required
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1">Save Changes</Button>
+              <Button type="button" variant="outline" onClick={() => setEditReceivingDialog(false)}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>
