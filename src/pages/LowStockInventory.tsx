@@ -50,14 +50,25 @@ const LowStockInventory = () => {
 
     setLoading(true);
     try {
-      const { data: workspaceData, error: workspaceError } = await supabase
-        .from("workspaces")
-        .select("id, name")
-        .eq("id", workspaceId)
-        .maybeSingle();
+      // Handle personal inventory (no workspace)
+      const isPersonal = workspaceId === 'personal';
+      let workspaceName = 'Personal Inventory';
+      
+      if (!isPersonal) {
+        const { data: workspaceData, error: workspaceError } = await supabase
+          .from("workspaces")
+          .select("id, name")
+          .eq("id", workspaceId)
+          .maybeSingle();
 
-      if (workspaceError) throw workspaceError;
-      setWorkspace(workspaceData);
+        if (workspaceError) throw workspaceError;
+        if (workspaceData) {
+          setWorkspace(workspaceData);
+          workspaceName = workspaceData.name;
+        }
+      } else {
+        setWorkspace({ id: 'personal', name: 'Personal Inventory' });
+      }
 
       const { data: settings } = await supabase
         .from("stock_alert_settings")
@@ -67,8 +78,8 @@ const LowStockInventory = () => {
 
       const minimumQuantity = settings?.minimum_quantity_threshold || 10;
 
-      // Only fetch inventory that belongs to stores in this workspace
-      const { data, error } = await supabase
+      // Build query based on personal or workspace inventory
+      let query = supabase
         .from("inventory")
         .select(`
           id,
@@ -79,20 +90,35 @@ const LowStockInventory = () => {
           items!inner(name, category, workspace_id),
           stores!inner(name, workspace_id)
         `)
-        .eq("workspace_id", workspaceId)
-        .eq("items.workspace_id", workspaceId)
-        .eq("stores.workspace_id", workspaceId)
         .lte("quantity", minimumQuantity)
         .gte("expiration_date", new Date().toISOString().split('T')[0])
         .order("quantity", { ascending: true });
 
+      if (isPersonal) {
+        query = query.is("workspace_id", null);
+      } else {
+        query = query
+          .eq("workspace_id", workspaceId)
+          .eq("items.workspace_id", workspaceId)
+          .eq("stores.workspace_id", workspaceId);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
       
       // Fetch all inventory for this workspace to calculate averages
-      const { data: allInventoryData } = await supabase
+      let allInventoryQuery = supabase
         .from("inventory")
-        .select("item_id, quantity")
-        .eq("workspace_id", workspaceId);
+        .select("item_id, quantity");
+      
+      if (isPersonal) {
+        allInventoryQuery = allInventoryQuery.is("workspace_id", null);
+      } else {
+        allInventoryQuery = allInventoryQuery.eq("workspace_id", workspaceId);
+      }
+
+      const { data: allInventoryData } = await allInventoryQuery;
 
       // Calculate average quantity per item across all stores
       const itemQuantities: Record<string, number[]> = {};

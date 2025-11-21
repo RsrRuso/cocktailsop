@@ -889,15 +889,23 @@ const StoreManagement = () => {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/low-stock-inventory/' + currentWorkspace.id)}>
+          <Card 
+            className="cursor-pointer hover:shadow-md transition-shadow" 
+            onClick={() => {
+              const workspaceId = currentWorkspace?.id || 'personal';
+              navigate(`/low-stock-inventory/${workspaceId}`);
+            }}
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-orange-500/10">
                   <AlertCircle className="h-5 w-5 text-orange-500" />
                 </div>
                 <div>
-                  <p className="font-semibold">Low Stock</p>
-                  <p className="text-xs text-muted-foreground">Stock alerts</p>
+                  <p className="font-semibold">Low Stock Alerts</p>
+                  <p className="text-xs text-muted-foreground">
+                    {Object.values(lowStockByStore).reduce((sum, count) => sum + count, 0)} items low
+                  </p>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
               </div>
