@@ -314,10 +314,10 @@ const StoreManagement = () => {
     }
 
     try {
-      // Find or create inventory record for the item at the from_store
+      // Find inventory record for the item at the from_store
       const { data: fromInventory } = await supabase
         .from('inventory')
-        .select('id, quantity')
+        .select('id, quantity, expiration_date')
         .eq('item_id', selectedItem)
         .eq('store_id', selectedFromStore)
         .maybeSingle();
@@ -333,8 +333,53 @@ const StoreManagement = () => {
         return;
       }
 
-      // Create transfer
-      const { error } = await supabase
+      // 1. Update source store inventory (reduce quantity)
+      const newSourceQty = fromInventory.quantity - transferQty;
+      if (newSourceQty > 0) {
+        await supabase
+          .from('inventory')
+          .update({ quantity: newSourceQty })
+          .eq('id', fromInventory.id);
+      } else {
+        // Delete if quantity becomes 0
+        await supabase
+          .from('inventory')
+          .delete()
+          .eq('id', fromInventory.id);
+      }
+
+      // 2. Update or create destination store inventory (add quantity)
+      const { data: toInventory } = await supabase
+        .from('inventory')
+        .select('id, quantity')
+        .eq('item_id', selectedItem)
+        .eq('store_id', selectedToStore)
+        .maybeSingle();
+
+      if (toInventory) {
+        // Update existing inventory
+        await supabase
+          .from('inventory')
+          .update({ quantity: toInventory.quantity + transferQty })
+          .eq('id', toInventory.id);
+      } else {
+        // Create new inventory record in destination store
+        await supabase
+          .from('inventory')
+          .insert({
+            workspace_id: currentWorkspace.id,
+            user_id: user.id,
+            store_id: selectedToStore,
+            item_id: selectedItem,
+            quantity: transferQty,
+            expiration_date: fromInventory.expiration_date,
+            received_date: new Date().toISOString(),
+            notes: transferNotes || null
+          });
+      }
+
+      // 3. Create transfer record as completed
+      await supabase
         .from("inventory_transfers")
         .insert({
           workspace_id: currentWorkspace.id,
@@ -343,14 +388,12 @@ const StoreManagement = () => {
           to_store_id: selectedToStore,
           inventory_id: fromInventory.id,
           quantity: transferQty,
-          status: 'pending',
+          status: 'completed',
           notes: transferNotes,
           transfer_date: new Date().toISOString()
         });
 
-      if (error) throw error;
-
-      toast.success("Transfer created successfully!");
+      toast.success("Transfer completed successfully!");
       fetchAllData();
       
       // Reset form
