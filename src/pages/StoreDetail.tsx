@@ -8,7 +8,8 @@ import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ArrowLeft, Package, ZoomIn } from "lucide-react";
 import { toast } from "sonner";
 
 const StoreDetail = () => {
@@ -20,6 +21,7 @@ const StoreDetail = () => {
   const [store, setStore] = useState<any>(null);
   const [inventory, setInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && id) {
@@ -162,19 +164,25 @@ const StoreDetail = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {inventory.map((inv) => (
-                  <Card key={inv.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <Card key={inv.id} className="overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02]">
                     {inv.items?.photo_url && (
-                      <div className="aspect-square w-full bg-muted border-b-2 border-border/50">
+                      <div 
+                        className="relative h-48 w-full bg-muted/50 border-b-2 border-border/50 cursor-pointer group"
+                        onClick={() => setZoomedImage(inv.items.photo_url)}
+                      >
                         <img 
                           src={inv.items.photo_url} 
                           alt={inv.items?.name || 'Item'} 
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain p-2 transition-transform group-hover:scale-105"
                         />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                          <ZoomIn className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                       </div>
                     )}
                     {!inv.items?.photo_url && (
-                      <div className="aspect-square w-full bg-muted flex items-center justify-center border-b-2 border-border/50">
-                        <Package className="h-16 w-16 text-muted-foreground/30" />
+                      <div className="h-48 w-full bg-muted/50 flex items-center justify-center border-b-2 border-border/50">
+                        <Package className="h-12 w-12 text-muted-foreground/30" />
                       </div>
                     )}
                     <CardContent className="p-4">
@@ -210,6 +218,19 @@ const StoreDetail = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Image Zoom Dialog */}
+      <Dialog open={!!zoomedImage} onOpenChange={() => setZoomedImage(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+          <div className="relative bg-black">
+            <img 
+              src={zoomedImage || ''} 
+              alt="Zoomed item" 
+              className="w-full h-auto max-h-[90vh] object-contain"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>
