@@ -17,7 +17,7 @@ import {
   Store, ArrowRightLeft, ClipboardCheck, TrendingDown, 
   Users, Camera, Bell, Clock, Package, Upload, 
   CheckCircle2, AlertCircle, UserPlus, UserMinus, Shield,
-  ExternalLink, BarChart3, Trash2
+  ExternalLink, BarChart3, Trash2, Building2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -847,15 +847,15 @@ const StoreManagement = () => {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/team-management')}>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/workspaces')}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-indigo-500/10">
-                  <Users className="h-5 w-5 text-indigo-500" />
+                  <Building2 className="h-5 w-5 text-indigo-500" />
                 </div>
                 <div>
-                  <p className="font-semibold">Team</p>
-                  <p className="text-xs text-muted-foreground">Workspaces</p>
+                  <p className="font-semibold">Workspaces</p>
+                  <p className="text-xs text-muted-foreground">Create & manage</p>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
               </div>
