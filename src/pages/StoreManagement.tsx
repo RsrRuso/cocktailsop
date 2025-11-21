@@ -1159,110 +1159,118 @@ const StoreManagement = () => {
                         return (
                           <div
                             key={transaction.id}
-                            className="group relative glass rounded-xl p-5 hover:shadow-xl transition-all duration-300 animate-fade-in border border-border/50"
+                            className="group relative glass rounded-xl p-3 sm:p-5 hover:shadow-xl transition-all duration-300 animate-fade-in border border-border/50"
                             style={{ animationDelay: `${index * 50}ms` }}
                           >
-                            <div className="flex items-start gap-4">
-                              {/* Item Photo with Zoom */}
-                              <div className="flex-shrink-0">
+                            <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                              {/* Item Photo with Zoom - Centered on mobile */}
+                              <div className="flex-shrink-0 w-full sm:w-auto flex justify-center sm:block">
                                 {item?.photo_url ? (
                                   <ZoomableImage
                                     src={item.photo_url}
                                     alt={item.name}
-                                    className="w-20 h-20 rounded-lg"
-                                    containerClassName="w-20 h-20 rounded-lg border-2 border-primary/20 shadow-md"
+                                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg"
+                                    containerClassName="w-16 h-16 sm:w-20 sm:h-20 rounded-lg border-2 border-primary/20 shadow-md"
                                     objectFit="cover"
                                   />
                                 ) : (
-                                  <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-2 border-primary/20 shadow-md">
-                                    <Package className="h-10 w-10 text-primary/50" />
+                                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-2 border-primary/20 shadow-md">
+                                    <Package className="h-8 w-8 sm:h-10 sm:w-10 text-primary/50" />
                                   </div>
                                 )}
                               </div>
                               
-                              <div className="flex-1 min-w-0 space-y-2">
+                              <div className="flex-1 min-w-0 w-full space-y-2">
                                 {/* Item Name */}
-                                <h4 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
+                                <h4 className="font-bold text-base sm:text-lg text-foreground group-hover:text-primary transition-colors break-words">
                                   {transaction.item_name || 'Multiple Items'}
                                 </h4>
                                 
                                 {/* Transaction Type with Icon and Details */}
-                                <div className="flex items-start gap-2">
+                                <div className="flex flex-col gap-2">
                                   {transaction.type === 'transfer' && (
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20">
-                                        <ArrowRightLeft className="w-4 h-4 text-blue-500" />
-                                        <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Transfer</span>
+                                    <>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
+                                          <ArrowRightLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
+                                          <span className="text-xs sm:text-sm font-medium text-blue-700 dark:text-blue-400">Transfer</span>
+                                        </div>
+                                        <span className="text-xs sm:text-sm text-muted-foreground">
+                                          <span className="font-semibold text-foreground">{transaction.item_count}</span> units
+                                        </span>
                                       </div>
-                                      <span className="text-sm text-muted-foreground">
-                                        <span className="font-semibold text-foreground">{transaction.item_count}</span> units
-                                      </span>
-                                      <span className="text-sm text-muted-foreground">•</span>
-                                      <span className="text-sm">
+                                      <div className="flex items-center gap-1.5 text-xs sm:text-sm flex-wrap">
                                         <span className="font-medium text-foreground">{transaction.from_store}</span>
-                                        <ArrowRightLeft className="inline w-3 h-3 mx-1" />
+                                        <ArrowRightLeft className="w-3 h-3 flex-shrink-0" />
                                         <span className="font-medium text-foreground">{transaction.to_store}</span>
-                                      </span>
-                                    </div>
+                                      </div>
+                                    </>
                                   )}
                                   {transaction.type === 'receiving' && (
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20">
-                                        <Package className="w-4 h-4 text-purple-500" />
-                                        <span className="text-sm font-medium text-purple-700 dark:text-purple-400">Receiving</span>
+                                    <>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
+                                          <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-500" />
+                                          <span className="text-xs sm:text-sm font-medium text-purple-700 dark:text-purple-400">Receiving</span>
+                                        </div>
+                                        <span className="text-xs sm:text-sm text-muted-foreground">
+                                          <span className="font-semibold text-foreground">{transaction.item_count}</span> units
+                                        </span>
                                       </div>
-                                      <span className="text-sm text-muted-foreground">
-                                        <span className="font-semibold text-foreground">{transaction.item_count}</span> units
-                                      </span>
-                                      <span className="text-sm text-muted-foreground">•</span>
-                                      <span className="text-sm">
-                                        received at <span className="font-medium text-foreground">{transaction.store}</span>
-                                      </span>
-                                    </div>
+                                      <div className="text-xs sm:text-sm">
+                                        received at <span className="font-medium text-foreground break-words">{transaction.store}</span>
+                                      </div>
+                                    </>
                                   )}
                                   {transaction.type === 'spot_check' && (
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
-                                        <ClipboardCheck className="w-4 h-4 text-green-500" />
-                                        <span className="text-sm font-medium text-green-700 dark:text-green-400">Spot Check</span>
+                                    <>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+                                          <ClipboardCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500" />
+                                          <span className="text-xs sm:text-sm font-medium text-green-700 dark:text-green-400">Spot Check</span>
+                                        </div>
+                                        <span className="text-xs sm:text-sm text-muted-foreground">
+                                          <span className="font-semibold text-foreground">{transaction.item_count}</span> items
+                                        </span>
                                       </div>
-                                      <span className="text-sm">
-                                        at <span className="font-medium text-foreground">{transaction.store}</span>
-                                      </span>
-                                      <span className="text-sm text-muted-foreground">•</span>
-                                      <span className="text-sm text-muted-foreground">
-                                        <span className="font-semibold text-foreground">{transaction.item_count}</span> items
-                                      </span>
-                                    </div>
+                                      <div className="text-xs sm:text-sm">
+                                        at <span className="font-medium text-foreground break-words">{transaction.store}</span>
+                                      </div>
+                                    </>
                                   )}
                                   {transaction.type === 'variance' && (
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20">
-                                        <TrendingDown className="w-4 h-4 text-orange-500" />
-                                        <span className="text-sm font-medium text-orange-700 dark:text-orange-400">Variance</span>
+                                    <>
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/20">
+                                          <TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
+                                          <span className="text-xs sm:text-sm font-medium text-orange-700 dark:text-orange-400">Variance</span>
+                                        </div>
+                                        <span className="text-xs sm:text-sm text-muted-foreground">
+                                          <span className="font-semibold text-foreground">{transaction.item_count}</span> items
+                                        </span>
                                       </div>
-                                      <span className="text-sm">
-                                        at <span className="font-medium text-foreground">{transaction.store}</span>
-                                      </span>
-                                      <span className="text-sm text-muted-foreground">•</span>
-                                      <span className="text-sm text-muted-foreground">
-                                        <span className="font-semibold text-foreground">{transaction.item_count}</span> items
-                                      </span>
-                                    </div>
+                                      <div className="text-xs sm:text-sm">
+                                        at <span className="font-medium text-foreground break-words">{transaction.store}</span>
+                                      </div>
+                                    </>
                                   )}
                                 </div>
                                 
                                 {/* Who Initiated and When */}
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <Avatar className="w-5 h-5">
-                                    <AvatarFallback className="text-[10px]">
-                                      {transaction.user_email?.charAt(0).toUpperCase()}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span className="font-medium">{transaction.user_email}</span>
-                                  <span>•</span>
-                                  <Clock className="w-3 h-3" />
-                                  <span>{new Date(transaction.timestamp).toLocaleString()}</span>
+                                <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
+                                  <div className="flex items-center gap-1.5">
+                                    <Avatar className="w-4 h-4 sm:w-5 sm:h-5">
+                                      <AvatarFallback className="text-[8px] sm:text-[10px]">
+                                        {transaction.user_email?.charAt(0).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="font-medium truncate max-w-[120px] sm:max-w-none">{transaction.user_email}</span>
+                                  </div>
+                                  <span className="hidden sm:inline">•</span>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3 flex-shrink-0" />
+                                    <span className="text-[10px] sm:text-xs">{new Date(transaction.timestamp).toLocaleString()}</span>
+                                  </div>
                                 </div>
                               </div>
                               
@@ -1273,7 +1281,7 @@ const StoreManagement = () => {
                                   transaction.status === 'pending' ? 'secondary' : 
                                   'destructive'
                                 }
-                                className="flex-shrink-0 px-3 py-1 text-xs font-semibold"
+                                className="self-start sm:self-auto flex-shrink-0 px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold"
                               >
                                 {transaction.status}
                               </Badge>
