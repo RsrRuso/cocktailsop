@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -11,6 +14,7 @@ import { toast } from "sonner";
 
 interface AuditItem {
   id: string;
+  itemId: string;
   name: string;
   expectedQty: number;
   actualQty: number;
@@ -23,18 +27,50 @@ interface AuditItem {
 
 const StockAudit = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { currentWorkspace } = useWorkspace();
   const [auditItems, setAuditItems] = useState<AuditItem[]>([]);
-  const [itemName, setItemName] = useState("");
+  const [masterItems, setMasterItems] = useState<any[]>([]);
+  const [selectedItemId, setSelectedItemId] = useState("");
   const [expectedQty, setExpectedQty] = useState("");
   const [actualQty, setActualQty] = useState("");
   const [unit, setUnit] = useState("bottles");
   const [unitValue, setUnitValue] = useState("");
 
+  useEffect(() => {
+    if (user) {
+      fetchMasterItems();
+    }
+  }, [user, currentWorkspace]);
+
+  const fetchMasterItems = async () => {
+    try {
+      const workspaceFilter = currentWorkspace 
+        ? { workspace_id: currentWorkspace.id }
+        : { user_id: user?.id, workspace_id: null };
+
+      const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .match(workspaceFilter)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setMasterItems(data || []);
+    } catch (error) {
+      console.error('Error fetching master items:', error);
+      toast.error('Failed to load items');
+    }
+  };
+
   const handleAddItem = () => {
-    if (!itemName || !expectedQty || !actualQty || !unitValue) {
+    if (!selectedItemId || !expectedQty || !actualQty || !unitValue) {
       toast.error("Please fill in all fields");
       return;
     }
+
+    const selectedItem = masterItems.find(item => item.id === selectedItemId);
+    if (!selectedItem) return;
 
     const expected = parseFloat(expectedQty);
     const actual = parseFloat(actualQty);
@@ -48,7 +84,8 @@ const StockAudit = () => {
 
     const newItem: AuditItem = {
       id: Date.now().toString(),
-      name: itemName,
+      itemId: selectedItemId,
+      name: selectedItem.name,
       expectedQty: expected,
       actualQty: actual,
       unit,
@@ -60,7 +97,7 @@ const StockAudit = () => {
 
     setAuditItems([...auditItems, newItem]);
     
-    setItemName("");
+    setSelectedItemId("");
     setExpectedQty("");
     setActualQty("");
     setUnitValue("");
@@ -98,17 +135,43 @@ const StockAudit = () => {
 
         <Card className="glass">
           <CardHeader>
-            <CardTitle>Add Audit Item</CardTitle>
-            <CardDescription>Compare expected vs actual inventory levels</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Add Audit Item</CardTitle>
+                <CardDescription>Compare expected vs actual inventory levels</CardDescription>
+              </div>
+              {masterItems.length === 0 && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => navigate('/master-items')}
+                >
+                  Add Master Items
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Item Name</label>
-              <Input
-                placeholder="e.g., Vodka - Premium"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-              />
+              <label className="text-sm font-medium mb-2 block">Select Item</label>
+              <Select value={selectedItemId} onValueChange={setSelectedItemId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose from master items..." />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  {masterItems.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No items found. Add items in Master Items first.
+                    </div>
+                  ) : (
+                    masterItems.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.name} {item.brand && `- ${item.brand}`}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
