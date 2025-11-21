@@ -136,22 +136,31 @@ const ScanAccess = () => {
       }
 
       // Check for existing requests
-      const { data: existing } = await supabase
+      const { data: existingRequests } = await supabase
         .from("access_requests")
         .select("*")
         .eq("workspace_id", workspaceId)
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: false });
 
-      if (existing && existing.status === "pending") {
+      const pendingRequest = existingRequests?.find(r => r.status === "pending");
+      
+      if (pendingRequest) {
         toast.info("You already have a pending access request");
         setStatus("success");
         return;
       }
 
-      // Create access request using logged-in user's info
+      // Delete any old rejected/approved requests to avoid duplicate key errors
+      if (existingRequests && existingRequests.length > 0) {
+        const oldRequestIds = existingRequests.map(r => r.id);
+        await supabase
+          .from("access_requests")
+          .delete()
+          .in("id", oldRequestIds);
+      }
+
+      // Create new access request
       const { error: requestError } = await supabase
         .from("access_requests")
         .insert([{
