@@ -781,7 +781,7 @@ const StoreManagement = () => {
           ? (variance / item.expected_quantity) * 100 
           : 0;
 
-        // Insert spot check item
+        // Insert spot check item (let the database compute variance fields)
         const { error: itemError } = await supabase
           .from("spot_check_items")
           .insert({
@@ -789,9 +789,7 @@ const StoreManagement = () => {
             inventory_id: item.inventory_id,
             item_id: item.item_id,
             expected_quantity: item.expected_quantity,
-            actual_quantity: actualQty,
-            variance: variance,
-            variance_percentage: variancePercentage
+            actual_quantity: actualQty
           });
 
         if (itemError) {
