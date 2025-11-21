@@ -1130,32 +1130,34 @@ const StoreManagement = () => {
         </Card>
 
         <Tabs defaultValue="transactions" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1">
-            <TabsTrigger value="transactions" className="text-xs sm:text-sm">
-              <Clock className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Live</span>
-            </TabsTrigger>
-            <TabsTrigger value="receivings" className="text-xs sm:text-sm">
-              <Package className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Receive</span>
-            </TabsTrigger>
-            <TabsTrigger value="transfers" className="text-xs sm:text-sm">
-              <ArrowRightLeft className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Transfer</span>
-            </TabsTrigger>
-            <TabsTrigger value="spotchecks" className="text-xs sm:text-sm">
-              <ClipboardCheck className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Checks</span>
-            </TabsTrigger>
-            <TabsTrigger value="variance" className="text-xs sm:text-sm">
-              <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Variance</span>
-            </TabsTrigger>
-            <TabsTrigger value="members" className="text-xs sm:text-sm">
-              <Users className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-              <span className="hidden sm:inline">Team</span>
-            </TabsTrigger>
-          </TabsList>
+          <ScrollArea className="w-full sm:w-auto">
+            <TabsList className="inline-flex w-max sm:grid sm:w-full sm:grid-cols-6 gap-1 mb-2">
+              <TabsTrigger value="transactions" className="text-xs sm:text-sm whitespace-nowrap px-3">
+                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-1 flex-shrink-0" />
+                <span>Live</span>
+              </TabsTrigger>
+              <TabsTrigger value="receivings" className="text-xs sm:text-sm whitespace-nowrap px-3">
+                <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-1 flex-shrink-0" />
+                <span>Receive</span>
+              </TabsTrigger>
+              <TabsTrigger value="transfers" className="text-xs sm:text-sm whitespace-nowrap px-3">
+                <ArrowRightLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-1 flex-shrink-0" />
+                <span>Transfer</span>
+              </TabsTrigger>
+              <TabsTrigger value="spotchecks" className="text-xs sm:text-sm whitespace-nowrap px-3">
+                <ClipboardCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-1 flex-shrink-0" />
+                <span>Checks</span>
+              </TabsTrigger>
+              <TabsTrigger value="variance" className="text-xs sm:text-sm whitespace-nowrap px-3">
+                <TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-1 flex-shrink-0" />
+                <span>Variance</span>
+              </TabsTrigger>
+              <TabsTrigger value="members" className="text-xs sm:text-sm whitespace-nowrap px-3">
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-1 flex-shrink-0" />
+                <span>Team</span>
+              </TabsTrigger>
+            </TabsList>
+          </ScrollArea>
 
           {/* Live Transactions Feed */}
           <TabsContent value="transactions" className="space-y-4">
