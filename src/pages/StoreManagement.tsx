@@ -177,7 +177,7 @@ const StoreManagement = () => {
           stores(name, store_type)
         `)
         .eq("workspace_id", workspaceId)
-        .eq("action_type", "receiving")
+        .eq("action_type", "received")
         .order("created_at", { ascending: false })
         .limit(20);
 
@@ -410,7 +410,7 @@ const StoreManagement = () => {
         workspace_id: currentWorkspace.id,
         user_id: user.id,
         store_id: selectedReceivingStore,
-        action_type: 'receiving',
+        action_type: 'received',
         quantity_after: qty,
         details: {
           item_id: selectedReceivingItem,
