@@ -95,6 +95,9 @@ const ScanAccess = lazy(() => import("./pages/ScanAccess"));
 const AccessApproval = lazy(() => import("./pages/AccessApproval"));
 const ExpiringInventory = lazy(() => import("./pages/ExpiringInventory"));
 const StoreManagement = lazy(() => import("./pages/StoreManagement"));
+const StoreDetail = lazy(() => import("./pages/StoreDetail"));
+const AllInventory = lazy(() => import("./pages/AllInventory"));
+const InventoryTransactions = lazy(() => import("./pages/InventoryTransactions"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -149,6 +152,9 @@ const App = () => (
               <Route path="/access-approval" element={<AccessApproval />} />
               <Route path="/expiring-inventory/:workspaceId" element={<ExpiringInventory />} />
               <Route path="/store-management" element={<StoreManagement />} />
+              <Route path="/store/:id" element={<StoreDetail />} />
+              <Route path="/all-inventory" element={<AllInventory />} />
+              <Route path="/inventory-transactions" element={<InventoryTransactions />} />
               <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
           <Route path="/abv-calculator" element={<ABVCalculator />} />

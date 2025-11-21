@@ -16,7 +16,8 @@ import { toast } from "sonner";
 import { 
   Store, ArrowRightLeft, ClipboardCheck, TrendingDown, 
   Users, Camera, Bell, Clock, Package, Upload, 
-  CheckCircle2, AlertCircle, UserPlus, UserMinus, Shield
+  CheckCircle2, AlertCircle, UserPlus, UserMinus, Shield,
+  ExternalLink, BarChart3
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -544,6 +545,92 @@ const StoreManagement = () => {
             Live Updates
           </Badge>
         </div>
+
+        {/* Quick Navigation */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/all-inventory')}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Package className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">All Inventory</p>
+                  <p className="text-xs text-muted-foreground">View combined inventory</p>
+                </div>
+                <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/inventory-transactions')}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <ArrowRightLeft className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <p className="font-semibold">Transactions</p>
+                  <p className="text-xs text-muted-foreground">View all transfers & receivings</p>
+                </div>
+                <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/expiring-inventory/' + currentWorkspace.id)}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-orange-500/10">
+                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                </div>
+                <div>
+                  <p className="font-semibold">Expiring Items</p>
+                  <p className="text-xs text-muted-foreground">FIFO alerts</p>
+                </div>
+                <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Stores List */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Store className="h-5 w-5" />
+              Your Stores ({stores.length})
+            </CardTitle>
+            <CardDescription>Click on a store to view its inventory</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {stores.map((store) => (
+                <Card 
+                  key={store.id} 
+                  className="cursor-pointer hover:shadow-md transition-all hover:border-primary/50"
+                  onClick={() => navigate(`/store/${store.id}`)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <p className="font-semibold">{store.name}</p>
+                        <p className="text-xs text-muted-foreground">{store.location}</p>
+                      </div>
+                      <Badge variant={store.store_type === 'warehouse' ? 'default' : 'secondary'} className="text-xs">
+                        {store.store_type}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                      <span className="text-xs text-muted-foreground">View Items</span>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="transactions" className="w-full">
           <TabsList className="grid w-full grid-cols-6">
