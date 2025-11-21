@@ -27,7 +27,6 @@ import { CreateEventDialog } from "@/components/CreateEventDialog";
 import { EventsListDialog } from "@/components/EventsListDialog";
 import { useManagerRole } from "@/hooks/useManagerRole";
 import { useToast } from "@/hooks/use-toast";
-import { useWorkspace } from "@/hooks/useWorkspace";
 
 const TopNav = () => {
   const navigate = useNavigate();
@@ -56,7 +55,6 @@ const TopNav = () => {
   const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
   const [regionDropdownOpen, setRegionDropdownOpen] = useState(false);
   const { isManager } = useManagerRole();
-  const { currentWorkspace, workspaces, switchWorkspace } = useWorkspace();
   
   const [eventFormData, setEventFormData] = useState({
     title: '',
@@ -367,52 +365,6 @@ const TopNav = () => {
 
             {/* Spotify Connect */}
             {/* <SpotifyConnect /> */}
-
-            {/* Workspace Selector */}
-            {workspaces.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button 
-                    onClick={lightTap}
-                    className="glass-hover p-2.5 rounded-2xl flex items-center gap-1.5"
-                  >
-                    <Package className="w-5 h-5" />
-                    {currentWorkspace && (
-                      <span className="text-xs max-w-[80px] truncate hidden sm:inline">{currentWorkspace.name}</span>
-                    )}
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="glass z-[60] bg-background/95 backdrop-blur-xl border border-border/50">
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
-                    Select Workspace
-                  </div>
-                  <div className="my-1 h-px bg-border/50" />
-                  <DropdownMenuItem
-                    onClick={() => { 
-                      lightTap(); 
-                      switchWorkspace('personal');
-                    }}
-                    className={`cursor-pointer ${!currentWorkspace ? 'bg-primary/20 text-primary font-semibold' : ''}`}
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    Personal Inventory
-                  </DropdownMenuItem>
-                  {workspaces.map((workspace) => (
-                    <DropdownMenuItem
-                      key={workspace.id}
-                      onClick={() => { 
-                        lightTap(); 
-                        switchWorkspace(workspace.id);
-                      }}
-                      className={`cursor-pointer ${currentWorkspace?.id === workspace.id ? 'bg-primary/20 text-primary font-semibold' : ''}`}
-                    >
-                      <Package className="w-4 h-4 mr-2" />
-                      {workspace.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
           </div>
 
           <div className="flex items-center gap-2">

@@ -74,14 +74,14 @@ const StoreManagement = () => {
   const [editReceivingQuantity, setEditReceivingQuantity] = useState("");
 
   useEffect(() => {
-    if (user && currentWorkspace) {
+    if (user) {
       fetchAllData();
       setupRealtimeSubscriptions();
     }
   }, [user, currentWorkspace]);
 
   const setupRealtimeSubscriptions = () => {
-    if (!currentWorkspace) return;
+    const workspaceFilter = currentWorkspace ? `workspace_id=eq.${currentWorkspace.id}` : `user_id=eq.${user?.id}`;
 
     const channel = supabase
       .channel('store-management-changes')
@@ -91,7 +91,7 @@ const StoreManagement = () => {
           event: '*',
           schema: 'public',
           table: 'inventory_transfers',
-          filter: `workspace_id=eq.${currentWorkspace.id}`
+          filter: workspaceFilter
         },
         () => {
           fetchAllData();
@@ -104,7 +104,7 @@ const StoreManagement = () => {
           event: '*',
           schema: 'public',
           table: 'inventory_receivings',
-          filter: `workspace_id=eq.${currentWorkspace.id}`
+          filter: workspaceFilter
         },
         () => {
           fetchAllData();
@@ -117,7 +117,7 @@ const StoreManagement = () => {
           event: '*',
           schema: 'public',
           table: 'inventory_spot_checks',
-          filter: `workspace_id=eq.${currentWorkspace.id}`
+          filter: workspaceFilter
         },
         () => {
           fetchAllData();
@@ -132,38 +132,61 @@ const StoreManagement = () => {
   };
 
   const fetchAllData = async () => {
-    if (!user || !currentWorkspace) return;
+    if (!user) return;
 
     try {
-      const workspaceId = currentWorkspace.id;
+      const workspaceFilter = currentWorkspace 
+        ? { workspace_id: currentWorkspace.id }
+        : { user_id: user.id, workspace_id: null };
 
       // Fetch stores
-      const { data: storesData } = await supabase
+      let storesQuery = supabase
         .from("stores")
         .select("*")
-        .eq("workspace_id", workspaceId)
         .eq("is_active", true)
         .order("name");
 
+      if (currentWorkspace) {
+        storesQuery = storesQuery.eq("workspace_id", currentWorkspace.id);
+      } else {
+        storesQuery = storesQuery.eq("user_id", user.id).is("workspace_id", null);
+      }
+
+      const { data: storesData } = await storesQuery;
+
       // Fetch items
-      const { data: itemsData } = await supabase
+      let itemsQuery = supabase
         .from("items")
         .select("*")
-        .eq("workspace_id", workspaceId)
         .order("name");
 
+      if (currentWorkspace) {
+        itemsQuery = itemsQuery.eq("workspace_id", currentWorkspace.id);
+      } else {
+        itemsQuery = itemsQuery.eq("user_id", user.id).is("workspace_id", null);
+      }
+
+      const { data: itemsData } = await itemsQuery;
+
       // Fetch inventory
-      const { data: inventoryData } = await supabase
+      let inventoryQuery = supabase
         .from("inventory")
         .select(`
           *,
           items(name, brand, photo_url, color_code),
           stores(name)
-        `)
-        .eq("workspace_id", workspaceId);
+        `);
+
+      if (currentWorkspace) {
+        inventoryQuery = inventoryQuery.eq("workspace_id", currentWorkspace.id);
+      } else {
+        inventoryQuery = inventoryQuery.eq("user_id", user.id).is("workspace_id", null);
+      }
+
+      const { data: inventoryData } = await inventoryQuery;
 
       // Fetch transfers
-      const { data: transfersData } = await supabase
+      let transfersQuery = supabase
         .from("inventory_transfers")
         .select(`
           *,
@@ -171,52 +194,84 @@ const StoreManagement = () => {
           to_store:stores!to_store_id(name),
           transferred_by:employees(name)
         `)
-        .eq("workspace_id", workspaceId)
         .order("transfer_date", { ascending: false })
         .limit(20);
 
+      if (currentWorkspace) {
+        transfersQuery = transfersQuery.eq("workspace_id", currentWorkspace.id);
+      } else {
+        transfersQuery = transfersQuery.eq("user_id", user.id).is("workspace_id", null);
+      }
+
+      const { data: transfersData } = await transfersQuery;
+
       // Fetch receivings from inventory_activity_log
-      const { data: receivingsData } = await supabase
+      let receivingsQuery = supabase
         .from("inventory_activity_log")
         .select(`
           *,
           stores(name, store_type)
         `)
-        .eq("workspace_id", workspaceId)
         .eq("action_type", "received")
         .order("created_at", { ascending: false })
         .limit(20);
 
+      if (currentWorkspace) {
+        receivingsQuery = receivingsQuery.eq("workspace_id", currentWorkspace.id);
+      } else {
+        receivingsQuery = receivingsQuery.eq("user_id", user.id).is("workspace_id", null);
+      }
+
+      const { data: receivingsData } = await receivingsQuery;
+
       // Fetch spot checks
-      const { data: spotChecksData } = await supabase
+      let spotChecksQuery = supabase
         .from("inventory_spot_checks")
         .select(`
           *,
           stores(name)
         `)
-        .eq("workspace_id", workspaceId)
         .order("check_date", { ascending: false })
         .limit(20);
 
+      if (currentWorkspace) {
+        spotChecksQuery = spotChecksQuery.eq("workspace_id", currentWorkspace.id);
+      } else {
+        spotChecksQuery = spotChecksQuery.eq("user_id", user.id).is("workspace_id", null);
+      }
+
+      const { data: spotChecksData } = await spotChecksQuery;
+
       // Fetch variance reports
-      const { data: varianceData } = await supabase
+      let varianceQuery = supabase
         .from("variance_reports")
         .select(`
           *,
           stores(name)
         `)
-        .eq("workspace_id", workspaceId)
         .order("report_date", { ascending: false })
         .limit(20);
 
-      // Fetch workspace members
-      const { data: membersData } = await supabase
-        .from("workspace_members")
-        .select(`
-          *,
-          profiles!inner(email, full_name, username)
-        `)
-        .eq("workspace_id", workspaceId);
+      if (currentWorkspace) {
+        varianceQuery = varianceQuery.eq("workspace_id", currentWorkspace.id);
+      } else {
+        varianceQuery = varianceQuery.eq("user_id", user.id).is("workspace_id", null);
+      }
+
+      const { data: varianceData } = await varianceQuery;
+
+      // Fetch workspace members (only if workspace exists)
+      let membersData = [];
+      if (currentWorkspace) {
+        const { data } = await supabase
+          .from("workspace_members")
+          .select(`
+            *,
+            profiles!inner(email, full_name, username)
+          `)
+          .eq("workspace_id", currentWorkspace.id);
+        membersData = data || [];
+      }
 
       setStores(storesData || []);
       setItems(itemsData || []);
@@ -225,7 +280,7 @@ const StoreManagement = () => {
       setReceivings(receivingsData || []);
       setSpotChecks(spotChecksData || []);
       setVarianceReports(varianceData || []);
-      setMembers(membersData || []);
+      setMembers(membersData);
 
       // Build live transactions feed
       const allTransactions: Transaction[] = [];
@@ -764,25 +819,6 @@ const StoreManagement = () => {
       toast.error("Failed to update receiving");
     }
   };
-
-  if (!currentWorkspace) {
-    return (
-      <div className="min-h-screen bg-background pb-20 pt-16">
-        <TopNav />
-        <div className="px-4 py-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>No Workspace Selected</CardTitle>
-              <CardDescription>
-                Please select a workspace to access Store Management
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-        <BottomNav />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
