@@ -17,7 +17,7 @@ import {
   Store, ArrowRightLeft, ClipboardCheck, TrendingDown, 
   Users, Camera, Bell, Clock, Package, Upload, 
   CheckCircle2, AlertCircle, UserPlus, UserMinus, Shield,
-  ExternalLink, BarChart3, Trash2
+  ExternalLink, BarChart3, Trash2, Activity
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1392,103 +1392,293 @@ const StoreManagement = () => {
 
           {/* Team Members Tab */}
           <TabsContent value="members" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>
-                  Manage workspace access and permissions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button className="w-full">
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Invite Member
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Invite Team Member</DialogTitle>
-                      </DialogHeader>
-                      <form className="space-y-4" onSubmit={(e) => {
-                        e.preventDefault();
-                        const formData = new FormData(e.currentTarget);
-                        handleInviteMember(
-                          formData.get("email") as string,
-                          formData.get("role") as string
-                        );
-                      }}>
-                        <div className="space-y-2">
-                          <Label>Email</Label>
-                          <Input
-                            name="email"
-                            type="email"
-                            placeholder="colleague@example.com"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Role</Label>
-                          <Select name="role" defaultValue="member">
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="viewer">Viewer</SelectItem>
-                              <SelectItem value="member">Member</SelectItem>
-                              <SelectItem value="manager">Manager</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button type="submit" className="w-full">
-                          Send Invitation
-                        </Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
+            {/* Team Stats Overview */}
+            <div className="grid grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{members.length}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Active Today</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{transactions.filter(t => {
+                    const today = new Date().toDateString();
+                    return new Date(t.timestamp).toDateString() === today;
+                  }).length}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">Total Actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{transactions.length}</div>
+                </CardContent>
+              </Card>
+            </div>
 
-                  <ScrollArea className="h-[400px]">
-                    <div className="space-y-2">
-                      {members.map((member: any) => (
-                        <div key={member.id} className="glass rounded-lg p-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <Avatar>
-                                <AvatarFallback>
-                                  {member.profiles?.email?.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-medium">
-                                  {member.profiles?.full_name || member.profiles?.username}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {member.profiles?.email}
-                                </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Team Members List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Team Members</CardTitle>
+                  <CardDescription>
+                    Manage workspace access and permissions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button className="w-full">
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Invite Member
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Invite Team Member</DialogTitle>
+                        </DialogHeader>
+                        <form className="space-y-4" onSubmit={(e) => {
+                          e.preventDefault();
+                          const formData = new FormData(e.currentTarget);
+                          handleInviteMember(
+                            formData.get("email") as string,
+                            formData.get("role") as string
+                          );
+                        }}>
+                          <div className="space-y-2">
+                            <Label>Email</Label>
+                            <Input
+                              name="email"
+                              type="email"
+                              placeholder="colleague@example.com"
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Role</Label>
+                            <Select name="role" defaultValue="member">
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="viewer">Viewer - View only</SelectItem>
+                                <SelectItem value="member">Member - View & receive</SelectItem>
+                                <SelectItem value="manager">Manager - Full access</SelectItem>
+                                <SelectItem value="admin">Admin - Full access + settings</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button type="submit" className="w-full">
+                            Send Invitation
+                          </Button>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+
+                    <ScrollArea className="h-[500px]">
+                      <div className="space-y-2">
+                        {members.map((member: any) => {
+                          const memberActions = transactions.filter(
+                            t => t.user_email === member.profiles?.email
+                          ).length;
+                          const lastAction = transactions.find(
+                            t => t.user_email === member.profiles?.email
+                          );
+                          
+                          return (
+                            <div key={member.id} className="glass rounded-lg p-3">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-start gap-3">
+                                  <Avatar className="relative">
+                                    <AvatarFallback>
+                                      {member.profiles?.email?.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                    {/* Online indicator - showing if active in last 5 mins */}
+                                    {lastAction && (new Date().getTime() - new Date(lastAction.timestamp).getTime()) < 300000 && (
+                                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
+                                    )}
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium truncate">
+                                        {member.profiles?.full_name || member.profiles?.username}
+                                      </p>
+                                      <Badge variant="outline" className="text-xs">
+                                        {member.role}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground truncate">
+                                      {member.profiles?.email}
+                                    </p>
+                                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                      <span>{memberActions} actions</span>
+                                      {lastAction && (
+                                        <span>Last: {new Date(lastAction.timestamp).toLocaleDateString()}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                {member.role !== 'owner' && currentWorkspace?.owner_id === user?.id && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveMember(member.id)}
+                                  >
+                                    <UserMinus className="w-4 h-4" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
+                          );
+                        })}
+                        {members.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                            <p>No team members yet</p>
+                            <p className="text-sm">Invite colleagues to collaborate</p>
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Team Activity Feed */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5" />
+                    Team Activity
+                  </CardTitle>
+                  <CardDescription>
+                    Recent actions by team members
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[600px]">
+                    <div className="space-y-3">
+                      {transactions.slice(0, 30).map((transaction, index) => (
+                        <div key={`${transaction.id}-${index}`} className="flex gap-3 pb-3 border-b last:border-0">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="text-xs">
+                              {transaction.user_email?.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
-                              <Badge variant="outline">
-                                {member.role}
+                              <p className="text-sm font-medium">{transaction.user_email?.split('@')[0]}</p>
+                              <Badge 
+                                variant={
+                                  transaction.type === 'transfer' ? 'default' :
+                                  transaction.type === 'receiving' ? 'secondary' :
+                                  transaction.type === 'spot_check' ? 'outline' :
+                                  'destructive'
+                                }
+                                className="text-xs"
+                              >
+                                {transaction.type === 'transfer' && <ArrowRightLeft className="w-3 h-3 mr-1" />}
+                                {transaction.type === 'receiving' && <Package className="w-3 h-3 mr-1" />}
+                                {transaction.type === 'spot_check' && <ClipboardCheck className="w-3 h-3 mr-1" />}
+                                {transaction.type === 'variance' && <TrendingDown className="w-3 h-3 mr-1" />}
+                                {transaction.type.replace('_', ' ')}
                               </Badge>
-                              {member.role !== 'owner' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveMember(member.id)}
-                                >
-                                  <UserMinus className="w-4 h-4" />
-                                </Button>
-                              )}
                             </div>
+                            <p className="text-xs text-muted-foreground">
+                              {transaction.type === 'transfer' && (
+                                `Transferred from ${transaction.from_store} to ${transaction.to_store}`
+                              )}
+                              {transaction.type === 'receiving' && (
+                                `Received ${transaction.item_count}x ${transaction.item_name} at ${transaction.store}`
+                              )}
+                              {transaction.type === 'spot_check' && (
+                                `Performed spot check at ${transaction.store}`
+                              )}
+                              {transaction.type === 'variance' && (
+                                `Variance report for ${transaction.store} (${transaction.item_count} items)`
+                              )}
+                            </p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(transaction.timestamp).toLocaleString()}
+                            </p>
                           </div>
                         </div>
                       ))}
+                      {transactions.length === 0 && (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                          <p>No activity yet</p>
+                          <p className="text-sm">Team actions will appear here</p>
+                        </div>
+                      )}
                     </div>
                   </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Permission Guide */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Role Permissions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-muted-foreground" />
+                      <h4 className="font-semibold text-sm">Viewer</h4>
+                    </div>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• View inventory</li>
+                      <li>• View transactions</li>
+                      <li>• View reports</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-blue-500" />
+                      <h4 className="font-semibold text-sm">Member</h4>
+                    </div>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• All Viewer permissions</li>
+                      <li>• Receive items</li>
+                      <li>• Create transfers</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-orange-500" />
+                      <h4 className="font-semibold text-sm">Manager</h4>
+                    </div>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• All Member permissions</li>
+                      <li>• Approve transfers</li>
+                      <li>• Manage inventory</li>
+                      <li>• Generate reports</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-red-500" />
+                      <h4 className="font-semibold text-sm">Admin</h4>
+                    </div>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• All Manager permissions</li>
+                      <li>• Manage team members</li>
+                      <li>• Workspace settings</li>
+                      <li>• Full access</li>
+                    </ul>
+                  </div>
                 </div>
               </CardContent>
             </Card>
