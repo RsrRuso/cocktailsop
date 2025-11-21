@@ -46,15 +46,17 @@ const WorkspaceManagement = () => {
       const { data: ownedWorkspaces, error: ownedError } = await supabase
         .from("workspaces")
         .select("*")
-        .eq("owner_id", user.id);
+        .eq("owner_id", user.id)
+        .eq("workspace_type", "store_management");
 
       if (ownedError) throw ownedError;
 
       // Fetch member workspaces
       const { data: memberWorkspaces, error: memberError } = await supabase
         .from("workspace_members")
-        .select("workspace_id, workspaces(*)")
-        .eq("user_id", user.id);
+        .select("workspace_id, workspaces!inner(*)")
+        .eq("user_id", user.id)
+        .eq("workspaces.workspace_type", "store_management");
 
       if (memberError) throw memberError;
 

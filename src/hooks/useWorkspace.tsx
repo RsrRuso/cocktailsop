@@ -51,13 +51,15 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       const { data: ownedWorkspaces } = await supabase
         .from('workspaces')
         .select('*')
-        .eq('owner_id', user.id);
+        .eq('owner_id', user.id)
+        .eq('workspace_type', 'store_management');
 
       // Fetch workspaces user is member of
       const { data: memberWorkspaces } = await supabase
         .from('workspace_members')
-        .select('workspace:workspaces(*)')
-        .eq('user_id', user.id);
+        .select('workspace:workspaces!inner(*)')
+        .eq('user_id', user.id)
+        .eq('workspace.workspace_type', 'store_management');
 
       const memberWorkspacesData = memberWorkspaces?.map((m: any) => m.workspace).filter(Boolean) || [];
       const allWorkspaces = [...(ownedWorkspaces || []), ...memberWorkspacesData];
