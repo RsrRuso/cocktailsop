@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInventoryAccess } from "@/hooks/useInventoryAccess";
 import { useManagerRole } from "@/hooks/useManagerRole";
-import { useWorkspace } from "@/hooks/useWorkspace";
 import { usePendingAccessRequests } from "@/hooks/usePendingAccessRequests";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
@@ -39,7 +38,6 @@ const InventoryManager = () => {
   const { user } = useAuth();
   const { hasAccess, isLoading: accessLoading, refetch: refetchAccess } = useInventoryAccess();
   const { isManager } = useManagerRole();
-  const { currentWorkspace, workspaces, switchWorkspace, isLoading: workspaceLoading } = useWorkspace();
   const { count: pendingRequestsCount } = usePendingAccessRequests();
   const navigate = useNavigate();
   const [stores, setStores] = useState<any[]>([]);
@@ -66,9 +64,9 @@ const InventoryManager = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (hasAccess && !workspaceLoading) {
-      console.log('Workspace changed, clearing data and refetching:', currentWorkspace?.name || 'Personal');
-      // Clear all data first to prevent showing wrong workspace data
+    if (hasAccess) {
+      console.log('FIFO Manager initialized - Personal inventory only');
+      // Clear all data first
       setStores([]);
       setItems([]);
       setInventory([]);
@@ -78,7 +76,7 @@ const InventoryManager = () => {
       // Then fetch new data
       fetchData();
     }
-  }, [hasAccess, currentWorkspace, workspaceLoading]);
+  }, [hasAccess]);
 
   useEffect(() => {
     if (!user || !hasAccess) return;
@@ -91,7 +89,7 @@ const InventoryManager = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'inventory'
+          table: 'fifo_inventory'
         },
         (payload) => {
           console.log('Inventory changed:', payload);
@@ -103,7 +101,7 @@ const InventoryManager = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'inventory_transfers'
+          table: 'fifo_transfers'
         },
         (payload) => {
           console.log('Transfer changed:', payload);
@@ -126,65 +124,36 @@ const InventoryManager = () => {
   const fetchData = async () => {
     if (!user || !hasAccess) return;
 
-    const workspaceId = currentWorkspace?.id;
-    console.log('=== FETCHING DATA ===');
-    console.log('Current workspace:', currentWorkspace?.name || 'Personal');
-    console.log('Workspace ID:', workspaceId || 'null (personal)');
+    console.log('=== FETCHING FIFO DATA (Personal Only) ===');
 
     try {
-      // Build queries based on whether we have a workspace or not
-      const storesQuery = supabase.from("stores").select("*");
-      const itemsQuery = supabase.from("items").select("*");
-      const inventoryQuery = supabase.from("inventory").select(`
-        *,
-        stores(name, area, store_type),
-        items(name, brand, color_code, category)
-      `);
-      const transfersQuery = supabase.from("inventory_transfers").select(`
-        *,
-        from_store:stores!from_store_id(name),
-        to_store:stores!to_store_id(name),
-        transferred_by:employees(name)
-      `);
-      const activityQuery = supabase.from("inventory_activity_log").select(`
-        *,
-        stores(name),
-        employees(name)
-      `);
-
-      // Apply STRICT workspace or user filtering
-      if (workspaceId) {
-        // When in a workspace, ONLY show data from THIS workspace
-        storesQuery.eq("workspace_id", workspaceId);
-        itemsQuery.eq("workspace_id", workspaceId);
-        inventoryQuery.eq("workspace_id", workspaceId);
-        transfersQuery.eq("workspace_id", workspaceId);
-        activityQuery.eq("workspace_id", workspaceId);
-        console.log('Filtering by workspace_id:', workspaceId);
-      } else {
-        // When in personal inventory, ONLY show data with NO workspace
-        storesQuery.eq("user_id", user.id).is("workspace_id", null);
-        itemsQuery.eq("user_id", user.id).is("workspace_id", null);
-        inventoryQuery.eq("user_id", user.id).is("workspace_id", null);
-        transfersQuery.eq("user_id", user.id).is("workspace_id", null);
-        activityQuery.eq("user_id", user.id).is("workspace_id", null);
-        console.log('Filtering by user_id and null workspace_id');
-      }
-
+      // Query FIFO tables (personal only, no workspace)
       const [storesRes, itemsRes, employeesRes, inventoryRes, transfersRes, activityRes] = await Promise.all([
-        storesQuery.order("name"),
-        itemsQuery.order("name"),
-        supabase.from("employees").select("*").eq("user_id", user.id).order("name"),
-        inventoryQuery.order("priority_score", { ascending: false }),
-        transfersQuery.order("transfer_date", { ascending: false }).limit(20),
-        activityQuery.order("created_at", { ascending: false }).limit(50)
+        supabase.from("fifo_stores").select("*").eq("user_id", user.id).order("name"),
+        supabase.from("fifo_items").select("*").eq("user_id", user.id).order("name"),
+        supabase.from("fifo_employees").select("*").eq("user_id", user.id).order("name"),
+        supabase.from("fifo_inventory").select(`
+          *,
+          fifo_stores!fifo_inventory_store_id_fkey(name, location, store_type),
+          fifo_items!fifo_inventory_item_id_fkey(name, brand, color_code, category)
+        `).eq("user_id", user.id).order("priority_score", { ascending: false }),
+        supabase.from("fifo_transfers").select(`
+          *,
+          from_store:fifo_stores!fifo_transfers_from_store_id_fkey(name),
+          to_store:fifo_stores!fifo_transfers_to_store_id_fkey(name),
+          transferred_by:fifo_employees!fifo_transfers_transferred_by_fkey(name)
+        `).eq("user_id", user.id).order("transfer_date", { ascending: false }).limit(20),
+        supabase.from("fifo_activity_log").select(`
+          *,
+          fifo_stores!fifo_activity_log_store_id_fkey(name),
+          fifo_employees!fifo_activity_log_employee_id_fkey(name)
+        `).eq("user_id", user.id).order("created_at", { ascending: false }).limit(50)
       ]);
 
-      console.log('=== FETCH RESULTS ===');
-      console.log('Stores:', storesRes.data?.length, storesRes.data?.map(s => ({ name: s.name, workspace_id: s.workspace_id })));
+      console.log('=== FIFO FETCH RESULTS ===');
+      console.log('Stores:', storesRes.data?.length);
       console.log('Items:', itemsRes.data?.length);
       console.log('Inventory:', inventoryRes.data?.length);
-      console.log('Errors:', { stores: storesRes.error, items: itemsRes.error, inventory: inventoryRes.error });
 
       if (storesRes.data) setStores(storesRes.data);
       if (itemsRes.data) setItems(itemsRes.data);
@@ -193,17 +162,17 @@ const InventoryManager = () => {
       if (transfersRes.data) setTransfers(transfersRes.data);
       if (activityRes.data) setActivityLog(activityRes.data);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching FIFO data:', error);
     }
   };
 
   const fetchFIFORecommendations = async (storeId: string) => {
     const { data } = await supabase
-      .from("inventory")
+      .from("fifo_inventory")
       .select(`
         *,
-        items(name, brand, color_code),
-        stores(name)
+        fifo_items!fifo_inventory_item_id_fkey(name, brand, color_code),
+        fifo_stores!fifo_inventory_store_id_fkey(name)
       `)
       .eq("store_id", storeId)
       .gt("quantity", 0)
