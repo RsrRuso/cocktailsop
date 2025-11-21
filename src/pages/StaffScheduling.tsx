@@ -14,7 +14,6 @@ import { toast } from 'sonner';
 import { Download, Plus, Trash2, Wand2, Calendar, Users, Save, Edit } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
-import { StockAlertSettings } from '@/components/StockAlertSettings';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -83,7 +82,7 @@ export default function StaffScheduling() {
   const [staffToDelete, setStaffToDelete] = useState<string | null>(null);
   const [savedSchedules, setSavedSchedules] = useState<any[]>([]);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
-  const [lowStockItems, setLowStockItems] = useState<any[]>([]);
+  const [expiringItems, setExpiringItems] = useState<any[]>([]);
   
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -112,31 +111,27 @@ export default function StaffScheduling() {
   // Re-fetch inventory when workspace changes
   useEffect(() => {
     if (user?.id) {
-      fetchLowStockInventory();
+      fetchExpiringItems();
     }
   }, [user, currentWorkspace]);
 
-  const fetchLowStockInventory = async () => {
+  const fetchExpiringItems = async () => {
     if (!user?.id) return;
 
     // Only fetch if we have a current workspace selected
     if (!currentWorkspace) {
-      console.log('No workspace selected - skipping low stock inventory fetch');
-      setLowStockItems([]);
+      console.log('No workspace selected - skipping expiring items fetch');
+      setExpiringItems([]);
       return;
     }
 
     try {
-      console.log('Fetching low stock inventory for workspace:', currentWorkspace.name);
+      console.log('Fetching expiring items for workspace:', currentWorkspace.name);
       
-      // Get settings for minimum quantity threshold
-      const { data: settings } = await supabase
-        .from('stock_alert_settings')
-        .select('minimum_quantity_threshold')
-        .eq('workspace_id', currentWorkspace.id)
-        .maybeSingle();
-
-      const minimumQuantity = settings?.minimum_quantity_threshold || 10;
+      // Calculate date 14 days from now
+      const fourteenDaysFromNow = new Date();
+      fourteenDaysFromNow.setDate(fourteenDaysFromNow.getDate() + 14);
+      const expiryThreshold = fourteenDaysFromNow.toISOString().split('T')[0];
 
       const { data, error } = await supabase
         .from('inventory')
@@ -152,19 +147,21 @@ export default function StaffScheduling() {
           )
         `)
         .eq('workspace_id', currentWorkspace.id)
-        .lte('quantity', minimumQuantity)
-        .order('quantity', { ascending: true });
+        .lte('expiration_date', expiryThreshold)
+        .gt('quantity', 0)
+        .order('expiration_date', { ascending: true })
+        .order('priority_score', { ascending: false });
 
       if (error) {
-        console.error('Error fetching low stock inventory:', error);
+        console.error('Error fetching expiring items:', error);
         return;
       }
 
-      console.log('Found low stock items:', data?.length || 0, 'items');
-      console.log('Low stock items details:', data);
-      setLowStockItems(data || []);
+      console.log('Found expiring items:', data?.length || 0, 'items');
+      console.log('Expiring items details:', data);
+      setExpiringItems(data || []);
     } catch (error) {
-      console.error('Error fetching low stock inventory:', error);
+      console.error('Error fetching expiring items:', error);
     }
   };
 
@@ -1349,29 +1346,29 @@ export default function StaffScheduling() {
       finalY += 2;
     }
     
-    // Low Stock Inventory Warnings Section
-    if (lowStockItems.length > 0) {
+    // Expiring Soon Warnings Section
+    if (expiringItems.length > 0) {
       doc.setFillColor(239, 68, 68); // Red color for warnings
       doc.roundedRect(14, finalY - 2, 270, 6, 2, 2, 'F');
       doc.setFontSize(7);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...colors.white);
-      doc.text('LOW STOCK WARNINGS', 18, finalY + 2.5);
+      doc.text('EXPIRING SOON', 18, finalY + 2.5);
       
       finalY += 8;
       doc.setFontSize(6);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...colors.lightGrey);
       
-      lowStockItems.slice(0, 5).forEach((item: any) => {
+      expiringItems.slice(0, 5).forEach((item: any) => {
         const itemName = item.items?.name || 'Unknown Item';
         const expiryDate = format(new Date(item.expiration_date), 'MMM dd');
-        const priority = item.priority_score;
+        const daysLeft = Math.ceil((new Date(item.expiration_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
         const storeName = item.stores?.name || 'Store';
         
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(239, 68, 68); // Red
-        doc.text(`Priority ${priority}:`, 18, finalY);
+        doc.text(`${daysLeft}d:`, 18, finalY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...colors.lightGrey);
         doc.text(`${itemName} - Expires ${expiryDate} (${storeName})`, 45, finalY);
@@ -1803,13 +1800,13 @@ export default function StaffScheduling() {
           </div>
         </Card>
 
-        {/* Low Stock Warnings */}
-        {lowStockItems.length > 0 && (
+        {/* Expiring Soon Warnings */}
+        {expiringItems.length > 0 && (
           <Card className="p-5 bg-gradient-to-br from-red-900/30 to-red-950/20 border-red-800 shadow-xl overflow-hidden relative">
             <div className="absolute top-0 left-0 w-96 h-96 bg-red-500/10 rounded-full blur-3xl" />
             <div className="relative">
-              <Accordion type="single" collapsible defaultValue="stock-warnings">
-                <AccordionItem value="stock-warnings" className="border-none">
+              <Accordion type="single" collapsible defaultValue="expiry-warnings">
+                <AccordionItem value="expiry-warnings" className="border-none">
                   <AccordionTrigger className="hover:no-underline pb-4">
                     <div className="flex items-center justify-between w-full pr-4">
                       <div className="flex items-center gap-3">
@@ -1817,41 +1814,48 @@ export default function StaffScheduling() {
                           <Calendar className="w-5 h-5 text-red-400" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-bold text-red-100">⚠️ Low Stock Warnings</h3>
-                          <p className="text-xs text-red-300">{lowStockItems.length} items running low on stock</p>
+                          <h3 className="text-lg font-bold text-red-100">⚠️ Expiring Soon</h3>
+                          <p className="text-xs text-red-300">{expiringItems.length} items expiring within 14 days</p>
                         </div>
                       </div>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-2">
-                      {lowStockItems.map((item: any) => (
-                        <div key={item.id} className="p-3 bg-red-950/40 border border-red-800/50 rounded-lg">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="font-bold text-red-100 text-sm">
-                                {item.items?.name || 'Unknown Item'}
+                      {expiringItems.map((item: any) => {
+                        const daysLeft = Math.ceil((new Date(item.expiration_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                        return (
+                          <div key={item.id} className="p-3 bg-red-950/40 border border-red-800/50 rounded-lg">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="font-bold text-red-100 text-sm">
+                                  {item.items?.name || 'Unknown Item'}
+                                </div>
+                                <div className="text-xs text-red-300 mt-1">
+                                  {item.items?.brand && `${item.items.brand} • `}
+                                  {item.items?.category || 'Uncategorized'}
+                                </div>
+                                <div className="text-xs text-red-400 mt-1">
+                                  Store: {item.stores?.name || 'Unknown'} • Qty: {item.quantity}
+                                </div>
                               </div>
-                              <div className="text-xs text-red-300 mt-1">
-                                {item.items?.brand && `${item.items.brand} • `}
-                                {item.items?.category || 'Uncategorized'}
-                              </div>
-                              <div className="text-xs text-red-400 mt-1">
-                                Store: {item.stores?.name || 'Unknown'} • Qty: {item.quantity}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-lg font-bold text-red-400">
-                                {item.priority_score}
-                              </div>
-                              <div className="text-[9px] text-red-300 uppercase">Priority</div>
-                              <div className="text-xs text-red-300 mt-1">
-                                Expires: {format(new Date(item.expiration_date), 'MMM dd, yyyy')}
+                              <div className="text-right">
+                                <div className={`text-lg font-bold ${
+                                  daysLeft <= 3 ? 'text-red-400' : 
+                                  daysLeft <= 7 ? 'text-orange-400' : 
+                                  'text-yellow-400'
+                                }`}>
+                                  {daysLeft}d
+                                </div>
+                                <div className="text-[9px] text-red-300 uppercase">Days Left</div>
+                                <div className="text-xs text-red-300 mt-1">
+                                  Expires: {format(new Date(item.expiration_date), 'MMM dd, yyyy')}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -2449,29 +2453,28 @@ export default function StaffScheduling() {
                       </div>
                     )}
                     
-                    {/* Low Stock Warnings */}
-                    {lowStockItems.length > 0 && (
+                    {/* Expiring Soon Warnings */}
+                    {expiringItems.length > 0 && (
                       <div className="mb-4 p-3 bg-red-950/30 border border-red-800/40 rounded-lg">
                         <div className="text-xs font-bold text-red-400 mb-2 flex items-center gap-2">
                           <span>⚠️</span>
-                          <span>Low Stock Warnings ({lowStockItems.length} items)</span>
+                          <span>Expiring Soon ({expiringItems.length} items)</span>
                         </div>
                         <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                          {lowStockItems.slice(0, 3).map((item: any, idx: number) => {
+                          {expiringItems.slice(0, 3).map((item: any, idx: number) => {
                             const itemName = item.items?.name || 'Unknown';
                             const expiryDate = format(new Date(item.expiration_date), 'MMM dd');
-                            const priority = item.priority_score;
                             const daysLeft = Math.ceil((new Date(item.expiration_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                             
                             return (
                               <div key={idx} className="text-[10px] text-red-300/90 flex justify-between items-center py-1.5 px-2 border-b border-red-800/20 last:border-0 bg-red-950/20 rounded">
                                 <span className="flex-1 break-words mr-2">
-                                  <span className="font-semibold">P{priority}:</span> {itemName}
+                                  <span className="font-semibold">{itemName}</span> • {expiryDate}
                                 </span>
                                 <span className={`ml-2 px-1.5 py-0.5 rounded text-[8px] font-medium ${
-                                  daysLeft <= 7 ? 'bg-red-500/20 text-red-300' : 
-                                  daysLeft <= 14 ? 'bg-yellow-500/20 text-yellow-300' : 
-                                  'bg-blue-500/20 text-blue-300'
+                                  daysLeft <= 3 ? 'bg-red-500/20 text-red-300' : 
+                                  daysLeft <= 7 ? 'bg-orange-500/20 text-orange-300' : 
+                                  'bg-yellow-500/20 text-yellow-300'
                                 }`}>
                                   {daysLeft}d
                                 </span>
@@ -2479,9 +2482,9 @@ export default function StaffScheduling() {
                             );
                           })}
                         </div>
-                        {lowStockItems.length > 3 && (
+                        {expiringItems.length > 3 && (
                           <div className="text-[8px] text-red-400/70 mt-1 text-center">
-                            +{lowStockItems.length - 3} more items
+                            +{expiringItems.length - 3} more items
                           </div>
                         )}
                       </div>
@@ -2912,9 +2915,6 @@ export default function StaffScheduling() {
             </div>
           </Card>
         )}
-
-        {/* Stock Alert Settings */}
-        <StockAlertSettings />
 
         {/* Legend - Enhanced */}
         <Card className="p-6 bg-gray-900 border-gray-800">
