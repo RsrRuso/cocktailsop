@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Package, Search, Filter } from "lucide-react";
+import { ZoomableImage } from "@/components/ZoomableImage";
+import { ArrowLeft, Package, Search, Filter, Image as ImageIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
@@ -213,14 +214,18 @@ const AllInventory = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {inventoryList.map((item: any) => (
-              <Card key={item.id} className="overflow-hidden">
-                {item.storeQuantities[0]?.photo_url && (
-                  <div className="aspect-square w-full bg-muted">
-                    <img 
-                      src={item.storeQuantities[0].photo_url} 
-                      alt={item.items?.name || 'Item'} 
-                      className="w-full h-full object-cover"
-                    />
+              <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02]">
+                {item.storeQuantities[0]?.photo_url ? (
+                  <ZoomableImage
+                    src={item.storeQuantities[0].photo_url}
+                    alt={item.items?.name || 'Item'}
+                    containerClassName="h-48 w-full bg-muted/50 border-b-2 border-border/50"
+                    className="w-full h-full p-2"
+                    objectFit="contain"
+                  />
+                ) : (
+                  <div className="h-48 w-full bg-muted/50 flex items-center justify-center border-b-2 border-border/50">
+                    <ImageIcon className="h-12 w-12 text-muted-foreground/30" />
                   </div>
                 )}
                 <CardContent className="p-4">
