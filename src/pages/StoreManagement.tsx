@@ -962,67 +962,67 @@ const StoreManagement = () => {
         </div>
 
         {/* Quick Action Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
           <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-green-500/50 animate-fade-in" onClick={() => navigate('/stores-admin')} style={{ animationDelay: '0ms' }}>
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-500/10 to-transparent rounded-bl-full" />
-            <CardContent className="p-5 relative">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
-                  <Store className="h-6 w-6 text-green-500" />
+            <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-green-500/10 to-transparent rounded-bl-full" />
+            <CardContent className="p-3 sm:p-5 relative">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 rounded-xl bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                  <Store className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-bold text-base group-hover:text-green-600 transition-colors">Stores</p>
-                  <p className="text-xs text-muted-foreground">Create & manage</p>
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="font-bold text-sm sm:text-base group-hover:text-green-600 transition-colors">Stores</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Create & manage</p>
                 </div>
-                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-green-500 group-hover:translate-x-0.5 transition-all" />
+                <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-green-500 group-hover:translate-x-0.5 transition-all" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-purple-500/50 animate-fade-in" onClick={() => navigate('/master-items')} style={{ animationDelay: '100ms' }}>
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full" />
-            <CardContent className="p-5 relative">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
-                  <Package className="h-6 w-6 text-purple-500" />
+            <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-bl-full" />
+            <CardContent className="p-3 sm:p-5 relative">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                  <Package className="h-5 w-5 sm:h-6 sm:w-6 text-purple-500" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-bold text-base group-hover:text-purple-600 transition-colors">Items</p>
-                  <p className="text-xs text-muted-foreground">Master list</p>
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="font-bold text-sm sm:text-base group-hover:text-purple-600 transition-colors">Items</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Master list</p>
                 </div>
-                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" />
+                <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-purple-500 group-hover:translate-x-0.5 transition-all" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-primary/50 animate-fade-in" onClick={() => navigate('/all-inventory')} style={{ animationDelay: '200ms' }}>
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full" />
-            <CardContent className="p-5 relative">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <Package className="h-6 w-6 text-primary" />
+            <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-primary/10 to-transparent rounded-bl-full" />
+            <CardContent className="p-3 sm:p-5 relative">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <Package className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-bold text-base group-hover:text-primary transition-colors">Inventory</p>
-                  <p className="text-xs text-muted-foreground">Combined view</p>
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="font-bold text-sm sm:text-base group-hover:text-primary transition-colors">Inventory</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Combined view</p>
                 </div>
-                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-blue-500/50 animate-fade-in" onClick={() => navigate('/inventory-transactions')} style={{ animationDelay: '300ms' }}>
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full" />
-            <CardContent className="p-5 relative">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
-                  <ArrowRightLeft className="h-6 w-6 text-blue-500" />
+            <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full" />
+            <CardContent className="p-3 sm:p-5 relative">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                  <ArrowRightLeft className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-bold text-base group-hover:text-blue-600 transition-colors">Transactions</p>
-                  <p className="text-xs text-muted-foreground">Live updates</p>
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="font-bold text-sm sm:text-base group-hover:text-blue-600 transition-colors">Transactions</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Live updates</p>
                 </div>
-                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
               </div>
             </CardContent>
           </Card>
@@ -1035,19 +1035,19 @@ const StoreManagement = () => {
             }}
             style={{ animationDelay: '400ms' }}
           >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-500/10 to-transparent rounded-bl-full" />
-            <CardContent className="p-5 relative">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-orange-500/10 group-hover:bg-orange-500/20 transition-colors">
-                  <AlertCircle className="h-6 w-6 text-orange-500 animate-pulse" />
+            <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-orange-500/10 to-transparent rounded-bl-full" />
+            <CardContent className="p-3 sm:p-5 relative">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 rounded-xl bg-orange-500/10 group-hover:bg-orange-500/20 transition-colors">
+                  <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-orange-500 animate-pulse" />
                 </div>
-                <div className="flex-1">
-                  <p className="font-bold text-base group-hover:text-orange-600 transition-colors">Low Stock</p>
-                  <p className="text-xs text-orange-600/80 dark:text-orange-400/80 font-medium">
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="font-bold text-sm sm:text-base group-hover:text-orange-600 transition-colors">Low Stock</p>
+                  <p className="text-[10px] sm:text-xs text-orange-600/80 dark:text-orange-400/80 font-medium">
                     {Object.values(lowStockByStore).reduce((sum, count) => sum + count, 0)} items low
                   </p>
                 </div>
-                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all" />
+                <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-orange-500 group-hover:translate-x-0.5 transition-all" />
               </div>
             </CardContent>
           </Card>
@@ -1300,15 +1300,15 @@ const StoreManagement = () => {
                                 </div>
                               </div>
                               
-                              {/* Status + actions */}
-                              <div className="flex flex-row sm:flex-col items-center sm:items-end gap-1.5 sm:gap-2 self-start sm:self-auto flex-shrink-0">
+                               {/* Status + actions - Always visible on mobile */}
+                              <div className="flex flex-row items-center gap-2 w-full sm:w-auto sm:flex-col sm:items-end self-start sm:self-auto flex-shrink-0 mt-2 sm:mt-0">
                                 <Badge 
                                   variant={
                                     transaction.status === 'completed' ? 'default' :
                                     transaction.status === 'pending' ? 'secondary' : 
                                     'destructive'
                                   }
-                                  className="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold whitespace-nowrap"
+                                  className="px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold whitespace-nowrap"
                                 >
                                   {transaction.status}
                                 </Badge>
@@ -1317,11 +1317,11 @@ const StoreManagement = () => {
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    className="h-8 w-8 sm:h-7 sm:w-7 text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
                                     onClick={() => handleDeleteFeedTransaction(transaction)}
                                     title="Delete activity"
                                   >
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                                   </Button>
                                 )}
                               </div>
@@ -1513,23 +1513,26 @@ const StoreManagement = () => {
                                 )}
                               </div>
                               
-                              <div className="flex sm:flex-col gap-2 w-full sm:w-auto sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                              {/* Buttons always visible on mobile, hover on desktop */}
+                              <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity mt-2 sm:mt-0">
                                 <Button
-                                  variant="outline"
+                                  variant="ghost"
                                   size="sm"
                                   onClick={() => handleEditReceiving(receiving)}
-                                  className="h-8 text-xs flex-1 sm:flex-none"
+                                  className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm flex-1 sm:flex-none flex-shrink-0"
+                                  title="Edit receiving"
                                 >
-                                  <Edit className="w-3 h-3 sm:mr-1" />
+                                  <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-1" />
                                   <span className="hidden sm:inline">Edit</span>
                                 </Button>
                                 <Button
-                                  variant="destructive"
+                                  variant="ghost"
                                   size="sm"
                                   onClick={() => handleDeleteReceiving(receiving)}
-                                  className="h-8 text-xs flex-1 sm:flex-none"
+                                  className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm flex-1 sm:flex-none flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  title="Delete receiving"
                                 >
-                                  <Trash2 className="w-3 h-3 sm:mr-1" />
+                                  <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-1" />
                                   <span className="hidden sm:inline">Delete</span>
                                 </Button>
                               </div>
@@ -1555,7 +1558,7 @@ const StoreManagement = () => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleCreateTransfer} className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-sm">From Store *</Label>
                       <Select value={selectedFromStore} onValueChange={(val) => {
@@ -1646,7 +1649,7 @@ const StoreManagement = () => {
                     ) : null;
                   })()}
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-sm">Quantity *</Label>
                       <Input
@@ -1742,28 +1745,29 @@ const StoreManagement = () => {
                                 )}
                               </div>
                               
-                              <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto shrink-0">
-                                <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'} className="whitespace-nowrap text-xs">
+                              {/* Buttons always visible on mobile, hover on desktop */}
+                              <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 w-full sm:w-auto shrink-0 mt-2 sm:mt-0">
+                                <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'} className="whitespace-nowrap text-xs px-2 sm:px-3 py-1">
                                   {transfer.status}
                                 </Badge>
-                                <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 sm:h-7 sm:w-7"
+                                    className="h-8 w-8 sm:h-7 sm:w-7 flex-shrink-0"
                                     onClick={() => handleEditTransfer(transfer)}
                                     title="Edit transfer"
                                   >
-                                    <Edit className="w-3.5 h-3.5" />
+                                    <Edit className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 sm:h-7 sm:w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    className="h-8 w-8 sm:h-7 sm:w-7 text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
                                     onClick={() => setDeleteTransferId(transfer.id)}
                                     title="Delete transfer"
                                   >
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                                   </Button>
                                 </div>
                               </div>
@@ -1782,9 +1786,9 @@ const StoreManagement = () => {
           <TabsContent value="spotchecks" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Spot Checks</span>
-                  <Button onClick={handleStartSpotCheck}>
+                <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                  <span className="text-lg sm:text-xl">Spot Checks</span>
+                  <Button onClick={handleStartSpotCheck} size="sm" className="w-full sm:w-auto">
                     <ClipboardCheck className="w-4 h-4 mr-2" />
                     Start New Check
                   </Button>
@@ -1872,7 +1876,7 @@ const StoreManagement = () => {
           {/* Team Members Tab */}
           <TabsContent value="members" className="space-y-4">
             {/* Team Stats Overview */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium">Total Members</CardTitle>
@@ -1902,7 +1906,7 @@ const StoreManagement = () => {
               </Card>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Team Members List */}
               <Card>
                 <CardHeader>
@@ -2111,7 +2115,7 @@ const StoreManagement = () => {
                 <CardTitle>Role Permissions</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Shield className="w-4 h-4 text-muted-foreground" />
