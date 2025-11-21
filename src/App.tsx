@@ -93,7 +93,7 @@ const StaffScheduling = lazy(() => import("./pages/StaffScheduling"));
 const QRAccessCode = lazy(() => import("./pages/QRAccessCode"));
 const ScanAccess = lazy(() => import("./pages/ScanAccess"));
 const AccessApproval = lazy(() => import("./pages/AccessApproval"));
-const ExpiringInventory = lazy(() => import("./pages/ExpiringInventory"));
+const LowStockInventory = lazy(() => import("./pages/LowStockInventory"));
 const StoreManagement = lazy(() => import("./pages/StoreManagement"));
 const StoreDetail = lazy(() => import("./pages/StoreDetail"));
 const AllInventory = lazy(() => import("./pages/AllInventory"));
@@ -152,7 +152,7 @@ const App = () => (
               <Route path="/qr-access-code" element={<QRAccessCode />} />
               <Route path="/scan-access/:workspaceId" element={<ScanAccess />} />
               <Route path="/access-approval" element={<AccessApproval />} />
-              <Route path="/expiring-inventory/:workspaceId" element={<ExpiringInventory />} />
+              <Route path="/low-stock-inventory/:workspaceId" element={<LowStockInventory />} />
               <Route path="/store-management" element={<StoreManagement />} />
               <Route path="/store/:id" element={<StoreDetail />} />
               <Route path="/all-inventory" element={<AllInventory />} />

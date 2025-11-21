@@ -9,11 +9,10 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-interface ExpiringItem {
+interface LowStockItem {
   id: string;
   quantity: number;
   expiration_date: string;
-  priority_score: number;
   items: { name: string } | null;
   stores: { name: string } | null;
 }
@@ -23,9 +22,9 @@ interface Workspace {
   name: string;
 }
 
-const ExpiringInventory = () => {
+const LowStockInventory = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
-  const [expiringItems, setExpiringItems] = useState<ExpiringItem[]>([]);
+  const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +43,6 @@ const ExpiringInventory = () => {
 
     setLoading(true);
     try {
-      // Fetch workspace info
       const { data: workspaceData, error: workspaceError } = await supabase
         .from("workspaces")
         .select("id, name")
@@ -54,16 +52,13 @@ const ExpiringInventory = () => {
       if (workspaceError) throw workspaceError;
       setWorkspace(workspaceData);
 
-      // Get the workspace settings to know the days threshold
       const { data: settings } = await supabase
-        .from("fifo_alert_settings")
-        .select("days_before_expiry")
+        .from("stock_alert_settings")
+        .select("minimum_quantity_threshold")
         .eq("workspace_id", workspaceId)
         .single();
 
-      const daysBeforeExpiry = settings?.days_before_expiry || 30;
-      const expiryThreshold = new Date();
-      expiryThreshold.setDate(expiryThreshold.getDate() + daysBeforeExpiry);
+      const minimumQuantity = settings?.minimum_quantity_threshold || 10;
 
       const { data, error } = await supabase
         .from("inventory")
@@ -71,34 +66,26 @@ const ExpiringInventory = () => {
           id,
           quantity,
           expiration_date,
-          priority_score,
           items(name),
           stores(name)
         `)
         .eq("workspace_id", workspaceId)
-        .lte("expiration_date", expiryThreshold.toISOString().split('T')[0])
-        .gte("quantity", 1)
-        .order("priority_score", { ascending: false });
+        .lte("quantity", minimumQuantity)
+        .order("quantity", { ascending: true });
 
       if (error) throw error;
-      setExpiringItems(data || []);
+      setLowStockItems(data || []);
     } catch (error) {
-      console.error("Error fetching expiring items:", error);
-      toast.error("Failed to load expiring items");
+      console.error("Error fetching low stock items:", error);
+      toast.error("Failed to load low stock items");
     } finally {
       setLoading(false);
     }
   };
 
-  const getDaysUntilExpiry = (expirationDate: string) => {
-    return Math.ceil(
-      (new Date(expirationDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    );
-  };
-
-  const getExpiryColor = (days: number) => {
-    if (days <= 7) return "text-red-500 bg-red-50 dark:bg-red-900/20";
-    if (days <= 14) return "text-orange-500 bg-orange-50 dark:bg-orange-900/20";
+  const getStockColor = (quantity: number) => {
+    if (quantity === 0) return "text-red-500 bg-red-50 dark:bg-red-900/20";
+    if (quantity <= 3) return "text-orange-500 bg-orange-50 dark:bg-orange-900/20";
     return "text-blue-500 bg-blue-50 dark:bg-blue-900/20";
   };
 
@@ -106,39 +93,32 @@ const ExpiringInventory = () => {
     try {
       const doc = new jsPDF();
 
-      // Title
       doc.setFontSize(20);
       doc.setTextColor(220, 38, 38);
-      doc.text("Expiring Inventory Report", 14, 20);
+      doc.text("Low Stock Inventory Report", 14, 20);
 
-      // Workspace name
       doc.setFontSize(12);
       doc.setTextColor(100);
       doc.text(`Workspace: ${workspace?.name || "Unknown"}`, 14, 30);
       doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 37);
 
-      // Summary
       doc.setFontSize(14);
       doc.setTextColor(0);
-      doc.text(`Total Items Expiring: ${expiringItems.length}`, 14, 47);
+      doc.text(`Total Low Stock Items: ${lowStockItems.length}`, 14, 47);
 
-      // Table data
-      const tableData = expiringItems.map((item, index) => {
-        const daysLeft = getDaysUntilExpiry(item.expiration_date);
+      const tableData = lowStockItems.map((item, index) => {
         return [
           index + 1,
           item.items?.name || "Unknown",
           item.stores?.name || "Unknown",
           item.quantity,
           new Date(item.expiration_date).toLocaleDateString(),
-          `${daysLeft} days`,
         ];
       });
 
-      // Generate table
       autoTable(doc, {
         startY: 55,
-        head: [["#", "Item", "Store", "Qty", "Expires", "Days Left"]],
+        head: [["#", "Item", "Store", "Quantity", "Expires"]],
         body: tableData,
         theme: "striped",
         headStyles: {
@@ -152,16 +132,14 @@ const ExpiringInventory = () => {
         },
         columnStyles: {
           0: { cellWidth: 15 },
-          1: { cellWidth: 50 },
-          2: { cellWidth: 40 },
-          3: { cellWidth: 20 },
-          4: { cellWidth: 30 },
-          5: { cellWidth: 25 },
+          1: { cellWidth: 60 },
+          2: { cellWidth: 45 },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 35 },
         },
       });
 
-      // Save PDF
-      const fileName = `expiring-inventory-${workspace?.name || "report"}-${new Date().toISOString().split('T')[0]}.pdf`;
+      const fileName = `low-stock-inventory-${workspace?.name || "report"}-${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(fileName);
       toast.success("PDF downloaded successfully");
     } catch (error) {
@@ -193,13 +171,13 @@ const ExpiringInventory = () => {
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Package className="w-6 h-6 text-red-500" />
-              Expiring Inventory
+              Low Stock Inventory
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
               {workspace?.name || "Loading..."}
             </p>
           </div>
-          {expiringItems.length > 0 && (
+          {lowStockItems.length > 0 && (
             <Button onClick={exportToPDF} className="gap-2">
               <Download className="w-4 h-4" />
               Export PDF
@@ -211,22 +189,21 @@ const ExpiringInventory = () => {
           <div className="glass rounded-2xl p-8 text-center">
             <p className="text-muted-foreground">Loading...</p>
           </div>
-        ) : expiringItems.length === 0 ? (
+        ) : lowStockItems.length === 0 ? (
           <div className="glass rounded-2xl p-8 text-center space-y-4">
             <div className="mx-auto w-20 h-20 rounded-full glass-hover flex items-center justify-center">
               <Package className="w-10 h-10 text-muted-foreground" />
             </div>
             <div>
-              <p className="font-medium">No Expiring Items</p>
+              <p className="font-medium">All Stock Levels Good</p>
               <p className="text-sm text-muted-foreground mt-1">
-                All inventory items are within safe expiry dates
+                No items are running low on stock
               </p>
             </div>
           </div>
         ) : (
           <div className="space-y-3">
-            {expiringItems.map((item, index) => {
-              const daysLeft = getDaysUntilExpiry(item.expiration_date);
+            {lowStockItems.map((item, index) => {
               return (
                 <div
                   key={item.id}
@@ -250,27 +227,19 @@ const ExpiringInventory = () => {
                           </span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Quantity:</span>{" "}
-                          <span className="font-medium">{item.quantity}</span>
-                        </div>
-                        <div>
                           <span className="text-muted-foreground">Expires:</span>{" "}
                           <span className="font-medium">
                             {new Date(item.expiration_date).toLocaleDateString()}
                           </span>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">Priority:</span>{" "}
-                          <span className="font-medium">{item.priority_score}</span>
-                        </div>
                       </div>
                     </div>
                     <div
-                      className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${getExpiryColor(
-                        daysLeft
+                      className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${getStockColor(
+                        item.quantity
                       )}`}
                     >
-                      {daysLeft} days
+                      Qty: {item.quantity}
                     </div>
                   </div>
                 </div>
@@ -285,4 +254,4 @@ const ExpiringInventory = () => {
   );
 };
 
-export default ExpiringInventory;
+export default LowStockInventory;

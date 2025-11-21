@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { Download, Plus, Trash2, Wand2, Calendar, Users, Save, Edit } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
-import { FIFOAlertSettings } from '@/components/FIFOAlertSettings';
+import { StockAlertSettings } from '@/components/StockAlertSettings';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -83,7 +83,7 @@ export default function StaffScheduling() {
   const [staffToDelete, setStaffToDelete] = useState<string | null>(null);
   const [savedSchedules, setSavedSchedules] = useState<any[]>([]);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
-  const [expiringItems, setExpiringItems] = useState<any[]>([]);
+  const [lowStockItems, setLowStockItems] = useState<any[]>([]);
   
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -112,26 +112,31 @@ export default function StaffScheduling() {
   // Re-fetch inventory when workspace changes
   useEffect(() => {
     if (user?.id) {
-      fetchExpiringInventory();
+      fetchLowStockInventory();
     }
   }, [user, currentWorkspace]);
 
-  const fetchExpiringInventory = async () => {
+  const fetchLowStockInventory = async () => {
     if (!user?.id) return;
 
     // Only fetch if we have a current workspace selected
     if (!currentWorkspace) {
-      console.log('No workspace selected - skipping FIFO inventory fetch');
-      setExpiringItems([]);
+      console.log('No workspace selected - skipping low stock inventory fetch');
+      setLowStockItems([]);
       return;
     }
 
     try {
-      console.log('Fetching FIFO inventory for workspace:', currentWorkspace.name);
+      console.log('Fetching low stock inventory for workspace:', currentWorkspace.name);
       
-      // Fetch items expiring in the next 30 days from current workspace
-      const thirtyDaysFromNow = new Date();
-      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+      // Get settings for minimum quantity threshold
+      const { data: settings } = await supabase
+        .from('stock_alert_settings')
+        .select('minimum_quantity_threshold')
+        .eq('workspace_id', currentWorkspace.id)
+        .maybeSingle();
+
+      const minimumQuantity = settings?.minimum_quantity_threshold || 10;
 
       const { data, error } = await supabase
         .from('inventory')
@@ -147,21 +152,19 @@ export default function StaffScheduling() {
           )
         `)
         .eq('workspace_id', currentWorkspace.id)
-        .eq('status', 'available')
-        .lte('expiration_date', thirtyDaysFromNow.toISOString().split('T')[0])
-        .order('expiration_date', { ascending: true })
-        .order('priority_score', { ascending: false });
+        .lte('quantity', minimumQuantity)
+        .order('quantity', { ascending: true });
 
       if (error) {
-        console.error('Error fetching expiring inventory:', error);
+        console.error('Error fetching low stock inventory:', error);
         return;
       }
 
-      console.log('Found expiring items:', data?.length || 0, 'items');
-      console.log('Expiring items details:', data);
-      setExpiringItems(data || []);
+      console.log('Found low stock items:', data?.length || 0, 'items');
+      console.log('Low stock items details:', data);
+      setLowStockItems(data || []);
     } catch (error) {
-      console.error('Error fetching expiring inventory:', error);
+      console.error('Error fetching low stock inventory:', error);
     }
   };
 
@@ -1346,21 +1349,21 @@ export default function StaffScheduling() {
       finalY += 2;
     }
     
-    // FIFO Inventory Warnings Section
-    if (expiringItems.length > 0) {
+    // Low Stock Inventory Warnings Section
+    if (lowStockItems.length > 0) {
       doc.setFillColor(239, 68, 68); // Red color for warnings
       doc.roundedRect(14, finalY - 2, 270, 6, 2, 2, 'F');
       doc.setFontSize(7);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...colors.white);
-      doc.text('FIFO INVENTORY WARNINGS', 18, finalY + 2.5);
+      doc.text('LOW STOCK WARNINGS', 18, finalY + 2.5);
       
       finalY += 8;
       doc.setFontSize(6);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...colors.lightGrey);
       
-      expiringItems.slice(0, 5).forEach((item: any) => {
+      lowStockItems.slice(0, 5).forEach((item: any) => {
         const itemName = item.items?.name || 'Unknown Item';
         const expiryDate = format(new Date(item.expiration_date), 'MMM dd');
         const priority = item.priority_score;
@@ -1800,13 +1803,13 @@ export default function StaffScheduling() {
           </div>
         </Card>
 
-        {/* FIFO Inventory Warnings */}
-        {expiringItems.length > 0 && (
+        {/* Low Stock Warnings */}
+        {lowStockItems.length > 0 && (
           <Card className="p-5 bg-gradient-to-br from-red-900/30 to-red-950/20 border-red-800 shadow-xl overflow-hidden relative">
             <div className="absolute top-0 left-0 w-96 h-96 bg-red-500/10 rounded-full blur-3xl" />
             <div className="relative">
-              <Accordion type="single" collapsible defaultValue="fifo-warnings">
-                <AccordionItem value="fifo-warnings" className="border-none">
+              <Accordion type="single" collapsible defaultValue="stock-warnings">
+                <AccordionItem value="stock-warnings" className="border-none">
                   <AccordionTrigger className="hover:no-underline pb-4">
                     <div className="flex items-center justify-between w-full pr-4">
                       <div className="flex items-center gap-3">
@@ -1814,15 +1817,15 @@ export default function StaffScheduling() {
                           <Calendar className="w-5 h-5 text-red-400" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-bold text-red-100">⚠️ FIFO Inventory Warnings</h3>
-                          <p className="text-xs text-red-300">{expiringItems.length} items expiring within 30 days</p>
+                          <h3 className="text-lg font-bold text-red-100">⚠️ Low Stock Warnings</h3>
+                          <p className="text-xs text-red-300">{lowStockItems.length} items running low on stock</p>
                         </div>
                       </div>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-2">
-                      {expiringItems.map((item: any) => (
+                      {lowStockItems.map((item: any) => (
                         <div key={item.id} className="p-3 bg-red-950/40 border border-red-800/50 rounded-lg">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -2446,15 +2449,15 @@ export default function StaffScheduling() {
                       </div>
                     )}
                     
-                    {/* FIFO Inventory Warnings */}
-                    {expiringItems.length > 0 && (
+                    {/* Low Stock Warnings */}
+                    {lowStockItems.length > 0 && (
                       <div className="mb-4 p-3 bg-red-950/30 border border-red-800/40 rounded-lg">
                         <div className="text-xs font-bold text-red-400 mb-2 flex items-center gap-2">
                           <span>⚠️</span>
-                          <span>FIFO Warnings ({expiringItems.length} items)</span>
+                          <span>Low Stock Warnings ({lowStockItems.length} items)</span>
                         </div>
                         <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                          {expiringItems.slice(0, 3).map((item: any, idx: number) => {
+                          {lowStockItems.slice(0, 3).map((item: any, idx: number) => {
                             const itemName = item.items?.name || 'Unknown';
                             const expiryDate = format(new Date(item.expiration_date), 'MMM dd');
                             const priority = item.priority_score;
@@ -2476,9 +2479,9 @@ export default function StaffScheduling() {
                             );
                           })}
                         </div>
-                        {expiringItems.length > 3 && (
+                        {lowStockItems.length > 3 && (
                           <div className="text-[8px] text-red-400/70 mt-1 text-center">
-                            +{expiringItems.length - 3} more items
+                            +{lowStockItems.length - 3} more items
                           </div>
                         )}
                       </div>
@@ -2910,8 +2913,8 @@ export default function StaffScheduling() {
           </Card>
         )}
 
-        {/* FIFO Alert Settings */}
-        <FIFOAlertSettings />
+        {/* Stock Alert Settings */}
+        <StockAlertSettings />
 
         {/* Legend - Enhanced */}
         <Card className="p-6 bg-gray-900 border-gray-800">
