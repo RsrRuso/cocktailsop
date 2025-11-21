@@ -33,6 +33,7 @@ interface Transaction {
   from_store?: string;
   to_store?: string;
   store?: string;
+  item_name?: string;
   item_count: number;
   status: string;
 }
@@ -48,6 +49,7 @@ const StoreManagement = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [transfers, setTransfers] = useState<any[]>([]);
+  const [receivings, setReceivings] = useState<any[]>([]);
   const [spotChecks, setSpotChecks] = useState<any[]>([]);
   const [varianceReports, setVarianceReports] = useState<any[]>([]);
   
@@ -58,6 +60,13 @@ const StoreManagement = () => {
   const [transferQuantity, setTransferQuantity] = useState("");
   const [transferNotes, setTransferNotes] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  
+  // Receiving form states
+  const [selectedReceivingStore, setSelectedReceivingStore] = useState("");
+  const [selectedReceivingItem, setSelectedReceivingItem] = useState("");
+  const [receivingQuantity, setReceivingQuantity] = useState("");
+  const [receivingNotes, setReceivingNotes] = useState("");
+  const [receivingPhotoFile, setReceivingPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (user && currentWorkspace) {
@@ -82,6 +91,19 @@ const StoreManagement = () => {
         () => {
           fetchAllData();
           toast.info("Transfer updated", { duration: 2000 });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'inventory_receivings',
+          filter: `workspace_id=eq.${currentWorkspace.id}`
+        },
+        () => {
+          fetchAllData();
+          toast.info("Receiving updated", { duration: 2000 });
         }
       )
       .on(
@@ -147,6 +169,20 @@ const StoreManagement = () => {
         .order("transfer_date", { ascending: false })
         .limit(20);
 
+      // Fetch receivings
+      const receivingsQuery = supabase
+        .from("inventory_receivings" as any)
+        .select(`
+          *,
+          stores(name, store_type),
+          items(name, brand)
+        `)
+        .eq("workspace_id", workspaceId)
+        .order("received_at", { ascending: false })
+        .limit(20);
+      
+      const { data: receivingsData } = await receivingsQuery;
+
       // Fetch spot checks
       const { data: spotChecksData } = await supabase
         .from("inventory_spot_checks")
@@ -182,6 +218,7 @@ const StoreManagement = () => {
       setItems(itemsData || []);
       setInventory(inventoryData || []);
       setTransfers(transfersData || []);
+      setReceivings(receivingsData || []);
       setSpotChecks(spotChecksData || []);
       setVarianceReports(varianceData || []);
       setMembers(membersData || []);
@@ -199,6 +236,19 @@ const StoreManagement = () => {
           to_store: t.to_store?.name,
           item_count: 1,
           status: t.status
+        });
+      });
+
+      receivingsData?.forEach((r: any) => {
+        allTransactions.push({
+          id: r.id,
+          type: 'receiving',
+          timestamp: r.received_at || r.created_at,
+          user_email: user.email || 'Unknown',
+          store: r.stores?.name,
+          item_name: r.items?.name,
+          item_count: r.quantity,
+          status: r.status
         });
       });
 
@@ -308,6 +358,69 @@ const StoreManagement = () => {
     } catch (error) {
       console.error("Error creating transfer:", error);
       toast.error("Failed to create transfer");
+    }
+  };
+
+  const handleCreateReceiving = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !currentWorkspace) return;
+
+    if (!selectedReceivingStore || !selectedReceivingItem || !receivingQuantity) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    try {
+      let photoUrl = null;
+      
+      // Upload photo if provided
+      if (receivingPhotoFile) {
+        const fileExt = receivingPhotoFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `receivings/${currentWorkspace.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('posts')
+          .upload(filePath, receivingPhotoFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('posts')
+          .getPublicUrl(filePath);
+
+        photoUrl = publicUrl;
+      }
+
+      // Create receiving - this will trigger automatic inventory update via database trigger
+      const { error } = await supabase
+        .from("inventory_receivings" as any)
+        .insert({
+          workspace_id: currentWorkspace.id,
+          user_id: user.id,
+          store_id: selectedReceivingStore,
+          item_id: selectedReceivingItem,
+          quantity: parseFloat(receivingQuantity),
+          status: 'completed',
+          notes: receivingNotes,
+          photo_url: photoUrl,
+          received_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      toast.success("Receiving recorded! Inventory updated automatically.");
+      fetchAllData();
+      
+      // Reset form
+      setSelectedReceivingStore("");
+      setSelectedReceivingItem("");
+      setReceivingQuantity("");
+      setReceivingNotes("");
+      setReceivingPhotoFile(null);
+    } catch (error) {
+      console.error("Error creating receiving:", error);
+      toast.error("Failed to record receiving");
     }
   };
 
@@ -433,14 +546,18 @@ const StoreManagement = () => {
         </div>
 
         <Tabs defaultValue="transactions" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="transactions">
               <Clock className="w-4 h-4 mr-1" />
               Live
             </TabsTrigger>
+            <TabsTrigger value="receivings">
+              <Package className="w-4 h-4 mr-1" />
+              Receive
+            </TabsTrigger>
             <TabsTrigger value="transfers">
               <ArrowRightLeft className="w-4 h-4 mr-1" />
-              Transfers
+              Transfer
             </TabsTrigger>
             <TabsTrigger value="spotchecks">
               <ClipboardCheck className="w-4 h-4 mr-1" />
@@ -497,10 +614,10 @@ const StoreManagement = () => {
                                   `Transfer: ${transaction.from_store} → ${transaction.to_store}`}
                                 {transaction.type === 'spot_check' && 
                                   `Spot Check at ${transaction.store}`}
-                                {transaction.type === 'variance' && 
+                                 {transaction.type === 'variance' && 
                                   `Variance Report - ${transaction.store}`}
                                 {transaction.type === 'receiving' && 
-                                  `Receiving at ${transaction.store}`}
+                                  `Receiving: ${transaction.item_name} at ${transaction.store}`}
                               </p>
                               <p className="text-sm text-muted-foreground">
                                 {transaction.user_email} • {transaction.item_count} items
@@ -521,6 +638,129 @@ const StoreManagement = () => {
                             {transaction.status}
                           </Badge>
                         </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Receivings Tab */}
+          <TabsContent value="receivings" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Record Receiving</CardTitle>
+                <CardDescription>
+                  Record items received at warehouse - inventory updates automatically
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreateReceiving} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Warehouse Store</Label>
+                    <Select value={selectedReceivingStore} onValueChange={setSelectedReceivingStore}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select warehouse" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {stores.filter(s => s.store_type === 'warehouse').map((store) => (
+                          <SelectItem key={store.id} value={store.id}>
+                            {store.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Item</Label>
+                    <Select value={selectedReceivingItem} onValueChange={setSelectedReceivingItem}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select item" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {items.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.name} {item.brand ? `(${item.brand})` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Quantity Received</Label>
+                    <Input
+                      type="number"
+                      value={receivingQuantity}
+                      onChange={(e) => setReceivingQuantity(e.target.value)}
+                      placeholder="Enter quantity"
+                      min="1"
+                      step="any"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Notes (Optional)</Label>
+                    <Textarea
+                      value={receivingNotes}
+                      onChange={(e) => setReceivingNotes(e.target.value)}
+                      placeholder="Add notes about this delivery..."
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Attach Photo (Optional)</Label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setReceivingPhotoFile(e.target.files?.[0] || null)}
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full">
+                    <Package className="w-4 h-4 mr-2" />
+                    Record Receiving
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Receivings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-2">
+                    {receivings.map((receiving: any) => (
+                      <div key={receiving.id} className="glass rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">
+                              {receiving.items?.name} at {receiving.stores?.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Qty: {receiving.quantity} • {new Date(receiving.received_at).toLocaleString()}
+                            </p>
+                            {receiving.notes && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {receiving.notes}
+                              </p>
+                            )}
+                          </div>
+                          <Badge variant={receiving.status === 'completed' ? 'default' : 'secondary'}>
+                            {receiving.status}
+                          </Badge>
+                        </div>
+                        {receiving.photo_url && (
+                          <img 
+                            src={receiving.photo_url} 
+                            alt="Receiving" 
+                            className="mt-2 rounded-lg w-full h-32 object-cover"
+                          />
+                        )}
                       </div>
                     ))}
                   </div>
