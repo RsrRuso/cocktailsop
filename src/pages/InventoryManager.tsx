@@ -134,19 +134,19 @@ const InventoryManager = () => {
         supabase.from("fifo_employees").select("*").eq("user_id", user.id).order("name"),
         supabase.from("fifo_inventory").select(`
           *,
-          fifo_stores!fifo_inventory_store_id_fkey(name, location, store_type),
-          fifo_items!fifo_inventory_item_id_fkey(name, brand, color_code, category)
+          stores:fifo_stores!fifo_inventory_store_id_fkey(name, location, store_type),
+          items:fifo_items!fifo_inventory_item_id_fkey(name, brand, color_code, category)
         `).eq("user_id", user.id).order("priority_score", { ascending: false }),
         supabase.from("fifo_transfers").select(`
           *,
           from_store:fifo_stores!fifo_transfers_from_store_id_fkey(name),
           to_store:fifo_stores!fifo_transfers_to_store_id_fkey(name),
-          transferred_by:fifo_employees!fifo_transfers_transferred_by_fkey(name)
+          employees:fifo_employees!fifo_transfers_transferred_by_fkey(name)
         `).eq("user_id", user.id).order("transfer_date", { ascending: false }).limit(20),
         supabase.from("fifo_activity_log").select(`
           *,
-          fifo_stores!fifo_activity_log_store_id_fkey(name),
-          fifo_employees!fifo_activity_log_employee_id_fkey(name)
+          stores:fifo_stores!fifo_activity_log_store_id_fkey(name),
+          employees:fifo_employees!fifo_activity_log_employee_id_fkey(name)
         `).eq("user_id", user.id).order("created_at", { ascending: false }).limit(50)
       ]);
 
@@ -171,8 +171,8 @@ const InventoryManager = () => {
       .from("fifo_inventory")
       .select(`
         *,
-        fifo_items!fifo_inventory_item_id_fkey(name, brand, color_code),
-        fifo_stores!fifo_inventory_store_id_fkey(name)
+        items:fifo_items!fifo_inventory_item_id_fkey(name, brand, color_code),
+        stores:fifo_stores!fifo_inventory_store_id_fkey(name)
       `)
       .eq("store_id", storeId)
       .gt("quantity", 0)
@@ -204,7 +204,7 @@ const InventoryManager = () => {
         try {
           const rowData = row as any;
           let { data: existingItem } = await supabase
-            .from("items")
+            .from("fifo_items")
             .select("id")
             .eq("user_id", user.id)
             .eq("name", rowData.item_name || rowData.name)
@@ -276,7 +276,7 @@ const InventoryManager = () => {
           setScanDialogOpen(false);
           
           const { data: item } = await supabase
-            .from("items")
+            .from("fifo_items")
             .select("*")
             .eq("barcode", decodedText)
             .single();
@@ -423,7 +423,7 @@ const InventoryManager = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase.from("employees").insert({
+    const { error } = await supabase.from("fifo_employees").insert({
       user_id: user.id,
       name: formData.get("employeeName") as string,
       title: formData.get("title") as string,
@@ -473,7 +473,7 @@ const InventoryManager = () => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
-    const { error } = await supabase.from("employees").update({
+    const { error } = await supabase.from("fifo_employees").update({
       name: formData.get("employeeName") as string,
       title: formData.get("title") as string,
     }).eq("id", employeeId);
@@ -489,7 +489,7 @@ const InventoryManager = () => {
   const handleDeleteEmployee = async (employeeId: string) => {
     if (!confirm("Are you sure you want to delete this employee?")) return;
     
-    const { error } = await supabase.from("employees").delete().eq("id", employeeId);
+    const { error } = await supabase.from("fifo_employees").delete().eq("id", employeeId);
 
     if (error) {
       toast.error("Failed to delete employee");
@@ -572,7 +572,7 @@ const InventoryManager = () => {
     const formData = new FormData(e.currentTarget as HTMLFormElement);
 
     const { error } = await supabase
-      .from("items")
+      .from("fifo_items")
       .update({
         name: formData.get("itemName") as string,
         brand: formData.get("brand") as string,
@@ -599,7 +599,7 @@ const InventoryManager = () => {
     if (!user) return;
 
     const { error } = await supabase
-      .from("items")
+      .from("fifo_items")
       .delete()
       .eq("id", itemMasterToDelete.id);
 
@@ -677,8 +677,8 @@ const InventoryManager = () => {
     const remainingQty = sourceInv.quantity - quantity;
 
     await supabase
-      .from("inventory")
-      .update({ 
+      .from("fifo_inventory")
+      .update({
         quantity: remainingQty,
         status: remainingQty <= 0 ? "transferred" : "available"
       })
@@ -699,8 +699,8 @@ const InventoryManager = () => {
 
     if (destInv) {
       await supabase
-        .from("inventory")
-        .update({ 
+        .from("fifo_inventory")
+        .update({
           quantity: destInv.quantity + quantity,
           status: "available"
         })
@@ -1512,7 +1512,7 @@ const InventoryManager = () => {
                             return;
                           }
 
-                          const { error } = await supabase.from("items").insert(itemsToInsert);
+                          const { error } = await supabase.from("fifo_items").insert(itemsToInsert);
 
                           if (error) throw error;
 
@@ -1920,7 +1920,7 @@ const InventoryManager = () => {
                                   {transfer.from_store?.name} → {transfer.to_store?.name}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  By: {transfer.transferred_by?.name} • Qty: {transfer.quantity}
+                                  By: {transfer.employees?.name} • Qty: {transfer.quantity}
                                 </p>
                               </div>
                               <Badge className="text-xs">{transfer.status}</Badge>
@@ -2140,8 +2140,8 @@ const InventoryManager = () => {
               const remainingQty = quickTransferItem.quantity - quantity;
 
               await supabase
-                .from("inventory")
-                .update({ 
+                .from("fifo_inventory")
+                .update({
                   quantity: remainingQty,
                   status: remainingQty <= 0 ? "transferred" : "available"
                 })
