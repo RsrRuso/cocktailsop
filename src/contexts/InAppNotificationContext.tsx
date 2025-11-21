@@ -6,7 +6,8 @@ interface InAppNotificationContextType {
   showNotification: (
     title: string,
     message: string,
-    type?: 'message' | 'like' | 'comment' | 'follow' | 'new_user' | 'default'
+    type?: 'message' | 'like' | 'comment' | 'follow' | 'new_user' | 'transaction' | 'receiving' | 'default',
+    onClick?: () => void
   ) => void;
 }
 
