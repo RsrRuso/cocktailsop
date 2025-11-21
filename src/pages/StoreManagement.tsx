@@ -590,6 +590,9 @@ const StoreManagement = () => {
 
       if (error) throw error;
 
+      // Optimistically update local state so UI reflects the change immediately
+      setReceivings((prev) => prev.filter((r) => r.id !== receiving.id));
+
       toast.success("Receiving deleted successfully");
       fetchAllData();
     } catch (error) {
@@ -645,17 +648,28 @@ const StoreManagement = () => {
           .update({ quantity: updatedQuantity })
           .eq('id', inventoryRecord.id);
 
+        const updatedReceiving = {
+          ...editingReceiving,
+          quantity_after: (editingReceiving.quantity_before || 0) + newQty,
+          details: {
+            ...editingReceiving.details,
+            received_quantity: newQty,
+          },
+        };
+
         // Update activity log
         await supabase
           .from('inventory_activity_log')
           .update({
-            quantity_after: (editingReceiving.quantity_before || 0) + newQty,
-            details: {
-              ...editingReceiving.details,
-              received_quantity: newQty
-            }
+            quantity_after: updatedReceiving.quantity_after,
+            details: updatedReceiving.details,
           })
           .eq('id', editingReceiving.id);
+
+        // Optimistically update local state so UI reflects the change immediately
+        setReceivings((prev) =>
+          prev.map((r) => (r.id === editingReceiving.id ? updatedReceiving : r))
+        );
 
         toast.success("Receiving updated successfully");
         setEditReceivingDialog(false);
