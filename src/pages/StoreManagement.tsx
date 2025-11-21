@@ -147,9 +147,9 @@ const StoreManagement = () => {
         .eq("is_active", true)
         .order("name");
       
-      // Filter to only show specific stores
+      // Filter to only show specific stores (case-sensitive)
       const filteredStores = storesData?.filter(store => 
-        ['ATTIKO', 'JERRY', 'WAREHOUSE'].includes(store.name.toUpperCase())
+        ['ATTIKO', 'JERRY', 'WAREHOUSE'].includes(store.name)
       ) || [];
 
       // Fetch items - all items for this user
