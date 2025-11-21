@@ -81,7 +81,7 @@ const StoreManagement = () => {
   }, [user, currentWorkspace]);
 
   const setupRealtimeSubscriptions = () => {
-    const workspaceFilter = currentWorkspace ? `workspace_id=eq.${currentWorkspace.id}` : `user_id=eq.${user?.id}`;
+    const workspaceFilter = `user_id=eq.${user?.id}`;
 
     const channel = supabase
       .channel('store-management-changes')
@@ -139,54 +139,33 @@ const StoreManagement = () => {
         ? { workspace_id: currentWorkspace.id }
         : { user_id: user.id, workspace_id: null };
 
-      // Fetch stores
-      let storesQuery = supabase
+      // Fetch stores - all active stores for this user
+      const { data: storesData } = await supabase
         .from("stores")
         .select("*")
+        .eq("user_id", user.id)
         .eq("is_active", true)
         .order("name");
 
-      if (currentWorkspace) {
-        storesQuery = storesQuery.eq("workspace_id", currentWorkspace.id);
-      } else {
-        storesQuery = storesQuery.eq("user_id", user.id).is("workspace_id", null);
-      }
-
-      const { data: storesData } = await storesQuery;
-
-      // Fetch items
-      let itemsQuery = supabase
+      // Fetch items - all items for this user
+      const { data: itemsData } = await supabase
         .from("items")
         .select("*")
+        .eq("user_id", user.id)
         .order("name");
 
-      if (currentWorkspace) {
-        itemsQuery = itemsQuery.eq("workspace_id", currentWorkspace.id);
-      } else {
-        itemsQuery = itemsQuery.eq("user_id", user.id).is("workspace_id", null);
-      }
-
-      const { data: itemsData } = await itemsQuery;
-
-      // Fetch inventory
-      let inventoryQuery = supabase
+      // Fetch inventory - all inventory for this user
+      const { data: inventoryData } = await supabase
         .from("inventory")
         .select(`
           *,
           items(name, brand, photo_url, color_code),
           stores(name)
-        `);
+        `)
+        .eq("user_id", user.id);
 
-      if (currentWorkspace) {
-        inventoryQuery = inventoryQuery.eq("workspace_id", currentWorkspace.id);
-      } else {
-        inventoryQuery = inventoryQuery.eq("user_id", user.id).is("workspace_id", null);
-      }
-
-      const { data: inventoryData } = await inventoryQuery;
-
-      // Fetch transfers
-      let transfersQuery = supabase
+      // Fetch transfers - all transfers for this user
+      const { data: transfersData } = await supabase
         .from("inventory_transfers")
         .select(`
           *,
@@ -194,84 +173,46 @@ const StoreManagement = () => {
           to_store:stores!to_store_id(name),
           transferred_by:employees(name)
         `)
+        .eq("user_id", user.id)
         .order("transfer_date", { ascending: false })
         .limit(20);
 
-      if (currentWorkspace) {
-        transfersQuery = transfersQuery.eq("workspace_id", currentWorkspace.id);
-      } else {
-        transfersQuery = transfersQuery.eq("user_id", user.id).is("workspace_id", null);
-      }
-
-      const { data: transfersData } = await transfersQuery;
-
-      // Fetch receivings from inventory_activity_log
-      let receivingsQuery = supabase
+      // Fetch receivings from inventory_activity_log - all for this user
+      const { data: receivingsData } = await supabase
         .from("inventory_activity_log")
         .select(`
           *,
           stores(name, store_type)
         `)
+        .eq("user_id", user.id)
         .eq("action_type", "received")
         .order("created_at", { ascending: false })
         .limit(20);
 
-      if (currentWorkspace) {
-        receivingsQuery = receivingsQuery.eq("workspace_id", currentWorkspace.id);
-      } else {
-        receivingsQuery = receivingsQuery.eq("user_id", user.id).is("workspace_id", null);
-      }
-
-      const { data: receivingsData } = await receivingsQuery;
-
-      // Fetch spot checks
-      let spotChecksQuery = supabase
+      // Fetch spot checks - all for this user
+      const { data: spotChecksData } = await supabase
         .from("inventory_spot_checks")
         .select(`
           *,
           stores(name)
         `)
+        .eq("user_id", user.id)
         .order("check_date", { ascending: false })
         .limit(20);
 
-      if (currentWorkspace) {
-        spotChecksQuery = spotChecksQuery.eq("workspace_id", currentWorkspace.id);
-      } else {
-        spotChecksQuery = spotChecksQuery.eq("user_id", user.id).is("workspace_id", null);
-      }
-
-      const { data: spotChecksData } = await spotChecksQuery;
-
-      // Fetch variance reports
-      let varianceQuery = supabase
+      // Fetch variance reports - all for this user
+      const { data: varianceData } = await supabase
         .from("variance_reports")
         .select(`
           *,
           stores(name)
         `)
+        .eq("user_id", user.id)
         .order("report_date", { ascending: false })
         .limit(20);
 
-      if (currentWorkspace) {
-        varianceQuery = varianceQuery.eq("workspace_id", currentWorkspace.id);
-      } else {
-        varianceQuery = varianceQuery.eq("user_id", user.id).is("workspace_id", null);
-      }
-
-      const { data: varianceData } = await varianceQuery;
-
-      // Fetch workspace members (only if workspace exists)
-      let membersData = [];
-      if (currentWorkspace) {
-        const { data } = await supabase
-          .from("workspace_members")
-          .select(`
-            *,
-            profiles!inner(email, full_name, username)
-          `)
-          .eq("workspace_id", currentWorkspace.id);
-        membersData = data || [];
-      }
+      // Workspace members not used in personal inventory mode
+      const membersData: any[] = [];
 
       setStores(storesData || []);
       setItems(itemsData || []);
@@ -832,7 +773,7 @@ const StoreManagement = () => {
               Store Management
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {currentWorkspace ? currentWorkspace.name : 'Personal Inventory'}
+              All personal stores and inventory
             </p>
           </div>
           <Badge variant="outline" className="gap-2">
