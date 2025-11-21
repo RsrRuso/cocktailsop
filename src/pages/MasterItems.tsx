@@ -12,7 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Package, Plus, Trash2, ArrowLeft, Barcode, Tag, Edit, Image as ImageIcon, Trash, Search } from "lucide-react";
+import { Package, Plus, Trash2, ArrowLeft, Barcode, Tag, Edit, Image as ImageIcon, Trash, Search, Download } from "lucide-react";
+import JsBarcode from "jsbarcode";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,7 +43,36 @@ const MasterItems = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const filteredItems = items.filter(item => 
+  const generateBarcode = () => {
+    const timestamp = Date.now().toString();
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    return `${timestamp}${random}`;
+  };
+
+  const downloadBarcode = (barcode: string, itemName: string) => {
+    try {
+      const canvas = document.createElement('canvas');
+      JsBarcode(canvas, barcode, {
+        format: "CODE128",
+        width: 2,
+        height: 100,
+        displayValue: true,
+        fontSize: 14,
+      });
+      
+      const url = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${itemName.replace(/[^a-z0-9]/gi, '_')}_barcode.png`;
+      link.click();
+      toast.success("Barcode downloaded!");
+    } catch (error) {
+      console.error('Error generating barcode:', error);
+      toast.error("Failed to generate barcode");
+    }
+  };
+
+  const filteredItems = items.filter(item =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -159,6 +189,9 @@ const MasterItems = () => {
         photoUrl = await uploadItemPhoto(itemPhoto);
       }
 
+      // Auto-generate barcode if not provided
+      const finalBarcode = itemBarcode.trim() || generateBarcode();
+
       const { error } = await supabase
         .from('items')
         .insert({
@@ -166,7 +199,7 @@ const MasterItems = () => {
           description: itemDescription.trim() || null,
           brand: itemBrand.trim() || null,
           category: itemCategory.trim() || null,
-          barcode: itemBarcode.trim() || null,
+          barcode: finalBarcode,
           color_code: itemColorCode,
           photo_url: photoUrl,
           user_id: user.id,
@@ -238,7 +271,7 @@ const MasterItems = () => {
     setItemDescription(item.description || "");
     setItemBrand(item.brand || "");
     setItemCategory(item.category || "");
-    setItemBarcode(item.barcode || "");
+    setItemBarcode(item.barcode || generateBarcode());
     setItemColorCode(item.color_code || "#3b82f6");
     setItemPhotoUrl(item.photo_url || "");
     setIsEditDialogOpen(true);
@@ -447,12 +480,12 @@ const MasterItems = () => {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="barcode" className="text-xs">Barcode</Label>
+                    <Label htmlFor="barcode" className="text-xs">Barcode (auto-generated)</Label>
                     <Input
                       id="barcode"
                       value={itemBarcode}
                       onChange={(e) => setItemBarcode(e.target.value)}
-                      placeholder="Barcode"
+                      placeholder="Auto-generated"
                       className="h-9"
                     />
                   </div>
@@ -559,12 +592,12 @@ const MasterItems = () => {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-barcode" className="text-xs">Barcode</Label>
+                    <Label htmlFor="edit-barcode" className="text-xs">Barcode (auto-generated)</Label>
                     <Input
                       id="edit-barcode"
                       value={itemBarcode}
                       onChange={(e) => setItemBarcode(e.target.value)}
-                      placeholder="Barcode"
+                      placeholder="Auto-generated"
                       className="h-9"
                     />
                   </div>
@@ -672,7 +705,7 @@ const MasterItems = () => {
                       <TableHead>Category</TableHead>
                       <TableHead>Barcode</TableHead>
                       <TableHead className="text-right">Stock</TableHead>
-                      <TableHead className="w-24 text-right">Actions</TableHead>
+                      <TableHead className="w-32 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -717,8 +750,23 @@ const MasterItems = () => {
                             </Badge>
                           ) : '-'}
                         </TableCell>
-                        <TableCell className="text-sm font-mono text-muted-foreground">
-                          {item.barcode || '-'}
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-mono text-muted-foreground">
+                              {item.barcode || '-'}
+                            </span>
+                            {item.barcode && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => downloadBarcode(item.barcode, item.name)}
+                                className="h-7 w-7 p-0"
+                                title="Download barcode"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-right font-semibold">
                           {item.inventory?.[0]?.count || 0}
