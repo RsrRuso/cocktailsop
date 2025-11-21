@@ -226,12 +226,16 @@ const StoreManagement = () => {
         .order("created_at", { ascending: false })
         .limit(20);
 
-      // Fetch spot checks - all for this user
+      // Fetch spot checks with items
       const { data: spotChecksData } = await supabase
         .from("inventory_spot_checks")
         .select(`
           *,
-          stores(name)
+          stores(name),
+          spot_check_items(
+            *,
+            items(name, photo_url)
+          )
         `)
         .eq("user_id", user.id)
         .order("check_date", { ascending: false })
