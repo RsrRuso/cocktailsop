@@ -54,7 +54,7 @@ const LowStockInventory = () => {
         .from("workspaces")
         .select("id, name")
         .eq("id", workspaceId)
-        .single();
+        .maybeSingle();
 
       if (workspaceError) throw workspaceError;
       setWorkspace(workspaceData);
@@ -63,10 +63,11 @@ const LowStockInventory = () => {
         .from("stock_alert_settings")
         .select("minimum_quantity_threshold")
         .eq("workspace_id", workspaceId)
-        .single();
+        .maybeSingle();
 
       const minimumQuantity = settings?.minimum_quantity_threshold || 10;
 
+      // Only fetch inventory that belongs to stores in this workspace
       const { data, error } = await supabase
         .from("inventory")
         .select(`
@@ -74,10 +75,13 @@ const LowStockInventory = () => {
           quantity,
           expiration_date,
           item_id,
-          items!inner(name, category),
-          stores(name)
+          workspace_id,
+          items!inner(name, category, workspace_id),
+          stores!inner(name, workspace_id)
         `)
         .eq("workspace_id", workspaceId)
+        .eq("items.workspace_id", workspaceId)
+        .eq("stores.workspace_id", workspaceId)
         .lte("quantity", minimumQuantity)
         .gte("expiration_date", new Date().toISOString().split('T')[0])
         .order("quantity", { ascending: true });
