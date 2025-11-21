@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Download, Package } from "lucide-react";
 import { toast } from "sonner";
-import { useWorkspace } from "@/hooks/useWorkspace";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -18,25 +18,43 @@ interface ExpiringItem {
   stores: { name: string } | null;
 }
 
+interface Workspace {
+  id: string;
+  name: string;
+}
+
 const ExpiringInventory = () => {
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const [expiringItems, setExpiringItems] = useState<ExpiringItem[]>([]);
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
-  const { currentWorkspace } = useWorkspace();
 
   useEffect(() => {
-    fetchExpiringItems();
-  }, [currentWorkspace]);
+    if (workspaceId) {
+      fetchWorkspaceAndItems();
+    }
+  }, [workspaceId]);
 
-  const fetchExpiringItems = async () => {
-    if (!currentWorkspace) return;
+  const fetchWorkspaceAndItems = async () => {
+    if (!workspaceId) return;
 
     setLoading(true);
     try {
+      // Fetch workspace info
+      const { data: workspaceData, error: workspaceError } = await supabase
+        .from("workspaces")
+        .select("id, name")
+        .eq("id", workspaceId)
+        .single();
+
+      if (workspaceError) throw workspaceError;
+      setWorkspace(workspaceData);
+
       // Get the workspace settings to know the days threshold
       const { data: settings } = await supabase
         .from("fifo_alert_settings")
         .select("days_before_expiry")
-        .eq("workspace_id", currentWorkspace.id)
+        .eq("workspace_id", workspaceId)
         .single();
 
       const daysBeforeExpiry = settings?.days_before_expiry || 30;
@@ -53,7 +71,7 @@ const ExpiringInventory = () => {
           items(name),
           stores(name)
         `)
-        .eq("workspace_id", currentWorkspace.id)
+        .eq("workspace_id", workspaceId)
         .lte("expiration_date", expiryThreshold.toISOString().split('T')[0])
         .gte("quantity", 1)
         .order("priority_score", { ascending: false });
@@ -92,7 +110,7 @@ const ExpiringInventory = () => {
       // Workspace name
       doc.setFontSize(12);
       doc.setTextColor(100);
-      doc.text(`Workspace: ${currentWorkspace?.name || "Unknown"}`, 14, 30);
+      doc.text(`Workspace: ${workspace?.name || "Unknown"}`, 14, 30);
       doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 37);
 
       // Summary
@@ -139,7 +157,7 @@ const ExpiringInventory = () => {
       });
 
       // Save PDF
-      const fileName = `expiring-inventory-${currentWorkspace?.name || "report"}-${new Date().toISOString().split('T')[0]}.pdf`;
+      const fileName = `expiring-inventory-${workspace?.name || "report"}-${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(fileName);
       toast.success("PDF downloaded successfully");
     } catch (error) {
@@ -147,6 +165,20 @@ const ExpiringInventory = () => {
       toast.error("Failed to generate PDF");
     }
   };
+
+  if (!workspaceId) {
+    return (
+      <div className="min-h-screen bg-background pb-20 pt-16">
+        <TopNav />
+        <div className="px-4 py-6">
+          <div className="glass rounded-2xl p-8 text-center">
+            <p className="text-muted-foreground">No workspace specified</p>
+          </div>
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
@@ -160,7 +192,7 @@ const ExpiringInventory = () => {
               Expiring Inventory
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {currentWorkspace?.name || "Select a workspace"}
+              {workspace?.name || "Loading..."}
             </p>
           </div>
           {expiringItems.length > 0 && (
