@@ -68,7 +68,7 @@ const Workspaces = () => {
               <DialogHeader>
                 <DialogTitle>Create New Workspace</DialogTitle>
                 <DialogDescription>
-                  Create a workspace to organize your team and inventory
+                  Create a workspace to organize your team and stores
                 </DialogDescription>
               </DialogHeader>
               
@@ -161,7 +161,7 @@ const Workspaces = () => {
             <CardTitle>About Workspaces</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>• Workspaces help you organize inventory, teams, and stores</p>
+            <p>• Workspaces help you organize teams and stores</p>
             <p>• Each workspace has its own team members and permissions</p>
             <p>• Switch between workspaces to manage different locations or teams</p>
             <p>• Invite team members to specific workspaces</p>
