@@ -512,10 +512,16 @@ const StoreManagement = () => {
     if (!user) return;
 
     try {
-      await supabase
+      const { error } = await supabase
         .from("inventory_transfers")
         .delete()
         .eq("id", transferId);
+
+      if (error) {
+        console.error("Error deleting transfer:", error);
+        toast.error(`Failed to delete transfer: ${error.message}`);
+        return;
+      }
 
       toast.success("Transfer deleted successfully");
       setDeleteTransferId(null);
