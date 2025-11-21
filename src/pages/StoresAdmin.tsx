@@ -135,17 +135,17 @@ const StoresAdmin = () => {
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
       
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="container mx-auto px-4 pt-20 pb-6 max-w-7xl">
         <Button 
           variant="ghost" 
           onClick={() => navigate('/store-management')}
-          className="mb-4"
+          className="mb-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Store Management
         </Button>
 
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Store className="h-8 w-8" />

@@ -704,10 +704,10 @@ const StoreManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-16">
+    <div className="min-h-screen bg-background pb-20">
       <TopNav />
 
-      <div className="px-4 py-6 space-y-4">
+      <div className="px-4 pt-20 pb-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -724,8 +724,8 @@ const StoreManagement = () => {
           </Badge>
         </div>
 
-        {/* Quick Navigation */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+        {/* Quick Action Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/stores-admin')}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
