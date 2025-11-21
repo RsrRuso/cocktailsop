@@ -66,7 +66,6 @@ const StoreManagement = () => {
   const [selectedReceivingItem, setSelectedReceivingItem] = useState("");
   const [receivingQuantity, setReceivingQuantity] = useState("");
   const [receivingNotes, setReceivingNotes] = useState("");
-  const [receivingPhotoFile, setReceivingPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (user && currentWorkspace) {
@@ -365,45 +364,61 @@ const StoreManagement = () => {
     }
 
     try {
-      let photoUrl = null;
+      const qty = parseFloat(receivingQuantity);
       
-      // Upload photo if provided
-      if (receivingPhotoFile) {
-        const fileExt = receivingPhotoFile.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `receivings/${currentWorkspace.id}/${fileName}`;
+      // Check if inventory already exists for this item at this store
+      const { data: existingInventory } = await supabase
+        .from('inventory')
+        .select('id, quantity')
+        .eq('item_id', selectedReceivingItem)
+        .eq('store_id', selectedReceivingStore)
+        .maybeSingle();
 
-        const { error: uploadError } = await supabase.storage
-          .from('posts')
-          .upload(filePath, receivingPhotoFile);
+      if (existingInventory) {
+        // Update existing inventory
+        const { error: updateError } = await supabase
+          .from('inventory')
+          .update({
+            quantity: existingInventory.quantity + qty,
+          })
+          .eq('id', existingInventory.id);
 
-        if (uploadError) throw uploadError;
+        if (updateError) throw updateError;
+      } else {
+        // Create new inventory record - need expiration date
+        const expirationDate = new Date();
+        expirationDate.setMonth(expirationDate.getMonth() + 6); // Default 6 months
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('posts')
-          .getPublicUrl(filePath);
+        const { error: insertError } = await supabase
+          .from('inventory')
+          .insert({
+            workspace_id: currentWorkspace.id,
+            user_id: user.id,
+            store_id: selectedReceivingStore,
+            item_id: selectedReceivingItem,
+            quantity: qty,
+            expiration_date: expirationDate.toISOString().split('T')[0],
+            received_date: new Date().toISOString(),
+            notes: receivingNotes || null
+          });
 
-        photoUrl = publicUrl;
+        if (insertError) throw insertError;
       }
 
-      // Create receiving - this will trigger automatic inventory update via database trigger
-      const { error } = await supabase
-        .from("inventory_receivings" as any)
-        .insert({
-          workspace_id: currentWorkspace.id,
-          user_id: user.id,
-          store_id: selectedReceivingStore,
+      // Log activity
+      await supabase.from('inventory_activity_log').insert({
+        workspace_id: currentWorkspace.id,
+        user_id: user.id,
+        store_id: selectedReceivingStore,
+        action_type: 'receiving',
+        quantity_after: qty,
+        details: {
           item_id: selectedReceivingItem,
-          quantity: parseFloat(receivingQuantity),
-          status: 'completed',
-          notes: receivingNotes,
-          photo_url: photoUrl,
-          received_at: new Date().toISOString()
-        });
+          notes: receivingNotes
+        }
+      });
 
-      if (error) throw error;
-
-      toast.success("Receiving recorded! Inventory updated automatically.");
+      toast.success("Receiving recorded successfully!");
       fetchAllData();
       
       // Reset form
@@ -411,7 +426,6 @@ const StoreManagement = () => {
       setSelectedReceivingItem("");
       setReceivingQuantity("");
       setReceivingNotes("");
-      setReceivingPhotoFile(null);
     } catch (error) {
       console.error("Error creating receiving:", error);
       toast.error("Failed to record receiving");
@@ -759,18 +773,18 @@ const StoreManagement = () => {
           {/* Receivings Tab */}
           <TabsContent value="receivings" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Record Receiving</CardTitle>
-                <CardDescription>
-                  Record items received at warehouse - inventory updates automatically
+              <CardHeader className="py-4">
+                <CardTitle className="text-lg">Record Receiving</CardTitle>
+                <CardDescription className="text-sm">
+                  Add items received to warehouse inventory
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleCreateReceiving} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Warehouse / Receiving Store</Label>
+                <form onSubmit={handleCreateReceiving} className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Warehouse / Receiving Store *</Label>
                     <Select value={selectedReceivingStore} onValueChange={setSelectedReceivingStore}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9">
                         <SelectValue placeholder="Select receiving store" />
                       </SelectTrigger>
                       <SelectContent>
@@ -785,53 +799,55 @@ const StoreManagement = () => {
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Item</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Item from Master List *</Label>
                     <Select value={selectedReceivingItem} onValueChange={setSelectedReceivingItem}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9">
                         <SelectValue placeholder="Select item" />
                       </SelectTrigger>
                       <SelectContent>
                         {items.map((item) => (
                           <SelectItem key={item.id} value={item.id}>
-                            {item.name} {item.brand ? `(${item.brand})` : ''}
+                            <div className="flex items-center gap-2">
+                              {item.color_code && (
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: item.color_code }}
+                                />
+                              )}
+                              <span>{item.name} {item.brand ? `(${item.brand})` : ''}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Quantity Received</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Quantity Received *</Label>
                     <Input
                       type="number"
                       value={receivingQuantity}
                       onChange={(e) => setReceivingQuantity(e.target.value)}
-                      placeholder="Enter quantity"
+                      placeholder="Qty"
                       min="1"
                       step="any"
+                      className="h-9"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Notes (Optional)</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Delivery Notes (Optional)</Label>
                     <Textarea
                       value={receivingNotes}
                       onChange={(e) => setReceivingNotes(e.target.value)}
-                      placeholder="Add notes about this delivery..."
+                      placeholder="Supplier, delivery info..."
+                      rows={2}
+                      className="text-sm"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Attach Photo (Optional)</Label>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setReceivingPhotoFile(e.target.files?.[0] || null)}
-                    />
-                  </div>
-
-                  <Button type="submit" className="w-full">
+                  <Button type="submit" className="w-full h-9">
                     <Package className="w-4 h-4 mr-2" />
                     Record Receiving
                   </Button>
