@@ -1130,34 +1130,34 @@ const StoreManagement = () => {
         </Card>
 
         <Tabs defaultValue="transactions" className="w-full">
-          <ScrollArea className="w-full sm:w-auto">
-            <TabsList className="inline-flex w-max sm:grid sm:w-full sm:grid-cols-6 gap-1 mb-2">
-              <TabsTrigger value="transactions" className="text-xs sm:text-sm whitespace-nowrap px-3">
-                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-1 flex-shrink-0" />
+          <div className="w-full overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex w-max min-w-full sm:grid sm:w-full sm:grid-cols-6 gap-1 mb-2">
+              <TabsTrigger value="transactions" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3 flex-1 sm:flex-initial">
+                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
                 <span>Live</span>
               </TabsTrigger>
-              <TabsTrigger value="receivings" className="text-xs sm:text-sm whitespace-nowrap px-3">
-                <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-1 flex-shrink-0" />
+              <TabsTrigger value="receivings" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3 flex-1 sm:flex-initial">
+                <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
                 <span>Receive</span>
               </TabsTrigger>
-              <TabsTrigger value="transfers" className="text-xs sm:text-sm whitespace-nowrap px-3">
-                <ArrowRightLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-1 flex-shrink-0" />
+              <TabsTrigger value="transfers" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3 flex-1 sm:flex-initial">
+                <ArrowRightLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
                 <span>Transfer</span>
               </TabsTrigger>
-              <TabsTrigger value="spotchecks" className="text-xs sm:text-sm whitespace-nowrap px-3">
-                <ClipboardCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-1 flex-shrink-0" />
+              <TabsTrigger value="spotchecks" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3 flex-1 sm:flex-initial">
+                <ClipboardCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
                 <span>Checks</span>
               </TabsTrigger>
-              <TabsTrigger value="variance" className="text-xs sm:text-sm whitespace-nowrap px-3">
-                <TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-1 flex-shrink-0" />
+              <TabsTrigger value="variance" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3 flex-1 sm:flex-initial">
+                <TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
                 <span>Variance</span>
               </TabsTrigger>
-              <TabsTrigger value="members" className="text-xs sm:text-sm whitespace-nowrap px-3">
-                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-1 flex-shrink-0" />
+              <TabsTrigger value="members" className="text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3 flex-1 sm:flex-initial">
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
                 <span>Team</span>
               </TabsTrigger>
             </TabsList>
-          </ScrollArea>
+          </div>
 
           {/* Live Transactions Feed */}
           <TabsContent value="transactions" className="space-y-4">
