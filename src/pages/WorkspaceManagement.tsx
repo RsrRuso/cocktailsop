@@ -153,44 +153,49 @@ const WorkspaceManagement = () => {
   };
 
   const handleDeleteAll = async () => {
-    if (!confirm(`Delete ALL ${workspaces.length} workspace(s)?\n\nAll stores, inventory, and data will be safely moved to your personal account.\n\nThis action cannot be undone.`)) {
-      return;
-    }
-
-    setDeleting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Get all workspace IDs
-      const workspaceIds = workspaces.map(w => w.id);
-
-      if (workspaceIds.length === 0) {
-        toast.info("No workspaces to delete");
+      if (!user) {
+        toast.error("You must be logged in to delete workspaces");
         return;
       }
 
-      // Make all data personal for all workspaces
-      await supabase.from("stores").update({ workspace_id: null }).in("workspace_id", workspaceIds);
-      await supabase.from("inventory").update({ workspace_id: null }).in("workspace_id", workspaceIds);
-      await supabase.from("items").update({ workspace_id: null }).in("workspace_id", workspaceIds);
-      await supabase.from("inventory_activity_log").update({ workspace_id: null }).in("workspace_id", workspaceIds);
-      await supabase.from("inventory_transfers").update({ workspace_id: null }).in("workspace_id", workspaceIds);
-      await supabase.from("inventory_spot_checks").update({ workspace_id: null }).in("workspace_id", workspaceIds);
-      await supabase.from("variance_reports").update({ workspace_id: null }).in("workspace_id", workspaceIds);
+      // Only delete workspaces you OWN, not ones you just joined
+      const ownedWorkspaces = workspaces.filter(w => w.owner_id === user.id);
+      const ownedWorkspaceIds = ownedWorkspaces.map(w => w.id);
+
+      if (ownedWorkspaceIds.length === 0) {
+        toast.info("No workspaces you own to delete");
+        return;
+      }
+
+      if (!confirm(`Delete ALL ${ownedWorkspaceIds.length} workspace(s) you own?\n\nAll stores, inventory, and data will be safely moved to your personal account.\n\nThis action cannot be undone.`)) {
+        return;
+      }
+
+      setDeleting(true);
+
+      // Make all data personal for owned workspaces
+      await supabase.from("stores").update({ workspace_id: null }).in("workspace_id", ownedWorkspaceIds);
+      await supabase.from("inventory").update({ workspace_id: null }).in("workspace_id", ownedWorkspaceIds);
+      await supabase.from("items").update({ workspace_id: null }).in("workspace_id", ownedWorkspaceIds);
+      await supabase.from("inventory_activity_log").update({ workspace_id: null }).in("workspace_id", ownedWorkspaceIds);
+      await supabase.from("inventory_transfers").update({ workspace_id: null }).in("workspace_id", ownedWorkspaceIds);
+      await supabase.from("inventory_spot_checks").update({ workspace_id: null }).in("workspace_id", ownedWorkspaceIds);
+      await supabase.from("variance_reports").update({ workspace_id: null }).in("workspace_id", ownedWorkspaceIds);
       
-      // Delete all workspace members
-      await supabase.from("workspace_members").delete().in("workspace_id", workspaceIds);
+      // Delete all workspace members for owned workspaces
+      await supabase.from("workspace_members").delete().in("workspace_id", ownedWorkspaceIds);
       
-      // Delete all workspaces
+      // Delete all owned workspaces
       const { error: workspaceError } = await supabase
         .from("workspaces")
         .delete()
-        .in("id", workspaceIds);
+        .in("id", ownedWorkspaceIds);
 
       if (workspaceError) throw workspaceError;
 
-      toast.success(`${workspaceIds.length} workspace(s) deleted - All data preserved!`);
+      toast.success(`${ownedWorkspaceIds.length} workspace(s) deleted - All data preserved!`);
       await fetchWorkspaces();
     } catch (error) {
       console.error("Error deleting all workspaces:", error);
@@ -307,7 +312,7 @@ const WorkspaceManagement = () => {
                 disabled={deleting}
               >
                 <Trash2 className="w-4 h-4" />
-                {deleting ? "Deleting..." : `Delete All (${workspaces.length})`}
+                {deleting ? "Deleting..." : "Delete My Workspaces"}
               </Button>
             )}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
