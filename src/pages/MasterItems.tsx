@@ -336,10 +336,10 @@ const MasterItems = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background">
       <TopNav />
       
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="container mx-auto px-4 pt-20 pb-24 max-w-7xl">
         <Button 
           variant="ghost" 
           onClick={() => navigate('/store-management')}
@@ -404,7 +404,7 @@ const MasterItems = () => {
                   Add Item
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add Item</DialogTitle>
               </DialogHeader>
@@ -516,7 +516,7 @@ const MasterItems = () => {
               setEditingItem(null);
             }
           }}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Edit Item</DialogTitle>
               </DialogHeader>
