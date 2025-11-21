@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -32,7 +31,6 @@ const InventoryTransactions = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { currentWorkspace } = useWorkspace();
-  const { showNotification } = useInAppNotificationContext();
   
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,45 +43,30 @@ const InventoryTransactions = () => {
   }, [user, currentWorkspace]);
 
   const setupRealtime = () => {
+    // Subscribe to changes to refresh the list
     const transferChannel = supabase
-      .channel('transfers-realtime')
+      .channel('page-transfers-refresh')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'inventory_transfers'
         },
-        (payload) => {
-          fetchTransactions();
-          showNotification(
-            '📦 New Transfer',
-            'Inventory transfer initiated',
-            'transaction',
-            () => navigate('/inventory-transactions')
-          );
-        }
+        () => fetchTransactions()
       )
       .subscribe();
 
     const inventoryChannel = supabase
-      .channel('inventory-realtime')
+      .channel('page-inventory-refresh')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'inventory'
         },
-        (payload) => {
-          fetchTransactions();
-          showNotification(
-            '✅ New Receiving',
-            'Inventory received successfully',
-            'receiving',
-            () => navigate('/inventory-transactions')
-          );
-        }
+        () => fetchTransactions()
       )
       .subscribe();
 
