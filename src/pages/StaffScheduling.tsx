@@ -2346,7 +2346,7 @@ export default function StaffScheduling() {
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {DAYS_OF_WEEK.map((day, dayIndex) => {
                 const daySchedule = Object.values(schedule).filter(s => s.day === day);
                 const working = daySchedule.filter(s => s.timeRange !== 'OFF');
@@ -2420,10 +2420,10 @@ export default function StaffScheduling() {
                   <div 
                     key={day} 
                     id={`day-${day}`}
-                    className={`border rounded-xl p-4 shadow-lg hover:shadow-xl transition-all ${isBusyDay ? 'border-orange-400 bg-gradient-to-br from-orange-900/30 to-orange-950/20' : 'bg-gradient-to-br from-gray-800 to-gray-850 border-gray-700 hover:border-primary/50'}`}
+                    className={`border rounded-xl p-5 shadow-lg hover:shadow-xl transition-all ${isBusyDay ? 'border-orange-400 bg-gradient-to-br from-orange-900/30 to-orange-950/20' : 'bg-gradient-to-br from-gray-800 to-gray-850 border-gray-700 hover:border-primary/50'}`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="font-bold text-sm text-gray-100 flex items-center gap-1">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="font-bold text-base text-gray-100 flex items-center gap-2">
                         {isBusyDay && <span className="inline-block w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>}
                         {day}
                       </div>
@@ -2431,26 +2431,28 @@ export default function StaffScheduling() {
                         size="sm"
                         variant="ghost"
                         onClick={() => exportDayToPNG(day)}
-                        className="h-7 px-2 text-xs hover:bg-gray-700 transition-colors"
+                        className="h-8 px-3 text-xs hover:bg-gray-700 transition-colors flex-shrink-0"
                         title="Download Screenshot"
                       >
-                        <Download className="h-3 w-3 mr-1" />
+                        <Download className="h-3.5 w-3.5 mr-1.5" />
                         Download
                       </Button>
                     </div>
                     {dayLabel && (
-                      <div className="text-xs text-orange-300 mb-3 bg-orange-950/30 rounded px-2 py-1 font-medium">
-                        📅 {dayLabel}
+                      <div className="text-xs text-orange-300 mb-4 bg-orange-950/30 rounded-lg px-3 py-2 font-medium flex items-center gap-2">
+                        <span>📅</span>
+                        <span>{dayLabel}</span>
                       </div>
                     )}
                     
                     {/* FIFO Inventory Warnings */}
                     {expiringItems.length > 0 && (
-                      <div className="mb-3 p-3 bg-red-950/30 border border-red-800/40 rounded-lg">
+                      <div className="mb-4 p-3 bg-red-950/30 border border-red-800/40 rounded-lg">
                         <div className="text-xs font-bold text-red-400 mb-2 flex items-center gap-2">
-                          ⚠️ FIFO Warnings ({expiringItems.length} items)
+                          <span>⚠️</span>
+                          <span>FIFO Warnings ({expiringItems.length} items)</span>
                         </div>
-                        <div className="space-y-1 max-h-32 overflow-y-auto">
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto">
                           {expiringItems.slice(0, 3).map((item: any, idx: number) => {
                             const itemName = item.items?.name || 'Unknown';
                             const expiryDate = format(new Date(item.expiration_date), 'MMM dd');
@@ -2458,8 +2460,8 @@ export default function StaffScheduling() {
                             const daysLeft = Math.ceil((new Date(item.expiration_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                             
                             return (
-                              <div key={idx} className="text-[9px] text-red-300/90 flex justify-between items-center py-1 border-b border-red-800/20 last:border-0">
-                                <span className="truncate flex-1">
+                              <div key={idx} className="text-[10px] text-red-300/90 flex justify-between items-center py-1.5 px-2 border-b border-red-800/20 last:border-0 bg-red-950/20 rounded">
+                                <span className="flex-1 break-words mr-2">
                                   <span className="font-semibold">P{priority}:</span> {itemName}
                                 </span>
                                 <span className={`ml-2 px-1.5 py-0.5 rounded text-[8px] font-medium ${
@@ -2483,51 +2485,52 @@ export default function StaffScheduling() {
 
                     {/* Daily Tasks */}
                     {specialEvents[day] && specialEvents[day].trim() !== '' && (
-                      <div className="mb-3 p-3 bg-amber-950/30 border border-amber-500/40 rounded-lg">
-                        <div className="text-xs font-bold text-amber-400 mb-1.5 flex items-center gap-2">
-                          📋 Daily Task
+                      <div className="mb-4 p-3 bg-amber-950/30 border border-amber-500/40 rounded-lg">
+                        <div className="text-xs font-bold text-amber-400 mb-2 flex items-center gap-2">
+                          <span>📋</span>
+                          <span>Daily Task</span>
                         </div>
-                        <div className="text-xs text-amber-200/90 leading-relaxed">
+                        <div className="text-xs text-amber-200/90 leading-relaxed break-words">
                           {specialEvents[day]}
                         </div>
                       </div>
                     )}
                     
                     {/* Summary Numbers */}
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="text-center p-2 bg-gradient-to-br from-green-950/40 to-green-900/20 rounded-lg border border-green-800/30">
-                        <div className="text-2xl font-extrabold text-green-400">{working.length}</div>
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wide">Working</div>
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="text-center p-3 bg-gradient-to-br from-green-950/40 to-green-900/20 rounded-lg border border-green-800/30">
+                        <div className="text-3xl font-extrabold text-green-400">{working.length}</div>
+                        <div className="text-[11px] text-gray-400 uppercase tracking-wide mt-1">Working</div>
                       </div>
-                      <div className="text-center p-2 bg-gradient-to-br from-red-950/40 to-red-900/20 rounded-lg border border-red-800/30">
-                        <div className="text-2xl font-extrabold text-red-400">{off.length}</div>
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wide">Off</div>
+                      <div className="text-center p-3 bg-gradient-to-br from-red-950/40 to-red-900/20 rounded-lg border border-red-800/30">
+                        <div className="text-3xl font-extrabold text-red-400">{off.length}</div>
+                        <div className="text-[11px] text-gray-400 uppercase tracking-wide mt-1">Off</div>
                       </div>
-                      <div className="text-center p-2 bg-gradient-to-br from-blue-950/40 to-blue-900/20 rounded-lg border border-blue-800/30">
-                        <div className="text-xl font-bold text-blue-400">{indoorStaff.length}</div>
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wide">Indoor</div>
+                      <div className="text-center p-3 bg-gradient-to-br from-blue-950/40 to-blue-900/20 rounded-lg border border-blue-800/30">
+                        <div className="text-2xl font-bold text-blue-400">{indoorStaff.length}</div>
+                        <div className="text-[11px] text-gray-400 uppercase tracking-wide mt-1">Indoor</div>
                       </div>
-                      <div className="text-center p-2 bg-gradient-to-br from-purple-950/40 to-purple-900/20 rounded-lg border border-purple-800/30">
-                        <div className="text-xl font-bold text-purple-400">{outdoorStaff.length}</div>
-                        <div className="text-[10px] text-gray-400 uppercase tracking-wide">Outdoor</div>
+                      <div className="text-center p-3 bg-gradient-to-br from-purple-950/40 to-purple-900/20 rounded-lg border border-purple-800/30">
+                        <div className="text-2xl font-bold text-purple-400">{outdoorStaff.length}</div>
+                        <div className="text-[11px] text-gray-400 uppercase tracking-wide mt-1">Outdoor</div>
                       </div>
                     </div>
                     
                     {/* Indoor Staff */}
                     {indoorStaff.length > 0 && (
-                      <div className="space-y-1.5 mb-2 bg-blue-950/20 rounded-lg p-2 border border-blue-900/30">
-                        <div className="text-xs font-bold text-blue-300 flex items-center gap-1">
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                          Indoor Stations
+                      <div className="space-y-2 mb-3 bg-blue-950/20 rounded-lg p-3 border border-blue-900/30">
+                        <div className="text-sm font-bold text-blue-300 flex items-center gap-2">
+                          <span className="inline-block w-2 h-2 rounded-full bg-blue-400"></span>
+                          <span>Indoor Stations</span>
                         </div>
-                        <div className="space-y-1 text-xs pl-3">
+                        <div className="space-y-2 text-xs pl-4">
                           {indoorStaff.map((s, idx) => (
-                            <div key={idx} className="text-gray-300">
+                            <div key={idx} className="text-gray-300 leading-relaxed">
                               • <span className={s.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
-                              {s.title === 'head_bartender' && <span className="text-[10px] text-yellow-500 ml-1">(HEAD)</span>}
-                              {s.title === 'senior_bartender' && <span className="text-[10px] text-blue-400 ml-1">(SENIOR)</span>}
+                              {s.title === 'head_bartender' && <span className="text-[10px] text-yellow-500 ml-1.5">(HEAD)</span>}
+                              {s.title === 'senior_bartender' && <span className="text-[10px] text-blue-400 ml-1.5">(SENIOR)</span>}
                               <span className="text-gray-500"> ({s.timeRange})</span>
-                              <div className="text-[10px] text-blue-400/80 pl-3">{s.station}</div>
+                              <div className="text-[11px] text-blue-400/80 pl-4 mt-0.5 break-words">{s.station}</div>
                             </div>
                           ))}
                         </div>
@@ -2536,19 +2539,19 @@ export default function StaffScheduling() {
 
                     {/* Outdoor Staff */}
                     {outdoorStaff.length > 0 && (
-                      <div className="space-y-1.5 mb-2 bg-purple-950/20 rounded-lg p-2 border border-purple-900/30">
-                        <div className="text-xs font-bold text-purple-300 flex items-center gap-1">
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-                          Outdoor Stations
+                      <div className="space-y-2 mb-3 bg-purple-950/20 rounded-lg p-3 border border-purple-900/30">
+                        <div className="text-sm font-bold text-purple-300 flex items-center gap-2">
+                          <span className="inline-block w-2 h-2 rounded-full bg-purple-400"></span>
+                          <span>Outdoor Stations</span>
                         </div>
-                        <div className="space-y-1 text-xs pl-3">
+                        <div className="space-y-2 text-xs pl-4">
                           {outdoorStaff.map((s, idx) => (
-                            <div key={idx} className="text-gray-300">
+                            <div key={idx} className="text-gray-300 leading-relaxed">
                               • <span className={s.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
-                              {s.title === 'head_bartender' && <span className="text-[10px] text-yellow-500 ml-1">(HEAD)</span>}
-                              {s.title === 'senior_bartender' && <span className="text-[10px] text-blue-400 ml-1">(SENIOR)</span>}
+                              {s.title === 'head_bartender' && <span className="text-[10px] text-yellow-500 ml-1.5">(HEAD)</span>}
+                              {s.title === 'senior_bartender' && <span className="text-[10px] text-blue-400 ml-1.5">(SENIOR)</span>}
                               <span className="text-gray-500"> ({s.timeRange})</span>
-                              <div className="text-[10px] text-purple-400/80 pl-3">{s.station}</div>
+                              <div className="text-[11px] text-purple-400/80 pl-4 mt-0.5 break-words">{s.station}</div>
                             </div>
                           ))}
                         </div>
@@ -2631,47 +2634,48 @@ export default function StaffScheduling() {
                       );
                       
                       return (firstWaveStaff.length > 0 || secondWaveStaff.length > 0) && (
-                        <div className="space-y-1.5 mb-2 bg-gradient-to-r from-orange-950/30 to-amber-950/20 rounded-lg p-2 border border-orange-800/40">
-                          <div className="text-xs font-bold text-orange-300 flex items-center gap-1">
-                            ☕ Break Schedule
+                        <div className="space-y-2 mb-3 bg-gradient-to-r from-orange-950/30 to-amber-950/20 rounded-lg p-3 border border-orange-800/40">
+                          <div className="text-sm font-bold text-orange-300 flex items-center gap-2">
+                            <span>☕</span>
+                            <span>Break Schedule</span>
                           </div>
-                          <div className="space-y-1.5 text-[10px] pl-2">
+                          <div className="space-y-2 text-[11px] pl-3">
                             {firstWaveStaff.length > 0 && (
-                              <div className="bg-orange-950/20 rounded p-1.5 border border-orange-900/30">
-                                <span className="font-semibold text-orange-400">First Wave Break</span>
-                                <div className="text-gray-300 mt-1 space-y-0.5">
+                              <div className="bg-orange-950/20 rounded-lg p-2.5 border border-orange-900/30">
+                                <span className="font-semibold text-orange-400 text-xs">First Wave Break</span>
+                                <div className="text-gray-300 mt-2 space-y-1">
                                    {firstWaveStaff.map((s, idx) => {
                                      return (
-                                       <div key={idx} className="pl-2">
+                                       <div key={idx} className="pl-3 leading-relaxed">
                                          • <span className={s.staff?.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
-                                         {s.staff?.title === 'head_bartender' && <span className="text-[8px] text-yellow-500 ml-1">(HEAD)</span>}
-                                         {s.staff?.title === 'senior_bartender' && <span className="text-[8px] text-blue-400 ml-1">(SENIOR)</span>}
-                                         <span className="text-gray-500 text-[9px]"> ({s.breakStart}-{s.breakEnd})</span>
+                                         {s.staff?.title === 'head_bartender' && <span className="text-[9px] text-yellow-500 ml-1.5">(HEAD)</span>}
+                                         {s.staff?.title === 'senior_bartender' && <span className="text-[9px] text-blue-400 ml-1.5">(SENIOR)</span>}
+                                         <span className="text-gray-500 text-[10px]"> ({s.breakStart}-{s.breakEnd})</span>
                                        </div>
                                      );
                                    })}
                                 </div>
-                                <div className="text-amber-400/80 mt-1.5 text-[9px] bg-amber-950/20 rounded p-1">
+                                <div className="text-amber-400/80 mt-2 text-[10px] bg-amber-950/20 rounded-lg p-2">
                                   ⚠️ Coverage: 2 Indoor + 1 Support remain
                                 </div>
                               </div>
                             )}
                             {secondWaveStaff.length > 0 && (
-                              <div className="bg-teal-950/20 rounded p-1.5 border border-teal-900/30">
-                                <span className="font-semibold text-teal-400">Second Wave Break</span>
-                                <div className="text-gray-300 mt-1 space-y-0.5">
+                              <div className="bg-teal-950/20 rounded-lg p-2.5 border border-teal-900/30">
+                                <span className="font-semibold text-teal-400 text-xs">Second Wave Break</span>
+                                <div className="text-gray-300 mt-2 space-y-1">
                                    {secondWaveStaff.map((s, idx) => {
                                      return (
-                                       <div key={idx} className="pl-2">
+                                       <div key={idx} className="pl-3 leading-relaxed">
                                          • <span className={s.staff?.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
-                                         {s.staff?.title === 'head_bartender' && <span className="text-[8px] text-yellow-500 ml-1">(HEAD)</span>}
-                                         {s.staff?.title === 'senior_bartender' && <span className="text-[8px] text-blue-400 ml-1">(SENIOR)</span>}
-                                         <span className="text-gray-500 text-[9px]"> ({s.breakStart}-{s.breakEnd})</span>
+                                         {s.staff?.title === 'head_bartender' && <span className="text-[9px] text-yellow-500 ml-1.5">(HEAD)</span>}
+                                         {s.staff?.title === 'senior_bartender' && <span className="text-[9px] text-blue-400 ml-1.5">(SENIOR)</span>}
+                                         <span className="text-gray-500 text-[10px]"> ({s.breakStart}-{s.breakEnd})</span>
                                        </div>
                                      );
                                    })}
                                 </div>
-                                <div className="text-teal-400/80 mt-1 text-[9px]">
+                                <div className="text-teal-400/80 mt-2 text-[10px] bg-teal-950/20 rounded-lg p-2">
                                   First wave returns to provide relief
                                 </div>
                               </div>
@@ -2683,11 +2687,14 @@ export default function StaffScheduling() {
 
                     {/* Off Staff */}
                     {offStaff.length > 0 && (
-                      <div className="space-y-1.5 pt-2 border-t border-gray-700/50 bg-gray-900/30 rounded-lg p-2 mt-2">
-                        <div className="text-xs font-bold text-gray-300">Off Duty:</div>
-                        <div className="space-y-1 text-xs pl-3">
+                      <div className="space-y-2 pt-3 border-t border-gray-700/50 bg-gray-900/30 rounded-lg p-3 mt-3">
+                        <div className="text-sm font-bold text-gray-300 flex items-center gap-2">
+                          <span>🏠</span>
+                          <span>Off Duty</span>
+                        </div>
+                        <div className="space-y-1.5 text-xs pl-4">
                           {offStaff.map((name, idx) => (
-                            <div key={idx} className="text-gray-400">
+                            <div key={idx} className="text-gray-400 leading-relaxed">
                               • {name}
                             </div>
                           ))}
