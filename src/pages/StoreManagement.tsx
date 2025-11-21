@@ -11,14 +11,14 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { toast } from "sonner";
 import { 
   Store, ArrowRightLeft, ClipboardCheck, TrendingDown, 
   Users, Camera, Bell, Clock, Package, Upload, 
   CheckCircle2, AlertCircle, UserPlus, UserMinus, Shield,
-  ExternalLink, BarChart3, Trash2, Activity, Edit, X
+  ExternalLink, BarChart3, Trash2, Activity, Edit, X, Check
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -78,6 +78,17 @@ const StoreManagement = () => {
   const [selectedReceivingItem, setSelectedReceivingItem] = useState("");
   const [receivingQuantity, setReceivingQuantity] = useState("");
   const [receivingNotes, setReceivingNotes] = useState("");
+  
+  // Spot check states
+  const [showSpotCheckDialog, setShowSpotCheckDialog] = useState(false);
+  const [spotCheckStore, setSpotCheckStore] = useState("");
+  const [spotCheckItems, setSpotCheckItems] = useState<{
+    inventory_id: string;
+    item_id: string;
+    item_name: string;
+    expected_quantity: number;
+    actual_quantity: string;
+  }[]>([]);
   
   // Edit receiving state
   const [editReceivingDialog, setEditReceivingDialog] = useState(false);
@@ -695,29 +706,121 @@ const StoreManagement = () => {
     }
   };
 
-  const handleStartSpotCheck = async () => {
-    if (!user || !currentWorkspace) return;
+  const handleStartSpotCheck = () => {
+    if (stores.length === 0) {
+      toast.error("No stores available");
+      return;
+    }
+    setSpotCheckStore(stores[0]?.id || "");
+    setShowSpotCheckDialog(true);
+  };
+
+  const handleLoadSpotCheckItems = () => {
+    if (!spotCheckStore) return;
+    
+    const storeInventory = inventory.filter(inv => inv.store_id === spotCheckStore);
+    const itemsToCheck = storeInventory.map(inv => {
+      const item = items.find(i => i.id === inv.item_id);
+      return {
+        inventory_id: inv.id,
+        item_id: inv.item_id,
+        item_name: item?.name || 'Unknown',
+        expected_quantity: inv.quantity,
+        actual_quantity: '',
+      };
+    });
+    
+    setSpotCheckItems(itemsToCheck);
+  };
+
+  const handleSpotCheckQuantityChange = (inventoryId: string, value: string) => {
+    setSpotCheckItems(prev => prev.map(item => 
+      item.inventory_id === inventoryId 
+        ? { ...item, actual_quantity: value }
+        : item
+    ));
+  };
+
+  const handleSubmitSpotCheck = async () => {
+    if (!user || !currentWorkspace || !spotCheckStore) return;
+    
+    const filledItems = spotCheckItems.filter(item => item.actual_quantity !== '');
+    
+    if (filledItems.length === 0) {
+      toast.error("Please enter at least one physical count");
+      return;
+    }
 
     try {
-      const { data, error } = await supabase
+      // Create spot check record
+      const { data: spotCheckData, error: spotCheckError } = await supabase
         .from("inventory_spot_checks")
         .insert({
           workspace_id: currentWorkspace.id,
           user_id: user.id,
-          store_id: stores[0]?.id,
-          status: 'in_progress',
-          check_date: new Date().toISOString()
+          store_id: spotCheckStore,
+          status: 'completed',
+          check_date: new Date().toISOString(),
+          completed_at: new Date().toISOString()
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (spotCheckError) throw spotCheckError;
 
-      toast.success("Spot check started!");
+      // Create spot check items and update inventory
+      for (const item of filledItems) {
+        const actualQty = parseFloat(item.actual_quantity);
+        const variance = actualQty - item.expected_quantity;
+        const variancePercentage = item.expected_quantity > 0 
+          ? (variance / item.expected_quantity) * 100 
+          : 0;
+
+        // Insert spot check item
+        await supabase
+          .from("spot_check_items")
+          .insert({
+            spot_check_id: spotCheckData.id,
+            inventory_id: item.inventory_id,
+            item_id: item.item_id,
+            expected_quantity: item.expected_quantity,
+            actual_quantity: actualQty,
+            variance: variance,
+            variance_percentage: variancePercentage
+          });
+
+        // Update inventory quantity to match physical count
+        await supabase
+          .from("inventory")
+          .update({ quantity: actualQty })
+          .eq("id", item.inventory_id);
+
+        // Log the adjustment
+        await supabase
+          .from("inventory_activity_log")
+          .insert({
+            user_id: user.id,
+            workspace_id: currentWorkspace.id,
+            store_id: spotCheckStore,
+            inventory_id: item.inventory_id,
+            action_type: 'spot_check_adjustment',
+            quantity_before: item.expected_quantity,
+            quantity_after: actualQty,
+            details: {
+              variance: variance,
+              variance_percentage: variancePercentage
+            }
+          });
+      }
+
+      toast.success(`Spot check completed! ${filledItems.length} items adjusted.`);
+      setShowSpotCheckDialog(false);
+      setSpotCheckItems([]);
+      setSpotCheckStore("");
       fetchAllData();
     } catch (error) {
-      console.error("Error starting spot check:", error);
-      toast.error("Failed to start spot check");
+      console.error("Error submitting spot check:", error);
+      toast.error("Failed to complete spot check");
     }
   };
 
@@ -1796,41 +1899,171 @@ const StoreManagement = () => {
                   </Button>
                 </CardTitle>
                 <CardDescription>
-                  Verify inventory accuracy
+                  Verify inventory accuracy and adjust quantities
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[500px]">
                   <div className="space-y-3">
-                    {spotChecks.map((check: any) => (
-                      <div key={check.id} className="glass rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <p className="font-medium">{check.stores?.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(check.check_date).toLocaleString()}
-                            </p>
-                          </div>
-                          <Badge variant={
-                            check.status === 'completed' ? 'default' :
-                            check.status === 'flagged' ? 'destructive' :
-                            'secondary'
-                          }>
-                            {check.status}
-                          </Badge>
-                        </div>
-                        {check.notes && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            {check.notes}
-                          </p>
-                        )}
+                    {spotChecks.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <ClipboardCheck className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                        <p className="text-sm">No spot checks yet</p>
                       </div>
-                    ))}
+                    ) : (
+                      spotChecks.map((check: any) => (
+                        <div key={check.id} className="glass rounded-lg p-4">
+                          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-bold text-base">{check.stores?.name}</p>
+                                <Badge variant={check.status === 'completed' ? 'default' : 'secondary'}>
+                                  {check.status}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(check.check_date).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {check.spot_check_items && check.spot_check_items.length > 0 && (
+                            <div className="mt-3 space-y-2 border-t pt-3">
+                              <p className="text-sm font-medium mb-2">Items Checked:</p>
+                              {check.spot_check_items.map((item: any) => (
+                                <div key={item.id} className="flex items-start gap-3 p-2 bg-muted/30 rounded-lg">
+                                  {item.items?.photo_url && (
+                                    <img 
+                                      src={item.items.photo_url} 
+                                      alt={item.items?.name} 
+                                      className="w-12 h-12 rounded object-cover flex-shrink-0"
+                                    />
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm break-words">{item.items?.name || 'Unknown Item'}</p>
+                                    <div className="flex flex-wrap gap-2 mt-1 text-xs">
+                                      <span className="text-muted-foreground">
+                                        System: <span className="font-semibold text-foreground">{item.expected_quantity}</span>
+                                      </span>
+                                      <span>→</span>
+                                      <span className="text-muted-foreground">
+                                        Physical: <span className="font-semibold text-primary">{item.actual_quantity}</span>
+                                      </span>
+                                      {item.variance !== 0 && (
+                                        <Badge 
+                                          variant={item.variance > 0 ? 'default' : 'destructive'}
+                                          className="text-xs"
+                                        >
+                                          {item.variance > 0 ? '+' : ''}{item.variance}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
                   </div>
                 </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Spot Check Dialog */}
+          <Dialog open={showSpotCheckDialog} onOpenChange={setShowSpotCheckDialog}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Spot Check</DialogTitle>
+                <DialogDescription>
+                  Count physical inventory and adjust system quantities
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Store *</Label>
+                  <Select value={spotCheckStore} onValueChange={setSpotCheckStore}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select store" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {stores.map((store) => (
+                        <SelectItem key={store.id} value={store.id}>
+                          {store.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {spotCheckStore && (
+                  <Button onClick={handleLoadSpotCheckItems} variant="outline" className="w-full">
+                    <Package className="w-4 h-4 mr-2" />
+                    Load Items for This Store
+                  </Button>
+                )}
+
+                {spotCheckItems.length > 0 && (
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                    <p className="text-sm font-medium">Enter Physical Counts:</p>
+                    {spotCheckItems.map((item) => (
+                      <div key={item.inventory_id} className="flex items-center gap-3 p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{item.item_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            System qty: {item.expected_quantity}
+                          </p>
+                        </div>
+                        <div className="w-24">
+                          <Input
+                            type="number"
+                            step="any"
+                            placeholder="Physical"
+                            value={item.actual_quantity}
+                            onChange={(e) => handleSpotCheckQuantityChange(item.inventory_id, e.target.value)}
+                            className="h-9"
+                          />
+                        </div>
+                        {item.actual_quantity && (
+                          <Badge 
+                            variant={
+                              parseFloat(item.actual_quantity) > item.expected_quantity 
+                                ? 'default' 
+                                : parseFloat(item.actual_quantity) < item.expected_quantity 
+                                ? 'destructive' 
+                                : 'secondary'
+                            }
+                            className="whitespace-nowrap"
+                          >
+                            {parseFloat(item.actual_quantity) === item.expected_quantity 
+                              ? 'Match' 
+                              : `${parseFloat(item.actual_quantity) > item.expected_quantity ? '+' : ''}${(parseFloat(item.actual_quantity) - item.expected_quantity).toFixed(1)}`
+                            }
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowSpotCheckDialog(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSubmitSpotCheck}
+                  disabled={spotCheckItems.filter(i => i.actual_quantity !== '').length === 0}
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  Submit Spot Check
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Variance Reports Tab */}
           <TabsContent value="variance" className="space-y-4">
