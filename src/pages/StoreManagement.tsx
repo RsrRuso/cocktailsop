@@ -149,7 +149,7 @@ const StoreManagement = () => {
       
       // Filter to only show specific stores
       const filteredStores = storesData?.filter(store => 
-        ['JERRY', 'WAREHOUSE'].includes(store.name.toUpperCase())
+        ['ATTIKO', 'JERRY', 'WAREHOUSE'].includes(store.name.toUpperCase())
       ) || [];
 
       // Fetch items - all items for this user
