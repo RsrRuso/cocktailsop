@@ -1,6 +1,9 @@
-import { createContext, useContext, ReactNode, useMemo } from 'react';
+import { createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
 import { useInAppNotifications } from '@/hooks/useInAppNotifications';
 import { InAppNotification } from '@/components/InAppNotification';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface InAppNotificationContextType {
   showNotification: (
@@ -15,6 +18,58 @@ const InAppNotificationContext = createContext<InAppNotificationContextType | un
 
 export const InAppNotificationProvider = ({ children }: { children: ReactNode }) => {
   const { currentNotification, showNotification, closeNotification } = useInAppNotifications();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Setup global realtime subscriptions for inventory transactions
+  useEffect(() => {
+    if (!user) return;
+
+    const transferChannel = supabase
+      .channel('global-transfers')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'inventory_transfers'
+        },
+        (payload) => {
+          showNotification(
+            '📦 New Transfer',
+            'Inventory transfer initiated',
+            'transaction',
+            () => navigate('/inventory-transactions')
+          );
+        }
+      )
+      .subscribe();
+
+    const inventoryChannel = supabase
+      .channel('global-inventory')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'inventory'
+        },
+        (payload) => {
+          showNotification(
+            '✅ New Receiving',
+            'Inventory received successfully',
+            'receiving',
+            () => navigate('/inventory-transactions')
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(transferChannel);
+      supabase.removeChannel(inventoryChannel);
+    };
+  }, [user, showNotification, navigate]);
 
   const contextValue = useMemo(() => ({ showNotification }), [showNotification]);
 
