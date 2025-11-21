@@ -36,7 +36,11 @@ const ExpiringInventory = () => {
   }, [workspaceId]);
 
   const fetchWorkspaceAndItems = async () => {
-    if (!workspaceId) return;
+    if (!workspaceId || workspaceId === 'null' || workspaceId === 'undefined') {
+      toast.error("Invalid workspace ID");
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
