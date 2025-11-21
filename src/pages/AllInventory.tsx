@@ -219,9 +219,9 @@ const AllInventory = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {inventoryList.map((item: any) => (
               <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-all hover:scale-[1.02]">
-                {item.storeQuantities[0]?.photo_url ? (
+                {item.items?.photo_url ? (
                   <ZoomableImage
-                    src={item.storeQuantities[0].photo_url}
+                    src={item.items.photo_url}
                     alt={item.items?.name || 'Item'}
                     containerClassName="h-48 w-full bg-muted/50 border-b-2 border-border/50"
                     className="w-full h-full p-2"
