@@ -4,7 +4,7 @@ import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Download, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -12,12 +12,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface VarianceData {
   item: string;
-  expectedQuantity: number;
-  spotCheckQty: number;
-  transferredQty: number;
-  variance: number;
-  variancePercent: number;
-  finalQty: number;
+  qty: number; // Expected quantity
+  qtyInSystem: number; // Inventory system quantity
+  physicalQty: number; // Spot check physical count
+  finalQty: number; // Final quantity after adjustments
   itemId: string;
 }
 
@@ -85,19 +83,16 @@ const VarianceReport = () => {
       // Build variance data
       const varianceData: VarianceData[] = spotCheckItems.map(item => {
         const expected = item.expected_quantity || 0;
-        const actual = item.actual_quantity || 0;
+        const systemQty = item.inventory?.quantity || 0;
+        const physical = item.actual_quantity || 0;
         const transferred = transferredByItem[item.item_id] || 0;
-        const variance = item.variance || 0;
-        const variancePercent = expected > 0 ? (variance / expected) * 100 : 0;
-        const finalQty = actual + transferred;
+        const finalQty = physical + transferred;
 
         return {
           item: item.items?.name || "Unknown Item",
-          expectedQuantity: expected,
-          spotCheckQty: actual,
-          transferredQty: transferred,
-          variance,
-          variancePercent,
+          qty: expected,
+          qtyInSystem: systemQty,
+          physicalQty: physical,
           finalQty,
           itemId: item.item_id
         };
@@ -126,9 +121,9 @@ const VarianceReport = () => {
     doc.setFontSize(10);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 28);
     
-    const totalVariance = variances.reduce((sum, item) => sum + Math.abs(item.variance), 0);
-    const overages = variances.filter(v => v.variance > 0).length;
-    const shortages = variances.filter(v => v.variance < 0).length;
+    const totalVariance = variances.reduce((sum, item) => sum + Math.abs(item.physicalQty - item.qtyInSystem), 0);
+    const overages = variances.filter(v => v.physicalQty > v.qtyInSystem).length;
+    const shortages = variances.filter(v => v.physicalQty < v.qtyInSystem).length;
     
     doc.setFontSize(12);
     doc.text("Summary", 14, 38);
@@ -139,14 +134,12 @@ const VarianceReport = () => {
     
     (doc as any).autoTable({
       startY: 65,
-      head: [['Item', 'Expected', 'Spot Check', 'Transferred', 'Variance', 'Variance %', 'Final Qty']],
+      head: [['Item Name', 'Qty', 'Qty in System', 'Physical Qty', 'Final Qty']],
       body: variances.map(item => [
         item.item,
-        item.expectedQuantity.toFixed(2),
-        item.spotCheckQty.toFixed(2),
-        item.transferredQty.toFixed(2),
-        item.variance.toFixed(2),
-        `${item.variancePercent.toFixed(1)}%`,
+        item.qty.toFixed(2),
+        item.qtyInSystem.toFixed(2),
+        item.physicalQty.toFixed(2),
         item.finalQty.toFixed(2)
       ]),
       theme: 'striped',
@@ -157,7 +150,7 @@ const VarianceReport = () => {
     toast.success("Report downloaded");
   };
 
-  const totalVariance = variances.reduce((sum, item) => sum + Math.abs(item.variance), 0);
+  const totalVariance = variances.reduce((sum, item) => sum + Math.abs(item.physicalQty - item.qtyInSystem), 0);
 
   if (loading) {
     return (
@@ -232,68 +225,31 @@ const VarianceReport = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {variances.map((data, index) => {
-                    const isOver = data.variance > 0;
-                    return (
-                      <div key={index} className={`p-4 rounded-lg border ${
-                        isOver ? 'bg-red-500/10 border-red-500/20' : 'bg-blue-500/10 border-blue-500/20'
-                      }`}>
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h4 className="font-semibold">{data.item}</h4>
-                            <div className="flex items-center gap-2 mt-1">
-                              {isOver ? (
-                                <TrendingUp className="w-4 h-4 text-red-500" />
-                              ) : (
-                                <TrendingDown className="w-4 h-4 text-blue-500" />
-                              )}
-                              <span className={`text-sm font-medium ${
-                                isOver ? 'text-red-500' : 'text-blue-500'
-                              }`}>
-                                {isOver ? 'Overage' : 'Shortage'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className={`text-2xl font-bold ${
-                              isOver ? 'text-red-500' : 'text-blue-500'
-                            }`}>
-                              {data.variance > 0 ? '+' : ''}{data.variance.toFixed(2)}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {data.variancePercent.toFixed(1)}%
-                            </div>
-                          </div>
+                  {variances.map((data, index) => (
+                    <div key={index} className="p-4 rounded-lg border glass">
+                      <div className="mb-3">
+                        <h4 className="font-semibold text-lg">{data.item}</h4>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
+                        <div>
+                          <span className="text-muted-foreground block">Qty:</span>
+                          <div className="font-medium">{data.qty.toFixed(2)}</div>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
-                          <div>
-                            <span className="text-muted-foreground block">Expected:</span>
-                            <div className="font-medium">{data.expectedQuantity.toFixed(2)}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground block">Spot Check:</span>
-                            <div className="font-medium">{data.spotCheckQty.toFixed(2)}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground block">Transferred:</span>
-                            <div className="font-medium">{data.transferredQty.toFixed(2)}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground block">Variance:</span>
-                            <div className={`font-bold ${
-                              isOver ? 'text-red-500' : 'text-blue-500'
-                            }`}>
-                              {data.variance.toFixed(2)}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground block">Final Qty:</span>
-                            <div className="font-bold text-primary">{data.finalQty.toFixed(2)}</div>
-                          </div>
+                        <div>
+                          <span className="text-muted-foreground block">Qty in System:</span>
+                          <div className="font-medium">{data.qtyInSystem.toFixed(2)}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block">Physical Qty:</span>
+                          <div className="font-medium">{data.physicalQty.toFixed(2)}</div>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block">Final Qty:</span>
+                          <div className="font-bold text-primary">{data.finalQty.toFixed(2)}</div>
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
