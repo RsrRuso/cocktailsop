@@ -74,14 +74,13 @@ const MasterItems = () => {
   };
 
   const filteredItems = items.filter(item => {
-    // Only show glasses category
-    if (item.category?.toLowerCase() !== 'glasses') return false;
-    
-    // Then apply search filter
-    return item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.barcode?.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(query) ||
+      item.brand?.toLowerCase().includes(query) ||
+      item.category?.toLowerCase().includes(query) ||
+      item.barcode?.toLowerCase().includes(query)
+    );
   });
 
   useEffect(() => {
