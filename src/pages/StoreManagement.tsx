@@ -548,7 +548,7 @@ const StoreManagement = () => {
         </div>
 
         {/* Quick Navigation */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/stores-admin')}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -556,8 +556,23 @@ const StoreManagement = () => {
                   <Store className="h-5 w-5 text-green-500" />
                 </div>
                 <div>
-                  <p className="font-semibold">Manage Stores</p>
-                  <p className="text-xs text-muted-foreground">Create & delete stores</p>
+                  <p className="font-semibold">Stores</p>
+                  <p className="text-xs text-muted-foreground">Create & manage</p>
+                </div>
+                <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/master-items')}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <Package className="h-5 w-5 text-purple-500" />
+                </div>
+                <div>
+                  <p className="font-semibold">Items</p>
+                  <p className="text-xs text-muted-foreground">Master list</p>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
               </div>
@@ -571,8 +586,8 @@ const StoreManagement = () => {
                   <Package className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold">All Inventory</p>
-                  <p className="text-xs text-muted-foreground">View combined inventory</p>
+                  <p className="font-semibold">Inventory</p>
+                  <p className="text-xs text-muted-foreground">Combined view</p>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
               </div>
@@ -587,7 +602,7 @@ const StoreManagement = () => {
                 </div>
                 <div>
                   <p className="font-semibold">Transactions</p>
-                  <p className="text-xs text-muted-foreground">Live transfers & receivings</p>
+                  <p className="text-xs text-muted-foreground">Live updates</p>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
               </div>
@@ -601,7 +616,7 @@ const StoreManagement = () => {
                   <AlertCircle className="h-5 w-5 text-orange-500" />
                 </div>
                 <div>
-                  <p className="font-semibold">Expiring Items</p>
+                  <p className="font-semibold">Expiring</p>
                   <p className="text-xs text-muted-foreground">FIFO alerts</p>
                 </div>
                 <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />

@@ -99,6 +99,7 @@ const StoreDetail = lazy(() => import("./pages/StoreDetail"));
 const AllInventory = lazy(() => import("./pages/AllInventory"));
 const InventoryTransactions = lazy(() => import("./pages/InventoryTransactions"));
 const StoresAdmin = lazy(() => import("./pages/StoresAdmin"));
+const MasterItems = lazy(() => import("./pages/MasterItems"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -157,6 +158,7 @@ const App = () => (
               <Route path="/all-inventory" element={<AllInventory />} />
               <Route path="/inventory-transactions" element={<InventoryTransactions />} />
               <Route path="/stores-admin" element={<StoresAdmin />} />
+              <Route path="/master-items" element={<MasterItems />} />
               <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
           <Route path="/abv-calculator" element={<ABVCalculator />} />
