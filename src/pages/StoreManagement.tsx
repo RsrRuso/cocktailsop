@@ -1329,21 +1329,23 @@ const StoreManagement = () => {
                         <SelectValue placeholder={selectedFromStore ? "Select item" : "Select from store first"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {items.map((item) => {
-                          const invQty = inventory.find(inv => 
-                            inv.item_id === item.id && inv.store_id === selectedFromStore
-                          )?.quantity || 0;
-                          
-                          return (
-                            <SelectItem 
-                              key={item.id} 
-                              value={item.id}
-                              disabled={invQty === 0}
-                            >
-                              {item.name} {item.brand ? `(${item.brand})` : ''} - Qty: {invQty}
-                            </SelectItem>
-                          );
-                        })}
+                        {items
+                          .filter((item) => item.category?.toLowerCase() === 'glassware')
+                          .map((item) => {
+                            const invQty = inventory.find(inv => 
+                              inv.item_id === item.id && inv.store_id === selectedFromStore
+                            )?.quantity || 0;
+                            
+                            return (
+                              <SelectItem 
+                                key={item.id} 
+                                value={item.id}
+                                disabled={invQty === 0}
+                              >
+                                {item.name} {item.brand ? `(${item.brand})` : ''} - Qty: {invQty}
+                              </SelectItem>
+                            );
+                          })}
                       </SelectContent>
                     </Select>
                   </div>
