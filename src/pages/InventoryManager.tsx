@@ -925,12 +925,8 @@ const InventoryManager = () => {
                   if (selectedStore && selectedStore !== 'all') {
                     // If specific store selected, show only that store
                     if (inv.store_id !== selectedStore) return false;
-                  } else {
-                    // If "All Stores" selected, show only Basement and Attiko
-                    const storeName = inv.stores?.name?.toLowerCase() || "";
-                    const isBasementOrAttiko = storeName.includes("basement") || storeName.includes("attiko");
-                    if (!isBasementOrAttiko) return false;
                   }
+                  // If "All Stores" or no selection, show all stores
                   
                   // Apply search filter
                   if (!searchTerm) return true;
@@ -1045,11 +1041,9 @@ const InventoryManager = () => {
                           if (selectedStore && selectedStore !== 'all') {
                             // If specific store selected, show only that store
                             return inv.store_id === selectedStore;
-                          } else {
-                            // If "All Stores" selected, show only Basement and Attiko
-                            const storeName = inv.stores?.name?.toLowerCase() || "";
-                            return storeName.includes("basement") || storeName.includes("attiko");
                           }
+                          // If "All Stores" or no selection, show all stores
+                          return true;
                         })
                         .map((inv) => {
                           return (
