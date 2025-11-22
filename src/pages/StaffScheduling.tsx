@@ -272,12 +272,20 @@ export default function StaffScheduling() {
       const dayCells = schedulesByDay[day] || [];
       
       // Separate bartenders with stations from others
-      const bartendersWithStations = dayCells.filter(cell => 
-        cell.station && cell.station.includes('Indoor - Station') && !cell.station.includes('Support')
-      );
-      const otherCells = dayCells.filter(cell => 
-        !cell.station || !cell.station.includes('Indoor - Station') || cell.station.includes('Support')
-      );
+      // Match both "Indoor - Station X" and "Indoor - Garnishing Station 3"
+      const bartendersWithStations = dayCells.filter(cell => {
+        if (!cell.station) return false;
+        const station = cell.station.toLowerCase();
+        // Match any indoor station (including garnishing)
+        return (station.includes('indoor') && station.includes('station') && !station.includes('support'));
+      });
+      
+      const otherCells = dayCells.filter(cell => {
+        if (!cell.station) return true;
+        const station = cell.station.toLowerCase();
+        // Include anything that's not an indoor station
+        return !(station.includes('indoor') && station.includes('station') && !station.includes('support'));
+      });
       
       // Rebuild station assignments with correct numbering
       const numBartenders = bartendersWithStations.length;
