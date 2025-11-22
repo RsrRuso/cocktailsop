@@ -60,6 +60,8 @@ const InventoryManager = () => {
   const [pastedText, setPastedText] = useState("");
   const [parsedItems, setParsedItems] = useState<string[]>([]);
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [selectedTransferItemId, setSelectedTransferItemId] = useState<string>("");
+  const [selectedFromStoreId, setSelectedFromStoreId] = useState<string>("");
   const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1833,7 +1835,12 @@ const InventoryManager = () => {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="col-span-2">
                       <Label className="text-xs">Select Item to Transfer</Label>
-                      <Select name="itemId" required>
+                      <Select 
+                        name="itemId" 
+                        required
+                        value={selectedTransferItemId}
+                        onValueChange={setSelectedTransferItemId}
+                      >
                         <SelectTrigger className="h-8 text-sm">
                           <SelectValue placeholder="Select item" />
                         </SelectTrigger>
@@ -1846,13 +1853,31 @@ const InventoryManager = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
-                      <Label className="text-xs">Quantity to Transfer</Label>
-                      <Input name="quantity" type="number" step="0.01" className="h-8 text-sm" required />
-                    </div>
+                    
+                    {selectedTransferItemId && selectedFromStoreId && (
+                      <div className="col-span-2">
+                        <Badge variant="outline" className="w-full justify-center">
+                          Available Stock: {
+                            inventory
+                              .filter(inv => 
+                                inv.item_id === selectedTransferItemId && 
+                                inv.store_id === selectedFromStoreId &&
+                                inv.status === 'available'
+                              )
+                              .reduce((sum, inv) => sum + inv.quantity, 0)
+                          } units
+                        </Badge>
+                      </div>
+                    )}
+                    
                     <div>
                       <Label className="text-xs">From Store (Source)</Label>
-                      <Select name="fromStoreId" required>
+                      <Select 
+                        name="fromStoreId" 
+                        required
+                        value={selectedFromStoreId}
+                        onValueChange={setSelectedFromStoreId}
+                      >
                         <SelectTrigger className="h-8 text-sm">
                           <SelectValue placeholder="Select source store" />
                         </SelectTrigger>
@@ -1864,6 +1889,27 @@ const InventoryManager = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Quantity to Transfer</Label>
+                      <Input 
+                        name="quantity" 
+                        type="number" 
+                        step="0.01" 
+                        className="h-8 text-sm" 
+                        required 
+                        max={
+                          selectedTransferItemId && selectedFromStoreId
+                            ? inventory
+                                .filter(inv => 
+                                  inv.item_id === selectedTransferItemId && 
+                                  inv.store_id === selectedFromStoreId &&
+                                  inv.status === 'available'
+                                )
+                                .reduce((sum, inv) => sum + inv.quantity, 0)
+                            : undefined
+                        }
+                      />
                     </div>
                     <div>
                       <Label className="text-xs">To Store (Destination)</Label>
