@@ -289,38 +289,32 @@ export default function StaffScheduling() {
       
       // Rebuild station assignments with correct numbering
       const numBartenders = bartendersWithStations.length;
-      const stations: string[] = [];
       
-      if (numBartenders >= 1) {
-        stations.push('Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain');
-      }
-      if (numBartenders >= 2) {
-        stations.push('Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain');
-      }
-      if (numBartenders >= 3) {
-        stations.push('Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain');
-      }
-      if (numBartenders >= 4) {
-        stations.push('Indoor - Station 4: Operate station, supervise bar backs, manage closing, refresh & maintain');
-      }
-      for (let i = 5; i <= numBartenders; i++) {
-        stations.push(`Indoor - Station ${i}: Operate station, supervise bar backs, manage closing, refresh & maintain`);
-      }
-      
-      // Assign stations to bartenders
+      // Assign stations to bartenders - only 3 stations max
       bartendersWithStations.forEach((cell: any, idx) => {
-        if (idx < stations.length) {
+        if (idx === 0) {
+          // First bartender gets Station 1
           normalized[cell.key] = {
             ...cell,
-            station: stations[idx]
+            station: 'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain'
+          };
+        } else if (idx === 1) {
+          // Second bartender gets Station 2
+          normalized[cell.key] = {
+            ...cell,
+            station: 'Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain'
+          };
+        } else if (idx === 2) {
+          // Third bartender gets Garnishing Station 3
+          normalized[cell.key] = {
+            ...cell,
+            station: 'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain'
           };
         } else {
-          // Overflow bartenders: prioritize Station 2 support, alternate with Station 1
-          const overflowIndex = idx - stations.length;
-          const supportStation = overflowIndex % 2 === 0 ? '2' : '1';
+          // Any additional bartenders beyond 3 become support
           normalized[cell.key] = {
             ...cell,
-            station: `Indoor - Support Station ${supportStation}: Assist Station ${supportStation}, could be either Station 1 or 2`
+            station: 'Indoor - Support Station 2 or Station 1: Can assist either Station 1 or Station 2'
           };
         }
       });
