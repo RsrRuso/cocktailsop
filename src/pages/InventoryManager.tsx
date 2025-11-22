@@ -543,11 +543,15 @@ const InventoryManager = () => {
 
     const { error } = await supabase
       .from("fifo_inventory")
-      .update({ status: "sold", quantity: 0 })
+      .update({ 
+        status: "sold", 
+        quantity: 0,
+        sold_at: new Date().toISOString()
+      })
       .eq("id", inventoryId);
 
     if (!error) {
-      toast.success("Item archived - moved to Archive tab");
+      toast.success("Item compressed and archived successfully");
       
       const { data: inv } = await supabase.from("fifo_inventory").select("*").eq("id", inventoryId).single();
       
@@ -1019,59 +1023,53 @@ const InventoryManager = () => {
             <Card>
               <CardHeader className="py-3">
                 <CardTitle className="text-sm font-medium">Archived Items (Sold)</CardTitle>
+                <CardDescription className="text-xs">Compressed archive of sold inventory</CardDescription>
               </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs py-2">Item</TableHead>
-                        <TableHead className="text-xs py-2">Store</TableHead>
-                        <TableHead className="text-xs py-2">Sold Date</TableHead>
-                        <TableHead className="text-xs py-2">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {inventory
-                        .filter((inv) => {
-                          // Only show sold items
-                          if (inv.status !== 'sold') return false;
-                          
-                          // Apply store filter
-                          if (selectedStore && selectedStore !== 'all') {
-                            // If specific store selected, show only that store
-                            return inv.store_id === selectedStore;
-                          }
-                          // If "All Stores" or no selection, show all stores
-                          return true;
-                        })
-                        .map((inv) => {
-                          return (
-                            <TableRow key={inv.id}>
-                              <TableCell className="py-2">
-                                <div className="flex items-center gap-2">
-                                  {inv.items?.color_code && (
-                                    <div 
-                                      className="w-3 h-3 rounded flex-shrink-0" 
-                                      style={{ backgroundColor: inv.items.color_code }}
-                                    />
-                                  )}
-                                  <span className="text-xs font-medium">{inv.items?.name}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="py-2 text-xs">{inv.stores?.name}</TableCell>
-                              <TableCell className="py-2 text-xs">
-                                {new Date(inv.updated_at || inv.created_at).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell className="py-2">
-                                <Badge variant="secondary" className="text-xs">Sold</Badge>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                    </TableBody>
-                  </Table>
-                </div>
+              <CardContent className="p-2 space-y-1">
+                {inventory
+                  .filter((inv) => {
+                    // Only show sold items
+                    if (inv.status !== 'sold') return false;
+                    
+                    // Apply store filter
+                    if (selectedStore && selectedStore !== 'all') {
+                      // If specific store selected, show only that store
+                      return inv.store_id === selectedStore;
+                    }
+                    // If "All Stores" or no selection, show all stores
+                    return true;
+                  })
+                  .map((inv) => {
+                    return (
+                      <div key={inv.id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-xs hover:bg-muted">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {inv.items?.color_code && (
+                            <div 
+                              className="w-2 h-2 rounded-full flex-shrink-0" 
+                              style={{ backgroundColor: inv.items.color_code }}
+                            />
+                          )}
+                          <span className="font-medium truncate">{inv.items?.name}</span>
+                          {inv.items?.brand && <span className="text-muted-foreground">• {inv.items.brand}</span>}
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className="text-muted-foreground">{inv.stores?.name}</span>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            {inv.sold_at ? new Date(inv.sold_at).toLocaleDateString() : new Date(inv.updated_at).toLocaleDateString()}
+                          </Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                {inventory.filter((inv) => {
+                  if (inv.status !== 'sold') return false;
+                  if (selectedStore && selectedStore !== 'all') {
+                    return inv.store_id === selectedStore;
+                  }
+                  return true;
+                }).length === 0 && (
+                  <p className="text-center text-muted-foreground text-xs py-4">No archived items</p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

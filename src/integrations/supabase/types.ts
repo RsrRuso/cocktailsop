@@ -1490,6 +1490,7 @@ export type Database = {
           quantity: number
           received_date: string | null
           scanned_data: Json | null
+          sold_at: string | null
           status: string | null
           store_id: string
           updated_at: string | null
@@ -1507,6 +1508,7 @@ export type Database = {
           quantity?: number
           received_date?: string | null
           scanned_data?: Json | null
+          sold_at?: string | null
           status?: string | null
           store_id: string
           updated_at?: string | null
@@ -1524,6 +1526,7 @@ export type Database = {
           quantity?: number
           received_date?: string | null
           scanned_data?: Json | null
+          sold_at?: string | null
           status?: string | null
           store_id?: string
           updated_at?: string | null
