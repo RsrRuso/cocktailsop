@@ -885,19 +885,26 @@ export default function StaffScheduling() {
       // OUTDOOR ALLOCATION: Always 1 bartender outdoor (minimum 2 total outdoor with barback)
       // This ensures min 2 outdoor (1 bartender + 1 barback), max 3 outdoor (+ 1 head)
       const numBartenders = allStationBartenders.length;
-      const stations = numBartenders >= 4 ? [
-        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Garnishing Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain',
-      ] : numBartenders === 3 ? [
-        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Garnishing Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
-      ] : [
-        'Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
-      ];
+      // Create dynamic station assignments based on number of bartenders
+      // Always count stations sequentially: Station 1, Station 2, Station 3, etc.
+      const stations: string[] = [];
+      
+      if (numBartenders >= 1) {
+        stations.push('Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain');
+      }
+      if (numBartenders >= 2) {
+        stations.push('Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain');
+      }
+      if (numBartenders >= 3) {
+        stations.push('Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain');
+      }
+      if (numBartenders >= 4) {
+        stations.push('Indoor - Station 4: Operate station, supervise bar backs, manage closing, refresh & maintain');
+      }
+      // If more than 4 bartenders, continue numbering
+      for (let i = 5; i <= numBartenders; i++) {
+        stations.push(`Indoor - Station ${i}: Operate station, supervise bar backs, manage closing, refresh & maintain`);
+      }
 
       // SHUFFLE stations to randomize assignments each time
       const shuffledStations = shuffleArray(stations);
