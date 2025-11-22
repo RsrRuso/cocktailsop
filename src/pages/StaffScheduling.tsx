@@ -886,7 +886,8 @@ export default function StaffScheduling() {
       // This ensures min 2 outdoor (1 bartender + 1 barback), max 3 outdoor (+ 1 head)
       const numBartenders = allStationBartenders.length;
       // Create dynamic station assignments based on number of bartenders
-      // Always count stations sequentially: Station 1, Station 2, Station 3, etc.
+      // Always count stations sequentially: Station 1, Station 2, Garnishing Station 3, Station 4, etc.
+      // DO NOT shuffle stations - assign them in order so each bartender gets a unique sequential number
       const stations: string[] = [];
       
       if (numBartenders >= 1) {
@@ -905,9 +906,6 @@ export default function StaffScheduling() {
       for (let i = 5; i <= numBartenders; i++) {
         stations.push(`Indoor - Station ${i}: Operate station, supervise bar backs, manage closing, refresh & maintain`);
       }
-
-      // SHUFFLE stations to randomize assignments each time
-      const shuffledStations = shuffleArray(stations);
 
       allStationBartenders.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
@@ -938,13 +936,13 @@ export default function StaffScheduling() {
           type = 'late_shift';
         }
         
-        if (idx < shuffledStations.length) {
+        if (idx < stations.length) {
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange,
             type,
-            station: shuffledStations[idx]
+            station: stations[idx]
           };
           assignedStaffIds.add(schedule.staff.id);
         } else {
