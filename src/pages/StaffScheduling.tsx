@@ -965,7 +965,7 @@ export default function StaffScheduling() {
       const stations: string[] = [];
       
       if (numBartenders >= 1) {
-        stations.push('Outdoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain');
+        stations.push('Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain');
       }
       if (numBartenders >= 2) {
         stations.push('Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain');
@@ -2948,7 +2948,12 @@ export default function StaffScheduling() {
                                   } else if (staff.title === 'senior_bartender' || staff.title === 'bartender') {
                                     if (currentStation.includes('Station 1') || currentStation.includes('Station 2') || currentStation.includes('Station 3')) {
                                       const stationNum = currentStation.match(/Station (\d)/)?.[1] || '1';
-                                      newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+                                      // ALWAYS preserve garnishing designation for Station 3
+                                      if (stationNum === '3') {
+                                        newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+                                      } else {
+                                        newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+                                      }
                                     } else {
                                       newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Floating Support: Assist all ${area} stations as needed`;
                                     }
