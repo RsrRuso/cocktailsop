@@ -307,12 +307,12 @@ export default function StaffScheduling() {
             station: stations[idx]
           };
         } else {
-          // Overflow bartenders: alternate between Station 1 and Station 2 support
+          // Overflow bartenders: prioritize Station 2 support, alternate with Station 1
           const overflowIndex = idx - stations.length;
-          const supportStation = overflowIndex % 2 === 0 ? '1' : '2';
+          const supportStation = overflowIndex % 2 === 0 ? '2' : '1';
           normalized[cell.key] = {
             ...cell,
-            station: `Indoor - Station ${supportStation} Support: Assist Station ${supportStation}, help where needed`
+            station: `Indoor - Support Station ${supportStation}: Assist Station ${supportStation}, could be either Station 1 or 2`
           };
         }
       });
@@ -1020,16 +1020,15 @@ export default function StaffScheduling() {
           };
           assignedStaffIds.add(schedule.staff.id);
         } else {
-          // Extra bartenders beyond available stations: assign to support Station 1 or Station 2
-          // Alternate between Station 1 and Station 2 support
+          // Extra bartenders beyond available stations: alternate support between Station 2 and Station 1
           const overflowIndex = idx - stations.length;
-          const supportStation = overflowIndex % 2 === 0 ? '1' : '2';
+          const supportStation = overflowIndex % 2 === 0 ? '2' : '1';
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange,
             type,
-            station: `Indoor - Station ${supportStation} Support: Assist Station ${supportStation}, help where needed`
+            station: `Indoor - Support Station ${supportStation}: Assist Station ${supportStation}, could be either Station 1 or 2`
           };
           assignedStaffIds.add(schedule.staff.id);
         }
