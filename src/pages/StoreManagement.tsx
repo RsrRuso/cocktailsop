@@ -177,10 +177,9 @@ const StoreManagement = () => {
         .match({ ...workspaceFilter, user_id: user.id, is_active: true })
         .order("name");
       
-      // Filter out specific stores: Attiko, Market, Room#10, and Warehouse
-      const excludedStoreNames = ["Attiko", "Market", "Room#10", "Warehouse"];
+      // Show only glassware-related stores
       const filteredStores = (storesData || []).filter(
-        store => !excludedStoreNames.includes(store.name)
+        store => store.name.toLowerCase().includes("glass")
       );
  
       // Fetch items - scoped to current workspace/personal context
