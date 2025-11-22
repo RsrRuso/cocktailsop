@@ -946,13 +946,16 @@ export default function StaffScheduling() {
           };
           assignedStaffIds.add(schedule.staff.id);
         } else {
-          // Extra bartenders prioritize indoor floating support
+          // Extra bartenders beyond available stations: assign to support Station 1 or Station 2
+          // Alternate between Station 1 and Station 2 support
+          const overflowIndex = idx - stations.length;
+          const supportStation = overflowIndex % 2 === 0 ? '1' : '2';
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange,
             type,
-            station: 'Indoor - Floating Support: Assist all indoor stations as needed'
+            station: `Indoor - Station ${supportStation} Support: Assist Station ${supportStation}, help where needed`
           };
           assignedStaffIds.add(schedule.staff.id);
         }
