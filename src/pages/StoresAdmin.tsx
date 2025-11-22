@@ -40,18 +40,21 @@ const StoresAdmin = () => {
     try {
       setLoading(true);
 
-      const workspaceFilter = currentWorkspace 
-        ? { workspace_id: currentWorkspace.id }
-        : { user_id: user?.id, workspace_id: null };
-
-      const { data, error } = await supabase
+      let query = supabase
         .from('stores')
         .select(`
           *,
           inventory(count)
         `)
-        .match({ ...workspaceFilter, is_active: true })
-        .order('created_at', { ascending: false });
+        .eq('is_active', true);
+
+      if (currentWorkspace) {
+        query = query.eq('workspace_id', currentWorkspace.id);
+      } else {
+        query = query.eq('user_id', user?.id).is('workspace_id', null);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setStores(data || []);
