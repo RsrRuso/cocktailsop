@@ -199,6 +199,11 @@ const StoreManagement = () => {
       }
 
       const { data: itemsData } = await itemsQuery.order("name");
+      
+      // Filter items to only show glassware items
+      const filteredItems = (itemsData || []).filter(
+        item => item.name.toLowerCase().includes("glass")
+      );
  
       // Fetch inventory - scoped to current workspace/personal context
       let inventoryQuery = supabase
@@ -306,7 +311,7 @@ const StoreManagement = () => {
       const membersData: any[] = [];
 
       setStores(filteredStores);
-      setItems(itemsData || []);
+      setItems(filteredItems);
       setInventory(inventoryData || []);
       setTransfers(transfersData || []);
       setReceivings(receivingsData || []);

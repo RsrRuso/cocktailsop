@@ -12,7 +12,6 @@ import autoTable from "jspdf-autotable";
 interface LowStockItem {
   id: string;
   quantity: number;
-  expiration_date: string;
   item_id: string;
   items: { name: string; category: string } | null;
   stores: { name: string } | null;
@@ -85,14 +84,12 @@ const LowStockInventory = () => {
         .select(`
           id,
           quantity,
-          expiration_date,
           item_id,
           workspace_id,
           items!inner(name, category, workspace_id),
           stores!inner(name, workspace_id)
         `)
         .lte("quantity", minimumQuantity)
-        .gte("expiration_date", new Date().toISOString().split('T')[0])
         .order("quantity", { ascending: true });
 
       if (isPersonal) {
@@ -191,13 +188,12 @@ const LowStockInventory = () => {
           item.stores?.name || "Unknown",
           item.quantity,
           stockLevel.label,
-          new Date(item.expiration_date).toLocaleDateString(),
         ];
       });
 
       autoTable(doc, {
         startY: 55,
-        head: [["#", "Item", "Store", "Quantity", "Status", "Expires"]],
+        head: [["#", "Item", "Store", "Quantity", "Status"]],
         body: tableData,
         theme: "striped",
         headStyles: {
@@ -211,11 +207,10 @@ const LowStockInventory = () => {
         },
         columnStyles: {
           0: { cellWidth: 12 },
-          1: { cellWidth: 50 },
-          2: { cellWidth: 35 },
-          3: { cellWidth: 20 },
-          4: { cellWidth: 28 },
-          5: { cellWidth: 30 },
+          1: { cellWidth: 60 },
+          2: { cellWidth: 45 },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 33 },
         },
       });
 
@@ -326,14 +321,8 @@ const LowStockInventory = () => {
                             {item.stores?.name || "Unknown"}
                           </span>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">Expires:</span>{" "}
-                          <span className="font-medium">
-                            {new Date(item.expiration_date).toLocaleDateString()}
-                          </span>
-                        </div>
                         {avgQuantity > 0 && (
-                          <div className="col-span-2">
+                          <div>
                             <span className="text-muted-foreground">Avg across stores:</span>{" "}
                             <span className="font-medium">
                               {avgQuantity.toFixed(1)}
