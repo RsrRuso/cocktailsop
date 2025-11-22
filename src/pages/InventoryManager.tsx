@@ -1873,53 +1873,19 @@ const InventoryManager = () => {
               <CardContent className="space-y-3">
                 <form onSubmit={handleTransfer} className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="col-span-2">
-                      <Label className="text-xs">Select Item to Transfer</Label>
-                      <Select 
-                        name="itemId" 
-                        required
-                        value={selectedTransferItemId}
-                        onValueChange={setSelectedTransferItemId}
-                      >
-                        <SelectTrigger className="h-8 text-sm">
-                          <SelectValue placeholder="Select item" />
-                        </SelectTrigger>
-                        <SelectContent position="popper" className="bg-popover border z-[100] max-h-[300px]">
-                          {items.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
-                              {item.name} {item.brand && `(${item.brand})`}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {selectedTransferItemId && selectedFromStoreId && (
-                      <div className="col-span-2">
-                        <Badge variant="outline" className="w-full justify-center">
-                          Available Stock: {
-                            inventory
-                              .filter(inv => 
-                                inv.item_id === selectedTransferItemId && 
-                                inv.store_id === selectedFromStoreId &&
-                                inv.status === 'available'
-                              )
-                              .reduce((sum, inv) => sum + inv.quantity, 0)
-                          } units
-                        </Badge>
-                      </div>
-                    )}
-                    
                     <div>
                       <Label className="text-xs">From Store (Source)</Label>
                       <Select 
                         name="fromStoreId" 
                         required
                         value={selectedFromStoreId}
-                        onValueChange={setSelectedFromStoreId}
+                        onValueChange={(value) => {
+                          setSelectedFromStoreId(value);
+                          setSelectedTransferItemId(""); // Reset item when store changes
+                        }}
                       >
                         <SelectTrigger className="h-8 text-sm">
-                          <SelectValue placeholder="Select source store" />
+                          <SelectValue placeholder="Select source store first" />
                         </SelectTrigger>
                         <SelectContent position="popper" className="bg-popover border z-[100]">
                           {stores.map((store) => (
@@ -1930,6 +1896,68 @@ const InventoryManager = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    
+                    <div>
+                      <Label className="text-xs">Select Item to Transfer</Label>
+                      <Select 
+                        name="itemId" 
+                        required
+                        value={selectedTransferItemId}
+                        onValueChange={setSelectedTransferItemId}
+                        disabled={!selectedFromStoreId}
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue placeholder={selectedFromStoreId ? "Select item" : "Select store first"} />
+                        </SelectTrigger>
+                        <SelectContent position="popper" className="bg-popover border z-[100] max-h-[300px]">
+                          {selectedFromStoreId && items
+                            .filter(item => {
+                              // Only show items that have inventory in the selected store
+                              const availableQty = inventory
+                                .filter(inv => 
+                                  inv.item_id === item.id && 
+                                  inv.store_id === selectedFromStoreId &&
+                                  inv.status === 'available' &&
+                                  inv.quantity > 0
+                                )
+                                .reduce((sum, inv) => sum + inv.quantity, 0);
+                              return availableQty > 0;
+                            })
+                            .map((item) => {
+                              const availableQty = inventory
+                                .filter(inv => 
+                                  inv.item_id === item.id && 
+                                  inv.store_id === selectedFromStoreId &&
+                                  inv.status === 'available'
+                                )
+                                .reduce((sum, inv) => sum + inv.quantity, 0);
+                              
+                              return (
+                                <SelectItem key={item.id} value={item.id}>
+                                  {item.name} {item.brand && `(${item.brand})`} - {availableQty} units
+                                </SelectItem>
+                              );
+                            })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {selectedTransferItemId && selectedFromStoreId && (
+                      <div className="col-span-2">
+                        <Badge variant="outline" className="w-full justify-center py-1.5">
+                          📦 Available Stock: {
+                            inventory
+                              .filter(inv => 
+                                inv.item_id === selectedTransferItemId && 
+                                inv.store_id === selectedFromStoreId &&
+                                inv.status === 'available'
+                              )
+                              .reduce((sum, inv) => sum + inv.quantity, 0)
+                          } units in {stores.find(s => s.id === selectedFromStoreId)?.name}
+                        </Badge>
+                      </div>
+                    )}
+                    
                     <div>
                       <Label className="text-xs">Quantity to Transfer</Label>
                       <Input 
@@ -1938,6 +1966,7 @@ const InventoryManager = () => {
                         step="0.01" 
                         className="h-8 text-sm" 
                         required 
+                        min="0.01"
                         max={
                           selectedTransferItemId && selectedFromStoreId
                             ? inventory
