@@ -111,31 +111,35 @@ const InventoryTransactions = () => {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      // Combine and format transactions
+      // Combine and format transactions - filter for glassware items only
       const allTransactions: Transaction[] = [
-        ...(transfersData || []).map((t: any) => ({
-          id: t.id,
-          type: 'transfer' as const,
-          timestamp: t.transfer_date || t.created_at,
-          user_email: t.profiles?.email || 'Unknown',
-          user_name: t.profiles?.full_name,
-          from_store: t.from_store?.name,
-          to_store: t.to_store?.name,
-          item_name: t.inventory?.items?.name || 'Unknown Item',
-          quantity: Number(t.quantity),
-          status: t.status
-        })),
-        ...(receivingsData || []).map((r: any) => ({
-          id: r.id,
-          type: 'receiving' as const,
-          timestamp: r.received_date || r.created_at,
-          user_email: r.profiles?.email || 'Unknown',
-          user_name: r.profiles?.full_name,
-          store: r.store?.name,
-          item_name: r.item?.name || 'Unknown Item',
-          quantity: Number(r.quantity),
-          status: r.status
-        }))
+        ...(transfersData || [])
+          .filter((t: any) => t.inventory?.items?.name?.toLowerCase().includes('glass'))
+          .map((t: any) => ({
+            id: t.id,
+            type: 'transfer' as const,
+            timestamp: t.transfer_date || t.created_at,
+            user_email: t.profiles?.email || 'Unknown',
+            user_name: t.profiles?.full_name,
+            from_store: t.from_store?.name,
+            to_store: t.to_store?.name,
+            item_name: t.inventory?.items?.name || 'Unknown Item',
+            quantity: Number(t.quantity),
+            status: t.status
+          })),
+        ...(receivingsData || [])
+          .filter((r: any) => r.item?.name?.toLowerCase().includes('glass'))
+          .map((r: any) => ({
+            id: r.id,
+            type: 'receiving' as const,
+            timestamp: r.received_date || r.created_at,
+            user_email: r.profiles?.email || 'Unknown',
+            user_name: r.profiles?.full_name,
+            store: r.store?.name,
+            item_name: r.item?.name || 'Unknown Item',
+            quantity: Number(r.quantity),
+            status: r.status
+          }))
       ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       setTransactions(allTransactions);
