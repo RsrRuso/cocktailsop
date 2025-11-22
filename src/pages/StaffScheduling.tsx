@@ -958,32 +958,31 @@ export default function StaffScheduling() {
       });
       
       const allStationBartenders = [...shuffledWorkingSeniorBartenders, ...shuffledWorkingBartenders];
+      
+      // Separate regular bartenders from seniors/heads
+      const regularBartenders = shuffledWorkingBartenders; // These are just 'bartender' role
+      const seniorStaff = shuffledWorkingSeniorBartenders; // These include both senior_bartender and head_bartender
+      
       // OUTDOOR ALLOCATION: Always 1 bartender outdoor (minimum 2 total outdoor with barback)
       // This ensures min 2 outdoor (1 bartender + 1 barback), max 3 outdoor (+ 1 head)
-      const numBartenders = allStationBartenders.length;
-      // Create dynamic station assignments based on number of bartenders
-      // Always count stations sequentially: Station 1, Station 2, Garnishing Station 3, Station 4, etc.
-      // DO NOT shuffle stations - assign them in order so each bartender gets a unique sequential number
+      const numRegularBartenders = regularBartenders.length;
+      
+      // Create station assignments ONLY for regular bartenders (max 3 stations)
+      // Station 1, Station 2, Garnishing Station 3
       const stations: string[] = [];
       
-      if (numBartenders >= 1) {
+      if (numRegularBartenders >= 1) {
         stations.push('Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain');
       }
-      if (numBartenders >= 2) {
+      if (numRegularBartenders >= 2) {
         stations.push('Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain');
       }
-      if (numBartenders >= 3) {
+      if (numRegularBartenders >= 3) {
         stations.push('Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain');
       }
-      if (numBartenders >= 4) {
-        stations.push('Indoor - Station 4: Operate station, supervise bar backs, manage closing, refresh & maintain');
-      }
-      // If more than 4 bartenders, continue numbering
-      for (let i = 5; i <= numBartenders; i++) {
-        stations.push(`Indoor - Station ${i}: Operate station, supervise bar backs, manage closing, refresh & maintain`);
-      }
 
-      allStationBartenders.forEach((schedule, idx) => {
+      // Assign stations to REGULAR BARTENDERS ONLY
+      regularBartenders.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
         // Skip if already assigned to avoid duplicates
@@ -1012,7 +1011,8 @@ export default function StaffScheduling() {
           type = 'late_shift';
         }
         
-        if (idx < stations.length) {
+        if (idx < 3 && idx < stations.length) {
+          // First 3 regular bartenders get numbered stations
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
@@ -1022,18 +1022,57 @@ export default function StaffScheduling() {
           };
           assignedStaffIds.add(schedule.staff.id);
         } else {
-          // Extra bartenders beyond available stations: alternate support between Station 2 and Station 1
-          const overflowIndex = idx - stations.length;
-          const supportStation = overflowIndex % 2 === 0 ? '2' : '1';
+          // Extra regular bartenders beyond 3 become support
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
             timeRange,
             type,
-            station: `Indoor - Support Station ${supportStation}: Assist Station ${supportStation}, could be either Station 1 or 2`
+            station: 'Indoor - Support Station 2 or Station 1: Can assist either Station 1 or Station 2'
           };
           assignedStaffIds.add(schedule.staff.id);
         }
+      });
+      
+      // Assign SENIORS/HEADS as SUPPORT (no station numbers)
+      seniorStaff.forEach((schedule, idx) => {
+        const key = `${schedule.staff.id}-${day}`;
+        
+        // Skip if already assigned to avoid duplicates
+        if (assignedStaffIds.has(schedule.staff.id)) {
+          console.warn(`⚠️ Skipping duplicate assignment for ${schedule.staff.name} on ${day}`);
+          return;
+        }
+        
+        // Determine time range based on day type
+        let timeRange;
+        let type: ScheduleCell['type'] = 'regular';
+        if (isBrunchDay) {
+          timeRange = '4:00 PM - 1:00 AM';
+          type = 'early_shift';
+        } else if (isPickupDay && idx === 0) {
+          timeRange = '4:00 PM - 1:00 AM';
+          type = 'early_shift';
+        } else if (day === 'Wednesday') {
+          timeRange = idx === 0 ? '4:00 PM - 1:00 AM' : '5:00 PM - 3:00 AM';
+          type = idx === 0 ? 'early_shift' : 'late_shift';
+        } else if (day === 'Saturday') {
+          timeRange = '4:00 PM - 1:00 AM';
+          type = 'early_shift';
+        } else {
+          timeRange = '5:00 PM - 3:00 AM';
+          type = 'late_shift';
+        }
+        
+        // Seniors always get support assignment (no numbered station)
+        newSchedule[key] = {
+          staffId: schedule.staff.id,
+          day,
+          timeRange,
+          type,
+          station: 'Indoor - Support Station 2 or Station 1: Can assist either Station 1 or Station 2'
+        };
+        assignedStaffIds.add(schedule.staff.id);
       });
 
       // === PRIORITY 3: BAR BACKS - PRIORITY ROLE ===
