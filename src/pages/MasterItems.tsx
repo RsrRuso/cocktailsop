@@ -113,18 +113,20 @@ const MasterItems = () => {
     try {
       setLoading(true);
 
-      const workspaceFilter = currentWorkspace 
-        ? { workspace_id: currentWorkspace.id }
-        : { user_id: user?.id, workspace_id: null };
-
-      const { data, error } = await supabase
+      let itemsQuery = supabase
         .from('items')
         .select(`
           *,
           inventory(count)
-        `)
-        .match(workspaceFilter)
-        .order('created_at', { ascending: false });
+        `);
+
+      if (currentWorkspace) {
+        itemsQuery = itemsQuery.eq('workspace_id', currentWorkspace.id);
+      } else {
+        itemsQuery = itemsQuery.eq('user_id', user?.id).is('workspace_id', null);
+      }
+
+      const { data, error } = await itemsQuery.order('created_at', { ascending: false });
 
       if (error) throw error;
       setItems(data || []);
@@ -341,14 +343,15 @@ const MasterItems = () => {
         return;
       }
 
-      const workspaceFilter = currentWorkspace 
-        ? { workspace_id: currentWorkspace.id }
-        : { user_id: user?.id, workspace_id: null };
+      let deleteQuery = supabase.from('items').delete();
 
-      const { error } = await supabase
-        .from('items')
-        .delete()
-        .match(workspaceFilter);
+      if (currentWorkspace) {
+        deleteQuery = deleteQuery.eq('workspace_id', currentWorkspace.id);
+      } else {
+        deleteQuery = deleteQuery.eq('user_id', user?.id).is('workspace_id', null);
+      }
+
+      const { error } = await deleteQuery;
 
       if (error) throw error;
 
