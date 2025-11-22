@@ -1214,7 +1214,9 @@ export default function StaffScheduling() {
     }).join(' | ');
     console.log(finalDistribution);
     
-    setSchedule(newSchedule);
+    // Apply normalization to ensure consistent station numbering
+    const normalizedSchedule = normalizeStationAssignments(newSchedule);
+    setSchedule(normalizedSchedule);
     toast.success(`✅ Schedule generated! Bartenders: Alternating 1-2 days off week-to-week. Support: 2 days off per month (10h shifts). Min 3 bartenders working daily.`, {
       duration: 7000
     });
