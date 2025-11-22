@@ -254,9 +254,83 @@ export default function StaffScheduling() {
     }
   };
 
+  const normalizeStationAssignments = (scheduleData: Record<string, ScheduleCell>) => {
+    const normalized: Record<string, ScheduleCell> = {};
+    
+    // Group by day to process each day's assignments
+    const schedulesByDay: Record<string, ScheduleCell[]> = {};
+    
+    Object.entries(scheduleData).forEach(([key, cell]) => {
+      if (!schedulesByDay[cell.day]) {
+        schedulesByDay[cell.day] = [];
+      }
+      schedulesByDay[cell.day].push({ ...cell, key } as any);
+    });
+    
+    // Process each day
+    DAYS_OF_WEEK.forEach(day => {
+      const dayCells = schedulesByDay[day] || [];
+      
+      // Separate bartenders with stations from others
+      const bartendersWithStations = dayCells.filter(cell => 
+        cell.station && cell.station.includes('Indoor - Station') && !cell.station.includes('Support')
+      );
+      const otherCells = dayCells.filter(cell => 
+        !cell.station || !cell.station.includes('Indoor - Station') || cell.station.includes('Support')
+      );
+      
+      // Rebuild station assignments with correct numbering
+      const numBartenders = bartendersWithStations.length;
+      const stations: string[] = [];
+      
+      if (numBartenders >= 1) {
+        stations.push('Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain');
+      }
+      if (numBartenders >= 2) {
+        stations.push('Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain');
+      }
+      if (numBartenders >= 3) {
+        stations.push('Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain');
+      }
+      if (numBartenders >= 4) {
+        stations.push('Indoor - Station 4: Operate station, supervise bar backs, manage closing, refresh & maintain');
+      }
+      for (let i = 5; i <= numBartenders; i++) {
+        stations.push(`Indoor - Station ${i}: Operate station, supervise bar backs, manage closing, refresh & maintain`);
+      }
+      
+      // Assign stations to bartenders
+      bartendersWithStations.forEach((cell: any, idx) => {
+        if (idx < stations.length) {
+          normalized[cell.key] = {
+            ...cell,
+            station: stations[idx]
+          };
+        } else {
+          // Overflow bartenders: alternate between Station 1 and Station 2 support
+          const overflowIndex = idx - stations.length;
+          const supportStation = overflowIndex % 2 === 0 ? '1' : '2';
+          normalized[cell.key] = {
+            ...cell,
+            station: `Indoor - Station ${supportStation} Support: Assist Station ${supportStation}, help where needed`
+          };
+        }
+      });
+      
+      // Add back all other cells unchanged
+      otherCells.forEach((cell: any) => {
+        normalized[cell.key] = cell;
+      });
+    });
+    
+    return normalized;
+  };
+
   const loadSchedule = (savedSchedule: any) => {
     setVenueName(savedSchedule.venue_name || '');
-    setSchedule(savedSchedule.schedule_data || {});
+    const loadedSchedule = savedSchedule.schedule_data || {};
+    const normalizedSchedule = normalizeStationAssignments(loadedSchedule);
+    setSchedule(normalizedSchedule);
     setDailyEvents(savedSchedule.daily_events || {});
     setSpecialEvents(savedSchedule.special_events || {});
     setWeekStartDate(savedSchedule.week_start_date);
