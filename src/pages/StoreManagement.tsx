@@ -177,7 +177,11 @@ const StoreManagement = () => {
         .match({ ...workspaceFilter, user_id: user.id, is_active: true })
         .order("name");
       
-      const filteredStores = storesData || [];
+      // Filter out specific stores: Attiko, Market, Room#10, and Warehouse
+      const excludedStoreNames = ["Attiko", "Market", "Room#10", "Warehouse"];
+      const filteredStores = (storesData || []).filter(
+        store => !excludedStoreNames.includes(store.name)
+      );
  
       // Fetch items - scoped to current workspace/personal context
       const { data: itemsData } = await supabase
