@@ -1077,44 +1077,92 @@ const InventoryManager = () => {
           <TabsContent value="fifo" className="space-y-2">
             <Card>
               <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">FIFO Priority - Use Store Filter Above</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  FIFO Priority {selectedStore && selectedStore !== 'all' 
+                    ? `- ${stores.find(s => s.id === selectedStore)?.name || 'Selected Store'}`
+                    : '- All Stores'
+                  }
+                </CardTitle>
+                <CardDescription className="text-xs">Items ordered by expiration urgency</CardDescription>
               </CardHeader>
               <CardContent className="p-2">
                 {selectedStore && selectedStore !== 'all' ? (
                   <div className="space-y-2">
-                    {fifoRecommendations.map((item, index) => {
-                      const daysUntilExpiry = getDaysUntilExpiry(item.expiration_date);
-                      return (
-                        <Card key={item.id} className="border-l-4" style={{
-                          borderLeftColor: index === 0 ? '#ef4444' : index === 1 ? '#f97316' : '#eab308'
-                        }}>
-                          <CardContent className="p-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className="text-lg font-bold text-muted-foreground">#{index + 1}</div>
-                                <div>
-                                  <h4 className="text-sm font-semibold">{item.items?.name}</h4>
-                                  <p className="text-xs text-muted-foreground">
-                                    {item.items?.brand} • Qty: <strong>{item.quantity}</strong>
-                                  </p>
-                                  <p className="text-xs">
-                                    Expires in <strong className={daysUntilExpiry <= 7 ? "text-red-500" : ""}>{daysUntilExpiry} days</strong>
-                                  </p>
+                    {fifoRecommendations.length > 0 ? (
+                      fifoRecommendations.map((item, index) => {
+                        const daysUntilExpiry = getDaysUntilExpiry(item.expiration_date);
+                        return (
+                          <Card key={item.id} className="border-l-4" style={{
+                            borderLeftColor: index === 0 ? '#ef4444' : index === 1 ? '#f97316' : '#eab308'
+                          }}>
+                            <CardContent className="p-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-lg font-bold text-muted-foreground">#{index + 1}</div>
+                                  <div>
+                                    <h4 className="text-sm font-semibold">{item.items?.name}</h4>
+                                    <p className="text-xs text-muted-foreground">
+                                      {item.items?.brand} • Qty: <strong>{item.quantity}</strong>
+                                    </p>
+                                    <p className="text-xs">
+                                      Expires in <strong className={daysUntilExpiry <= 7 ? "text-red-500" : ""}>{daysUntilExpiry} days</strong>
+                                    </p>
+                                  </div>
                                 </div>
+                                <Badge className={`${getPriorityBadgeColor(item.priority_score)} text-white text-xs`}>
+                                  {item.priority_score}
+                                </Badge>
                               </div>
-                              <Badge className={`${getPriorityBadgeColor(item.priority_score)} text-white text-xs`}>
-                                {item.priority_score}
-                              </Badge>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
+                            </CardContent>
+                          </Card>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No items with active inventory in this store
+                      </p>
+                    )}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    Select a store from the filter above to view FIFO recommendations
-                  </p>
+                  <div className="space-y-2">
+                    {inventory
+                      .filter(inv => inv.quantity > 0 && inv.status === 'available')
+                      .sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0))
+                      .slice(0, 20)
+                      .map((item, index) => {
+                        const daysUntilExpiry = getDaysUntilExpiry(item.expiration_date);
+                        return (
+                          <Card key={item.id} className="border-l-4" style={{
+                            borderLeftColor: index === 0 ? '#ef4444' : index === 1 ? '#f97316' : index === 2 ? '#eab308' : '#94a3b8'
+                          }}>
+                            <CardContent className="p-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-lg font-bold text-muted-foreground">#{index + 1}</div>
+                                  <div>
+                                    <h4 className="text-sm font-semibold">{item.items?.name}</h4>
+                                    <p className="text-xs text-muted-foreground">
+                                      {item.stores?.name} • {item.items?.brand} • Qty: <strong>{item.quantity}</strong>
+                                    </p>
+                                    <p className="text-xs">
+                                      Expires in <strong className={daysUntilExpiry <= 7 ? "text-red-500" : ""}>{daysUntilExpiry} days</strong>
+                                    </p>
+                                  </div>
+                                </div>
+                                <Badge className={`${getPriorityBadgeColor(item.priority_score)} text-white text-xs`}>
+                                  {item.priority_score || 0}
+                                </Badge>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    {inventory.filter(inv => inv.quantity > 0 && inv.status === 'available').length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No active inventory items found
+                      </p>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>
