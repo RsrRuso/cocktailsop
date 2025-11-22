@@ -143,7 +143,10 @@ const InventoryManager = () => {
           *,
           from_store:fifo_stores!fifo_transfers_from_store_id_fkey(name),
           to_store:fifo_stores!fifo_transfers_to_store_id_fkey(name),
-          employees:fifo_employees!fifo_transfers_transferred_by_fkey(name)
+          employees:fifo_employees!fifo_transfers_transferred_by_fkey(name),
+          inventory:fifo_inventory!fifo_transfers_inventory_id_fkey(
+            items:fifo_items!fifo_inventory_item_id_fkey(name, brand, category)
+          )
         `).eq("user_id", user.id).order("transfer_date", { ascending: false }).limit(20),
         supabase.from("fifo_activity_log").select(`
           *,
@@ -2020,30 +2023,62 @@ const InventoryManager = () => {
 
                 <div className="mt-4">
                   <h3 className="text-sm font-semibold mb-2">Recent Transfers</h3>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {transfers
                       .filter((transfer) => transfer.from_store_id !== transfer.to_store_id)
                       .slice(0, 10)
                       .map((transfer) => (
-                        <Card key={transfer.id}>
-                          <CardContent className="p-2">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-xs font-medium">
-                                  {transfer.from_store?.name} → {transfer.to_store?.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  By: {transfer.employees?.name} • Qty: {transfer.quantity}
-                                </p>
+                        <Card key={transfer.id} className="bg-muted/30">
+                          <CardContent className="p-3">
+                            <div className="space-y-2">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                      {transfer.status}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {new Date(transfer.transfer_date || transfer.created_at).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs font-medium">
+                                    📦 {transfer.inventory?.items?.name || 'Item'} 
+                                    {transfer.inventory?.items?.brand && ` (${transfer.inventory.items.brand})`}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Quantity: <strong>{transfer.quantity}</strong> units
+                                  </p>
+                                </div>
                               </div>
-                              <Badge className="text-xs">{transfer.status}</Badge>
+                              
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="space-y-1">
+                                  <p className="text-muted-foreground">From:</p>
+                                  <p className="font-medium">🏪 {transfer.from_store?.name}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-muted-foreground">To:</p>
+                                  <p className="font-medium">🏪 {transfer.to_store?.name}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="pt-2 border-t border-border/50">
+                                <p className="text-xs text-muted-foreground">
+                                  👤 Transferred by: <strong>{transfer.employees?.name}</strong>
+                                </p>
+                                {transfer.notes && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    💬 {transfer.notes}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                            <p className="text-xs mt-0.5">
-                              {new Date(transfer.transfer_date).toLocaleString()}
-                            </p>
                           </CardContent>
                         </Card>
                       ))}
+                    {transfers.filter((transfer) => transfer.from_store_id !== transfer.to_store_id).length === 0 && (
+                      <p className="text-center text-muted-foreground text-xs py-4">No recent transfers</p>
+                    )}
                   </div>
                 </div>
               </CardContent>
