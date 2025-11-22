@@ -1,7 +1,6 @@
 // App Root Component
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -116,15 +115,14 @@ const PageLoader = () => (
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
-      <TooltipProvider>
-        <InAppNotificationProvider>
-          <AuthProvider>
-            <WorkspaceProvider>
-              <CartProvider>
-                <RoutePreloader />
-                <Toaster />
-                <Sonner />
-                <Suspense fallback={<PageLoader />}>
+      <InAppNotificationProvider>
+        <AuthProvider>
+          <WorkspaceProvider>
+            <CartProvider>
+              <RoutePreloader />
+              <Toaster />
+              <Sonner />
+              <Suspense fallback={<PageLoader />}>
                 <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/landing" element={<Landing />} />
@@ -219,7 +217,6 @@ const App = () => (
           </WorkspaceProvider>
         </AuthProvider>
       </InAppNotificationProvider>
-    </TooltipProvider>
     </BrowserRouter>
   </QueryClientProvider>
 );
