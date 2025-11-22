@@ -1832,19 +1832,17 @@ const InventoryManager = () => {
                 <form onSubmit={handleTransfer} className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
                     <div className="col-span-2">
-                      <Label className="text-xs">Select Item to Transfer (Glassware Only)</Label>
+                      <Label className="text-xs">Select Item to Transfer</Label>
                       <Select name="itemId" required>
                         <SelectTrigger className="h-8 text-sm">
-                          <SelectValue placeholder="Select glassware item" />
+                          <SelectValue placeholder="Select item" />
                         </SelectTrigger>
                         <SelectContent position="popper" className="bg-popover border z-[100] max-h-[300px]">
-                          {items
-                            .filter((item) => item.category?.toLowerCase() === 'glassware')
-                            .map((item) => (
-                              <SelectItem key={item.id} value={item.id}>
-                                {item.name} {item.brand && `(${item.brand})`}
-                              </SelectItem>
-                            ))}
+                          {items.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.name} {item.brand && `(${item.brand})`}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
