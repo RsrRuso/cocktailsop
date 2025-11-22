@@ -166,16 +166,20 @@ const StoreManagement = () => {
     if (!user) return;
 
     try {
-      const workspaceFilter = currentWorkspace 
-        ? { workspace_id: currentWorkspace.id }
-        : { user_id: user.id, workspace_id: null };
- 
       // Fetch stores - show all active stores for this user and current workspace/personal context
-      const { data: storesData } = await supabase
+      let storesQuery = supabase
         .from("stores")
         .select("*")
-        .match({ ...workspaceFilter, user_id: user.id, is_active: true })
-        .order("name");
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      if (currentWorkspace) {
+        storesQuery = storesQuery.eq('workspace_id', currentWorkspace.id);
+      } else {
+        storesQuery = storesQuery.is('workspace_id', null);
+      }
+
+      const { data: storesData } = await storesQuery.order("name");
       
       // Show only glassware-related stores
       const filteredStores = (storesData || []).filter(
@@ -183,24 +187,39 @@ const StoreManagement = () => {
       );
  
       // Fetch items - scoped to current workspace/personal context
-      const { data: itemsData } = await supabase
+      let itemsQuery = supabase
         .from("items")
         .select("*")
-        .match({ ...workspaceFilter, user_id: user.id })
-        .order("name");
+        .eq('user_id', user.id);
+
+      if (currentWorkspace) {
+        itemsQuery = itemsQuery.eq('workspace_id', currentWorkspace.id);
+      } else {
+        itemsQuery = itemsQuery.is('workspace_id', null);
+      }
+
+      const { data: itemsData } = await itemsQuery.order("name");
  
       // Fetch inventory - scoped to current workspace/personal context
-      const { data: inventoryData } = await supabase
+      let inventoryQuery = supabase
         .from("inventory")
         .select(`
           *,
           items(name, brand, photo_url, color_code),
           stores(name)
         `)
-        .match({ ...workspaceFilter, user_id: user.id });
+        .eq('user_id', user.id);
+
+      if (currentWorkspace) {
+        inventoryQuery = inventoryQuery.eq('workspace_id', currentWorkspace.id);
+      } else {
+        inventoryQuery = inventoryQuery.is('workspace_id', null);
+      }
+
+      const { data: inventoryData } = await inventoryQuery;
  
       // Fetch transfers - scoped to current workspace/personal context
-      const { data: transfersData } = await supabase
+      let transfersQuery = supabase
         .from("inventory_transfers")
         .select(`
           *,
@@ -209,23 +228,40 @@ const StoreManagement = () => {
           transferred_by:employees(name),
           inventory:inventory(items(name))
         `)
-        .match({ ...workspaceFilter, user_id: user.id })
+        .eq('user_id', user.id)
         .order("transfer_date", { ascending: false })
         .limit(20);
+
+      if (currentWorkspace) {
+        transfersQuery = transfersQuery.eq('workspace_id', currentWorkspace.id);
+      } else {
+        transfersQuery = transfersQuery.is('workspace_id', null);
+      }
+
+      const { data: transfersData } = await transfersQuery;
  
       // Fetch receivings from inventory_activity_log - scoped to current workspace/personal context
-      const { data: receivingsData } = await supabase
+      let receivingsQuery = supabase
         .from("inventory_activity_log")
         .select(`
           *,
           stores(name, store_type)
         `)
-        .match({ ...workspaceFilter, user_id: user.id, action_type: "received" })
+        .eq('user_id', user.id)
+        .eq('action_type', "received")
         .order("created_at", { ascending: false })
         .limit(20);
+
+      if (currentWorkspace) {
+        receivingsQuery = receivingsQuery.eq('workspace_id', currentWorkspace.id);
+      } else {
+        receivingsQuery = receivingsQuery.is('workspace_id', null);
+      }
+
+      const { data: receivingsData } = await receivingsQuery;
  
       // Fetch spot checks with items - scoped to current workspace/personal context
-      const { data: spotChecksData } = await supabase
+      let spotChecksQuery = supabase
         .from("inventory_spot_checks")
         .select(`
           *,
@@ -235,20 +271,36 @@ const StoreManagement = () => {
             items(name, photo_url)
           )
         `)
-        .match({ ...workspaceFilter, user_id: user.id })
+        .eq('user_id', user.id)
         .order("check_date", { ascending: false })
         .limit(20);
+
+      if (currentWorkspace) {
+        spotChecksQuery = spotChecksQuery.eq('workspace_id', currentWorkspace.id);
+      } else {
+        spotChecksQuery = spotChecksQuery.is('workspace_id', null);
+      }
+
+      const { data: spotChecksData } = await spotChecksQuery;
  
       // Fetch variance reports - scoped to current workspace/personal context
-      const { data: varianceData } = await supabase
+      let varianceQuery = supabase
         .from("variance_reports")
         .select(`
           *,
           stores(name)
         `)
-        .match({ ...workspaceFilter, user_id: user.id })
+        .eq('user_id', user.id)
         .order("report_date", { ascending: false })
         .limit(20);
+
+      if (currentWorkspace) {
+        varianceQuery = varianceQuery.eq('workspace_id', currentWorkspace.id);
+      } else {
+        varianceQuery = varianceQuery.is('workspace_id', null);
+      }
+
+      const { data: varianceData } = await varianceQuery;
 
       // Workspace members not used in personal inventory mode
       const membersData: any[] = [];
