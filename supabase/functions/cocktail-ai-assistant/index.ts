@@ -11,7 +11,31 @@ serve(async (req) => {
   }
 
   try {
-    const { action, data } = await req.json();
+    const requestBody = await req.json();
+    
+    // Validate request structure
+    if (!requestBody.action || typeof requestBody.action !== 'string') {
+      throw new Error('Invalid or missing action parameter');
+    }
+    
+    if (!requestBody.data || typeof requestBody.data !== 'object') {
+      throw new Error('Invalid or missing data parameter');
+    }
+    
+    const validActions = [
+      'suggest_ingredients',
+      'analyze_taste',
+      'recommend_technique',
+      'calculate_nutrition',
+      'suggest_garnish',
+      'optimize_ratios'
+    ];
+    
+    if (!validActions.includes(requestBody.action)) {
+      throw new Error(`Invalid action. Must be one of: ${validActions.join(', ')}`);
+    }
+    
+    const { action, data } = requestBody;
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
