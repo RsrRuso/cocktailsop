@@ -316,8 +316,8 @@ export const InviteWorkspaceMemberDialog = ({
             </div>
 
             {/* Lists Section - Scrollable */}
-            <div className="flex-1 min-h-0 px-4 sm:px-6 py-3">
-              <Tabs defaultValue="following" className="h-full flex flex-col">
+            <div className="flex-1 min-h-0 px-4 sm:px-6">
+              <Tabs defaultValue="following" className="h-full flex flex-col pt-3">
                 <TabsList className="grid w-full grid-cols-2 shrink-0 mb-3">
                   <TabsTrigger value="following" className="text-xs sm:text-sm">
                     Following ({following.length})
@@ -329,7 +329,7 @@ export const InviteWorkspaceMemberDialog = ({
 
                 <TabsContent value="following" className="flex-1 min-h-0 mt-0 data-[state=active]:block">
                   <ScrollArea className="h-full">
-                    <div className="pr-3">
+                    <div className="pr-3 pb-4">
                       {loadingConnections ? (
                         <div className="text-center py-8 text-muted-foreground text-sm">
                           Loading...
@@ -343,7 +343,7 @@ export const InviteWorkspaceMemberDialog = ({
 
                 <TabsContent value="followers" className="flex-1 min-h-0 mt-0 data-[state=active]:block">
                   <ScrollArea className="h-full">
-                    <div className="pr-3">
+                    <div className="pr-3 pb-4">
                       {loadingConnections ? (
                         <div className="text-center py-8 text-muted-foreground text-sm">
                           Loading...
@@ -357,8 +357,8 @@ export const InviteWorkspaceMemberDialog = ({
               </Tabs>
             </div>
 
-            {/* Fixed Buttons at Bottom */}
-            <div className="px-4 sm:px-6 py-3 border-t shrink-0 bg-background">
+            {/* Fixed Buttons at Bottom - Completely Separated */}
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t shrink-0 bg-background mt-3">
               <div className="flex justify-end gap-2">
                 <Button
                   variant="outline"
