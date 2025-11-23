@@ -30,6 +30,13 @@ const WorkspaceManagement = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
+  const [personalInventory, setPersonalInventory] = useState<{ store_count: number; member_count: number; name: string; description: string }>({ 
+    store_count: 0, 
+    member_count: 1,
+    name: localStorage.getItem('personalInventoryName') || 'Personal Inventory',
+    description: localStorage.getItem('personalInventoryDesc') || 'My personal stores and inventory'
+  });
+  const [editPersonalOpen, setEditPersonalOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -93,6 +100,20 @@ const WorkspaceManagement = () => {
       );
 
       setWorkspaces(workspacesWithCounts);
+      
+      // Fetch personal inventory counts (user already declared above)
+      if (user) {
+        const { count: personalStoreCount } = await supabase
+          .from("stores")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .is("workspace_id", null);
+        
+        setPersonalInventory(prev => ({
+          ...prev,
+          store_count: personalStoreCount || 0
+        }));
+      }
     } catch (error) {
       console.error("Error fetching workspaces:", error);
       toast.error("Failed to load workspaces");
@@ -289,6 +310,60 @@ const WorkspaceManagement = () => {
     setEditOpen(true);
   };
 
+  const handleUpdatePersonal = () => {
+    if (!formData.name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+    
+    localStorage.setItem('personalInventoryName', formData.name);
+    localStorage.setItem('personalInventoryDesc', formData.description);
+    
+    setPersonalInventory({
+      ...personalInventory,
+      name: formData.name,
+      description: formData.description
+    });
+    
+    toast.success("Personal inventory updated");
+    setEditPersonalOpen(false);
+    setFormData({ name: "", description: "" });
+  };
+
+  const openEditPersonalDialog = () => {
+    setFormData({
+      name: personalInventory.name,
+      description: personalInventory.description,
+    });
+    setEditPersonalOpen(true);
+  };
+
+  const handleDeletePersonal = async () => {
+    if (!confirm("Delete ALL personal inventory data?\n\nThis will permanently delete all your personal stores, items, and inventory records.\n\nThis action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete all personal inventory data
+      await supabase.from("inventory_spot_checks").delete().eq("user_id", user.id).is("workspace_id", null);
+      await supabase.from("variance_reports").delete().eq("user_id", user.id).is("workspace_id", null);
+      await supabase.from("inventory_transfers").delete().eq("user_id", user.id).is("workspace_id", null);
+      await supabase.from("inventory_activity_log").delete().eq("user_id", user.id).is("workspace_id", null);
+      await supabase.from("inventory").delete().eq("user_id", user.id).is("workspace_id", null);
+      await supabase.from("items").delete().eq("user_id", user.id).is("workspace_id", null);
+      await supabase.from("stores").delete().eq("user_id", user.id).is("workspace_id", null);
+
+      toast.success("Personal inventory deleted");
+      fetchWorkspaces();
+    } catch (error) {
+      console.error("Error deleting personal inventory:", error);
+      toast.error("Failed to delete personal inventory");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
@@ -379,6 +454,67 @@ const WorkspaceManagement = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Personal Inventory Card */}
+            <Card
+              className="glass p-6 hover:glass-hover transition-all cursor-pointer border-2 border-primary/30"
+              onClick={() => navigate('/store-management')}
+            >
+              <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <Store className="w-5 h-5 text-primary" />
+                      {personalInventory.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      {personalInventory.description}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <Store className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium">{personalInventory.store_count}</span>
+                    <span className="text-muted-foreground">stores</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-medium">{personalInventory.member_count}</span>
+                    <span className="text-muted-foreground">member</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditPersonalDialog();
+                    }}
+                    className="flex-1 gap-2"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeletePersonal();
+                    }}
+                    className="flex-1 gap-2 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </Card>
+            
+            {/* Workspace Cards */}
             {workspaces.map((workspace) => (
               <Card
                 key={workspace.id}
@@ -477,6 +613,42 @@ const WorkspaceManagement = () => {
             </div>
             <Button onClick={handleUpdate} className="w-full">
               Update Workspace
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editPersonalOpen} onOpenChange={setEditPersonalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Personal Inventory</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="personal-name">Name *</Label>
+              <Input
+                id="personal-name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="Enter name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="personal-description">Description</Label>
+              <Textarea
+                id="personal-description"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                placeholder="Enter description"
+                rows={3}
+              />
+            </div>
+            <Button onClick={handleUpdatePersonal} className="w-full">
+              Update
             </Button>
           </div>
         </DialogContent>
