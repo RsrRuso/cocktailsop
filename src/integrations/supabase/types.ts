@@ -5020,6 +5020,7 @@ export type Database = {
           id: string
           invited_by: string | null
           joined_at: string | null
+          permissions: Json | null
           role: string
           user_id: string
           workspace_id: string
@@ -5028,6 +5029,7 @@ export type Database = {
           id?: string
           invited_by?: string | null
           joined_at?: string | null
+          permissions?: Json | null
           role?: string
           user_id: string
           workspace_id: string
@@ -5036,6 +5038,7 @@ export type Database = {
           id?: string
           invited_by?: string | null
           joined_at?: string | null
+          permissions?: Json | null
           role?: string
           user_id?: string
           workspace_id?: string

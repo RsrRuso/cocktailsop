@@ -39,6 +39,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { InviteWorkspaceMemberDialog } from "@/components/InviteWorkspaceMemberDialog";
+import { ManageMemberPermissionsDialog } from "@/components/ManageMemberPermissionsDialog";
 interface Transaction {
   id: string;
   type: 'transfer' | 'receiving' | 'spot_check' | 'variance';
@@ -73,6 +74,7 @@ const StoreManagement = () => {
   const [spotChecks, setSpotChecks] = useState<any[]>([]);
   const [varianceReports, setVarianceReports] = useState<any[]>([]);
   const [inviteWorkspaceDialogOpen, setInviteWorkspaceDialogOpen] = useState(false);
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   // Form states
   const [selectedFromStore, setSelectedFromStore] = useState("");
   const [selectedToStore, setSelectedToStore] = useState("");
@@ -2406,20 +2408,37 @@ const StoreManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <Button
-                      className="w-full"
-                      onClick={() => {
-                        if (!currentWorkspace) {
-                          navigate("/workspace-management");
-                          toast.info("Create a workspace to add members and collaborate with your team.");
-                          return;
-                        }
-                        setInviteWorkspaceDialogOpen(true);
-                      }}
-                    >
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Add Members
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1"
+                        onClick={() => {
+                          if (!currentWorkspace) {
+                            navigate("/workspace-management");
+                            toast.info("Create a workspace to add members and collaborate with your team.");
+                            return;
+                          }
+                          setInviteWorkspaceDialogOpen(true);
+                        }}
+                      >
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Add Members
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          if (!currentWorkspace) {
+                            navigate("/workspace-management");
+                            toast.info("Create a workspace to manage member permissions.");
+                            return;
+                          }
+                          setPermissionsDialogOpen(true);
+                        }}
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        Permissions
+                      </Button>
+                    </div>
 
                     <ScrollArea className="h-[500px]">
                       <div className="space-y-2">
@@ -2738,13 +2757,23 @@ const StoreManagement = () => {
       </AlertDialog>
 
       {currentWorkspace && (
-        <InviteWorkspaceMemberDialog
-          open={inviteWorkspaceDialogOpen}
-          onOpenChange={setInviteWorkspaceDialogOpen}
-          workspaceId={currentWorkspace.id}
-          workspaceName={currentWorkspace.name}
-          onSuccess={fetchAllData}
-        />
+        <>
+          <InviteWorkspaceMemberDialog
+            open={inviteWorkspaceDialogOpen}
+            onOpenChange={setInviteWorkspaceDialogOpen}
+            workspaceId={currentWorkspace.id}
+            workspaceName={currentWorkspace.name}
+            onSuccess={fetchAllData}
+          />
+          
+          <ManageMemberPermissionsDialog
+            open={permissionsDialogOpen}
+            onOpenChange={setPermissionsDialogOpen}
+            workspaceId={currentWorkspace.id}
+            workspaceName={currentWorkspace.name}
+            onSuccess={fetchAllData}
+          />
+        </>
       )}
 
       <BottomNav />

@@ -67,6 +67,33 @@ export default function ScanReceive() {
       .eq("id", contextData.to_store_id)
       .maybeSingle();
 
+    // Check permissions if this is a workspace store
+    if (toStore?.workspace_id) {
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("role, permissions")
+        .eq("workspace_id", toStore.workspace_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!membership) {
+        toast.error("You don't have access to this workspace");
+        setLoading(false);
+        navigate("/");
+        return;
+      }
+
+      const permissions = membership.permissions as any;
+      const canReceive = membership.role === "admin" || permissions?.can_receive === true;
+      
+      if (!canReceive) {
+        toast.error("You don't have permission to receive inventory in this workspace");
+        setLoading(false);
+        navigate("/");
+        return;
+      }
+    }
+
     setReceivingContext({ ...contextData, toStoreName: toStore?.name });
 
     // Fetch all stores in the same workspace context
