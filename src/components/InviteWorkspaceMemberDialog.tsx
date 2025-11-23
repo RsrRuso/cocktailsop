@@ -334,7 +334,7 @@ export const InviteWorkspaceMemberDialog = ({
             </div>
 
             {/* Lists Section - Scrollable, fully independent from buttons */}
-            <div className="flex-1 min-h-0 px-4 sm:px-6">
+            <div className="flex-1 min-h-0 overflow-hidden px-4 sm:px-6">
               <Tabs defaultValue="following" className="h-full flex flex-col pt-3">
                 <TabsList className="grid w-full grid-cols-2 shrink-0 mb-3">
                   <TabsTrigger value="following" className="text-xs sm:text-sm">
@@ -345,33 +345,35 @@ export const InviteWorkspaceMemberDialog = ({
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="following" className="flex-1 min-h-0 mt-0 data-[state=active]:block">
-                  <ScrollArea className="h-full">
-                    <div className="pr-3 pb-4">
-                      {loadingConnections ? (
-                        <div className="text-center py-8 text-muted-foreground text-sm">
-                          Loading...
-                        </div>
-                      ) : (
-                        renderProfileList(following)
-                      )}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <TabsContent value="following" className="h-full mt-0 data-[state=active]:block">
+                    <ScrollArea className="h-full">
+                      <div className="pr-3 pb-4">
+                        {loadingConnections ? (
+                          <div className="text-center py-8 text-muted-foreground text-sm">
+                            Loading...
+                          </div>
+                        ) : (
+                          renderProfileList(following)
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </TabsContent>
 
-                <TabsContent value="followers" className="flex-1 min-h-0 mt-0 data-[state=active]:block">
-                  <ScrollArea className="h-full">
-                    <div className="pr-3 pb-4">
-                      {loadingConnections ? (
-                        <div className="text-center py-8 text-muted-foreground text-sm">
-                          Loading...
-                        </div>
-                      ) : (
-                        renderProfileList(followers)
-                      )}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
+                  <TabsContent value="followers" className="h-full mt-0 data-[state=active]:block">
+                    <ScrollArea className="h-full">
+                      <div className="pr-3 pb-4">
+                        {loadingConnections ? (
+                          <div className="text-center py-8 text-muted-foreground text-sm">
+                            Loading...
+                          </div>
+                        ) : (
+                          renderProfileList(followers)
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </TabsContent>
+                </div>
               </Tabs>
             </div>
           </TabsContent>
