@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ interface Workspace {
 }
 
 const WorkspaceManagement = () => {
+  const { refreshWorkspaces: refreshWorkspaceContext } = useWorkspace();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -144,7 +146,8 @@ const WorkspaceManagement = () => {
       toast.success("Workspace created successfully");
       setCreateOpen(false);
       setFormData({ name: "", description: "" });
-      fetchWorkspaces();
+      await fetchWorkspaces();
+      await refreshWorkspaceContext();
     } catch (error) {
       console.error("Error creating workspace:", error);
       toast.error("Failed to create workspace");
@@ -169,7 +172,8 @@ const WorkspaceManagement = () => {
       setEditOpen(false);
       setSelectedWorkspace(null);
       setFormData({ name: "", description: "" });
-      fetchWorkspaces();
+      await fetchWorkspaces();
+      await refreshWorkspaceContext();
     } catch (error) {
       console.error("Error updating workspace:", error);
       toast.error("Failed to update workspace");
@@ -221,6 +225,7 @@ const WorkspaceManagement = () => {
 
       toast.success(`${ownedWorkspaceIds.length} workspace(s) deleted - All data preserved!`);
       await fetchWorkspaces();
+      await refreshWorkspaceContext();
     } catch (error) {
       console.error("Error deleting all workspaces:", error);
       toast.error("Failed to delete workspaces");
@@ -295,7 +300,8 @@ const WorkspaceManagement = () => {
       if (workspaceError) throw workspaceError;
 
       toast.success("Workspace deleted - All your data has been safely preserved!");
-      fetchWorkspaces();
+      await fetchWorkspaces();
+      await refreshWorkspaceContext();
     } catch (error) {
       console.error("Error deleting workspace:", error);
       toast.error("Failed to delete workspace");
