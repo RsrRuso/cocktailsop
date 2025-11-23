@@ -286,6 +286,20 @@ const WorkspaceManagement = () => {
 
       if (transfersError) throw transfersError;
 
+      // Step 5a: Make all spot checks personal
+      const { error: spotChecksError } = await supabase
+        .from("inventory_spot_checks")
+        .update({ workspace_id: null })
+        .eq("workspace_id", workspace.id);
+
+      if (spotChecksError) throw spotChecksError;
+
+      // Step 5b: Make all variance reports personal (if table exists)
+      await supabase
+        .from("variance_reports")
+        .update({ workspace_id: null })
+        .eq("workspace_id", workspace.id);
+
       // Step 6: Delete workspace members
       const { error: membersError } = await supabase
         .from("workspace_members")
@@ -313,9 +327,9 @@ const WorkspaceManagement = () => {
       toast.success("Workspace deleted - All your data has been safely preserved!");
       await fetchWorkspaces();
       await refreshWorkspaceContext();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting workspace:", error);
-      toast.error("Failed to delete workspace");
+      toast.error(`Failed to delete workspace: ${error.message || 'Unknown error'}`);
     }
   };
 
