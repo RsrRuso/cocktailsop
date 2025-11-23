@@ -1,9 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSimpleQuery } from "@/lib/simpleQuery";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useUserStatus = (userId: string | null | undefined) => {
-  return useQuery({
-    queryKey: ['user-status', userId],
+  return useSimpleQuery({
     queryFn: async () => {
       if (!userId) return null;
       
@@ -12,9 +11,9 @@ export const useUserStatus = (userId: string | null | undefined) => {
         .select('*, reaction_count, reply_count')
         .eq('user_id', userId)
         .gt('expires_at', new Date().toISOString())
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') {
+      if (error && (error as any).code !== 'PGRST116') {
         console.error('Error fetching status:', error);
         return null;
       }
@@ -22,7 +21,5 @@ export const useUserStatus = (userId: string | null | undefined) => {
       return data;
     },
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000,
   });
 };

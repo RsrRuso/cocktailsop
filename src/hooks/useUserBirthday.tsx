@@ -1,9 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSimpleQuery } from "@/lib/simpleQuery";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useUserBirthday = (userId: string | null | undefined) => {
-  return useQuery({
-    queryKey: ['user-birthday', userId],
+  return useSimpleQuery({
     queryFn: async () => {
       if (!userId) return { isBirthday: false };
       
@@ -11,12 +10,12 @@ export const useUserBirthday = (userId: string | null | undefined) => {
         .from('profiles')
         .select('date_of_birth')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
       if (error || !data?.date_of_birth) {
         return { isBirthday: false };
       }
-
+  
       const birthDate = new Date(data.date_of_birth);
       const today = new Date();
       
@@ -28,6 +27,5 @@ export const useUserBirthday = (userId: string | null | undefined) => {
       return { isBirthday };
     },
     enabled: !!userId,
-    staleTime: 60 * 60 * 1000, // 1 hour
   });
 };
