@@ -237,6 +237,9 @@ export default function ScanTransfer() {
       return;
     }
 
+    const fromStore = fromStores.find(s => s.id === fromStoreId);
+    const workspaceIdForTransfer = fromStore?.workspace_id ?? availableInventory.workspace_id ?? null;
+
     setSubmitting(true);
 
     const { error } = await supabase
@@ -248,7 +251,7 @@ export default function ScanTransfer() {
         quantity: quantityNum,
         notes,
         user_id: user.id,
-        workspace_id: availableInventory.workspace_id,
+        workspace_id: workspaceIdForTransfer,
         status: "completed",
         transfer_date: new Date().toISOString()
       });
@@ -261,7 +264,10 @@ export default function ScanTransfer() {
 
     await supabase
       .from("inventory")
-      .update({ quantity: availableInventory.quantity - quantityNum })
+      .update({ 
+        quantity: availableInventory.quantity - quantityNum,
+        workspace_id: workspaceIdForTransfer,
+      })
       .eq("id", availableInventory.id);
 
     const { data: existingToInventory } = await supabase
@@ -274,7 +280,10 @@ export default function ScanTransfer() {
     if (existingToInventory) {
       await supabase
         .from("inventory")
-        .update({ quantity: existingToInventory.quantity + quantityNum })
+        .update({ 
+          quantity: existingToInventory.quantity + quantityNum,
+          workspace_id: workspaceIdForTransfer,
+        })
         .eq("id", existingToInventory.id);
     } else {
       await supabase
@@ -285,26 +294,26 @@ export default function ScanTransfer() {
           quantity: quantityNum,
           expiration_date: availableInventory.expiration_date,
           user_id: user.id,
-          workspace_id: availableInventory.workspace_id
-      });
+          workspace_id: workspaceIdForTransfer,
+        });
     }
 
     toast.success("Transfer completed!");
     
     // Store transfer details for PDF generation
     const selectedItem = items.find(i => i.id === selectedItemId);
-    const fromStore = fromStores.find(s => s.id === fromStoreId);
-    const toStore = stores.find(s => s.id === toStoreId);
+    const fromStoreForSummary = fromStores.find(s => s.id === fromStoreId);
+    const toStoreForSummary = stores.find(s => s.id === toStoreId);
     
     setLastTransfer({
       id: `TRF-${Date.now()}`,
       date: new Date().toISOString(),
-      fromStore: fromStore?.name || "Unknown",
-      toStore: toStore?.name || "Unknown",
+      fromStore: fromStoreForSummary?.name || "Unknown",
+      toStore: toStoreForSummary?.name || "Unknown",
       item: selectedItem?.name || "Unknown",
       quantity: quantityNum,
       notes: notes,
-      user: user.email
+      user: user.email,
     });
     
     setSubmitting(false);
@@ -317,16 +326,13 @@ export default function ScanTransfer() {
     }
 
     setSubmitting(true);
-    const results = [];
+    const results: any[] = [];
 
     try {
       for (const transfer of batchQueue) {
-        // Get workspace_id from the source inventory
-        const { data: sourceInv } = await supabase
-          .from("inventory")
-          .select("workspace_id")
-          .eq("id", transfer.availableInventoryId)
-          .single();
+        const sourceInv = inventory.find(inv => inv.id === transfer.availableInventoryId);
+        const fromStore = fromStores.find(s => s.id === transfer.fromStoreId);
+        const workspaceIdForTransfer = fromStore?.workspace_id ?? sourceInv?.workspace_id ?? null;
 
         const { error } = await supabase
           .from("inventory_transfers")
@@ -337,9 +343,9 @@ export default function ScanTransfer() {
             quantity: transfer.quantity,
             notes: transfer.notes,
             user_id: user.id,
-            workspace_id: sourceInv?.workspace_id,
+            workspace_id: workspaceIdForTransfer,
             status: "completed",
-            transfer_date: new Date().toISOString()
+            transfer_date: new Date().toISOString(),
           });
 
         if (error) throw error;
@@ -352,7 +358,10 @@ export default function ScanTransfer() {
 
         await supabase
           .from("inventory")
-          .update({ quantity: (fromInv?.quantity || 0) - transfer.quantity })
+          .update({ 
+            quantity: (fromInv?.quantity || 0) - transfer.quantity,
+            workspace_id: workspaceIdForTransfer,
+          })
           .eq("id", transfer.availableInventoryId);
 
         const { data: existingToInventory } = await supabase
@@ -365,7 +374,10 @@ export default function ScanTransfer() {
         if (existingToInventory) {
           await supabase
             .from("inventory")
-            .update({ quantity: existingToInventory.quantity + transfer.quantity })
+            .update({ 
+              quantity: existingToInventory.quantity + transfer.quantity,
+              workspace_id: workspaceIdForTransfer,
+            })
             .eq("id", existingToInventory.id);
         } else {
           await supabase
@@ -376,7 +388,7 @@ export default function ScanTransfer() {
               quantity: transfer.quantity,
               expiration_date: transfer.expirationDate,
               user_id: user.id,
-              workspace_id: sourceInv?.workspace_id
+              workspace_id: workspaceIdForTransfer,
             });
         }
 
@@ -384,7 +396,7 @@ export default function ScanTransfer() {
           ...transfer,
           id: `TRF-${Date.now()}-${results.length}`,
           date: new Date().toISOString(),
-          user: user.email
+          user: user.email,
         });
       }
 
