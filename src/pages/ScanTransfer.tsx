@@ -38,7 +38,8 @@ export default function ScanTransfer() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
-        window.location.href = "https://cocktailsop.com";
+        toast.info("Please log in to access this transfer");
+        navigate(`/auth?redirect=/scan-transfer/${qrCodeId}`);
         return;
       }
       setUser(user);
