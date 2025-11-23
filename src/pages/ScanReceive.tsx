@@ -8,8 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { PackageOpen, Loader2, AlertCircle, Search, Download, FileText } from "lucide-react";
-import TopNav from "@/components/TopNav";
-import BottomNav from "@/components/BottomNav";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 
@@ -446,21 +444,18 @@ export default function ScanReceive() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center pb-20">
-        <TopNav />
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted-foreground">Loading receiving details...</p>
         </div>
-        <BottomNav />
       </div>
     );
   }
 
   if (!receivingContext) {
     return (
-      <div className="min-h-screen bg-background pb-20">
-        <TopNav />
+      <div className="min-h-screen bg-background">
         <div className="container mx-auto p-4 pt-20">
           <Card className="p-6 max-w-2xl mx-auto text-center">
             <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
@@ -473,15 +468,12 @@ export default function ScanReceive() {
             </Button>
           </Card>
         </div>
-        <BottomNav />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <TopNav />
-      
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4 pt-20">
         <Card className="p-6 max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-6">
@@ -728,8 +720,6 @@ export default function ScanReceive() {
           </div>
         </Card>
       </div>
-
-      <BottomNav />
     </div>
   );
 }
