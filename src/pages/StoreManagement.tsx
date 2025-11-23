@@ -2406,17 +2406,24 @@ const StoreManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {currentWorkspace ? (
-                      <Button
-                        className="w-full"
-                        onClick={() => setInviteWorkspaceDialogOpen(true)}
-                      >
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Add Members
-                      </Button>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Select a workspace from the selector above to manage team members.
+                    <Button
+                      className="w-full"
+                      disabled={!currentWorkspace}
+                      onClick={() => {
+                        if (!currentWorkspace) {
+                          toast.info("Select a workspace from the selector above to add members.");
+                          return;
+                        }
+                        setInviteWorkspaceDialogOpen(true);
+                      }}
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add Members
+                    </Button>
+
+                    {!currentWorkspace && (
+                      <p className="text-xs text-muted-foreground">
+                        Personal inventories can’t have members. Choose a workspace in the selector above first.
                       </p>
                     )}
 
