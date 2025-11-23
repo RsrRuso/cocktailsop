@@ -2319,10 +2319,20 @@ const StoreManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <Button className="w-full" onClick={() => setInviteWorkspaceDialogOpen(true)}>
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        if (!currentWorkspace) {
+                          toast.error("Select a workspace first to manage team members.");
+                          return;
+                        }
+                        setInviteWorkspaceDialogOpen(true);
+                      }}
+                    >
                       <UserPlus className="w-4 h-4 mr-2" />
                       Add Members
                     </Button>
+
 
                     <ScrollArea className="h-[500px]">
                       <div className="space-y-2">
