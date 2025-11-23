@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { PackageOpen, Loader2, AlertCircle } from "lucide-react";
+import { PackageOpen, Loader2, AlertCircle, Search } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 
@@ -25,6 +25,7 @@ export default function ScanReceive() {
   const [batchNumber, setBatchNumber] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const [itemSearch, setItemSearch] = useState<string>("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -265,21 +266,41 @@ export default function ScanReceive() {
             </div>
 
             <div>
-              <Label>Select Item *</Label>
+              <Label>Search & Select Item *</Label>
+              <div className="relative mt-2 mb-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  value={itemSearch}
+                  onChange={(e) => setItemSearch(e.target.value)}
+                  placeholder="Search items by name or brand..."
+                  className="pl-9"
+                  disabled={submitting}
+                />
+              </div>
               <select
                 value={selectedItemId}
                 onChange={(e) => setSelectedItemId(e.target.value)}
-                className="w-full mt-2 p-2 border rounded-md bg-background"
+                className="w-full p-2 border rounded-md bg-background"
                 disabled={items.length === 0 || submitting}
               >
                 {items.length === 0 ? (
                   <option value="">No items available</option>
                 ) : (
-                  items.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name} {item.brand ? `- ${item.brand}` : ""}
-                    </option>
-                  ))
+                  items
+                    .filter((item) => {
+                      if (!itemSearch) return true;
+                      const search = itemSearch.toLowerCase();
+                      return (
+                        item.name.toLowerCase().includes(search) ||
+                        (item.brand && item.brand.toLowerCase().includes(search))
+                      );
+                    })
+                    .map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} {item.brand ? `- ${item.brand}` : ""}
+                      </option>
+                    ))
                 )}
               </select>
             </div>
