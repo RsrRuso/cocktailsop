@@ -6,10 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Users, Target, Clock, CheckCircle, TrendingUp, Activity, BarChart3 } from "lucide-react";
+import { Users, Target, Clock, CheckCircle, TrendingUp, Activity, BarChart3, UserPlus } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import { InviteTeamMemberDialogV2 } from "@/components/InviteTeamMemberDialogV2";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 
 interface Team {
@@ -57,6 +59,7 @@ const TeamDashboard = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -319,8 +322,20 @@ const TeamDashboard = () => {
             {/* Team Members List */}
             <Card>
               <CardHeader>
-                <CardTitle>Team Members Performance</CardTitle>
-                <CardDescription>Individual workload and time tracking</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Team Members Performance</CardTitle>
+                    <CardDescription>Individual workload and time tracking</CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setInviteDialogOpen(true)}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Add Members
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[400px]">
@@ -370,6 +385,15 @@ const TeamDashboard = () => {
           </>
         )}
       </div>
+
+      <InviteTeamMemberDialogV2
+        open={inviteDialogOpen}
+        onOpenChange={setInviteDialogOpen}
+        teamId={selectedTeamId}
+        teamName={teams.find(t => t.id === selectedTeamId)?.name || ""}
+        existingMemberIds={teamMembers.map(m => m.user_id)}
+        onSuccess={fetchTeamData}
+      />
 
       <BottomNav />
     </div>
