@@ -18,9 +18,11 @@ export default function ScanTransfer() {
   const [loading, setLoading] = useState(true);
   const [transferContext, setTransferContext] = useState<any>(null);
   const [stores, setStores] = useState<any[]>([]);
+  const [fromStores, setFromStores] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
   
+  const [fromStoreId, setFromStoreId] = useState<string>("");
   const [toStoreId, setToStoreId] = useState<string>("");
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("1");
@@ -60,25 +62,32 @@ export default function ScanTransfer() {
       .from("stores")
       .select("name")
       .eq("id", contextData.from_store_id)
-      .single();
+      .maybeSingle();
 
     setTransferContext({ ...contextData, fromStoreName: fromStore?.name });
 
-    const { data: storesData } = await supabase
+    // Fetch all stores for "from" selection (glassware only)
+    const { data: allStoresData } = await supabase
       .from("stores")
       .select("*")
       .eq("user_id", userId)
-      .neq("id", contextData.from_store_id)
       .order("name");
 
-    // Filter to show only glassware-related stores
-    const glasswareStores = (storesData || []).filter(
+    const allGlasswareStores = (allStoresData || []).filter(
       store => store.name.toLowerCase().includes("glass")
     );
 
-    setStores(glasswareStores);
-    if (glasswareStores.length > 0) {
-      setToStoreId(glasswareStores[0].id);
+    setFromStores(allGlasswareStores);
+    setFromStoreId(contextData.from_store_id);
+
+    // Fetch destination stores (exclude selected from store)
+    const glasswareDestStores = allGlasswareStores.filter(
+      store => store.id !== contextData.from_store_id
+    );
+
+    setStores(glasswareDestStores);
+    if (glasswareDestStores.length > 0) {
+      setToStoreId(glasswareDestStores[0].id);
     }
 
     const { data: itemsData } = await supabase
@@ -108,8 +117,29 @@ export default function ScanTransfer() {
     setLoading(false);
   };
 
+  // Update destination stores when from store changes
+  useEffect(() => {
+    if (fromStoreId && fromStores.length > 0) {
+      const filtered = fromStores.filter(store => store.id !== fromStoreId);
+      setStores(filtered);
+      if (filtered.length > 0 && !filtered.find(s => s.id === toStoreId)) {
+        setToStoreId(filtered[0].id);
+      }
+
+      // Update inventory for selected from store
+      supabase
+        .from("inventory")
+        .select("*, items(*)")
+        .eq("store_id", fromStoreId)
+        .gt("quantity", 0)
+        .then(({ data }) => {
+          setInventory(data || []);
+        });
+    }
+  }, [fromStoreId, fromStores]);
+
   const handleTransfer = async () => {
-    if (!selectedItemId || !toStoreId || !quantity) {
+    if (!selectedItemId || !toStoreId || !quantity || !fromStoreId) {
       toast.error("Please fill all fields");
       return;
     }
@@ -131,7 +161,7 @@ export default function ScanTransfer() {
     const { error } = await supabase
       .from("inventory_transfers")
       .insert({
-        from_store_id: transferContext.from_store_id,
+        from_store_id: fromStoreId,
         to_store_id: toStoreId,
         inventory_id: availableInventory.id,
         quantity: quantityNum,
@@ -157,7 +187,7 @@ export default function ScanTransfer() {
       .select("*")
       .eq("store_id", toStoreId)
       .eq("item_id", selectedItemId)
-      .single();
+      .maybeSingle();
 
     if (existingToInventory) {
       await supabase
@@ -176,11 +206,12 @@ export default function ScanTransfer() {
         });
     }
 
-    toast.success("Transfer completed successfully");
-    setQuantity("1");
-    setNotes("");
-    fetchTransferContext(user.id);
-    setSubmitting(false);
+    toast.success("Transfer completed! Redirecting...");
+    
+    // Redirect to store management after 1 second
+    setTimeout(() => {
+      navigate("/store-management");
+    }, 1000);
   };
 
   if (loading) {
@@ -217,14 +248,34 @@ export default function ScanTransfer() {
           <div className="flex items-center gap-3 mb-6">
             <ArrowLeftRight className="w-8 h-8 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold">Transfer Items</h1>
+              <h1 className="text-2xl font-bold">Transfer Glassware Items</h1>
               <p className="text-sm text-muted-foreground">
-                From: {transferContext.fromStoreName}
+                Select source and destination stores
               </p>
             </div>
           </div>
 
           <div className="space-y-4">
+            <div>
+              <Label>From Glassware Store</Label>
+              <select
+                value={fromStoreId}
+                onChange={(e) => setFromStoreId(e.target.value)}
+                className="w-full mt-2 p-2 border rounded-md bg-background"
+                disabled={fromStores.length === 0}
+              >
+                {fromStores.length === 0 ? (
+                  <option value="">No glassware stores available</option>
+                ) : (
+                  fromStores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
             <div>
               <Label>Select Glassware Item</Label>
               <select
