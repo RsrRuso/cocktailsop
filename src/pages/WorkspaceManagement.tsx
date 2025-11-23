@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Building2, Users, Store, Edit, Trash2 } from "lucide-react";
+import { Plus, Building2, Users, Store, Edit, Trash2, UserPlus } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { InviteWorkspaceMemberDialog } from "@/components/InviteWorkspaceMemberDialog";
 
 interface Workspace {
   id: string;
@@ -28,6 +29,7 @@ const WorkspaceManagement = () => {
   const [deleting, setDeleting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
   const navigate = useNavigate();
@@ -413,7 +415,20 @@ const WorkspaceManagement = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 pt-2">
+                  <div className="grid grid-cols-3 gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedWorkspace(workspace);
+                        setInviteOpen(true);
+                      }}
+                      className="gap-1.5"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      Add
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -421,7 +436,7 @@ const WorkspaceManagement = () => {
                         e.stopPropagation();
                         openEditDialog(workspace);
                       }}
-                      className="flex-1 gap-2"
+                      className="gap-1.5"
                     >
                       <Edit className="w-3.5 h-3.5" />
                       Edit
@@ -433,7 +448,7 @@ const WorkspaceManagement = () => {
                         e.stopPropagation();
                         handleDelete(workspace);
                       }}
-                      className="flex-1 gap-2 text-destructive hover:text-destructive"
+                      className="gap-1.5 text-destructive hover:text-destructive"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       Delete
@@ -481,6 +496,16 @@ const WorkspaceManagement = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {selectedWorkspace && (
+        <InviteWorkspaceMemberDialog
+          open={inviteOpen}
+          onOpenChange={setInviteOpen}
+          workspaceId={selectedWorkspace.id}
+          workspaceName={selectedWorkspace.name}
+          onSuccess={fetchWorkspaces}
+        />
+      )}
 
       <BottomNav />
     </div>
