@@ -337,8 +337,19 @@ const StoreManagement = () => {
 
       const { data: varianceData } = await varianceQuery;
 
-      // Workspace members not used in personal inventory mode
-      const membersData: any[] = [];
+      // Fetch workspace members
+      let membersData: any[] = [];
+      if (currentWorkspace) {
+        const { data: workspaceMembersData } = await supabase
+          .from('workspace_members')
+          .select(`
+            *,
+            profiles:user_id(id, username, full_name, avatar_url)
+          `)
+          .eq('workspace_id', currentWorkspace.id);
+        
+        membersData = workspaceMembersData || [];
+      }
 
       setStores(storesData || []);
       setItems(itemsData || []);
