@@ -102,6 +102,7 @@ const MasterItems = lazy(() => import("./pages/MasterItems"));
 const WorkspaceManagement = lazy(() => import("./pages/WorkspaceManagement"));
 const TransferQRGenerator = lazy(() => import("@/pages/TransferQRGenerator"));
 const ScanTransfer = lazy(() => import("@/pages/ScanTransfer"));
+const ScanReceive = lazy(() => import("@/pages/ScanReceive"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -155,6 +156,7 @@ const App = () => (
               <Route path="/access-approval" element={<AccessApproval />} />
               <Route path="/transfer-qr" element={<TransferQRGenerator />} />
               <Route path="/scan-transfer/:qrCodeId" element={<ScanTransfer />} />
+              <Route path="/scan-receive/:qrCodeId" element={<ScanReceive />} />
               <Route path="/low-stock-inventory/:workspaceId" element={<LowStockInventory />} />
               <Route path="/store-management" element={<StoreManagement />} />
               <Route path="/store/:id" element={<StoreDetail />} />

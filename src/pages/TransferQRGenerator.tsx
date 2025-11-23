@@ -6,9 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, QrCode, Store as StoreIcon } from "lucide-react";
+import { Copy, QrCode, Store as StoreIcon, PackageOpen } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 
@@ -16,8 +17,15 @@ export default function TransferQRGenerator() {
   const navigate = useNavigate();
   const { currentWorkspace } = useWorkspace();
   const [user, setUser] = useState<any>(null);
-  const [qrCodeId, setQrCodeId] = useState<string>("");
+  
+  // Transfer QR state
+  const [transferQrCodeId, setTransferQrCodeId] = useState<string>("");
   const [fromStoreId, setFromStoreId] = useState<string>("");
+  
+  // Receiving QR state
+  const [receivingQrCodeId, setReceivingQrCodeId] = useState<string>("");
+  const [toStoreId, setToStoreId] = useState<string>("");
+  
   const [stores, setStores] = useState<any[]>([]);
 
   useEffect(() => {
@@ -33,15 +41,22 @@ export default function TransferQRGenerator() {
   useEffect(() => {
     if (user) {
       fetchStores(user.id);
-      const newCode = generateNewCode();
+      const newTransferCode = generateNewTransferCode();
+      const newReceivingCode = generateNewReceivingCode();
     }
   }, [user, currentWorkspace]);
 
   useEffect(() => {
-    if (qrCodeId && fromStoreId && user) {
-      autoSaveQRCode(qrCodeId, fromStoreId);
+    if (transferQrCodeId && fromStoreId && user) {
+      autoSaveTransferQRCode(transferQrCodeId, fromStoreId);
     }
-  }, [qrCodeId, fromStoreId, user]);
+  }, [transferQrCodeId, fromStoreId, user]);
+
+  useEffect(() => {
+    if (receivingQrCodeId && toStoreId && user) {
+      autoSaveReceivingQRCode(receivingQrCodeId, toStoreId);
+    }
+  }, [receivingQrCodeId, toStoreId, user]);
 
   const fetchStores = async (userId: string) => {
     let storesQuery = supabase
@@ -68,16 +83,23 @@ export default function TransferQRGenerator() {
     setStores(data || []);
     if (data && data.length > 0) {
       setFromStoreId(data[0].id);
+      setToStoreId(data[0].id);
     }
   };
 
-  const generateNewCode = () => {
-    const newId = Math.random().toString(36).substring(2, 15);
-    setQrCodeId(newId);
+  const generateNewTransferCode = () => {
+    const newId = 'T-' + Math.random().toString(36).substring(2, 15);
+    setTransferQrCodeId(newId);
     return newId;
   };
 
-  const autoSaveQRCode = async (codeId: string, storeId: string) => {
+  const generateNewReceivingCode = () => {
+    const newId = 'R-' + Math.random().toString(36).substring(2, 15);
+    setReceivingQrCodeId(newId);
+    return newId;
+  };
+
+  const autoSaveTransferQRCode = async (codeId: string, storeId: string) => {
     if (!user || !storeId) return;
 
     const { error } = await supabase
@@ -94,23 +116,60 @@ export default function TransferQRGenerator() {
     }
   };
 
-  const qrUrl = `${window.location.origin}/scan-transfer/${qrCodeId}`;
-  const qrPath = `/scan-transfer/${qrCodeId}`;
+  const autoSaveReceivingQRCode = async (codeId: string, storeId: string) => {
+    if (!user || !storeId) return;
 
-  const handleCopyUrl = () => {
-    navigator.clipboard.writeText(qrUrl);
+    const { error } = await supabase
+      .from("receiving_qr_codes" as any)
+      .upsert({
+        qr_code_id: codeId,
+        to_store_id: storeId,
+        user_id: user.id,
+        updated_at: new Date().toISOString()
+      });
+
+    if (!error) {
+      toast.success("Receiving QR code saved");
+    }
+  };
+
+  const transferQrUrl = `${window.location.origin}/scan-transfer/${transferQrCodeId}`;
+  const transferQrPath = `/scan-transfer/${transferQrCodeId}`;
+  
+  const receivingQrUrl = `${window.location.origin}/scan-receive/${receivingQrCodeId}`;
+  const receivingQrPath = `/scan-receive/${receivingQrCodeId}`;
+
+  const handleCopyTransferUrl = () => {
+    navigator.clipboard.writeText(transferQrUrl);
     toast.success("URL copied to clipboard");
   };
 
-  const handleCopyPath = () => {
-    navigator.clipboard.writeText(qrPath);
+  const handleCopyTransferPath = () => {
+    navigator.clipboard.writeText(transferQrPath);
     toast.success("Path copied to clipboard");
   };
 
-  const handleGenerateNew = () => {
-    const newCode = generateNewCode();
+  const handleCopyReceivingUrl = () => {
+    navigator.clipboard.writeText(receivingQrUrl);
+    toast.success("URL copied to clipboard");
+  };
+
+  const handleCopyReceivingPath = () => {
+    navigator.clipboard.writeText(receivingQrPath);
+    toast.success("Path copied to clipboard");
+  };
+
+  const handleGenerateNewTransfer = () => {
+    const newCode = generateNewTransferCode();
     if (fromStoreId && user) {
-      autoSaveQRCode(newCode, fromStoreId);
+      autoSaveTransferQRCode(newCode, fromStoreId);
+    }
+  };
+
+  const handleGenerateNewReceiving = () => {
+    const newCode = generateNewReceivingCode();
+    if (toStoreId && user) {
+      autoSaveReceivingQRCode(newCode, toStoreId);
     }
   };
 
@@ -124,88 +183,173 @@ export default function TransferQRGenerator() {
         <Card className="p-6 max-w-2xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
             <QrCode className="w-8 h-8 text-primary" />
-            <h1 className="text-2xl font-bold">Generate Transfer QR Code</h1>
+            <h1 className="text-2xl font-bold">QR Code Generator</h1>
           </div>
 
-          <div className="space-y-6">
-            <div className="p-4 bg-muted/50 rounded-lg border">
-              <div className="flex items-center gap-2 mb-2">
-                <StoreIcon className="w-5 h-5 text-primary" />
-                <p className="font-semibold">Available Stores: {stores.length}</p>
+          <Tabs defaultValue="transfer" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="transfer">Transfer QR</TabsTrigger>
+              <TabsTrigger value="receiving">Receiving QR</TabsTrigger>
+            </TabsList>
+
+            {/* Transfer QR Tab */}
+            <TabsContent value="transfer" className="space-y-6">
+              <div className="p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-2 mb-2">
+                  <StoreIcon className="w-5 h-5 text-primary" />
+                  <p className="font-semibold">Transfer QR Code</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Generate QR codes to transfer items from one store to another
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {stores.length === 0 
-                  ? "No stores found. Create stores in Store Management first." 
-                  : "Select a source store to generate transfer QR code"}
-              </p>
-            </div>
 
-            <div>
-              <Label>Select Source Store</Label>
-              <select
-                value={fromStoreId}
-                onChange={(e) => setFromStoreId(e.target.value)}
-                className="w-full mt-2 p-2 border rounded-md bg-background"
-                disabled={stores.length === 0}
-              >
-                {stores.length === 0 ? (
-                  <option value="">No stores available</option>
-                ) : (
-                  stores.map((store) => (
-                    <option key={store.id} value={store.id}>
-                      {store.name}
-                    </option>
-                  ))
-                )}
-              </select>
-              <p className="text-xs text-muted-foreground mt-2">
-                QR code auto-saves when you select a store
-              </p>
-            </div>
+              <div>
+                <Label>Select Source Store</Label>
+                <select
+                  value={fromStoreId}
+                  onChange={(e) => setFromStoreId(e.target.value)}
+                  className="w-full mt-2 p-2 border rounded-md bg-background"
+                  disabled={stores.length === 0}
+                >
+                  {stores.length === 0 ? (
+                    <option value="">No stores available</option>
+                  ) : (
+                    stores.map((store) => (
+                      <option key={store.id} value={store.id}>
+                        {store.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <p className="text-xs text-muted-foreground mt-2">
+                  QR code auto-saves when you select a store
+                </p>
+              </div>
 
-            {qrCodeId && (
-              <>
-                <div className="flex justify-center p-8 bg-white rounded-lg">
-                  <QRCodeSVG value={qrUrl} size={256} />
-                </div>
+              {transferQrCodeId && (
+                <>
+                  <div className="flex justify-center p-8 bg-white rounded-lg">
+                    <QRCodeSVG value={transferQrUrl} size={256} />
+                  </div>
 
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-sm text-muted-foreground">QR Code URL</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Input value={qrUrl} readOnly className="flex-1" />
-                      <Button variant="outline" size="icon" onClick={handleCopyUrl}>
-                        <Copy className="w-4 h-4" />
-                      </Button>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm text-muted-foreground">QR Code URL</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input value={transferQrUrl} readOnly className="flex-1" />
+                        <Button variant="outline" size="icon" onClick={handleCopyTransferUrl}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm text-muted-foreground">QR Code Path</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input value={transferQrPath} readOnly className="flex-1" />
+                        <Button variant="outline" size="icon" onClick={handleCopyTransferPath}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <Label className="text-sm text-muted-foreground">QR Code Path</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Input value={qrPath} readOnly className="flex-1" />
-                      <Button variant="outline" size="icon" onClick={handleCopyPath}>
-                        <Copy className="w-4 h-4" />
-                      </Button>
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={handleGenerateNewTransfer} className="flex-1">
+                      Generate New Code
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate(`/scan-transfer/${transferQrCodeId}`)}
+                      className="flex-1"
+                    >
+                      Test Scan
+                    </Button>
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            {/* Receiving QR Tab */}
+            <TabsContent value="receiving" className="space-y-6">
+              <div className="p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-2 mb-2">
+                  <PackageOpen className="w-5 h-5 text-emerald-500" />
+                  <p className="font-semibold">Receiving QR Code</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Generate QR codes to receive items directly into a store
+                </p>
+              </div>
+
+              <div>
+                <Label>Select Destination Store</Label>
+                <select
+                  value={toStoreId}
+                  onChange={(e) => setToStoreId(e.target.value)}
+                  className="w-full mt-2 p-2 border rounded-md bg-background"
+                  disabled={stores.length === 0}
+                >
+                  {stores.length === 0 ? (
+                    <option value="">No stores available</option>
+                  ) : (
+                    stores.map((store) => (
+                      <option key={store.id} value={store.id}>
+                        {store.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <p className="text-xs text-muted-foreground mt-2">
+                  QR code auto-saves when you select a store
+                </p>
+              </div>
+
+              {receivingQrCodeId && (
+                <>
+                  <div className="flex justify-center p-8 bg-white rounded-lg">
+                    <QRCodeSVG value={receivingQrUrl} size={256} />
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm text-muted-foreground">QR Code URL</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input value={receivingQrUrl} readOnly className="flex-1" />
+                        <Button variant="outline" size="icon" onClick={handleCopyReceivingUrl}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm text-muted-foreground">QR Code Path</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input value={receivingQrPath} readOnly className="flex-1" />
+                        <Button variant="outline" size="icon" onClick={handleCopyReceivingPath}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={handleGenerateNew} className="flex-1">
-                    Generate New Code
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate(`/scan-transfer/${qrCodeId}`)}
-                    className="flex-1"
-                  >
-                    Test Scan
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={handleGenerateNewReceiving} className="flex-1">
+                      Generate New Code
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate(`/scan-receive/${receivingQrCodeId}`)}
+                      className="flex-1"
+                    >
+                      Test Scan
+                    </Button>
+                  </div>
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
         </Card>
       </div>
 
