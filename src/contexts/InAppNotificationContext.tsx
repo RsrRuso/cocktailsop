@@ -3,7 +3,6 @@ import { useInAppNotifications } from '@/hooks/useInAppNotifications';
 import { InAppNotification } from '@/components/InAppNotification';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 interface InAppNotificationContextType {
   showNotification: (
@@ -19,7 +18,6 @@ const InAppNotificationContext = createContext<InAppNotificationContextType | un
 export const InAppNotificationProvider = ({ children }: { children: ReactNode }) => {
   const { currentNotification, showNotification, closeNotification } = useInAppNotifications();
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   // Setup global realtime subscriptions for inventory transactions
   useEffect(() => {
@@ -39,7 +37,7 @@ export const InAppNotificationProvider = ({ children }: { children: ReactNode })
             '📦 New Transfer',
             'Inventory transfer initiated',
             'transaction',
-            () => navigate('/inventory-transactions')
+            () => window.location.href = '/inventory-transactions'
           );
         }
       )
@@ -59,7 +57,7 @@ export const InAppNotificationProvider = ({ children }: { children: ReactNode })
             '✅ New Receiving',
             'Inventory received successfully',
             'receiving',
-            () => navigate('/inventory-transactions')
+            () => window.location.href = '/inventory-transactions'
           );
         }
       )
@@ -69,7 +67,7 @@ export const InAppNotificationProvider = ({ children }: { children: ReactNode })
       supabase.removeChannel(transferChannel);
       supabase.removeChannel(inventoryChannel);
     };
-  }, [user, showNotification, navigate]);
+  }, [user, showNotification]);
 
   const contextValue = useMemo(() => ({ showNotification }), [showNotification]);
 
