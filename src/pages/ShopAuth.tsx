@@ -76,7 +76,7 @@ const ShopAuth = () => {
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        toast({ title: "Error", description: error.errors[0].message, variant: "destructive" });
+        toast({ title: "Error", description: error.issues[0].message, variant: "destructive" });
       }
       return false;
     }
