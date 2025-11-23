@@ -136,6 +136,7 @@ const WorkspaceManagement = () => {
         name: formData.name,
         description: formData.description,
         owner_id: user.id,
+        workspace_type: "store_management",
       });
 
       if (error) throw error;

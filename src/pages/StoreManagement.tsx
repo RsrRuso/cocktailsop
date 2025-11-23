@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,7 @@ const StoreManagement = () => {
   const { user } = useAuth();
   const { currentWorkspace, workspaces, switchWorkspace } = useWorkspace();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   const [stores, setStores] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
@@ -112,6 +113,16 @@ const StoreManagement = () => {
       setupRealtimeSubscriptions();
     }
   }, [user, currentWorkspace]);
+
+  useEffect(() => {
+    const workspaceId = searchParams.get("workspace");
+    if (workspaceId && workspaces.length > 0) {
+      const exists = workspaces.some((w) => w.id === workspaceId);
+      if (exists) {
+        switchWorkspace(workspaceId);
+      }
+    }
+  }, [searchParams, workspaces, switchWorkspace]);
 
   const setupRealtimeSubscriptions = () => {
     const workspaceFilter = `user_id=eq.${user?.id}`;
