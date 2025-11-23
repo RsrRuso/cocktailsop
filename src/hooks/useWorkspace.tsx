@@ -113,6 +113,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
           name,
           description,
           owner_id: user.id,
+          workspace_type: 'store_management',
         })
         .select()
         .single();
