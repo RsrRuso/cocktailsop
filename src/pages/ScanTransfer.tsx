@@ -32,6 +32,8 @@ export default function ScanTransfer() {
   const [submitting, setSubmitting] = useState(false);
   const [itemSearch, setItemSearch] = useState<string>("");
   const [lastTransfer, setLastTransfer] = useState<any>(null);
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchQueue, setBatchQueue] = useState<any[]>([]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -178,6 +180,31 @@ export default function ScanTransfer() {
       return;
     }
 
+    if (batchMode) {
+      // Add to batch queue
+      const selectedItem = items.find(i => i.id === selectedItemId);
+      const fromStore = fromStores.find(s => s.id === fromStoreId);
+      const toStore = stores.find(s => s.id === toStoreId);
+      
+      setBatchQueue(prev => [...prev, {
+        fromStoreId,
+        toStoreId,
+        selectedItemId,
+        availableInventoryId: availableInventory.id,
+        quantity: quantityNum,
+        notes,
+        fromStore: fromStore?.name || "Unknown",
+        toStore: toStore?.name || "Unknown",
+        item: selectedItem?.name || "Unknown",
+        expirationDate: availableInventory.expiration_date
+      }]);
+      
+      toast.success(`Added to batch (${batchQueue.length + 1} items)`);
+      setQuantity("1");
+      setNotes("");
+      return;
+    }
+
     setSubmitting(true);
 
     const { error } = await supabase
@@ -249,59 +276,192 @@ export default function ScanTransfer() {
     setSubmitting(false);
   };
 
+  const handleBatchSubmit = async () => {
+    if (batchQueue.length === 0) {
+      toast.error("No transfers in batch");
+      return;
+    }
+
+    setSubmitting(true);
+    const results = [];
+
+    try {
+      for (const transfer of batchQueue) {
+        const { error } = await supabase
+          .from("inventory_transfers")
+          .insert({
+            from_store_id: transfer.fromStoreId,
+            to_store_id: transfer.toStoreId,
+            inventory_id: transfer.availableInventoryId,
+            quantity: transfer.quantity,
+            notes: transfer.notes,
+            user_id: user.id,
+            status: "completed",
+            transfer_date: new Date().toISOString()
+          });
+
+        if (error) throw error;
+
+        const { data: fromInv } = await supabase
+          .from("inventory")
+          .select("quantity")
+          .eq("id", transfer.availableInventoryId)
+          .single();
+
+        await supabase
+          .from("inventory")
+          .update({ quantity: (fromInv?.quantity || 0) - transfer.quantity })
+          .eq("id", transfer.availableInventoryId);
+
+        const { data: existingToInventory } = await supabase
+          .from("inventory")
+          .select("*")
+          .eq("store_id", transfer.toStoreId)
+          .eq("item_id", transfer.selectedItemId)
+          .maybeSingle();
+
+        if (existingToInventory) {
+          await supabase
+            .from("inventory")
+            .update({ quantity: existingToInventory.quantity + transfer.quantity })
+            .eq("id", existingToInventory.id);
+        } else {
+          await supabase
+            .from("inventory")
+            .insert({
+              store_id: transfer.toStoreId,
+              item_id: transfer.selectedItemId,
+              quantity: transfer.quantity,
+              expiration_date: transfer.expirationDate,
+              user_id: user.id
+            });
+        }
+
+        results.push({
+          ...transfer,
+          id: `TRF-${Date.now()}-${results.length}`,
+          date: new Date().toISOString(),
+          user: user.email
+        });
+      }
+
+      toast.success(`${results.length} transfers completed!`);
+      setLastTransfer({ batch: results });
+      setBatchQueue([]);
+      setBatchMode(false);
+      setSubmitting(false);
+    } catch (error: any) {
+      console.error("Batch transfer error:", error);
+      toast.error("Some transfers failed");
+      setSubmitting(false);
+    }
+  };
+
   const generateTransferPDF = async () => {
     if (!lastTransfer) return;
 
     try {
       const pdf = new jsPDF();
       
-      // Header
-      pdf.setFontSize(20);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Transfer Receipt", 105, 20, { align: "center" });
-      
-      // QR Code
-      const qrDataUrl = await QRCode.toDataURL(`TRANSFER-${lastTransfer.id}`);
-      pdf.addImage(qrDataUrl, "PNG", 160, 30, 40, 40);
-      
-      // Transfer Details
-      pdf.setFontSize(12);
-      pdf.setFont("helvetica", "normal");
-      
-      pdf.text(`Transfer ID: ${lastTransfer.id}`, 20, 40);
-      pdf.text(`Date: ${new Date(lastTransfer.date).toLocaleString()}`, 20, 50);
-      pdf.text(`Processed by: ${lastTransfer.user}`, 20, 60);
-      
-      // Separator
-      pdf.setDrawColor(200);
-      pdf.line(20, 75, 190, 75);
-      
-      // Transfer Information
-      pdf.setFontSize(14);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Transfer Information", 20, 90);
-      
-      pdf.setFontSize(12);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(`From Store: ${lastTransfer.fromStore}`, 20, 105);
-      pdf.text(`To Store: ${lastTransfer.toStore}`, 20, 115);
-      pdf.text(`Item: ${lastTransfer.item}`, 20, 125);
-      pdf.text(`Quantity: ${lastTransfer.quantity} units`, 20, 135);
-      
-      if (lastTransfer.notes) {
-        pdf.text("Notes:", 20, 150);
-        pdf.setFontSize(10);
-        const splitNotes = pdf.splitTextToSize(lastTransfer.notes, 170);
-        pdf.text(splitNotes, 20, 160);
+      if (lastTransfer.batch) {
+        // Batch PDF
+        pdf.setFontSize(20);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Batch Transfer Receipt", 105, 20, { align: "center" });
+        
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`Total Transfers: ${lastTransfer.batch.length}`, 20, 40);
+        pdf.text(`Date: ${new Date().toLocaleString()}`, 20, 50);
+        
+        let yPos = 70;
+        
+        for (let i = 0; i < lastTransfer.batch.length; i++) {
+          const transfer = lastTransfer.batch[i];
+          
+          if (yPos > 250) {
+            pdf.addPage();
+            yPos = 20;
+          }
+          
+          pdf.setFontSize(14);
+          pdf.setFont("helvetica", "bold");
+          pdf.text(`Transfer ${i + 1}`, 20, yPos);
+          yPos += 10;
+          
+          pdf.setFontSize(10);
+          pdf.setFont("helvetica", "normal");
+          pdf.text(`From: ${transfer.fromStore}`, 20, yPos);
+          yPos += 7;
+          pdf.text(`To: ${transfer.toStore}`, 20, yPos);
+          yPos += 7;
+          pdf.text(`Item: ${transfer.item}`, 20, yPos);
+          yPos += 7;
+          pdf.text(`Quantity: ${transfer.quantity} units`, 20, yPos);
+          yPos += 7;
+          
+          if (transfer.notes) {
+            pdf.text(`Notes: ${transfer.notes}`, 20, yPos);
+            yPos += 7;
+          }
+          
+          const qrDataUrl = await QRCode.toDataURL(`TRANSFER-${transfer.id}`);
+          pdf.addImage(qrDataUrl, "PNG", 150, yPos - 25, 35, 35);
+          
+          yPos += 20;
+        }
+        
+        pdf.setFontSize(8);
+        pdf.setTextColor(128);
+        pdf.text("This document serves as proof of transfer", 105, 280, { align: "center" });
+        pdf.text("Generated by Store Management System", 105, 285, { align: "center" });
+        
+        pdf.save(`Batch_Transfer_${Date.now()}.pdf`);
+      } else {
+        // Single transfer PDF
+        pdf.setFontSize(20);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Transfer Receipt", 105, 20, { align: "center" });
+        
+        const qrDataUrl = await QRCode.toDataURL(`TRANSFER-${lastTransfer.id}`);
+        pdf.addImage(qrDataUrl, "PNG", 160, 30, 40, 40);
+        
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "normal");
+        
+        pdf.text(`Transfer ID: ${lastTransfer.id}`, 20, 40);
+        pdf.text(`Date: ${new Date(lastTransfer.date).toLocaleString()}`, 20, 50);
+        pdf.text(`Processed by: ${lastTransfer.user}`, 20, 60);
+        
+        pdf.setDrawColor(200);
+        pdf.line(20, 75, 190, 75);
+        
+        pdf.setFontSize(14);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Transfer Information", 20, 90);
+        
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`From Store: ${lastTransfer.fromStore}`, 20, 105);
+        pdf.text(`To Store: ${lastTransfer.toStore}`, 20, 115);
+        pdf.text(`Item: ${lastTransfer.item}`, 20, 125);
+        pdf.text(`Quantity: ${lastTransfer.quantity} units`, 20, 135);
+        
+        if (lastTransfer.notes) {
+          pdf.text("Notes:", 20, 150);
+          pdf.setFontSize(10);
+          const splitNotes = pdf.splitTextToSize(lastTransfer.notes, 170);
+          pdf.text(splitNotes, 20, 160);
+        }
+        
+        pdf.setFontSize(8);
+        pdf.setTextColor(128);
+        pdf.text("This document serves as proof of transfer", 105, 280, { align: "center" });
+        pdf.text("Generated by Store Management System", 105, 285, { align: "center" });
+        
+        pdf.save(`Transfer_${lastTransfer.id}.pdf`);
       }
       
-      // Footer
-      pdf.setFontSize(8);
-      pdf.setTextColor(128);
-      pdf.text("This document serves as proof of transfer", 105, 280, { align: "center" });
-      pdf.text("Generated by Store Management System", 105, 285, { align: "center" });
-      
-      pdf.save(`Transfer_${lastTransfer.id}.pdf`);
       toast.success("PDF downloaded successfully");
     } catch (error) {
       console.error("PDF generation error:", error);
@@ -340,14 +500,22 @@ export default function ScanTransfer() {
       
       <div className="container mx-auto p-4 pt-20">
         <Card className="p-6 max-w-2xl mx-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <ArrowLeftRight className="w-8 h-8 text-primary" />
-            <div>
-              <h1 className="text-2xl font-bold">Transfer Glassware Items</h1>
-              <p className="text-sm text-muted-foreground">
-                Select source and destination stores
-              </p>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <ArrowLeftRight className="w-8 h-8 text-primary" />
+              <div>
+                <h1 className="text-2xl font-bold">Transfer Glassware Items</h1>
+                <p className="text-sm text-muted-foreground">
+                  Select source and destination stores
+                </p>
+              </div>
             </div>
+            <Button
+              variant={batchMode ? "default" : "outline"}
+              onClick={() => setBatchMode(!batchMode)}
+            >
+              {batchMode ? `Batch Mode (${batchQueue.length})` : "Enable Batch"}
+            </Button>
           </div>
 
           <div className="space-y-4">
@@ -487,7 +655,12 @@ export default function ScanTransfer() {
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing Transfer...
+                  Processing...
+                </>
+              ) : batchMode ? (
+                <>
+                  <PackageOpen className="w-4 h-4 mr-2" />
+                  Add to Batch
                 </>
               ) : (
                 <>
@@ -496,6 +669,54 @@ export default function ScanTransfer() {
                 </>
               )}
             </Button>
+
+            {batchMode && batchQueue.length > 0 && (
+              <Card className="p-4 border-primary">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold">Batch Queue ({batchQueue.length})</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setBatchQueue([])}
+                  >
+                    Clear All
+                  </Button>
+                </div>
+                <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
+                  {batchQueue.map((item, idx) => (
+                    <div key={idx} className="p-2 bg-muted rounded flex justify-between items-center text-sm">
+                      <div>
+                        <div className="font-medium">{item.item}</div>
+                        <div className="text-muted-foreground">
+                          {item.fromStore} → {item.toStore} ({item.quantity} units)
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setBatchQueue(prev => prev.filter((_, i) => i !== idx))}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  onClick={handleBatchSubmit}
+                  className="w-full"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing Batch...
+                    </>
+                  ) : (
+                    `Submit ${batchQueue.length} Transfers`
+                  )}
+                </Button>
+              </Card>
+            )}
 
             {lastTransfer && (
               <Card className="p-4 bg-emerald-500/10 border border-emerald-500/20 mt-4">
