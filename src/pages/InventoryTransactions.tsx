@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -34,47 +35,6 @@ const InventoryTransactions = () => {
   
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      fetchTransactions();
-      setupRealtime();
-    }
-  }, [user, currentWorkspace]);
-
-  const setupRealtime = () => {
-    // Subscribe to changes to refresh the list
-    const transferChannel = supabase
-      .channel('page-transfers-refresh')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'inventory_transfers'
-        },
-        () => fetchTransactions()
-      )
-      .subscribe();
-
-    const inventoryChannel = supabase
-      .channel('page-inventory-refresh')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'inventory'
-        },
-        () => fetchTransactions()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(transferChannel);
-      supabase.removeChannel(inventoryChannel);
-    };
-  };
 
   const fetchTransactions = async () => {
     try {
@@ -144,6 +104,30 @@ const InventoryTransactions = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      fetchTransactions();
+    }
+  }, [user, currentWorkspace]);
+
+  // Real-time subscription for inventory transfers
+  useRealtimeSubscription({
+    channel: 'inventory-transactions-transfers',
+    table: 'inventory_transfers',
+    event: '*',
+    onUpdate: fetchTransactions,
+    debounceMs: 500,
+  });
+
+  // Real-time subscription for inventory changes
+  useRealtimeSubscription({
+    channel: 'inventory-transactions-inventory',
+    table: 'inventory',
+    event: '*',
+    onUpdate: fetchTransactions,
+    debounceMs: 500,
+  });
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
