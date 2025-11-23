@@ -4374,6 +4374,41 @@ export type Database = {
         }
         Relationships: []
       }
+      transfer_qr_codes: {
+        Row: {
+          created_at: string
+          from_store_id: string
+          id: string
+          qr_code_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_store_id: string
+          id?: string
+          qr_code_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_store_id?: string
+          id?: string
+          qr_code_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transfer_qr_codes_from_store_id_fkey"
+            columns: ["from_store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transfers: {
         Row: {
           created_at: string

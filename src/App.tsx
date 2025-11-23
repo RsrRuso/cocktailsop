@@ -100,6 +100,8 @@ const InventoryTransactions = lazy(() => import("./pages/InventoryTransactions")
 const StoresAdmin = lazy(() => import("./pages/StoresAdmin"));
 const MasterItems = lazy(() => import("./pages/MasterItems"));
 const WorkspaceManagement = lazy(() => import("./pages/WorkspaceManagement"));
+const TransferQRGenerator = lazy(() => import("@/pages/TransferQRGenerator"));
+const ScanTransfer = lazy(() => import("@/pages/ScanTransfer"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -151,6 +153,8 @@ const App = () => (
               <Route path="/qr-access-code" element={<QRAccessCode />} />
               <Route path="/scan-access/:workspaceId" element={<ScanAccess />} />
               <Route path="/access-approval" element={<AccessApproval />} />
+              <Route path="/transfer-qr" element={<TransferQRGenerator />} />
+              <Route path="/scan-transfer/:qrCodeId" element={<ScanTransfer />} />
               <Route path="/low-stock-inventory/:workspaceId" element={<LowStockInventory />} />
               <Route path="/store-management" element={<StoreManagement />} />
               <Route path="/store/:id" element={<StoreDetail />} />

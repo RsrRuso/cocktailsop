@@ -68,7 +68,7 @@ export default function TransferQRGenerator() {
     }
 
     const { error } = await supabase
-      .from("transfer_qr_codes")
+      .from("transfer_qr_codes" as any)
       .upsert({
         qr_code_id: qrCodeId,
         from_store_id: fromStoreId,
