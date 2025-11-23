@@ -29,7 +29,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { invitationId }: InvitationRequest = await req.json();
+    const requestBody = await req.json();
+    
+    // Validate invitationId format
+    if (!requestBody.invitationId || typeof requestBody.invitationId !== 'string') {
+      throw new Error("Invalid invitation ID");
+    }
+    
+    // Basic UUID format validation
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(requestBody.invitationId)) {
+      throw new Error("Invalid invitation ID format");
+    }
+    
+    const { invitationId } = requestBody as InvitationRequest;
 
     console.log("Processing invitation:", invitationId);
 
@@ -135,7 +148,7 @@ const handler = async (req: Request): Promise<Response> => {
         </html>
       `;
 
-    // TEST MODE: Sending to ruslan.melqonian@gmail.com instead of actual recipient
+    // Send email to actual recipient
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -144,12 +157,9 @@ const handler = async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         from: "Team Invitation <onboarding@resend.dev>",
-        to: ["ruslan.melqonian@gmail.com"],
-        subject: `[TEST] You're invited to join ${teamName} (intended for ${invitation.invited_email})`,
-        html: emailHtml.replace(
-          '<div class="content">',
-          `<div class="content"><div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 6px;"><strong>⚠️ TEST MODE:</strong> This email was intended for <strong>${invitation.invited_email}</strong> but sent to you for testing purposes.</div>`
-        ),
+        to: [invitation.invited_email],
+        subject: `You're invited to join ${teamName}`,
+        html: emailHtml,
       }),
     });
 
