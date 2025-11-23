@@ -1225,10 +1225,10 @@ const StoreManagement = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => navigate("/workspace-management")}
-                className="whitespace-nowrap"
+                className="whitespace-nowrap gap-2"
               >
-                <Plus className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Manage</span>
+                <Plus className="w-4 h-4" />
+                <span>Manage</span>
               </Button>
             </div>
           </div>
