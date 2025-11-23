@@ -47,7 +47,8 @@ export default function TransferQRGenerator() {
     let storesQuery = supabase
       .from("stores")
       .select("*")
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .eq("is_active", true);
 
     if (currentWorkspace?.id) {
       storesQuery = storesQuery.eq("workspace_id", currentWorkspace.id);
@@ -58,12 +59,12 @@ export default function TransferQRGenerator() {
     const { data, error } = await storesQuery.order("name");
     
     if (error) {
-      console.error("Error fetching stores:", error);
+      console.error("[TransferQR] Error fetching stores:", error);
       toast.error("Failed to load stores");
       return;
     }
 
-    console.log("Fetched stores:", data);
+    console.log(`[TransferQR] Fetched ${data?.length || 0} stores`, data?.map(s => s.name));
     setStores(data || []);
     if (data && data.length > 0) {
       setFromStoreId(data[0].id);

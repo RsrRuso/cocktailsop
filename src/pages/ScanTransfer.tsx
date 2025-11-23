@@ -66,14 +66,20 @@ export default function ScanTransfer() {
 
     setTransferContext({ ...contextData, fromStoreName: fromStore?.name });
 
-    // Fetch all stores for "from" selection
-    const { data: allStoresData } = await supabase
+    // Fetch all active stores for this user & workspace (same as "Your Stores")
+    let storesQuery = supabase
       .from("stores")
       .select("*")
       .eq("user_id", userId)
-      .order("name");
+      .eq("is_active", true);
 
-    console.log(`[ScanTransfer] Fetched ${allStoresData?.length || 0} stores`);
+    const { data: allStoresData, error: storesError } = await storesQuery.order("name");
+
+    if (storesError) {
+      console.error("[ScanTransfer] Error fetching stores:", storesError);
+    }
+
+    console.log(`[ScanTransfer] Fetched ${allStoresData?.length || 0} stores`, allStoresData?.map(s => s.name));
 
     setFromStores(allStoresData || []);
     setFromStoreId(contextData.from_store_id);
