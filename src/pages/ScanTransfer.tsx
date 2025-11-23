@@ -248,6 +248,7 @@ export default function ScanTransfer() {
         quantity: quantityNum,
         notes,
         user_id: user.id,
+        workspace_id: availableInventory.workspace_id,
         status: "completed",
         transfer_date: new Date().toISOString()
       });
@@ -283,7 +284,8 @@ export default function ScanTransfer() {
           item_id: selectedItemId,
           quantity: quantityNum,
           expiration_date: availableInventory.expiration_date,
-          user_id: user.id
+          user_id: user.id,
+          workspace_id: availableInventory.workspace_id
       });
     }
 
@@ -319,6 +321,13 @@ export default function ScanTransfer() {
 
     try {
       for (const transfer of batchQueue) {
+        // Get workspace_id from the source inventory
+        const { data: sourceInv } = await supabase
+          .from("inventory")
+          .select("workspace_id")
+          .eq("id", transfer.availableInventoryId)
+          .single();
+
         const { error } = await supabase
           .from("inventory_transfers")
           .insert({
@@ -328,6 +337,7 @@ export default function ScanTransfer() {
             quantity: transfer.quantity,
             notes: transfer.notes,
             user_id: user.id,
+            workspace_id: sourceInv?.workspace_id,
             status: "completed",
             transfer_date: new Date().toISOString()
           });
@@ -365,7 +375,8 @@ export default function ScanTransfer() {
               item_id: transfer.selectedItemId,
               quantity: transfer.quantity,
               expiration_date: transfer.expirationDate,
-              user_id: user.id
+              user_id: user.id,
+              workspace_id: sourceInv?.workspace_id
             });
         }
 
