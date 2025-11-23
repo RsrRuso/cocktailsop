@@ -1240,6 +1240,22 @@ const StoreManagement = () => {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden border-2 border-border/50 hover:border-emerald-500/50 animate-fade-in" onClick={() => navigate('/transfer-qr')} style={{ animationDelay: '500ms' }}>
+            <div className="absolute top-0 right-0 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-bl-full" />
+            <CardContent className="p-3 sm:p-5 relative">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
+                  <ArrowRightLeft className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500" />
+                </div>
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="font-bold text-sm sm:text-base group-hover:text-emerald-600 transition-colors">Transfer QR</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Generate & scan</p>
+                </div>
+                <ExternalLink className="hidden sm:block h-4 w-4 text-muted-foreground group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Stores List */}

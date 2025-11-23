@@ -41,25 +41,33 @@ export default function ScanTransfer() {
   const fetchTransferContext = async (userId: string) => {
     setLoading(true);
     
-    const { data: context } = await supabase
-      .from("transfer_qr_codes")
-      .select("*, stores!transfer_qr_codes_from_store_id_fkey(name)")
+    const { data: context, error: contextError } = await supabase
+      .from("transfer_qr_codes" as any)
+      .select("*")
       .eq("qr_code_id", qrCodeId)
       .single();
 
-    if (!context) {
+    if (contextError || !context) {
       toast.error("Invalid QR code");
       setLoading(false);
       return;
     }
 
-    setTransferContext(context);
+    const contextData = context as any;
+    
+    const { data: fromStore } = await supabase
+      .from("stores")
+      .select("name")
+      .eq("id", contextData.from_store_id)
+      .single();
+
+    setTransferContext({ ...contextData, fromStoreName: fromStore?.name });
 
     const { data: storesData } = await supabase
       .from("stores")
       .select("*")
       .eq("user_id", userId)
-      .neq("id", context.from_store_id)
+      .neq("id", contextData.from_store_id)
       .order("name");
 
     setStores(storesData || []);
@@ -81,7 +89,7 @@ export default function ScanTransfer() {
     const { data: inventoryData } = await supabase
       .from("inventory")
       .select("*, items(*)")
-      .eq("store_id", context.from_store_id)
+      .eq("store_id", contextData.from_store_id)
       .gt("quantity", 0);
 
     setInventory(inventoryData || []);
@@ -193,7 +201,7 @@ export default function ScanTransfer() {
             <div>
               <h1 className="text-2xl font-bold">Transfer Items</h1>
               <p className="text-sm text-muted-foreground">
-                From: {transferContext.stores?.name}
+                From: {transferContext.fromStoreName}
               </p>
             </div>
           </div>
