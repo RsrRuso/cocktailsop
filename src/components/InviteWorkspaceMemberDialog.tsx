@@ -156,7 +156,10 @@ export const InviteWorkspaceMemberDialog = ({
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        toast.error("You must be logged in to add members");
+        return;
+      }
 
       const members = Array.from(selectedUsers).map(userId => ({
         workspace_id: workspaceId,
@@ -165,19 +168,26 @@ export const InviteWorkspaceMemberDialog = ({
         invited_by: user.id,
       }));
 
-      const { error } = await supabase
+      console.log("Attempting to add members:", members);
+
+      const { data, error } = await supabase
         .from("workspace_members")
-        .insert(members);
+        .insert(members)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database error:", error);
+        throw error;
+      }
 
+      console.log("Successfully added members:", data);
       toast.success(`Added ${selectedUsers.size} member(s) to workspace`);
       setSelectedUsers(new Set());
       onSuccess?.();
       onOpenChange(false);
     } catch (error: any) {
       console.error("Invite error:", error);
-      toast.error(error.message || "Failed to add members");
+      toast.error(error.message || "Failed to add members. Please check console for details.");
     } finally {
       setIsLoading(false);
     }
