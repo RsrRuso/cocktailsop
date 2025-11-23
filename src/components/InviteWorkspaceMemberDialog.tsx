@@ -277,37 +277,39 @@ export const InviteWorkspaceMemberDialog = ({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="connections" className="flex-1 flex flex-col min-h-0 space-y-4">
-            <div className="space-y-2">
-              <Input
-                placeholder="Search connections..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Role for selected members</Label>
-              <Select
-                value={role}
-                onValueChange={(value: "member" | "admin") => setRole(value)}
-                disabled={isLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedUsers.size > 0 && (
-              <div className="text-sm text-muted-foreground">
-                {selectedUsers.size} user(s) selected
+          <TabsContent value="connections" className="flex-1 flex flex-col min-h-0">
+            <div className="space-y-4 pb-4">
+              <div className="space-y-2">
+                <Input
+                  placeholder="Search connections..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
-            )}
+
+              <div className="space-y-2">
+                <Label>Role for selected members</Label>
+                <Select
+                  value={role}
+                  onValueChange={(value: "member" | "admin") => setRole(value)}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedUsers.size > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  {selectedUsers.size} user(s) selected
+                </div>
+              )}
+            </div>
 
             <Tabs defaultValue="following" className="flex-1 flex flex-col min-h-0">
               <TabsList className="grid w-full grid-cols-2">
@@ -319,8 +321,8 @@ export const InviteWorkspaceMemberDialog = ({
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="following" className="flex-1 min-h-0 mt-2">
-                <ScrollArea className="h-[300px] pr-4">
+              <TabsContent value="following" className="mt-4">
+                <ScrollArea className="h-[280px] pr-4">
                   {loadingConnections ? (
                     <div className="text-center py-8 text-muted-foreground">
                       Loading...
@@ -331,8 +333,8 @@ export const InviteWorkspaceMemberDialog = ({
                 </ScrollArea>
               </TabsContent>
 
-              <TabsContent value="followers" className="flex-1 min-h-0 mt-2">
-                <ScrollArea className="h-[300px] pr-4">
+              <TabsContent value="followers" className="mt-4">
+                <ScrollArea className="h-[280px] pr-4">
                   {loadingConnections ? (
                     <div className="text-center py-8 text-muted-foreground">
                       Loading...
@@ -344,7 +346,7 @@ export const InviteWorkspaceMemberDialog = ({
               </TabsContent>
             </Tabs>
 
-            <div className="flex justify-end gap-2 pt-2 border-t">
+            <div className="flex justify-end gap-2 pt-4 mt-4 border-t">
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
