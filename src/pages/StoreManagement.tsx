@@ -364,8 +364,9 @@ const StoreManagement = () => {
           user_email: user.email || 'Unknown',
           from_store: t.from_store?.name,
           to_store: t.to_store?.name,
-          item_count: 1,
-          status: t.status
+          item_name: t.inventory?.items?.name || 'Unknown Item',
+          item_count: Number(t.quantity) || 0,
+          status: t.status,
         });
       });
 
