@@ -18,6 +18,8 @@ export default function ScanReceive() {
   const [loading, setLoading] = useState(true);
   const [receivingContext, setReceivingContext] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState<string>("");
   
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("1");
@@ -64,7 +66,26 @@ export default function ScanReceive() {
 
     setReceivingContext({ ...contextData, toStoreName: toStore?.name });
 
-    console.log("[ScanReceive] Using store", { id: toStore?.id, name: toStore?.name });
+    // Fetch all stores for selection
+    let storesQuery = supabase
+      .from("stores")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("is_active", true);
+
+    if (toStore?.workspace_id) {
+      storesQuery = storesQuery.eq("workspace_id", toStore.workspace_id);
+    } else {
+      storesQuery = storesQuery.is("workspace_id", null);
+    }
+
+    const { data: storesData } = await storesQuery.order("name");
+    setStores(storesData || []);
+    
+    // Pre-select the store from QR code
+    if (storesData && storesData.length > 0) {
+      setSelectedStoreId(contextData.to_store_id);
+    }
 
     // Fetch all items for this user & same workspace context
     let itemsQuery = supabase
@@ -100,7 +121,7 @@ export default function ScanReceive() {
       return;
     }
 
-    if (!selectedItemId || !quantity || !expirationDate) {
+    if (!selectedStoreId || !selectedItemId || !quantity || !expirationDate) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -120,7 +141,7 @@ export default function ScanReceive() {
       const { data: existingInventory } = await supabase
         .from("inventory")
         .select("*")
-        .eq("store_id", receivingContext.to_store_id)
+        .eq("store_id", selectedStoreId)
         .eq("item_id", selectedItemId)
         .eq("expiration_date", expirationDate)
         .eq("batch_number", batchNumber || "")
@@ -150,7 +171,7 @@ export default function ScanReceive() {
           .insert({
             workspace_id: receivingContext.workspace_id || null,
             user_id: user.id,
-            store_id: receivingContext.to_store_id,
+            store_id: selectedStoreId,
             item_id: selectedItemId,
             quantity: quantityNum,
             expiration_date: expirationDate,
@@ -172,7 +193,7 @@ export default function ScanReceive() {
       await supabase.from("inventory_activity_log").insert({
         workspace_id: receivingContext.workspace_id || null,
         user_id: user.id,
-        store_id: receivingContext.to_store_id,
+        store_id: selectedStoreId,
         inventory_id: inventoryId,
         action_type: "received",
         quantity_after: existingInventory 
@@ -253,7 +274,7 @@ export default function ScanReceive() {
             <div>
               <h1 className="text-2xl font-bold">Receive Items</h1>
               <p className="text-sm text-muted-foreground">
-                Receiving into: <span className="font-semibold text-foreground">{receivingContext.toStoreName}</span>
+                Select destination store and items to receive
               </p>
             </div>
           </div>
@@ -263,6 +284,26 @@ export default function ScanReceive() {
               <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
                 📦 Use this form to record items being received into the store
               </p>
+            </div>
+
+            <div>
+              <Label>Select Destination Store *</Label>
+              <select
+                value={selectedStoreId}
+                onChange={(e) => setSelectedStoreId(e.target.value)}
+                className="w-full mt-2 p-2 border rounded-md bg-background z-50"
+                disabled={stores.length === 0 || submitting}
+              >
+                {stores.length === 0 ? (
+                  <option value="">No stores available</option>
+                ) : (
+                  stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))
+                )}
+              </select>
             </div>
 
             <div>
@@ -278,14 +319,9 @@ export default function ScanReceive() {
                   disabled={submitting}
                 />
               </div>
-              <select
-                value={selectedItemId}
-                onChange={(e) => setSelectedItemId(e.target.value)}
-                className="w-full p-2 border rounded-md bg-background"
-                disabled={items.length === 0 || submitting}
-              >
+              <div className="space-y-2 max-h-64 overflow-y-auto border rounded-md bg-background p-2">
                 {items.length === 0 ? (
-                  <option value="">No items available</option>
+                  <div className="text-center text-muted-foreground py-4">No items available</div>
                 ) : (
                   items
                     .filter((item) => {
@@ -297,12 +333,38 @@ export default function ScanReceive() {
                       );
                     })
                     .map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name} {item.brand ? `- ${item.brand}` : ""}
-                      </option>
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setSelectedItemId(item.id)}
+                        disabled={submitting}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:border-primary ${
+                          selectedItemId === item.id 
+                            ? 'border-primary bg-primary/10' 
+                            : 'border-border bg-background'
+                        }`}
+                      >
+                        {item.photo_url ? (
+                          <img 
+                            src={item.photo_url} 
+                            alt={item.name}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                            <PackageOpen className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 text-left">
+                          <div className="font-medium">{item.name}</div>
+                          {item.brand && (
+                            <div className="text-sm text-muted-foreground">{item.brand}</div>
+                          )}
+                        </div>
+                      </button>
                     ))
                 )}
-              </select>
+              </div>
             </div>
 
             <div>
@@ -357,7 +419,7 @@ export default function ScanReceive() {
               onClick={handleReceive}
               className="w-full"
               size="lg"
-              disabled={submitting || !selectedItemId || !quantity || !expirationDate}
+              disabled={submitting || !selectedStoreId || !selectedItemId || !quantity || !expirationDate}
             >
               {submitting ? (
                 <>

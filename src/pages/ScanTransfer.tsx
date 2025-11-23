@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeftRight, Loader2, PackageOpen, AlertCircle } from "lucide-react";
+import { ArrowLeftRight, Loader2, PackageOpen, AlertCircle, Search } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 
@@ -28,6 +28,7 @@ export default function ScanTransfer() {
   const [quantity, setQuantity] = useState<string>("1");
   const [notes, setNotes] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const [itemSearch, setItemSearch] = useState<string>("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -295,26 +296,70 @@ export default function ScanTransfer() {
             </div>
 
             <div>
-              <Label>Select Glassware Item</Label>
-              <select
-                value={selectedItemId}
-                onChange={(e) => setSelectedItemId(e.target.value)}
-                className="w-full mt-2 p-2 border rounded-md bg-background"
-                disabled={items.length === 0}
-              >
+              <Label>Search & Select Glassware Item</Label>
+              <div className="relative mt-2 mb-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  value={itemSearch}
+                  onChange={(e) => setItemSearch(e.target.value)}
+                  placeholder="Search items by name or brand..."
+                  className="pl-9"
+                  disabled={submitting}
+                />
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto border rounded-md bg-background p-2">
                 {items.length === 0 ? (
-                  <option value="">No glassware items available</option>
+                  <div className="text-center text-muted-foreground py-4">No glassware items available</div>
                 ) : (
-                  items.map((item) => {
-                    const inv = inventory.find(i => i.item_id === item.id);
-                    return (
-                      <option key={item.id} value={item.id}>
-                        {item.name} {inv ? `(Available: ${inv.quantity})` : "(Not in stock)"}
-                      </option>
-                    );
-                  })
+                  items
+                    .filter((item) => {
+                      if (!itemSearch) return true;
+                      const search = itemSearch.toLowerCase();
+                      return (
+                        item.name.toLowerCase().includes(search) ||
+                        (item.brand && item.brand.toLowerCase().includes(search))
+                      );
+                    })
+                    .map((item) => {
+                      const inv = inventory.find(i => i.item_id === item.id);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setSelectedItemId(item.id)}
+                          disabled={submitting}
+                          className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:border-primary ${
+                            selectedItemId === item.id 
+                              ? 'border-primary bg-primary/10' 
+                              : 'border-border bg-background'
+                          }`}
+                        >
+                          {item.photo_url ? (
+                            <img 
+                              src={item.photo_url} 
+                              alt={item.name}
+                              className="w-12 h-12 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                              <PackageOpen className="w-6 h-6 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex-1 text-left">
+                            <div className="font-medium">{item.name}</div>
+                            {item.brand && (
+                              <div className="text-sm text-muted-foreground">{item.brand}</div>
+                            )}
+                            <div className="text-sm text-muted-foreground">
+                              {inv ? `Available: ${inv.quantity}` : "Not in stock"}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })
                 )}
-              </select>
+              </div>
             </div>
 
             <div>
