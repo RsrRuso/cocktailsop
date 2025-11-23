@@ -30,6 +30,8 @@ export default function ScanReceive() {
   const [submitting, setSubmitting] = useState(false);
   const [itemSearch, setItemSearch] = useState<string>("");
   const [lastReceive, setLastReceive] = useState<any>(null);
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchQueue, setBatchQueue] = useState<any[]>([]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -134,17 +136,38 @@ export default function ScanReceive() {
       return;
     }
 
+    const defaultExpirationDate = new Date();
+    defaultExpirationDate.setFullYear(defaultExpirationDate.getFullYear() + 1);
+    const expirationDate = defaultExpirationDate.toISOString().split('T')[0];
+
+    if (batchMode) {
+      // Add to batch queue
+      const selectedItem = items.find(i => i.id === selectedItemId);
+      const selectedStore = stores.find(s => s.id === selectedStoreId);
+      
+      setBatchQueue(prev => [...prev, {
+        selectedStoreId,
+        selectedItemId,
+        quantity: quantityNum,
+        batchNumber: batchNumber || null,
+        notes: notes || null,
+        expirationDate,
+        store: selectedStore?.name || "Unknown",
+        item: selectedItem?.name || "Unknown"
+      }]);
+      
+      toast.success(`Added to batch (${batchQueue.length + 1} items)`);
+      setQuantity("1");
+      setBatchNumber("");
+      setNotes("");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       const selectedItem = items.find(i => i.id === selectedItemId);
       
-      // Use default expiration date of 1 year from now
-      const defaultExpirationDate = new Date();
-      defaultExpirationDate.setFullYear(defaultExpirationDate.getFullYear() + 1);
-      const expirationDate = defaultExpirationDate.toISOString().split('T')[0];
-      
-      // Check for existing inventory with same item and expiration
       const { data: existingInventory } = await supabase
         .from("inventory")
         .select("*")
@@ -157,7 +180,6 @@ export default function ScanReceive() {
       let inventoryId: string;
 
       if (existingInventory) {
-        // Update existing inventory
         const newQuantity = existingInventory.quantity + quantityNum;
         
         const { data: updated, error: updateError } = await supabase
@@ -169,10 +191,7 @@ export default function ScanReceive() {
 
         if (updateError) throw updateError;
         inventoryId = updated.id;
-
-        console.log(`[ScanReceive] Updated inventory ${inventoryId}: ${existingInventory.quantity} -> ${newQuantity}`);
       } else {
-        // Create new inventory record
         const { data: newInventory, error: insertError } = await supabase
           .from("inventory")
           .insert({
@@ -192,11 +211,8 @@ export default function ScanReceive() {
 
         if (insertError) throw insertError;
         inventoryId = newInventory.id;
-
-        console.log(`[ScanReceive] Created new inventory ${inventoryId} with quantity ${quantityNum}`);
       }
 
-      // Log the receiving activity
       await supabase.from("inventory_activity_log").insert({
         workspace_id: receivingContext.workspace_id || null,
         user_id: user.id,
@@ -220,7 +236,6 @@ export default function ScanReceive() {
 
       toast.success(`Successfully received ${quantityNum} units of ${selectedItem?.name}`);
       
-      // Store receive details for PDF generation
       const selectedStore = stores.find(s => s.id === selectedStoreId);
       
       setLastReceive({
@@ -235,7 +250,6 @@ export default function ScanReceive() {
         user: user.email
       });
       
-      // Reset form
       setQuantity("1");
       setBatchNumber("");
       setNotes("");
@@ -248,60 +262,178 @@ export default function ScanReceive() {
     }
   };
 
+  const handleBatchSubmit = async () => {
+    if (batchQueue.length === 0) {
+      toast.error("No items in batch");
+      return;
+    }
+
+    setSubmitting(true);
+    const results = [];
+
+    try {
+      for (const receive of batchQueue) {
+        const { data: existingInventory } = await supabase
+          .from("inventory")
+          .select("*")
+          .eq("store_id", receive.selectedStoreId)
+          .eq("item_id", receive.selectedItemId)
+          .eq("expiration_date", receive.expirationDate)
+          .eq("batch_number", receive.batchNumber || "")
+          .maybeSingle();
+
+        if (existingInventory) {
+          const newQuantity = existingInventory.quantity + receive.quantity;
+          
+          await supabase
+            .from("inventory")
+            .update({ quantity: newQuantity })
+            .eq("id", existingInventory.id);
+        } else {
+          await supabase
+            .from("inventory")
+            .insert({
+              workspace_id: receivingContext.workspace_id || null,
+              user_id: user.id,
+              store_id: receive.selectedStoreId,
+              item_id: receive.selectedItemId,
+              quantity: receive.quantity,
+              expiration_date: receive.expirationDate,
+              batch_number: receive.batchNumber,
+              notes: receive.notes,
+              received_date: new Date().toISOString(),
+              status: "active"
+            });
+        }
+
+        results.push({
+          ...receive,
+          id: `RCV-${Date.now()}-${results.length}`,
+          date: new Date().toISOString(),
+          user: user.email
+        });
+      }
+
+      toast.success(`${results.length} items received!`);
+      setLastReceive({ batch: results });
+      setBatchQueue([]);
+      setBatchMode(false);
+      setSubmitting(false);
+    } catch (error: any) {
+      console.error("Batch receive error:", error);
+      toast.error("Some receives failed");
+      setSubmitting(false);
+    }
+  };
+
   const generateReceivePDF = async () => {
     if (!lastReceive) return;
 
     try {
       const pdf = new jsPDF();
       
-      // Header
-      pdf.setFontSize(20);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Receiving Receipt", 105, 20, { align: "center" });
-      
-      // QR Code
-      const qrDataUrl = await QRCode.toDataURL(`RECEIVE-${lastReceive.id}`);
-      pdf.addImage(qrDataUrl, "PNG", 160, 30, 40, 40);
-      
-      // Receipt Details
-      pdf.setFontSize(12);
-      pdf.setFont("helvetica", "normal");
-      
-      pdf.text(`Receipt ID: ${lastReceive.id}`, 20, 40);
-      pdf.text(`Date: ${new Date(lastReceive.date).toLocaleString()}`, 20, 50);
-      pdf.text(`Received by: ${lastReceive.user}`, 20, 60);
-      
-      // Separator
-      pdf.setDrawColor(200);
-      pdf.line(20, 75, 190, 75);
-      
-      // Receiving Information
-      pdf.setFontSize(14);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Receiving Information", 20, 90);
-      
-      pdf.setFontSize(12);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(`Store: ${lastReceive.store}`, 20, 105);
-      pdf.text(`Item: ${lastReceive.item}`, 20, 115);
-      pdf.text(`Quantity: ${lastReceive.quantity} units`, 20, 125);
-      pdf.text(`Batch Number: ${lastReceive.batchNumber}`, 20, 135);
-      pdf.text(`Expiration Date: ${new Date(lastReceive.expirationDate).toLocaleDateString()}`, 20, 145);
-      
-      if (lastReceive.notes) {
-        pdf.text("Notes:", 20, 160);
-        pdf.setFontSize(10);
-        const splitNotes = pdf.splitTextToSize(lastReceive.notes, 170);
-        pdf.text(splitNotes, 20, 170);
+      if (lastReceive.batch) {
+        // Batch PDF
+        pdf.setFontSize(20);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Batch Receiving Receipt", 105, 20, { align: "center" });
+        
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`Total Items: ${lastReceive.batch.length}`, 20, 40);
+        pdf.text(`Date: ${new Date().toLocaleString()}`, 20, 50);
+        
+        let yPos = 70;
+        
+        for (let i = 0; i < lastReceive.batch.length; i++) {
+          const receive = lastReceive.batch[i];
+          
+          if (yPos > 250) {
+            pdf.addPage();
+            yPos = 20;
+          }
+          
+          pdf.setFontSize(14);
+          pdf.setFont("helvetica", "bold");
+          pdf.text(`Receive ${i + 1}`, 20, yPos);
+          yPos += 10;
+          
+          pdf.setFontSize(10);
+          pdf.setFont("helvetica", "normal");
+          pdf.text(`Store: ${receive.store}`, 20, yPos);
+          yPos += 7;
+          pdf.text(`Item: ${receive.item}`, 20, yPos);
+          yPos += 7;
+          pdf.text(`Quantity: ${receive.quantity} units`, 20, yPos);
+          yPos += 7;
+          pdf.text(`Batch: ${receive.batchNumber || 'N/A'}`, 20, yPos);
+          yPos += 7;
+          pdf.text(`Expiration: ${new Date(receive.expirationDate).toLocaleDateString()}`, 20, yPos);
+          yPos += 7;
+          
+          if (receive.notes) {
+            pdf.text(`Notes: ${receive.notes}`, 20, yPos);
+            yPos += 7;
+          }
+          
+          const qrDataUrl = await QRCode.toDataURL(`RECEIVE-${receive.id}`);
+          pdf.addImage(qrDataUrl, "PNG", 150, yPos - 30, 35, 35);
+          
+          yPos += 20;
+        }
+        
+        pdf.setFontSize(8);
+        pdf.setTextColor(128);
+        pdf.text("This document serves as proof of receiving", 105, 280, { align: "center" });
+        pdf.text("Generated by Store Management System", 105, 285, { align: "center" });
+        
+        pdf.save(`Batch_Receive_${Date.now()}.pdf`);
+      } else {
+        // Single receive PDF
+        pdf.setFontSize(20);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Receiving Receipt", 105, 20, { align: "center" });
+        
+        const qrDataUrl = await QRCode.toDataURL(`RECEIVE-${lastReceive.id}`);
+        pdf.addImage(qrDataUrl, "PNG", 160, 30, 40, 40);
+        
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "normal");
+        
+        pdf.text(`Receipt ID: ${lastReceive.id}`, 20, 40);
+        pdf.text(`Date: ${new Date(lastReceive.date).toLocaleString()}`, 20, 50);
+        pdf.text(`Received by: ${lastReceive.user}`, 20, 60);
+        
+        pdf.setDrawColor(200);
+        pdf.line(20, 75, 190, 75);
+        
+        pdf.setFontSize(14);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Receiving Information", 20, 90);
+        
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`Store: ${lastReceive.store}`, 20, 105);
+        pdf.text(`Item: ${lastReceive.item}`, 20, 115);
+        pdf.text(`Quantity: ${lastReceive.quantity} units`, 20, 125);
+        pdf.text(`Batch Number: ${lastReceive.batchNumber}`, 20, 135);
+        pdf.text(`Expiration Date: ${new Date(lastReceive.expirationDate).toLocaleDateString()}`, 20, 145);
+        
+        if (lastReceive.notes) {
+          pdf.text("Notes:", 20, 160);
+          pdf.setFontSize(10);
+          const splitNotes = pdf.splitTextToSize(lastReceive.notes, 170);
+          pdf.text(splitNotes, 20, 170);
+        }
+        
+        pdf.setFontSize(8);
+        pdf.setTextColor(128);
+        pdf.text("This document serves as proof of receiving", 105, 280, { align: "center" });
+        pdf.text("Generated by Store Management System", 105, 285, { align: "center" });
+        
+        pdf.save(`Receive_${lastReceive.id}.pdf`);
       }
       
-      // Footer
-      pdf.setFontSize(8);
-      pdf.setTextColor(128);
-      pdf.text("This document serves as proof of receiving", 105, 280, { align: "center" });
-      pdf.text("Generated by Store Management System", 105, 285, { align: "center" });
-      
-      pdf.save(`Receive_${lastReceive.id}.pdf`);
       toast.success("PDF downloaded successfully");
     } catch (error) {
       console.error("PDF generation error:", error);
@@ -351,14 +483,22 @@ export default function ScanReceive() {
       
       <div className="container mx-auto p-4 pt-20">
         <Card className="p-6 max-w-2xl mx-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <PackageOpen className="w-8 h-8 text-emerald-500" />
-            <div>
-              <h1 className="text-2xl font-bold">Receive Items</h1>
-              <p className="text-sm text-muted-foreground">
-                Select destination store and items to receive
-              </p>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <PackageOpen className="w-8 h-8 text-emerald-500" />
+              <div>
+                <h1 className="text-2xl font-bold">Receive Items</h1>
+                <p className="text-sm text-muted-foreground">
+                  Select destination store and items to receive
+                </p>
+              </div>
             </div>
+            <Button
+              variant={batchMode ? "default" : "outline"}
+              onClick={() => setBatchMode(!batchMode)}
+            >
+              {batchMode ? `Batch Mode (${batchQueue.length})` : "Enable Batch"}
+            </Button>
           </div>
 
           <div className="space-y-6">
@@ -495,7 +635,12 @@ export default function ScanReceive() {
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Receiving...
+                  Processing...
+                </>
+              ) : batchMode ? (
+                <>
+                  <PackageOpen className="w-4 h-4 mr-2" />
+                  Add to Batch
                 </>
               ) : (
                 <>
@@ -504,6 +649,54 @@ export default function ScanReceive() {
                 </>
               )}
             </Button>
+
+            {batchMode && batchQueue.length > 0 && (
+              <Card className="p-4 border-primary">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold">Batch Queue ({batchQueue.length})</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setBatchQueue([])}
+                  >
+                    Clear All
+                  </Button>
+                </div>
+                <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
+                  {batchQueue.map((item, idx) => (
+                    <div key={idx} className="p-2 bg-muted rounded flex justify-between items-center text-sm">
+                      <div>
+                        <div className="font-medium">{item.item}</div>
+                        <div className="text-muted-foreground">
+                          {item.store} - Qty: {item.quantity} - Batch: {item.batchNumber || 'N/A'}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setBatchQueue(prev => prev.filter((_, i) => i !== idx))}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  onClick={handleBatchSubmit}
+                  className="w-full"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing Batch...
+                    </>
+                  ) : (
+                    `Submit ${batchQueue.length} Receives`
+                  )}
+                </Button>
+              </Card>
+            )}
 
             {lastReceive && (
               <Card className="p-4 bg-emerald-500/10 border border-emerald-500/20 mt-4">
