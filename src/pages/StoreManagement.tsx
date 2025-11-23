@@ -37,7 +37,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
-
+import { InviteWorkspaceMemberDialog } from "@/components/InviteWorkspaceMemberDialog";
 interface Transaction {
   id: string;
   type: 'transfer' | 'receiving' | 'spot_check' | 'variance';
@@ -66,7 +66,7 @@ const StoreManagement = () => {
   const [receivings, setReceivings] = useState<any[]>([]);
   const [spotChecks, setSpotChecks] = useState<any[]>([]);
   const [varianceReports, setVarianceReports] = useState<any[]>([]);
-  
+  const [inviteWorkspaceDialogOpen, setInviteWorkspaceDialogOpen] = useState(false);
   // Form states
   const [selectedFromStore, setSelectedFromStore] = useState("");
   const [selectedToStore, setSelectedToStore] = useState("");
@@ -2319,54 +2319,10 @@ const StoreManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button className="w-full">
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Invite Member
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Invite Team Member</DialogTitle>
-                        </DialogHeader>
-                        <form className="space-y-4" onSubmit={(e) => {
-                          e.preventDefault();
-                          const formData = new FormData(e.currentTarget);
-                          handleInviteMember(
-                            formData.get("email") as string,
-                            formData.get("role") as string
-                          );
-                        }}>
-                          <div className="space-y-2">
-                            <Label>Email</Label>
-                            <Input
-                              name="email"
-                              type="email"
-                              placeholder="colleague@example.com"
-                              required
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Role</Label>
-                            <Select name="role" defaultValue="member">
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="viewer">Viewer - View only</SelectItem>
-                                <SelectItem value="member">Member - View & receive</SelectItem>
-                                <SelectItem value="manager">Manager - Full access</SelectItem>
-                                <SelectItem value="admin">Admin - Full access + settings</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <Button type="submit" className="w-full">
-                            Send Invitation
-                          </Button>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
+                    <Button className="w-full" onClick={() => setInviteWorkspaceDialogOpen(true)}>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add Members
+                    </Button>
 
                     <ScrollArea className="h-[500px]">
                       <div className="space-y-2">
@@ -2683,6 +2639,16 @@ const StoreManagement = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {currentWorkspace && (
+        <InviteWorkspaceMemberDialog
+          open={inviteWorkspaceDialogOpen}
+          onOpenChange={setInviteWorkspaceDialogOpen}
+          workspaceId={currentWorkspace.id}
+          workspaceName={currentWorkspace.name}
+          onSuccess={fetchAllData}
+        />
+      )}
 
       <BottomNav />
     </div>
