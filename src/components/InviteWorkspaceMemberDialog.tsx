@@ -257,16 +257,16 @@ export const InviteWorkspaceMemberDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col gap-0">
+        <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5" />
             Add Members to {workspaceName}
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="connections" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="connections" className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="connections" className="gap-2">
               <Users className="w-4 h-4" />
               From Connections
@@ -277,15 +277,13 @@ export const InviteWorkspaceMemberDialog = ({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="connections" className="flex-1 flex flex-col min-h-0">
-            <div className="space-y-4 pb-4">
-              <div className="space-y-2">
-                <Input
-                  placeholder="Search connections..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+          <TabsContent value="connections" className="flex-1 flex flex-col min-h-0 mt-0 data-[state=active]:flex">
+            <div className="space-y-3 pb-3 border-b">
+              <Input
+                placeholder="Search connections..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
 
               <div className="space-y-2">
                 <Label>Role for selected members</Label>
@@ -311,42 +309,44 @@ export const InviteWorkspaceMemberDialog = ({
               )}
             </div>
 
-            <Tabs defaultValue="following" className="flex-1 flex flex-col min-h-0">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="following">
-                  Following ({following.length})
-                </TabsTrigger>
-                <TabsTrigger value="followers">
-                  Followers ({followers.length})
-                </TabsTrigger>
-              </TabsList>
+            <div className="flex-1 min-h-0 py-3">
+              <Tabs defaultValue="following" className="flex flex-col h-full">
+                <TabsList className="grid w-full grid-cols-2 mb-3">
+                  <TabsTrigger value="following">
+                    Following ({following.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="followers">
+                    Followers ({followers.length})
+                  </TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="following" className="mt-4">
-                <ScrollArea className="h-[280px] pr-4">
-                  {loadingConnections ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Loading...
-                    </div>
-                  ) : (
-                    renderProfileList(following)
-                  )}
-                </ScrollArea>
-              </TabsContent>
+                <TabsContent value="following" className="flex-1 mt-0 data-[state=active]:block">
+                  <ScrollArea className="h-[240px]">
+                    {loadingConnections ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Loading...
+                      </div>
+                    ) : (
+                      renderProfileList(following)
+                    )}
+                  </ScrollArea>
+                </TabsContent>
 
-              <TabsContent value="followers" className="mt-4">
-                <ScrollArea className="h-[280px] pr-4">
-                  {loadingConnections ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Loading...
-                    </div>
-                  ) : (
-                    renderProfileList(followers)
-                  )}
-                </ScrollArea>
-              </TabsContent>
-            </Tabs>
+                <TabsContent value="followers" className="flex-1 mt-0 data-[state=active]:block">
+                  <ScrollArea className="h-[240px]">
+                    {loadingConnections ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Loading...
+                      </div>
+                    ) : (
+                      renderProfileList(followers)
+                    )}
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+            </div>
 
-            <div className="flex justify-end gap-2 pt-4 mt-4 border-t">
+            <div className="flex justify-end gap-2 pt-3 border-t mt-auto">
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
@@ -363,7 +363,7 @@ export const InviteWorkspaceMemberDialog = ({
             </div>
           </TabsContent>
 
-          <TabsContent value="email" className="space-y-4">
+          <TabsContent value="email" className="space-y-4 mt-0 data-[state=active]:flex flex-col">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <Input
@@ -398,7 +398,7 @@ export const InviteWorkspaceMemberDialog = ({
               </p>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t">
+            <div className="flex justify-end gap-2 pt-4 border-t mt-auto">
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
