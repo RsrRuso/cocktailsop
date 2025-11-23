@@ -82,9 +82,14 @@ export default function ScanTransfer() {
       .eq("user_id", userId)
       .order("name");
 
-    setItems(itemsData || []);
-    if (itemsData && itemsData.length > 0) {
-      setSelectedItemId(itemsData[0].id);
+    // Filter to show only glassware items
+    const glasswareItems = (itemsData || []).filter(
+      item => item.name.toLowerCase().includes("glass")
+    );
+
+    setItems(glasswareItems);
+    if (glasswareItems.length > 0) {
+      setSelectedItemId(glasswareItems[0].id);
     }
 
     const { data: inventoryData } = await supabase
