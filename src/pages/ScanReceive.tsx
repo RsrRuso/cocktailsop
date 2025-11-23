@@ -69,17 +69,16 @@ export default function ScanReceive() {
 
     setReceivingContext({ ...contextData, toStoreName: toStore?.name });
 
-    // Fetch all stores for selection
+    // Fetch all stores in the same workspace context
     let storesQuery = supabase
       .from("stores")
       .select("*")
-      .eq("user_id", userId)
       .eq("is_active", true);
 
     if (toStore?.workspace_id) {
       storesQuery = storesQuery.eq("workspace_id", toStore.workspace_id);
     } else {
-      storesQuery = storesQuery.is("workspace_id", null);
+      storesQuery = storesQuery.eq("user_id", userId).is("workspace_id", null);
     }
 
     const { data: storesData } = await storesQuery.order("name");
@@ -90,16 +89,15 @@ export default function ScanReceive() {
       setSelectedStoreId(contextData.to_store_id);
     }
 
-    // Fetch all items for this user & same workspace context
+    // Fetch all items in the same workspace context
     let itemsQuery = supabase
       .from("items")
-      .select("*")
-      .eq("user_id", userId);
+      .select("*");
 
     if (toStore?.workspace_id) {
       itemsQuery = itemsQuery.eq("workspace_id", toStore.workspace_id);
     } else {
-      itemsQuery = itemsQuery.is("workspace_id", null);
+      itemsQuery = itemsQuery.eq("user_id", userId).is("workspace_id", null);
     }
 
     const { data: itemsData, error: itemsError } = await itemsQuery.order("name");
