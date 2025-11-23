@@ -257,42 +257,48 @@ export const InviteWorkspaceMemberDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col gap-0">
-        <DialogHeader className="pb-4">
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="w-[95vw] sm:max-w-lg h-[85vh] sm:h-auto sm:max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 border-b shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <UserPlus className="w-5 h-5" />
             Add Members to {workspaceName}
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="connections" className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="connections" className="gap-2">
-              <Users className="w-4 h-4" />
-              From Connections
-            </TabsTrigger>
-            <TabsTrigger value="email" className="gap-2">
-              <Mail className="w-4 h-4" />
-              By Email
-            </TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="connections" className="flex-1 flex flex-col overflow-hidden">
+          <div className="px-4 sm:px-6 pt-4 shrink-0">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="connections" className="gap-1.5 text-xs sm:text-sm">
+                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">From Connections</span>
+                <span className="sm:hidden">Connections</span>
+              </TabsTrigger>
+              <TabsTrigger value="email" className="gap-1.5 text-xs sm:text-sm">
+                <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">By Email</span>
+                <span className="sm:hidden">Email</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="connections" className="flex-1 flex flex-col min-h-0 mt-0 data-[state=active]:flex">
-            <div className="space-y-3 pb-3 border-b">
+          <TabsContent value="connections" className="flex-1 flex flex-col overflow-hidden mt-0 data-[state=active]:flex">
+            {/* Controls Section */}
+            <div className="px-4 sm:px-6 py-3 space-y-3 border-b shrink-0">
               <Input
                 placeholder="Search connections..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 sm:h-10"
               />
 
-              <div className="space-y-2">
-                <Label>Role for selected members</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs sm:text-sm">Role for selected members</Label>
                 <Select
                   value={role}
                   onValueChange={(value: "member" | "admin") => setRole(value)}
                   disabled={isLoading}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 sm:h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -303,113 +309,137 @@ export const InviteWorkspaceMemberDialog = ({
               </div>
 
               {selectedUsers.size > 0 && (
-                <div className="text-sm text-muted-foreground">
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   {selectedUsers.size} user(s) selected
                 </div>
               )}
             </div>
 
-            <div className="flex-1 min-h-0 py-3">
-              <Tabs defaultValue="following" className="flex flex-col h-full">
-                <TabsList className="grid w-full grid-cols-2 mb-3">
-                  <TabsTrigger value="following">
+            {/* Lists Section - Scrollable */}
+            <div className="flex-1 overflow-hidden px-4 sm:px-6">
+              <Tabs defaultValue="following" className="h-full flex flex-col py-3">
+                <TabsList className="grid w-full grid-cols-2 shrink-0 mb-3">
+                  <TabsTrigger value="following" className="text-xs sm:text-sm">
                     Following ({following.length})
                   </TabsTrigger>
-                  <TabsTrigger value="followers">
+                  <TabsTrigger value="followers" className="text-xs sm:text-sm">
                     Followers ({followers.length})
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="following" className="flex-1 mt-0 data-[state=active]:block">
-                  <ScrollArea className="h-[240px]">
-                    {loadingConnections ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        Loading...
+                <div className="flex-1 overflow-hidden">
+                  <TabsContent value="following" className="h-full mt-0 data-[state=active]:block">
+                    <ScrollArea className="h-full">
+                      <div className="pr-3 pb-3">
+                        {loadingConnections ? (
+                          <div className="text-center py-8 text-muted-foreground text-sm">
+                            Loading...
+                          </div>
+                        ) : (
+                          renderProfileList(following)
+                        )}
                       </div>
-                    ) : (
-                      renderProfileList(following)
-                    )}
-                  </ScrollArea>
-                </TabsContent>
+                    </ScrollArea>
+                  </TabsContent>
 
-                <TabsContent value="followers" className="flex-1 mt-0 data-[state=active]:block">
-                  <ScrollArea className="h-[240px]">
-                    {loadingConnections ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        Loading...
+                  <TabsContent value="followers" className="h-full mt-0 data-[state=active]:block">
+                    <ScrollArea className="h-full">
+                      <div className="pr-3 pb-3">
+                        {loadingConnections ? (
+                          <div className="text-center py-8 text-muted-foreground text-sm">
+                            Loading...
+                          </div>
+                        ) : (
+                          renderProfileList(followers)
+                        )}
                       </div>
-                    ) : (
-                      renderProfileList(followers)
-                    )}
-                  </ScrollArea>
-                </TabsContent>
+                    </ScrollArea>
+                  </TabsContent>
+                </div>
               </Tabs>
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t mt-auto">
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isLoading}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleInviteSelected}
-                disabled={isLoading || selectedUsers.size === 0}
-              >
-                {isLoading ? "Adding..." : `Add ${selectedUsers.size || ""} Member(s)`}
-              </Button>
+            {/* Fixed Buttons at Bottom */}
+            <div className="px-4 sm:px-6 py-3 border-t shrink-0 bg-background">
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isLoading}
+                  className="h-9 sm:h-10 text-xs sm:text-sm"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleInviteSelected}
+                  disabled={isLoading || selectedUsers.size === 0}
+                  className="h-9 sm:h-10 text-xs sm:text-sm"
+                >
+                  {isLoading ? "Adding..." : `Add ${selectedUsers.size || ""} Member(s)`}
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
-          <TabsContent value="email" className="space-y-4 mt-0 data-[state=active]:flex flex-col">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="colleague@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-              />
+          <TabsContent value="email" className="flex-1 flex flex-col overflow-hidden mt-0 data-[state=active]:flex">
+            <div className="flex-1 overflow-auto px-4 sm:px-6 py-4">
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-xs sm:text-sm">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="colleague@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                    className="h-9 sm:h-10"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="role" className="text-xs sm:text-sm">Role</Label>
+                  <Select
+                    value={role}
+                    onValueChange={(value: "member" | "admin") => setRole(value)}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger id="role" className="h-9 sm:h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {role === "member"
+                      ? "Can view and manage stores"
+                      : "Can manage workspace and invite members"}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select
-                value={role}
-                onValueChange={(value: "member" | "admin") => setRole(value)}
-                disabled={isLoading}
-              >
-                <SelectTrigger id="role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-sm text-muted-foreground">
-                {role === "member"
-                  ? "Can view and manage stores"
-                  : "Can manage workspace and invite members"}
-              </p>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4 border-t mt-auto">
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isLoading}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleInviteByEmail} disabled={isLoading}>
-                <Mail className="mr-2 h-4 w-4" />
-                {isLoading ? "Sending..." : "Send Invitation"}
-              </Button>
+            <div className="px-4 sm:px-6 py-3 border-t shrink-0 bg-background">
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isLoading}
+                  className="h-9 sm:h-10 text-xs sm:text-sm"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleInviteByEmail} 
+                  disabled={isLoading}
+                  className="h-9 sm:h-10 text-xs sm:text-sm"
+                >
+                  <Mail className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  {isLoading ? "Sending..." : "Send Invitation"}
+                </Button>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
