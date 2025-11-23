@@ -347,7 +347,7 @@ export const InviteWorkspaceMemberDialog = ({
 
                 <div className="flex-1 min-h-0 overflow-hidden">
                   <TabsContent value="following" className="h-full mt-0 data-[state=active]:block">
-                    <ScrollArea className="h-full">
+                    <ScrollArea className="h-[300px] sm:h-[400px]">
                       <div className="pr-3 pb-4">
                         {loadingConnections ? (
                           <div className="text-center py-8 text-muted-foreground text-sm">
@@ -361,7 +361,7 @@ export const InviteWorkspaceMemberDialog = ({
                   </TabsContent>
 
                   <TabsContent value="followers" className="h-full mt-0 data-[state=active]:block">
-                    <ScrollArea className="h-full">
+                    <ScrollArea className="h-[300px] sm:h-[400px]">
                       <div className="pr-3 pb-4">
                         {loadingConnections ? (
                           <div className="text-center py-8 text-muted-foreground text-sm">
