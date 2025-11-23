@@ -1995,9 +1995,7 @@ const StoreManagement = () => {
                         <SelectValue placeholder={selectedFromStore ? "Select item" : "Select from store first"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {items
-                          .filter((item) => item.category?.toLowerCase() === 'glassware')
-                          .map((item) => {
+                        {items.map((item) => {
                             const invQty = inventory.find(inv => 
                               inv.item_id === item.id && inv.store_id === selectedFromStore
                             )?.quantity || 0;
