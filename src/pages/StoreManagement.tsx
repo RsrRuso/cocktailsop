@@ -58,6 +58,10 @@ const StoreManagement = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
+  const [personalInventoryName, setPersonalInventoryName] = useState(
+    localStorage.getItem('personalInventoryName') || 'Personal Inventory'
+  );
+  
   const [stores, setStores] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
@@ -123,6 +127,22 @@ const StoreManagement = () => {
       }
     }
   }, [searchParams, workspaces, switchWorkspace]);
+
+  // Listen for localStorage changes to personal inventory name
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setPersonalInventoryName(localStorage.getItem('personalInventoryName') || 'Personal Inventory');
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    // Also check on mount and when returning to this page
+    const interval = setInterval(handleStorageChange, 500);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   const setupRealtimeSubscriptions = () => {
     const workspaceFilter = `user_id=eq.${user?.id}`;
@@ -1212,14 +1232,14 @@ const StoreManagement = () => {
               >
                 <SelectTrigger className="flex-1">
                   <SelectValue>
-                    {currentWorkspace ? currentWorkspace.name : "Personal Inventory"}
+                    {currentWorkspace ? currentWorkspace.name : personalInventoryName}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="personal">
                     <div className="flex items-center gap-2">
                       <Store className="w-4 h-4" />
-                      Personal Inventory
+                      {personalInventoryName}
                     </div>
                   </SelectItem>
                   {workspaces.map((workspace) => (
