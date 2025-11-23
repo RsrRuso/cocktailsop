@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, ArrowRightLeft, Clock, User } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Clock, User, Package } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
@@ -211,57 +211,103 @@ const InventoryTransactions = () => {
           </Card>
         ) : (
           <ScrollArea className="h-[calc(100vh-280px)]">
-            <div className="space-y-3">
+            <div className="space-y-4">
               {transactions.map((transaction) => (
-                <Card key={transaction.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-primary/10">
-                          <User className="h-5 w-5" />
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div>
-                            <p className="font-semibold">
-                              {transaction.user_name || transaction.user_email}
+                <Card key={transaction.id} className="border-l-4 border-l-primary/50 hover:shadow-lg transition-all hover:border-l-primary">
+                  <CardContent className="p-5">
+                    <div className="space-y-4">
+                      {/* Header with User Info and Status */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-12 w-12 border-2 border-primary/20">
+                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-semibold">
+                              {transaction.user_name 
+                                ? transaction.user_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                                : transaction.user_email.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          
+                          <div className="space-y-1">
+                            <p className="font-semibold text-base text-foreground">
+                              {transaction.user_name || 'User'}
                             </p>
-                            {transaction.user_name && (
-                              <p className="text-xs text-muted-foreground">
-                                {transaction.user_email}
-                              </p>
-                            )}
+                            <p className="text-xs text-muted-foreground font-medium">
+                              {transaction.user_email}
+                            </p>
                           </div>
-                          <Badge variant="outline" className={getStatusColor(transaction.status)}>
-                            {transaction.status}
-                          </Badge>
                         </div>
                         
-                        <div className="space-y-1">
-                          <p className="text-sm">
-                            <span className="font-medium">{transaction.item_name}</span>
-                            {' • '}
-                            <span className="text-muted-foreground">Qty: {transaction.quantity}</span>
-                          </p>
-                          
-                          {transaction.type === 'transfer' ? (
-                            <p className="text-sm text-muted-foreground flex items-center gap-1">
-                              <ArrowRightLeft className="h-3 w-3" />
-                              Transfer: {transaction.from_store} → {transaction.to_store}
-                            </p>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">
-                              Receiving at: {transaction.store}
-                            </p>
-                          )}
-                          
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
-                            <Clock className="h-3 w-3" />
-                            {new Date(transaction.timestamp).toLocaleString()}
-                          </p>
+                        <div className="flex flex-col items-end gap-2">
+                          <Badge 
+                            variant="outline" 
+                            className={`${getStatusColor(transaction.status)} font-semibold px-3 py-1`}
+                          >
+                            {transaction.status.toUpperCase()}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {transaction.type === 'transfer' ? 'Transfer' : 'Receiving'}
+                          </Badge>
                         </div>
+                      </div>
+                      
+                      {/* Transaction Details */}
+                      <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                        {/* Item and Quantity */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <Package className="h-4 w-4 text-primary" />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground font-medium">Item</p>
+                              <p className="font-semibold text-foreground">{transaction.item_name}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground font-medium">Quantity</p>
+                            <p className="text-2xl font-bold text-primary">{transaction.quantity}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Store Transfer Information */}
+                        {transaction.type === 'transfer' ? (
+                          <div className="flex items-center gap-2 pt-2 border-t">
+                            <div className="flex-1">
+                              <p className="text-xs text-muted-foreground font-medium mb-1">From</p>
+                              <div className="bg-background rounded px-3 py-2">
+                                <p className="font-semibold text-sm">{transaction.from_store}</p>
+                              </div>
+                            </div>
+                            
+                            <ArrowRightLeft className="h-5 w-5 text-primary mt-5 flex-shrink-0" />
+                            
+                            <div className="flex-1">
+                              <p className="text-xs text-muted-foreground font-medium mb-1">To</p>
+                              <div className="bg-background rounded px-3 py-2">
+                                <p className="font-semibold text-sm">{transaction.to_store}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="pt-2 border-t">
+                            <p className="text-xs text-muted-foreground font-medium mb-1">Store</p>
+                            <div className="bg-background rounded px-3 py-2">
+                              <p className="font-semibold text-sm">{transaction.store}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Timestamp */}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
+                        <Clock className="h-4 w-4" />
+                        <span className="font-medium">
+                          {new Date(transaction.timestamp).toLocaleString('en-US', {
+                            dateStyle: 'medium',
+                            timeStyle: 'short'
+                          })}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
