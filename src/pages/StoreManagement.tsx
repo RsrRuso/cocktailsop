@@ -181,6 +181,11 @@ const StoreManagement = () => {
 
       const { data: storesData } = await storesQuery.order("name");
  
+      console.log(`[Store Management] Fetched ${storesData?.length || 0} stores for current context`);
+      if (storesData && storesData.length > 0) {
+        console.log(`[Store Management] Store names:`, storesData.map(s => s.name).join(', '));
+      }
+
       // Fetch items - scoped to current workspace/personal context
       let itemsQuery = supabase
         .from("items")
@@ -1555,7 +1560,9 @@ const StoreManagement = () => {
               <CardContent>
                  <form onSubmit={handleCreateReceiving} className="space-y-3">
                   <div className="space-y-1.5">
-                    <Label className="text-sm">Warehouse / Receiving Store *</Label>
+                    <Label className="text-sm">
+                      Warehouse / Receiving Store * ({stores.filter((s) => s.store_type === 'receive' || s.store_type === 'both').length} available)
+                    </Label>
                     <Select value={selectedReceivingStore} onValueChange={setSelectedReceivingStore}>
                       <SelectTrigger className="h-9">
                         <SelectValue placeholder="Select receiving store" />
@@ -1765,9 +1772,9 @@ const StoreManagement = () => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleCreateTransfer} className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label className="text-sm">From Store *</Label>
+                      <Label className="text-sm">From Store * ({stores.length} available)</Label>
                       <Select value={selectedFromStore} onValueChange={(val) => {
                         setSelectedFromStore(val);
                         setSelectedItem(""); // Reset item when store changes
@@ -1786,7 +1793,7 @@ const StoreManagement = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label className="text-sm">To Store *</Label>
+                      <Label className="text-sm">To Store * ({stores.filter(s => s.id !== selectedFromStore).length} available)</Label>
                       <Select value={selectedToStore} onValueChange={setSelectedToStore}>
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="Select store" />
