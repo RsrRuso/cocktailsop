@@ -88,7 +88,7 @@ const InventoryTransactions = () => {
             user_name: profile?.full_name || profile?.username || null,
             from_store: t.from_store?.name || 'Unknown',
             to_store: t.to_store?.name || 'Unknown',
-            item_name: t.inventory?.items?.name || 'Unknown Item',
+            item_name: t.inventory?.items?.name || 'Multiple Items',
             quantity: Number(t.quantity) || 0,
             status: t.status || 'completed'
           };
@@ -231,20 +231,25 @@ const InventoryTransactions = () => {
                       {/* Transaction Details */}
                       <div className="bg-muted/30 rounded-lg p-4 space-y-3">
                         {/* Item and Quantity */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                               <Package className="h-4 w-4 text-primary" />
                             </div>
                             <div>
-                              <p className="text-xs text-muted-foreground font-medium">Item</p>
-                              <p className="font-semibold text-foreground">{transaction.item_name}</p>
+                              <p className="text-[0.7rem] uppercase tracking-wide text-muted-foreground font-medium">Item</p>
+                              <p className="font-semibold text-lg text-foreground">
+                                {transaction.item_name === 'Multiple Items' ? 'Multiple Items' : transaction.item_name}
+                              </p>
                             </div>
                           </div>
                           
                           <div className="text-right">
-                            <p className="text-xs text-muted-foreground font-medium">Quantity</p>
-                            <p className="text-2xl font-bold text-primary">{transaction.quantity}</p>
+                            <p className="text-[0.7rem] uppercase tracking-wide text-muted-foreground font-medium">Quantity</p>
+                            <p className="text-2xl font-extrabold text-primary leading-none">
+                              {transaction.quantity}
+                              <span className="ml-1 text-xs font-medium text-muted-foreground">units</span>
+                            </p>
                           </div>
                         </div>
                         
