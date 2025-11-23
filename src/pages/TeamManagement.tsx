@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { InviteTeamMemberDialog } from "@/components/InviteTeamMemberDialog";
+import { InviteTeamMemberDialogV2 } from "@/components/InviteTeamMemberDialogV2";
 
 interface Team {
   id: string;
@@ -685,11 +685,16 @@ const TeamManagement = () => {
        <BottomNav />
       
       {selectedTeam && (
-        <InviteTeamMemberDialog
+        <InviteTeamMemberDialogV2
           open={inviteDialogOpen}
           onOpenChange={setInviteDialogOpen}
           teamId={selectedTeam.id}
           teamName={selectedTeam.name}
+          existingMemberIds={teamMembers.map(m => m.user_id)}
+          onSuccess={() => {
+            fetchTeamMembers();
+            window.dispatchEvent(new CustomEvent('invitationSent'));
+          }}
         />
       )}
     </div>
