@@ -1203,7 +1203,9 @@ const StoreManagement = () => {
               Store Management
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              All personal stores and inventory
+              {currentWorkspace
+                ? `All ${currentWorkspace.name} stores and inventory`
+                : `All ${personalInventoryName} stores and inventory`}
             </p>
           </div>
           <Badge variant="outline" className="gap-2 text-xs">
