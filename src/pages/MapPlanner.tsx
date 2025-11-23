@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Plus, Trash2, Edit, MapPin, Box, List, Save } from "lucide-react";
+import { Plus, Trash2, Edit, MapPin, Box, List, Save, Download, Move, Square, Circle, Type } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -58,6 +58,11 @@ export default function MapPlanner() {
   const [selectedMap, setSelectedMap] = useState<string | null>(null);
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
+  const [drawingMode, setDrawingMode] = useState<"select" | "rect" | "circle" | "text">("select");
+  const [canvasElements, setCanvasElements] = useState<any[]>([]);
+  const [draggingElement, setDraggingElement] = useState<number | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Fetch location maps
   const { data: maps } = useQuery({
@@ -267,6 +272,177 @@ export default function MapPlanner() {
     },
   });
 
+  // Canvas drawing functions
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.fillStyle = "#1a1a1a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw grid
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 50) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < canvas.height; y += 50) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
+
+    // Draw elements
+    canvasElements.forEach((element, index) => {
+      ctx.fillStyle = element.color || "#3b82f6";
+      ctx.strokeStyle = draggingElement === index ? "#f59e0b" : "#60a5fa";
+      ctx.lineWidth = 2;
+
+      if (element.type === "rect") {
+        ctx.fillRect(element.x, element.y, element.width, element.height);
+        ctx.strokeRect(element.x, element.y, element.width, element.height);
+      } else if (element.type === "circle") {
+        ctx.beginPath();
+        ctx.arc(element.x, element.y, element.radius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+      } else if (element.type === "text") {
+        ctx.fillStyle = "#fff";
+        ctx.font = "16px sans-serif";
+        ctx.fillText(element.text, element.x, element.y);
+      }
+
+      // Draw label
+      if (element.label) {
+        ctx.fillStyle = "#fff";
+        ctx.font = "12px sans-serif";
+        ctx.fillText(element.label, element.x, element.y - 5);
+      }
+    });
+  }, [canvasElements, draggingElement]);
+
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (drawingMode === "rect") {
+      const newElement = {
+        type: "rect",
+        x: x - 50,
+        y: y - 25,
+        width: 100,
+        height: 50,
+        color: "#3b82f6",
+        label: "Equipment",
+      };
+      setCanvasElements([...canvasElements, newElement]);
+    } else if (drawingMode === "circle") {
+      const newElement = {
+        type: "circle",
+        x,
+        y,
+        radius: 30,
+        color: "#8b5cf6",
+        label: "Station",
+      };
+      setCanvasElements([...canvasElements, newElement]);
+    } else if (drawingMode === "text") {
+      const text = prompt("Enter text:");
+      if (text) {
+        const newElement = {
+          type: "text",
+          x,
+          y,
+          text,
+        };
+        setCanvasElements([...canvasElements, newElement]);
+      }
+    }
+  };
+
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (drawingMode !== "select") return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Check if clicking on an element
+    const elementIndex = canvasElements.findIndex((el) => {
+      if (el.type === "rect") {
+        return x >= el.x && x <= el.x + el.width && y >= el.y && y <= el.y + el.height;
+      } else if (el.type === "circle") {
+        const dist = Math.sqrt((x - el.x) ** 2 + (y - el.y) ** 2);
+        return dist <= el.radius;
+      }
+      return false;
+    });
+
+    if (elementIndex !== -1) {
+      setDraggingElement(elementIndex);
+      setMousePos({ x, y });
+    }
+  };
+
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (draggingElement === null) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const dx = x - mousePos.x;
+    const dy = y - mousePos.y;
+
+    const updatedElements = [...canvasElements];
+    const element = updatedElements[draggingElement];
+
+    element.x += dx;
+    element.y += dy;
+
+    setCanvasElements(updatedElements);
+    setMousePos({ x, y });
+  };
+
+  const handleCanvasMouseUp = () => {
+    setDraggingElement(null);
+  };
+
+  const clearCanvas = () => {
+    if (confirm("Clear the canvas?")) {
+      setCanvasElements([]);
+    }
+  };
+
+  const exportCanvasImage = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const link = document.createElement("a");
+    link.download = "map-layout.png";
+    link.href = canvas.toDataURL();
+    link.click();
+    toast.success("Map exported as image");
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
@@ -323,7 +499,135 @@ export default function MapPlanner() {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <Tabs defaultValue="list" className="w-full mb-6">
+          <TabsList>
+            <TabsTrigger value="list">
+              <List className="mr-2 h-4 w-4" />
+              List View
+            </TabsTrigger>
+            <TabsTrigger value="designer">
+              <MapPin className="mr-2 h-4 w-4" />
+              Visual Designer
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="designer" className="mt-6">
+            {!selectedMap ? (
+              <Card>
+                <CardContent className="flex items-center justify-center py-20">
+                  <p className="text-muted-foreground">Select or create a map to start designing</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Canvas Designer</CardTitle>
+                      <div className="flex gap-2">
+                        <Button
+                          variant={drawingMode === "select" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDrawingMode("select")}
+                        >
+                          <Move className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant={drawingMode === "rect" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDrawingMode("rect")}
+                        >
+                          <Square className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant={drawingMode === "circle" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDrawingMode("circle")}
+                        >
+                          <Circle className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant={drawingMode === "text" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDrawingMode("text")}
+                        >
+                          <Type className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={clearCanvas}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={exportCanvasImage}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <CardDescription>
+                      {drawingMode === "select" && "Click and drag to move elements"}
+                      {drawingMode === "rect" && "Click to place rectangular equipment"}
+                      {drawingMode === "circle" && "Click to place circular stations"}
+                      {drawingMode === "text" && "Click to add text labels"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <canvas
+                      ref={canvasRef}
+                      width={1200}
+                      height={800}
+                      className="border border-border rounded-lg cursor-crosshair w-full"
+                      onClick={handleCanvasClick}
+                      onMouseDown={handleCanvasMouseDown}
+                      onMouseMove={handleCanvasMouseMove}
+                      onMouseUp={handleCanvasMouseUp}
+                      onMouseLeave={handleCanvasMouseUp}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Equipment Palette */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Equipment Palette</CardTitle>
+                    <CardDescription>Your configured equipment for this map</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                      {areas?.map((area) =>
+                        equipment
+                          ?.filter((eq) => eq.area_id === area.id)
+                          .map((eq) => (
+                            <Button
+                              key={eq.id}
+                              variant="outline"
+                              size="sm"
+                              className="justify-start"
+                              onClick={() => {
+                                setDrawingMode("rect");
+                                const newElement = {
+                                  type: "rect",
+                                  x: 100,
+                                  y: 100,
+                                  width: 120,
+                                  height: 60,
+                                  color: "#3b82f6",
+                                  label: eq.name,
+                                };
+                                setCanvasElements([...canvasElements, newElement]);
+                              }}
+                            >
+                              <Box className="mr-2 h-4 w-4" />
+                              {eq.name}
+                            </Button>
+                          ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="list" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Maps List */}
           <Card className="lg:col-span-1">
             <CardHeader>
@@ -743,6 +1047,8 @@ export default function MapPlanner() {
             </CardContent>
           </Card>
         </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <BottomNav />
