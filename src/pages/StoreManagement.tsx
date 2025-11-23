@@ -18,7 +18,8 @@ import {
   Store, ArrowRightLeft, ClipboardCheck, TrendingDown, 
   Users, Camera, Bell, Clock, Package, Upload, 
   CheckCircle2, AlertCircle, UserPlus, UserMinus, Shield,
-  ExternalLink, BarChart3, Trash2, Activity, Edit, X, Check
+  ExternalLink, BarChart3, Trash2, Activity, Edit, X, Check,
+  Building2, Plus
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -53,7 +54,7 @@ interface Transaction {
 
 const StoreManagement = () => {
   const { user } = useAuth();
-  const { currentWorkspace, workspaces } = useWorkspace();
+  const { currentWorkspace, workspaces, switchWorkspace } = useWorkspace();
   const navigate = useNavigate();
   
   const [stores, setStores] = useState<any[]>([]);
@@ -1179,6 +1180,59 @@ const StoreManagement = () => {
             Live Updates
           </Badge>
         </div>
+
+        {/* Workspace Selector */}
+        <Card className="p-4 border-2 border-primary/20">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <Building2 className="w-5 h-5 text-primary flex-shrink-0" />
+              <Label className="text-sm font-medium whitespace-nowrap">Workspace:</Label>
+            </div>
+            <div className="flex-1 w-full flex gap-2">
+              <Select
+                value={currentWorkspace?.id || "personal"}
+                onValueChange={(value) => {
+                  if (value === "personal") {
+                    switchWorkspace("personal");
+                  } else {
+                    switchWorkspace(value);
+                  }
+                }}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue>
+                    {currentWorkspace ? currentWorkspace.name : "Personal Inventory"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="personal">
+                    <div className="flex items-center gap-2">
+                      <Store className="w-4 h-4" />
+                      Personal Inventory
+                    </div>
+                  </SelectItem>
+                  {workspaces.map((workspace) => (
+                    <SelectItem key={workspace.id} value={workspace.id}>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4" />
+                        {workspace.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/workspace-management")}
+                className="whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Manage</span>
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         {/* Quick Action Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
