@@ -180,11 +180,6 @@ const StoreManagement = () => {
       }
 
       const { data: storesData } = await storesQuery.order("name");
-      
-      // Show only glassware-related stores
-      const filteredStores = (storesData || []).filter(
-        store => store.name.toLowerCase().includes("glass")
-      );
  
       // Fetch items - scoped to current workspace/personal context
       let itemsQuery = supabase
@@ -199,11 +194,6 @@ const StoreManagement = () => {
       }
 
       const { data: itemsData } = await itemsQuery.order("name");
-      
-      // Filter items to only show glassware items
-      const filteredItems = (itemsData || []).filter(
-        item => item.name.toLowerCase().includes("glass")
-      );
  
       // Fetch inventory - scoped to current workspace/personal context
       let inventoryQuery = supabase
@@ -310,8 +300,8 @@ const StoreManagement = () => {
       // Workspace members not used in personal inventory mode
       const membersData: any[] = [];
 
-      setStores(filteredStores);
-      setItems(filteredItems);
+      setStores(storesData || []);
+      setItems(itemsData || []);
       setInventory(inventoryData || []);
       setTransfers(transfersData || []);
       setReceivings(receivingsData || []);
@@ -341,7 +331,7 @@ const StoreManagement = () => {
       });
 
       // Check each store for low stock items
-      filteredStores.forEach((store: any) => {
+      (storesData || []).forEach((store: any) => {
         const storeInventory = inventoryData?.filter((inv: any) => inv.store_id === store.id) || [];
         let lowStockCount = 0;
 
