@@ -215,6 +215,9 @@ const WorkspaceManagement = () => {
       // Delete all workspace members for owned workspaces
       await supabase.from("workspace_members").delete().in("workspace_id", ownedWorkspaceIds);
       
+      // Delete all access requests for owned workspaces
+      await supabase.from("access_requests").delete().in("workspace_id", ownedWorkspaceIds);
+      
       // Delete all owned workspaces
       const { error: workspaceError } = await supabase
         .from("workspaces")
@@ -291,7 +294,15 @@ const WorkspaceManagement = () => {
 
       if (membersError) throw membersError;
 
-      // Step 7: Finally delete the workspace
+      // Step 7: Delete access requests
+      const { error: accessRequestsError } = await supabase
+        .from("access_requests")
+        .delete()
+        .eq("workspace_id", workspace.id);
+
+      if (accessRequestsError) throw accessRequestsError;
+
+      // Step 8: Finally delete the workspace
       const { error: workspaceError } = await supabase
         .from("workspaces")
         .delete()
