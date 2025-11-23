@@ -23,7 +23,6 @@ export default function ScanReceive() {
   
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("1");
-  const [expirationDate, setExpirationDate] = useState<string>("");
   const [batchNumber, setBatchNumber] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
@@ -121,7 +120,7 @@ export default function ScanReceive() {
       return;
     }
 
-    if (!selectedStoreId || !selectedItemId || !quantity || !expirationDate) {
+    if (!selectedStoreId || !selectedItemId || !quantity) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -136,6 +135,11 @@ export default function ScanReceive() {
 
     try {
       const selectedItem = items.find(i => i.id === selectedItemId);
+      
+      // Use default expiration date of 1 year from now
+      const defaultExpirationDate = new Date();
+      defaultExpirationDate.setFullYear(defaultExpirationDate.getFullYear() + 1);
+      const expirationDate = defaultExpirationDate.toISOString().split('T')[0];
       
       // Check for existing inventory with same item and expiration
       const { data: existingInventory } = await supabase
@@ -215,7 +219,6 @@ export default function ScanReceive() {
       
       // Reset form
       setQuantity("1");
-      setExpirationDate("");
       setBatchNumber("");
       setNotes("");
       
@@ -382,17 +385,6 @@ export default function ScanReceive() {
             </div>
 
             <div>
-              <Label>Expiration Date *</Label>
-              <Input
-                type="date"
-                value={expirationDate}
-                onChange={(e) => setExpirationDate(e.target.value)}
-                className="mt-2"
-                disabled={submitting}
-              />
-            </div>
-
-            <div>
               <Label>Batch Number (Optional)</Label>
               <Input
                 type="text"
@@ -419,7 +411,7 @@ export default function ScanReceive() {
               onClick={handleReceive}
               className="w-full"
               size="lg"
-              disabled={submitting || !selectedStoreId || !selectedItemId || !quantity || !expirationDate}
+              disabled={submitting || !selectedStoreId || !selectedItemId || !quantity}
             >
               {submitting ? (
                 <>
