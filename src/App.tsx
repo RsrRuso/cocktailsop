@@ -5,8 +5,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InAppNotificationProvider } from "@/contexts/InAppNotificationContext";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
@@ -117,17 +115,16 @@ const PageLoader = () => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <InAppNotificationProvider>
-        <AuthProvider>
-          <WorkspaceProvider>
-            <CartProvider>
-              <RoutePreloader />
-              <Toaster />
-              <Sonner />
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
+  <BrowserRouter>
+    <InAppNotificationProvider>
+      <AuthProvider>
+        <WorkspaceProvider>
+          <CartProvider>
+            <RoutePreloader />
+            <Toaster />
+            <Sonner />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/landing" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
@@ -151,22 +148,22 @@ const App = () => (
           <Route path="/advanced-editor" element={<AdvancedEditor />} />
           <Route path="/reel-editor" element={<ReelEditor />} />
           <Route path="/team-invitation" element={<TeamInvitation />} />
-              <Route path="/inventory-manager" element={<InventoryManager />} />
-              <Route path="/qr-access-code" element={<QRAccessCode />} />
-              <Route path="/scan-access/:workspaceId" element={<ScanAccess />} />
-              <Route path="/access-approval" element={<AccessApproval />} />
-              <Route path="/transfer-qr" element={<TransferQRGenerator />} />
-              <Route path="/scan-transfer/:qrCodeId" element={<ScanTransfer />} />
-              <Route path="/scan-receive/:qrCodeId" element={<ScanReceive />} />
-              <Route path="/low-stock-inventory/:workspaceId" element={<LowStockInventory />} />
-              <Route path="/store-management" element={<StoreManagement />} />
-              <Route path="/store/:id" element={<StoreDetail />} />
-              <Route path="/all-inventory" element={<AllInventory />} />
-              <Route path="/inventory-transactions" element={<InventoryTransactions />} />
-              <Route path="/stores-admin" element={<StoresAdmin />} />
-              <Route path="/master-items" element={<MasterItems />} />
-              <Route path="/workspace-management" element={<WorkspaceManagement />} />
-              <Route path="/temperature-log" element={<TemperatureLog />} />
+               <Route path="/inventory-manager" element={<InventoryManager />} />
+               <Route path="/qr-access-code" element={<QRAccessCode />} />
+               <Route path="/scan-access/:workspaceId" element={<ScanAccess />} />
+               <Route path="/access-approval" element={<AccessApproval />} />
+               <Route path="/transfer-qr" element={<TransferQRGenerator />} />
+               <Route path="/scan-transfer/:qrCodeId" element={<ScanTransfer />} />
+               <Route path="/scan-receive/:qrCodeId" element={<ScanReceive />} />
+               <Route path="/low-stock-inventory/:workspaceId" element={<LowStockInventory />} />
+               <Route path="/store-management" element={<StoreManagement />} />
+               <Route path="/store/:id" element={<StoreDetail />} />
+               <Route path="/all-inventory" element={<AllInventory />} />
+               <Route path="/inventory-transactions" element={<InventoryTransactions />} />
+               <Route path="/stores-admin" element={<StoresAdmin />} />
+               <Route path="/master-items" element={<MasterItems />} />
+               <Route path="/workspace-management" element={<WorkspaceManagement />} />
+               <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
           <Route path="/abv-calculator" element={<ABVCalculator />} />
           <Route path="/scaling-tool" element={<ScalingTool />} />
@@ -226,7 +223,6 @@ const App = () => (
         </AuthProvider>
       </InAppNotificationProvider>
     </BrowserRouter>
-  </QueryClientProvider>
-);
+  );
 
 export default App;
