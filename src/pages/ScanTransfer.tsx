@@ -33,7 +33,7 @@ export default function ScanTransfer() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
-        navigate("/auth");
+        window.location.href = "https://cocktailsop.com";
         return;
       }
       setUser(user);
