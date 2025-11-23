@@ -32,7 +32,7 @@ export default function ScanReceive() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
-        navigate("/auth");
+        window.location.href = "https://cocktailsop.com";
         return;
       }
       setUser(user);
