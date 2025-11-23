@@ -1,18 +1,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, QrCode } from "lucide-react";
+import { Copy, QrCode, Store as StoreIcon } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 
 export default function TransferQRGenerator() {
   const navigate = useNavigate();
+  const { currentWorkspace } = useWorkspace();
   const [user, setUser] = useState<any>(null);
   const [qrCodeId, setQrCodeId] = useState<string>("");
   const [fromStoreId, setFromStoreId] = useState<string>("");
@@ -25,11 +27,15 @@ export default function TransferQRGenerator() {
         return;
       }
       setUser(user);
-      fetchStores(user.id);
-      const newCode = generateNewCode();
-      // Auto-save will happen when store is selected
     });
   }, [navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchStores(user.id);
+      const newCode = generateNewCode();
+    }
+  }, [user, currentWorkspace]);
 
   useEffect(() => {
     if (qrCodeId && fromStoreId && user) {
@@ -38,12 +44,26 @@ export default function TransferQRGenerator() {
   }, [qrCodeId, fromStoreId, user]);
 
   const fetchStores = async (userId: string) => {
-    const { data } = await supabase
+    let storesQuery = supabase
       .from("stores")
       .select("*")
-      .eq("user_id", userId)
-      .order("name");
+      .eq("user_id", userId);
+
+    if (currentWorkspace?.id) {
+      storesQuery = storesQuery.eq("workspace_id", currentWorkspace.id);
+    } else {
+      storesQuery = storesQuery.is("workspace_id", null);
+    }
+
+    const { data, error } = await storesQuery.order("name");
     
+    if (error) {
+      console.error("Error fetching stores:", error);
+      toast.error("Failed to load stores");
+      return;
+    }
+
+    console.log("Fetched stores:", data);
     setStores(data || []);
     if (data && data.length > 0) {
       setFromStoreId(data[0].id);
@@ -107,18 +127,35 @@ export default function TransferQRGenerator() {
           </div>
 
           <div className="space-y-6">
+            <div className="p-4 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-2 mb-2">
+                <StoreIcon className="w-5 h-5 text-primary" />
+                <p className="font-semibold">Available Stores: {stores.length}</p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stores.length === 0 
+                  ? "No stores found. Create stores in Store Management first." 
+                  : "Select a source store to generate transfer QR code"}
+              </p>
+            </div>
+
             <div>
               <Label>Select Source Store</Label>
               <select
                 value={fromStoreId}
                 onChange={(e) => setFromStoreId(e.target.value)}
                 className="w-full mt-2 p-2 border rounded-md bg-background"
+                disabled={stores.length === 0}
               >
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name}
-                  </option>
-                ))}
+                {stores.length === 0 ? (
+                  <option value="">No stores available</option>
+                ) : (
+                  stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))
+                )}
               </select>
               <p className="text-xs text-muted-foreground mt-2">
                 QR code auto-saves when you select a store
