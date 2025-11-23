@@ -317,6 +317,15 @@ const OpsTools = () => {
         path: "/staff-scheduling",
       },
       {
+        name: "Map Planner",
+        description: "Design venue layouts with equipment",
+        details: "Plan your bar layout by mapping stations, equipment, and item locations. Create visual SOPs showing where everything is stored for efficient service.",
+        icon: Building2,
+        gradient: "from-blue-600 to-indigo-500",
+        premium: false,
+        path: "/map-planner",
+      },
+      {
         name: "Cocktail Specs",
         description: "Standardize cocktail specifications",
         details: "Create and share standardized recipes. Document exact specs, techniques, glassware, and garnishes to ensure consistency across your team.",
