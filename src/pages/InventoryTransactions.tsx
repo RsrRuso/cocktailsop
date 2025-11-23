@@ -84,63 +84,43 @@ const InventoryTransactions = () => {
         ? { workspace_id: currentWorkspace.id }
         : { user_id: user?.id, workspace_id: null };
 
-      // Fetch transfers
+      // Fetch transfers with store and item info
       const { data: transfersData } = await supabase
         .from('inventory_transfers')
         .select(`
           *,
           from_store:stores!inventory_transfers_from_store_id_fkey(name),
           to_store:stores!inventory_transfers_to_store_id_fkey(name),
-          inventory(items(name)),
-          profiles!inventory_transfers_user_id_fkey(full_name, email)
+          inventory(items(name))
         `)
         .match(workspaceFilter)
         .order('created_at', { ascending: false })
         .limit(100);
 
-      // Fetch receivings
-      const { data: receivingsData } = await supabase
-        .from('inventory_receivings' as any)
-        .select(`
-          *,
-          store:stores(name),
-          item:items(name),
-          profiles!inventory_receivings_user_id_fkey(full_name, email)
-        `)
-        .match(workspaceFilter)
-        .order('created_at', { ascending: false })
-        .limit(100);
+      // Fetch user profiles separately
+      const userIds = [...new Set(transfersData?.map(t => t.user_id) || [])];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
 
-      // Combine and format transactions - filter for glassware items only
-      const allTransactions: Transaction[] = [
-        ...(transfersData || [])
-          .filter((t: any) => t.inventory?.items?.name?.toLowerCase().includes('glass'))
-          .map((t: any) => ({
-            id: t.id,
-            type: 'transfer' as const,
-            timestamp: t.transfer_date || t.created_at,
-            user_email: t.profiles?.email || 'Unknown',
-            user_name: t.profiles?.full_name,
-            from_store: t.from_store?.name,
-            to_store: t.to_store?.name,
-            item_name: t.inventory?.items?.name || 'Unknown Item',
-            quantity: Number(t.quantity),
-            status: t.status
-          })),
-        ...(receivingsData || [])
-          .filter((r: any) => r.item?.name?.toLowerCase().includes('glass'))
-          .map((r: any) => ({
-            id: r.id,
-            type: 'receiving' as const,
-            timestamp: r.received_date || r.created_at,
-            user_email: r.profiles?.email || 'Unknown',
-            user_name: r.profiles?.full_name,
-            store: r.store?.name,
-            item_name: r.item?.name || 'Unknown Item',
-            quantity: Number(r.quantity),
-            status: r.status
-          }))
-      ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+
+      // Combine and format transactions - showing all items
+      const allTransactions: Transaction[] = (transfersData || [])
+        .map((t: any) => ({
+          id: t.id,
+          type: 'transfer' as const,
+          timestamp: t.transfer_date || t.created_at,
+          user_email: profilesMap.get(t.user_id)?.email || user?.email || 'Unknown',
+          user_name: profilesMap.get(t.user_id)?.full_name || null,
+          from_store: t.from_store?.name || 'Unknown',
+          to_store: t.to_store?.name || 'Unknown',
+          item_name: t.inventory?.items?.name || 'Unknown Item',
+          quantity: Number(t.quantity) || 0,
+          status: t.status || 'completed'
+        }))
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       setTransactions(allTransactions);
     } catch (error: any) {
