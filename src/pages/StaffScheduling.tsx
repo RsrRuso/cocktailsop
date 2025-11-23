@@ -1660,9 +1660,9 @@ export default function StaffScheduling() {
         }
 
         const dataUrl = await toPng(element, {
-          pixelRatio: 6,
+          pixelRatio: 2,
           cacheBust: true,
-          quality: 1.0,
+          quality: 0.85,
           backgroundColor: '#1a1a1a',
         });
 
@@ -1738,9 +1738,9 @@ export default function StaffScheduling() {
       console.log(`Using html-to-image to capture ${day}...`);
       
       const dataUrl = await toPng(element, {
-        pixelRatio: 6,
+        pixelRatio: 2,
         cacheBust: true,
-        quality: 1.0,
+        quality: 0.85,
         backgroundColor: '#1a1a1a',
       });
       
