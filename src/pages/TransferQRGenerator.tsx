@@ -133,10 +133,10 @@ export default function TransferQRGenerator() {
     }
   };
 
-  const transferQrUrl = `${window.location.origin}/scan-transfer/${transferQrCodeId}`;
+  const transferQrUrl = `https://cocktailsop.com/scan-transfer/${transferQrCodeId}`;
   const transferQrPath = `/scan-transfer/${transferQrCodeId}`;
   
-  const receivingQrUrl = `${window.location.origin}/scan-receive/${receivingQrCodeId}`;
+  const receivingQrUrl = `https://cocktailsop.com/scan-receive/${receivingQrCodeId}`;
   const receivingQrPath = `/scan-receive/${receivingQrCodeId}`;
 
   const handleCopyTransferUrl = () => {
