@@ -80,12 +80,8 @@ const InventoryTransactions = () => {
     try {
       setLoading(true);
 
-      const workspaceFilter = currentWorkspace 
-        ? { workspace_id: currentWorkspace.id }
-        : { user_id: user?.id, workspace_id: null };
-
-      // Fetch transfers with store and item info
-      const { data: transfersData } = await supabase
+      // Build the query with proper null handling
+      let query = supabase
         .from('inventory_transfers')
         .select(`
           *,
@@ -93,38 +89,56 @@ const InventoryTransactions = () => {
           to_store:stores!inventory_transfers_to_store_id_fkey(name),
           inventory(items(name))
         `)
-        .match(workspaceFilter)
+        .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(100);
+
+      // Apply workspace filter
+      if (currentWorkspace) {
+        query = query.eq('workspace_id', currentWorkspace.id);
+      } else {
+        query = query.is('workspace_id', null);
+      }
+
+      const { data: transfersData, error: transferError } = await query;
+
+      if (transferError) {
+        console.error('[InventoryTransactions] Error fetching transfers:', transferError);
+        throw transferError;
+      }
 
       // Fetch user profiles separately
       const userIds = [...new Set(transfersData?.map(t => t.user_id) || [])];
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name, email, username')
         .in('id', userIds);
 
       const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
 
-      // Combine and format transactions - showing all items
+      // Format transactions with all details
       const allTransactions: Transaction[] = (transfersData || [])
-        .map((t: any) => ({
-          id: t.id,
-          type: 'transfer' as const,
-          timestamp: t.transfer_date || t.created_at,
-          user_email: profilesMap.get(t.user_id)?.email || user?.email || 'Unknown',
-          user_name: profilesMap.get(t.user_id)?.full_name || null,
-          from_store: t.from_store?.name || 'Unknown',
-          to_store: t.to_store?.name || 'Unknown',
-          item_name: t.inventory?.items?.name || 'Unknown Item',
-          quantity: Number(t.quantity) || 0,
-          status: t.status || 'completed'
-        }))
+        .map((t: any) => {
+          const profile = profilesMap.get(t.user_id);
+          return {
+            id: t.id,
+            type: 'transfer' as const,
+            timestamp: t.transfer_date || t.created_at,
+            user_email: profile?.email || user?.email || 'Unknown',
+            user_name: profile?.full_name || profile?.username || null,
+            from_store: t.from_store?.name || 'Unknown',
+            to_store: t.to_store?.name || 'Unknown',
+            item_name: t.inventory?.items?.name || 'Unknown Item',
+            quantity: Number(t.quantity) || 0,
+            status: t.status || 'completed'
+          };
+        })
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
+      console.log('[InventoryTransactions] Loaded transactions:', allTransactions.length);
       setTransactions(allTransactions);
     } catch (error: any) {
-      console.error('Error fetching transactions:', error);
+      console.error('[InventoryTransactions] Error:', error);
       toast.error('Failed to load transactions');
     } finally {
       setLoading(false);
