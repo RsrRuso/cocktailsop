@@ -34,7 +34,8 @@ import {
   AlertDialogDescription, 
   AlertDialogFooter, 
   AlertDialogHeader, 
-  AlertDialogTitle 
+  AlertDialogTitle,
+  AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 
 interface Transaction {
@@ -620,6 +621,26 @@ const StoreManagement = () => {
     } catch (error) {
       console.error("Error deleting transfer:", error);
       toast.error("Failed to delete transfer");
+    }
+  };
+
+  const handleDeleteStore = async (storeId: string, storeName: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('stores')
+        .update({ is_active: false })
+        .eq('id', storeId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast.success(`${storeName} deleted successfully`);
+      fetchAllData();
+    } catch (error) {
+      console.error('Error deleting store:', error);
+      toast.error('Failed to delete store');
     }
   };
 
@@ -1285,18 +1306,17 @@ const StoreManagement = () => {
                 return (
                   <Card 
                     key={store.id} 
-                    className={`group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 overflow-hidden animate-fade-in ${
+                    className={`group transition-all duration-300 hover:shadow-2xl overflow-hidden animate-fade-in ${
                       hasLowStock 
                         ? 'border-2 border-orange-500/50 hover:border-orange-500' 
                         : 'border-2 border-border/50 hover:border-primary/50'
                     }`}
                     style={{ animationDelay: `${index * 100}ms` }}
-                    onClick={() => navigate(`/store/${store.id}`)}
                   >
                     <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/5 to-transparent rounded-bl-full" />
                     <CardContent className="p-5 relative">
                       <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
+                        <div className="flex-1 cursor-pointer" onClick={() => navigate(`/store/${store.id}`)}>
                           <h3 className="font-bold text-xl mb-1 group-hover:text-primary transition-colors">
                             {store.name}
                           </h3>
@@ -1304,16 +1324,47 @@ const StoreManagement = () => {
                             {store.store_type?.replace('_', ' ')} store
                           </p>
                         </div>
-                        <div className={`p-3 rounded-xl ${
-                          hasLowStock 
-                            ? 'bg-orange-500/10' 
-                            : 'bg-primary/10'
-                        }`}>
-                          <Store className={`h-6 w-6 ${
+                        <div className="flex items-center gap-2">
+                          <div className={`p-3 rounded-xl ${
                             hasLowStock 
-                              ? 'text-orange-500' 
-                              : 'text-primary'
-                          }`} />
+                              ? 'bg-orange-500/10' 
+                              : 'bg-primary/10'
+                          }`}>
+                            <Store className={`h-6 w-6 ${
+                              hasLowStock 
+                                ? 'text-orange-500' 
+                                : 'text-primary'
+                            }`} />
+                          </div>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete {store.name}?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will soft delete the store. All inventory data will be preserved.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteStore(store.id, store.name)}
+                                  className="bg-destructive hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
                       
@@ -1331,7 +1382,10 @@ const StoreManagement = () => {
                         </div>
                       )}
                       
-                      <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground group-hover:text-primary transition-colors">
+                      <div 
+                        className="flex items-center gap-2 mt-4 text-sm text-muted-foreground group-hover:text-primary transition-colors cursor-pointer"
+                        onClick={() => navigate(`/store/${store.id}`)}
+                      >
                         <span className="font-medium">View Inventory</span>
                         <ArrowRightLeft className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </div>
