@@ -36,7 +36,8 @@ export default function ScanReceive() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
-        window.location.href = "https://cocktailsop.com";
+        toast.info("Please log in to access this receiving");
+        navigate(`/auth?redirect=/scan-receive/${qrCodeId}`);
         return;
       }
       setUser(user);
