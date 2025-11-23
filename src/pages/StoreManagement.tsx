@@ -5,6 +5,7 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import { LiveTransactionFeed } from "@/components/LiveTransactionFeed";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1261,6 +1262,11 @@ const StoreManagement = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Live Transaction Feed */}
+        <div className="mt-6">
+          <LiveTransactionFeed userId={user!.id} workspaceId={currentWorkspace?.id} />
         </div>
 
         {/* Stores List */}
