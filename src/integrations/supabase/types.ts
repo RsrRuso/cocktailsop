@@ -61,6 +61,44 @@ export type Database = {
           },
         ]
       }
+      area_equipment: {
+        Row: {
+          area_id: string
+          capacity: string | null
+          created_at: string | null
+          equipment_type: string
+          id: string
+          name: string
+          notes: string | null
+        }
+        Insert: {
+          area_id: string
+          capacity?: string | null
+          created_at?: string | null
+          equipment_type: string
+          id?: string
+          name: string
+          notes?: string | null
+        }
+        Update: {
+          area_id?: string
+          capacity?: string | null
+          created_at?: string | null
+          equipment_type?: string
+          id?: string
+          name?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "area_equipment_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "location_areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batch_calculations: {
         Row: {
           batch_size: number
@@ -1225,6 +1263,47 @@ export type Database = {
         }
         Relationships: []
       }
+      equipment_items: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          equipment_id: string
+          id: string
+          item_name: string
+          notes: string | null
+          quantity: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          equipment_id: string
+          id?: string
+          item_name: string
+          notes?: string | null
+          quantity?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          equipment_id?: string
+          id?: string
+          item_name?: string
+          notes?: string | null
+          quantity?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_items_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "area_equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_attendees: {
         Row: {
           created_at: string | null
@@ -2265,6 +2344,85 @@ export type Database = {
           views?: number | null
         }
         Relationships: []
+      }
+      location_areas: {
+        Row: {
+          area_type: string
+          created_at: string | null
+          id: string
+          map_id: string
+          name: string
+          notes: string | null
+          position_x: number | null
+          position_y: number | null
+        }
+        Insert: {
+          area_type: string
+          created_at?: string | null
+          id?: string
+          map_id: string
+          name: string
+          notes?: string | null
+          position_x?: number | null
+          position_y?: number | null
+        }
+        Update: {
+          area_type?: string
+          created_at?: string | null
+          id?: string
+          map_id?: string
+          name?: string
+          notes?: string | null
+          position_x?: number | null
+          position_y?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_areas_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "location_maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      location_maps: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_maps_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {

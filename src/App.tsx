@@ -103,6 +103,7 @@ const WorkspaceManagement = lazy(() => import("./pages/WorkspaceManagement"));
 const TransferQRGenerator = lazy(() => import("@/pages/TransferQRGenerator"));
 const ScanTransfer = lazy(() => import("@/pages/ScanTransfer"));
 const ScanReceive = lazy(() => import("@/pages/ScanReceive"));
+const MapPlanner = lazy(() => import("@/pages/MapPlanner"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -215,6 +216,7 @@ const App = () => (
           <Route path="/orders" element={<Orders />} />
           <Route path="/seller-dashboard" element={<SellerDashboard />} />
           <Route path="/staff-scheduling" element={<StaffScheduling />} />
+          <Route path="/map-planner" element={<MapPlanner />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
                 </Routes>
