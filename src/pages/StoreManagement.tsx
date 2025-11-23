@@ -337,18 +337,35 @@ const StoreManagement = () => {
 
       const { data: varianceData } = await varianceQuery;
 
-      // Fetch workspace members
+      // Fetch workspace members (workspace mode only)
       let membersData: any[] = [];
       if (currentWorkspace) {
-        const { data: workspaceMembersData } = await supabase
-          .from('workspace_members')
-          .select(`
-            *,
-            profiles:user_id(id, username, full_name, avatar_url)
-          `)
-          .eq('workspace_id', currentWorkspace.id);
-        
-        membersData = workspaceMembersData || [];
+        const { data: workspaceMembersData, error: membersError } = await supabase
+          .from("workspace_members")
+          .select("id, user_id, role, permissions")
+          .eq("workspace_id", currentWorkspace.id)
+          .order("role", { ascending: false });
+
+        if (membersError) {
+          console.error("Error fetching workspace members:", membersError);
+        } else if (workspaceMembersData && workspaceMembersData.length > 0) {
+          const userIds = workspaceMembersData.map((m: any) => m.user_id);
+          const { data: profilesData, error: profilesError } = await supabase
+            .from("profiles")
+            .select("id, full_name, username, avatar_url")
+            .in("id", userIds);
+
+          if (profilesError) {
+            console.error("Error fetching member profiles:", profilesError);
+            membersData = workspaceMembersData;
+          } else {
+            membersData = workspaceMembersData.map((member: any) => ({
+              ...member,
+              permissions: member.permissions || { can_receive: false, can_transfer: false },
+              profiles: profilesData?.find((p: any) => p.id === member.user_id),
+            }));
+          }
+        }
       }
 
       setStores(storesData || []);
