@@ -625,7 +625,10 @@ const StoreManagement = () => {
 
   const handleCreateReceiving = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !currentWorkspace) return;
+    if (!user) {
+      toast.error("You must be logged in to record receives");
+      return;
+    }
 
     if (!selectedReceivingStore || !selectedReceivingItem || !receivingQuantity) {
       toast.error("Please fill all required fields");
@@ -675,7 +678,7 @@ const StoreManagement = () => {
         const { data: newInventory, error: insertError } = await supabase
           .from('inventory')
           .insert({
-            workspace_id: currentWorkspace.id,
+            workspace_id: currentWorkspace?.id || null,
             user_id: user.id,
             store_id: selectedReceivingStore,
             item_id: selectedReceivingItem,
@@ -696,7 +699,7 @@ const StoreManagement = () => {
 
       // Log activity
       await supabase.from('inventory_activity_log').insert({
-        workspace_id: currentWorkspace.id,
+        workspace_id: currentWorkspace?.id || null,
         user_id: user.id,
         store_id: selectedReceivingStore,
         inventory_id: inventoryId,
@@ -712,7 +715,7 @@ const StoreManagement = () => {
 
       // Auto-sync: If receiving in WAREHOUSE, auto-create in other stores
       const receivingStore = stores.find(s => s.id === selectedReceivingStore);
-      if (receivingStore?.store_type === 'receive') {
+      if (receivingStore?.store_type === 'receive' && currentWorkspace) {
         const otherStores = stores.filter(s => 
           s.id !== selectedReceivingStore && 
           s.is_active && 
