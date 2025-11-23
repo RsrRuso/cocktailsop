@@ -76,17 +76,16 @@ export default function ScanTransfer() {
       { id: fromStore?.id, name: fromStore?.name, workspace_id: fromStore?.workspace_id ?? "personal" }
     );
 
-    // Fetch all active stores for this user & same workspace context as the QR code
+    // Fetch all active stores in the same workspace context as the QR code
     let storesQuery = supabase
       .from("stores")
       .select("*")
-      .eq("user_id", userId)
       .eq("is_active", true);
 
     if (fromStore?.workspace_id) {
       storesQuery = storesQuery.eq("workspace_id", fromStore.workspace_id);
     } else {
-      storesQuery = storesQuery.is("workspace_id", null);
+      storesQuery = storesQuery.eq("user_id", userId).is("workspace_id", null);
     }
 
     const { data: allStoresData, error: storesError } = await storesQuery.order("name");
@@ -113,11 +112,18 @@ export default function ScanTransfer() {
       setToStoreId(destStores[0].id);
     }
 
-    const { data: itemsData } = await supabase
+    // Fetch items in the same workspace context
+    let itemsQuery = supabase
       .from("items")
-      .select("*")
-      .eq("user_id", userId)
-      .order("name");
+      .select("*");
+
+    if (fromStore?.workspace_id) {
+      itemsQuery = itemsQuery.eq("workspace_id", fromStore.workspace_id);
+    } else {
+      itemsQuery = itemsQuery.eq("user_id", userId).is("workspace_id", null);
+    }
+
+    const { data: itemsData } = await itemsQuery.order("name");
 
     // Filter to show only glassware items
     const glasswareItems = (itemsData || []).filter(
