@@ -440,112 +440,37 @@ const WorkspaceManagement = () => {
           <div className="glass rounded-2xl p-8 text-center">
             <p className="text-muted-foreground">Loading workspaces...</p>
           </div>
-        ) : workspaces.length === 0 ? (
-          <div className="glass rounded-2xl p-8 text-center space-y-4">
-            <div className="mx-auto w-20 h-20 rounded-full glass-hover flex items-center justify-center">
-              <Building2 className="w-10 h-10 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="font-medium">No Workspaces Yet</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Create your first workspace to get started
-              </p>
-            </div>
-          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Personal Inventory Card */}
-            <Card
-              className="glass p-6 hover:glass-hover transition-all cursor-pointer border-2 border-primary/30"
-              onClick={() => navigate('/store-management')}
-            >
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <Store className="w-5 h-5 text-primary" />
-                      {personalInventory.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {personalInventory.description}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <Store className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium">{personalInventory.store_count}</span>
-                    <span className="text-muted-foreground">stores</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium">{personalInventory.member_count}</span>
-                    <span className="text-muted-foreground">member</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEditPersonalDialog();
-                    }}
-                    className="flex-1 gap-2"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeletePersonal();
-                    }}
-                    className="flex-1 gap-2 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </Card>
-            
-            {/* Workspace Cards */}
-            {workspaces.map((workspace) => (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Personal Inventory Card */}
               <Card
-                key={workspace.id}
-                className="glass p-6 hover:glass-hover transition-all cursor-pointer"
-                onClick={() => navigate(`/store-management?workspace=${workspace.id}`)}
+                className="glass p-6 hover:glass-hover transition-all cursor-pointer border-2 border-primary/30"
+                onClick={() => navigate('/store-management')}
               >
                 <div className="space-y-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h3 className="font-semibold text-lg flex items-center gap-2">
-                        <Building2 className="w-5 h-5 text-primary" />
-                        {workspace.name}
+                        <Store className="w-5 h-5 text-primary" />
+                        {personalInventory.name}
                       </h3>
-                      {workspace.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {workspace.description}
-                        </p>
-                      )}
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {personalInventory.description}
+                      </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4 text-sm">
                     <div className="flex items-center gap-1.5">
                       <Store className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">{workspace.store_count}</span>
+                      <span className="font-medium">{personalInventory.store_count}</span>
                       <span className="text-muted-foreground">stores</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Users className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">{workspace.member_count}</span>
-                      <span className="text-muted-foreground">members</span>
+                      <span className="font-medium">{personalInventory.member_count}</span>
+                      <span className="text-muted-foreground">member</span>
                     </div>
                   </div>
 
@@ -555,7 +480,7 @@ const WorkspaceManagement = () => {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        openEditDialog(workspace);
+                        openEditPersonalDialog();
                       }}
                       className="flex-1 gap-2"
                     >
@@ -567,7 +492,7 @@ const WorkspaceManagement = () => {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(workspace);
+                        handleDeletePersonal();
                       }}
                       className="flex-1 gap-2 text-destructive hover:text-destructive"
                     >
@@ -577,9 +502,89 @@ const WorkspaceManagement = () => {
                   </div>
                 </div>
               </Card>
-            ))}
-          </div>
+              
+              {/* Workspace Cards */}
+              {workspaces.map((workspace) => (
+                <Card
+                  key={workspace.id}
+                  className="glass p-6 hover:glass-hover transition-all cursor-pointer"
+                  onClick={() => navigate(`/store-management?workspace=${workspace.id}`)}
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          <Building2 className="w-5 h-5 text-primary" />
+                          {workspace.name}
+                        </h3>
+                        {workspace.description && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            {workspace.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1.5">
+                        <Store className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium">{workspace.store_count}</span>
+                        <span className="text-muted-foreground">stores</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium">{workspace.member_count}</span>
+                        <span className="text-muted-foreground">members</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditDialog(workspace);
+                        }}
+                        className="flex-1 gap-2"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(workspace);
+                        }}
+                        className="flex-1 gap-2 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {workspaces.length === 0 && (
+              <div className="glass rounded-2xl p-8 text-center space-y-4 mt-4">
+                <div className="mx-auto w-20 h-20 rounded-full glass-hover flex items-center justify-center">
+                  <Building2 className="w-10 h-10 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium">No Workspaces Yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create your first workspace to get started
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
         )}
+
       </div>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
