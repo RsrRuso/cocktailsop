@@ -257,7 +257,7 @@ export const InviteWorkspaceMemberDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-lg h-[85vh] sm:h-auto sm:max-h-[85vh] flex flex-col p-0">
+      <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <UserPlus className="w-5 h-5" />
@@ -265,7 +265,7 @@ export const InviteWorkspaceMemberDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="connections" className="flex-1 flex flex-col overflow-hidden">
+        <Tabs defaultValue="connections" className="flex-1 flex flex-col min-h-0">
           <div className="px-4 sm:px-6 pt-4 shrink-0">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="connections" className="gap-1.5 text-xs sm:text-sm">
@@ -281,7 +281,7 @@ export const InviteWorkspaceMemberDialog = ({
             </TabsList>
           </div>
 
-          <TabsContent value="connections" className="flex-1 flex flex-col overflow-hidden mt-0 data-[state=active]:flex">
+          <TabsContent value="connections" className="flex-1 flex flex-col min-h-0 mt-0 data-[state=active]:flex">
             {/* Controls Section */}
             <div className="px-4 sm:px-6 py-3 space-y-3 border-b shrink-0">
               <Input
@@ -316,8 +316,8 @@ export const InviteWorkspaceMemberDialog = ({
             </div>
 
             {/* Lists Section - Scrollable */}
-            <div className="flex-1 overflow-hidden px-4 sm:px-6">
-              <Tabs defaultValue="following" className="h-full flex flex-col py-3">
+            <div className="flex-1 min-h-0 px-4 sm:px-6 py-3">
+              <Tabs defaultValue="following" className="h-full flex flex-col">
                 <TabsList className="grid w-full grid-cols-2 shrink-0 mb-3">
                   <TabsTrigger value="following" className="text-xs sm:text-sm">
                     Following ({following.length})
@@ -327,35 +327,33 @@ export const InviteWorkspaceMemberDialog = ({
                   </TabsTrigger>
                 </TabsList>
 
-                <div className="flex-1 overflow-hidden">
-                  <TabsContent value="following" className="h-full mt-0 data-[state=active]:block">
-                    <ScrollArea className="h-full">
-                      <div className="pr-3 pb-3">
-                        {loadingConnections ? (
-                          <div className="text-center py-8 text-muted-foreground text-sm">
-                            Loading...
-                          </div>
-                        ) : (
-                          renderProfileList(following)
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </TabsContent>
+                <TabsContent value="following" className="flex-1 min-h-0 mt-0 data-[state=active]:block">
+                  <ScrollArea className="h-full">
+                    <div className="pr-3">
+                      {loadingConnections ? (
+                        <div className="text-center py-8 text-muted-foreground text-sm">
+                          Loading...
+                        </div>
+                      ) : (
+                        renderProfileList(following)
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
 
-                  <TabsContent value="followers" className="h-full mt-0 data-[state=active]:block">
-                    <ScrollArea className="h-full">
-                      <div className="pr-3 pb-3">
-                        {loadingConnections ? (
-                          <div className="text-center py-8 text-muted-foreground text-sm">
-                            Loading...
-                          </div>
-                        ) : (
-                          renderProfileList(followers)
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </TabsContent>
-                </div>
+                <TabsContent value="followers" className="flex-1 min-h-0 mt-0 data-[state=active]:block">
+                  <ScrollArea className="h-full">
+                    <div className="pr-3">
+                      {loadingConnections ? (
+                        <div className="text-center py-8 text-muted-foreground text-sm">
+                          Loading...
+                        </div>
+                      ) : (
+                        renderProfileList(followers)
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
               </Tabs>
             </div>
 
@@ -381,8 +379,8 @@ export const InviteWorkspaceMemberDialog = ({
             </div>
           </TabsContent>
 
-          <TabsContent value="email" className="flex-1 flex flex-col overflow-hidden mt-0 data-[state=active]:flex">
-            <div className="flex-1 overflow-auto px-4 sm:px-6 py-4">
+          <TabsContent value="email" className="flex-1 flex flex-col min-h-0 mt-0 data-[state=active]:flex">
+            <div className="flex-1 min-h-0 overflow-auto px-4 sm:px-6 py-4">
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="email" className="text-xs sm:text-sm">Email Address</Label>
