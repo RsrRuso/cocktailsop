@@ -76,70 +76,11 @@ const InventoryTransactions = () => {
 
       const profilesMap = new Map(profilesData?.map((p: any) => [p.id, p]) || []);
 
-      // Fetch inventory + item names for more detailed display
-      const inventoryIds = [
-        ...new Set(
-          (transfersData || [])
-            .map((t: any) => t.inventory_id)
-            .filter((id: string | null) => !!id)
-        ),
-      ];
-
-      let inventoryMap = new Map<string, { item_name?: string; quantity?: number }>();
-
-      if (inventoryIds.length > 0) {
-        const { data: inventoryData, error: inventoryError } = await supabase
-          .from('inventory')
-          .select('id, item_id, quantity')
-          .in('id', inventoryIds as string[]);
-
-        if (inventoryError) {
-          console.error('[InventoryTransactions] Error fetching inventory for transfers:', inventoryError);
-        }
-
-        const itemIds = [
-          ...new Set((inventoryData || []).map((inv: any) => inv.item_id)),
-        ];
-
-        let itemsMap = new Map<string, { name?: string }>();
-
-        if (itemIds.length > 0) {
-          const { data: itemsData, error: itemsError } = await supabase
-            .from('items')
-            .select('id, name')
-            .in('id', itemIds as string[]);
-
-          if (itemsError) {
-            console.error('[InventoryTransactions] Error fetching items for transfers:', itemsError);
-          }
-
-          itemsMap = new Map(
-            (itemsData || []).map((item: any) => [item.id, { name: item.name }])
-          );
-        }
-
-        inventoryMap = new Map(
-          (inventoryData || []).map((inv: any) => {
-            const item = itemsMap.get(inv.item_id);
-            return [
-              inv.id,
-              {
-                item_name: item?.name,
-                quantity: inv.quantity,
-              },
-            ];
-          })
-        );
-      }
-
-      // Format transactions with all details
+      // Format transactions with all details from the query
       const allTransactions: Transaction[] = (transfersData || [])
         .map((t: any) => {
           const profile = profilesMap.get(t.user_id);
-          const inventoryDetails = t.inventory_id
-            ? inventoryMap.get(t.inventory_id)
-            : undefined;
-
+          
           return {
             id: t.id,
             type: 'transfer' as const,
@@ -148,8 +89,8 @@ const InventoryTransactions = () => {
             user_name: profile?.full_name || profile?.username || null,
             from_store: t.from_store?.name || 'Unknown',
             to_store: t.to_store?.name || 'Unknown',
-            item_name: inventoryDetails?.item_name || 'Unknown Item',
-            quantity: Number(t.quantity ?? inventoryDetails?.quantity ?? 0),
+            item_name: t.inventory?.items?.name || 'Unknown Item',
+            quantity: Number(t.quantity) || 0,
             status: t.status || 'completed',
           };
         })
