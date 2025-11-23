@@ -40,8 +40,13 @@ const InventoryTransactions = () => {
     try {
       setLoading(true);
 
-      // Build the query with proper null handling
-      let query = supabase
+      // Build workspace filter
+      const workspaceFilter = currentWorkspace 
+        ? { workspace_id: currentWorkspace.id }
+        : { workspace_id: null };
+
+      // Fetch transfers
+      let transferQuery = supabase
         .from('inventory_transfers')
         .select(`
           *,
@@ -53,31 +58,61 @@ const InventoryTransactions = () => {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      // Apply workspace filter
       if (currentWorkspace) {
-        query = query.eq('workspace_id', currentWorkspace.id);
+        transferQuery = transferQuery.eq('workspace_id', currentWorkspace.id);
       } else {
-        query = query.is('workspace_id', null);
+        transferQuery = transferQuery.is('workspace_id', null);
       }
 
-      const { data: transfersData, error: transferError } = await query;
+      const { data: transfersData, error: transferError } = await transferQuery;
 
       if (transferError) {
         console.error('[InventoryTransactions] Error fetching transfers:', transferError);
         throw transferError;
       }
 
+      // Fetch receiving operations from activity log
+      let activityQuery = supabase
+        .from('inventory_activity_log')
+        .select(`
+          *,
+          store:stores(name),
+          inventory(items(name))
+        `)
+        .eq('user_id', user!.id)
+        .eq('action_type', 'received')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (currentWorkspace) {
+        activityQuery = activityQuery.eq('workspace_id', currentWorkspace.id);
+      } else {
+        activityQuery = activityQuery.is('workspace_id', null);
+      }
+
+      const { data: activityData, error: activityError } = await activityQuery;
+
+      if (activityError) {
+        console.error('[InventoryTransactions] Error fetching activity:', activityError);
+      }
+
       // Fetch user profiles separately
-      const userIds = [...new Set(transfersData?.map((t: any) => t.user_id) || [])];
+      const allUserIds = [
+        ...new Set([
+          ...(transfersData?.map((t: any) => t.user_id) || []),
+          ...(activityData?.map((a: any) => a.user_id) || [])
+        ])
+      ];
+      
       const { data: profilesData } = await supabase
         .from('profiles')
         .select('id, full_name, email, username')
-        .in('id', userIds);
+        .in('id', allUserIds);
 
       const profilesMap = new Map(profilesData?.map((p: any) => [p.id, p]) || []);
 
-      // Format transactions with all details from the query
-      const allTransactions: Transaction[] = (transfersData || [])
+      // Format transfer transactions
+      const transferTransactions: Transaction[] = (transfersData || [])
         .map((t: any) => {
           const profile = profilesMap.get(t.user_id);
           
@@ -93,7 +128,29 @@ const InventoryTransactions = () => {
             quantity: Number(t.quantity) || 0,
             status: t.status || 'completed',
           };
-        })
+        });
+
+      // Format receiving transactions
+      const receivingTransactions: Transaction[] = (activityData || [])
+        .map((a: any) => {
+          const profile = profilesMap.get(a.user_id);
+          const itemName = a.inventory?.items?.name || a.details?.item_name || 'Unknown Item';
+          
+          return {
+            id: a.id,
+            type: 'receiving' as const,
+            timestamp: a.created_at,
+            user_email: profile?.email || user?.email || 'Unknown',
+            user_name: profile?.full_name || profile?.username || null,
+            store: a.store?.name || 'Unknown',
+            item_name: itemName,
+            quantity: Number(a.details?.received_quantity || a.quantity_after) || 0,
+            status: 'completed',
+          };
+        });
+
+      // Combine and sort all transactions
+      const allTransactions = [...transferTransactions, ...receivingTransactions]
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       console.log('[InventoryTransactions] Loaded transactions:', allTransactions.length);
@@ -121,10 +178,10 @@ const InventoryTransactions = () => {
     debounceMs: 500,
   });
 
-  // Real-time subscription for inventory changes
+  // Real-time subscription for activity log
   useRealtimeSubscription({
-    channel: 'inventory-transactions-inventory',
-    table: 'inventory',
+    channel: 'inventory-transactions-activity',
+    table: 'inventory_activity_log',
     event: '*',
     onUpdate: fetchTransactions,
     debounceMs: 500,

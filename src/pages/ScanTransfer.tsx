@@ -242,7 +242,7 @@ export default function ScanTransfer() {
 
     setSubmitting(true);
 
-    const { error } = await supabase
+    const { data: transferData, error } = await supabase
       .from("inventory_transfers")
       .insert({
         from_store_id: fromStoreId,
@@ -254,13 +254,36 @@ export default function ScanTransfer() {
         workspace_id: workspaceIdForTransfer,
         status: "completed",
         transfer_date: new Date().toISOString()
-      });
+      })
+      .select()
+      .single();
 
     if (error) {
       toast.error("Transfer failed");
       setSubmitting(false);
       return;
     }
+
+    // Log the transfer activity
+    const selectedItem = items.find(i => i.id === selectedItemId);
+    await supabase.from("inventory_activity_log").insert({
+      workspace_id: workspaceIdForTransfer,
+      user_id: user.id,
+      store_id: fromStoreId,
+      inventory_id: availableInventory.id,
+      action_type: "transferred",
+      quantity_before: availableInventory.quantity,
+      quantity_after: availableInventory.quantity - quantityNum,
+      details: {
+        item_id: selectedItemId,
+        item_name: selectedItem?.name,
+        from_store_id: fromStoreId,
+        to_store_id: toStoreId,
+        transfer_quantity: quantityNum,
+        notes: notes || null,
+        transfer_id: transferData?.id
+      }
+    });
 
     await supabase
       .from("inventory")
@@ -301,7 +324,6 @@ export default function ScanTransfer() {
     toast.success("Transfer completed!");
     
     // Store transfer details for PDF generation
-    const selectedItem = items.find(i => i.id === selectedItemId);
     const fromStoreForSummary = fromStores.find(s => s.id === fromStoreId);
     const toStoreForSummary = stores.find(s => s.id === toStoreId);
     
@@ -334,7 +356,7 @@ export default function ScanTransfer() {
         const fromStore = fromStores.find(s => s.id === transfer.fromStoreId);
         const workspaceIdForTransfer = fromStore?.workspace_id ?? sourceInv?.workspace_id ?? null;
 
-        const { error } = await supabase
+        const { data: transferData, error } = await supabase
           .from("inventory_transfers")
           .insert({
             from_store_id: transfer.fromStoreId,
@@ -346,9 +368,31 @@ export default function ScanTransfer() {
             workspace_id: workspaceIdForTransfer,
             status: "completed",
             transfer_date: new Date().toISOString(),
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Log the transfer activity
+        await supabase.from("inventory_activity_log").insert({
+          workspace_id: workspaceIdForTransfer,
+          user_id: user.id,
+          store_id: transfer.fromStoreId,
+          inventory_id: transfer.availableInventoryId,
+          action_type: "transferred",
+          quantity_before: sourceInv?.quantity || 0,
+          quantity_after: (sourceInv?.quantity || 0) - transfer.quantity,
+          details: {
+            item_id: transfer.selectedItemId,
+            item_name: transfer.item,
+            from_store_id: transfer.fromStoreId,
+            to_store_id: transfer.toStoreId,
+            transfer_quantity: transfer.quantity,
+            notes: transfer.notes || null,
+            transfer_id: transferData?.id
+          }
+        });
 
         const { data: fromInv } = await supabase
           .from("inventory")

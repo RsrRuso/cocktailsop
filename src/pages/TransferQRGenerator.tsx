@@ -108,6 +108,7 @@ export default function TransferQRGenerator() {
         qr_code_id: codeId,
         from_store_id: storeId,
         user_id: user.id,
+        workspace_id: currentWorkspace?.id || null,
         updated_at: new Date().toISOString()
       });
 
@@ -125,6 +126,7 @@ export default function TransferQRGenerator() {
         qr_code_id: codeId,
         to_store_id: storeId,
         user_id: user.id,
+        workspace_id: currentWorkspace?.id || null,
         updated_at: new Date().toISOString()
       });
 
