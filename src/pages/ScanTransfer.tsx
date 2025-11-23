@@ -8,8 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeftRight, Loader2, PackageOpen, AlertCircle, Search, Download, FileText } from "lucide-react";
-import TopNav from "@/components/TopNav";
-import BottomNav from "@/components/BottomNav";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 
@@ -496,8 +494,7 @@ export default function ScanTransfer() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <TopNav />
+    <div className="min-h-screen bg-background">
       
       <div className="container mx-auto p-4 pt-20">
         <Card className="p-6 max-w-2xl mx-auto">
@@ -766,8 +763,6 @@ export default function ScanTransfer() {
           </div>
         </Card>
       </div>
-
-      <BottomNav />
     </div>
   );
 }
