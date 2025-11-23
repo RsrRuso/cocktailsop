@@ -2408,10 +2408,10 @@ const StoreManagement = () => {
                   <div className="space-y-4">
                     <Button
                       className="w-full"
-                      disabled={!currentWorkspace}
                       onClick={() => {
                         if (!currentWorkspace) {
-                          toast.info("Select a workspace from the selector above to add members.");
+                          navigate("/workspace-management");
+                          toast.info("Create a workspace to add members and collaborate with your team.");
                           return;
                         }
                         setInviteWorkspaceDialogOpen(true);
@@ -2420,13 +2420,6 @@ const StoreManagement = () => {
                       <UserPlus className="w-4 h-4 mr-2" />
                       Add Members
                     </Button>
-
-                    {!currentWorkspace && (
-                      <p className="text-xs text-muted-foreground">
-                        Personal inventories can’t have members. Choose a workspace in the selector above first.
-                      </p>
-                    )}
-
 
                     <ScrollArea className="h-[500px]">
                       <div className="space-y-2">
