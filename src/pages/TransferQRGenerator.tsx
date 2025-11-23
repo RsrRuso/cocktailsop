@@ -26,9 +26,16 @@ export default function TransferQRGenerator() {
       }
       setUser(user);
       fetchStores(user.id);
-      generateNewCode();
+      const newCode = generateNewCode();
+      // Auto-save will happen when store is selected
     });
   }, [navigate]);
+
+  useEffect(() => {
+    if (qrCodeId && fromStoreId && user) {
+      autoSaveQRCode(qrCodeId, fromStoreId);
+    }
+  }, [qrCodeId, fromStoreId, user]);
 
   const fetchStores = async (userId: string) => {
     const { data } = await supabase
@@ -46,6 +53,24 @@ export default function TransferQRGenerator() {
   const generateNewCode = () => {
     const newId = Math.random().toString(36).substring(2, 15);
     setQrCodeId(newId);
+    return newId;
+  };
+
+  const autoSaveQRCode = async (codeId: string, storeId: string) => {
+    if (!user || !storeId) return;
+
+    const { error } = await supabase
+      .from("transfer_qr_codes" as any)
+      .upsert({
+        qr_code_id: codeId,
+        from_store_id: storeId,
+        user_id: user.id,
+        updated_at: new Date().toISOString()
+      });
+
+    if (!error) {
+      toast.success("Transfer QR code saved");
+    }
   };
 
   const qrUrl = `${window.location.origin}/scan-transfer/${qrCodeId}`;
@@ -61,27 +86,11 @@ export default function TransferQRGenerator() {
     toast.success("Path copied to clipboard");
   };
 
-  const handleSaveTransferContext = async () => {
-    if (!fromStoreId) {
-      toast.error("Please select a store");
-      return;
+  const handleGenerateNew = () => {
+    const newCode = generateNewCode();
+    if (fromStoreId && user) {
+      autoSaveQRCode(newCode, fromStoreId);
     }
-
-    const { error } = await supabase
-      .from("transfer_qr_codes" as any)
-      .upsert({
-        qr_code_id: qrCodeId,
-        from_store_id: fromStoreId,
-        user_id: user.id,
-        created_at: new Date().toISOString()
-      });
-
-    if (error) {
-      toast.error("Failed to save transfer context");
-      return;
-    }
-
-    toast.success("Transfer QR code ready to use");
   };
 
   if (!user) return null;
@@ -111,11 +120,10 @@ export default function TransferQRGenerator() {
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-muted-foreground mt-2">
+                QR code auto-saves when you select a store
+              </p>
             </div>
-
-            <Button onClick={handleSaveTransferContext} className="w-full">
-              Save Transfer Context
-            </Button>
 
             {qrCodeId && (
               <>
@@ -146,7 +154,7 @@ export default function TransferQRGenerator() {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={generateNewCode} className="flex-1">
+                  <Button variant="outline" onClick={handleGenerateNew} className="flex-1">
                     Generate New Code
                   </Button>
                   <Button 

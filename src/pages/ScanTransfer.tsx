@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeftRight, Loader2, PackageOpen } from "lucide-react";
+import { ArrowLeftRight, Loader2, PackageOpen, AlertCircle } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 
@@ -48,7 +48,8 @@ export default function ScanTransfer() {
       .single();
 
     if (contextError || !context) {
-      toast.error("Invalid QR code");
+      console.error("QR code lookup error:", contextError);
+      toast.error("Invalid or expired QR code. Please generate a new one.");
       setLoading(false);
       return;
     }
@@ -182,9 +183,16 @@ export default function ScanTransfer() {
 
   if (!transferContext) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="p-6 text-center">
-          <p className="text-destructive">Invalid transfer QR code</p>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="p-6 text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <p className="text-lg font-semibold mb-2">Invalid Transfer QR Code</p>
+          <p className="text-sm text-muted-foreground mb-4">
+            This QR code doesn't exist or has expired. Please generate a new one from Store Management.
+          </p>
+          <Button onClick={() => navigate("/transfer-qr")} className="w-full">
+            Generate New QR Code
+          </Button>
         </Card>
       </div>
     );
