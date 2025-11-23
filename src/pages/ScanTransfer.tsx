@@ -71,9 +71,14 @@ export default function ScanTransfer() {
       .neq("id", contextData.from_store_id)
       .order("name");
 
-    setStores(storesData || []);
-    if (storesData && storesData.length > 0) {
-      setToStoreId(storesData[0].id);
+    // Filter to show only glassware-related stores
+    const glasswareStores = (storesData || []).filter(
+      store => store.name.toLowerCase().includes("glass")
+    );
+
+    setStores(glasswareStores);
+    if (glasswareStores.length > 0) {
+      setToStoreId(glasswareStores[0].id);
     }
 
     const { data: itemsData } = await supabase
@@ -221,35 +226,45 @@ export default function ScanTransfer() {
 
           <div className="space-y-4">
             <div>
-              <Label>Select Item</Label>
+              <Label>Select Glassware Item</Label>
               <select
                 value={selectedItemId}
                 onChange={(e) => setSelectedItemId(e.target.value)}
                 className="w-full mt-2 p-2 border rounded-md bg-background"
+                disabled={items.length === 0}
               >
-                {items.map((item) => {
-                  const inv = inventory.find(i => i.item_id === item.id);
-                  return (
-                    <option key={item.id} value={item.id}>
-                      {item.name} {inv ? `(Available: ${inv.quantity})` : "(Not in stock)"}
-                    </option>
-                  );
-                })}
+                {items.length === 0 ? (
+                  <option value="">No glassware items available</option>
+                ) : (
+                  items.map((item) => {
+                    const inv = inventory.find(i => i.item_id === item.id);
+                    return (
+                      <option key={item.id} value={item.id}>
+                        {item.name} {inv ? `(Available: ${inv.quantity})` : "(Not in stock)"}
+                      </option>
+                    );
+                  })
+                )}
               </select>
             </div>
 
             <div>
-              <Label>To Store</Label>
+              <Label>To Glassware Store</Label>
               <select
                 value={toStoreId}
                 onChange={(e) => setToStoreId(e.target.value)}
                 className="w-full mt-2 p-2 border rounded-md bg-background"
+                disabled={stores.length === 0}
               >
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name}
-                  </option>
-                ))}
+                {stores.length === 0 ? (
+                  <option value="">No glassware stores available</option>
+                ) : (
+                  stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -294,7 +309,19 @@ export default function ScanTransfer() {
 
             {inventory.length === 0 && (
               <p className="text-sm text-muted-foreground text-center">
-                No items available in source store
+                No glassware items available in source store
+              </p>
+            )}
+
+            {items.length === 0 && (
+              <p className="text-sm text-destructive text-center mt-2">
+                No glassware items found in master list
+              </p>
+            )}
+
+            {stores.length === 0 && (
+              <p className="text-sm text-destructive text-center mt-2">
+                No glassware destination stores available
               </p>
             )}
           </div>
