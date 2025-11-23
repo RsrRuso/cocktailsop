@@ -69,6 +69,33 @@ export default function ScanTransfer() {
       .eq("id", contextData.from_store_id)
       .maybeSingle();
 
+    // Check permissions if this is a workspace store
+    if (fromStore?.workspace_id) {
+      const { data: membership } = await supabase
+        .from("workspace_members")
+        .select("role, permissions")
+        .eq("workspace_id", fromStore.workspace_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!membership) {
+        toast.error("You don't have access to this workspace");
+        setLoading(false);
+        navigate("/");
+        return;
+      }
+
+      const permissions = membership.permissions as any;
+      const canTransfer = membership.role === "admin" || permissions?.can_transfer === true;
+      
+      if (!canTransfer) {
+        toast.error("You don't have permission to transfer inventory in this workspace");
+        setLoading(false);
+        navigate("/");
+        return;
+      }
+    }
+
     setTransferContext({ ...contextData, fromStoreName: fromStore?.name });
 
     console.log(
