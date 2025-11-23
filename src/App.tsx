@@ -14,6 +14,7 @@ import { RoutePreloader } from "@/components/RoutePreloader";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import StoreManagement from "./pages/StoreManagement";
 
 // Lazy load ALL other routes including Home for code splitting
 const Home = lazy(() => import("./pages/Home"));
@@ -91,7 +92,7 @@ const QRAccessCode = lazy(() => import("./pages/QRAccessCode"));
 const ScanAccess = lazy(() => import("./pages/ScanAccess"));
 const AccessApproval = lazy(() => import("./pages/AccessApproval"));
 const LowStockInventory = lazy(() => import("./pages/LowStockInventory"));
-const StoreManagement = lazy(() => import("./pages/StoreManagement"));
+
 const StoreDetail = lazy(() => import("./pages/StoreDetail"));
 const AllInventory = lazy(() => import("./pages/AllInventory"));
 const InventoryTransactions = lazy(() => import("./pages/InventoryTransactions"));
