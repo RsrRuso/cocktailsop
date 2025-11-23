@@ -66,28 +66,26 @@ export default function ScanTransfer() {
 
     setTransferContext({ ...contextData, fromStoreName: fromStore?.name });
 
-    // Fetch all stores for "from" selection (glassware only)
+    // Fetch all stores for "from" selection
     const { data: allStoresData } = await supabase
       .from("stores")
       .select("*")
       .eq("user_id", userId)
       .order("name");
 
-    const allGlasswareStores = (allStoresData || []).filter(
-      store => store.name.toLowerCase().includes("glass")
-    );
+    console.log(`[ScanTransfer] Fetched ${allStoresData?.length || 0} stores`);
 
-    setFromStores(allGlasswareStores);
+    setFromStores(allStoresData || []);
     setFromStoreId(contextData.from_store_id);
 
     // Fetch destination stores (exclude selected from store)
-    const glasswareDestStores = allGlasswareStores.filter(
+    const destStores = (allStoresData || []).filter(
       store => store.id !== contextData.from_store_id
     );
 
-    setStores(glasswareDestStores);
-    if (glasswareDestStores.length > 0) {
-      setToStoreId(glasswareDestStores[0].id);
+    setStores(destStores);
+    if (destStores.length > 0) {
+      setToStoreId(destStores[0].id);
     }
 
     const { data: itemsData } = await supabase
@@ -257,7 +255,7 @@ export default function ScanTransfer() {
 
           <div className="space-y-4">
             <div>
-              <Label>From Glassware Store</Label>
+              <Label>From Store ({fromStores.length} available)</Label>
               <select
                 value={fromStoreId}
                 onChange={(e) => setFromStoreId(e.target.value)}
@@ -265,7 +263,7 @@ export default function ScanTransfer() {
                 disabled={fromStores.length === 0}
               >
                 {fromStores.length === 0 ? (
-                  <option value="">No glassware stores available</option>
+                  <option value="">No stores available</option>
                 ) : (
                   fromStores.map((store) => (
                     <option key={store.id} value={store.id}>
@@ -300,7 +298,7 @@ export default function ScanTransfer() {
             </div>
 
             <div>
-              <Label>To Glassware Store</Label>
+              <Label>To Store ({stores.length} available)</Label>
               <select
                 value={toStoreId}
                 onChange={(e) => setToStoreId(e.target.value)}
@@ -308,7 +306,7 @@ export default function ScanTransfer() {
                 disabled={stores.length === 0}
               >
                 {stores.length === 0 ? (
-                  <option value="">No glassware stores available</option>
+                  <option value="">No stores available</option>
                 ) : (
                   stores.map((store) => (
                     <option key={store.id} value={store.id}>
@@ -372,7 +370,7 @@ export default function ScanTransfer() {
 
             {stores.length === 0 && (
               <p className="text-sm text-destructive text-center mt-2">
-                No glassware destination stores available
+                No destination stores available
               </p>
             )}
           </div>
