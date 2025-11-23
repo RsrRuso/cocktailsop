@@ -282,7 +282,6 @@ export const InviteWorkspaceMemberDialog = ({
           </div>
 
           <TabsContent value="connections" className="flex-1 flex flex-col min-h-0 mt-0 data-[state=active]:flex">
-            {/* Controls Section */}
             <div className="px-4 sm:px-6 py-3 space-y-3 border-b shrink-0">
               <Input
                 placeholder="Search connections..."
@@ -313,9 +312,28 @@ export const InviteWorkspaceMemberDialog = ({
                   {selectedUsers.size} user(s) selected
                 </div>
               )}
+
+              {/* Action buttons stay in control area on mobile to avoid overlapping lists */}
+              <div className="flex justify-end gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isLoading}
+                  className="h-9 sm:h-10 text-xs sm:text-sm"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleInviteSelected}
+                  disabled={isLoading || selectedUsers.size === 0}
+                  className="h-9 sm:h-10 text-xs sm:text-sm"
+                >
+                  {isLoading ? "Adding..." : `Add ${selectedUsers.size || ""} Member(s)`}
+                </Button>
+              </div>
             </div>
 
-            {/* Lists Section - Scrollable */}
+            {/* Lists Section - Scrollable, fully independent from buttons */}
             <div className="flex-1 min-h-0 px-4 sm:px-6">
               <Tabs defaultValue="following" className="h-full flex flex-col pt-3">
                 <TabsList className="grid w-full grid-cols-2 shrink-0 mb-3">
@@ -355,27 +373,6 @@ export const InviteWorkspaceMemberDialog = ({
                   </ScrollArea>
                 </TabsContent>
               </Tabs>
-            </div>
-
-            {/* Fixed Buttons at Bottom - Completely Separated */}
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t shrink-0 bg-background mt-3">
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={isLoading}
-                  className="h-9 sm:h-10 text-xs sm:text-sm"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleInviteSelected}
-                  disabled={isLoading || selectedUsers.size === 0}
-                  className="h-9 sm:h-10 text-xs sm:text-sm"
-                >
-                  {isLoading ? "Adding..." : `Add ${selectedUsers.size || ""} Member(s)`}
-                </Button>
-              </div>
             </div>
           </TabsContent>
 
