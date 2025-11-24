@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.f6820a3952e742afbcec46bcaaa4573d',
-  appName: 'LAB Cocktail SOP',
+  appName: 'SV',
   webDir: 'dist',
   plugins: {
     SplashScreen: {
