@@ -2626,13 +2626,21 @@ export default function StaffScheduling() {
                         <div className="space-y-2 text-xs pl-4">
                           {indoorStaff.map((s, idx) => {
                             const responsibility = s.title ? ROLE_RESPONSIBILITIES[s.title] : '';
+                            const hasStation = s.station && s.station.includes('Station');
                             return (
                               <div key={idx} className="text-gray-300 leading-relaxed">
                                 • <span className={s.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
                                 {s.title === 'head_bartender' && <span className="text-[10px] text-yellow-500 ml-1.5">(HEAD)</span>}
                                 {s.title === 'senior_bartender' && <span className="text-[10px] text-blue-400 ml-1.5">(SENIOR)</span>}
                                 <span className="text-gray-500"> ({s.timeRange})</span>
-                                <div className="text-[11px] text-blue-400/80 pl-4 mt-0.5 break-words">{s.station}</div>
+                                {hasStation && (
+                                  <div className="text-[11px] text-blue-400/80 pl-4 mt-0.5 break-words">{s.station}</div>
+                                )}
+                                {!hasStation && s.title !== 'head_bartender' && (
+                                  <div className="text-[11px] text-red-400/80 pl-4 mt-0.5 break-words font-semibold">
+                                    ⚠️ Station assignment missing - regenerate schedule
+                                  </div>
+                                )}
                                 {responsibility && (
                                   <div className="text-[10px] text-gray-400/90 pl-4 mt-1 italic break-words leading-relaxed">
                                     {responsibility}
