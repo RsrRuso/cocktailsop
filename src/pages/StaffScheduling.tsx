@@ -84,6 +84,8 @@ export default function StaffScheduling() {
   const [savedSchedules, setSavedSchedules] = useState<any[]>([]);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [expiringItems, setExpiringItems] = useState<any[]>([]);
+  const [selectedArea, setSelectedArea] = useState<'indoor' | 'outdoor'>('indoor');
+  
   
   const [newStaff, setNewStaff] = useState({
     name: '',
@@ -2815,6 +2817,28 @@ export default function StaffScheduling() {
                       </div>
                     )}
                     
+                    {/* Area Navigation Buttons */}
+                    {indoorStaff.length > 0 && outdoorStaff.length > 0 && (
+                      <div className="flex gap-2 mb-4">
+                        <Button
+                          size="sm"
+                          variant={selectedArea === 'indoor' ? 'default' : 'outline'}
+                          onClick={() => setSelectedArea('indoor')}
+                          className="flex-1 h-9"
+                        >
+                          Indoor ({indoorStaff.length})
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={selectedArea === 'outdoor' ? 'default' : 'outline'}
+                          onClick={() => setSelectedArea('outdoor')}
+                          className="flex-1 h-9"
+                        >
+                          Outdoor ({outdoorStaff.length})
+                        </Button>
+                      </div>
+                    )}
+                    
                     {/* Summary Numbers */}
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       <div className="text-center p-3 bg-gradient-to-br from-green-950/40 to-green-900/20 rounded-lg border border-green-800/30">
@@ -2836,7 +2860,7 @@ export default function StaffScheduling() {
                     </div>
                     
                     {/* Indoor Staff */}
-                    {indoorStaff.length > 0 && (
+                    {indoorStaff.length > 0 && (selectedArea === 'indoor' || outdoorStaff.length === 0) && (
                       <div className="space-y-2 mb-3 bg-blue-950/20 rounded-lg p-3 border border-blue-900/30">
                         <div className="text-sm font-bold text-blue-300 flex items-center gap-2">
                           <span className="inline-block w-2 h-2 rounded-full bg-blue-400"></span>
@@ -2861,7 +2885,7 @@ export default function StaffScheduling() {
                     )}
 
                     {/* Outdoor Staff */}
-                    {outdoorStaff.length > 0 && (
+                    {outdoorStaff.length > 0 && (selectedArea === 'outdoor' || indoorStaff.length === 0) && (
                       <div className="space-y-2 mb-3 bg-purple-950/20 rounded-lg p-3 border border-purple-900/30">
                         <div className="text-sm font-bold text-purple-300 flex items-center gap-2">
                           <span className="inline-block w-2 h-2 rounded-full bg-purple-400"></span>
