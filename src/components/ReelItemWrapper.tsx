@@ -79,25 +79,25 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
             return newSet;
           });
         }}
-        className="absolute top-20 right-4 z-20 w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all"
+        className="absolute top-20 right-3 sm:right-4 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10 transition-all"
       >
         {mutedVideos.has(reel.id) ? (
-          <VolumeX className="w-5 h-5 text-white" />
+          <VolumeX className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
         ) : (
-          <Volume2 className="w-5 h-5 text-white" />
+          <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
         )}
       </button>
 
       {/* Bottom Action Bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent backdrop-blur-sm border-t border-white/10">
-        <div className="h-full flex items-center justify-around px-4">
+      <div className="absolute bottom-0 left-0 right-0 h-14 sm:h-16 bg-transparent backdrop-blur-md border-t-2 border-white/20">
+        <div className="h-full flex items-center justify-around px-2 sm:px-4">
           <button 
             onClick={() => handleLikeReel(reel.id)}
-            className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+            className="flex flex-col items-center gap-0.5 sm:gap-1 hover:scale-110 transition-transform active:scale-95"
           >
-            <Heart className={`w-7 h-7 transition-all ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+            <Heart className={`w-6 h-6 sm:w-7 sm:h-7 transition-all ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
             <span 
-              className="text-white text-xs font-semibold cursor-pointer hover:underline"
+              className="text-white text-[10px] sm:text-xs font-semibold cursor-pointer hover:underline drop-shadow-lg"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedReelForLikes(reel.id);
@@ -113,10 +113,10 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
               setSelectedReelForComments(reel.id);
               setShowComments(true);
             }}
-            className="flex flex-col items-center gap-1 hover:scale-110 transition-transform"
+            className="flex flex-col items-center gap-0.5 sm:gap-1 hover:scale-110 transition-transform active:scale-95"
           >
-            <MessageCircle className="w-7 h-7 text-white" />
-            <span className="text-white text-xs font-semibold">{reel.comment_count || 0}</span>
+            <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+            <span className="text-white text-[10px] sm:text-xs font-semibold drop-shadow-lg">{reel.comment_count || 0}</span>
           </button>
 
           <button 
@@ -126,27 +126,25 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
               setSelectedReelVideo(reel.video_url);
               setShowShare(true);
             }}
-            className="flex flex-col items-center gap-1 hover:scale-110 transition-transform group"
+            className="flex flex-col items-center gap-0.5 sm:gap-1 hover:scale-110 transition-transform active:scale-95 group"
           >
-            <div className="relative">
-              <Send className="w-7 h-7 text-white drop-shadow-[0_4px_8px_rgba(255,255,255,0.3)] group-hover:drop-shadow-[0_6px_12px_rgba(255,255,255,0.5)] transition-all" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }} />
-            </div>
-            <span className="text-white text-xs font-semibold">Send</span>
+            <Send className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+            <span className="text-white text-[10px] sm:text-xs font-semibold drop-shadow-lg">Send</span>
           </button>
 
-          <button className="flex flex-col items-center gap-1">
-            <Eye className="w-7 h-7 text-white" />
-            <span className="text-white text-xs font-semibold">{reel.view_count || 0}</span>
+          <button className="flex flex-col items-center gap-0.5 sm:gap-1">
+            <Eye className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+            <span className="text-white text-[10px] sm:text-xs font-semibold drop-shadow-lg">{reel.view_count || 0}</span>
           </button>
 
           {user && reel.user_id === user.id && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex flex-col items-center gap-1 hover:scale-110 transition-transform">
-                  <MoreVertical className="w-7 h-7 text-white" />
+                <button className="flex flex-col items-center gap-0.5 sm:gap-1 hover:scale-110 transition-transform active:scale-95">
+                  <MoreVertical className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="glass">
+              <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md border border-border/50">
                 <DropdownMenuItem onClick={() => navigate(`/edit-reel/${reel.id}`)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit
