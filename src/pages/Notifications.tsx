@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 interface Notification {
   id: string;
@@ -27,6 +28,7 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const navigate = useNavigate();
   const { showNotification } = useInAppNotificationContext();
+  const { showNotification: showPushNotification } = usePushNotifications();
 
   useEffect(() => {
     let channel: any;
@@ -67,7 +69,21 @@ const Notifications = () => {
               newNotification.type as any
             );
             
-            // Send mobile push notification
+            // Send PWA push notification with sound
+            await showPushNotification(
+              'New Notification',
+              newNotification.content,
+              {
+                tag: newNotification.type,
+                data: {
+                  type: newNotification.type,
+                  url: window.location.origin + '/notifications'
+                },
+                silent: false // Enable sound
+              }
+            );
+            
+            // Send mobile push notification (Capacitor)
             try {
               await LocalNotifications.schedule({
                 notifications: [
@@ -84,7 +100,7 @@ const Notifications = () => {
                 ]
               });
             } catch (error) {
-              // Local notifications not available
+              // Local notifications not available on web
             }
           }
         )
