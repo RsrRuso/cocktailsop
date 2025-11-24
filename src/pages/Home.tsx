@@ -97,6 +97,8 @@ const Home = () => {
   const [selectedLikesPostId, setSelectedLikesPostId] = useState("");
   const [isReelLikes, setIsReelLikes] = useState(false);
   const { isManager } = useManagerRole();
+  const [showTopNav, setShowTopNav] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   
   // Update currentUser when profile changes
   useEffect(() => {
@@ -125,6 +127,28 @@ const Home = () => {
     }
     return feed.filter(item => item.profiles !== null);
   }, [feed, selectedRegion]);
+
+  // Scroll detection for auto-hide nav
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY < 10) {
+        setShowTopNav(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down - hide nav
+        setShowTopNav(false);
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up - show nav
+        setShowTopNav(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   useEffect(() => {
     fetchStories();
@@ -291,7 +315,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen pb-20 pt-16">
-      <TopNav />
+      <TopNav isVisible={showTopNav} />
 
       {/* Stories */}
       <div className="px-4 py-4 overflow-x-auto scrollbar-hide">
