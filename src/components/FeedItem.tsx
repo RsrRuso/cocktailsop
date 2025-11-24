@@ -57,25 +57,15 @@ export const FeedItem = memo(({
   useViewTracking('post', item.id, currentUserId, true);
 
   return (
-    <div className="group relative">
-      {/* Animated Glow Background */}
-      <div className="absolute -inset-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 animate-gradient-xy"></div>
-      
-      {/* Glassy Transparent Frame with Contour Borders */}
-      <div className="relative bg-transparent backdrop-blur-xl rounded-2xl border-2 border-white/20 group-hover:border-white/30 transition-all duration-300 overflow-hidden">
-        {/* Subtle Glow on Edges */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 opacity-30 pointer-events-none"></div>
+    <div className="relative bg-transparent backdrop-blur-xl rounded-2xl border-2 border-white/20 hover:border-white/30 transition-all duration-300 overflow-hidden mb-4">
         
         <div className="relative p-4 space-y-4">
           {/* Enhanced Header */}
           <div className="flex items-center gap-3">
             <div 
-              className="relative cursor-pointer group/avatar"
+              className="relative cursor-pointer"
               onClick={() => navigate(`/user/${item.user_id}`)}
             >
-              {/* Avatar Glow Effect */}
-              <div className={`absolute -inset-1 bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-purple-500 to-pink-500'} rounded-full blur-md opacity-50 group-hover/avatar:opacity-100 transition-opacity animate-pulse`}></div>
-              
               <OptimizedAvatar
                 src={item.profiles?.avatar_url}
                 alt={item.profiles?.username || 'User'}
@@ -94,11 +84,8 @@ export const FeedItem = memo(({
                   {item.profiles?.full_name || item.profiles?.username || 'Unknown User'}
                 </p>
                 {item.profiles?.badge_level && (
-                  <div className="relative group/badge">
-                    <div className={`absolute -inset-2 bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)} blur-lg opacity-50 group-hover/badge:opacity-100 transition-all duration-300 rounded-full animate-pulse`} />
-                    <div className={`relative w-6 h-6 rounded-full bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)} flex items-center justify-center text-[10px] font-black text-white shadow-2xl ring-2 ring-white/40 group-hover/badge:scale-110 group-hover/badge:rotate-12 transition-all duration-300`}>
-                      {item.profiles.badge_level[0].toUpperCase()}
-                    </div>
+                  <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)} flex items-center justify-center text-[10px] font-black text-white shadow-lg ring-2 ring-white/40 transition-all duration-300`}>
+                    {item.profiles.badge_level[0].toUpperCase()}
                   </div>
                 )}
               </div>
@@ -189,15 +176,8 @@ export const FeedItem = memo(({
 
           {/* Enhanced Actions Bar - Glassy Transparent with Contours */}
           <div className="flex items-center gap-3 pt-2 border-t-2 border-white/20">
-            {/* Like Button with Glow */}
-            <div className="relative group/like">
-              <div className={`absolute -inset-1 rounded-full blur-md transition-all duration-300 ${
-                isLiked 
-                  ? 'bg-gradient-to-r from-red-500 to-pink-500 opacity-50 group-hover/like:opacity-75' 
-                  : 'bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover/like:opacity-30'
-              }`}></div>
-              
-              <button 
+            {/* Like Button */}
+            <button
                 onClick={onLike}
                 className={`relative flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl ${
                   isLiked 
@@ -216,39 +196,27 @@ export const FeedItem = memo(({
                   {item.like_count || 0}
                 </span>
               </button>
-            </div>
 
-            {/* Comment Button with Glow */}
-            <div className="relative group/comment">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur-md opacity-0 group-hover/comment:opacity-30 transition-opacity duration-300"></div>
-              
-              <button 
+            {/* Comment Button */}
+            <button
                 onClick={() => setShowComments(true)}
                 className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border-2 border-white/20 hover:border-white/30 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-105"
               >
                 <MessageCircle className="w-5 h-5" />
                 <span className="text-sm font-bold min-w-[20px]">{item.comment_count || 0}</span>
               </button>
-            </div>
 
-            {/* Share Button with Glow */}
-            <div className="relative group/share">
-              <div className="absolute -inset-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full blur-md opacity-0 group-hover/share:opacity-30 transition-opacity duration-300"></div>
-              
-              <button 
+            {/* Share Button */}
+            <button
                 onClick={onShare}
                 className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border-2 border-white/20 hover:border-green-500/30 text-muted-foreground hover:text-green-500 transition-all duration-300 hover:scale-105"
               >
                 <Send className="w-5 h-5" />
                 <span className="text-xs font-medium">Share</span>
               </button>
-            </div>
             
-            {/* AI Insights Button - Enhanced */}
-            <div className="relative ml-auto group/ai">
-              <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 rounded-full blur-md opacity-40 group-hover/ai:opacity-70 transition-opacity duration-300 animate-pulse"></div>
-              
-              <button
+            {/* AI Insights Button */}
+            <button
                 onClick={() => setShowInsights(true)}
                 className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border-2 border-purple-500/40 hover:border-purple-500/60 transition-all duration-300 hover:scale-105"
               >
@@ -258,16 +226,14 @@ export const FeedItem = memo(({
                   AI Insights
                 </span>
               </button>
-            </div>
             
-            {/* Views Counter with Glassy Transparent Border */}
+            {/* Views Counter */}
             <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-transparent backdrop-blur-xl border-2 border-white/20">
               <Eye className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-bold text-muted-foreground">{item.view_count || 0}</span>
             </div>
           </div>
         </div>
-      </div>
 
       {/* Enhanced Dialogs with AI */}
       <EnhancedLikesDialog
