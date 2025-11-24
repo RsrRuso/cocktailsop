@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'notification.wav'],
       manifest: {
-        name: 'CocktailSOP - Professional Bar Management',
-        short_name: 'CocktailSOP',
+        name: 'SV',
+        short_name: 'SV',
         description: 'Professional operations suite for beverage industry professionals',
         theme_color: '#000000',
         background_color: '#000000',
