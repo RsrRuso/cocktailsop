@@ -1,7 +1,7 @@
 {
-  "name": "LAB Cocktail SOP Tool",
-  "short_name": "LAB SOP",
-  "description": "Professional cocktail standard operating procedures for mobile",
+  "name": "CocktailSOP - Professional Bar Management",
+  "short_name": "CocktailSOP",
+  "description": "Professional operations suite for beverage industry professionals",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
@@ -26,6 +26,6 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["social", "productivity", "business"],
+  "categories": ["business", "productivity", "food"],
   "prefer_related_applications": false
 }

@@ -11,6 +11,7 @@ import { RoutePreloader } from "@/components/RoutePreloader";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { usePageTransition } from "@/hooks/usePageTransition";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 // Eager load ONLY index/landing/auth (no user data)
 import Index from "./pages/Index";
@@ -105,6 +106,7 @@ const TransferQRGenerator = lazy(() => import("@/pages/TransferQRGenerator"));
 const ScanTransfer = lazy(() => import("@/pages/ScanTransfer"));
 const ScanReceive = lazy(() => import("@/pages/ScanReceive"));
 const MapPlanner = lazy(() => import("@/pages/MapPlanner"));
+const Install = lazy(() => import("@/pages/Install"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -126,6 +128,7 @@ const AppContent = () => {
       <RoutePreloader />
       <Toaster />
       <Sonner />
+      <InstallPrompt />
       <Suspense fallback={<PageLoader />}>
               <Routes>
           <Route path="/" element={<Index />} />
@@ -217,6 +220,7 @@ const AppContent = () => {
           <Route path="/seller-dashboard" element={<SellerDashboard />} />
           <Route path="/staff-scheduling" element={<StaffScheduling />} />
           <Route path="/map-planner" element={<MapPlanner />} />
+          <Route path="/install" element={<Install />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
                 </Routes>
