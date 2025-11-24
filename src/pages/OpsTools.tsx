@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 import { Wine, Droplets, Beaker, Scale, ThermometerSnowflake, Calculator, BookOpen, Package, TrendingUp, FileText, Shield, DollarSign, Trash2, Target, ClipboardCheck, Percent, FileBarChart, Download, BarChart3, PieChart, Users, Clock, AlertTriangle, CheckCircle2, Flame, Sparkles, TestTube, Timer, Thermometer, Container, BoxSelect, Tags, TrendingDown, Calendar, UserCheck, GraduationCap, Briefcase, LineChart, Activity, Edit3, Store, ArrowRightLeft, Building2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -10,7 +11,7 @@ const OpsTools = () => {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState("mixing");
 
-  const tools = {
+  const tools = useMemo(() => ({
     reports: [
       {
         name: "Sales Report",
@@ -403,7 +404,7 @@ const OpsTools = () => {
         premium: true,
       },
     ],
-  };
+  }), []);
 
   const handleToolClick = (toolName: string, isPremium: boolean, path?: string) => {
     if (path) {
@@ -420,6 +421,9 @@ const OpsTools = () => {
       <TopNav />
 
       <div className="px-4 py-6 space-y-6">
+        {/* Performance Monitor */}
+        <PerformanceMonitor />
+        
         {/* Header with Stats */}
         <div className="space-y-4">
           <div>
