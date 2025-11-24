@@ -1,4 +1,3 @@
-// App Root Component
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -11,6 +10,7 @@ import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { RoutePreloader } from "@/components/RoutePreloader";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
+import { usePageTransition } from "@/hooks/usePageTransition";
 
 // Eager load ONLY index/landing/auth (no user data)
 import Index from "./pages/Index";
@@ -117,7 +117,11 @@ const PageLoader = () => (
   </div>
 );
 
-const App = () => (
+const App = () => {
+  // Monitor page transition performance
+  usePageTransition();
+  
+  return (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <InAppNotificationProvider>
@@ -228,6 +232,7 @@ const App = () => (
       </InAppNotificationProvider>
     </BrowserRouter>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
