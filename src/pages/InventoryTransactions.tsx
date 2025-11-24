@@ -40,46 +40,47 @@ const InventoryTransactions = () => {
     try {
       setLoading(true);
 
-      // Build transfer query
+      // Build workspace filter
+      const workspaceFilter = currentWorkspace 
+        ? { workspace_id: currentWorkspace.id }
+        : { workspace_id: null };
+
+      // Fetch transfers from all workspace members
       let transferQuery = supabase
         .from('inventory_transfers')
         .select(`
-          id,
-          user_id,
-          transfer_date,
-          created_at,
-          quantity,
-          status,
+          *,
           from_store:stores!inventory_transfers_from_store_id_fkey(name),
           to_store:stores!inventory_transfers_to_store_id_fkey(name),
-          inventory(items(name)),
-          profiles!inventory_transfers_user_id_fkey(id, full_name, email, username)
+          inventory(items(name))
         `)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(100);
 
       if (currentWorkspace) {
         transferQuery = transferQuery.eq('workspace_id', currentWorkspace.id);
       } else {
         transferQuery = transferQuery.is('workspace_id', null);
       }
-      
-      // Build activity query
+
+      const { data: transfersData, error: transferError } = await transferQuery;
+
+      if (transferError) {
+        console.error('[InventoryTransactions] Error fetching transfers:', transferError);
+        throw transferError;
+      }
+
+      // Fetch receiving operations from activity log (all workspace members)
       let activityQuery = supabase
         .from('inventory_activity_log')
         .select(`
-          id,
-          user_id,
-          created_at,
-          details,
-          quantity_after,
+          *,
           store:stores(name),
-          inventory(items(name)),
-          profiles!inventory_activity_log_user_id_fkey(id, full_name, email, username)
+          inventory(items(name))
         `)
         .eq('action_type', 'received')
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(100);
 
       if (currentWorkspace) {
         activityQuery = activityQuery.eq('workspace_id', currentWorkspace.id);
@@ -87,46 +88,64 @@ const InventoryTransactions = () => {
         activityQuery = activityQuery.is('workspace_id', null);
       }
 
-      // Parallel fetch for maximum speed
-      const [transfersResult, activityResult] = await Promise.all([
-        transferQuery,
-        activityQuery
-      ]);
+      const { data: activityData, error: activityError } = await activityQuery;
 
-      const { data: transfersData, error: transferError } = transfersResult;
-      const { data: activityData, error: activityError } = activityResult;
+      if (activityError) {
+        console.error('[InventoryTransactions] Error fetching activity:', activityError);
+      }
 
-      if (transferError) throw transferError;
-      if (activityError) console.error('[InventoryTransactions] Activity error:', activityError);
+      // Fetch user profiles separately
+      const allUserIds = [
+        ...new Set([
+          ...(transfersData?.map((t: any) => t.user_id) || []),
+          ...(activityData?.map((a: any) => a.user_id) || [])
+        ])
+      ];
+      
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, username')
+        .in('id', allUserIds);
 
-      // Format transfer transactions (profile already joined)
+      const profilesMap = new Map(profilesData?.map((p: any) => [p.id, p]) || []);
+
+      // Format transfer transactions
       const transferTransactions: Transaction[] = (transfersData || [])
-        .map((t: any) => ({
-          id: t.id,
-          type: 'transfer' as const,
-          timestamp: t.transfer_date || t.created_at,
-          user_email: t.profiles?.email || 'Unknown User',
-          user_name: t.profiles?.full_name || t.profiles?.username || null,
-          from_store: t.from_store?.name || 'Unknown',
-          to_store: t.to_store?.name || 'Unknown',
-          item_name: t.inventory?.items?.name || 'Unknown Item',
-          quantity: Number(t.quantity) || 0,
-          status: t.status || 'completed',
-        }));
+        .map((t: any) => {
+          const profile = profilesMap.get(t.user_id);
+          
+          return {
+            id: t.id,
+            type: 'transfer' as const,
+            timestamp: t.transfer_date || t.created_at,
+            user_email: profile?.email || 'Unknown User',
+            user_name: profile?.full_name || profile?.username || null,
+            from_store: t.from_store?.name || 'Unknown',
+            to_store: t.to_store?.name || 'Unknown',
+            item_name: t.inventory?.items?.name || 'Unknown Item',
+            quantity: Number(t.quantity) || 0,
+            status: t.status || 'completed',
+          };
+        });
 
-      // Format receiving transactions (profile already joined)
+      // Format receiving transactions
       const receivingTransactions: Transaction[] = (activityData || [])
-        .map((a: any) => ({
-          id: a.id,
-          type: 'receiving' as const,
-          timestamp: a.created_at,
-          user_email: a.profiles?.email || 'Unknown User',
-          user_name: a.profiles?.full_name || a.profiles?.username || null,
-          store: a.store?.name || 'Unknown',
-          item_name: a.inventory?.items?.name || a.details?.item_name || 'Unknown Item',
-          quantity: Number(a.details?.received_quantity || a.quantity_after) || 0,
-          status: 'completed',
-        }));
+        .map((a: any) => {
+          const profile = profilesMap.get(a.user_id);
+          const itemName = a.inventory?.items?.name || a.details?.item_name || 'Unknown Item';
+          
+          return {
+            id: a.id,
+            type: 'receiving' as const,
+            timestamp: a.created_at,
+            user_email: profile?.email || 'Unknown User',
+            user_name: profile?.full_name || profile?.username || null,
+            store: a.store?.name || 'Unknown',
+            item_name: itemName,
+            quantity: Number(a.details?.received_quantity || a.quantity_after) || 0,
+            status: 'completed',
+          };
+        });
 
       // Combine and sort all transactions
       const allTransactions = [...transferTransactions, ...receivingTransactions]
@@ -154,7 +173,7 @@ const InventoryTransactions = () => {
     table: 'inventory_transfers',
     event: '*',
     onUpdate: fetchTransactions,
-    debounceMs: 300,
+    debounceMs: 500,
   });
 
   // Real-time subscription for activity log
@@ -163,7 +182,7 @@ const InventoryTransactions = () => {
     table: 'inventory_activity_log',
     event: '*',
     onUpdate: fetchTransactions,
-    debounceMs: 300,
+    debounceMs: 500,
   });
 
   const getStatusColor = (status: string) => {
