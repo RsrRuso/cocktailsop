@@ -2744,8 +2744,16 @@ export default function StaffScheduling() {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
                   let displayStation = '';
                   
-                  // Always recalculate bartender stations to ensure uniqueness
-                  if (staff?.title) {
+                  // Check if there's a manually assigned station (saved in s.station)
+                  if (s.station && (staff?.title === 'senior_bartender' || staff?.title === 'bartender')) {
+                    // Use the manually assigned station if it exists and contains station info
+                    if (s.station.includes('Indoor - Station') || s.station.includes('Indoor - Garnishing Station')) {
+                      displayStation = s.station;
+                    }
+                  }
+                  
+                  // If no manual station, calculate based on role
+                  if (!displayStation && staff?.title) {
                     switch(staff.title) {
                       case 'head_bartender':
                         displayStation = "Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow";
@@ -2776,9 +2784,9 @@ export default function StaffScheduling() {
                     }
                   }
                   
-                  // Fallback to existing station if no title
+                  // Final fallback to existing station
                   if (!displayStation) {
-                    displayStation = s.station;
+                    displayStation = s.station || '';
                   }
                   
                   return { 
@@ -2792,8 +2800,16 @@ export default function StaffScheduling() {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
                   let displayStation = '';
                   
-                  // Always recalculate bartender stations to ensure uniqueness
-                  if (staff?.title) {
+                  // Check if there's a manually assigned station (saved in s.station)
+                  if (s.station && (staff?.title === 'senior_bartender' || staff?.title === 'bartender')) {
+                    // Use the manually assigned station if it exists and contains station info
+                    if (s.station.includes('Outdoor - Station')) {
+                      displayStation = s.station;
+                    }
+                  }
+                  
+                  // If no manual station, calculate based on role
+                  if (!displayStation && staff?.title) {
                     switch(staff.title) {
                       case 'head_bartender':
                         displayStation = "Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow";
@@ -2822,9 +2838,9 @@ export default function StaffScheduling() {
                     }
                   }
                   
-                  // Fallback to existing station if no title
+                  // Final fallback to existing station
                   if (!displayStation) {
-                    displayStation = s.station;
+                    displayStation = s.station || '';
                   }
                   
                   return { 
@@ -2915,7 +2931,7 @@ export default function StaffScheduling() {
                           <span>🥂</span>
                           <span>Low Stock Glassware ({lowStockItems.length} items)</span>
                         </div>
-                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                        <div className="space-y-2">
                           {lowStockItems.map((item: any, idx: number) => {
                             const itemName = item.items?.name || 'Unknown';
                             const storeName = item.stores?.name || 'Unknown Store';
