@@ -13,9 +13,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { scheduleEventReminder, addToCalendar } from '@/lib/eventReminders';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useNavigate } from 'react-router-dom';
+import UnifiedLikesDialog from '@/components/unified/UnifiedLikesDialog';
+import UnifiedAttendeesDialog from '@/components/unified/UnifiedAttendeesDialog';
 
 interface Event {
   id: string;
@@ -52,7 +51,6 @@ interface EventDetailDialogProps {
 
 export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }: EventDetailDialogProps) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [hasLiked, setHasLiked] = useState(false);
   const [isAttending, setIsAttending] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -72,8 +70,6 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [showLikesDialog, setShowLikesDialog] = useState(false);
   const [showAttendeesDialog, setShowAttendeesDialog] = useState(false);
-  const [likes, setLikes] = useState<any[]>([]);
-  const [attendees, setAttendees] = useState<any[]>([]);
 
   useEffect(() => {
     if (event && open && user) {
@@ -339,17 +335,6 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
     }
   };
 
-  const fetchLikesAndAttendees = async () => {
-    if (!event) return;
-    
-    const [likesRes, attendeesRes] = await Promise.all([
-      supabase.from('event_likes').select('user_id, created_at, profiles!event_likes_user_id_fkey(username, avatar_url, full_name)').eq('event_id', event.id),
-      supabase.from('event_attendees').select('user_id, created_at, profiles!event_attendees_user_id_fkey(username, avatar_url, full_name)').eq('event_id', event.id)
-    ]);
-    
-    if (likesRes.data) setLikes(likesRes.data);
-    if (attendeesRes.data) setAttendees(attendeesRes.data);
-  };
 
   const renderComment = (comment: Comment, isReply: boolean = false) => {
     const isOwner = user && comment.user_id === user.id;
@@ -626,10 +611,7 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          fetchLikesAndAttendees();
-                          setShowLikesDialog(true);
-                        }}
+                        onClick={() => setShowLikesDialog(true)}
                       >
                         View Likes
                       </Button>
@@ -647,10 +629,7 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          fetchLikesAndAttendees();
-                          setShowAttendeesDialog(true);
-                        }}
+                        onClick={() => setShowAttendeesDialog(true)}
                       >
                         <Users className="w-4 h-4 mr-1" />
                         View
@@ -747,89 +726,22 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Likes Dialog */}
-      <Dialog open={showLikesDialog} onOpenChange={setShowLikesDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Heart className="w-5 h-5 fill-red-500 text-red-500" />
-              Event Likes
-            </DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-            {likes.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No likes yet</div>
-            ) : (
-              <div className="space-y-3">
-                {likes.map((like: any) => (
-                  <div
-                    key={like.user_id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => {
-                      navigate(`/user/${like.user_id}`);
-                      setShowLikesDialog(false);
-                      onOpenChange(false);
-                    }}
-                  >
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={like.profiles?.avatar_url || undefined} />
-                      <AvatarFallback>{like.profiles?.username?.[0] || '?'}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{like.profiles?.full_name}</p>
-                      <p className="text-sm text-muted-foreground truncate">@{like.profiles?.username}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(like.created_at), { addSuffix: true })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-
-      {/* Attendees Dialog */}
-      <Dialog open={showAttendeesDialog} onOpenChange={setShowAttendeesDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Who's Going
-            </DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-            {attendees.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No attendees yet</div>
-            ) : (
-              <div className="space-y-3">
-                {attendees.map((attendee: any) => (
-                  <div
-                    key={attendee.user_id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => {
-                      navigate(`/user/${attendee.user_id}`);
-                      setShowAttendeesDialog(false);
-                      onOpenChange(false);
-                    }}
-                  >
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={attendee.profiles?.avatar_url || undefined} />
-                      <AvatarFallback>{attendee.profiles?.username?.[0] || '?'}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{attendee.profiles?.full_name}</p>
-                      <p className="text-sm text-muted-foreground truncate">@{attendee.profiles?.username}</p>
-                    </div>
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  </div>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      {/* Unified Dialogs */}
+      {event && (
+        <>
+          <UnifiedLikesDialog
+            open={showLikesDialog}
+            onOpenChange={setShowLikesDialog}
+            contentType="event"
+            contentId={event.id}
+          />
+          <UnifiedAttendeesDialog
+            open={showAttendeesDialog}
+            onOpenChange={setShowAttendeesDialog}
+            eventId={event.id}
+          />
+        </>
+      )}
     </>
   );
 };
