@@ -275,29 +275,27 @@ export const EnhancedCommentsDialog = ({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, x: -10 }}
-        transition={{ delay: index * 0.05 }}
-        className={depth > 0 ? 'ml-8 mt-2 border-l-2 border-purple-500/20 pl-3' : 'mt-3'}
+        transition={{ delay: index * 0.03, duration: 0.2 }}
+        className={depth > 0 ? 'ml-6 sm:ml-8 mt-2 border-l-2 border-purple-500/20 pl-2 sm:pl-3' : 'mb-2'}
       >
-        <div className="group relative p-3 rounded-xl bg-card/30 hover:bg-card/50 border border-border/50 hover:border-primary/30 transition-all">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div className="group relative p-2.5 sm:p-3 rounded-xl bg-card/30 hover:bg-card/50 border border-border/50 hover:border-primary/30 transition-all duration-200">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
           
-          <div className="relative flex gap-3">
-            <Avatar className="w-9 h-9 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
+          <div className="relative flex gap-2 sm:gap-3">
+            <Avatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
               <AvatarImage src={comment.profiles.avatar_url || undefined} />
-              <AvatarFallback className="text-sm bg-gradient-to-br from-purple-500/10 to-pink-500/10">
+              <AvatarFallback className="text-xs sm:text-sm bg-gradient-to-br from-purple-500/10 to-pink-500/10">
                 {comment.profiles.username[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="font-semibold text-sm">{comment.profiles.full_name}</span>
-                <span className="text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                <span className="font-semibold text-xs sm:text-sm">{comment.profiles.full_name}</span>
+                <span className="text-[10px] sm:text-xs text-muted-foreground">
                   @{comment.profiles.username}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  •
-                </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-[10px] sm:text-xs text-muted-foreground">•</span>
+                <span className="text-[10px] sm:text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                 </span>
               </div>
@@ -329,21 +327,21 @@ export const EnhancedCommentsDialog = ({
                   </div>
                 </div>
               ) : (
-                <p className="text-sm mt-1 whitespace-pre-wrap break-words text-foreground/90">{comment.content}</p>
+                <p className="text-xs sm:text-sm mt-0.5 whitespace-pre-wrap break-words text-foreground/90 leading-relaxed">{comment.content}</p>
               )}
               
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs hover:bg-purple-500/10 hover:text-purple-500"
+                  className="h-6 sm:h-7 text-[10px] sm:text-xs px-2 hover:bg-purple-500/10 hover:text-purple-500 transition-colors"
                   onClick={() => {
                     setReplyingTo(comment.id);
                     setNewComment(`@${comment.profiles.username} `);
                     textareaRef.current?.focus();
                   }}
                 >
-                  <Reply className="w-3 h-3 mr-1" /> Reply
+                  <Reply className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" /> Reply
                 </Button>
                 
                 {isOwner && !isEditing && (
@@ -385,7 +383,7 @@ export const EnhancedCommentsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[85vh] w-[95vw] sm:w-full flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-purple-500/5 overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[95vh] w-[98vw] sm:w-full flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-purple-500/5 overflow-hidden">
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border/50 bg-gradient-to-r from-purple-500/10 to-pink-500/10 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -407,49 +405,43 @@ export const EnhancedCommentsDialog = ({
           </div>
         </DialogHeader>
 
-        {/* AI Insights */}
+        {/* AI Insights - Compact */}
         {comments.length > 0 && (
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border/50 shrink-0">
-            <div className="flex items-center gap-2 mb-2 sm:mb-3">
-              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
-              <h3 className="font-semibold text-xs sm:text-sm">Engagement Insights</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:gap-3">
-              <Card className="p-3 bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <Zap className="w-4 h-4 text-purple-500" />
-                  <span className="text-xs text-muted-foreground">Activity</span>
-                </div>
-                <div className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-                  {aiInsights.engagementRate.toFixed(0)}%
-                </div>
-                <Progress value={aiInsights.engagementRate} className="h-1 mt-2" />
-              </Card>
+          <div className="px-4 sm:px-6 py-2 border-b border-border/50 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20">
+                <Zap className="w-3 h-3 text-purple-500" />
+                <span className="text-xs font-bold text-purple-500">{aiInsights.engagementRate.toFixed(0)}%</span>
+              </div>
               {aiInsights.topCommenter && (
-                <Card className="p-3 bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-4 h-4 text-blue-500" />
-                    <span className="text-xs text-muted-foreground">Top</span>
-                  </div>
-                  <div className="text-sm font-semibold text-foreground truncate">
-                    @{aiInsights.topCommenter.profiles.username}
-                  </div>
-                </Card>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20">
+                  <TrendingUp className="w-3 h-3 text-blue-500" />
+                  <span className="text-xs font-medium text-blue-500">@{aiInsights.topCommenter.profiles.username}</span>
+                </div>
               )}
             </div>
           </div>
         )}
 
-        <ScrollArea className="flex-1 px-4 sm:px-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 300px)' }}>
+        {/* Enhanced Scrollable Comments Area */}
+        <div className="relative flex-1 overflow-hidden">
+          {/* Top Gradient Fade */}
+          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-background via-background/80 to-transparent z-10 pointer-events-none"></div>
+          
+          {/* Bottom Gradient Fade */}
+          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background via-background/80 to-transparent z-10 pointer-events-none"></div>
+
+          <ScrollArea className="h-full px-4 sm:px-6" style={{ maxHeight: 'calc(95vh - 240px)' }}>
+            <div className="pt-4 pb-4">
           {loading ? (
-            <div className="flex items-center justify-center py-8 sm:py-12">
+            <div className="flex items-center justify-center py-12">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
                 <div className="relative animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
               </div>
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-16">
               <div className="relative mb-4 inline-block">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-xl opacity-30"></div>
                 <MessageCircle className="relative w-16 h-16 text-muted-foreground" />
@@ -459,12 +451,12 @@ export const EnhancedCommentsDialog = ({
             </div>
           ) : (
             <AnimatePresence mode="popLayout">
-              <div className="pb-4">
-                {comments.map((comment, idx) => renderComment(comment, 0, idx))}
-              </div>
+              {comments.map((comment, idx) => renderComment(comment, 0, idx))}
             </AnimatePresence>
           )}
-        </ScrollArea>
+            </div>
+          </ScrollArea>
+        </div>
 
         <form onSubmit={handleSubmit} className="border-t border-border/50 p-3 sm:p-4 space-y-2 sm:space-y-3 shrink-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5">
           {replyingTo && (
