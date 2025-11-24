@@ -46,6 +46,28 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
     };
 
     fetchEvents();
+
+    // Real-time subscription to refresh event counts
+    const channel = supabase
+      .channel(`events-ticker-${region}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'events',
+          filter: `region=eq.${region}`
+        },
+        () => {
+          // Refetch events when any event is updated
+          fetchEvents();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [region]);
 
   const handleEventClick = (event: Event) => {
