@@ -158,24 +158,18 @@ const Reels = () => {
 
     const isLiked = likedReels.has(reelId);
 
-    // Optimistic update
+    // Optimistic UI update only - database trigger handles the count
     if (isLiked) {
       setLikedReels(prev => {
         const newSet = new Set(prev);
         newSet.delete(reelId);
         return newSet;
       });
-      setReels(prev => prev.map(r => 
-        r.id === reelId ? { ...r, like_count: Math.max(0, r.like_count - 1) } : r
-      ));
     } else {
       setLikedReels(prev => new Set(prev).add(reelId));
-      setReels(prev => prev.map(r => 
-        r.id === reelId ? { ...r, like_count: r.like_count + 1 } : r
-      ));
     }
 
-    // Background API call
+    // Database operation - trigger updates count automatically
     try {
       if (isLiked) {
         const { error } = await supabase
@@ -195,22 +189,17 @@ const Reels = () => {
       }
     } catch (error: any) {
       console.error('Error toggling reel like:', error);
-      // Revert on error
+      // Revert UI state only - database trigger handles counts
       if (isLiked) {
         setLikedReels(prev => new Set(prev).add(reelId));
-        setReels(prev => prev.map(r => 
-          r.id === reelId ? { ...r, like_count: r.like_count + 1 } : r
-        ));
       } else {
         setLikedReels(prev => {
           const newSet = new Set(prev);
           newSet.delete(reelId);
           return newSet;
         });
-        setReels(prev => prev.map(r => 
-          r.id === reelId ? { ...r, like_count: Math.max(0, r.like_count - 1) } : r
-        ));
       }
+      toast.error('Failed to update like');
     }
   };
 

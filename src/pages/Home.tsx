@@ -202,24 +202,12 @@ const Home = () => {
   }, [user?.id]);
 
   const handleLikePost = useCallback((postId: string) => {
-    togglePostLike(postId, (increment) => {
-      setPosts(prev => prev.map(p => 
-        p.id === postId 
-          ? { ...p, like_count: Math.max(0, p.like_count + increment) } 
-          : p
-      ));
-    });
-  }, [togglePostLike, setPosts]);
+    togglePostLike(postId); // Database trigger + real-time subscription handle counts
+  }, [togglePostLike]);
 
   const handleLikeReel = useCallback((reelId: string) => {
-    toggleReelLike(reelId, (increment) => {
-      setReels(prev => prev.map(r => 
-        r.id === reelId 
-          ? { ...r, like_count: Math.max(0, r.like_count + increment) } 
-          : r
-      ));
-    });
-  }, [toggleReelLike, setReels]);
+    toggleReelLike(reelId); // Database trigger + real-time subscription handle counts
+  }, [toggleReelLike]);
 
   const getBadgeColor = (level: string) => {
     const colors = {

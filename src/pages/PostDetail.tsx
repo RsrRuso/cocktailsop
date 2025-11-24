@@ -30,6 +30,32 @@ const PostDetail = () => {
         checkIfLiked();
       }
     }
+
+    // Real-time subscription for post updates (like/comment counts)
+    const postChannel = supabase
+      .channel(`post-detail-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'posts',
+          filter: `id=eq.${id}`
+        },
+        (payload: any) => {
+          // Update counts from database trigger updates
+          setPost((prev: any) => ({
+            ...prev,
+            like_count: payload.new.like_count,
+            comment_count: payload.new.comment_count
+          }));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(postChannel);
+    };
   }, [id, user]);
 
   const fetchPost = async () => {
@@ -80,12 +106,8 @@ const PostDetail = () => {
 
     const wasLiked = isLiked;
     
-    // Optimistic update
+    // Optimistic UI update - database trigger handles the count
     setIsLiked(!wasLiked);
-    setPost((prev: any) => ({ 
-      ...prev, 
-      like_count: wasLiked ? Math.max(0, prev.like_count - 1) : prev.like_count + 1
-    }));
 
     try {
       if (wasLiked) {
@@ -108,10 +130,6 @@ const PostDetail = () => {
       console.error('Error toggling like:', error);
       // Revert on error
       setIsLiked(wasLiked);
-      setPost((prev: any) => ({ 
-        ...prev, 
-        like_count: wasLiked ? prev.like_count + 1 : Math.max(0, prev.like_count - 1)
-      }));
       toast.error('Failed to update like');
     }
   };
