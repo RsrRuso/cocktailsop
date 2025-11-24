@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 interface ContentBoostSuggestionsProps {
-  contentType: 'post' | 'reel' | 'story';
+  contentType: 'post' | 'reel' | 'story' | 'music_share' | 'event';
   engagement: {
     likes: number;
     comments: number;
