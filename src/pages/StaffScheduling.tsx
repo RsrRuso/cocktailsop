@@ -84,6 +84,7 @@ export default function StaffScheduling() {
   const [savedSchedules, setSavedSchedules] = useState<any[]>([]);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [expiringItems, setExpiringItems] = useState<any[]>([]);
+  const [lowStockItems, setLowStockItems] = useState<any[]>([]);
   const [selectedArea, setSelectedArea] = useState<'indoor' | 'outdoor'>('indoor');
   
   
@@ -117,6 +118,7 @@ export default function StaffScheduling() {
   useEffect(() => {
     if (user?.id) {
       fetchExpiringItems();
+      fetchLowStockItems();
     }
   }, [user, currentWorkspace]);
 
@@ -223,6 +225,91 @@ export default function StaffScheduling() {
       setExpiringItems(allItems);
     } catch (error) {
       console.error('Error fetching expiring items:', error);
+    }
+  };
+
+  const fetchLowStockItems = async () => {
+    if (!user?.id) return;
+
+    try {
+      console.log('Fetching low stock items for user:', user.id);
+
+      // Fetch settings for minimum quantity threshold
+      const { data: settings } = await supabase
+        .from('stock_alert_settings')
+        .select('minimum_quantity_threshold')
+        .eq('workspace_id', currentWorkspace?.id || 'personal')
+        .maybeSingle();
+
+      const minimumQuantity = settings?.minimum_quantity_threshold || 10;
+
+      // Fetch from FIFO inventory
+      const { data: fifoData, error: fifoError } = await supabase
+        .from('fifo_inventory')
+        .select(`
+          *,
+          fifo_items!inner (
+            name,
+            category,
+            brand
+          ),
+          fifo_stores!inner (
+            name
+          )
+        `)
+        .eq('user_id', user.id)
+        .lte('quantity', minimumQuantity)
+        .order('quantity', { ascending: true });
+
+      if (fifoError) {
+        console.error('Error fetching FIFO low stock items:', fifoError);
+      }
+
+      // Fetch from regular inventory (if workspace exists)
+      let regularData: any[] = [];
+      if (currentWorkspace) {
+        const { data, error } = await supabase
+          .from('inventory')
+          .select(`
+            *,
+            items!inner (
+              name,
+              category,
+              brand
+            ),
+            stores!inner (
+              name
+            )
+          `)
+          .eq('workspace_id', currentWorkspace.id)
+          .lte('quantity', minimumQuantity)
+          .order('quantity', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching regular inventory low stock items:', error);
+        } else {
+          regularData = data || [];
+        }
+      }
+
+      // Combine both sources and normalize the data structure
+      const allItems = [
+        ...(fifoData || []).map(item => ({
+          ...item,
+          items: item.fifo_items,
+          stores: item.fifo_stores,
+          source: 'fifo'
+        })),
+        ...(regularData || []).map(item => ({
+          ...item,
+          source: 'regular'
+        }))
+      ].sort((a, b) => a.quantity - b.quantity);
+
+      console.log('Found low stock items:', allItems.length, 'items (FIFO:', fifoData?.length || 0, ', Regular:', regularData.length, ')');
+      setLowStockItems(allItems);
+    } catch (error) {
+      console.error('Error fetching low stock items:', error);
     }
   };
 
@@ -2811,6 +2898,43 @@ export default function StaffScheduling() {
                         {expiringItems.length > 3 && (
                           <div className="text-[8px] text-red-400/70 mt-1 text-center">
                             +{expiringItems.length - 3} more items
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Low Stock Warnings */}
+                    {lowStockItems.length > 0 && (
+                      <div className="mb-4 p-3 bg-orange-950/30 border border-orange-800/40 rounded-lg">
+                        <div className="text-xs font-bold text-orange-400 mb-2 flex items-center gap-2">
+                          <span>📦</span>
+                          <span>Low Stock ({lowStockItems.length} items)</span>
+                        </div>
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                          {lowStockItems.slice(0, 3).map((item: any, idx: number) => {
+                            const itemName = item.items?.name || 'Unknown';
+                            const storeName = item.stores?.name || 'Unknown Store';
+                            const quantity = item.quantity || 0;
+                            
+                            return (
+                              <div key={idx} className="text-[10px] text-orange-300/90 flex justify-between items-center py-1.5 px-2 border-b border-orange-800/20 last:border-0 bg-orange-950/20 rounded">
+                                <span className="flex-1 break-words mr-2">
+                                  <span className="font-semibold">{itemName}</span> • {storeName}
+                                </span>
+                                <span className={`ml-2 px-1.5 py-0.5 rounded text-[8px] font-medium ${
+                                  quantity === 0 ? 'bg-red-500/20 text-red-300' : 
+                                  quantity <= 3 ? 'bg-orange-500/20 text-orange-300' : 
+                                  'bg-yellow-500/20 text-yellow-300'
+                                }`}>
+                                  Qty: {quantity}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {lowStockItems.length > 3 && (
+                          <div className="text-[8px] text-orange-400/70 mt-1 text-center">
+                            +{lowStockItems.length - 3} more items
                           </div>
                         )}
                       </div>
