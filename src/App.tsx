@@ -9,6 +9,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { RoutePreloader } from "@/components/RoutePreloader";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 
 // Eager load ONLY index/landing/auth (no user data)
 import Index from "./pages/Index";
@@ -116,15 +118,16 @@ const PageLoader = () => (
 );
 
 const App = () => (
-  <BrowserRouter>
-    <InAppNotificationProvider>
-      <AuthProvider>
-        <WorkspaceProvider>
-          <CartProvider>
-            <RoutePreloader />
-            <Toaster />
-            <Sonner />
-            <Suspense fallback={<PageLoader />}>
+  <QueryClientProvider client={queryClient}>
+    <BrowserRouter>
+      <InAppNotificationProvider>
+        <AuthProvider>
+          <WorkspaceProvider>
+            <CartProvider>
+              <RoutePreloader />
+              <Toaster />
+              <Sonner />
+              <Suspense fallback={<PageLoader />}>
               <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/landing" element={<Landing />} />
@@ -224,6 +227,7 @@ const App = () => (
         </AuthProvider>
       </InAppNotificationProvider>
     </BrowserRouter>
-  );
+  </QueryClientProvider>
+);
 
 export default App;
