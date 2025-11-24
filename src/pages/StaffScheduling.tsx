@@ -2563,18 +2563,76 @@ export default function StaffScheduling() {
 
                 const indoorStaff = sortedIndoor.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
+                  let displayStation = s.station;
+                  
+                  // If no station is set, assign the default role description based on title
+                  if (!displayStation && staff?.title) {
+                    switch(staff.title) {
+                      case 'head_bartender':
+                        displayStation = "Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow";
+                        break;
+                      case 'senior_bartender':
+                        displayStation = `Indoor - Station ${((sortedIndoor.filter(st => {
+                          const stf = staffMembers.find(sm => sm.id === st.staffId);
+                          return stf?.title === 'senior_bartender' || stf?.title === 'bartender';
+                        }).indexOf(s) % 3) + 1)}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
+                        break;
+                      case 'bartender':
+                        displayStation = `Indoor - Station ${((sortedIndoor.filter(st => {
+                          const stf = staffMembers.find(sm => sm.id === st.staffId);
+                          return stf?.title === 'senior_bartender' || stf?.title === 'bartender';
+                        }).indexOf(s) % 3) + 1)}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
+                        break;
+                      case 'bar_back':
+                        displayStation = "Handle pickups and refills, polish glassware, stock supplies and prepare garnishes";
+                        break;
+                      case 'support':
+                        displayStation = "Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance";
+                        break;
+                    }
+                  }
+                  
                   return { 
                     name: staff?.name || 'Unknown', 
-                    station: s.station, 
+                    station: displayStation, 
                     timeRange: s.timeRange,
                     title: staff?.title 
                   };
                 });
                 const outdoorStaff = sortedOutdoor.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
+                  let displayStation = s.station;
+                  
+                  // If no station is set, assign the default role description based on title
+                  if (!displayStation && staff?.title) {
+                    switch(staff.title) {
+                      case 'head_bartender':
+                        displayStation = "Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow";
+                        break;
+                      case 'senior_bartender':
+                        displayStation = `Outdoor - Station ${((sortedOutdoor.filter(st => {
+                          const stf = staffMembers.find(sm => sm.id === st.staffId);
+                          return stf?.title === 'senior_bartender' || stf?.title === 'bartender';
+                        }).indexOf(s) % 2) + 1)}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
+                        break;
+                      case 'bartender':
+                        displayStation = `Outdoor - Station ${((sortedOutdoor.filter(st => {
+                          const stf = staffMembers.find(sm => sm.id === st.staffId);
+                          return stf?.title === 'senior_bartender' || stf?.title === 'bartender';
+                        }).indexOf(s) % 2) + 1)}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
+                        break;
+                      case 'bar_back':
+                        displayStation = "Handle pickups and refills, polish glassware, stock supplies and prepare garnishes";
+                        break;
+                      case 'support':
+                        displayStation = "Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance";
+                        break;
+                    }
+                  }
+                  
                   return { 
                     name: staff?.name || 'Unknown', 
-                    station: s.station, 
+                    station: displayStation, 
                     timeRange: s.timeRange,
                     title: staff?.title 
                   };
