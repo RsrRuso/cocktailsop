@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Send, Trash2, MessageCircle, Reply, MoreVertical, Brain, Sparkles, TrendingUp, Heart, Zap } from 'lucide-react';
+import { Send, Trash2, MessageCircle, Reply, MoreVertical, Brain, Sparkles, TrendingUp, Heart, Zap, Wand2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,12 +43,16 @@ export const EnhancedCommentsDialog = ({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [aiInsights, setAiInsights] = useState({
     totalComments: 0,
     engagementRate: 0,
     topCommenter: null as Comment | null,
   });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const suggestionTimeoutRef = useRef<number | null>(null);
 
   const config = getEngagementConfig(contentType);
 
@@ -204,6 +208,56 @@ export const EnhancedCommentsDialog = ({
       console.error('Error editing comment:', err);
       toast.error('Failed to update');
     }
+  };
+
+  const fetchAISuggestions = async (text: string) => {
+    if (text.trim().length < 3) {
+      setAiSuggestions([]);
+      return;
+    }
+
+    setLoadingSuggestions(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-comment-rewrite', {
+        body: { text, context: `${contentType} comment` }
+      });
+
+      if (error) throw error;
+      
+      if (data?.suggestions && Array.isArray(data.suggestions)) {
+        setAiSuggestions(data.suggestions);
+        setShowSuggestions(true);
+      }
+    } catch (err) {
+      console.error('Error fetching AI suggestions:', err);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const handleTextChange = (text: string) => {
+    setNewComment(text);
+    
+    // Debounce AI suggestions
+    if (suggestionTimeoutRef.current) {
+      clearTimeout(suggestionTimeoutRef.current);
+    }
+
+    suggestionTimeoutRef.current = window.setTimeout(() => {
+      if (text.trim().length >= 10) {
+        fetchAISuggestions(text);
+      } else {
+        setAiSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 1000);
+  };
+
+  const applySuggestion = (suggestion: string) => {
+    setNewComment(suggestion);
+    setShowSuggestions(false);
+    setAiSuggestions([]);
+    textareaRef.current?.focus();
   };
 
   const renderComment = (comment: Comment, depth: number = 0, index: number = 0) => {
@@ -431,19 +485,80 @@ export const EnhancedCommentsDialog = ({
             </motion.div>
           )}
           <div className="flex gap-2">
-            <Textarea
-              ref={textareaRef}
-              placeholder="Write a comment... (Ctrl+Enter to send)"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              className="flex-1 min-h-[60px] max-h-[120px] resize-none bg-background/50"
-              disabled={submitting}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.ctrlKey) {
-                  handleSubmit();
-                }
-              }}
-            />
+            <div className="relative flex-1">
+              <Textarea
+                ref={textareaRef}
+                placeholder="Write a comment... (Ctrl+Enter to send)"
+                value={newComment}
+                onChange={(e) => handleTextChange(e.target.value)}
+                className="flex-1 min-h-[60px] max-h-[120px] resize-none bg-background/50 pr-10"
+                disabled={submitting}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) {
+                    handleSubmit();
+                  }
+                }}
+              />
+              
+              {/* AI Indicator */}
+              {loadingSuggestions && (
+                <div className="absolute top-2 right-2">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  >
+                    <Wand2 className="w-4 h-4 text-purple-500" />
+                  </motion.div>
+                </div>
+              )}
+              
+              {/* AI Suggestions Popup */}
+              <AnimatePresence>
+                {showSuggestions && aiSuggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute bottom-full mb-2 left-0 right-0 z-50"
+                  >
+                    <Card className="p-3 space-y-2 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/30 backdrop-blur-xl shadow-2xl">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Brain className="w-4 h-4 text-purple-500" />
+                        <span className="text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+                          AI Suggestions
+                        </span>
+                        <button
+                          onClick={() => setShowSuggestions(false)}
+                          className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                        {aiSuggestions.map((suggestion, idx) => (
+                          <motion.button
+                            key={idx}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            onClick={() => applySuggestion(suggestion)}
+                            className="w-full text-left p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-primary/30 transition-all group"
+                          >
+                            <div className="flex items-start gap-2">
+                              <Sparkles className="w-3 h-3 text-pink-500 mt-1 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                              <p className="text-sm text-foreground/90 group-hover:text-foreground transition-colors">
+                                {suggestion}
+                              </p>
+                            </div>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             <Button
               type="submit"
               disabled={!newComment.trim() || submitting}
