@@ -2970,7 +2970,24 @@ export default function StaffScheduling() {
                                 else if (value === '3:00 PM - 1:00 AM') type = 'regular'; // Support 10h shift
                                 else if (value.includes('4:00 PM')) type = 'early_shift';
                                 else if (value.includes('5:00 PM')) type = 'late_shift';
-                                updateScheduleCell(staff.id, day, value, type, cell?.station, cell?.breakStart, cell?.breakEnd);
+                                
+                                // Generate appropriate station based on role if not already set
+                                let station = cell?.station || '';
+                                if (!station && value !== 'OFF') {
+                                  if (staff.title === 'head_bartender') {
+                                    station = 'Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow';
+                                  } else if (staff.title === 'bar_back') {
+                                    station = 'Handle pickups and refills, polish glassware, stock supplies and prepare garnishes';
+                                  } else if (staff.title === 'support') {
+                                    station = 'Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance';
+                                  } else if (staff.title === 'senior_bartender') {
+                                    station = 'Indoor - Station 1: Work behind assigned bar station, train junior staff members, ensure health and safety compliance';
+                                  } else if (staff.title === 'bartender') {
+                                    station = 'Indoor - Station 1: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards';
+                                  }
+                                }
+                                
+                                updateScheduleCell(staff.id, day, value, type, station, cell?.breakStart, cell?.breakEnd);
                               }}
                             >
                               <SelectTrigger className="text-[9px] h-6 bg-gray-900 border-gray-700 text-gray-100 px-1">
@@ -2997,23 +3014,35 @@ export default function StaffScheduling() {
                                   
                                   // Generate appropriate station based on staff role and selected area
                                   if (staff.title === 'head_bartender') {
-                                    newStation = `Head - ${area === 'outdoor' ? 'Outdoor' : 'Indoor'} Supervisor: Observe ${area} operations, support where needed`;
-                                  } else if (staff.title === 'senior_bartender' || staff.title === 'bartender') {
+                                    newStation = 'Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow';
+                                  } else if (staff.title === 'senior_bartender') {
                                     if (currentStation.includes('Station 1') || currentStation.includes('Station 2') || currentStation.includes('Station 3')) {
                                       const stationNum = currentStation.match(/Station (\d)/)?.[1] || '1';
                                       // ALWAYS preserve garnishing designation for Station 3
                                       if (stationNum === '3') {
-                                        newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+                                        newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Garnishing Station 3: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
                                       } else {
-                                        newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+                                        newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Station ${stationNum}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
                                       }
                                     } else {
-                                      newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Floating Support: Assist all ${area} stations as needed`;
+                                      newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Station 1: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
+                                    }
+                                  } else if (staff.title === 'bartender') {
+                                    if (currentStation.includes('Station 1') || currentStation.includes('Station 2') || currentStation.includes('Station 3')) {
+                                      const stationNum = currentStation.match(/Station (\d)/)?.[1] || '1';
+                                      // ALWAYS preserve garnishing designation for Station 3
+                                      if (stationNum === '3') {
+                                        newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Garnishing Station 3: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
+                                      } else {
+                                        newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
+                                      }
+                                    } else {
+                                      newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Station 1: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
                                     }
                                   } else if (staff.title === 'bar_back') {
-                                    newStation = `Bar Back - ${area === 'outdoor' ? 'Outdoor' : 'Indoor'}: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish`;
+                                    newStation = 'Handle pickups and refills, polish glassware, stock supplies and prepare garnishes';
                                   } else if (staff.title === 'support') {
-                                    newStation = `Support - ${area === 'outdoor' ? 'Outdoor' : 'Indoor'}: Glassware Polishing, General Support`;
+                                    newStation = 'Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance';
                                   }
                                   
                                   updateScheduleCell(staff.id, day, cell.timeRange, cell.type, newStation, cell?.breakStart, cell?.breakEnd);
