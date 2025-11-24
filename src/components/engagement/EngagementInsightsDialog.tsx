@@ -42,7 +42,7 @@ export const EngagementInsightsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5">
+      <DialogContent className="w-[95vw] max-w-4xl h-[85vh] sm:h-[90vh] p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden">
         <DialogHeader className="p-6 pb-4 border-b border-border/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -59,18 +59,18 @@ export const EngagementInsightsDialog = ({
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <div className="px-6 pt-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="insights">Insights</TabsTrigger>
-              <TabsTrigger value="boost">Boost</TabsTrigger>
-              <TabsTrigger value="ads">Ads</TabsTrigger>
-              <TabsTrigger value="trends">Trends</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <div className="px-3 sm:px-6 pt-4 flex-shrink-0">
+            <TabsList className="grid w-full grid-cols-4 h-auto">
+              <TabsTrigger value="insights" className="text-xs sm:text-sm px-2 sm:px-3">Insights</TabsTrigger>
+              <TabsTrigger value="boost" className="text-xs sm:text-sm px-2 sm:px-3">Boost</TabsTrigger>
+              <TabsTrigger value="ads" className="text-xs sm:text-sm px-2 sm:px-3">Ads</TabsTrigger>
+              <TabsTrigger value="trends" className="text-xs sm:text-sm px-2 sm:px-3">Trends</TabsTrigger>
             </TabsList>
           </div>
 
-          <ScrollArea className="flex-1">
-            <div className="p-6 space-y-4">
+          <ScrollArea className="flex-1 overflow-y-auto">
+            <div className="p-3 sm:p-6 space-y-4 pb-8">
               <TabsContent value="insights" className="mt-0 space-y-4">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
