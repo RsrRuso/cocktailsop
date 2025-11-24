@@ -6,13 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Heart, MessageCircle, CheckCircle, Send, Pencil, Trash2, Smile, Reply, MoreVertical, CalendarPlus } from 'lucide-react';
+import { Heart, MessageCircle, CheckCircle, Send, Pencil, Trash2, Smile, Reply, MoreVertical, CalendarPlus, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { scheduleEventReminder, addToCalendar } from '@/lib/eventReminders';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useNavigate } from 'react-router-dom';
 
 interface Event {
   id: string;
@@ -49,6 +52,7 @@ interface EventDetailDialogProps {
 
 export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }: EventDetailDialogProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [hasLiked, setHasLiked] = useState(false);
   const [isAttending, setIsAttending] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -66,6 +70,10 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentContent, setEditCommentContent] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+  const [showLikesDialog, setShowLikesDialog] = useState(false);
+  const [showAttendeesDialog, setShowAttendeesDialog] = useState(false);
+  const [likes, setLikes] = useState<any[]>([]);
+  const [attendees, setAttendees] = useState<any[]>([]);
 
   useEffect(() => {
     if (event && open && user) {
@@ -331,13 +339,28 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
     }
   };
 
+  const fetchLikesAndAttendees = async () => {
+    if (!event) return;
+    
+    const [likesRes, attendeesRes] = await Promise.all([
+      supabase.from('event_likes').select('user_id, created_at, profiles!event_likes_user_id_fkey(username, avatar_url, full_name)').eq('event_id', event.id),
+      supabase.from('event_attendees').select('user_id, created_at, profiles!event_attendees_user_id_fkey(username, avatar_url, full_name)').eq('event_id', event.id)
+    ]);
+    
+    if (likesRes.data) setLikes(likesRes.data);
+    if (attendeesRes.data) setAttendees(attendeesRes.data);
+  };
+
   const renderComment = (comment: Comment, isReply: boolean = false) => {
     const isOwner = user && comment.user_id === user.id;
     const isEditing = editingCommentId === comment.id;
     const reactionCounts: Record<string, number> = {};
+    const userReactions: Record<string, string[]> = {};
     
     (comment.reactions || []).forEach(r => {
       reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
+      if (!userReactions[r.emoji]) userReactions[r.emoji] = [];
+      userReactions[r.emoji].push(r.user_id);
     });
 
     const replyToComment = comments.find(c => c.id === comment.parent_comment_id);
@@ -443,18 +466,21 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
             </Button>
           </div>
           {Object.keys(reactionCounts).length > 0 && (
-            <div className="flex gap-1 mt-2">
-              {Object.entries(reactionCounts).map(([emoji, count]) => (
-                <Button
-                  key={emoji}
-                  variant="secondary"
-                  size="sm"
-                  className="h-6 px-2 text-xs"
-                  onClick={() => handleReaction(comment.id, emoji)}
-                >
-                  {emoji} {count}
-                </Button>
-              ))}
+            <div className="flex gap-1 mt-2 flex-wrap">
+              {Object.entries(reactionCounts).map(([emoji, count]) => {
+                const hasUserReacted = user && userReactions[emoji]?.includes(user.id);
+                return (
+                  <Button
+                    key={emoji}
+                    variant={hasUserReacted ? "default" : "secondary"}
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => handleReaction(comment.id, emoji)}
+                  >
+                    {emoji} {count}
+                  </Button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -587,24 +613,49 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
 
                   {/* Action Buttons */}
                   <div className="flex gap-2 py-4 border-y">
-                  <Button
-                    variant={hasLiked ? "default" : "outline"}
-                    size="sm"
-                    onClick={handleLike}
-                    className="flex-1"
-                  >
-                    <Heart className={`w-4 h-4 mr-2 ${hasLiked ? 'fill-current' : ''}`} />
-                    Like {likeCount > 0 && `(${likeCount})`}
-                  </Button>
-                  <Button
-                    variant={isAttending ? "default" : "outline"}
-                    size="sm"
-                    onClick={handleAttendance}
-                    className="flex-1"
-                  >
-                    <CheckCircle className={`w-4 h-4 mr-2 ${isAttending ? 'fill-current' : ''}`} />
-                    I'll Go {attendeeCount > 0 && `(${attendeeCount})`}
+                    <Button
+                      variant={hasLiked ? "default" : "outline"}
+                      size="sm"
+                      onClick={handleLike}
+                      className="flex-1"
+                    >
+                      <Heart className={`w-4 h-4 mr-2 ${hasLiked ? 'fill-current' : ''}`} />
+                      Like {likeCount > 0 && `(${likeCount})`}
                     </Button>
+                    {likeCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          fetchLikesAndAttendees();
+                          setShowLikesDialog(true);
+                        }}
+                      >
+                        View Likes
+                      </Button>
+                    )}
+                    <Button
+                      variant={isAttending ? "default" : "outline"}
+                      size="sm"
+                      onClick={handleAttendance}
+                      className="flex-1"
+                    >
+                      <CheckCircle className={`w-4 h-4 mr-2 ${isAttending ? 'fill-current' : ''}`} />
+                      I'll Go {attendeeCount > 0 && `(${attendeeCount})`}
+                    </Button>
+                    {attendeeCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          fetchLikesAndAttendees();
+                          setShowAttendeesDialog(true);
+                        }}
+                      >
+                        <Users className="w-4 h-4 mr-1" />
+                        View
+                      </Button>
+                    )}
                   </div>
 
                   {/* Comments Section */}
@@ -695,6 +746,90 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Likes Dialog */}
+      <Dialog open={showLikesDialog} onOpenChange={setShowLikesDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Heart className="w-5 h-5 fill-red-500 text-red-500" />
+              Event Likes
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            {likes.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">No likes yet</div>
+            ) : (
+              <div className="space-y-3">
+                {likes.map((like: any) => (
+                  <div
+                    key={like.user_id}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      navigate(`/user/${like.user_id}`);
+                      setShowLikesDialog(false);
+                      onOpenChange(false);
+                    }}
+                  >
+                    <Avatar className="w-12 h-12">
+                      <AvatarImage src={like.profiles?.avatar_url || undefined} />
+                      <AvatarFallback>{like.profiles?.username?.[0] || '?'}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{like.profiles?.full_name}</p>
+                      <p className="text-sm text-muted-foreground truncate">@{like.profiles?.username}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(like.created_at), { addSuffix: true })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Attendees Dialog */}
+      <Dialog open={showAttendeesDialog} onOpenChange={setShowAttendeesDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Who's Going
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            {attendees.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">No attendees yet</div>
+            ) : (
+              <div className="space-y-3">
+                {attendees.map((attendee: any) => (
+                  <div
+                    key={attendee.user_id}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      navigate(`/user/${attendee.user_id}`);
+                      setShowAttendeesDialog(false);
+                      onOpenChange(false);
+                    }}
+                  >
+                    <Avatar className="w-12 h-12">
+                      <AvatarImage src={attendee.profiles?.avatar_url || undefined} />
+                      <AvatarFallback>{attendee.profiles?.username?.[0] || '?'}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{attendee.profiles?.full_name}</p>
+                      <p className="text-sm text-muted-foreground truncate">@{attendee.profiles?.username}</p>
+                    </div>
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
