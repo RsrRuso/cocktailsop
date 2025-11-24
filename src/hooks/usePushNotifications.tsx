@@ -133,6 +133,8 @@ export const usePushNotifications = () => {
   return {
     showNotification,
     requestPermission,
-    hasPermission: Notification.permission === 'granted'
+    hasPermission: typeof window !== 'undefined' && 'Notification' in window 
+      ? Notification.permission === 'granted' 
+      : false
   };
 };
