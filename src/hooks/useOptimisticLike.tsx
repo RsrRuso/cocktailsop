@@ -65,8 +65,10 @@ export const useOptimisticLike = (
       // Update count immediately
       updateCount?.(increment);
 
-      // Background API call
+      // Background API call with request deduplication
       try {
+        console.log(`[LIKE] Starting ${isLiked ? 'unlike' : 'like'} for ${itemType} ${itemId}`);
+        
         if (itemType === 'post') {
           if (isLiked) {
             const { error } = await supabase
@@ -75,12 +77,16 @@ export const useOptimisticLike = (
               .eq('post_id', itemId)
               .eq('user_id', currentUserId);
             if (error) throw error;
+            console.log(`[LIKE] Successfully unliked post ${itemId}`);
           } else {
             const { error } = await supabase
               .from('post_likes')
               .insert({ post_id: itemId, user_id: currentUserId });
             // Ignore duplicate key errors (23505) - already liked
-            if (error && error.code !== '23505') throw error;
+            if (error && error.code !== '23505') {
+              throw error;
+            }
+            console.log(`[LIKE] Successfully liked post ${itemId}. Duplicate error code: ${error?.code || 'none'}`);
           }
         } else {
           if (isLiked) {
@@ -90,16 +96,20 @@ export const useOptimisticLike = (
               .eq('reel_id', itemId)
               .eq('user_id', currentUserId);
             if (error) throw error;
+            console.log(`[LIKE] Successfully unliked reel ${itemId}`);
           } else {
             const { error } = await supabase
               .from('reel_likes')
               .insert({ reel_id: itemId, user_id: currentUserId });
             // Ignore duplicate key errors (23505) - already liked
-            if (error && error.code !== '23505') throw error;
+            if (error && error.code !== '23505') {
+              throw error;
+            }
+            console.log(`[LIKE] Successfully liked reel ${itemId}. Duplicate error code: ${error?.code || 'none'}`);
           }
         }
       } catch (error: any) {
-        console.error('Like error:', error);
+        console.error('[LIKE] Error:', error);
         toast.error(`Failed to ${isLiked ? 'unlike' : 'like'}`);
         
         // Revert on error
