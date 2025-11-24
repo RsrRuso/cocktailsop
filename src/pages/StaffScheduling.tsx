@@ -2650,10 +2650,10 @@ export default function StaffScheduling() {
                 
                 const indoorStaff = sortedIndoor.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
-                  let displayStation = s.station;
+                  let displayStation = '';
                   
-                  // If no station is set, assign the default role description based on title
-                  if (!displayStation && staff?.title) {
+                  // Always recalculate bartender stations to ensure uniqueness
+                  if (staff?.title) {
                     switch(staff.title) {
                       case 'head_bartender':
                         displayStation = "Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow";
@@ -2670,7 +2670,8 @@ export default function StaffScheduling() {
                             ? `Indoor - Garnishing Station 3: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members' : 'supervise bar backs'}, ${staff.title === 'senior_bartender' ? 'ensure health and safety compliance' : 'maintain hygiene and service standards'}`
                             : `Indoor - Station ${stationNum}: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members' : 'supervise bar backs'}, ${staff.title === 'senior_bartender' ? 'ensure health and safety compliance' : 'maintain hygiene and service standards'}`;
                         } else {
-                          displayStation = "Support: Assist with bar operations as needed";
+                          // More bartenders than stations - assign to support with station preference
+                          displayStation = "Support - Station 1 or 2: Assist with bar operations as needed";
                         }
                         break;
                       }
@@ -2683,6 +2684,11 @@ export default function StaffScheduling() {
                     }
                   }
                   
+                  // Fallback to existing station if no title
+                  if (!displayStation) {
+                    displayStation = s.station;
+                  }
+                  
                   return { 
                     name: staff?.name || 'Unknown', 
                     station: displayStation, 
@@ -2692,10 +2698,10 @@ export default function StaffScheduling() {
                 });
                 const outdoorStaff = sortedOutdoor.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
-                  let displayStation = s.station;
+                  let displayStation = '';
                   
-                  // If no station is set, assign the default role description based on title
-                  if (!displayStation && staff?.title) {
+                  // Always recalculate bartender stations to ensure uniqueness
+                  if (staff?.title) {
                     switch(staff.title) {
                       case 'head_bartender':
                         displayStation = "Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow";
@@ -2710,7 +2716,8 @@ export default function StaffScheduling() {
                           const stationNum = availableOutdoorStations.splice(stationIndex, 1)[0];
                           displayStation = `Outdoor - Station ${stationNum}: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members' : 'supervise bar backs'}, ${staff.title === 'senior_bartender' ? 'ensure health and safety compliance' : 'maintain hygiene and service standards'}`;
                         } else {
-                          displayStation = "Support: Assist with bar operations as needed";
+                          // More bartenders than stations - assign to support with station preference
+                          displayStation = "Support - Station 1 or 2: Assist with bar operations as needed";
                         }
                         break;
                       }
@@ -2721,6 +2728,11 @@ export default function StaffScheduling() {
                         displayStation = "Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance";
                         break;
                     }
+                  }
+                  
+                  // Fallback to existing station if no title
+                  if (!displayStation) {
+                    displayStation = s.station;
                   }
                   
                   return { 
