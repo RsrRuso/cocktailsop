@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 
 interface SimpleQueryOptions<T> {
   queryFn: () => Promise<T>;
   enabled?: boolean;
+  cacheKey?: string;
+  staleTime?: number;
 }
 
 interface SimpleQueryResult<T> {
@@ -12,29 +14,93 @@ interface SimpleQueryResult<T> {
   refetch: () => Promise<void>;
 }
 
+// Global cache and request deduplication
+const cache = new Map<string, { data: any; timestamp: number }>();
+const pendingRequests = new Map<string, Promise<any>>();
+
 export function useSimpleQuery<T>(options: SimpleQueryOptions<T>): SimpleQueryResult<T> {
-  const { queryFn, enabled = true } = options;
-  const [data, setData] = useState<T | undefined>(undefined);
+  const { queryFn, enabled = true, cacheKey, staleTime = 30000 } = options;
+  const [data, setData] = useState<T | undefined>(() => {
+    if (cacheKey) {
+      const cached = cache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < staleTime) {
+        return cached.data;
+      }
+    }
+    return undefined;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<unknown>(undefined);
+  const mountedRef = useRef(true);
 
   const fetchData = useCallback(async () => {
     if (!enabled) return;
-    setIsLoading(true);
-    try {
-      const result = await queryFn();
-      setData(result);
-      setError(undefined);
-    } catch (err) {
-      console.error("useSimpleQuery error:", err);
-      setError(err);
-    } finally {
-      setIsLoading(false);
+    
+    // Check cache first
+    if (cacheKey) {
+      const cached = cache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < staleTime) {
+        if (mountedRef.current) {
+          setData(cached.data);
+        }
+        return;
+      }
+
+      // Deduplicate pending requests
+      const pending = pendingRequests.get(cacheKey);
+      if (pending) {
+        try {
+          const result = await pending;
+          if (mountedRef.current) {
+            setData(result);
+          }
+          return;
+        } catch (err) {
+          // Continue to make a new request
+        }
+      }
     }
-  }, [enabled, queryFn]);
+    
+    if (mountedRef.current) {
+      setIsLoading(true);
+    }
+    
+    const requestPromise = queryFn();
+    if (cacheKey) {
+      pendingRequests.set(cacheKey, requestPromise);
+    }
+    
+    try {
+      const result = await requestPromise;
+      if (mountedRef.current) {
+        setData(result);
+        setError(undefined);
+        
+        // Update cache
+        if (cacheKey) {
+          cache.set(cacheKey, { data: result, timestamp: Date.now() });
+        }
+      }
+    } catch (err) {
+      if (mountedRef.current) {
+        setError(err);
+      }
+    } finally {
+      if (cacheKey) {
+        pendingRequests.delete(cacheKey);
+      }
+      if (mountedRef.current) {
+        setIsLoading(false);
+      }
+    }
+  }, [enabled, queryFn, cacheKey, staleTime]);
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchData();
+    return () => {
+      mountedRef.current = false;
+    };
   }, [fetchData]);
 
   return { data, isLoading, error, refetch: fetchData };

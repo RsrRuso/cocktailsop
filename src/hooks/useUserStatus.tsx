@@ -14,12 +14,13 @@ export const useUserStatus = (userId: string | null | undefined) => {
         .maybeSingle();
       
       if (error && (error as any).code !== 'PGRST116') {
-        console.error('Error fetching status:', error);
         return null;
       }
       
       return data;
     },
     enabled: !!userId,
+    cacheKey: userId ? `user_status_${userId}` : undefined,
+    staleTime: 60000, // Cache for 1 minute
   });
 };
