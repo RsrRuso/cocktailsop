@@ -9,3 +9,6 @@ export { SmartAdSuggestions } from './SmartAdSuggestions';
 export { AdvancedReactions } from './AdvancedReactions';
 export { OptimalPostingTime } from './OptimalPostingTime';
 export { ContentPerformanceAnalytics } from './ContentPerformanceAnalytics';
+export { TrendingContentAnalyzer } from './TrendingContentAnalyzer';
+export { ViralPredictionEngine } from './ViralPredictionEngine';
+export { ContentBoostSuggestions } from './ContentBoostSuggestions';
