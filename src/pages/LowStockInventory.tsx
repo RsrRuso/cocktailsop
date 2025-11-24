@@ -8,12 +8,13 @@ import { Download, Package, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { ZoomableImage } from "@/components/ZoomableImage";
 
 interface LowStockItem {
   id: string;
   quantity: number;
   item_id: string;
-  items: { name: string; category: string } | null;
+  items: { name: string; category: string; photo_url: string | null } | null;
   stores: { name: string } | null;
 }
 
@@ -86,7 +87,7 @@ const LowStockInventory = () => {
           quantity,
           item_id,
           workspace_id,
-          items!inner(name, category, workspace_id),
+          items!inner(name, category, photo_url, workspace_id),
           stores!inner(name, workspace_id)
         `)
         .lte("quantity", minimumQuantity)
@@ -301,9 +302,19 @@ const LowStockInventory = () => {
                         : ''
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-start gap-4">
+                    {item.items?.photo_url && (
+                      <div className="shrink-0">
+                        <ZoomableImage
+                          src={item.items.photo_url}
+                          alt={item.items.name}
+                          className="w-20 h-20 rounded-lg object-cover"
+                          containerClassName="w-20 h-20"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <span className="text-sm text-muted-foreground">
                           #{index + 1}
                         </span>
@@ -332,7 +343,7 @@ const LowStockInventory = () => {
                       </div>
                     </div>
                     <div
-                      className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${stockLevel.color}`}
+                      className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap self-start ${stockLevel.color}`}
                     >
                       Qty: {item.quantity}
                     </div>
