@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Download, Plus, Trash2, Wand2, Calendar, Users, Save, Edit } from 'lucide-react';
 import TopNav from '@/components/TopNav';
 import BottomNav from '@/components/BottomNav';
+import { ZoomableImage } from '@/components/ZoomableImage';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -251,7 +252,8 @@ export default function StaffScheduling() {
           fifo_items!inner (
             name,
             category,
-            brand
+            brand,
+            photo_url
           ),
           fifo_stores!inner (
             name
@@ -276,7 +278,8 @@ export default function StaffScheduling() {
             items!inner (
               name,
               category,
-              brand
+              brand,
+              photo_url
             ),
             stores!inner (
               name
@@ -2912,18 +2915,31 @@ export default function StaffScheduling() {
                           <span>🥂</span>
                           <span>Low Stock Glassware ({lowStockItems.length} items)</span>
                         </div>
-                        <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                          {lowStockItems.slice(0, 3).map((item: any, idx: number) => {
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {lowStockItems.map((item: any, idx: number) => {
                             const itemName = item.items?.name || 'Unknown';
                             const storeName = item.stores?.name || 'Unknown Store';
                             const quantity = item.quantity || 0;
+                            const photoUrl = item.items?.photo_url;
                             
                             return (
-                              <div key={idx} className="text-[10px] text-orange-300/90 flex justify-between items-center py-1.5 px-2 border-b border-orange-800/20 last:border-0 bg-orange-950/20 rounded">
-                                <span className="flex-1 break-words mr-2">
-                                  <span className="font-semibold">{itemName}</span> • {storeName}
-                                </span>
-                                <span className={`ml-2 px-1.5 py-0.5 rounded text-[8px] font-medium ${
+                              <div key={idx} className="flex gap-2 items-center py-1.5 px-2 border-b border-orange-800/20 last:border-0 bg-orange-950/20 rounded">
+                                {photoUrl && (
+                                  <div className="shrink-0">
+                                    <ZoomableImage
+                                      src={photoUrl}
+                                      alt={itemName}
+                                      className="w-12 h-12 rounded object-cover"
+                                      containerClassName="w-12 h-12"
+                                      showZoomIcon={false}
+                                    />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0 text-[10px] text-orange-300/90">
+                                  <div className="font-semibold truncate">{itemName}</div>
+                                  <div className="text-orange-400/70">{storeName}</div>
+                                </div>
+                                <span className={`shrink-0 px-1.5 py-0.5 rounded text-[8px] font-medium ${
                                   quantity === 0 ? 'bg-red-500/20 text-red-300' : 
                                   quantity <= 3 ? 'bg-orange-500/20 text-orange-300' : 
                                   'bg-yellow-500/20 text-yellow-300'
@@ -2934,11 +2950,6 @@ export default function StaffScheduling() {
                             );
                           })}
                         </div>
-                        {lowStockItems.length > 3 && (
-                          <div className="text-[8px] text-orange-400/70 mt-1 text-center">
-                            +{lowStockItems.length - 3} more items
-                          </div>
-                        )}
                       </div>
                     )}
 
