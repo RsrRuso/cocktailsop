@@ -113,6 +113,13 @@ const Auth = () => {
         toast.success("Password reset link sent! Check your email");
         setIsForgotPassword(false);
       } else if (isSignUp) {
+        // Check if passwords match
+        if (password !== confirmPassword) {
+          toast.error("Passwords don't match. Please make sure both passwords are identical.");
+          setLoading(false);
+          return;
+        }
+
         // Validate signup inputs
         const validated = signUpSchema.parse({
           email,
@@ -259,26 +266,76 @@ const Auth = () => {
               </div>
 
               {!isForgotPassword && (
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="glass"
-                  />
-                  {!isSignUp && (
-                    <button
-                      type="button"
-                      onClick={() => setIsForgotPassword(true)}
-                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      Forgot password?
-                    </button>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="glass"
+                      placeholder={isSignUp ? "Create a strong password" : "Enter password"}
+                    />
+                    {isSignUp && (
+                      <div className="text-xs space-y-1 mt-2 p-3 glass rounded-lg">
+                        <p className="font-semibold text-foreground mb-1">Password must contain:</p>
+                        <div className="space-y-1">
+                          <p className={password.length >= 8 ? "text-green-500" : "text-muted-foreground"}>
+                            ✓ At least 8 characters
+                          </p>
+                          <p className={/[A-Z]/.test(password) ? "text-green-500" : "text-muted-foreground"}>
+                            ✓ One uppercase letter (A-Z)
+                          </p>
+                          <p className={/[a-z]/.test(password) ? "text-green-500" : "text-muted-foreground"}>
+                            ✓ One lowercase letter (a-z)
+                          </p>
+                          <p className={/[0-9]/.test(password) ? "text-green-500" : "text-muted-foreground"}>
+                            ✓ One number (0-9)
+                          </p>
+                          <p className={/[^A-Za-z0-9]/.test(password) ? "text-green-500" : "text-muted-foreground"}>
+                            ✓ One special character (!@#$%^&*)
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {!isSignUp && (
+                      <button
+                        type="button"
+                        onClick={() => setIsForgotPassword(true)}
+                        className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
+
+                  {isSignUp && (
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        className="glass"
+                        placeholder="Re-enter your password"
+                      />
+                      {confirmPassword && password !== confirmPassword && (
+                        <p className="text-xs text-red-500 mt-1">
+                          ⚠️ Passwords don't match
+                        </p>
+                      )}
+                      {confirmPassword && password === confirmPassword && (
+                        <p className="text-xs text-green-500 mt-1">
+                          ✓ Passwords match
+                        </p>
+                      )}
+                    </div>
                   )}
-                </div>
+                </>
               )}
             </>
           )}
