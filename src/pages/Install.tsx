@@ -46,7 +46,7 @@ const Install = () => {
 
     if (outcome === 'accepted') {
       toast.success("App installed!", {
-        description: "You can now access CocktailSOP from your home screen"
+        description: "You can now access SV from your home screen"
       });
       setIsInstalled(true);
     }
@@ -70,10 +70,10 @@ const Install = () => {
         <Card className="border-2">
           <CardHeader className="text-center space-y-4">
             <div className="mx-auto w-32 h-32 rounded-3xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center shadow-2xl">
-              <img src="/icon-512.png" alt="CocktailSOP" className="w-28 h-28 rounded-2xl" />
+              <img src="/icon-512.png" alt="SV" className="w-28 h-28 rounded-2xl" />
             </div>
             <div>
-              <CardTitle className="text-3xl">Install CocktailSOP</CardTitle>
+              <CardTitle className="text-3xl">Install SV</CardTitle>
               <CardDescription className="text-base mt-2">
                 Get instant access from your home screen
               </CardDescription>
@@ -87,7 +87,7 @@ const Install = () => {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Already Installed!</h3>
                   <p className="text-muted-foreground">
-                    CocktailSOP is already installed on your device
+                    SV is already installed on your device
                   </p>
                 </div>
                 <Button onClick={() => navigate('/home')} size="lg" className="w-full">
