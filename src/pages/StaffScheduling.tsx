@@ -1869,8 +1869,31 @@ export default function StaffScheduling() {
       
       console.log(`Using html-to-image to capture ${day}...`);
       
-      // Wait a bit for images to load
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Convert all images to base64 to ensure they're captured
+      const images = element.querySelectorAll('img');
+      const imagePromises = Array.from(images).map(async (img) => {
+        if (img.src && !img.src.startsWith('data:')) {
+          try {
+            const response = await fetch(img.src);
+            const blob = await response.blob();
+            return new Promise<void>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                img.src = reader.result as string;
+                resolve();
+              };
+              reader.readAsDataURL(blob);
+            });
+          } catch (error) {
+            console.error('Failed to convert image:', error);
+          }
+        }
+      });
+      
+      await Promise.all(imagePromises);
+      
+      // Wait a bit more for images to render
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       const dataUrl = await toPng(element, {
         pixelRatio: 2,
@@ -1878,10 +1901,6 @@ export default function StaffScheduling() {
         quality: 0.95,
         backgroundColor: '#1a1a1a',
         skipAutoScale: true,
-        fetchRequestInit: {
-          mode: 'cors',
-          credentials: 'include',
-        },
       });
       
       console.log(`Image captured successfully for ${day}, creating PDF...`);
