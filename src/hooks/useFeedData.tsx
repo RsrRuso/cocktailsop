@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Post {
@@ -25,9 +25,24 @@ interface Reel {
   profiles: any;
 }
 
+// Cache for feed data
+let feedCache: { posts: Post[]; reels: Reel[]; timestamp: number; region: string | null } | null = null;
+const CACHE_TIME = 60000; // 1 minute
+
 export const useFeedData = (selectedRegion: string | null) => {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [reels, setReels] = useState<Reel[]>([]);
+  const [posts, setPosts] = useState<Post[]>(() => {
+    // Initialize from cache if valid
+    if (feedCache && Date.now() - feedCache.timestamp < CACHE_TIME && feedCache.region === selectedRegion) {
+      return feedCache.posts;
+    }
+    return [];
+  });
+  const [reels, setReels] = useState<Reel[]>(() => {
+    if (feedCache && Date.now() - feedCache.timestamp < CACHE_TIME && feedCache.region === selectedRegion) {
+      return feedCache.reels;
+    }
+    return [];
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchPosts = useCallback(async () => {
@@ -61,8 +76,10 @@ export const useFeedData = (selectedRegion: string | null) => {
         : postsWithProfiles;
 
       setPosts(filteredPosts);
+      return filteredPosts;
     } catch (error) {
       console.error('Fetch posts failed');
+      return [];
     }
   }, [selectedRegion]);
 
@@ -97,16 +114,35 @@ export const useFeedData = (selectedRegion: string | null) => {
         : reelsWithProfiles;
 
       setReels(filteredReels);
+      return filteredReels;
     } catch (error) {
       console.error('Fetch reels failed');
+      return [];
     }
   }, [selectedRegion]);
 
   const refreshFeed = useCallback(async () => {
+    // Check cache first
+    if (feedCache && Date.now() - feedCache.timestamp < CACHE_TIME && feedCache.region === selectedRegion) {
+      setPosts(feedCache.posts);
+      setReels(feedCache.reels);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
-    await Promise.all([fetchPosts(), fetchReels()]);
+    const [fetchedPosts, fetchedReels] = await Promise.all([fetchPosts(), fetchReels()]);
+    
+    // Update cache
+    feedCache = {
+      posts: fetchedPosts || [],
+      reels: fetchedReels || [],
+      timestamp: Date.now(),
+      region: selectedRegion
+    };
+    
     setIsLoading(false);
-  }, [fetchPosts, fetchReels]);
+  }, [fetchPosts, fetchReels, selectedRegion]);
 
   useEffect(() => {
     refreshFeed();

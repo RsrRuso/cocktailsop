@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "lucide-react";
-import { useState } from "react";
+import { useState, memo } from "react";
 import StatusRing from "./StatusRing";
 import { useUserStatus } from "@/hooks/useUserStatus";
 import BirthdayFireworks from "./BirthdayFireworks";
@@ -19,18 +19,19 @@ interface OptimizedAvatarProps {
   showBirthdayBadge?: boolean;
 }
 
-const OptimizedAvatar = ({ 
+const OptimizedAvatar = memo(({ 
   src, 
   alt, 
   fallback, 
   className,
   userId,
-  showStatus = true,
+  showStatus = false, // Changed default to false for performance
   showAddButton = false,
   onAddStatusClick
 }: OptimizedAvatarProps) => {
   const [imageError, setImageError] = useState(false);
-  const { data: status } = useUserStatus(showStatus ? userId : null);
+  // Only fetch status if explicitly requested
+  const { data: status } = useUserStatus(showStatus && userId ? userId : null);
   const { data: birthdayData } = useUserBirthday(userId);
 
   // Only render image if src exists and no error
@@ -65,6 +66,8 @@ const OptimizedAvatar = ({
       </StatusRing>
     </BirthdayFireworks>
   );
-};
+});
+
+OptimizedAvatar.displayName = 'OptimizedAvatar';
 
 export default OptimizedAvatar;

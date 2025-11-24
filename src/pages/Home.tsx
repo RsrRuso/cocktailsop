@@ -201,7 +201,7 @@ const Home = () => {
     }
   }, [user?.id]);
 
-  const handleLikePost = (postId: string) => {
+  const handleLikePost = useCallback((postId: string) => {
     togglePostLike(postId, (increment) => {
       setPosts(prev => prev.map(p => 
         p.id === postId 
@@ -209,9 +209,9 @@ const Home = () => {
           : p
       ));
     });
-  };
+  }, [togglePostLike, setPosts]);
 
-  const handleLikeReel = (reelId: string) => {
+  const handleLikeReel = useCallback((reelId: string) => {
     toggleReelLike(reelId, (increment) => {
       setReels(prev => prev.map(r => 
         r.id === reelId 
@@ -219,7 +219,7 @@ const Home = () => {
           : r
       ));
     });
-  };
+  }, [toggleReelLike, setReels]);
 
   const getBadgeColor = (level: string) => {
     const colors = {
