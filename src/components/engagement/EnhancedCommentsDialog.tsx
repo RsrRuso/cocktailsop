@@ -165,7 +165,6 @@ export const EnhancedCommentsDialog = ({
 
       setNewComment('');
       setReplyingTo(null);
-      toast.success('Comment posted!');
       onCommentChange?.();
     } catch (err) {
       console.error('Error submitting comment:', err);
@@ -184,7 +183,6 @@ export const EnhancedCommentsDialog = ({
         .eq('user_id', user?.id);
 
       if (error) throw error;
-      toast.success('Comment deleted');
       onCommentChange?.();
     } catch (err) {
       console.error('Error deleting comment:', err);
@@ -202,7 +200,6 @@ export const EnhancedCommentsDialog = ({
 
       if (error) throw error;
       setEditingId(null);
-      toast.success('Comment updated');
       onCommentChange?.();
     } catch (err) {
       console.error('Error editing comment:', err);
