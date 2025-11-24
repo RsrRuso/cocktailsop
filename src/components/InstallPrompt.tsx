@@ -61,7 +61,7 @@ export const InstallPrompt = () => {
             <Download className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm mb-1">Install CocktailSOP</h3>
+            <h3 className="font-semibold text-sm mb-1">Install SV</h3>
             <p className="text-xs text-muted-foreground mb-3">
               Add to your home screen for quick access and offline use
             </p>
