@@ -186,10 +186,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
 
       {/* AI Insights Button - Mobile Friendly Positioning */}
       <div className="absolute bottom-[72px] sm:bottom-[80px] right-2 sm:right-3 z-20">
-        <div className="relative group/ai">
-          <div className="absolute -inset-0.5 sm:-inset-1 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 rounded-full blur-sm sm:blur-md opacity-40 group-hover/ai:opacity-70 transition-opacity duration-300 animate-pulse"></div>
-          
-          <button
+        <button
             onClick={() => setShowInsights(true)}
             className="relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full bg-transparent border-2 border-purple-400/50 hover:border-purple-400/70 backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95"
           >
@@ -199,7 +196,6 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
               AI
             </span>
           </button>
-        </div>
       </div>
 
       {/* AI Insights Dialog */}
