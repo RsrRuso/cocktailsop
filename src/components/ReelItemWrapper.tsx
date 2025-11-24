@@ -1,5 +1,5 @@
-import { FC } from 'react';
-import { Heart, MessageCircle, Send, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX, Eye } from 'lucide-react';
+import { FC, useState } from 'react';
+import { Heart, MessageCircle, Send, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX, Eye, Brain, Sparkles } from 'lucide-react';
 import OptimizedAvatar from '@/components/OptimizedAvatar';
 import {
   DropdownMenu,
@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useViewTracking } from '@/hooks/useViewTracking';
+import { EngagementInsightsDialog } from '@/components/engagement';
 
 interface ReelItemWrapperProps {
   reel: any;
@@ -50,6 +51,8 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
   navigate,
   handleDeleteReel,
 }) => {
+  const [showInsights, setShowInsights] = useState(false);
+  
   // Track view when this reel is visible
   useViewTracking('reel', reel.id, user?.id, index === currentIndex);
 
@@ -180,6 +183,40 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
           <p className="text-white text-sm font-semibold text-3d-neon">Original Audio</p>
         </div>
       </div>
+
+      {/* AI Insights Button - Fixed positioned with safe area */}
+      <div className="absolute bottom-20 sm:bottom-24 right-3 sm:right-4 z-20">
+        <div className="relative group/ai">
+          <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 rounded-full blur-md opacity-40 group-hover/ai:opacity-70 transition-opacity duration-300 animate-pulse"></div>
+          
+          <button
+            onClick={() => setShowInsights(true)}
+            className="relative flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-full bg-gradient-to-r from-purple-500/30 via-pink-500/30 to-blue-500/30 hover:from-purple-500/40 hover:via-pink-500/40 hover:to-blue-500/40 border border-purple-500/50 hover:border-purple-500/70 backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95"
+          >
+            <Brain className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-300 group-hover/ai:text-pink-300 transition-colors" />
+            <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-pink-300 group-hover/ai:text-blue-300 animate-pulse transition-colors" />
+            <span className="text-[10px] sm:text-xs font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-blue-300 bg-clip-text text-transparent whitespace-nowrap">
+              AI
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* AI Insights Dialog */}
+      <EngagementInsightsDialog
+        open={showInsights}
+        onOpenChange={setShowInsights}
+        contentId={reel.id}
+        contentType="reel"
+        content={reel.caption || ''}
+        engagement={{
+          likes: reel.like_count || 0,
+          comments: reel.comment_count || 0,
+          shares: 0,
+          views: reel.view_count || 0,
+        }}
+        createdAt={reel.created_at}
+      />
     </div>
   );
 };
