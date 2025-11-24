@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -31,6 +31,31 @@ const Notifications = () => {
   const { showNotification: showPushNotification } = usePushNotifications();
   const processedNotificationsRef = useRef<Set<string>>(new Set());
   const subscriptionRef = useRef<any>(null);
+  const dedupedNotifications = useMemo(() => {
+    const seen = new Set<string>();
+    const result: Notification[] = [];
+
+    for (const n of notifications) {
+      const key = [
+        n.type,
+        n.content,
+        n.post_id || "",
+        n.reel_id || "",
+        n.story_id || "",
+        n.music_share_id || "",
+        n.event_id || "",
+        n.reference_user_id || "",
+        new Date(n.created_at).toISOString().slice(0, 19)
+      ].join("|");
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push(n);
+      }
+    }
+
+    return result;
+  }, [notifications]);
 
   const handleTestNotification = async () => {
     await showPushNotification(
@@ -301,7 +326,7 @@ const Notifications = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {notifications.map((notification) => (
+            {dedupedNotifications.map((notification) => (
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
