@@ -16,6 +16,7 @@ import { scheduleEventReminder, addToCalendar } from '@/lib/eventReminders';
 import UnifiedLikesDialog from '@/components/unified/UnifiedLikesDialog';
 import UnifiedAttendeesDialog from '@/components/unified/UnifiedAttendeesDialog';
 import UnifiedAdvancedCommentsDialog from '@/components/unified/UnifiedAdvancedCommentsDialog';
+import { useUnifiedEngagement } from '@/hooks/useUnifiedEngagement';
 
 interface Event {
   id: string;
@@ -52,11 +53,13 @@ interface EventDetailDialogProps {
 
 export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }: EventDetailDialogProps) => {
   const { user } = useAuth();
-  const [hasLiked, setHasLiked] = useState(false);
+  const { likedItems, toggleLike } = useUnifiedEngagement('event', user?.id);
   const [isAttending, setIsAttending] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
   const [attendeeCount, setAttendeeCount] = useState(0);
+  
+  const hasLiked = event?.id ? likedItems.has(event.id) : false;
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,72 +115,33 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
   const fetchEventData = async () => {
     if (!event || !user) return;
 
-    // Fetch engagement status
-    const [likeRes, attendRes] = await Promise.all([
-      supabase.from('event_likes').select('id').eq('event_id', event.id).eq('user_id', user.id).single(),
-      supabase.from('event_attendees').select('id').eq('event_id', event.id).eq('user_id', user.id).single()
-    ]);
+    // Fetch attendance status
+    const attendRes = await supabase
+      .from('event_attendees')
+      .select('id')
+      .eq('event_id', event.id)
+      .eq('user_id', user.id)
+      .single();
 
-    setHasLiked(!!likeRes.data);
     setIsAttending(!!attendRes.data);
 
-    // Fetch updated counts and comments
-    const [eventRes, commentsRes] = await Promise.all([
-      supabase.from('events').select('like_count, comment_count, attendee_count').eq('id', event.id).single(),
-      supabase.from('event_comments')
-        .select('*, profiles!event_comments_user_id_fkey(username, avatar_url, full_name)')
-        .eq('event_id', event.id)
-        .order('created_at', { ascending: true })
-    ]);
+    // Fetch updated counts from the event directly (trigger-maintained)
+    const eventRes = await supabase
+      .from('events')
+      .select('like_count, comment_count, attendee_count')
+      .eq('id', event.id)
+      .single();
 
     if (eventRes.data) {
       setLikeCount(eventRes.data.like_count || 0);
       setCommentCount(eventRes.data.comment_count || 0);
       setAttendeeCount(eventRes.data.attendee_count || 0);
     }
-
-    if (commentsRes.data) {
-      setComments(commentsRes.data.map(c => ({
-        ...c,
-        reactions: (c.reactions as unknown as Array<{ emoji: string; user_id: string }>) || []
-      })) as Comment[]);
-    }
   };
 
   const handleLike = async () => {
     if (!event || !user) return;
-
-    const wasLiked = hasLiked;
-    
-    // Optimistic update
-    setHasLiked(!wasLiked);
-
-    // Database trigger will handle count update automatically
-    try {
-      if (wasLiked) {
-        const { error } = await supabase
-          .from('event_likes')
-          .delete()
-          .eq('event_id', event.id)
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-        toast.success('Like removed');
-      } else {
-        const { error } = await supabase
-          .from('event_likes')
-          .insert({ event_id: event.id, user_id: user.id });
-
-        // Ignore duplicate key errors - already liked
-        if (error && error.code !== '23505') throw error;
-        toast.success('Event liked!');
-      }
-    } catch (error: any) {
-      console.error('Error toggling event like:', error);
-      // Revert on error
-      setHasLiked(wasLiked);
-      toast.error('Failed to update like');
-    }
+    await toggleLike(event.id);
   };
 
   const handleAttendance = async () => {
