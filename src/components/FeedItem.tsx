@@ -1,11 +1,12 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit, Volume2, VolumeX, Eye } from "lucide-react";
+import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit, Volume2, VolumeX, Eye, Brain, Sparkles } from "lucide-react";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { getProfessionalBadge } from "@/lib/profileUtils";
 import { LazyImage } from "@/components/LazyImage";
 import { LazyVideo } from "@/components/LazyVideo";
 import { useViewTracking } from "@/hooks/useViewTracking";
+import { EngagementInsightsDialog } from "@/components/engagement";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +49,7 @@ export const FeedItem = memo(({
   const navigate = useNavigate();
   const professionalBadge = getProfessionalBadge(item.profiles?.professional_title || null);
   const BadgeIcon = professionalBadge.icon;
+  const [showInsights, setShowInsights] = useState(false);
 
   // Track post views
   useViewTracking('post', item.id, currentUserId, true);
@@ -165,7 +167,7 @@ export const FeedItem = memo(({
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-6 px-2 pb-1">
+      <div className="flex items-center gap-4 px-2 pb-1">
         <button 
           onClick={onLike}
           className={`flex items-center gap-2 transition-all hover:scale-110 ${
@@ -197,11 +199,40 @@ export const FeedItem = memo(({
           <Send className="w-5 h-5" />
           <span className="text-xs">Send</span>
         </button>
-        <div className="flex items-center gap-2 text-muted-foreground ml-auto">
+        
+        {/* AI Insights Button */}
+        <button
+          onClick={() => setShowInsights(true)}
+          className="flex items-center gap-1.5 ml-auto px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 transition-all hover:scale-105 group"
+        >
+          <Brain className="w-4 h-4 text-purple-500 group-hover:text-pink-500 transition-colors" />
+          <Sparkles className="w-3 h-3 text-pink-500 animate-pulse" />
+          <span className="text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+            AI Insights
+          </span>
+        </button>
+        
+        <div className="flex items-center gap-2 text-muted-foreground">
           <Eye className="w-5 h-5" />
           <span className="text-sm font-bold">{item.view_count || 0}</span>
         </div>
       </div>
+
+      {/* AI Insights Dialog */}
+      <EngagementInsightsDialog
+        open={showInsights}
+        onOpenChange={setShowInsights}
+        contentId={item.id}
+        contentType={item.type}
+        content={item.content || item.caption || ''}
+        engagement={{
+          likes: item.like_count || 0,
+          comments: item.comment_count || 0,
+          shares: 0,
+          views: item.view_count || 0,
+        }}
+        createdAt={item.created_at}
+      />
     </div>
   );
 });
