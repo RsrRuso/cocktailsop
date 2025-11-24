@@ -445,7 +445,7 @@ export const EnhancedCommentsDialog = ({
         )}
 
         {/* Enhanced Scrollable Comments Area */}
-        <div className="relative flex-1 overflow-hidden">
+        <div className="relative flex-1 min-h-0 overflow-hidden">
           {/* Top Gradient Fade */}
           <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-background via-background/90 to-transparent z-10 pointer-events-none"></div>
           
@@ -466,8 +466,8 @@ export const EnhancedCommentsDialog = ({
           {/* Bottom Gradient Fade */}
           <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background via-background/90 to-transparent z-10 pointer-events-none"></div>
 
-          <ScrollArea className="h-full px-4 sm:px-6 custom-scrollbar-advanced" style={{ maxHeight: 'calc(95vh - 240px)' }}>
-            <div className="pt-6 pb-6 space-y-3">
+          <ScrollArea className="h-full w-full custom-scrollbar-advanced">
+            <div className="px-4 sm:px-6 pt-6 pb-6 space-y-3">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="relative">
