@@ -404,23 +404,23 @@ export const EnhancedCommentsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl h-[95vh] w-[98vw] sm:w-full flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-purple-500/5 overflow-hidden">
-        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border/50 bg-gradient-to-r from-purple-500/10 to-pink-500/10 shrink-0">
+      <DialogContent className="max-w-3xl h-[95vh] sm:h-[90vh] w-[98vw] sm:w-[95vw] md:w-full flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-purple-500/5 overflow-hidden">
+        <DialogHeader className="px-3 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 border-b border-border/50 bg-gradient-to-r from-purple-500/10 to-pink-500/10 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-lg opacity-50 animate-pulse"></div>
-                <div className="relative p-1.5 sm:p-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500">
+                <div className="relative p-1 sm:p-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500">
                   <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
               </div>
               <div>
-                <DialogTitle className="text-lg sm:text-xl">AI-Powered Comments</DialogTitle>
-                <p className="text-xs sm:text-sm text-muted-foreground">{aiInsights.totalComments} conversations</p>
+                <DialogTitle className="text-base sm:text-xl">AI-Powered Comments</DialogTitle>
+                <p className="text-[10px] sm:text-sm text-muted-foreground">{aiInsights.totalComments} conversations</p>
               </div>
             </div>
-            <Badge variant="secondary" className="gap-1 text-xs">
-              <Brain className="w-3 h-3" />
+            <Badge variant="secondary" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1">
+              <Brain className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               <span className="hidden sm:inline">Live AI</span>
             </Badge>
           </div>
@@ -428,16 +428,16 @@ export const EnhancedCommentsDialog = ({
 
         {/* AI Insights - Compact */}
         {comments.length > 0 && (
-          <div className="px-4 sm:px-6 py-2 border-b border-border/50 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20">
-                <Zap className="w-3 h-3 text-purple-500" />
-                <span className="text-xs font-bold text-purple-500">{aiInsights.engagementRate.toFixed(0)}%</span>
+          <div className="px-3 sm:px-6 py-1.5 sm:py-2 border-b border-border/50 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto">
+              <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20 whitespace-nowrap">
+                <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-purple-500" />
+                <span className="text-[10px] sm:text-xs font-bold text-purple-500">{aiInsights.engagementRate.toFixed(0)}%</span>
               </div>
               {aiInsights.topCommenter && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20">
-                  <TrendingUp className="w-3 h-3 text-blue-500" />
-                  <span className="text-xs font-medium text-blue-500">@{aiInsights.topCommenter.profiles.username}</span>
+                <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20 whitespace-nowrap">
+                  <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-blue-500" />
+                  <span className="text-[10px] sm:text-xs font-medium text-blue-500">@{aiInsights.topCommenter.profiles.username}</span>
                 </div>
               )}
             </div>
@@ -453,22 +453,22 @@ export const EnhancedCommentsDialog = ({
           <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background via-background/90 to-transparent z-10 pointer-events-none"></div>
 
           <div className="h-full w-full overflow-y-auto custom-scrollbar-advanced"  style={{ scrollBehavior: 'smooth' }}>
-            <div className="px-4 sm:px-6 pt-6 pb-6 space-y-3">
+            <div className="px-3 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6 space-y-2 sm:space-y-3">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-8 sm:py-12">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                <div className="relative animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+                <div className="relative animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-purple-500 border-t-transparent"></div>
               </div>
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="relative mb-4 inline-block">
+            <div className="text-center py-12 sm:py-16">
+              <div className="relative mb-3 sm:mb-4 inline-block">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-xl opacity-30"></div>
-                <MessageCircle className="relative w-16 h-16 text-muted-foreground" />
+                <MessageCircle className="relative w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground" />
               </div>
-              <p className="font-medium mb-1 text-foreground">No comments yet</p>
-              <p className="text-sm text-muted-foreground">Start the conversation!</p>
+              <p className="font-medium mb-1 text-sm sm:text-base text-foreground">No comments yet</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Start the conversation!</p>
             </div>
           ) : (
             <AnimatePresence mode="popLayout">
@@ -506,10 +506,10 @@ export const EnhancedCommentsDialog = ({
             <div className="relative flex-1">
               <Textarea
                 ref={textareaRef}
-                placeholder="Write a comment... (Ctrl+Enter to send)"
+                placeholder="Write a comment..."
                 value={newComment}
                 onChange={(e) => handleTextChange(e.target.value)}
-                className="flex-1 min-h-[60px] max-h-[120px] resize-none bg-background/50 pr-10"
+                className="flex-1 min-h-[60px] sm:min-h-[80px] max-h-[120px] resize-none bg-background/50 pr-10 text-sm sm:text-base"
                 disabled={submitting}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.ctrlKey) {
@@ -525,7 +525,7 @@ export const EnhancedCommentsDialog = ({
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   >
-                    <Wand2 className="w-4 h-4 text-purple-500" />
+                    <Wand2 className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
                   </motion.div>
                 </div>
               )}
@@ -540,7 +540,7 @@ export const EnhancedCommentsDialog = ({
                     className="absolute bottom-full mb-2 left-0 right-0 z-50 max-w-full"
                   >
                     <Card className="p-2 sm:p-3 space-y-2 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/30 backdrop-blur-xl shadow-2xl">
-                      <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
                         <Brain className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
                         <span className="text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
                           AI Suggestions
@@ -551,9 +551,9 @@ export const EnhancedCommentsDialog = ({
                           size="sm"
                           onClick={() => fetchAISuggestions(newComment, true)}
                           disabled={loadingSuggestions}
-                          className="h-6 px-2 ml-auto"
+                          className="h-5 sm:h-6 px-1.5 sm:px-2 ml-auto"
                         >
-                          <Wand2 className="w-3 h-3 mr-1" />
+                          <Wand2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                           <span className="text-[10px] sm:text-xs">New</span>
                         </Button>
                         <button
@@ -565,7 +565,7 @@ export const EnhancedCommentsDialog = ({
                         </button>
                       </div>
                       
-                      <div className="space-y-1.5 sm:space-y-2 max-h-[200px] sm:max-h-[250px] overflow-y-auto custom-scrollbar">
+                      <div className="space-y-1 sm:space-y-1.5 max-h-[150px] sm:max-h-[200px] overflow-y-auto custom-scrollbar">
                         {aiSuggestions.map((suggestion, idx) => (
                           <motion.button
                             key={`${idx}-${suggestion.slice(0, 20)}`}
@@ -576,9 +576,9 @@ export const EnhancedCommentsDialog = ({
                             type="button"
                             className="w-full text-left p-2 sm:p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-primary/30 transition-all group"
                           >
-                            <div className="flex items-start gap-2">
-                              <Sparkles className="w-3 h-3 text-pink-500 mt-0.5 sm:mt-1 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                              <p className="text-xs sm:text-sm text-foreground/90 group-hover:text-foreground transition-colors leading-relaxed">
+                            <div className="flex items-start gap-1.5 sm:gap-2">
+                              <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-pink-500 mt-0.5 sm:mt-1 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                              <p className="text-[11px] sm:text-sm text-foreground/90 group-hover:text-foreground transition-colors leading-relaxed">
                                 {suggestion}
                               </p>
                             </div>
