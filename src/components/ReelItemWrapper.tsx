@@ -185,7 +185,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
       </div>
 
       {/* AI Insights Button - Fixed positioned with safe area */}
-      <div className="absolute bottom-20 sm:bottom-24 right-3 sm:right-4 z-20">
+      <div className="absolute bottom-[120px] sm:bottom-[140px] right-3 sm:right-4 z-20">
         <div className="relative group/ai">
           <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 rounded-full blur-md opacity-40 group-hover/ai:opacity-70 transition-opacity duration-300 animate-pulse"></div>
           
