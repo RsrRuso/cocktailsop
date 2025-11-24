@@ -146,12 +146,7 @@ const Music = () => {
     }
     setLikedShares(newLikedShares);
 
-    setMusicShares(prev => prev.map(share => 
-      share.id === shareId 
-        ? { ...share, like_count: share.like_count + (isLiked ? -1 : 1) }
-        : share
-    ));
-
+    // Database trigger handles count update - no manual count changes
     try {
       if (isLiked) {
         const { error } = await supabase
@@ -172,11 +167,6 @@ const Music = () => {
       toast.error('Failed to update like');
       // Revert on error
       setLikedShares(likedShares);
-      setMusicShares(prev => prev.map(share => 
-        share.id === shareId 
-          ? { ...share, like_count: share.like_count + (isLiked ? 1 : -1) }
-          : share
-      ));
     }
   };
 

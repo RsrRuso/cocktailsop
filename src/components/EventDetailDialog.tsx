@@ -75,6 +75,32 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
       setEditDate(event.event_date ? new Date(event.event_date).toISOString().split('T')[0] : '');
       setIsEditing(false);
     }
+
+    // Real-time subscription for event updates
+    if (event?.id && open) {
+      const channel = supabase
+        .channel(`event-${event.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'events',
+            filter: `id=eq.${event.id}`
+          },
+          (payload: any) => {
+            // Update counts in real-time from trigger updates
+            setLikeCount(payload.new.like_count || 0);
+            setCommentCount(payload.new.comment_count || 0);
+            setAttendeeCount(payload.new.attendee_count || 0);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [event?.id, open, user]);
 
   const fetchEventData = async () => {
@@ -119,8 +145,8 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
     
     // Optimistic update
     setHasLiked(!wasLiked);
-    setLikeCount(prev => wasLiked ? Math.max(0, prev - 1) : prev + 1);
 
+    // Database trigger will handle count update automatically
     try {
       if (wasLiked) {
         const { error } = await supabase
@@ -144,7 +170,6 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
       console.error('Error toggling event like:', error);
       // Revert on error
       setHasLiked(wasLiked);
-      setLikeCount(prev => wasLiked ? prev + 1 : Math.max(0, prev - 1));
       toast.error('Failed to update like');
     }
   };
