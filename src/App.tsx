@@ -117,21 +117,16 @@ const PageLoader = () => (
   </div>
 );
 
-const App = () => {
-  // Monitor page transition performance
-  usePageTransition();
+// Wrapper component inside Router to use routing hooks
+const AppContent = () => {
+  usePageTransition(); // Now inside Router context
   
   return (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <InAppNotificationProvider>
-        <AuthProvider>
-          <WorkspaceProvider>
-            <CartProvider>
-              <RoutePreloader />
-              <Toaster />
-              <Sonner />
-              <Suspense fallback={<PageLoader />}>
+    <>
+      <RoutePreloader />
+      <Toaster />
+      <Sonner />
+      <Suspense fallback={<PageLoader />}>
               <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/landing" element={<Landing />} />
@@ -226,13 +221,24 @@ const App = () => {
           <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
+    </>
+  );
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <BrowserRouter>
+      <InAppNotificationProvider>
+        <AuthProvider>
+          <WorkspaceProvider>
+            <CartProvider>
+              <AppContent />
             </CartProvider>
           </WorkspaceProvider>
         </AuthProvider>
       </InAppNotificationProvider>
     </BrowserRouter>
   </QueryClientProvider>
-  );
-};
+);
 
 export default App;
