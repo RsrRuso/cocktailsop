@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSimpleQuery } from '@/lib/simpleQuery';
 
 interface Reaction {
   emoji: string;
@@ -36,8 +37,17 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
   const [isTyping, setIsTyping] = useState(false);
   const { toast } = useToast();
   const channelRef = useRef<any>(null);
+  const messagesChannelRef = useRef<any>(null);
+  const pendingMessagesRef = useRef<Map<string, Message>>(new Map());
 
-  const markUnreadAsDelivered = async () => {
+  const markAsRead = useCallback(async (messageId: string) => {
+    await supabase
+      .from('messages')
+      .update({ read: true, delivered: true })
+      .eq('id', messageId);
+  }, []);
+
+  const markUnreadAsDelivered = useCallback(async () => {
     if (!conversationId || !currentUser) return;
     
     await supabase
@@ -46,7 +56,7 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
       .eq('conversation_id', conversationId)
       .neq('sender_id', currentUser.id)
       .eq('delivered', false);
-  };
+  }, [conversationId, currentUser]);
 
   useEffect(() => {
     if (!conversationId || !currentUser) return;
@@ -190,16 +200,20 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
       )
       .subscribe();
 
+    messagesChannelRef.current = messagesChannel;
+
     return () => {
       if (channelRef.current) {
         channelRef.current.untrack();
         supabase.removeChannel(channelRef.current);
       }
-      supabase.removeChannel(messagesChannel);
+      if (messagesChannelRef.current) {
+        supabase.removeChannel(messagesChannelRef.current);
+      }
     };
-  }, [conversationId, currentUser]);
+  }, [conversationId, currentUser, markUnreadAsDelivered, markAsRead, otherUser]);
 
-  const initializeChat = async () => {
+  const initializeChat = useCallback(async () => {
     if (!conversationId) return;
 
     const [conversationResult, messagesResult] = await Promise.all([
@@ -242,19 +256,15 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
         .map((msg) => msg.id);
 
       if (unreadIds.length > 0) {
-        await supabase.from('messages').update({ read: true }).in('id', unreadIds);
+        // Batch mark as read
+        requestAnimationFrame(() => {
+          supabase.from('messages').update({ read: true }).in('id', unreadIds);
+        });
       }
     }
-  };
+  }, [conversationId, currentUser]);
 
-  const markAsRead = async (messageId: string) => {
-    await supabase
-      .from('messages')
-      .update({ read: true, delivered: true })
-      .eq('id', messageId);
-  };
-
-  const updateTypingStatus = (typing: boolean) => {
+  const updateTypingStatus = useCallback((typing: boolean) => {
     if (channelRef.current && currentUser) {
       channelRef.current.track({
         user_id: currentUser.id,
@@ -262,9 +272,9 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
         typing,
       });
     }
-  };
+  }, [currentUser]);
 
-  const handleReaction = async (messageId: string, emoji: string) => {
+  const handleReaction = useCallback(async (messageId: string, emoji: string) => {
     if (!currentUser) return;
 
     const message = messages.find((m) => m.id === messageId);
@@ -292,51 +302,72 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
       updatedReactions = [...reactions, { emoji, user_ids: [currentUser.id] }];
     }
 
-    const { error } = await supabase
-      .from('messages')
-      .update({ reactions: updatedReactions })
-      .eq('id', messageId);
+    // Optimistic update
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId ? { ...msg, reactions: updatedReactions } : msg
+      )
+    );
 
-    if (error) console.error('Error updating reaction:', error);
-  };
+    // Background sync
+    requestAnimationFrame(async () => {
+      const { error } = await supabase
+        .from('messages')
+        .update({ reactions: updatedReactions })
+        .eq('id', messageId);
 
-  const handleDelete = async (messageId: string) => {
+      if (error) {
+        console.error('Error updating reaction:', error);
+        // Revert on error
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId ? { ...msg, reactions: message.reactions } : msg
+          )
+        );
+      }
+    });
+  }, [currentUser, messages]);
+
+  const handleDelete = useCallback(async (messageId: string) => {
     const message = messages.find((m) => m.id === messageId);
 
     // Optimistically remove from UI immediately
     setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
 
-    if (message?.media_url) {
-      try {
-        const urlParts = message.media_url.split('/');
-        const filePath = urlParts.slice(-2).join('/');
-        await supabase.storage.from('stories').remove([filePath]);
-      } catch (error) {
-        console.error('Error deleting media file:', error);
+    // Background deletion
+    requestAnimationFrame(async () => {
+      if (message?.media_url) {
+        try {
+          const urlParts = message.media_url.split('/');
+          const filePath = urlParts.slice(-2).join('/');
+          await supabase.storage.from('stories').remove([filePath]);
+        } catch (error) {
+          console.error('Error deleting media file:', error);
+        }
       }
-    }
 
-    const { error } = await supabase.from('messages').delete().eq('id', messageId);
-    if (error) {
-      console.error('Error deleting message:', error);
-      // Revert optimistic update on error
-      if (message) {
-        setMessages((prev) => [...prev, message].sort((a, b) => 
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        ));
+      const { error } = await supabase.from('messages').delete().eq('id', messageId);
+      if (error) {
+        console.error('Error deleting message:', error);
+        // Revert optimistic update on error
+        if (message) {
+          setMessages((prev) => [...prev, message].sort((a, b) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          ));
+        }
+        toast({
+          title: 'Error',
+          description: 'Failed to delete message',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Success',
+          description: 'Message deleted successfully',
+        });
       }
-      toast({
-        title: 'Error',
-        description: 'Failed to delete message',
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Success',
-        description: 'Message deleted successfully',
-      });
-    }
-  };
+    });
+  }, [messages, toast]);
 
   return {
     messages,

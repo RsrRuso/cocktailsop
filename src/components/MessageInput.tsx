@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, memo } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Progress } from './ui/progress';
@@ -25,7 +25,7 @@ interface MessageInputProps {
   onStartVideoRecording: () => void;
 }
 
-export const MessageInput = ({
+export const MessageInput = memo(({
   value,
   onChange,
   onSend,
@@ -47,7 +47,7 @@ export const MessageInput = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     onChange(newValue);
 
@@ -59,15 +59,15 @@ export const MessageInput = ({
 
     typingTimeoutRef.current = setTimeout(() => {
       onTyping(false);
-    }, 1000);
-  };
+    }, 1500); // Increased debounce for better performance
+  }, [onChange, onTyping]);
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onSend();
     }
-  };
+  }, [onSend]);
 
   return (
     <div className="p-4 border-t glass backdrop-blur-xl border-primary/20">
@@ -197,4 +197,4 @@ export const MessageInput = ({
       </div>
     </div>
   );
-};
+});
