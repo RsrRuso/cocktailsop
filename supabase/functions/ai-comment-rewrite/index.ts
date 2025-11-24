@@ -25,12 +25,31 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are an AI writing assistant that helps improve comment text. Generate 3 different variations of the user's comment that are:
-1. More professional and polished
-2. More concise and clear  
-3. More friendly and engaging
+    // Add randomness to ensure fresh suggestions each time
+    const randomSeed = Math.random();
+    const styleVariations = [
+      "professional and polished",
+      "concise and clear",
+      "friendly and engaging",
+      "enthusiastic and energetic",
+      "thoughtful and insightful",
+      "casual and relatable"
+    ];
 
-Each variation should maintain the core meaning but improve the expression. Return ONLY a JSON array of 3 strings, nothing else.`;
+    // Pick 3 random styles
+    const shuffled = styleVariations.sort(() => 0.5 - Math.random());
+    const selectedStyles = shuffled.slice(0, 3);
+
+    const systemPrompt = `You are an AI writing assistant that helps improve comment text. Generate 3 COMPLETELY DIFFERENT variations of the user's comment with these styles:
+1. ${selectedStyles[0]}
+2. ${selectedStyles[1]}
+3. ${selectedStyles[2]}
+
+Each variation MUST be unique and creative. Never repeat previous suggestions. Use different words, sentence structures, and expressions while maintaining the core meaning.
+
+CRITICAL: Return ONLY a valid JSON array of exactly 3 strings, nothing else. No markdown, no explanation, just the array.
+
+Example format: ["First suggestion here", "Second suggestion here", "Third suggestion here"]`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -42,9 +61,9 @@ Each variation should maintain the core meaning but improve the expression. Retu
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Original comment: "${text}"\n\nContext: ${context || "General comment"}\n\nProvide 3 improved variations as a JSON array of strings.` }
+          { role: "user", content: `Original comment: "${text}"\n\nContext: ${context || "General comment"}\n\nRandom seed: ${randomSeed}\n\nProvide 3 completely unique and creative variations.` }
         ],
-        temperature: 0.8,
+        temperature: 0.95, // Higher temperature for more variety
       }),
     });
 
@@ -77,8 +96,14 @@ Each variation should maintain the core meaning but improve the expression. Retu
     // Parse the JSON array from the response
     let suggestions: string[] = [];
     try {
-      const parsed = JSON.parse(content);
-      suggestions = Array.isArray(parsed) ? parsed.slice(0, 3) : [];
+      // Try to extract JSON array from the response
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        suggestions = Array.isArray(parsed) ? parsed.slice(0, 3) : [];
+      } else {
+        throw new Error("No JSON array found");
+      }
     } catch {
       // If parsing fails, try to extract suggestions from text
       const lines = content.split('\n').filter((line: string) => line.trim().length > 0);

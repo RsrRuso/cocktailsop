@@ -210,7 +210,7 @@ export const EnhancedCommentsDialog = ({
     }
   };
 
-  const fetchAISuggestions = async (text: string) => {
+  const fetchAISuggestions = async (text: string, forceNew = false) => {
     if (text.trim().length < 3) {
       setAiSuggestions([]);
       return;
@@ -219,7 +219,11 @@ export const EnhancedCommentsDialog = ({
     setLoadingSuggestions(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-comment-rewrite', {
-        body: { text, context: `${contentType} comment` }
+        body: { 
+          text, 
+          context: `${contentType} comment`,
+          timestamp: Date.now() // Force unique requests
+        }
       });
 
       if (error) throw error;
@@ -230,6 +234,7 @@ export const EnhancedCommentsDialog = ({
       }
     } catch (err) {
       console.error('Error fetching AI suggestions:', err);
+      toast.error('Failed to get AI suggestions');
     } finally {
       setLoadingSuggestions(false);
     }
@@ -380,36 +385,36 @@ export const EnhancedCommentsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-purple-500/5">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50 bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+      <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[85vh] w-[95vw] sm:w-full flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-purple-500/5 overflow-hidden">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border/50 bg-gradient-to-r from-purple-500/10 to-pink-500/10 shrink-0">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-lg opacity-50 animate-pulse"></div>
-                <div className="relative p-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500">
-                  <MessageCircle className="w-5 h-5 text-white" />
+                <div className="relative p-1.5 sm:p-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500">
+                  <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
               </div>
               <div>
-                <DialogTitle className="text-xl">AI-Powered Comments</DialogTitle>
-                <p className="text-sm text-muted-foreground">{aiInsights.totalComments} conversations</p>
+                <DialogTitle className="text-lg sm:text-xl">AI-Powered Comments</DialogTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground">{aiInsights.totalComments} conversations</p>
               </div>
             </div>
-            <Badge variant="secondary" className="gap-1">
+            <Badge variant="secondary" className="gap-1 text-xs">
               <Brain className="w-3 h-3" />
-              Live AI
+              <span className="hidden sm:inline">Live AI</span>
             </Badge>
           </div>
         </DialogHeader>
 
         {/* AI Insights */}
         {comments.length > 0 && (
-          <div className="px-6 py-4 border-b border-border/50">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-purple-500" />
-              <h3 className="font-semibold text-sm">Engagement Insights</h3>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border/50 shrink-0">
+            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+              <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
+              <h3 className="font-semibold text-xs sm:text-sm">Engagement Insights</h3>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <Card className="p-3 bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/20">
                 <div className="flex items-center gap-2 mb-2">
                   <Zap className="w-4 h-4 text-purple-500" />
@@ -435,9 +440,9 @@ export const EnhancedCommentsDialog = ({
           </div>
         )}
 
-        <ScrollArea className="flex-1 px-6">
+        <ScrollArea className="flex-1 px-4 sm:px-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 300px)' }}>
           {loading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-8 sm:py-12">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
                 <div className="relative animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
@@ -461,7 +466,7 @@ export const EnhancedCommentsDialog = ({
           )}
         </ScrollArea>
 
-        <form onSubmit={handleSubmit} className="border-t border-border/50 p-4 space-y-3 shrink-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5">
+        <form onSubmit={handleSubmit} className="border-t border-border/50 p-3 sm:p-4 space-y-2 sm:space-y-3 shrink-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5">
           {replyingTo && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -519,35 +524,48 @@ export const EnhancedCommentsDialog = ({
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute bottom-full mb-2 left-0 right-0 z-50"
+                    className="absolute bottom-full mb-2 left-0 right-0 z-50 max-w-full"
                   >
-                    <Card className="p-3 space-y-2 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/30 backdrop-blur-xl shadow-2xl">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Brain className="w-4 h-4 text-purple-500" />
-                        <span className="text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+                    <Card className="p-2 sm:p-3 space-y-2 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/30 backdrop-blur-xl shadow-2xl">
+                      <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                        <Brain className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
+                        <span className="text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
                           AI Suggestions
                         </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => fetchAISuggestions(newComment, true)}
+                          disabled={loadingSuggestions}
+                          className="h-6 px-2 ml-auto"
+                        >
+                          <Wand2 className="w-3 h-3 mr-1" />
+                          <span className="text-[10px] sm:text-xs">New</span>
+                        </Button>
                         <button
+                          type="button"
                           onClick={() => setShowSuggestions(false)}
-                          className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+                          className="text-xs text-muted-foreground hover:text-foreground"
                         >
                           ✕
                         </button>
                       </div>
                       
-                      <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                      <div className="space-y-1.5 sm:space-y-2 max-h-[200px] sm:max-h-[250px] overflow-y-auto custom-scrollbar">
                         {aiSuggestions.map((suggestion, idx) => (
                           <motion.button
-                            key={idx}
+                            key={`${idx}-${suggestion.slice(0, 20)}`}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: idx * 0.1 }}
                             onClick={() => applySuggestion(suggestion)}
-                            className="w-full text-left p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-primary/30 transition-all group"
+                            type="button"
+                            className="w-full text-left p-2 sm:p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-primary/30 transition-all group"
                           >
                             <div className="flex items-start gap-2">
-                              <Sparkles className="w-3 h-3 text-pink-500 mt-1 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                              <p className="text-sm text-foreground/90 group-hover:text-foreground transition-colors">
+                              <Sparkles className="w-3 h-3 text-pink-500 mt-0.5 sm:mt-1 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                              <p className="text-xs sm:text-sm text-foreground/90 group-hover:text-foreground transition-colors leading-relaxed">
                                 {suggestion}
                               </p>
                             </div>
