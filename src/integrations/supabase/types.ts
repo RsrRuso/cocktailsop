@@ -1333,6 +1333,45 @@ export type Database = {
           },
         ]
       }
+      event_comment_reactions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          reaction_type?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "event_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_comment_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_comments: {
         Row: {
           content: string
@@ -1340,7 +1379,9 @@ export type Database = {
           event_id: string
           id: string
           parent_comment_id: string | null
+          reaction_count: number | null
           reactions: Json | null
+          reply_count: number | null
           user_id: string
         }
         Insert: {
@@ -1349,7 +1390,9 @@ export type Database = {
           event_id: string
           id?: string
           parent_comment_id?: string | null
+          reaction_count?: number | null
           reactions?: Json | null
+          reply_count?: number | null
           user_id: string
         }
         Update: {
@@ -1358,7 +1401,9 @@ export type Database = {
           event_id?: string
           id?: string
           parent_comment_id?: string | null
+          reaction_count?: number | null
           reactions?: Json | null
+          reply_count?: number | null
           user_id?: string
         }
         Relationships: [

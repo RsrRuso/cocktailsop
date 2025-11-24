@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { scheduleEventReminder, addToCalendar } from '@/lib/eventReminders';
 import UnifiedLikesDialog from '@/components/unified/UnifiedLikesDialog';
 import UnifiedAttendeesDialog from '@/components/unified/UnifiedAttendeesDialog';
+import UnifiedAdvancedCommentsDialog from '@/components/unified/UnifiedAdvancedCommentsDialog';
 
 interface Event {
   id: string;
@@ -70,6 +71,7 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [showLikesDialog, setShowLikesDialog] = useState(false);
   const [showAttendeesDialog, setShowAttendeesDialog] = useState(false);
+  const [showCommentsDialog, setShowCommentsDialog] = useState(false);
 
   useEffect(() => {
     if (event && open && user) {
@@ -655,73 +657,19 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
                     )}
                   </div>
 
-                  {/* Comments Section */}
-                  <div className="flex-1 flex flex-col min-h-0">
-                    <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-                      <MessageCircle className="w-5 h-5" />
-                      <span className="font-semibold">Comments ({commentCount})</span>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto pr-4 min-h-0">
-                      <div className="space-y-4 pb-4">
-                        {comments.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-8">
-                            No comments yet. Be the first to comment!
-                          </p>
-                        ) : (
-                          <>
-                            {comments
-                              .filter(c => !c.parent_comment_id)
-                              .map((comment) => (
-                                <div key={comment.id}>
-                                  {renderComment(comment)}
-                                  {comments
-                                    .filter(c => c.parent_comment_id === comment.id)
-                                    .map(reply => renderComment(reply, true))}
-                                </div>
-                              ))}
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Comment Input */}
-                    <div className="pt-4 border-t space-y-2 flex-shrink-0">
-                    {replyToId && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Reply className="w-4 h-4" />
-                        Replying to comment
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => {
-                            setReplyToId(null);
-                            setNewComment('');
-                          }}
-                          className="h-6"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      <Textarea
-                        placeholder="Write a comment..."
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        className="flex-1 min-h-[60px] max-h-[120px]"
-                        disabled={isSubmitting}
-                      />
-                      <Button
-                        onClick={handleSubmitComment}
-                        disabled={!newComment.trim() || isSubmitting}
-                        size="icon"
-                      >
-                        <Send className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Comments Button - Opens Advanced Dialog */}
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setShowCommentsDialog(true)}
+                    className="w-full h-12 gap-2 justify-start"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    <span className="flex flex-col items-start">
+                      <span className="text-xs opacity-70">Comments</span>
+                      {commentCount > 0 && <span className="font-semibold text-sm">{commentCount}</span>}
+                    </span>
+                  </Button>
                 </>
               )}
             </div>
@@ -753,11 +701,18 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
             contentType="event"
             contentId={event.id}
           />
-          <UnifiedAttendeesDialog
-            open={showAttendeesDialog}
-            onOpenChange={setShowAttendeesDialog}
-            eventId={event.id}
-          />
+      <UnifiedAttendeesDialog
+        open={showAttendeesDialog}
+        onOpenChange={setShowAttendeesDialog}
+        eventId={event.id}
+      />
+
+      <UnifiedAdvancedCommentsDialog
+        open={showCommentsDialog}
+        onOpenChange={setShowCommentsDialog}
+        eventId={event.id}
+        currentUserId={user?.id}
+      />
         </>
       )}
     </>
