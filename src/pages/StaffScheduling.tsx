@@ -292,29 +292,38 @@ export default function StaffScheduling() {
     DAYS_OF_WEEK.forEach(day => {
       const dayCells = schedulesByDay[day] || [];
       
-      // Find working bartenders and senior bartenders (not OFF, not head bartenders)
+      // Find working senior bartenders (they get support station)
+      const workingSeniorBartenders = dayCells.filter(cell => {
+        const staff = staffMembers.find(s => s.id === cell.staffId);
+        if (!staff) return false;
+        return staff.title === 'senior_bartender' && cell.timeRange !== 'OFF';
+      });
+      
+      // Find working regular bartenders (they get specific stations)
       const workingBartenders = dayCells.filter(cell => {
         const staff = staffMembers.find(s => s.id === cell.staffId);
         if (!staff) return false;
-        
-        const isBartender = staff.title === 'bartender' || staff.title === 'senior_bartender';
-        const isWorking = cell.timeRange !== 'OFF';
-        
-        return isBartender && isWorking;
+        return staff.title === 'bartender' && cell.timeRange !== 'OFF';
       });
       
       // Find all other cells (head bartenders, bar backs, support, off days)
       const otherCells = dayCells.filter(cell => {
         const staff = staffMembers.find(s => s.id === cell.staffId);
         if (!staff) return true;
-        
         const isBartender = staff.title === 'bartender' || staff.title === 'senior_bartender';
         const isWorking = cell.timeRange !== 'OFF';
-        
         return !(isBartender && isWorking);
       });
       
-      // Stations to assign
+      // Assign support station to senior bartenders
+      workingSeniorBartenders.forEach((cell: any) => {
+        normalized[cell.key] = {
+          ...cell,
+          station: 'Indoor - Support Station 2 or Station 1: Can assist either Station 1 or Station 2'
+        };
+      });
+      
+      // Stations to assign to regular bartenders
       const stations = [
         'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
@@ -968,18 +977,56 @@ export default function StaffScheduling() {
         };
       });
       
-      const allStationBartenders = [...shuffledWorkingSeniorBartenders, ...shuffledWorkingBartenders];
+      // SENIOR BARTENDERS get support station assignment
+      shuffledWorkingSeniorBartenders.forEach((schedule) => {
+        const key = `${schedule.staff.id}-${day}`;
+        
+        // Skip if already assigned to avoid duplicates
+        if (assignedStaffIds.has(schedule.staff.id)) {
+          console.warn(`⚠️ Skipping duplicate assignment for ${schedule.staff.name} on ${day}`);
+          return;
+        }
+        
+        // Determine time range based on day type
+        let timeRange;
+        let type: ScheduleCell['type'] = 'regular';
+        if (isBrunchDay) {
+          timeRange = '4:00 PM - 1:00 AM'; // 9 hours for brunch days
+          type = 'early_shift';
+        } else if (isPickupDay) {
+          timeRange = '4:00 PM - 1:00 AM'; // First bartender on pickup days
+          type = 'early_shift';
+        } else if (day === 'Wednesday') {
+          timeRange = '4:00 PM - 1:00 AM';
+          type = 'early_shift';
+        } else if (day === 'Saturday') {
+          timeRange = '4:00 PM - 1:00 AM'; // 9 hours for Saturday
+          type = 'early_shift';
+        } else {
+          timeRange = '5:00 PM - 3:00 AM'; // 10 hours standard
+          type = 'late_shift';
+        }
+        
+        newSchedule[key] = {
+          staffId: schedule.staff.id,
+          day,
+          timeRange,
+          type,
+          station: 'Indoor - Support Station 2 or Station 1: Can assist either Station 1 or Station 2'
+        };
+        assignedStaffIds.add(schedule.staff.id);
+      });
       
-      // ALL BARTENDERS (senior + regular) should get station assignments
-      // Indoor bar has 3 stations - cycle through them for all bartenders
+      // REGULAR BARTENDERS get specific station assignments
+      // Indoor bar has 3 stations - cycle through them
       const stations = [
         'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
         'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain'
       ];
 
-      // Assign stations to ALL BARTENDERS - cycle through the 3 stations
-      allStationBartenders.forEach((schedule, idx) => {
+      // Assign stations to REGULAR BARTENDERS - cycle through the 3 stations
+      shuffledWorkingBartenders.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
         // Skip if already assigned to avoid duplicates
@@ -2636,27 +2683,14 @@ export default function StaffScheduling() {
                         </div>
                         <div className="space-y-2 text-xs pl-4">
                           {indoorStaff.map((s, idx) => {
-                            const responsibility = s.title ? ROLE_RESPONSIBILITIES[s.title] : '';
-                            const hasStation = s.station && s.station.includes('Station');
-                            const isStationRole = s.title === 'bartender' || s.title === 'senior_bartender';
                             return (
                               <div key={idx} className="text-gray-300 leading-relaxed">
                                 • <span className={s.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
                                 {s.title === 'head_bartender' && <span className="text-[10px] text-yellow-500 ml-1.5">(HEAD)</span>}
                                 {s.title === 'senior_bartender' && <span className="text-[10px] text-blue-400 ml-1.5">(SENIOR)</span>}
                                 <span className="text-gray-500"> ({s.timeRange})</span>
-                                {isStationRole && hasStation && (
+                                {s.station && (
                                   <div className="text-[11px] text-blue-400/80 pl-4 mt-0.5 break-words">{s.station}</div>
-                                )}
-                                {isStationRole && !hasStation && (
-                                  <div className="text-[11px] text-red-400/80 pl-4 mt-0.5 break-words font-semibold">
-                                    ⚠️ Station assignment missing - regenerate schedule
-                                  </div>
-                                )}
-                                {responsibility && (
-                                  <div className="text-[10px] text-gray-400/90 pl-4 mt-1 italic break-words leading-relaxed">
-                                    {responsibility}
-                                  </div>
                                 )}
                               </div>
                             );
@@ -2674,18 +2708,14 @@ export default function StaffScheduling() {
                         </div>
                         <div className="space-y-2 text-xs pl-4">
                           {outdoorStaff.map((s, idx) => {
-                            const responsibility = s.title ? ROLE_RESPONSIBILITIES[s.title] : '';
                             return (
                               <div key={idx} className="text-gray-300 leading-relaxed">
                                 • <span className={s.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
                                 {s.title === 'head_bartender' && <span className="text-[10px] text-yellow-500 ml-1.5">(HEAD)</span>}
                                 {s.title === 'senior_bartender' && <span className="text-[10px] text-blue-400 ml-1.5">(SENIOR)</span>}
                                 <span className="text-gray-500"> ({s.timeRange})</span>
-                                <div className="text-[11px] text-purple-400/80 pl-4 mt-0.5 break-words">{s.station}</div>
-                                {responsibility && (
-                                  <div className="text-[10px] text-gray-400/90 pl-4 mt-1 italic break-words leading-relaxed">
-                                    {responsibility}
-                                  </div>
+                                {s.station && (
+                                  <div className="text-[11px] text-purple-400/80 pl-4 mt-0.5 break-words">{s.station}</div>
                                 )}
                               </div>
                             );
