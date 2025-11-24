@@ -232,7 +232,7 @@ export default function StaffScheduling() {
     if (!user?.id) return;
 
     try {
-      console.log('Fetching low stock items for user:', user.id);
+      console.log('Fetching low stock glassware for user:', user.id);
 
       // Fetch settings for minimum quantity threshold
       const { data: settings } = await supabase
@@ -243,7 +243,7 @@ export default function StaffScheduling() {
 
       const minimumQuantity = settings?.minimum_quantity_threshold || 10;
 
-      // Fetch from FIFO inventory
+      // Fetch from FIFO inventory (glassware only)
       const { data: fifoData, error: fifoError } = await supabase
         .from('fifo_inventory')
         .select(`
@@ -258,14 +258,15 @@ export default function StaffScheduling() {
           )
         `)
         .eq('user_id', user.id)
+        .ilike('fifo_items.category', '%glassware%')
         .lte('quantity', minimumQuantity)
         .order('quantity', { ascending: true });
 
       if (fifoError) {
-        console.error('Error fetching FIFO low stock items:', fifoError);
+        console.error('Error fetching FIFO low stock glassware:', fifoError);
       }
 
-      // Fetch from regular inventory (if workspace exists)
+      // Fetch from regular inventory (if workspace exists, glassware only)
       let regularData: any[] = [];
       if (currentWorkspace) {
         const { data, error } = await supabase
@@ -282,11 +283,12 @@ export default function StaffScheduling() {
             )
           `)
           .eq('workspace_id', currentWorkspace.id)
+          .ilike('items.category', '%glassware%')
           .lte('quantity', minimumQuantity)
           .order('quantity', { ascending: true });
 
         if (error) {
-          console.error('Error fetching regular inventory low stock items:', error);
+          console.error('Error fetching regular inventory low stock glassware:', error);
         } else {
           regularData = data || [];
         }
@@ -306,10 +308,10 @@ export default function StaffScheduling() {
         }))
       ].sort((a, b) => a.quantity - b.quantity);
 
-      console.log('Found low stock items:', allItems.length, 'items (FIFO:', fifoData?.length || 0, ', Regular:', regularData.length, ')');
+      console.log('Found low stock glassware:', allItems.length, 'items (FIFO:', fifoData?.length || 0, ', Regular:', regularData.length, ')');
       setLowStockItems(allItems);
     } catch (error) {
-      console.error('Error fetching low stock items:', error);
+      console.error('Error fetching low stock glassware:', error);
     }
   };
 
@@ -2903,12 +2905,12 @@ export default function StaffScheduling() {
                       </div>
                     )}
 
-                    {/* Low Stock Warnings */}
+                    {/* Low Stock Glassware Warnings */}
                     {lowStockItems.length > 0 && (
                       <div className="mb-4 p-3 bg-orange-950/30 border border-orange-800/40 rounded-lg">
                         <div className="text-xs font-bold text-orange-400 mb-2 flex items-center gap-2">
-                          <span>📦</span>
-                          <span>Low Stock ({lowStockItems.length} items)</span>
+                          <span>🥂</span>
+                          <span>Low Stock Glassware ({lowStockItems.length} items)</span>
                         </div>
                         <div className="space-y-1.5 max-h-40 overflow-y-auto">
                           {lowStockItems.slice(0, 3).map((item: any, idx: number) => {
