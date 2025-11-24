@@ -201,17 +201,18 @@ const StoreManagement = () => {
     if (!user) return;
 
     try {
-      // Fetch stores - show all active stores for this user and current workspace/personal context
+      // Fetch stores - show all active stores for current workspace/personal context
       let storesQuery = supabase
         .from("stores")
         .select("*")
-        .eq('user_id', user.id)
         .eq('is_active', true);
 
       if (currentWorkspace) {
+        // In workspace: show all workspace stores (members can see all)
         storesQuery = storesQuery.eq('workspace_id', currentWorkspace.id);
       } else {
-        storesQuery = storesQuery.is('workspace_id', null);
+        // Personal: show only user's own stores
+        storesQuery = storesQuery.eq('user_id', user.id).is('workspace_id', null);
       }
 
       const { data: storesData } = await storesQuery.order("name");
@@ -224,13 +225,14 @@ const StoreManagement = () => {
       // Fetch items - scoped to current workspace/personal context
       let itemsQuery = supabase
         .from("items")
-        .select("*")
-        .eq('user_id', user.id);
+        .select("*");
 
       if (currentWorkspace) {
+        // In workspace: show all workspace items
         itemsQuery = itemsQuery.eq('workspace_id', currentWorkspace.id);
       } else {
-        itemsQuery = itemsQuery.is('workspace_id', null);
+        // Personal: show only user's own items
+        itemsQuery = itemsQuery.eq('user_id', user.id).is('workspace_id', null);
       }
 
       const { data: itemsData } = await itemsQuery.order("name");
@@ -242,13 +244,14 @@ const StoreManagement = () => {
           *,
           items(name, brand, photo_url, color_code),
           stores(name)
-        `)
-        .eq('user_id', user.id);
+        `);
 
       if (currentWorkspace) {
+        // In workspace: show all workspace inventory
         inventoryQuery = inventoryQuery.eq('workspace_id', currentWorkspace.id);
       } else {
-        inventoryQuery = inventoryQuery.is('workspace_id', null);
+        // Personal: show only user's own inventory
+        inventoryQuery = inventoryQuery.eq('user_id', user.id).is('workspace_id', null);
       }
 
       const { data: inventoryData } = await inventoryQuery;
@@ -263,14 +266,15 @@ const StoreManagement = () => {
           transferred_by:employees(name),
           inventory:inventory(items(name))
         `)
-        .eq('user_id', user.id)
         .order("transfer_date", { ascending: false })
         .limit(20);
 
       if (currentWorkspace) {
+        // In workspace: show all workspace transfers
         transfersQuery = transfersQuery.eq('workspace_id', currentWorkspace.id);
       } else {
-        transfersQuery = transfersQuery.is('workspace_id', null);
+        // Personal: show only user's own transfers
+        transfersQuery = transfersQuery.eq('user_id', user.id).is('workspace_id', null);
       }
 
       const { data: transfersData } = await transfersQuery;
@@ -282,15 +286,16 @@ const StoreManagement = () => {
           *,
           stores(name, store_type)
         `)
-        .eq('user_id', user.id)
         .eq('action_type', "received")
         .order("created_at", { ascending: false })
         .limit(20);
 
       if (currentWorkspace) {
+        // In workspace: show all workspace receivings
         receivingsQuery = receivingsQuery.eq('workspace_id', currentWorkspace.id);
       } else {
-        receivingsQuery = receivingsQuery.is('workspace_id', null);
+        // Personal: show only user's own receivings
+        receivingsQuery = receivingsQuery.eq('user_id', user.id).is('workspace_id', null);
       }
 
       const { data: receivingsData } = await receivingsQuery;
@@ -306,14 +311,15 @@ const StoreManagement = () => {
             items(name, photo_url)
           )
         `)
-        .eq('user_id', user.id)
         .order("check_date", { ascending: false })
         .limit(20);
 
       if (currentWorkspace) {
+        // In workspace: show all workspace spot checks
         spotChecksQuery = spotChecksQuery.eq('workspace_id', currentWorkspace.id);
       } else {
-        spotChecksQuery = spotChecksQuery.is('workspace_id', null);
+        // Personal: show only user's own spot checks
+        spotChecksQuery = spotChecksQuery.eq('user_id', user.id).is('workspace_id', null);
       }
 
       const { data: spotChecksData } = await spotChecksQuery;
@@ -325,14 +331,15 @@ const StoreManagement = () => {
           *,
           stores(name)
         `)
-        .eq('user_id', user.id)
         .order("report_date", { ascending: false })
         .limit(20);
 
       if (currentWorkspace) {
+        // In workspace: show all workspace variance reports
         varianceQuery = varianceQuery.eq('workspace_id', currentWorkspace.id);
       } else {
-        varianceQuery = varianceQuery.is('workspace_id', null);
+        // Personal: show only user's own variance reports
+        varianceQuery = varianceQuery.eq('user_id', user.id).is('workspace_id', null);
       }
 
       const { data: varianceData } = await varianceQuery;
