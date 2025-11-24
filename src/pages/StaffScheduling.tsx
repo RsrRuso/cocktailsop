@@ -1043,7 +1043,7 @@ export default function StaffScheduling() {
         }
         
         // Check area allocation from team_staff
-        const staffMember = teamStaff.find(s => s.id === schedule.staff.id);
+        const staffMember = staffMembers.find(s => s.id === schedule.staff.id);
         const areaAllocation = staffMember?.area_allocation || 'indoor';
         
         let station = '';
@@ -2554,7 +2554,16 @@ export default function StaffScheduling() {
                 // Calculate the actual date for this day
                 const dayDate = addDays(new Date(weekStartDate), dayIndex);
                 
-                // Track available stations for unique assignments
+                // Track available stations for unique assignments - sort bartenders by name first
+                const bartenderStaffInIndoor = sortedIndoor.filter(s => {
+                  const staff = staffMembers.find(sm => sm.id === s.staffId);
+                  return staff?.title === 'bartender' || staff?.title === 'senior_bartender';
+                }).sort((a, b) => {
+                  const staffA = staffMembers.find(sm => sm.id === a.staffId);
+                  const staffB = staffMembers.find(sm => sm.id === b.staffId);
+                  return (staffA?.name || '').localeCompare(staffB?.name || '');
+                });
+                
                 const availableIndoorStations = [1, 2, 3];
                 const availableOutdoorStations = [1, 2];
                 
@@ -2570,8 +2579,9 @@ export default function StaffScheduling() {
                         break;
                       case 'senior_bartender':
                       case 'bartender': {
-                        // Use rotation to pick from available stations (ensures uniqueness)
-                        if (availableIndoorStations.length > 0) {
+                        // Find this bartender's index in sorted list to ensure consistent unique assignment
+                        const bartenderIndex = bartenderStaffInIndoor.findIndex(bs => bs.staffId === s.staffId);
+                        if (bartenderIndex !== -1 && availableIndoorStations.length > 0) {
                           const dateStr = dayDate.toISOString().split('T')[0];
                           const rotationHash = (dateStr + (staff?.name || s.staffId)).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
                           const stationIndex = rotationHash % availableIndoorStations.length;
@@ -2579,7 +2589,7 @@ export default function StaffScheduling() {
                           displayStation = stationNum === 3 
                             ? `Indoor - Garnishing Station 3: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members' : 'supervise bar backs'}, ${staff.title === 'senior_bartender' ? 'ensure health and safety compliance' : 'maintain hygiene and service standards'}`
                             : `Indoor - Station ${stationNum}: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members' : 'supervise bar backs'}, ${staff.title === 'senior_bartender' ? 'ensure health and safety compliance' : 'maintain hygiene and service standards'}`;
-                        } else {
+                        } else if (bartenderIndex === -1) {
                           displayStation = "Support: Assist with bar operations as needed";
                         }
                         break;
@@ -2600,6 +2610,16 @@ export default function StaffScheduling() {
                     title: staff?.title 
                   };
                 });
+                // Sort outdoor bartenders by name for consistent unique assignment
+                const bartenderStaffInOutdoor = sortedOutdoor.filter(s => {
+                  const staff = staffMembers.find(sm => sm.id === s.staffId);
+                  return staff?.title === 'bartender' || staff?.title === 'senior_bartender';
+                }).sort((a, b) => {
+                  const staffA = staffMembers.find(sm => sm.id === a.staffId);
+                  const staffB = staffMembers.find(sm => sm.id === b.staffId);
+                  return (staffA?.name || '').localeCompare(staffB?.name || '');
+                });
+                
                 const outdoorStaff = sortedOutdoor.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
                   let displayStation = s.station;
@@ -2612,14 +2632,15 @@ export default function StaffScheduling() {
                         break;
                       case 'senior_bartender':
                       case 'bartender': {
-                        // Use rotation to pick from available stations (ensures uniqueness)
-                        if (availableOutdoorStations.length > 0) {
+                        // Find this bartender's index in sorted list to ensure consistent unique assignment
+                        const bartenderIndex = bartenderStaffInOutdoor.findIndex(bs => bs.staffId === s.staffId);
+                        if (bartenderIndex !== -1 && availableOutdoorStations.length > 0) {
                           const dateStr = dayDate.toISOString().split('T')[0];
                           const rotationHash = (dateStr + (staff?.name || s.staffId)).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
                           const stationIndex = rotationHash % availableOutdoorStations.length;
                           const stationNum = availableOutdoorStations.splice(stationIndex, 1)[0];
                           displayStation = `Outdoor - Station ${stationNum}: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members' : 'supervise bar backs'}, ${staff.title === 'senior_bartender' ? 'ensure health and safety compliance' : 'maintain hygiene and service standards'}`;
-                        } else {
+                        } else if (bartenderIndex === -1) {
                           displayStation = "Support: Assist with bar operations as needed";
                         }
                         break;
