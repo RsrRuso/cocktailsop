@@ -443,6 +443,30 @@ All colors MUST be HSL.
     animation: gradient-xy 3s ease infinite;
   }
 
+  /* Smooth scrolling for scroll areas */
+  .custom-scrollbar {
+    scroll-behavior: smooth;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+    border-radius: 10px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary) / 0.5));
+    border-radius: 10px;
+    transition: background 0.3s ease;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, hsl(var(--primary) / 0.8), hsl(var(--primary) / 0.6));
+  }
+
   .animate-confetti-fall {
     animation: confetti-fall 4s linear infinite;
   }
