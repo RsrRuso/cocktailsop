@@ -33,35 +33,43 @@ const createNotificationSound = async (): Promise<AudioBuffer> => {
   return buffer;
 };
 
-export const playNotificationSound = async (volume: number = 0.5) => {
+export const playNotificationSound = async (volume: number = 0.9) => {
   try {
-    const context = initAudioContext();
-    
-    // Resume context if suspended (required for autoplay policies)
-    if (context.state === 'suspended') {
-      await context.resume();
-    }
-
-    // Create or reuse the notification sound
-    if (!notificationSound) {
-      notificationSound = await createNotificationSound();
-    }
-
-    // Create and configure audio nodes
-    const source = context.createBufferSource();
-    const gainNode = context.createGain();
-    
-    source.buffer = notificationSound;
-    gainNode.gain.value = Math.min(Math.max(volume, 0), 1); // Clamp between 0 and 1
-    
-    // Connect nodes
-    source.connect(gainNode);
-    gainNode.connect(context.destination);
-    
-    // Play the sound
-    source.start(0);
+    // Try to use the WAV file first for a louder, more distinctive sound
+    const audio = new Audio('/notification.wav');
+    audio.volume = Math.min(Math.max(volume, 0), 1);
+    await audio.play();
   } catch (error) {
-    // Could not play notification sound
+    // Fallback to generated sound if file fails
+    try {
+      const context = initAudioContext();
+      
+      // Resume context if suspended (required for autoplay policies)
+      if (context.state === 'suspended') {
+        await context.resume();
+      }
+
+      // Create or reuse the notification sound
+      if (!notificationSound) {
+        notificationSound = await createNotificationSound();
+      }
+
+      // Create and configure audio nodes
+      const source = context.createBufferSource();
+      const gainNode = context.createGain();
+      
+      source.buffer = notificationSound;
+      gainNode.gain.value = Math.min(Math.max(volume, 0), 1);
+      
+      // Connect nodes
+      source.connect(gainNode);
+      gainNode.connect(context.destination);
+      
+      // Play the sound
+      source.start(0);
+    } catch (fallbackError) {
+      // Could not play notification sound
+    }
   }
 };
 

@@ -21,7 +21,7 @@ export const useInAppNotifications = () => {
     };
 
     setCurrentNotification(notification);
-    playNotificationSound(0.6);
+    playNotificationSound(0.9);
   }, []);
 
   const closeNotification = useCallback(() => {

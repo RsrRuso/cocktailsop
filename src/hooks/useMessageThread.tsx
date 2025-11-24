@@ -140,15 +140,32 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
               .eq('id', newMsg.id)
               .then(() => {});
 
-            const receivedSound = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZUA0PVKzn7K5fGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBSh+zPLZjT0HImvB7+ScTgwPUq3n7KxeGAg+ltryxHElBSyBzvLYiTcIGWi77fueRwgMS6Lh8LJlHAQ4ktfyyHgrBQ==');
-            receivedSound.volume = 1.0;
-            receivedSound.play().catch(() => {});
+            // Play loud notification sound
+            const audio = new Audio('/notification.wav');
+            audio.volume = 0.9;
+            audio.play().catch(() => {});
 
-            if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+            // Create push notification using service worker if available
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+              navigator.serviceWorker.ready.then((registration) => {
+                registration.showNotification('New message from ' + otherUser?.full_name, {
+                  body: newMsg.content,
+                  icon: otherUser?.avatar_url || '/icon-192.png',
+                  badge: '/icon-192.png',
+                  tag: 'message-' + newMsg.id,
+                  requireInteraction: false,
+                  silent: false,
+                  data: {
+                    url: `/message-thread/${conversationId}`,
+                    type: 'message',
+                  }
+                });
+              });
+            } else if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
               new Notification('New message from ' + otherUser?.full_name, {
                 body: newMsg.content,
-                icon: otherUser?.avatar_url || '/favicon.ico',
-                badge: '/favicon.ico',
+                icon: otherUser?.avatar_url || '/icon-192.png',
+                badge: '/icon-192.png',
                 tag: 'message-' + newMsg.id,
                 requireInteraction: false,
               });

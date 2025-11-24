@@ -53,11 +53,11 @@ export const usePushNotifications = () => {
         data: options?.data || {}
       });
       
-      // Play notification sound (not silent by default)
+      // Play loud notification sound (not silent by default)
       if (!options?.silent) {
         try {
           const audio = new Audio('/notification.wav');
-          audio.volume = 0.5;
+          audio.volume = 0.9;
           await audio.play();
         } catch (error) {
           // Audio play failed (user interaction required or not allowed)
@@ -75,11 +75,11 @@ export const usePushNotifications = () => {
         data: options?.data || {}
       });
 
-      // Play sound for fallback notifications too
+      // Play loud sound for fallback notifications too
       if (!options?.silent) {
         try {
           const audio = new Audio('/notification.wav');
-          audio.volume = 0.5;
+          audio.volume = 0.9;
           await audio.play();
         } catch (error) {
           // Audio play failed
