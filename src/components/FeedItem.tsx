@@ -59,7 +59,7 @@ export const FeedItem = memo(({
   return (
     <div className="relative bg-black w-full">
       {/* Top Header Section */}
-      <div className="relative p-4 bg-transparent backdrop-blur-xl border-b-2 border-white/10">
+      <div className="relative p-4 bg-transparent backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center gap-3">
             <div 
               className="relative cursor-pointer"
@@ -102,11 +102,11 @@ export const FeedItem = memo(({
         {currentUserId && item.user_id === currentUserId && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-2 rounded-xl bg-transparent backdrop-blur-xl border-2 border-white/20 hover:border-white/30 hover:bg-white/5 transition-all">
+              <button className="p-2 rounded-xl bg-transparent backdrop-blur-xl border border-white/20 hover:border-white/30 hover:bg-white/5 transition-all">
                 <MoreVertical className="w-5 h-5" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-transparent backdrop-blur-xl border-2 border-white/30">
+            <DropdownMenuContent align="end" className="bg-transparent backdrop-blur-xl border border-white/30">
               {item.type === 'post' && (
                 <DropdownMenuItem onClick={onEdit}>
                   <Edit className="w-4 h-4 mr-2" />
@@ -177,15 +177,15 @@ export const FeedItem = memo(({
       </div>
 
       {/* Bottom Action Bar - Glassy Transparent with Contours */}
-      <div className="relative p-4 bg-transparent backdrop-blur-xl border-t-2 border-white/10">
+      <div className="relative p-4 bg-transparent backdrop-blur-xl border-t border-white/10">
         <div className="flex items-center gap-3">
             {/* Like Button */}
             <button
                 onClick={onLike}
                 className={`relative flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl ${
                   isLiked 
-                    ? 'bg-transparent border-2 border-red-500/50 text-red-500 hover:scale-110 hover:border-red-500/70' 
-                    : 'bg-transparent hover:bg-white/5 border-2 border-white/20 hover:border-white/30 text-muted-foreground hover:text-primary hover:scale-105'
+                    ? 'bg-transparent border border-red-500/50 text-red-500 hover:scale-110 hover:border-red-500/70' 
+                    : 'bg-transparent hover:bg-white/5 border border-white/20 hover:border-white/30 text-muted-foreground hover:text-primary hover:scale-105'
                 }`}
               >
                 <Heart className={`w-5 h-5 transition-all duration-300 ${isLiked ? 'fill-current scale-110' : ''}`} />
@@ -203,7 +203,7 @@ export const FeedItem = memo(({
             {/* Comment Button */}
             <button
                 onClick={() => setShowComments(true)}
-                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border-2 border-white/20 hover:border-white/30 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-105"
+                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border border-white/20 hover:border-white/30 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-105"
               >
                 <MessageCircle className="w-5 h-5" />
                 <span className="text-sm font-bold min-w-[20px]">{item.comment_count || 0}</span>
@@ -212,7 +212,7 @@ export const FeedItem = memo(({
             {/* Share Button */}
             <button
                 onClick={onShare}
-                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border-2 border-white/20 hover:border-green-500/30 text-muted-foreground hover:text-green-500 transition-all duration-300 hover:scale-105"
+                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border border-white/20 hover:border-green-500/30 text-muted-foreground hover:text-green-500 transition-all duration-300 hover:scale-105"
               >
                 <Send className="w-5 h-5" />
                 <span className="text-xs font-medium">Share</span>
@@ -221,7 +221,7 @@ export const FeedItem = memo(({
             {/* AI Insights Button */}
             <button
                 onClick={() => setShowInsights(true)}
-                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border-2 border-purple-500/40 hover:border-purple-500/60 transition-all duration-300 hover:scale-105"
+                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border border-purple-500/40 hover:border-purple-500/60 transition-all duration-300 hover:scale-105"
               >
                 <Brain className="w-4 h-4 text-purple-400 group-hover/ai:text-pink-400 transition-colors" />
                 <Sparkles className="w-3.5 h-3.5 text-pink-400 group-hover/ai:text-blue-400 animate-pulse transition-colors" />
@@ -231,7 +231,7 @@ export const FeedItem = memo(({
               </button>
             
             {/* Views Counter */}
-            <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-transparent backdrop-blur-xl border-2 border-white/20">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-transparent backdrop-blur-xl border border-white/20">
               <Eye className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-bold text-muted-foreground">{item.view_count || 0}</span>
             </div>
