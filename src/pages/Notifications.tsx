@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -29,6 +29,8 @@ const Notifications = () => {
   const navigate = useNavigate();
   const { showNotification } = useInAppNotificationContext();
   const { showNotification: showPushNotification } = usePushNotifications();
+  const processedNotificationsRef = useRef<Set<string>>(new Set());
+  const subscriptionRef = useRef<any>(null);
 
   const handleTestNotification = async () => {
     await showPushNotification(
@@ -43,10 +45,29 @@ const Notifications = () => {
     toast.success("Test notification sent!");
   };
 
+  const fetchNotifications = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", user.id)
+      .neq("type", "message")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (data) setNotifications(data as Notification[]);
+  }, []);
+
   useEffect(() => {
-    let channel: any;
-    
     const setupSubscription = async () => {
+      // Clean up existing subscription first
+      if (subscriptionRef.current) {
+        await supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
+
       // Request notification permissions
       try {
         await LocalNotifications.requestPermissions();
@@ -60,8 +81,8 @@ const Notifications = () => {
       fetchNotifications();
       
       // Set up realtime subscription for new notifications - ONLY for current user
-      channel = supabase
-        .channel(`notifications-${user.id}`)
+      subscriptionRef.current = supabase
+        .channel(`notifications-${user.id}-${Date.now()}`) // Add timestamp for uniqueness
         .on(
           'postgres_changes',
           {
@@ -71,9 +92,21 @@ const Notifications = () => {
             filter: `user_id=eq.${user.id}` // Only listen to notifications for current user
           },
           async (payload) => {
-            fetchNotifications();
-            
             const newNotification = payload.new as Notification;
+            
+            // Deduplicate notifications
+            if (processedNotificationsRef.current.has(newNotification.id)) {
+              return;
+            }
+            processedNotificationsRef.current.add(newNotification.id);
+            
+            // Clean up old processed IDs (keep last 100)
+            if (processedNotificationsRef.current.size > 100) {
+              const items = Array.from(processedNotificationsRef.current);
+              processedNotificationsRef.current = new Set(items.slice(-50));
+            }
+            
+            fetchNotifications();
             
             // Send in-app notification for ALL types
             showNotification(
@@ -87,7 +120,7 @@ const Notifications = () => {
               'New Notification',
               newNotification.content,
               {
-                tag: newNotification.type,
+                tag: newNotification.id, // Use notification ID as tag to prevent duplicates
                 data: {
                   type: newNotification.type,
                   url: window.location.origin + '/notifications'
@@ -123,26 +156,13 @@ const Notifications = () => {
     setupSubscription();
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
       }
     };
-  }, []);
+  }, [fetchNotifications, showNotification, showPushNotification]);
 
-  const fetchNotifications = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", user.id)
-      .neq("type", "message")
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (data) setNotifications(data as Notification[]);
-  };
 
   const handleMarkAllAsRead = async () => {
     const { data: { user } } = await supabase.auth.getUser();
