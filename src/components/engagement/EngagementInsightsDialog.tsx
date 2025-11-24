@@ -42,7 +42,7 @@ export const EngagementInsightsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5">
         <DialogHeader className="p-6 pb-4 border-b border-border/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -69,8 +69,9 @@ export const EngagementInsightsDialog = ({
             </TabsList>
           </div>
 
-          <ScrollArea className="flex-1">
-            <div className="p-6 space-y-4">
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar-advanced">
+              <div className="p-6 space-y-4">
               <TabsContent value="insights" className="mt-0 space-y-4">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -146,8 +147,9 @@ export const EngagementInsightsDialog = ({
                   <TrendingContentAnalyzer />
                 </motion.div>
               </TabsContent>
+              </div>
             </div>
-          </ScrollArea>
+          </div>
         </Tabs>
       </DialogContent>
     </Dialog>

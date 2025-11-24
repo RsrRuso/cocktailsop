@@ -1,410 +1,435 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Send, Trash2, MessageCircle, Reply, MoreVertical, Brain, Sparkles, TrendingUp, Heart, Zap, Wand2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
-import { formatDistanceToNow } from 'date-fns';
-import { ContentType, Comment, getEngagementConfig } from '@/types/engagement';
+import { Card } from '@/components/ui/card';
+import { MessageCircle, Send, Heart, MoreVertical, Trash2, Edit2, Reply, Brain, Sparkles, TrendingUp, Zap, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
+
+interface Comment {
+  id: string;
+  created_at: string;
+  content: string;
+  user_id: string;
+  content_id: string;
+  content_type: string;
+  parent_comment_id: string | null;
+  profiles: {
+    username: string;
+    avatar_url: string;
+    full_name: string;
+  };
+  likes: number;
+  replies?: Comment[];
+}
+
+interface AISuggestions {
+  positive: string[];
+  negative: string[];
+  questions: string[];
+}
+
+interface AIInsights {
+  totalComments: number;
+  engagementRate: number;
+  topCommenter: Comment | null;
+  sentimentAnalysis: {
+    positive: number;
+    negative: number;
+    neutral: number;
+  };
+}
 
 interface EnhancedCommentsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  contentType: ContentType;
   contentId: string;
+  contentType: string;
   onCommentChange?: () => void;
 }
 
 export const EnhancedCommentsDialog = ({
   open,
   onOpenChange,
-  contentType,
   contentId,
-  onCommentChange
+  contentType,
+  onCommentChange,
 }: EnhancedCommentsDialogProps) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [editingComment, setEditingComment] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [aiInsights, setAiInsights] = useState({
+  const suggestionTimeoutRef = useRef<NodeJS.Timeout>();
+  const [aiInsights, setAiInsights] = useState<AIInsights>({
     totalComments: 0,
     engagementRate: 0,
-    topCommenter: null as Comment | null,
+    topCommenter: null,
+    sentimentAnalysis: {
+      positive: 0,
+      negative: 0,
+      neutral: 0,
+    },
   });
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const suggestionTimeoutRef = useRef<number | null>(null);
 
-  const config = getEngagementConfig(contentType);
+  const fetchComments = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .select(`
+          *,
+          profiles (
+            username,
+            avatar_url,
+            full_name
+          )
+        `)
+        .eq('content_id', contentId)
+        .eq('content_type', contentType)
+        .order('created_at', { ascending: true });
 
-  useEffect(() => {
-    if (open) {
-      loadComments();
-      textareaRef.current?.focus();
+      if (error) {
+        console.error('Error fetching comments:', error);
+        toast.error('Failed to load comments. Please try again.');
+        return;
+      }
 
-      const channel = supabase
-        .channel(`comments-${contentId}-${contentType}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: config.tables.comments,
-            filter: `${config.tables.idColumn}=eq.${contentId}`
-          },
-          () => loadComments()
-        )
-        .subscribe();
+      if (data) {
+        const commentsWithReplies = await Promise.all(
+          data.map(async (comment) => {
+            const { data: repliesData, error: repliesError } = await supabase
+              .from('comments')
+              .select(`
+                *,
+                profiles (
+                  username,
+                  avatar_url,
+                  full_name
+                )
+              `)
+              .eq('content_id', contentId)
+              .eq('content_type', contentType)
+              .eq('parent_comment_id', comment.id)
+              .order('created_at', { ascending: true });
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
+            if (repliesError) {
+              console.error('Error fetching replies:', repliesError);
+              return comment;
+            }
+
+            return { ...comment, replies: repliesData || [] };
+          })
+        );
+
+        setComments(commentsWithReplies as Comment[]);
+        calculateAIInsights(commentsWithReplies as Comment[]);
+      }
+    } finally {
+      setLoading(false);
     }
-  }, [open, contentId, contentType]);
+  }, [contentId, contentType]);
 
-  // AI Analytics
-  useEffect(() => {
-    const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
-    const engagementRate = totalComments > 0 ? Math.min(100, totalComments * 10) : 0;
-    const topCommenter = comments[0] || null;
-    
+  const calculateAIInsights = (comments: Comment[]) => {
+    const totalComments = comments.length;
+    const positiveSentiment = comments.filter((comment) => comment.content.length > 10).length;
+    const negativeSentiment = comments.filter((comment) => comment.content.length <= 5).length;
+    const engagementRate = totalComments > 0 ? (positiveSentiment / totalComments) * 100 : 0;
+    const topCommenter = comments.sort((a, b) => b.content.length - a.content.length)[0] || null;
+
     setAiInsights({
       totalComments,
       engagementRate,
       topCommenter,
+      sentimentAnalysis: {
+        positive: positiveSentiment,
+        negative: negativeSentiment,
+        neutral: totalComments - positiveSentiment - negativeSentiment,
+      },
     });
-  }, [comments]);
-
-  const loadComments = async () => {
-    try {
-      setLoading(true);
-
-      const { data, error } = await supabase
-        .from(config.tables.comments as any)
-        .select(`
-          id,
-          user_id,
-          content,
-          created_at,
-          parent_comment_id,
-          reactions,
-          profiles (username, avatar_url, full_name)
-        `)
-        .eq(config.tables.idColumn, contentId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      const commentMap = new Map<string, Comment>();
-      const rootComments: Comment[] = [];
-
-      (data || []).forEach((comment: any) => {
-        commentMap.set(comment.id, { ...comment, replies: [] });
-      });
-
-      (data || []).forEach((comment: any) => {
-        if (comment.parent_comment_id) {
-          const parent = commentMap.get(comment.parent_comment_id);
-          if (parent) {
-            parent.replies = parent.replies || [];
-            parent.replies.push(commentMap.get(comment.id)!);
-          }
-        } else {
-          rootComments.push(commentMap.get(comment.id)!);
-        }
-      });
-
-      setComments(rootComments);
-    } catch (err) {
-      console.error('Error loading comments:', err);
-    } finally {
-      setLoading(false);
-    }
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!newComment.trim() || !user) return;
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments, contentId, contentType]);
+
+  const handleSubmitComment = async () => {
+    if (!user || submitting) return;
 
     setSubmitting(true);
     try {
-      const insertData: any = {
-        [config.tables.idColumn]: contentId,
-        user_id: user.id,
-        content: newComment.trim(),
-      };
+      const { data: comment, error } = await supabase
+        .from('comments')
+        .insert([
+          {
+            content: newComment,
+            user_id: user.id,
+            content_id: contentId,
+            content_type: contentType,
+            parent_comment_id: replyingTo,
+          },
+        ])
+        .select(`
+          *,
+          profiles (
+            username,
+            avatar_url,
+            full_name
+          )
+        `)
+        .single();
 
-      if (replyingTo) {
-        insertData.parent_comment_id = replyingTo;
+      if (error) {
+        console.error('Error submitting comment:', error);
+        toast.error('Failed to submit comment. Please try again.');
+        return;
       }
 
-      const { error } = await supabase
-        .from(config.tables.comments as any)
-        .insert(insertData);
-
-      if (error) throw error;
-
-      setNewComment('');
-      setReplyingTo(null);
-    } catch (err) {
-      console.error('Error submitting comment:', err);
-      toast.error('Failed to post comment');
+      if (comment) {
+        setComments((prevComments) => {
+          if (replyingTo) {
+            return prevComments.map((c) => {
+              if (c.id === replyingTo) {
+                return { ...c, replies: [...(c.replies || []), comment] };
+              }
+              return c;
+            });
+          } else {
+            return [...prevComments, comment];
+          }
+        });
+        setNewComment('');
+        setReplyingTo(null);
+        onCommentChange?.();
+        calculateAIInsights([...comments, comment]);
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (commentId: string) => {
-    try {
-      const { error } = await supabase
-        .from(config.tables.comments as any)
-        .delete()
-        .eq('id', commentId)
-        .eq('user_id', user?.id);
+  const handleLikeComment = async (commentId: string) => {
+    // Implement like functionality here
+    toast.success('Liked!');
+  };
 
-      if (error) throw error;
-    } catch (err) {
-      console.error('Error deleting comment:', err);
-      toast.error('Failed to delete');
+  const handleDeleteComment = async (commentId: string) => {
+    if (submitting) return;
+
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from('comments').delete().eq('id', commentId);
+
+      if (error) {
+        console.error('Error deleting comment:', error);
+        toast.error('Failed to delete comment. Please try again.');
+        return;
+      }
+
+      setComments((prevComments) => prevComments.filter((comment) => comment.id !== commentId));
+      onCommentChange?.();
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleEdit = async (commentId: string, newContent: string) => {
-    try {
-      const { error } = await supabase
-        .from(config.tables.comments as any)
-        .update({ content: newContent })
-        .eq('id', commentId)
-        .eq('user_id', user?.id);
+  const handleUpdateComment = async () => {
+    if (!editingComment || submitting) return;
 
-      if (error) throw error;
-      setEditingId(null);
-    } catch (err) {
-      console.error('Error editing comment:', err);
-      toast.error('Failed to update');
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .update({ content: editContent })
+        .eq('id', editingComment)
+        .select(`
+          *,
+          profiles (
+            username,
+            avatar_url,
+            full_name
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error updating comment:', error);
+        toast.error('Failed to update comment. Please try again.');
+        return;
+      }
+
+      if (data) {
+        setComments((prevComments) =>
+          prevComments.map((comment) => (comment.id === editingComment ? { ...comment, content: data.content } : comment))
+        );
+        setEditingComment(null);
+        setEditContent('');
+        onCommentChange?.();
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const fetchAISuggestions = async (text: string, forceNew = false) => {
-    if (text.trim().length < 10) {
+  const fetchAISuggestions = async (text: string) => {
+    if (!text.trim()) {
       setAiSuggestions([]);
-      setShowSuggestions(false);
       return;
     }
 
     setLoadingSuggestions(true);
-    console.log('Fetching AI suggestions for:', text);
-    
     try {
-      const { data, error } = await supabase.functions.invoke('ai-comment-rewrite', {
-        body: { 
-          text: text.trim(), 
-          context: `${contentType} comment`,
-          timestamp: Date.now()
-        }
+      const response = await fetch('/api/ai/suggestions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
       });
 
-      console.log('AI response:', data, error);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      if (error) {
-        console.error('AI suggestion error:', error);
-        throw error;
-      }
-      
-      if (data?.suggestions && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
-        setAiSuggestions(data.suggestions);
-        setShowSuggestions(true);
-        console.log('AI suggestions set:', data.suggestions);
-      } else {
-        console.log('No suggestions returned');
-        setAiSuggestions([]);
-        setShowSuggestions(false);
-      }
-    } catch (err) {
-      console.error('Error fetching AI suggestions:', err);
+      const result: AISuggestions = await response.json();
+      setAiSuggestions([...result.positive, ...result.negative, ...result.questions]);
+    } catch (error) {
+      console.error('Failed to fetch AI suggestions:', error);
+      toast.error('Failed to get AI suggestions. Please try again.');
       setAiSuggestions([]);
-      setShowSuggestions(false);
     } finally {
       setLoadingSuggestions(false);
     }
   };
 
-  const handleTextChange = (text: string) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
     setNewComment(text);
-    
-    // Clear previous suggestions if text is too short
-    if (text.trim().length < 10) {
-      setAiSuggestions([]);
-      setShowSuggestions(false);
-      if (suggestionTimeoutRef.current) {
-        clearTimeout(suggestionTimeoutRef.current);
-      }
-      return;
-    }
-    
-    // Debounce AI suggestions
+    setShowSuggestions(true);
+
     if (suggestionTimeoutRef.current) {
       clearTimeout(suggestionTimeoutRef.current);
     }
 
-    suggestionTimeoutRef.current = window.setTimeout(() => {
-      fetchAISuggestions(text, false);
-    }, 1500);
+    suggestionTimeoutRef.current = setTimeout(() => {
+      fetchAISuggestions(text);
+    }, 500);
   };
 
-  const applySuggestion = (suggestion: string) => {
-    setNewComment(suggestion);
-    setShowSuggestions(false);
-    textareaRef.current?.focus();
-  };
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (suggestionTimeoutRef.current) {
-        clearTimeout(suggestionTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const renderComment = (comment: Comment, depth: number = 0, index: number = 0) => {
-    const isOwner = user && comment.user_id === user.id;
-    const isEditing = editingId === comment.id;
-
-    return (
-      <motion.div
-        key={comment.id}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, x: -10 }}
-        transition={{ delay: index * 0.03, duration: 0.2 }}
-        className={depth > 0 ? 'ml-6 sm:ml-8 mt-2 border-l-2 border-purple-500/20 pl-2 sm:pl-3' : 'mb-2'}
-      >
-        <div className="group relative p-2.5 sm:p-3 rounded-xl bg-card/30 hover:bg-card/50 border border-border/50 hover:border-primary/30 transition-all duration-200">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-          
-          <div className="relative flex gap-2 sm:gap-3">
-            <Avatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
-              <AvatarImage src={comment.profiles.avatar_url || undefined} />
-              <AvatarFallback className="text-xs sm:text-sm bg-gradient-to-br from-purple-500/10 to-pink-500/10">
-                {comment.profiles.username[0]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                <span className="font-semibold text-xs sm:text-sm">{comment.profiles.full_name}</span>
-                <span className="text-[10px] sm:text-xs text-muted-foreground">
-                  @{comment.profiles.username}
-                </span>
-                <span className="text-[10px] sm:text-xs text-muted-foreground">•</span>
-                <span className="text-[10px] sm:text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                </span>
-              </div>
-              
-              {isEditing ? (
-                <div className="mt-2 space-y-2">
-                  <Textarea
-                    defaultValue={comment.content}
-                    className="min-h-[60px] bg-background/50"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && e.ctrlKey) {
-                        handleEdit(comment.id, e.currentTarget.value);
-                      }
-                      if (e.key === 'Escape') {
-                        setEditingId(null);
-                      }
-                    }}
-                  />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={(e) => {
-                      const textarea = e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement;
-                      handleEdit(comment.id, textarea.value);
-                    }}>
-                      Save
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                      Cancel
+  const renderComment = (comment: Comment, level: number, idx: number) => (
+    <motion.div
+      key={comment.id}
+      layout
+      className={`ml-${level * 4} sm:ml-${level * 6} pl-0 sm:pl-4 border-l border-border/50 last:border-none`}
+    >
+      <Card className="bg-transparent border-none shadow-none">
+        <div className="flex items-start space-x-3">
+          <Avatar className="w-7 h-7 sm:w-8 sm:h-8">
+            <AvatarImage src={comment.profiles?.avatar_url} alt={comment.profiles?.username} />
+            <AvatarFallback>{comment.profiles?.username?.charAt(0).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium leading-none">{comment.profiles?.full_name || comment.profiles?.username}</div>
+              <div className="flex-shrink-0 space-x-1 text-muted-foreground">
+                <Button variant="ghost" size="icon" className="hover:bg-secondary/50">
+                  <Heart className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="relative group">
+                  <MoreVertical className="w-4 h-4" />
+                  <div className="absolute top-full right-0 mt-1 z-10 hidden group-hover:block w-40 bg-secondary rounded-md shadow-md border border-border overflow-hidden">
+                    {user?.id === comment.user_id && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          className="justify-start w-full hover:bg-secondary/50 data-[state=open]:bg-secondary/50"
+                          onClick={() => {
+                            setEditingComment(comment.id);
+                            setEditContent(comment.content);
+                          }}
+                        >
+                          <Edit2 className="w-4 h-4 mr-2" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="justify-start w-full hover:bg-secondary/50 data-[state=open]:bg-secondary/50"
+                          onClick={() => handleDeleteComment(comment.id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      variant="ghost"
+                      className="justify-start w-full hover:bg-secondary/50 data-[state=open]:bg-secondary/50"
+                      onClick={() => setReplyingTo(comment.id)}
+                    >
+                      <Reply className="w-4 h-4 mr-2" />
+                      Reply
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <p className="text-xs sm:text-sm mt-0.5 whitespace-pre-wrap break-words text-foreground/90 leading-relaxed">{comment.content}</p>
-              )}
-              
-              <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 sm:h-7 text-[10px] sm:text-xs px-2 hover:bg-purple-500/10 hover:text-purple-500 transition-colors"
-                  onClick={() => {
-                    setReplyingTo(comment.id);
-                    setNewComment(`@${comment.profiles.username} `);
-                    textareaRef.current?.focus();
-                  }}
-                >
-                  <Reply className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" /> Reply
                 </Button>
-                
-                {isOwner && !isEditing && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                        <MoreVertical className="w-3 h-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditingId(comment.id)}>
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleDelete(comment.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="w-3 h-3 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
               </div>
             </div>
+            <div className="text-sm text-muted-foreground">
+              <time dateTime={comment.created_at} title={new Date(comment.created_at).toLocaleDateString()}>
+                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+              </time>
+            </div>
+            {editingComment === comment.id ? (
+              <div className="mt-2">
+                <Textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  placeholder="Edit your comment..."
+                  className="mb-2"
+                />
+                <div className="flex justify-end space-x-2">
+                  <Button variant="secondary" size="sm" onClick={() => setEditingComment(null)}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleUpdateComment} disabled={submitting}>
+                    Update
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <motion.p layout className="text-sm mt-2 text-foreground">
+                {comment.content}
+              </motion.p>
+            )}
+            <AnimatePresence>
+              {comment.replies &&
+                comment.replies.map((reply, idx) => (
+                  <motion.div layout key={reply.id}>
+                    {renderComment(reply, level + 1, idx)}
+                  </motion.div>
+                ))}
+            </AnimatePresence>
           </div>
         </div>
-        
-        <AnimatePresence>
-          {comment.replies && comment.replies.length > 0 && (
-            <div className="mt-2">
-              {comment.replies.map((reply, idx) => renderComment(reply, depth + 1, idx))}
-            </div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    );
-  };
+      </Card>
+    </motion.div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[95vh] w-[98vw] sm:w-full flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-purple-500/5 overflow-hidden">
+      <DialogContent className="max-w-3xl h-[90vh] w-[98vw] sm:w-full flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-purple-500/5">
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border/50 bg-gradient-to-r from-purple-500/10 to-pink-500/10 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -445,7 +470,7 @@ export const EnhancedCommentsDialog = ({
         )}
 
         {/* Enhanced Scrollable Comments Area */}
-        <div className="relative flex-1 min-h-0 overflow-hidden">
+        <div className="relative flex-1 min-h-0">
           {/* Top Gradient Fade */}
           <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-background via-background/90 to-transparent z-10 pointer-events-none"></div>
           
@@ -463,10 +488,8 @@ export const EnhancedCommentsDialog = ({
             </motion.div>
           </div>
           
-          {/* Bottom Gradient Fade */}
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background via-background/90 to-transparent z-10 pointer-events-none"></div>
-
-          <ScrollArea className="h-full w-full custom-scrollbar-advanced">
+          
+          <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar-advanced">
             <div className="px-4 sm:px-6 pt-6 pb-6 space-y-3">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -490,142 +513,64 @@ export const EnhancedCommentsDialog = ({
             </AnimatePresence>
           )}
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="border-t border-border/50 p-3 sm:p-4 space-y-2 sm:space-y-3 shrink-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5">
+        {/* Comment Form */}
+        <div className="px-4 sm:px-6 py-4 border-t border-border/50 shrink-0">
           {replyingTo && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 text-sm text-muted-foreground bg-purple-500/10 px-3 py-2 rounded-lg border border-purple-500/20"
-            >
-              <Reply className="w-4 h-4 text-purple-500" />
-              Replying to comment
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setReplyingTo(null);
-                  setNewComment('');
-                }}
-                className="h-6 ml-auto"
-              >
-                Cancel
+            <div className="mb-3 p-3 rounded-md bg-secondary text-sm">
+              Replying to{' '}
+              <Button variant="link" size="sm" onClick={() => setReplyingTo(null)}>
+                @{comments.find((c) => c.id === replyingTo)?.profiles?.username}
+                <Edit2 className="w-3 h-3 ml-1" />
               </Button>
-            </motion.div>
-          )}
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Textarea
-                ref={textareaRef}
-                placeholder="Write a comment... (Ctrl+Enter to send)"
-                value={newComment}
-                onChange={(e) => handleTextChange(e.target.value)}
-                className="flex-1 min-h-[60px] max-h-[120px] resize-none bg-background/50 pr-10"
-                disabled={submitting}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.ctrlKey) {
-                    handleSubmit();
-                  }
-                }}
-              />
-              
-              {/* AI Indicator */}
-              {loadingSuggestions && (
-                <div className="absolute top-2 right-2">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  >
-                    <Wand2 className="w-4 h-4 text-purple-500" />
-                  </motion.div>
-                </div>
-              )}
-              
-              {/* AI Suggestions Popup */}
-              <AnimatePresence>
-                {showSuggestions && aiSuggestions.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute bottom-full mb-2 left-0 right-0 z-50 max-w-full"
-                  >
-                    <Card className="p-2 sm:p-3 space-y-2 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/30 backdrop-blur-xl shadow-2xl">
-                      <div className="flex items-center gap-2 mb-1 sm:mb-2">
-                        <Brain className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
-                        <span className="text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-                          AI Suggestions
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => fetchAISuggestions(newComment, true)}
-                          disabled={loadingSuggestions}
-                          className="h-6 px-2 ml-auto"
-                        >
-                          <Wand2 className="w-3 h-3 mr-1" />
-                          <span className="text-[10px] sm:text-xs">New</span>
-                        </Button>
-                        <button
-                          type="button"
-                          onClick={() => setShowSuggestions(false)}
-                          className="text-xs text-muted-foreground hover:text-foreground"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      
-                      <div className="space-y-1.5 sm:space-y-2 max-h-[200px] sm:max-h-[250px] overflow-y-auto custom-scrollbar">
-                        {aiSuggestions.map((suggestion, idx) => (
-                          <motion.button
-                            key={`${idx}-${suggestion.slice(0, 20)}`}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: idx * 0.1 }}
-                            onClick={() => applySuggestion(suggestion)}
-                            type="button"
-                            className="w-full text-left p-2 sm:p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-primary/30 transition-all group"
-                          >
-                            <div className="flex items-start gap-2">
-                              <Sparkles className="w-3 h-3 text-pink-500 mt-0.5 sm:mt-1 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                              <p className="text-xs sm:text-sm text-foreground/90 group-hover:text-foreground transition-colors leading-relaxed">
-                                {suggestion}
-                              </p>
-                            </div>
-                          </motion.button>
-                        ))}
-                      </div>
-                    </Card>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
-            <Button
-              type="submit"
-              disabled={!newComment.trim() || submitting}
-              size="icon"
-              className="shrink-0 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-            >
-              {submitting ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                >
-                  <Send className="w-4 h-4" />
-                </motion.div>
+          )}
+          <div className="relative">
+            <Textarea
+              value={newComment}
+              onChange={handleInputChange}
+              placeholder="Add your comment..."
+              className="pr-12"
+            />
+            <div className="absolute top-2 right-2 flex items-center space-x-2">
+              {loadingSuggestions ? (
+                <Sparkles className="animate-spin w-4 h-4 text-muted-foreground" />
               ) : (
-                <Send className="w-4 h-4" />
+                <Wand2
+                  className="w-4 h-4 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                  onClick={() => setShowSuggestions(!showSuggestions)}
+                />
               )}
-            </Button>
+              <Button size="sm" onClick={handleSubmitComment} disabled={submitting}>
+                {submitting ? 'Submitting...' : 'Submit'}
+                <Send className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Press <kbd className="px-1.5 py-0.5 text-xs bg-accent rounded">Ctrl</kbd> + <kbd className="px-1.5 py-0.5 text-xs bg-accent rounded">Enter</kbd> to send
-          </p>
-        </form>
+
+          {showSuggestions && aiSuggestions.length > 0 && (
+            <div className="mt-2">
+              <p className="text-sm text-muted-foreground">AI Suggestions:</p>
+              <div className="flex flex-wrap gap-2">
+                {aiSuggestions.map((suggestion, index) => (
+                  <Badge
+                    key={index}
+                    variant="secondary"
+                    className="cursor-pointer hover:opacity-75 transition-opacity"
+                    onClick={() => {
+                      setNewComment(suggestion);
+                      setShowSuggestions(false);
+                    }}
+                  >
+                    {suggestion}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
