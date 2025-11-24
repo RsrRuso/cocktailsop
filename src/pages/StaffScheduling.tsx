@@ -56,9 +56,9 @@ const CELL_COLORS = {
 };
 
 const ROLE_RESPONSIBILITIES = {
-  head_bartender: 'Supervise bar operations, support and coordinate teams, monitor safety and quality standards',
-  senior_bartender: 'Operate bar stations efficiently, train junior staff members, ensure health and safety compliance',
-  bartender: 'Run assigned bar stations, supervise bar backs, maintain hygiene and service standards',
+  head_bartender: 'Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow',
+  senior_bartender: 'Work behind assigned bar station, train junior staff members, ensure health and safety compliance',
+  bartender: 'Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards',
   bar_back: 'Handle pickups and refills, polish glassware, stock supplies and prepare garnishes',
   support: 'Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance',
 };
