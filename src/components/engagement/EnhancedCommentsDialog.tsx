@@ -420,13 +420,27 @@ export const EnhancedCommentsDialog = ({
         {/* Enhanced Scrollable Comments Area */}
         <div className="relative flex-1 overflow-hidden">
           {/* Top Gradient Fade */}
-          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-background via-background/80 to-transparent z-10 pointer-events-none"></div>
+          <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-background via-background/90 to-transparent z-10 pointer-events-none"></div>
+          
+          {/* Scroll Indicator Top */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ repeat: Infinity, duration: 1.5, repeatType: "reverse" }}
+              className="text-purple-500"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="opacity-30">
+                <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </motion.div>
+          </div>
           
           {/* Bottom Gradient Fade */}
-          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background via-background/80 to-transparent z-10 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background via-background/90 to-transparent z-10 pointer-events-none"></div>
 
-          <ScrollArea className="h-full px-4 sm:px-6" style={{ maxHeight: 'calc(95vh - 240px)' }}>
-            <div className="pt-4 pb-4">
+          <ScrollArea className="h-full px-4 sm:px-6 custom-scrollbar-advanced" style={{ maxHeight: 'calc(95vh - 240px)' }}>
+            <div className="pt-6 pb-6 space-y-3">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="relative">
