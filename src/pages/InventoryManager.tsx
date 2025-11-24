@@ -269,17 +269,47 @@ const InventoryManager = () => {
   const startBarcodeScanner = () => {
     setScanDialogOpen(true);
     setTimeout(() => {
-      const scanner = new Html5QrcodeScanner("barcode-reader", {
-        fps: 10,
-        qrbox: { width: 250, height: 250 }
-      }, false);
+      const scanner = new Html5QrcodeScanner(
+        "barcode-reader",
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        false
+      );
 
       scanner.render(
         async (decodedText) => {
           toast.success(`Scanned: ${decodedText}`);
           scanner.clear();
           setScanDialogOpen(false);
-          
+
+          // If this is a QR code pointing to one of our app routes, navigate there
+          let targetPath: string | null = null;
+
+          try {
+            if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
+              const url = new URL(decodedText);
+              const pathname = url.pathname;
+
+              if (pathname.startsWith("/scan-transfer/")) {
+                targetPath = pathname;
+              } else if (pathname.startsWith("/scan-receive/")) {
+                targetPath = pathname;
+              } else if (pathname.startsWith("/scan-access/")) {
+                targetPath = pathname;
+              }
+            }
+          } catch (error) {
+            console.warn("Invalid QR URL:", error);
+          }
+
+          if (targetPath) {
+            navigate(targetPath);
+            return;
+          }
+
+          // Fallback: treat as FIFO item barcode
           const { data: item } = await supabase
             .from("fifo_items")
             .select("*")
