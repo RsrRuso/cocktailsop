@@ -308,27 +308,46 @@ export default function StaffScheduling() {
         
         // Assign station based on role
         if (title === 'head_bartender') {
-          station = 'Supervising and observing';
+          station = 'Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow';
         } else if (title === 'bar_back') {
-          station = 'Pickups, station opening/closing, garnishes, glassware polishing, refill fridges';
+          station = 'Handle pickups and refills, polish glassware, stock supplies and prepare garnishes';
         } else if (title === 'support') {
-          station = 'Polishing glassware and general support';
-        } else if (title === 'senior_bartender' || title === 'bartender') {
+          station = 'Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance';
+        } else if (title === 'senior_bartender') {
           // Determine if indoor or outdoor based on existing station or alternate
           const isOutdoor = cell.station?.includes('Outdoor');
           
           if (isOutdoor) {
             // Outdoor has 2 operational stations
             const stationNum = (outdoorBartenderCount % 2) + 1;
-            station = `Outdoor - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+            station = `Outdoor - Station ${stationNum}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
             outdoorBartenderCount++;
           } else {
             // Indoor has 3 stations: 1, 2 operational, 3 garnishing
             const stationNum = (indoorBartenderCount % 3) + 1;
             if (stationNum === 3) {
-              station = 'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain';
+              station = 'Indoor - Garnishing Station 3: Work behind assigned bar station, train junior staff members, ensure health and safety compliance';
             } else {
-              station = `Indoor - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+              station = `Indoor - Station ${stationNum}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
+            }
+            indoorBartenderCount++;
+          }
+        } else if (title === 'bartender') {
+          // Determine if indoor or outdoor based on existing station or alternate
+          const isOutdoor = cell.station?.includes('Outdoor');
+          
+          if (isOutdoor) {
+            // Outdoor has 2 operational stations
+            const stationNum = (outdoorBartenderCount % 2) + 1;
+            station = `Outdoor - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
+            outdoorBartenderCount++;
+          } else {
+            // Indoor has 3 stations: 1, 2 operational, 3 garnishing
+            const stationNum = (indoorBartenderCount % 3) + 1;
+            if (stationNum === 3) {
+              station = 'Indoor - Garnishing Station 3: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards';
+            } else {
+              station = `Indoor - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
             }
             indoorBartenderCount++;
           }
@@ -952,7 +971,7 @@ export default function StaffScheduling() {
           day,
           timeRange,
           type,
-          station: 'Supervising and observing'
+          station: 'Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow'
         };
         assignedStaffIds.add(schedule.staff.id);
       });
@@ -1009,9 +1028,9 @@ export default function StaffScheduling() {
         const stationNum = (indoorBartenderCount % 3) + 1;
         let station = '';
         if (stationNum === 3) {
-          station = 'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain';
+          station = 'Indoor - Garnishing Station 3: Work behind assigned bar station, train junior staff members, ensure health and safety compliance';
         } else {
-          station = `Indoor - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+          station = `Indoor - Station ${stationNum}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
         }
         indoorBartenderCount++;
         
@@ -1063,14 +1082,14 @@ export default function StaffScheduling() {
         if (isIndoor) {
           const stationNum = (indoorBartenderCount % 3) + 1;
           if (stationNum === 3) {
-            station = 'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain';
+            station = 'Indoor - Garnishing Station 3: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards';
           } else {
-            station = `Indoor - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+            station = `Indoor - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
           }
           indoorBartenderCount++;
         } else {
           const stationNum = (outdoorBartenderCount % 2) + 1;
-          station = `Outdoor - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+          station = `Outdoor - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
           outdoorBartenderCount++;
         }
         
@@ -1139,7 +1158,7 @@ export default function StaffScheduling() {
           day,
           timeRange,
           type,
-          station: 'Pickups, station opening/closing, garnishes, glassware polishing, refill fridges'
+          station: 'Handle pickups and refills, polish glassware, stock supplies and prepare garnishes'
         };
         assignedStaffIds.add(schedule.staff.id);
       });
@@ -1173,7 +1192,7 @@ export default function StaffScheduling() {
           day,
           timeRange: '3:00 PM - 1:00 AM',
           type: 'regular',
-          station: 'Polishing glassware and general support'
+          station: 'Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance'
         };
         assignedStaffIds.add(schedule.staff.id);
       });
