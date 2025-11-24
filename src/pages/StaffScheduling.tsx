@@ -3166,7 +3166,7 @@ export default function StaffScheduling() {
                               <SelectTrigger className="text-[9px] h-6 bg-gray-900 border-gray-700 text-gray-100 px-1">
                                 <SelectValue placeholder="Time" />
                               </SelectTrigger>
-                              <SelectContent className="bg-gray-900 border-gray-700 z-50">
+                              <SelectContent className="bg-popover border-gray-700 z-[9999]">
                                 <SelectItem value="OFF" className="text-gray-100 text-[10px]">OFF</SelectItem>
                                 <SelectItem value="11:00 AM - 8:00 PM" className="text-gray-100 text-[10px]">11:00 AM - 8:00 PM</SelectItem>
                                 <SelectItem value="12:00 PM - 9:00 PM" className="text-gray-100 text-[10px]">12:00 PM - 9:00 PM</SelectItem>
@@ -3224,7 +3224,7 @@ export default function StaffScheduling() {
                                 <SelectTrigger className="text-[8px] h-5 bg-gray-800 border-gray-600 text-gray-100 px-1 mt-0.5">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="bg-gray-900 border-gray-700 z-50">
+                                <SelectContent className="bg-popover border-gray-700 z-[9999]">
                                   <SelectItem value="indoor" className="text-gray-100 text-[9px]">🏠 Indoor</SelectItem>
                                   <SelectItem value="outdoor" className="text-gray-100 text-[9px]">🌳 Outdoor</SelectItem>
                                 </SelectContent>
@@ -3248,7 +3248,7 @@ export default function StaffScheduling() {
                                   <SelectTrigger className="text-[7px] h-4 bg-orange-500/10 border-orange-500/30 px-0.5">
                                     <SelectValue placeholder="Break Start" />
                                   </SelectTrigger>
-                                  <SelectContent className="bg-gray-900 border-gray-700 z-[100]">
+                                  <SelectContent className="bg-popover border-gray-700 z-[9999]">
                                     <SelectItem value="5:00 PM" className="text-gray-100 text-[9px]">5:00 PM</SelectItem>
                                     <SelectItem value="5:30 PM" className="text-gray-100 text-[9px]">5:30 PM</SelectItem>
                                     <SelectItem value="6:00 PM" className="text-gray-100 text-[9px]">6:00 PM</SelectItem>
@@ -3267,7 +3267,7 @@ export default function StaffScheduling() {
                                   <SelectTrigger className="text-[7px] h-4 bg-orange-500/10 border-orange-500/30 px-0.5">
                                     <SelectValue placeholder="Break End" />
                                   </SelectTrigger>
-                                  <SelectContent className="bg-gray-900 border-gray-700 z-[100]">
+                                  <SelectContent className="bg-popover border-gray-700 z-[9999]">
                                     <SelectItem value="5:30 PM" className="text-gray-100 text-[9px]">5:30 PM</SelectItem>
                                     <SelectItem value="6:00 PM" className="text-gray-100 text-[9px]">6:00 PM</SelectItem>
                                     <SelectItem value="6:30 PM" className="text-gray-100 text-[9px]">6:30 PM</SelectItem>
