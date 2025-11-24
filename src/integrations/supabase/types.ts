@@ -3639,6 +3639,7 @@ export type Database = {
       }
       staff_members: {
         Row: {
+          area_allocation: string | null
           break_timings: Json | null
           created_at: string | null
           email: string | null
@@ -3653,6 +3654,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          area_allocation?: string | null
           break_timings?: Json | null
           created_at?: string | null
           email?: string | null
@@ -3667,6 +3669,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          area_allocation?: string | null
           break_timings?: Json | null
           created_at?: string | null
           email?: string | null
