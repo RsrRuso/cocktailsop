@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InAppNotificationProvider } from "@/contexts/InAppNotificationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -12,6 +12,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { usePageTransition } from "@/hooks/usePageTransition";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 // Eager load ONLY index/landing/auth (no user data)
 import Index from "./pages/Index";
@@ -122,6 +123,15 @@ const PageLoader = () => (
 // Wrapper component inside Router to use routing hooks
 const AppContent = () => {
   usePageTransition(); // Now inside Router context
+  const { requestPermission } = usePushNotifications();
+  
+  useEffect(() => {
+    // Request notification permission on app load
+    const initNotifications = async () => {
+      await requestPermission();
+    };
+    initNotifications();
+  }, [requestPermission]);
   
   return (
     <>
