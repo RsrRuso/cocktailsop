@@ -994,9 +994,9 @@ export default function StaffScheduling() {
         };
       });
       
-      // Track station assignments for indoor/outdoor
-      let indoorBartenderCount = 0;
-      let outdoorBartenderCount = 0;
+      // Track available stations for indoor/outdoor (ensures no duplicates)
+      const availableIndoorStations = [1, 2, 3];
+      const availableOutdoorStations = [1, 2];
       
       // SENIOR BARTENDERS get station assignments (indoor stations)
       shuffledWorkingSeniorBartenders.forEach((schedule) => {
@@ -1028,25 +1028,28 @@ export default function StaffScheduling() {
           type = 'late_shift';
         }
         
-        // Assign indoor station (rotate based on date and staff name)
-        const rotationHash = (dateStr + schedule.staff.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const stationNum = ((rotationHash + indoorBartenderCount) % 3) + 1;
-        let station = '';
-        if (stationNum === 3) {
-          station = 'Indoor - Garnishing Station 3: Work behind assigned bar station, train junior staff members, ensure health and safety compliance';
-        } else {
-          station = `Indoor - Station ${stationNum}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
+        // Assign indoor station from available pool (rotation determines which available station to pick)
+        if (availableIndoorStations.length > 0) {
+          const rotationHash = (dateStr + schedule.staff.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const stationIndex = rotationHash % availableIndoorStations.length;
+          const stationNum = availableIndoorStations.splice(stationIndex, 1)[0];
+          
+          let station = '';
+          if (stationNum === 3) {
+            station = 'Indoor - Garnishing Station 3: Work behind assigned bar station, train junior staff members, ensure health and safety compliance';
+          } else {
+            station = `Indoor - Station ${stationNum}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
+          }
+          
+          newSchedule[key] = {
+            staffId: schedule.staff.id,
+            day,
+            timeRange,
+            type,
+            station
+          };
+          assignedStaffIds.add(schedule.staff.id);
         }
-        indoorBartenderCount++;
-        
-        newSchedule[key] = {
-          staffId: schedule.staff.id,
-          day,
-          timeRange,
-          type,
-          station
-        };
-        assignedStaffIds.add(schedule.staff.id);
       });
       
       // REGULAR BARTENDERS get station assignments (alternate between indoor and outdoor)
@@ -1079,25 +1082,29 @@ export default function StaffScheduling() {
           type = 'late_shift';
         }
         
-        // Alternate between indoor and outdoor stations
-        // Even index = indoor, odd index = outdoor
-        const isIndoor = idx % 2 === 0;
+        // Alternate between indoor and outdoor stations based on available capacity
         let station = '';
         
-        if (isIndoor) {
+        // Try to assign to available stations (prefer balancing indoor/outdoor)
+        if (availableIndoorStations.length > 0 && (availableOutdoorStations.length === 0 || idx % 2 === 0)) {
           const rotationHash = (dateStr + schedule.staff.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-          const stationNum = ((rotationHash + indoorBartenderCount) % 3) + 1;
+          const stationIndex = rotationHash % availableIndoorStations.length;
+          const stationNum = availableIndoorStations.splice(stationIndex, 1)[0];
+          
           if (stationNum === 3) {
             station = 'Indoor - Garnishing Station 3: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards';
           } else {
             station = `Indoor - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
           }
-          indoorBartenderCount++;
-        } else {
+        } else if (availableOutdoorStations.length > 0) {
           const rotationHash = (dateStr + schedule.staff.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-          const stationNum = ((rotationHash + outdoorBartenderCount) % 2) + 1;
+          const stationIndex = rotationHash % availableOutdoorStations.length;
+          const stationNum = availableOutdoorStations.splice(stationIndex, 1)[0];
+          
           station = `Outdoor - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
-          outdoorBartenderCount++;
+        } else {
+          // Fallback if all stations are taken
+          station = 'Support: Assist with bar operations as needed';
         }
         
         newSchedule[key] = {
@@ -2571,6 +2578,10 @@ export default function StaffScheduling() {
                 // Calculate the actual date for this day
                 const dayDate = addDays(new Date(weekStartDate), dayIndex);
                 
+                // Track available stations for unique assignments
+                const availableIndoorStations = [1, 2, 3];
+                const availableOutdoorStations = [1, 2];
+                
                 const indoorStaff = sortedIndoor.map(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
                   let displayStation = s.station;
@@ -2583,14 +2594,18 @@ export default function StaffScheduling() {
                         break;
                       case 'senior_bartender':
                       case 'bartender': {
-                        const dateStr = dayDate.toISOString().split('T')[0];
-                        const rotationHash = (dateStr + (staff?.name || s.staffId)).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                        const bartenderIndex = sortedIndoor.filter(st => {
-                          const stf = staffMembers.find(sm => sm.id === st.staffId);
-                          return stf?.title === 'senior_bartender' || stf?.title === 'bartender';
-                        }).indexOf(s);
-                        const stationNum = ((rotationHash + bartenderIndex) % 3) + 1;
-                        displayStation = `Indoor - Station ${stationNum}: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members' : 'supervise bar backs'}, ${staff.title === 'senior_bartender' ? 'ensure health and safety compliance' : 'maintain hygiene and service standards'}`;
+                        // Use rotation to pick from available stations (ensures uniqueness)
+                        if (availableIndoorStations.length > 0) {
+                          const dateStr = dayDate.toISOString().split('T')[0];
+                          const rotationHash = (dateStr + (staff?.name || s.staffId)).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                          const stationIndex = rotationHash % availableIndoorStations.length;
+                          const stationNum = availableIndoorStations.splice(stationIndex, 1)[0];
+                          displayStation = stationNum === 3 
+                            ? `Indoor - Garnishing Station 3: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members' : 'supervise bar backs'}, ${staff.title === 'senior_bartender' ? 'ensure health and safety compliance' : 'maintain hygiene and service standards'}`
+                            : `Indoor - Station ${stationNum}: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members' : 'supervise bar backs'}, ${staff.title === 'senior_bartender' ? 'ensure health and safety compliance' : 'maintain hygiene and service standards'}`;
+                        } else {
+                          displayStation = "Support: Assist with bar operations as needed";
+                        }
                         break;
                       }
                       case 'bar_back':
@@ -2621,14 +2636,16 @@ export default function StaffScheduling() {
                         break;
                       case 'senior_bartender':
                       case 'bartender': {
-                        const dateStr = dayDate.toISOString().split('T')[0];
-                        const rotationHash = (dateStr + (staff?.name || s.staffId)).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                        const bartenderIndex = sortedOutdoor.filter(st => {
-                          const stf = staffMembers.find(sm => sm.id === st.staffId);
-                          return stf?.title === 'senior_bartender' || stf?.title === 'bartender';
-                        }).indexOf(s);
-                        const stationNum = ((rotationHash + bartenderIndex) % 2) + 1;
-                        displayStation = `Outdoor - Station ${stationNum}: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members' : 'supervise bar backs'}, ${staff.title === 'senior_bartender' ? 'ensure health and safety compliance' : 'maintain hygiene and service standards'}`;
+                        // Use rotation to pick from available stations (ensures uniqueness)
+                        if (availableOutdoorStations.length > 0) {
+                          const dateStr = dayDate.toISOString().split('T')[0];
+                          const rotationHash = (dateStr + (staff?.name || s.staffId)).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                          const stationIndex = rotationHash % availableOutdoorStations.length;
+                          const stationNum = availableOutdoorStations.splice(stationIndex, 1)[0];
+                          displayStation = `Outdoor - Station ${stationNum}: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members' : 'supervise bar backs'}, ${staff.title === 'senior_bartender' ? 'ensure health and safety compliance' : 'maintain hygiene and service standards'}`;
+                        } else {
+                          displayStation = "Support: Assist with bar operations as needed";
+                        }
                         break;
                       }
                       case 'bar_back':
