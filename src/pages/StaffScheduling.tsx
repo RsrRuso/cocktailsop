@@ -2174,7 +2174,7 @@ export default function StaffScheduling() {
                                 <SelectTrigger>
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="z-[9999] bg-popover">
                                   <SelectItem value="head_bartender">Head Bartender</SelectItem>
                                   <SelectItem value="senior_bartender">Senior Bartender</SelectItem>
                                   <SelectItem value="bartender">Bartender</SelectItem>
@@ -2196,7 +2196,7 @@ export default function StaffScheduling() {
                                   <SelectTrigger>
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="z-[9999] bg-popover">
                                     <SelectItem value="indoor">Indoor</SelectItem>
                                     <SelectItem value="outdoor">Outdoor</SelectItem>
                                   </SelectContent>
@@ -2248,7 +2248,7 @@ export default function StaffScheduling() {
                                   <SelectTrigger>
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="z-[9999] bg-popover">
                                     <SelectItem value="head_bartender">Head Bartender</SelectItem>
                                     <SelectItem value="senior_bartender">Senior Bartender</SelectItem>
                                     <SelectItem value="bartender">Bartender</SelectItem>
@@ -2270,7 +2270,7 @@ export default function StaffScheduling() {
                                     <SelectTrigger>
                                       <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="z-[9999] bg-popover">
                                       <SelectItem value="indoor">Indoor</SelectItem>
                                       <SelectItem value="outdoor">Outdoor</SelectItem>
                                     </SelectContent>
