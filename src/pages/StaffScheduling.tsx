@@ -2184,7 +2184,7 @@ export default function StaffScheduling() {
                                 {ROLE_RESPONSIBILITIES[newStaff.title]}
                               </p>
                             </div>
-                            {(newStaff.title === 'bartender' || newStaff.title === 'senior_bartender' || newStaff.title === 'bar_back') && (
+                            {(newStaff.title === 'head_bartender' || newStaff.title === 'bartender' || newStaff.title === 'senior_bartender' || newStaff.title === 'bar_back' || newStaff.title === 'support') && (
                               <div>
                                 <Label>Area Allocation</Label>
                                 <Select
@@ -2258,7 +2258,7 @@ export default function StaffScheduling() {
                                   {ROLE_RESPONSIBILITIES[editingStaff.title]}
                                 </p>
                               </div>
-                              {(editingStaff.title === 'bartender' || editingStaff.title === 'senior_bartender' || editingStaff.title === 'bar_back') && (
+                              {(editingStaff.title === 'head_bartender' || editingStaff.title === 'bartender' || editingStaff.title === 'senior_bartender' || editingStaff.title === 'bar_back' || editingStaff.title === 'support') && (
                                 <div>
                                   <Label>Area Allocation</Label>
                                   <Select
