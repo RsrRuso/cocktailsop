@@ -4,31 +4,32 @@ import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FeedItem } from "@/components/FeedItem";
-import CommentsDialog from "@/components/CommentsDialog";
-import LikesDialog from "@/components/LikesDialog";
+import UnifiedCommentsDialog from "@/components/unified/UnifiedCommentsDialog";
+import UnifiedLikesDialog from "@/components/unified/UnifiedLikesDialog";
 import ShareDialog from "@/components/ShareDialog";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "sonner";
+import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
 
 const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [post, setPost] = useState<any>(null);
-  const [isLiked, setIsLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showComments, setShowComments] = useState(false);
   const [showLikes, setShowLikes] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [mutedVideos] = useState(new Set<string>());
+  
+  // Use unified engagement hook
+  const { likedItems, toggleLike } = useUnifiedEngagement('post', user?.id);
+  const isLiked = id ? likedItems.has(id) : false;
 
   useEffect(() => {
     if (id) {
       fetchPost();
-      if (user) {
-        checkIfLiked();
-      }
     }
 
     // Real-time subscription for post updates (like/comment counts)
@@ -56,7 +57,7 @@ const PostDetail = () => {
     return () => {
       supabase.removeChannel(postChannel);
     };
-  }, [id, user]);
+  }, [id]);
 
   const fetchPost = async () => {
     const { data, error } = await supabase
@@ -85,52 +86,9 @@ const PostDetail = () => {
     setIsLoading(false);
   };
 
-  const checkIfLiked = async () => {
-    if (!user) return;
-    
-    const { data } = await supabase
-      .from("post_likes")
-      .select("id")
-      .eq("post_id", id)
-      .eq("user_id", user.id)
-      .single();
-
-    setIsLiked(!!data);
-  };
-
-  const handleLike = async () => {
-    if (!user) {
-      toast.error("Please sign in to like posts");
-      return;
-    }
-
-    const wasLiked = isLiked;
-    
-    // Optimistic UI update - database trigger handles the count
-    setIsLiked(!wasLiked);
-
-    try {
-      if (wasLiked) {
-        const { error } = await supabase
-          .from("post_likes")
-          .delete()
-          .eq("post_id", id)
-          .eq("user_id", user.id);
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("post_likes")
-          .insert({ post_id: id, user_id: user.id });
-        
-        // Ignore duplicate key errors - already liked
-        if (error && error.code !== '23505') throw error;
-      }
-    } catch (error: any) {
-      console.error('Error toggling like:', error);
-      // Revert on error
-      setIsLiked(wasLiked);
-      toast.error('Failed to update like');
+  const handleLike = () => {
+    if (id) {
+      toggleLike(id);
     }
   };
 
@@ -211,10 +169,11 @@ const PostDetail = () => {
       </div>
 
       {showComments && (
-        <CommentsDialog
+        <UnifiedCommentsDialog
           open={showComments}
           onOpenChange={setShowComments}
-          postId={post.id}
+          contentType="post"
+          contentId={post.id}
           onCommentChange={() => {
             fetchPost();
           }}
@@ -222,10 +181,11 @@ const PostDetail = () => {
       )}
 
       {showLikes && (
-        <LikesDialog
+        <UnifiedLikesDialog
           open={showLikes}
           onOpenChange={setShowLikes}
-          postId={post.id}
+          contentType="post"
+          contentId={post.id}
         />
       )}
 
