@@ -179,9 +179,8 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
 
     const wasAttending = isAttending;
     
-    // Optimistic update
+    // Optimistic UI update only - database trigger handles the count
     setIsAttending(!wasAttending);
-    setAttendeeCount(prev => wasAttending ? Math.max(0, prev - 1) : prev + 1);
 
     try {
       if (wasAttending) {
@@ -215,9 +214,8 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
       }
     } catch (error: any) {
       console.error('Error toggling attendance:', error);
-      // Revert on error
+      // Revert UI state only - database trigger handles counts
       setIsAttending(wasAttending);
-      setAttendeeCount(prev => wasAttending ? prev + 1 : Math.max(0, prev - 1));
       toast.error('Failed to update attendance');
     }
   };
@@ -243,7 +241,7 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
         ...data,
         reactions: (data.reactions as unknown as Array<{ emoji: string; user_id: string }>) || []
       } as Comment]);
-      setCommentCount(prev => prev + 1);
+      // Database trigger handles count update
       setNewComment('');
       setReplyToId(null);
       
@@ -326,7 +324,7 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
 
     if (!error) {
       setComments(prev => prev.filter(c => c.id !== commentId));
-      setCommentCount(prev => Math.max(0, prev - 1));
+      // Database trigger handles count update
       toast.success('Comment deleted!');
     } else {
       toast.error('Failed to delete comment');
