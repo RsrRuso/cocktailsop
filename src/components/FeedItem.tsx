@@ -57,11 +57,10 @@ export const FeedItem = memo(({
   useViewTracking('post', item.id, currentUserId, true);
 
   return (
-    <div className="relative bg-transparent backdrop-blur-xl rounded-2xl border-2 border-white/20 hover:border-white/30 transition-all duration-300 overflow-hidden mb-4">
-        
-        <div className="relative p-4 space-y-4">
-          {/* Enhanced Header */}
-          <div className="flex items-center gap-3">
+    <div className="relative bg-black w-full">
+      {/* Top Header Section */}
+      <div className="relative p-4 bg-transparent backdrop-blur-xl border-b-2 border-white/10">
+        <div className="flex items-center gap-3">
             <div 
               className="relative cursor-pointer"
               onClick={() => navigate(`/user/${item.user_id}`)}
@@ -124,58 +123,62 @@ export const FeedItem = memo(({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
+        </div>
       </div>
 
-      {/* Content */}
-      {'content' in item && item.content && (
-        <p className="text-sm px-2">{item.content}</p>
-      )}
+      {/* Content - Full Width */}
+      <div className="relative w-full">
+        {'content' in item && item.content && (
+          <p className="text-sm px-4 py-3 text-white bg-black/50">{item.content}</p>
+        )}
 
-      {/* Media */}
-      {item.media_urls && item.media_urls.length > 0 && (
-        <div className={`grid gap-1 ${item.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-          {item.media_urls.map((url: string, idx: number) => (
-            <div key={idx} className="relative rounded-xl overflow-hidden">
-              {url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('audio') ? (
-                <div className="bg-primary/10 rounded-xl p-4">
-                  <audio src={url} controls className="w-full" />
-                </div>
-              ) : item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
-                <div className="relative">
-                  <LazyVideo
+        {/* Media - Full Screen */}
+        {item.media_urls && item.media_urls.length > 0 && (
+          <div className="w-full">
+            {item.media_urls.map((url: string, idx: number) => (
+              <div key={idx} className="relative w-full">
+                {url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('audio') ? (
+                  <div className="bg-black p-4">
+                    <audio src={url} controls className="w-full" />
+                  </div>
+                ) : item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
+                  <div className="relative w-full">
+                    <LazyVideo
+                      src={url}
+                      muted={!mutedVideos.has(item.id + url)}
+                      className="w-full h-auto object-cover"
+                    />
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleMute(item.id + url);
+                      }}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
+                    >
+                      {mutedVideos.has(item.id + url) ? (
+                        <Volume2 className="w-4 h-4 text-white" />
+                      ) : (
+                        <VolumeX className="w-4 h-4 text-white" />
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <LazyImage
                     src={url}
-                    muted={!mutedVideos.has(item.id + url)}
-                    className="w-full h-auto min-h-[400px] max-h-[600px] object-cover rounded-xl"
+                    alt="Post media"
+                    className="w-full h-auto object-cover"
                   />
-                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleMute(item.id + url);
-                    }}
-                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
-                  >
-                    {mutedVideos.has(item.id + url) ? (
-                      <Volume2 className="w-4 h-4 text-white" />
-                    ) : (
-                      <VolumeX className="w-4 h-4 text-white" />
-                    )}
-                  </button>
-                </div>
-              ) : (
-                <LazyImage
-                  src={url}
-                  alt="Post media"
-                  className="w-full h-auto object-cover"
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-          {/* Enhanced Actions Bar - Glassy Transparent with Contours */}
-          <div className="flex items-center gap-3 pt-2 border-t-2 border-white/20">
+      {/* Bottom Action Bar - Glassy Transparent with Contours */}
+      <div className="relative p-4 bg-transparent backdrop-blur-xl border-t-2 border-white/10">
+        <div className="flex items-center gap-3">
             {/* Like Button */}
             <button
                 onClick={onLike}
