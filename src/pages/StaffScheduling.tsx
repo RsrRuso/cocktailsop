@@ -25,6 +25,7 @@ interface StaffMember {
   name: string;
   title: 'head_bartender' | 'senior_bartender' | 'bartender' | 'bar_back' | 'support';
   email?: string | null;
+  area_allocation?: 'indoor' | 'outdoor';
   breakTimings?: {
     firstWaveStart: string;
     firstWaveEnd: string;
@@ -88,6 +89,7 @@ export default function StaffScheduling() {
     name: '',
     title: 'bartender' as StaffMember['title'],
     email: '',
+    area_allocation: 'indoor' as 'indoor' | 'outdoor',
   });
   
   const [editingStaff, setEditingStaff] = useState<{
@@ -95,6 +97,7 @@ export default function StaffScheduling() {
     name: string;
     title: StaffMember['title'];
     email: string;
+    area_allocation: 'indoor' | 'outdoor';
   } | null>(null);
   const [isEditStaffOpen, setIsEditStaffOpen] = useState(false);
 
@@ -413,6 +416,7 @@ export default function StaffScheduling() {
         name: newStaff.name,
         title: newStaff.title,
         email: newStaff.email,
+        area_allocation: newStaff.area_allocation,
         invitation_status: 'pending',
       });
 
@@ -422,7 +426,7 @@ export default function StaffScheduling() {
     }
 
     toast.success('Staff member added successfully');
-    setNewStaff({ name: '', title: 'bartender', email: '' });
+    setNewStaff({ name: '', title: 'bartender', email: '', area_allocation: 'indoor' });
     setIsAddStaffOpen(false);
     fetchStaffMembers();
   };
@@ -453,6 +457,7 @@ export default function StaffScheduling() {
         name: editingStaff.name,
         title: editingStaff.title,
         email: editingStaff.email,
+        area_allocation: editingStaff.area_allocation,
       })
       .eq('id', editingStaff.id);
 
@@ -998,7 +1003,7 @@ export default function StaffScheduling() {
       const availableIndoorStations = [1, 2, 3];
       const availableOutdoorStations = [1, 2];
       
-      // SENIOR BARTENDERS get station assignments (indoor stations)
+      // SENIOR BARTENDERS get station assignments based on their area allocation
       shuffledWorkingSeniorBartenders.forEach((schedule) => {
         const key = `${schedule.staff.id}-${day}`;
         
@@ -1028,19 +1033,33 @@ export default function StaffScheduling() {
           type = 'late_shift';
         }
         
-        // Assign indoor station from available pool (rotation determines which available station to pick)
-        if (availableIndoorStations.length > 0) {
+        // Get staff member's area allocation
+        const staffMember = staffMembers.find(s => s.id === schedule.staff.id);
+        const areaAllocation = staffMember?.area_allocation || 'indoor';
+        
+        // Assign station based on area allocation
+        let station = '';
+        if (areaAllocation === 'indoor' && availableIndoorStations.length > 0) {
           const rotationHash = (dateStr + schedule.staff.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
           const stationIndex = rotationHash % availableIndoorStations.length;
           const stationNum = availableIndoorStations.splice(stationIndex, 1)[0];
           
-          let station = '';
           if (stationNum === 3) {
             station = 'Indoor - Garnishing Station 3: Work behind assigned bar station, train junior staff members, ensure health and safety compliance';
           } else {
             station = `Indoor - Station ${stationNum}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
           }
+        } else if (areaAllocation === 'outdoor' && availableOutdoorStations.length > 0) {
+          const rotationHash = (dateStr + schedule.staff.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const stationIndex = rotationHash % availableOutdoorStations.length;
+          const stationNum = availableOutdoorStations.splice(stationIndex, 1)[0];
           
+          station = `Outdoor - Station ${stationNum}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
+        } else {
+          station = 'Support: Assist with bar operations as needed';
+        }
+        
+        if (station) {
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
@@ -1052,7 +1071,7 @@ export default function StaffScheduling() {
         }
       });
       
-      // REGULAR BARTENDERS get station assignments (alternate between indoor and outdoor)
+      // REGULAR BARTENDERS get station assignments based on their area allocation
       shuffledWorkingBartenders.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
@@ -1082,11 +1101,13 @@ export default function StaffScheduling() {
           type = 'late_shift';
         }
         
-        // Alternate between indoor and outdoor stations based on available capacity
-        let station = '';
+        // Get staff member's area allocation
+        const staffMember = staffMembers.find(s => s.id === schedule.staff.id);
+        const areaAllocation = staffMember?.area_allocation || 'indoor';
         
-        // Try to assign to available stations (prefer balancing indoor/outdoor)
-        if (availableIndoorStations.length > 0 && (availableOutdoorStations.length === 0 || idx % 2 === 0)) {
+        // Assign station based on area allocation
+        let station = '';
+        if (areaAllocation === 'indoor' && availableIndoorStations.length > 0) {
           const rotationHash = (dateStr + schedule.staff.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
           const stationIndex = rotationHash % availableIndoorStations.length;
           const stationNum = availableIndoorStations.splice(stationIndex, 1)[0];
@@ -1096,14 +1117,13 @@ export default function StaffScheduling() {
           } else {
             station = `Indoor - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
           }
-        } else if (availableOutdoorStations.length > 0) {
+        } else if (areaAllocation === 'outdoor' && availableOutdoorStations.length > 0) {
           const rotationHash = (dateStr + schedule.staff.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
           const stationIndex = rotationHash % availableOutdoorStations.length;
           const stationNum = availableOutdoorStations.splice(stationIndex, 1)[0];
           
           station = `Outdoor - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
         } else {
-          // Fallback if all stations are taken
           station = 'Support: Assist with bar operations as needed';
         }
         
@@ -2164,6 +2184,26 @@ export default function StaffScheduling() {
                                 {ROLE_RESPONSIBILITIES[newStaff.title]}
                               </p>
                             </div>
+                            {(newStaff.title === 'bartender' || newStaff.title === 'senior_bartender' || newStaff.title === 'bar_back') && (
+                              <div>
+                                <Label>Area Allocation</Label>
+                                <Select
+                                  value={newStaff.area_allocation}
+                                  onValueChange={(value) => setNewStaff({ ...newStaff, area_allocation: value as 'indoor' | 'outdoor' })}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="indoor">Indoor</SelectItem>
+                                    <SelectItem value="outdoor">Outdoor</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Assign this staff member to indoor or outdoor bar area
+                                </p>
+                              </div>
+                            )}
                             <Button onClick={addStaffMember} className="w-full">Add Staff Member</Button>
                           </div>
                         </DialogContent>
@@ -2218,6 +2258,26 @@ export default function StaffScheduling() {
                                   {ROLE_RESPONSIBILITIES[editingStaff.title]}
                                 </p>
                               </div>
+                              {(editingStaff.title === 'bartender' || editingStaff.title === 'senior_bartender' || editingStaff.title === 'bar_back') && (
+                                <div>
+                                  <Label>Area Allocation</Label>
+                                  <Select
+                                    value={editingStaff.area_allocation}
+                                    onValueChange={(value) => setEditingStaff({ ...editingStaff, area_allocation: value as 'indoor' | 'outdoor' })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="indoor">Indoor</SelectItem>
+                                      <SelectItem value="outdoor">Outdoor</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Assign this staff member to indoor or outdoor bar area
+                                  </p>
+                                </div>
+                              )}
                               <Button onClick={updateStaffMember} className="w-full">Update Staff Member</Button>
                             </div>
                           )}
@@ -2253,6 +2313,7 @@ export default function StaffScheduling() {
                                       name: staff.name,
                                       title: staff.title,
                                       email: staff.email || '',
+                                      area_allocation: staff.area_allocation || 'indoor',
                                     });
                                     setIsEditStaffOpen(true);
                                   }}
@@ -2300,6 +2361,7 @@ export default function StaffScheduling() {
                                       name: staff.name,
                                       title: staff.title,
                                       email: staff.email || '',
+                                      area_allocation: staff.area_allocation || 'indoor',
                                     });
                                     setIsEditStaffOpen(true);
                                   }}
@@ -2537,23 +2599,25 @@ export default function StaffScheduling() {
                 const working = daySchedule.filter(s => s.timeRange !== 'OFF');
                 const off = daySchedule.filter(s => s.timeRange === 'OFF');
                 
-                // Categorize by area - ENSURE NO DOUBLE COUNTING (each person in ONE area only)
+                // Categorize by area based on staff member area_allocation
                 const indoor = working.filter(s => {
-                  const station = s.station || '';
-                  // Match "Indoor" in station name
-                  return station.toLowerCase().includes('indoor');
+                  const staff = staffMembers.find(sm => sm.id === s.staffId);
+                  const areaAllocation = staff?.area_allocation || 'indoor';
+                  // Head bartenders and support staff default to indoor
+                  if (staff?.title === 'head_bartender' || staff?.title === 'support') {
+                    return true;
+                  }
+                  return areaAllocation === 'indoor';
                 });
                 const outdoor = working.filter(s => {
-                  const station = s.station || '';
-                  // Match "Outdoor" in station name
-                  return station.toLowerCase().includes('outdoor');
+                  const staff = staffMembers.find(sm => sm.id === s.staffId);
+                  const areaAllocation = staff?.area_allocation || 'indoor';
+                  // Head bartenders and support are not outdoor-specific
+                  if (staff?.title === 'head_bartender' || staff?.title === 'support') {
+                    return false;
+                  }
+                  return areaAllocation === 'outdoor';
                 });
-                
-                // Get IDs that are already categorized
-                const categorizedIds = new Set([...indoor, ...outdoor].map(s => s.staffId));
-                
-                // Catch any working staff not categorized - assign to indoor by default
-                const uncategorized = working.filter(s => !categorizedIds.has(s.staffId));
                 
                 // Get staff details - SORT BY ROLE (Head first)
                 const sortStaffByRole = (staffList: any[]) => {
@@ -2572,8 +2636,8 @@ export default function StaffScheduling() {
                   });
                 };
 
-                const sortedIndoor = sortStaffByRole([...indoor, ...uncategorized]);
-                const sortedOutdoor = sortStaffByRole([...outdoor]);
+                const sortedIndoor = sortStaffByRole(indoor);
+                const sortedOutdoor = sortStaffByRole(outdoor);
 
                 // Calculate the actual date for this day
                 const dayDate = addDays(new Date(weekStartDate), dayIndex);
