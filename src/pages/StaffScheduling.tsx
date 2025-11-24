@@ -271,52 +271,42 @@ export default function StaffScheduling() {
     DAYS_OF_WEEK.forEach(day => {
       const dayCells = schedulesByDay[day] || [];
       
-      // Separate bartenders with stations from others
-      // Match both "Indoor - Station X" and "Indoor - Garnishing Station 3"
-      const bartendersWithStations = dayCells.filter(cell => {
-        if (!cell.station) return false;
-        const station = cell.station.toLowerCase();
-        // Match any indoor station (including garnishing)
-        return (station.includes('indoor') && station.includes('station') && !station.includes('support'));
+      // Find working bartenders and senior bartenders (not OFF, not head bartenders)
+      const workingBartenders = dayCells.filter(cell => {
+        const staff = staffMembers.find(s => s.id === cell.staffId);
+        if (!staff) return false;
+        
+        const isBartender = staff.title === 'bartender' || staff.title === 'senior_bartender';
+        const isWorking = cell.timeRange !== 'OFF';
+        
+        return isBartender && isWorking;
       });
       
+      // Find all other cells (head bartenders, bar backs, support, off days)
       const otherCells = dayCells.filter(cell => {
-        if (!cell.station) return true;
-        const station = cell.station.toLowerCase();
-        // Include anything that's not an indoor station
-        return !(station.includes('indoor') && station.includes('station') && !station.includes('support'));
+        const staff = staffMembers.find(s => s.id === cell.staffId);
+        if (!staff) return true;
+        
+        const isBartender = staff.title === 'bartender' || staff.title === 'senior_bartender';
+        const isWorking = cell.timeRange !== 'OFF';
+        
+        return !(isBartender && isWorking);
       });
       
-      // Rebuild station assignments with correct numbering
-      const numBartenders = bartendersWithStations.length;
+      // Stations to assign
+      const stations = [
+        'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain'
+      ];
       
-      // Assign stations to bartenders - only 3 stations max
-      bartendersWithStations.forEach((cell: any, idx) => {
-        if (idx === 0) {
-          // First bartender gets Station 1
-          normalized[cell.key] = {
-            ...cell,
-            station: 'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain'
-          };
-        } else if (idx === 1) {
-          // Second bartender gets Station 2
-          normalized[cell.key] = {
-            ...cell,
-            station: 'Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain'
-          };
-        } else if (idx === 2) {
-          // Third bartender gets Garnishing Station 3
-          normalized[cell.key] = {
-            ...cell,
-            station: 'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain'
-          };
-        } else {
-          // Any additional bartenders beyond 3 become support
-          normalized[cell.key] = {
-            ...cell,
-            station: 'Indoor - Support Station 2 or Station 1: Can assist either Station 1 or Station 2'
-          };
-        }
+      // Assign stations to working bartenders - cycle through the 3 stations
+      workingBartenders.forEach((cell: any, idx) => {
+        const stationIdx = idx % 3; // Cycle through 0, 1, 2
+        normalized[cell.key] = {
+          ...cell,
+          station: stations[stationIdx]
+        };
       });
       
       // Add back all other cells unchanged
