@@ -1,9 +1,23 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, TrendingUp, Users, Briefcase } from "lucide-react";
+import { Shield, TrendingUp, Users, Briefcase, Bell } from "lucide-react";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { showNotification } = usePushNotifications();
+
+  const handleTestNotification = async () => {
+    await showNotification(
+      "Test Notification",
+      "This is a test notification with sound! 🔔",
+      {
+        icon: "/icon-192.png",
+        requireInteraction: false,
+        silent: false
+      }
+    );
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -23,6 +37,15 @@ const Landing = () => {
             <span className="text-2xl font-bold text-gradient-primary">SpecVerse</span>
           </div>
           <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleTestNotification}
+              className="text-foreground hover:text-primary"
+              title="Test Notification"
+            >
+              <Bell className="w-5 h-5" />
+            </Button>
             <Button
               variant="ghost"
               onClick={() => navigate("/auth")}
