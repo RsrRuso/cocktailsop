@@ -13,6 +13,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -345,18 +350,16 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="glass z-[60] bg-background/95 backdrop-blur-xl border border-border/50">
-              {/* Region Dropdown Button */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div className="px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <span>{regions.find(r => r.name === (selectedRegion || 'All'))?.flag}</span>
-                      <span>{selectedRegion || 'All'} Region</span>
-                    </span>
-                    <span className="text-xs ml-2">▼</span>
-                  </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="glass z-[70] bg-background/95 backdrop-blur-xl border border-border/50">
+              {/* Region Selector with Collapsible */}
+              <Collapsible>
+                <CollapsibleTrigger className="w-full px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <span>{regions.find(r => r.name === (selectedRegion || 'All'))?.flag}</span>
+                    <span>{selectedRegion || 'All'} Region</span>
+                  </span>
+                  <span className="text-xs">▼</span>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
                   {regions.map((region) => (
                     <DropdownMenuItem
                       key={region.name}
@@ -364,14 +367,14 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                         lightTap(); 
                         handleRegionChange(region.name);
                       }}
-                      className={`cursor-pointer ${selectedRegion === region.name ? 'bg-primary/20 text-primary font-semibold' : ''}`}
+                      className={`cursor-pointer ml-4 ${selectedRegion === region.name ? 'bg-primary/20 text-primary font-semibold' : ''}`}
                     >
                       <span className="mr-2 text-lg">{region.flag}</span>
                       {region.name}
                     </DropdownMenuItem>
                   ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </CollapsibleContent>
+              </Collapsible>
               
               {selectedRegion && (
                 <>
