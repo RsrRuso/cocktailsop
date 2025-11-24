@@ -115,6 +115,27 @@ export default function StaffScheduling() {
     }
   }, [user, currentWorkspace]);
 
+  // Ensure loaded schedules always have station assignments once staff and schedule are available
+  useEffect(() => {
+    if (!user?.id) return;
+    if (staffMembers.length === 0) return;
+    if (Object.keys(schedule).length === 0) return;
+
+    const needsNormalization = Object.values(schedule).some((cell) => {
+      if (cell.timeRange === 'OFF') return false;
+      const staff = staffMembers.find((s) => s.id === cell.staffId);
+      if (!staff) return false;
+      const isBartenderRole = staff.title === 'bartender' || staff.title === 'senior_bartender';
+      if (!isBartenderRole) return false;
+      return !cell.station || !cell.station.includes('Station');
+    });
+
+    if (needsNormalization) {
+      const normalized = normalizeStationAssignments(schedule);
+      setSchedule(normalized);
+    }
+  }, [staffMembers, user]);
+
   const fetchExpiringItems = async () => {
     if (!user?.id) return;
 
@@ -2617,16 +2638,17 @@ export default function StaffScheduling() {
                           {indoorStaff.map((s, idx) => {
                             const responsibility = s.title ? ROLE_RESPONSIBILITIES[s.title] : '';
                             const hasStation = s.station && s.station.includes('Station');
+                            const isStationRole = s.title === 'bartender' || s.title === 'senior_bartender';
                             return (
                               <div key={idx} className="text-gray-300 leading-relaxed">
                                 • <span className={s.title === 'head_bartender' ? 'font-bold text-yellow-400' : ''}>{s.name}</span>
                                 {s.title === 'head_bartender' && <span className="text-[10px] text-yellow-500 ml-1.5">(HEAD)</span>}
                                 {s.title === 'senior_bartender' && <span className="text-[10px] text-blue-400 ml-1.5">(SENIOR)</span>}
                                 <span className="text-gray-500"> ({s.timeRange})</span>
-                                {hasStation && (
+                                {isStationRole && hasStation && (
                                   <div className="text-[11px] text-blue-400/80 pl-4 mt-0.5 break-words">{s.station}</div>
                                 )}
-                                {!hasStation && s.title !== 'head_bartender' && (
+                                {isStationRole && !hasStation && (
                                   <div className="text-[11px] text-red-400/80 pl-4 mt-0.5 break-words font-semibold">
                                     ⚠️ Station assignment missing - regenerate schedule
                                   </div>
