@@ -101,11 +101,8 @@ const Landing = () => {
               <Button
                 size="lg"
                 variant="outline"
-                onClick={() => {
-                  console.log("Learn More clicked");
-                  navigate("/introduction");
-                }}
-                className="glass hover:border-accent/50 w-full sm:w-auto px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg cursor-pointer"
+                onClick={() => navigate("/introduction")}
+                className="glass hover:border-accent/50 w-full sm:w-auto px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg"
               >
                 Learn More
               </Button>
