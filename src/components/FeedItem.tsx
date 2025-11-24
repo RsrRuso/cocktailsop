@@ -6,7 +6,7 @@ import { getProfessionalBadge } from "@/lib/profileUtils";
 import { LazyImage } from "@/components/LazyImage";
 import { LazyVideo } from "@/components/LazyVideo";
 import { useViewTracking } from "@/hooks/useViewTracking";
-import { EngagementInsightsDialog } from "@/components/engagement";
+import { EngagementInsightsDialog, EnhancedLikesDialog, EnhancedCommentsDialog } from "@/components/engagement";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +50,8 @@ export const FeedItem = memo(({
   const professionalBadge = getProfessionalBadge(item.profiles?.professional_title || null);
   const BadgeIcon = professionalBadge.icon;
   const [showInsights, setShowInsights] = useState(false);
+  const [showLikes, setShowLikes] = useState(false);
+  const [showComments, setShowComments] = useState(false);
 
   // Track post views
   useViewTracking('post', item.id, currentUserId, true);
@@ -179,14 +181,14 @@ export const FeedItem = memo(({
             className="text-sm font-bold min-w-[20px] cursor-pointer hover:underline"
             onClick={(e) => {
               e.stopPropagation();
-              onViewLikes();
+              setShowLikes(true);
             }}
           >
             {item.like_count || 0}
           </span>
         </button>
         <button 
-          onClick={onComment}
+          onClick={() => setShowComments(true)}
           className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"
         >
           <MessageCircle className="w-5 h-5" />
@@ -218,7 +220,22 @@ export const FeedItem = memo(({
         </div>
       </div>
 
-      {/* AI Insights Dialog */}
+      {/* Enhanced Dialogs with AI */}
+      <EnhancedLikesDialog
+        open={showLikes}
+        onOpenChange={setShowLikes}
+        contentType={item.type}
+        contentId={item.id}
+      />
+
+      <EnhancedCommentsDialog
+        open={showComments}
+        onOpenChange={setShowComments}
+        contentType={item.type}
+        contentId={item.id}
+        onCommentChange={onComment}
+      />
+
       <EngagementInsightsDialog
         open={showInsights}
         onOpenChange={setShowInsights}
