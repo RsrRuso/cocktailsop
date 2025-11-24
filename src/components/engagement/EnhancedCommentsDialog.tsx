@@ -205,30 +205,44 @@ export const EnhancedCommentsDialog = ({
   };
 
   const fetchAISuggestions = async (text: string, forceNew = false) => {
-    if (text.trim().length < 3) {
+    if (text.trim().length < 10) {
       setAiSuggestions([]);
+      setShowSuggestions(false);
       return;
     }
 
     setLoadingSuggestions(true);
+    console.log('Fetching AI suggestions for:', text);
+    
     try {
       const { data, error } = await supabase.functions.invoke('ai-comment-rewrite', {
         body: { 
-          text, 
+          text: text.trim(), 
           context: `${contentType} comment`,
-          timestamp: Date.now() // Force unique requests
+          timestamp: Date.now()
         }
       });
 
-      if (error) throw error;
+      console.log('AI response:', data, error);
+
+      if (error) {
+        console.error('AI suggestion error:', error);
+        throw error;
+      }
       
-      if (data?.suggestions && Array.isArray(data.suggestions)) {
+      if (data?.suggestions && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
         setAiSuggestions(data.suggestions);
         setShowSuggestions(true);
+        console.log('AI suggestions set:', data.suggestions);
+      } else {
+        console.log('No suggestions returned');
+        setAiSuggestions([]);
+        setShowSuggestions(false);
       }
     } catch (err) {
       console.error('Error fetching AI suggestions:', err);
-      toast.error('Failed to get AI suggestions');
+      setAiSuggestions([]);
+      setShowSuggestions(false);
     } finally {
       setLoadingSuggestions(false);
     }
@@ -237,27 +251,40 @@ export const EnhancedCommentsDialog = ({
   const handleTextChange = (text: string) => {
     setNewComment(text);
     
+    // Clear previous suggestions if text is too short
+    if (text.trim().length < 10) {
+      setAiSuggestions([]);
+      setShowSuggestions(false);
+      if (suggestionTimeoutRef.current) {
+        clearTimeout(suggestionTimeoutRef.current);
+      }
+      return;
+    }
+    
     // Debounce AI suggestions
     if (suggestionTimeoutRef.current) {
       clearTimeout(suggestionTimeoutRef.current);
     }
 
     suggestionTimeoutRef.current = window.setTimeout(() => {
-      if (text.trim().length >= 10) {
-        fetchAISuggestions(text);
-      } else {
-        setAiSuggestions([]);
-        setShowSuggestions(false);
-      }
-    }, 1000);
+      fetchAISuggestions(text, false);
+    }, 1500);
   };
 
   const applySuggestion = (suggestion: string) => {
     setNewComment(suggestion);
     setShowSuggestions(false);
-    setAiSuggestions([]);
     textareaRef.current?.focus();
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (suggestionTimeoutRef.current) {
+        clearTimeout(suggestionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const renderComment = (comment: Comment, depth: number = 0, index: number = 0) => {
     const isOwner = user && comment.user_id === user.id;
