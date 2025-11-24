@@ -1869,11 +1869,19 @@ export default function StaffScheduling() {
       
       console.log(`Using html-to-image to capture ${day}...`);
       
+      // Wait a bit for images to load
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const dataUrl = await toPng(element, {
         pixelRatio: 2,
         cacheBust: true,
-        quality: 0.85,
+        quality: 0.95,
         backgroundColor: '#1a1a1a',
+        skipAutoScale: true,
+        fetchRequestInit: {
+          mode: 'cors',
+          credentials: 'include',
+        },
       });
       
       console.log(`Image captured successfully for ${day}, creating PDF...`);
