@@ -242,15 +242,15 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
-      <InAppNotificationProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <InAppNotificationProvider>
           <WorkspaceProvider>
             <CartProvider>
               <AppContent />
             </CartProvider>
           </WorkspaceProvider>
-        </AuthProvider>
-      </InAppNotificationProvider>
+        </InAppNotificationProvider>
+      </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>
 );
