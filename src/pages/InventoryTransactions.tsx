@@ -45,7 +45,7 @@ const InventoryTransactions = () => {
         ? { workspace_id: currentWorkspace.id }
         : { workspace_id: null };
 
-      // Fetch transfers
+      // Fetch transfers from all workspace members
       let transferQuery = supabase
         .from('inventory_transfers')
         .select(`
@@ -54,7 +54,6 @@ const InventoryTransactions = () => {
           to_store:stores!inventory_transfers_to_store_id_fkey(name),
           inventory(items(name))
         `)
-        .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -71,7 +70,7 @@ const InventoryTransactions = () => {
         throw transferError;
       }
 
-      // Fetch receiving operations from activity log
+      // Fetch receiving operations from activity log (all workspace members)
       let activityQuery = supabase
         .from('inventory_activity_log')
         .select(`
@@ -79,7 +78,6 @@ const InventoryTransactions = () => {
           store:stores(name),
           inventory(items(name))
         `)
-        .eq('user_id', user!.id)
         .eq('action_type', 'received')
         .order('created_at', { ascending: false })
         .limit(100);
