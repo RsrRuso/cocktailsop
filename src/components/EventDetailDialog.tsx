@@ -78,6 +78,7 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
 
   useEffect(() => {
     if (event && open && user) {
+      // CRITICAL: Fetch fresh data immediately on open to override stale props
       fetchEventData();
       setEditTitle(event.title);
       setEditDescription(event.description || '');
@@ -98,10 +99,50 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
             filter: `id=eq.${event.id}`
           },
           (payload: any) => {
+            console.log('[EVENT DIALOG] Real-time update:', payload.new);
             // Update counts in real-time from trigger updates
             setLikeCount(payload.new.like_count || 0);
             setCommentCount(payload.new.comment_count || 0);
             setAttendeeCount(payload.new.attendee_count || 0);
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'event_likes',
+            filter: `event_id=eq.${event.id}`
+          },
+          () => {
+            // Refetch when likes change
+            fetchEventData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'event_comments',
+            filter: `event_id=eq.${event.id}`
+          },
+          () => {
+            // Refetch when comments change
+            fetchEventData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'event_attendees',
+            filter: `event_id=eq.${event.id}`
+          },
+          () => {
+            // Refetch when attendance changes
+            fetchEventData();
           }
         )
         .subscribe();
