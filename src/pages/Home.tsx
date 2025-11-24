@@ -417,7 +417,7 @@ const Home = () => {
       )}
 
       {/* Feed */}
-      <div className="space-y-6 px-4">
+      <div className="space-y-6">
         {filteredFeed.length > 0 ? (
           filteredFeed.map((item) => (
             <FeedItem

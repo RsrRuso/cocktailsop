@@ -59,7 +59,7 @@ export const FeedItem = memo(({
   return (
     <div className="relative bg-black w-full">
       {/* Top Header Section */}
-      <div className="relative p-4 bg-transparent backdrop-blur-xl border-b border-white/10">
+      <div className="relative px-3 py-4 bg-transparent backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center gap-3">
             <div 
               className="relative cursor-pointer"
@@ -129,7 +129,7 @@ export const FeedItem = memo(({
       {/* Content - Full Width */}
       <div className="relative w-full">
         {'content' in item && item.content && (
-          <p className="text-sm px-4 py-3 text-white bg-black/50">{item.content}</p>
+          <p className="text-sm px-3 py-3 text-white bg-black/50">{item.content}</p>
         )}
 
         {/* Media - Full Screen */}
@@ -177,7 +177,7 @@ export const FeedItem = memo(({
       </div>
 
       {/* Bottom Action Bar - Glassy Transparent with Contours */}
-      <div className="relative p-4 bg-transparent backdrop-blur-xl border-t border-white/10">
+      <div className="relative px-3 py-4 bg-transparent backdrop-blur-xl border-t border-white/10">
         <div className="flex items-center gap-3">
             {/* Like Button */}
             <button
