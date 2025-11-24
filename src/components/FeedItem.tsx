@@ -61,9 +61,10 @@ export const FeedItem = memo(({
       {/* Animated Glow Background */}
       <div className="absolute -inset-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 animate-gradient-xy"></div>
       
-      <div className="relative bg-gradient-to-br from-card/95 via-card to-card/95 backdrop-blur-xl rounded-2xl border border-border/50 group-hover:border-primary/30 transition-all duration-300 overflow-hidden">
-        {/* Subtle AI Pattern Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 opacity-50"></div>
+      {/* Glassy Transparent Frame with Contour Borders */}
+      <div className="relative bg-transparent backdrop-blur-xl rounded-2xl border-2 border-white/20 group-hover:border-white/30 transition-all duration-300 overflow-hidden">
+        {/* Subtle Glow on Edges */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 opacity-30 pointer-events-none"></div>
         
         <div className="relative p-4 space-y-4">
           {/* Enhanced Header */}
@@ -115,11 +116,11 @@ export const FeedItem = memo(({
         {currentUserId && item.user_id === currentUserId && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="glass-hover p-2 rounded-xl">
+              <button className="p-2 rounded-xl bg-transparent backdrop-blur-xl border-2 border-white/20 hover:border-white/30 hover:bg-white/5 transition-all">
                 <MoreVertical className="w-5 h-5" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="glass">
+            <DropdownMenuContent align="end" className="bg-transparent backdrop-blur-xl border-2 border-white/30">
               {item.type === 'post' && (
                 <DropdownMenuItem onClick={onEdit}>
                   <Edit className="w-4 h-4 mr-2" />
@@ -186,8 +187,8 @@ export const FeedItem = memo(({
         </div>
       )}
 
-          {/* Enhanced Actions Bar with AI Design */}
-          <div className="flex items-center gap-3 pt-2 border-t border-border/30">
+          {/* Enhanced Actions Bar - Glassy Transparent with Contours */}
+          <div className="flex items-center gap-3 pt-2 border-t-2 border-white/20">
             {/* Like Button with Glow */}
             <div className="relative group/like">
               <div className={`absolute -inset-1 rounded-full blur-md transition-all duration-300 ${
@@ -198,10 +199,10 @@ export const FeedItem = memo(({
               
               <button 
                 onClick={onLike}
-                className={`relative flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                className={`relative flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 backdrop-blur-xl ${
                   isLiked 
-                    ? 'bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-500/30 text-red-500 hover:scale-110' 
-                    : 'bg-card/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-pink-500/10 border border-transparent hover:border-primary/20 text-muted-foreground hover:text-primary hover:scale-105'
+                    ? 'bg-transparent border-2 border-red-500/50 text-red-500 hover:scale-110 hover:border-red-500/70' 
+                    : 'bg-transparent hover:bg-white/5 border-2 border-white/20 hover:border-white/30 text-muted-foreground hover:text-primary hover:scale-105'
                 }`}
               >
                 <Heart className={`w-5 h-5 transition-all duration-300 ${isLiked ? 'fill-current scale-110' : ''}`} />
@@ -223,7 +224,7 @@ export const FeedItem = memo(({
               
               <button 
                 onClick={() => setShowComments(true)}
-                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-500/10 border border-transparent hover:border-primary/20 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-105"
+                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border-2 border-white/20 hover:border-white/30 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-105"
               >
                 <MessageCircle className="w-5 h-5" />
                 <span className="text-sm font-bold min-w-[20px]">{item.comment_count || 0}</span>
@@ -236,7 +237,7 @@ export const FeedItem = memo(({
               
               <button 
                 onClick={onShare}
-                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 hover:bg-gradient-to-r hover:from-green-500/10 hover:to-emerald-500/10 border border-transparent hover:border-green-500/20 text-muted-foreground hover:text-green-500 transition-all duration-300 hover:scale-105"
+                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border-2 border-white/20 hover:border-green-500/30 text-muted-foreground hover:text-green-500 transition-all duration-300 hover:scale-105"
               >
                 <Send className="w-5 h-5" />
                 <span className="text-xs font-medium">Share</span>
@@ -249,7 +250,7 @@ export const FeedItem = memo(({
               
               <button
                 onClick={() => setShowInsights(true)}
-                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 hover:from-purple-500/30 hover:via-pink-500/30 hover:to-blue-500/30 border border-purple-500/40 hover:border-purple-500/60 transition-all duration-300 hover:scale-105"
+                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border-2 border-purple-500/40 hover:border-purple-500/60 transition-all duration-300 hover:scale-105"
               >
                 <Brain className="w-4 h-4 text-purple-400 group-hover/ai:text-pink-400 transition-colors" />
                 <Sparkles className="w-3.5 h-3.5 text-pink-400 group-hover/ai:text-blue-400 animate-pulse transition-colors" />
@@ -259,8 +260,8 @@ export const FeedItem = memo(({
               </button>
             </div>
             
-            {/* Views Counter with Icon */}
-            <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-card/30 border border-border/20">
+            {/* Views Counter with Glassy Transparent Border */}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-transparent backdrop-blur-xl border-2 border-white/20">
               <Eye className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-bold text-muted-foreground">{item.view_count || 0}</span>
             </div>
