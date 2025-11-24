@@ -303,75 +303,72 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
             >
               <Music className="w-5 h-5" />
             </button>
+          </div>
 
-            {/* Region Dropdown */}
-            <DropdownMenu open={regionDropdownOpen} onOpenChange={setRegionDropdownOpen}>
-              <DropdownMenuTrigger asChild>
-                <button 
-                  onClick={lightTap}
-                  className="glass-hover p-2.5 rounded-2xl flex items-center gap-1.5"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {selectedRegion && (
-                    <span className="text-xs">{regions.find(r => r.name === selectedRegion)?.flag}</span>
-                  )}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="glass z-[60] bg-background/95 backdrop-blur-xl border border-border/50">
-                {regions.map((region) => (
-                  <DropdownMenuItem
-                    key={region.name}
-                    onClick={() => { 
-                      lightTap(); 
-                      handleRegionChange(region.name);
-                    }}
-                    className={`cursor-pointer ${selectedRegion === region.name ? 'bg-primary/20 text-primary font-semibold' : ''}`}
-                  >
-                    <span className="mr-2 text-lg">{region.flag}</span>
-                    {region.name}
-                  </DropdownMenuItem>
-                ))}
-                
+          <div className="flex items-center gap-2">
+          {/* Region Dropdown */}
+          <DropdownMenu open={regionDropdownOpen} onOpenChange={setRegionDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <button 
+                onClick={lightTap}
+                className="glass-hover p-2.5 rounded-2xl flex items-center gap-1.5"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 {selectedRegion && (
-                  <>
-                    <div className="my-1 h-px bg-border/50" />
+                  <span className="text-xs">{regions.find(r => r.name === selectedRegion)?.flag}</span>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="glass z-[60] bg-background/95 backdrop-blur-xl border border-border/50">
+              {regions.map((region) => (
+                <DropdownMenuItem
+                  key={region.name}
+                  onClick={() => { 
+                    lightTap(); 
+                    handleRegionChange(region.name);
+                  }}
+                  className={`cursor-pointer ${selectedRegion === region.name ? 'bg-primary/20 text-primary font-semibold' : ''}`}
+                >
+                  <span className="mr-2 text-lg">{region.flag}</span>
+                  {region.name}
+                </DropdownMenuItem>
+              ))}
+              
+              {selectedRegion && (
+                <>
+                  <div className="my-1 h-px bg-border/50" />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      lightTap();
+                      setEventsDialogOpen(true);
+                      setRegionDropdownOpen(false);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    View Events
+                  </DropdownMenuItem>
+                  
+                  {isManager && (
                     <DropdownMenuItem
                       onClick={() => {
                         lightTap();
-                        setEventsDialogOpen(true);
+                        setCreateEventDialogOpen(true);
                         setRegionDropdownOpen(false);
                       }}
                       className="cursor-pointer"
                     >
                       <Calendar className="w-4 h-4 mr-2" />
-                      View Events
+                      Create Event
                     </DropdownMenuItem>
-                    
-                    {isManager && (
-                      <DropdownMenuItem
-                        onClick={() => {
-                          lightTap();
-                          setCreateEventDialogOpen(true);
-                          setRegionDropdownOpen(false);
-                        }}
-                        className="cursor-pointer"
-                      >
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Create Event
-                      </DropdownMenuItem>
-                    )}
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  )}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            {/* Spotify Connect */}
-            {/* <SpotifyConnect /> */}
-          </div>
-
-          <div className="flex items-center gap-2">
           <button
             onClick={() => {
               lightTap();
