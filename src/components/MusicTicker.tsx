@@ -194,14 +194,8 @@ const MusicTicker = () => {
     if (!user) return;
 
     const isLiked = likedShares.has(shareId);
-
-    // Optimistic update - instant UI feedback
-    setMusicShares(prev => prev.map(share => 
-      share.id === shareId 
-        ? { ...share, like_count: share.like_count + (isLiked ? -1 : 1) }
-        : share
-    ));
     
+    // Optimistic UI update - database trigger handles count
     setLikedShares(prev => {
       const next = new Set(prev);
       if (isLiked) {
@@ -212,7 +206,7 @@ const MusicTicker = () => {
       return next;
     });
 
-    // Database update
+    // Database operation - trigger updates count automatically
     try {
       if (isLiked) {
         const { error } = await supabase
@@ -237,11 +231,6 @@ const MusicTicker = () => {
       console.error("Error toggling like:", error);
       toast.error('Failed to update like');
       // Revert on error
-      setMusicShares(prev => prev.map(share => 
-        share.id === shareId 
-          ? { ...share, like_count: share.like_count + (isLiked ? 1 : -1) }
-          : share
-      ));
       setLikedShares(prev => {
         const next = new Set(prev);
         if (isLiked) {
