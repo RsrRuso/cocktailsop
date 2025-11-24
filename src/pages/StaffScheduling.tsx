@@ -2495,7 +2495,7 @@ export default function StaffScheduling() {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
                   return { 
                     name: staff?.name || 'Unknown', 
-                    station: s.station || 'Station assignment pending', 
+                    station: s.station, 
                     timeRange: s.timeRange,
                     title: staff?.title 
                   };
