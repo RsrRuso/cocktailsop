@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar, MessageCircle } from 'lucide-react';
 import { EventDetailDialog } from './EventDetailDialog';
@@ -27,10 +27,11 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [listDialogOpen, setListDialogOpen] = useState(false);
+  const fetchIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const fetchEvents = async () => {
-      // Update expired events before fetching
+      console.log('[EVENTS TICKER] Fetching fresh events...');
       await supabase.rpc('update_expired_events');
       
       const { data } = await supabase
@@ -42,30 +43,29 @@ export const EventsTicker = ({ region }: EventsTickerProps) => {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (data) setEvents(data);
+      if (data) {
+        console.log('[EVENTS TICKER] Fresh data:', data);
+        setEvents(data);
+      }
     };
 
+    // Fetch immediately
     fetchEvents();
 
-    // Real-time subscription to refresh event counts
+    // Force refresh every 5 seconds to bypass cache
+    fetchIntervalRef.current = setInterval(fetchEvents, 5000);
+
+    // Real-time subscription
     const channel = supabase
       .channel(`events-ticker-${region}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'events',
-          filter: `region=eq.${region}`
-        },
-        () => {
-          // Refetch events when any event is updated
-          fetchEvents();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, fetchEvents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_likes' }, fetchEvents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_comments' }, fetchEvents)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_attendees' }, fetchEvents)
       .subscribe();
 
     return () => {
+      if (fetchIntervalRef.current) clearInterval(fetchIntervalRef.current);
       supabase.removeChannel(channel);
     };
   }, [region]);
