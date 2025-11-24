@@ -13,9 +13,14 @@ export const usePageTransition = () => {
       const endTime = performance.now();
       const duration = endTime - startTime;
       
-      // Warn if slower than 5 seconds
-      if (duration > 5000) {
-        console.warn(`Slow page load: ${location.pathname} took ${(duration / 1000).toFixed(2)}s`);
+      // Log all page transitions for monitoring
+      console.log(`⚡ Page transition: ${location.pathname} - ${(duration / 1000).toFixed(2)}s`);
+      
+      // Warn if slower than 1 second (Instagram-level target)
+      if (duration > 1000) {
+        console.warn(`⚠️ Slow page load: ${location.pathname} took ${(duration / 1000).toFixed(2)}s (target: <1s)`);
+      } else {
+        console.log(`✅ Fast load: ${location.pathname}`);
       }
     };
 
