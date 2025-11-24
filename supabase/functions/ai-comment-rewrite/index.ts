@@ -10,10 +10,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  console.log('AI Comment Rewrite function called');
+
   try {
     const { text, context } = await req.json();
     
+    console.log('Request body:', { text, context });
+    
     if (!text || text.trim().length < 3) {
+      console.log('Text too short, returning empty suggestions');
       return new Response(
         JSON.stringify({ suggestions: [] }), 
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -22,8 +27,11 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+
+    console.log('Calling AI gateway...');
 
     // Add randomness to ensure fresh suggestions each time
     const randomSeed = Math.random();
@@ -61,13 +69,18 @@ Example format: ["First suggestion here", "Second suggestion here", "Third sugge
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Original comment: "${text}"\n\nContext: ${context || "General comment"}\n\nRandom seed: ${randomSeed}\n\nProvide 3 completely unique and creative variations.` }
+          { role: "user", content: `Original comment: "${text}"\n\nContext: ${context || "General comment"}\n\nRandom seed: ${randomSeed}\n\nProvide 3 completely unique and creative variations as a JSON array.` }
         ],
-        temperature: 0.95, // Higher temperature for more variety
+        temperature: 0.95,
       }),
     });
 
+    console.log('AI gateway response status:', response.status);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AI gateway error:', response.status, errorText);
+      
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), 
@@ -86,14 +99,16 @@ Example format: ["First suggestion here", "Second suggestion here", "Third sugge
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
+    console.log('AI response content:', content);
+
     if (!content) {
+      console.log('No content in AI response');
       return new Response(
         JSON.stringify({ suggestions: [] }), 
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Parse the JSON array from the response
     let suggestions: string[] = [];
     try {
       // Try to extract JSON array from the response
@@ -104,13 +119,16 @@ Example format: ["First suggestion here", "Second suggestion here", "Third sugge
       } else {
         throw new Error("No JSON array found");
       }
-    } catch {
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
       // If parsing fails, try to extract suggestions from text
       const lines = content.split('\n').filter((line: string) => line.trim().length > 0);
       suggestions = lines.slice(0, 3).map((line: string) => 
         line.replace(/^["'\-\d\.\)\s]+/, '').replace(/["']$/, '').trim()
-      );
+      ).filter((s: string) => s.length > 0);
     }
+
+    console.log('Final suggestions:', suggestions);
 
     return new Response(
       JSON.stringify({ suggestions: suggestions.filter(s => s.length > 0) }), 
@@ -120,7 +138,10 @@ Example format: ["First suggestion here", "Second suggestion here", "Third sugge
   } catch (error) {
     console.error("Error in ai-comment-rewrite:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), 
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : "Unknown error",
+        suggestions: []
+      }), 
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
