@@ -998,8 +998,22 @@ export default function StaffScheduling() {
       const availableIndoorStations = [1, 2, 3];
       const availableOutdoorStations = [1, 2];
       
-      // SENIOR BARTENDERS get station assignments (indoor stations)
-      shuffledWorkingSeniorBartenders.forEach((schedule) => {
+      // Collect all bartenders and senior bartenders with their area allocation
+      const allBarStaff: Array<{schedule: any, type: 'senior' | 'regular', idx: number}> = [];
+      
+      shuffledWorkingSeniorBartenders.forEach((schedule, idx) => {
+        allBarStaff.push({schedule, type: 'senior', idx});
+      });
+      
+      shuffledWorkingBartenders.forEach((schedule, idx) => {
+        allBarStaff.push({schedule, type: 'regular', idx});
+      });
+      
+      // Sort by staff name to ensure consistent rotation order
+      allBarStaff.sort((a, b) => a.schedule.staff.name.localeCompare(b.schedule.staff.name));
+      
+      // Assign stations to all bar staff
+      allBarStaff.forEach(({schedule, type, idx}) => {
         const key = `${schedule.staff.id}-${day}`;
         
         // Skip if already assigned to avoid duplicates
@@ -1010,100 +1024,62 @@ export default function StaffScheduling() {
         
         // Determine time range based on day type
         let timeRange;
-        let type: ScheduleCell['type'] = 'regular';
+        let scheduleType: ScheduleCell['type'] = 'regular';
         if (isBrunchDay) {
           timeRange = '4:00 PM - 1:00 AM'; // 9 hours for brunch days
-          type = 'early_shift';
-        } else if (isPickupDay) {
+          scheduleType = 'early_shift';
+        } else if (isPickupDay && idx === 0 && type === 'regular') {
           timeRange = '4:00 PM - 1:00 AM'; // First bartender on pickup days
-          type = 'early_shift';
-        } else if (day === 'Wednesday') {
-          timeRange = '4:00 PM - 1:00 AM';
-          type = 'early_shift';
+          scheduleType = 'early_shift';
+        } else if (day === 'Wednesday' && type === 'regular') {
+          timeRange = idx === 0 ? '4:00 PM - 1:00 AM' : '5:00 PM - 3:00 AM';
+          scheduleType = idx === 0 ? 'early_shift' : 'late_shift';
         } else if (day === 'Saturday') {
           timeRange = '4:00 PM - 1:00 AM'; // 9 hours for Saturday
-          type = 'early_shift';
+          scheduleType = 'early_shift';
         } else {
           timeRange = '5:00 PM - 3:00 AM'; // 10 hours standard
-          type = 'late_shift';
+          scheduleType = 'late_shift';
         }
         
-        // Assign indoor station from available pool (rotation determines which available station to pick)
-        if (availableIndoorStations.length > 0) {
-          const rotationHash = (dateStr + schedule.staff.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-          const stationIndex = rotationHash % availableIndoorStations.length;
-          const stationNum = availableIndoorStations.splice(stationIndex, 1)[0];
-          
-          let station = '';
-          if (stationNum === 3) {
-            station = 'Indoor - Garnishing Station 3: Work behind assigned bar station, train junior staff members, ensure health and safety compliance';
-          } else {
-            station = `Indoor - Station ${stationNum}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
-          }
-          
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange,
-            type,
-            station
-          };
-          assignedStaffIds.add(schedule.staff.id);
-        }
-      });
-      
-      // REGULAR BARTENDERS get station assignments (alternate between indoor and outdoor)
-      shuffledWorkingBartenders.forEach((schedule, idx) => {
-        const key = `${schedule.staff.id}-${day}`;
+        // Check area allocation from team_staff
+        const staffMember = teamStaff.find(s => s.id === schedule.staff.id);
+        const areaAllocation = staffMember?.area_allocation || 'indoor';
         
-        // Skip if already assigned to avoid duplicates
-        if (assignedStaffIds.has(schedule.staff.id)) {
-          console.warn(`⚠️ Skipping duplicate assignment for ${schedule.staff.name} on ${day}`);
-          return;
-        }
-        
-        // Determine time range based on day type and position
-        let timeRange;
-        let type: ScheduleCell['type'] = 'regular';
-        if (isBrunchDay) {
-          timeRange = '4:00 PM - 1:00 AM'; // 9 hours for brunch days
-          type = 'early_shift';
-        } else if (isPickupDay && idx === 0) {
-          timeRange = '4:00 PM - 1:00 AM'; // First bartender on pickup days
-          type = 'early_shift';
-        } else if (day === 'Wednesday') {
-          timeRange = idx === 0 ? '4:00 PM - 1:00 AM' : '5:00 PM - 3:00 AM'; // Mixed on Wednesday
-          type = idx === 0 ? 'early_shift' : 'late_shift';
-        } else if (day === 'Saturday') {
-          timeRange = '4:00 PM - 1:00 AM'; // 9 hours for Saturday
-          type = 'early_shift';
-        } else {
-          timeRange = '5:00 PM - 3:00 AM'; // 10 hours standard
-          type = 'late_shift';
-        }
-        
-        // Alternate between indoor and outdoor stations based on available capacity
         let station = '';
         
-        // Try to assign to available stations (prefer balancing indoor/outdoor)
-        if (availableIndoorStations.length > 0 && (availableOutdoorStations.length === 0 || idx % 2 === 0)) {
+        // Assign based on area allocation
+        if (areaAllocation === 'indoor' && availableIndoorStations.length > 0) {
+          // Calculate rotation for this staff on this date
           const rotationHash = (dateStr + schedule.staff.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
           const stationIndex = rotationHash % availableIndoorStations.length;
           const stationNum = availableIndoorStations.splice(stationIndex, 1)[0];
           
-          if (stationNum === 3) {
-            station = 'Indoor - Garnishing Station 3: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards';
+          if (type === 'senior') {
+            if (stationNum === 3) {
+              station = 'Indoor - Garnishing Station 3: Work behind assigned bar station, train junior staff members, ensure health and safety compliance';
+            } else {
+              station = `Indoor - Station ${stationNum}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
+            }
           } else {
-            station = `Indoor - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
+            if (stationNum === 3) {
+              station = 'Indoor - Garnishing Station 3: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards';
+            } else {
+              station = `Indoor - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
+            }
           }
-        } else if (availableOutdoorStations.length > 0) {
+        } else if (areaAllocation === 'outdoor' && availableOutdoorStations.length > 0) {
           const rotationHash = (dateStr + schedule.staff.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
           const stationIndex = rotationHash % availableOutdoorStations.length;
           const stationNum = availableOutdoorStations.splice(stationIndex, 1)[0];
           
-          station = `Outdoor - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
+          if (type === 'senior') {
+            station = `Outdoor - Station ${stationNum}: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
+          } else {
+            station = `Outdoor - Station ${stationNum}: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
+          }
         } else {
-          // Fallback if all stations are taken
+          // Fallback if all allocated stations are taken or no area allocation
           station = 'Support: Assist with bar operations as needed';
         }
         
@@ -1111,7 +1087,7 @@ export default function StaffScheduling() {
           staffId: schedule.staff.id,
           day,
           timeRange,
-          type,
+          type: scheduleType,
           station
         };
         assignedStaffIds.add(schedule.staff.id);
