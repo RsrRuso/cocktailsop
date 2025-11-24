@@ -292,56 +292,52 @@ export default function StaffScheduling() {
     DAYS_OF_WEEK.forEach(day => {
       const dayCells = schedulesByDay[day] || [];
       
-      // Find working senior bartenders (they get support station)
-      const workingSeniorBartenders = dayCells.filter(cell => {
-        const staff = staffMembers.find(s => s.id === cell.staffId);
-        if (!staff) return false;
-        return staff.title === 'senior_bartender' && cell.timeRange !== 'OFF';
-      });
+      // Separate by role for proper assignment
+      let indoorBartenderCount = 0;
+      let outdoorBartenderCount = 0;
       
-      // Find working regular bartenders (they get specific stations)
-      const workingBartenders = dayCells.filter(cell => {
+      dayCells.forEach((cell: any) => {
         const staff = staffMembers.find(s => s.id === cell.staffId);
-        if (!staff) return false;
-        return staff.title === 'bartender' && cell.timeRange !== 'OFF';
-      });
-      
-      // Find all other cells (head bartenders, bar backs, support, off days)
-      const otherCells = dayCells.filter(cell => {
-        const staff = staffMembers.find(s => s.id === cell.staffId);
-        if (!staff) return true;
-        const isBartender = staff.title === 'bartender' || staff.title === 'senior_bartender';
-        const isWorking = cell.timeRange !== 'OFF';
-        return !(isBartender && isWorking);
-      });
-      
-      // Assign support station to senior bartenders
-      workingSeniorBartenders.forEach((cell: any) => {
+        if (!staff || cell.timeRange === 'OFF') {
+          normalized[cell.key] = cell;
+          return;
+        }
+        
+        const title = staff.title;
+        let station = '';
+        
+        // Assign station based on role
+        if (title === 'head_bartender') {
+          station = 'Supervising and observing';
+        } else if (title === 'bar_back') {
+          station = 'Pickups, station opening/closing, garnishes, glassware polishing, refill fridges';
+        } else if (title === 'support') {
+          station = 'Polishing glassware and general support';
+        } else if (title === 'senior_bartender' || title === 'bartender') {
+          // Determine if indoor or outdoor based on existing station or alternate
+          const isOutdoor = cell.station?.includes('Outdoor');
+          
+          if (isOutdoor) {
+            // Outdoor has 2 operational stations
+            const stationNum = (outdoorBartenderCount % 2) + 1;
+            station = `Outdoor - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+            outdoorBartenderCount++;
+          } else {
+            // Indoor has 3 stations: 1, 2 operational, 3 garnishing
+            const stationNum = (indoorBartenderCount % 3) + 1;
+            if (stationNum === 3) {
+              station = 'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain';
+            } else {
+              station = `Indoor - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+            }
+            indoorBartenderCount++;
+          }
+        }
+        
         normalized[cell.key] = {
           ...cell,
-          station: 'Indoor - Support Station 2 or Station 1: Can assist either Station 1 or Station 2'
+          station: station || cell.station
         };
-      });
-      
-      // Stations to assign to regular bartenders
-      const stations = [
-        'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain'
-      ];
-      
-      // Assign stations to working bartenders - cycle through the 3 stations
-      workingBartenders.forEach((cell: any, idx) => {
-        const stationIdx = idx % 3; // Cycle through 0, 1, 2
-        normalized[cell.key] = {
-          ...cell,
-          station: stations[stationIdx]
-        };
-      });
-      
-      // Add back all other cells unchanged
-      otherCells.forEach((cell: any) => {
-        normalized[cell.key] = cell;
       });
     });
     
@@ -956,9 +952,7 @@ export default function StaffScheduling() {
           day,
           timeRange,
           type,
-          station: shouldDivideHeads 
-            ? `Head - ${area} Supervisor: Observe ${area.toLowerCase()} operations, support where needed`
-            : `Head - Supervising: Observe all operations, support where needed`
+          station: 'Supervising and observing'
         };
         assignedStaffIds.add(schedule.staff.id);
       });
@@ -977,7 +971,11 @@ export default function StaffScheduling() {
         };
       });
       
-      // SENIOR BARTENDERS get support station assignment
+      // Track station assignments for indoor/outdoor
+      let indoorBartenderCount = 0;
+      let outdoorBartenderCount = 0;
+      
+      // SENIOR BARTENDERS get station assignments (indoor stations)
       shuffledWorkingSeniorBartenders.forEach((schedule) => {
         const key = `${schedule.staff.id}-${day}`;
         
@@ -1007,25 +1005,27 @@ export default function StaffScheduling() {
           type = 'late_shift';
         }
         
+        // Assign indoor station (cycle through 1, 2, 3)
+        const stationNum = (indoorBartenderCount % 3) + 1;
+        let station = '';
+        if (stationNum === 3) {
+          station = 'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain';
+        } else {
+          station = `Indoor - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+        }
+        indoorBartenderCount++;
+        
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
           timeRange,
           type,
-          station: 'Indoor - Support Station 2 or Station 1: Can assist either Station 1 or Station 2'
+          station
         };
         assignedStaffIds.add(schedule.staff.id);
       });
       
-      // REGULAR BARTENDERS get specific station assignments
-      // Indoor bar has 3 stations - cycle through them
-      const stations = [
-        'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
-        'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain'
-      ];
-
-      // Assign stations to REGULAR BARTENDERS - cycle through the 3 stations
+      // REGULAR BARTENDERS get station assignments (alternate between indoor and outdoor)
       shuffledWorkingBartenders.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
@@ -1055,14 +1055,31 @@ export default function StaffScheduling() {
           type = 'late_shift';
         }
         
-        // Cycle through the 3 stations (use modulo to wrap around)
-        const stationIndex = idx % 3;
+        // Alternate between indoor and outdoor stations
+        // Even index = indoor, odd index = outdoor
+        const isIndoor = idx % 2 === 0;
+        let station = '';
+        
+        if (isIndoor) {
+          const stationNum = (indoorBartenderCount % 3) + 1;
+          if (stationNum === 3) {
+            station = 'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain';
+          } else {
+            station = `Indoor - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+          }
+          indoorBartenderCount++;
+        } else {
+          const stationNum = (outdoorBartenderCount % 2) + 1;
+          station = `Outdoor - Station ${stationNum}: Operate station, supervise bar backs, manage closing, refresh & maintain`;
+          outdoorBartenderCount++;
+        }
+        
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
           timeRange,
           type,
-          station: stations[stationIndex]
+          station
         };
         assignedStaffIds.add(schedule.staff.id);
       });
@@ -1089,19 +1106,6 @@ export default function StaffScheduling() {
           console.warn(`⚠️ Skipping duplicate assignment for ${schedule.staff.name} on ${day}`);
           return;
         }
-        
-        // OUTDOOR ALLOCATION: Always 1 barback outdoor (ensures min 2 total outdoor with bartender)
-        // First barback always outdoor to meet minimum 2 outdoor requirement
-        const barBackStations = shuffledWorkingBarBacks.length >= 3 ? [
-          'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
-          'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
-          'Bar Back - Indoor Support: Pickups, Refilling, Glassware, Batching, help where needed, stock'
-        ] : shuffledWorkingBarBacks.length === 2 ? [
-          'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish',
-          'Bar Back - Indoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish'
-        ] : [
-          'Bar Back - Outdoor: Pickups, Refilling, Glassware, Batching, Opening/Closing, Fridges, Stock, Garnish'
-        ];
         
         // First bar back gets early start for pickup/opening duties (9 hours)
         let timeRange, type;
@@ -1130,16 +1134,14 @@ export default function StaffScheduling() {
           }
         }
         
-        // Assign station - prioritize indoor after first outdoor
-        const station = idx < barBackStations.length ? barBackStations[idx] : barBackStations[barBackStations.length - 1];
-        
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
           timeRange,
           type,
-          station
+          station: 'Pickups, station opening/closing, garnishes, glassware polishing, refill fridges'
         };
+        assignedStaffIds.add(schedule.staff.id);
       });
 
       // === PRIORITY 4: SUPPORT - General Support & Glassware Polishing ===
@@ -1165,22 +1167,13 @@ export default function StaffScheduling() {
           return;
         }
         
-        // Allocate support to Indoor or Outdoor (10 hours: 3:00 PM - 1:00 AM)
-        const supportStations = [
-          'Support - Outdoor: Glassware Polishing, General Support',
-          'Support - Indoor: Glassware Polishing, General Support'
-        ];
-        
-        // Assign station (alternate between outdoor and indoor)
-        const station = idx < supportStations.length ? supportStations[idx] : supportStations[idx % supportStations.length];
-        
         // Support works 10 hours: 3:00 PM - 1:00 AM
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
           timeRange: '3:00 PM - 1:00 AM',
           type: 'regular',
-          station
+          station: 'Polishing glassware and general support'
         };
         assignedStaffIds.add(schedule.staff.id);
       });
