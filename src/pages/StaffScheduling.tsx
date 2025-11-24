@@ -3255,6 +3255,38 @@ export default function StaffScheduling() {
                                 </SelectContent>
                               </Select>
                             )}
+                            {/* Station Number Selector for Bartenders */}
+                            {cell?.timeRange && cell.timeRange !== 'OFF' && (staff.title === 'bartender' || staff.title === 'senior_bartender') && (
+                              <Select
+                                value={(() => {
+                                  const stationMatch = cell?.station?.match(/Station (\d)/);
+                                  return stationMatch ? stationMatch[1] : '1';
+                                })()}
+                                onValueChange={(stationNum) => {
+                                  const area = staff.area_allocation || (cell?.station?.toLowerCase().includes('outdoor') ? 'outdoor' : 'indoor');
+                                  let newStation = '';
+                                  
+                                  if (stationNum === '3') {
+                                    newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Garnishing Station 3: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members, ensure health and safety compliance' : 'supervise bar backs, maintain hygiene and service standards'}`;
+                                  } else {
+                                    newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Station ${stationNum}: Work behind assigned bar station, ${staff.title === 'senior_bartender' ? 'train junior staff members, ensure health and safety compliance' : 'supervise bar backs, maintain hygiene and service standards'}`;
+                                  }
+                                  
+                                  updateScheduleCell(staff.id, day, cell.timeRange, cell.type, newStation, cell?.breakStart, cell?.breakEnd);
+                                }}
+                              >
+                                <SelectTrigger className="text-[8px] h-5 bg-blue-500/10 border-blue-500/30 text-gray-100 px-1 mt-0.5">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover border-gray-700 z-[9999]">
+                                  <SelectItem value="1" className="text-gray-100 text-[9px]">📍 Station 1</SelectItem>
+                                  <SelectItem value="2" className="text-gray-100 text-[9px]">📍 Station 2</SelectItem>
+                                  {(staff.area_allocation === 'indoor' || !staff.area_allocation || !cell?.station?.toLowerCase().includes('outdoor')) && (
+                                    <SelectItem value="3" className="text-gray-100 text-[9px]">🌿 Garnishing Station 3</SelectItem>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            )}
                             {cell?.station && (
                               <div className="text-[8px] text-gray-400 text-center mt-0.5 leading-none truncate px-0.5">
                                 {cell.station}
