@@ -423,15 +423,33 @@ const StoreManagement = () => {
 
       setLowStockByStore(lowStockCounts);
 
+      // Fetch user profiles for transactions
+      const allUserIds = [
+        ...new Set([
+          ...(transfersData?.map((t: any) => t.user_id) || []),
+          ...(receivingsData?.map((r: any) => r.user_id) || []),
+          ...(spotChecksData?.map((s: any) => s.user_id) || []),
+          ...(varianceData?.map((v: any) => v.user_id) || [])
+        ])
+      ];
+
+      const { data: transactionProfilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, username')
+        .in('id', allUserIds);
+
+      const profilesMap = new Map(transactionProfilesData?.map((p: any) => [p.id, p]) || []);
+
       // Build live transactions feed
       const allTransactions: Transaction[] = [];
 
       transfersData?.forEach((t: any) => {
+        const profile = profilesMap.get(t.user_id);
         allTransactions.push({
           id: t.id,
           type: 'transfer',
           timestamp: t.transfer_date || t.created_at,
-          user_email: user.email || 'Unknown',
+          user_email: profile?.email || 'Unknown User',
           from_store: t.from_store?.name,
           to_store: t.to_store?.name,
           item_name: t.inventory?.items?.name || 'Unknown Item',
@@ -441,6 +459,7 @@ const StoreManagement = () => {
       });
 
       receivingsData?.forEach((r: any) => {
+        const profile = profilesMap.get(r.user_id);
         const itemId = r.details?.item_id;
         const item = itemsData?.find((i: any) => i.id === itemId);
         const quantityBefore = typeof r.quantity_before === 'number' ? r.quantity_before : 0;
@@ -452,7 +471,7 @@ const StoreManagement = () => {
           id: r.id,
           type: 'receiving',
           timestamp: r.created_at,
-          user_email: user.email || 'Unknown',
+          user_email: profile?.email || 'Unknown User',
           store: r.stores?.name,
           item_name: item?.name || 'Unknown Item',
           item_count: receivedQty,
@@ -461,11 +480,12 @@ const StoreManagement = () => {
       });
 
       spotChecksData?.forEach((s: any) => {
+        const profile = profilesMap.get(s.user_id);
         allTransactions.push({
           id: s.id,
           type: 'spot_check',
           timestamp: s.check_date || s.created_at,
-          user_email: user.email || 'Unknown',
+          user_email: profile?.email || 'Unknown User',
           store: s.stores?.name,
           item_count: 0,
           status: s.status
@@ -473,11 +493,12 @@ const StoreManagement = () => {
       });
 
       varianceData?.forEach((v: any) => {
+        const profile = profilesMap.get(v.user_id);
         allTransactions.push({
           id: v.id,
           type: 'variance',
           timestamp: v.created_at,
-          user_email: user.email || 'Unknown',
+          user_email: profile?.email || 'Unknown User',
           store: v.stores?.name,
           item_count: v.total_items_checked || 0,
           status: 'completed'
