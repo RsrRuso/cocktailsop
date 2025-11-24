@@ -304,6 +304,17 @@ const InventoryManager = () => {
             console.warn("Invalid QR URL:", error);
           }
 
+          // Also support QR codes that directly encode just the path
+          if (!targetPath) {
+            if (decodedText.startsWith("/scan-transfer/")) {
+              targetPath = decodedText;
+            } else if (decodedText.startsWith("/scan-receive/")) {
+              targetPath = decodedText;
+            } else if (decodedText.startsWith("/scan-access/")) {
+              targetPath = decodedText;
+            }
+          }
+
           if (targetPath) {
             navigate(targetPath);
             return;
