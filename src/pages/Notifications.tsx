@@ -30,6 +30,19 @@ const Notifications = () => {
   const { showNotification } = useInAppNotificationContext();
   const { showNotification: showPushNotification } = usePushNotifications();
 
+  const handleTestNotification = async () => {
+    await showPushNotification(
+      "Test Notification 🔔",
+      "This is a test notification with sound! Your PWA notifications are working.",
+      {
+        icon: "/icon-192.png",
+        requireInteraction: false,
+        silent: false
+      }
+    );
+    toast.success("Test notification sent!");
+  };
+
   useEffect(() => {
     let channel: any;
     
@@ -235,17 +248,28 @@ const Notifications = () => {
       <div className="px-4 py-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Notifications</h2>
-          {notifications.some(n => !n.read) && (
+          <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={handleMarkAllAsRead}
+              onClick={handleTestNotification}
               className="glass-hover"
             >
-              <CheckCheck className="w-4 h-4 mr-2" />
-              Mark all read
+              <Bell className="w-4 h-4 mr-2" />
+              Test
             </Button>
-          )}
+            {notifications.some(n => !n.read) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleMarkAllAsRead}
+                className="glass-hover"
+              >
+                <CheckCheck className="w-4 h-4 mr-2" />
+                Mark all read
+              </Button>
+            )}
+          </div>
         </div>
 
         {notifications.length === 0 ? (
