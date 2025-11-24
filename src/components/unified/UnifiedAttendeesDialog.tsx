@@ -68,50 +68,56 @@ const UnifiedAttendeesDialog = ({ open, onOpenChange, eventId }: UnifiedAttendee
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
+      <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 border-b shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             Event Attendees
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm sm:text-base">
             {attendees.length} {attendees.length === 1 ? 'person is' : 'people are'} attending this event
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh]">
+        <ScrollArea className="flex-1 px-4 sm:px-6 py-2">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
             </div>
           ) : attendees.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No attendees yet
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p>No attendees yet</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 pb-4">
               {attendees.map((attendee) => (
                 <div
                   key={attendee.user_id}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="flex items-center gap-3 p-3 sm:p-4 rounded-xl hover:bg-accent/50 active:bg-accent transition-all cursor-pointer group"
                   onClick={() => {
                     navigate(`/user/${attendee.user_id}`);
                     onOpenChange(false);
                   }}
                 >
-                  <Avatar className="w-12 h-12">
+                  <Avatar className="w-12 h-12 sm:w-14 sm:h-14 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
                     <AvatarImage src={attendee.profiles.avatar_url || undefined} />
-                    <AvatarFallback>{attendee.profiles.username[0]}</AvatarFallback>
+                    <AvatarFallback className="text-base sm:text-lg font-semibold bg-primary/10">
+                      {attendee.profiles.username[0]?.toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{attendee.profiles.full_name}</p>
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className="font-semibold text-sm sm:text-base truncate">{attendee.profiles.full_name}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">
                       @{attendee.profiles.username}
                     </p>
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
                     {formatDistanceToNow(new Date(attendee.created_at), { addSuffix: true })}
                   </span>
+                  <div className="shrink-0 w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <Users className="w-4 h-4 text-green-600" />
+                  </div>
                 </div>
               ))}
             </div>

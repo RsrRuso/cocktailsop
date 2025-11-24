@@ -597,43 +597,61 @@ export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }:
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2 py-4 border-y">
-                    <Button
-                      variant={hasLiked ? "default" : "outline"}
-                      size="sm"
-                      onClick={handleLike}
-                      className="flex-1"
-                    >
-                      <Heart className={`w-4 h-4 mr-2 ${hasLiked ? 'fill-current' : ''}`} />
-                      Like {likeCount > 0 && `(${likeCount})`}
-                    </Button>
-                    {likeCount > 0 && (
+                  <div className="space-y-3 py-4 border-y">
+                    {/* Primary Actions */}
+                    <div className="grid grid-cols-2 gap-2">
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowLikesDialog(true)}
+                        variant={hasLiked ? "default" : "outline"}
+                        size="lg"
+                        onClick={handleLike}
+                        className="w-full h-12 gap-2"
                       >
-                        View Likes
+                        <Heart className={`w-5 h-5 ${hasLiked ? 'fill-current' : ''}`} />
+                        <span className="flex flex-col items-start">
+                          <span className="text-xs opacity-70">Like</span>
+                          {likeCount > 0 && <span className="font-semibold text-sm">{likeCount}</span>}
+                        </span>
                       </Button>
-                    )}
-                    <Button
-                      variant={isAttending ? "default" : "outline"}
-                      size="sm"
-                      onClick={handleAttendance}
-                      className="flex-1"
-                    >
-                      <CheckCircle className={`w-4 h-4 mr-2 ${isAttending ? 'fill-current' : ''}`} />
-                      I'll Go {attendeeCount > 0 && `(${attendeeCount})`}
-                    </Button>
-                    {attendeeCount > 0 && (
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowAttendeesDialog(true)}
+                        variant={isAttending ? "default" : "outline"}
+                        size="lg"
+                        onClick={handleAttendance}
+                        className="w-full h-12 gap-2"
                       >
-                        <Users className="w-4 h-4 mr-1" />
-                        View
+                        <CheckCircle className={`w-5 h-5 ${isAttending ? 'fill-current' : ''}`} />
+                        <span className="flex flex-col items-start">
+                          <span className="text-xs opacity-70">Going</span>
+                          {attendeeCount > 0 && <span className="font-semibold text-sm">{attendeeCount}</span>}
+                        </span>
                       </Button>
+                    </div>
+                    
+                    {/* View Details Buttons */}
+                    {(likeCount > 0 || attendeeCount > 0) && (
+                      <div className="flex gap-2">
+                        {likeCount > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowLikesDialog(true)}
+                            className="flex-1 gap-2 h-9"
+                          >
+                            <Heart className="w-4 h-4 text-red-500" />
+                            <span className="text-xs">View {likeCount} {likeCount === 1 ? 'Like' : 'Likes'}</span>
+                          </Button>
+                        )}
+                        {attendeeCount > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAttendeesDialog(true)}
+                            className="flex-1 gap-2 h-9"
+                          >
+                            <Users className="w-4 h-4 text-primary" />
+                            <span className="text-xs">View {attendeeCount} {attendeeCount === 1 ? 'Attendee' : 'Attendees'}</span>
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </div>
 

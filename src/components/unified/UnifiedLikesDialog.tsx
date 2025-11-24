@@ -73,50 +73,54 @@ const UnifiedLikesDialog = ({ open, onOpenChange, contentType, contentId }: Unif
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Heart className="w-5 h-5 fill-red-500 text-red-500" />
+      <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 border-b shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Heart className="w-5 h-5 sm:w-6 sm:h-6 fill-red-500 text-red-500" />
             {getContentLabel()} Likes
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm sm:text-base">
             {likes.length} {likes.length === 1 ? 'person likes' : 'people like'} this {getContentLabel().toLowerCase()}
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh]">
+        <ScrollArea className="flex-1 px-4 sm:px-6 py-2">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
             </div>
           ) : likes.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No likes yet
+            <div className="text-center py-12 text-muted-foreground">
+              <Heart className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p>No likes yet</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 pb-4">
               {likes.map((like) => (
                 <div
                   key={like.user_id}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="flex items-center gap-3 p-3 sm:p-4 rounded-xl hover:bg-accent/50 active:bg-accent transition-all cursor-pointer group"
                   onClick={() => {
                     navigate(`/user/${like.user_id}`);
                     onOpenChange(false);
                   }}
                 >
-                  <Avatar className="w-12 h-12">
+                  <Avatar className="w-12 h-12 sm:w-14 sm:h-14 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
                     <AvatarImage src={like.profiles.avatar_url || undefined} />
-                    <AvatarFallback>{like.profiles.username[0]}</AvatarFallback>
+                    <AvatarFallback className="text-base sm:text-lg font-semibold bg-primary/10">
+                      {like.profiles.username[0]?.toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{like.profiles.full_name}</p>
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className="font-semibold text-sm sm:text-base truncate">{like.profiles.full_name}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">
                       @{like.profiles.username}
                     </p>
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
                     {formatDistanceToNow(new Date(like.created_at), { addSuffix: true })}
                   </span>
+                  <Heart className="w-4 h-4 fill-red-500 text-red-500 shrink-0" />
                 </div>
               ))}
             </div>
