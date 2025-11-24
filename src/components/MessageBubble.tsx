@@ -2,7 +2,7 @@ import { Message } from '@/hooks/useMessageThread';
 import { Check, CheckCheck, Reply, Trash2, Forward } from 'lucide-react';
 import { LazyImage } from './LazyImage';
 import { VoiceWaveform } from './VoiceWaveform';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo, useCallback } from 'react';
 
 interface MessageBubbleProps {
   message: Message;
@@ -14,7 +14,7 @@ interface MessageBubbleProps {
   children?: React.ReactNode;
 }
 
-export const MessageBubble = ({
+export const MessageBubble = memo(({
   message,
   isOwn,
   replyMessage,
@@ -29,13 +29,13 @@ export const MessageBubble = ({
   const touchStartY = useRef(0);
   const bubbleRef = useRef<HTMLDivElement>(null);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
     setIsSwiping(true);
-  };
+  }, []);
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSwiping) return;
 
     const touchX = e.touches[0].clientX;
@@ -56,9 +56,9 @@ export const MessageBubble = ({
         setSwipeOffset(newOffset);
       }
     }
-  };
+  }, [isSwiping, isOwn]);
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     setIsSwiping(false);
     
     // If swiped enough, trigger action
@@ -70,7 +70,7 @@ export const MessageBubble = ({
     } else {
       setSwipeOffset(0);
     }
-  };
+  }, [swipeOffset]);
 
   useEffect(() => {
     // Reset swipe when message changes
@@ -241,4 +241,15 @@ export const MessageBubble = ({
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for better performance
+  return (
+    prevProps.message.id === nextProps.message.id &&
+    prevProps.message.content === nextProps.message.content &&
+    prevProps.message.read === nextProps.message.read &&
+    prevProps.message.delivered === nextProps.message.delivered &&
+    prevProps.message.edited === nextProps.message.edited &&
+    JSON.stringify(prevProps.message.reactions) === JSON.stringify(nextProps.message.reactions) &&
+    prevProps.isOwn === nextProps.isOwn
+  );
+});

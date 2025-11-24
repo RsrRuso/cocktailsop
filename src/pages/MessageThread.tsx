@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Smile, Settings } from "lucide-react";
@@ -96,7 +96,7 @@ const MessageThread = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!newMessage.trim() || !currentUser || !conversationId) return;
 
     const trimmedMessage = newMessage.trim();
@@ -131,15 +131,19 @@ const MessageThread = () => {
       }
 
       updateTypingStatus(false);
-      await supabase
-        .from("conversations")
-        .update({ last_message_at: new Date().toISOString() })
-        .eq("id", conversationId);
+      
+      // Update conversation timestamp in background
+      requestAnimationFrame(() => {
+        supabase
+          .from("conversations")
+          .update({ last_message_at: new Date().toISOString() })
+          .eq("id", conversationId);
+      });
     } catch (error) {
       console.error("Failed to send message:", error);
       setNewMessage(trimmedMessage);
     }
-  };
+  }, [newMessage, currentUser, conversationId, replyingTo, editingMessage, updateTypingStatus]);
 
   const quickEmojis = ["🔥", "❤️", "👍", "😂", "😮", "😢", "🎉", "👏"];
   const allEmojis = [
