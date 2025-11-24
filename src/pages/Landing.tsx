@@ -31,12 +31,12 @@ const Landing = () => {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 glow-primary" />
-            <span className="text-2xl font-bold text-gradient-primary">SpecVerse</span>
+        <header className="px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 glow-primary" />
+            <span className="text-xl sm:text-2xl font-bold text-gradient-primary">SpecVerse</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Button
               variant="ghost"
               size="icon"
@@ -44,18 +44,18 @@ const Landing = () => {
               className="text-foreground hover:text-primary"
               title="Test Notification"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
             <Button
               variant="ghost"
               onClick={() => navigate("/auth")}
-              className="text-foreground hover:text-primary"
+              className="text-foreground hover:text-primary text-sm sm:text-base hidden sm:inline-flex"
             >
               Sign In
             </Button>
             <Button
               onClick={() => navigate("/auth")}
-              className="glass glow-primary border-primary/30 hover:border-primary/50"
+              className="glass glow-primary border-primary/30 hover:border-primary/50 text-sm sm:text-base px-3 sm:px-4"
             >
               Get Started
             </Button>
@@ -72,11 +72,11 @@ const Landing = () => {
             </div>
 
             {/* Main Heading */}
-            <div className="space-y-4">
-              <h1 className="text-6xl md:text-8xl font-bold text-gradient-primary tracking-tight">
+            <div className="space-y-3 sm:space-y-4">
+              <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold text-gradient-primary tracking-tight">
                 SpecVerse
               </h1>
-              <h2 className="text-4xl md:text-5xl font-bold text-white">
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white">
                 Capital & Career
                 <br />
                 Ecosystem
@@ -84,77 +84,78 @@ const Landing = () => {
             </div>
 
             {/* Description */}
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
               The first proof-of-work platform connecting verified hospitality professionals 
               with investors, opportunities, and recognition.
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-6 sm:pt-8 px-4">
               <Button
                 size="lg"
                 onClick={() => navigate("/auth")}
-                className="glass glow-primary border-primary/30 hover:border-primary/50 px-8 py-6 text-lg"
+                className="glass glow-primary border-primary/30 hover:border-primary/50 w-full sm:w-auto px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg"
               >
                 Join the Network
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="glass hover:border-accent/50 px-8 py-6 text-lg"
+                onClick={() => navigate("/introduction")}
+                className="glass hover:border-accent/50 w-full sm:w-auto px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg"
               >
                 Learn More
               </Button>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-16">
-              <div className="glass rounded-2xl p-6 space-y-2 glow-primary">
-                <div className="text-4xl font-bold text-gradient-gold">$2M+</div>
-                <div className="text-sm text-muted-foreground">Total Investment</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 pt-8 sm:pt-16 px-4">
+              <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-1 sm:space-y-2 glow-primary">
+                <div className="text-2xl sm:text-4xl font-bold text-gradient-gold">$2M+</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Total Investment</div>
               </div>
-              <div className="glass rounded-2xl p-6 space-y-2">
-                <div className="text-4xl font-bold text-gradient-primary">2.4K</div>
-                <div className="text-sm text-muted-foreground">Professionals</div>
+              <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-1 sm:space-y-2">
+                <div className="text-2xl sm:text-4xl font-bold text-gradient-primary">2.4K</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Professionals</div>
               </div>
-              <div className="glass rounded-2xl p-6 space-y-2">
-                <div className="text-4xl font-bold text-white">100%</div>
-                <div className="text-sm text-muted-foreground">Verified</div>
+              <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-1 sm:space-y-2">
+                <div className="text-2xl sm:text-4xl font-bold text-white">100%</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Verified</div>
               </div>
-              <div className="glass rounded-2xl p-6 space-y-2 glow-gold">
-                <div className="text-4xl font-bold text-gradient-gold">850+</div>
-                <div className="text-sm text-muted-foreground">Opportunities</div>
+              <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-1 sm:space-y-2 glow-gold">
+                <div className="text-2xl sm:text-4xl font-bold text-gradient-gold">850+</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Opportunities</div>
               </div>
             </div>
 
             {/* Features */}
-            <div className="grid md:grid-cols-3 gap-6 pt-12">
-              <div className="glass rounded-2xl p-6 text-left space-y-3 glass-hover">
-                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center glow-primary">
-                  <TrendingUp className="w-6 h-6 text-primary" />
+            <div className="grid md:grid-cols-3 gap-4 sm:gap-6 pt-8 sm:pt-12 px-4">
+              <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6 text-left space-y-2 sm:space-y-3 glass-hover">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/20 flex items-center justify-center glow-primary">
+                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold">Career Growth</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="text-lg sm:text-xl font-semibold">Career Growth</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Track your professional journey and showcase your achievements
                 </p>
               </div>
 
-              <div className="glass rounded-2xl p-6 text-left space-y-3 glass-hover">
-                <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center glow-accent">
-                  <Users className="w-6 h-6 text-accent" />
+              <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6 text-left space-y-2 sm:space-y-3 glass-hover">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-accent/20 flex items-center justify-center glow-accent">
+                  <Users className="w-5 h-5 sm:w-6 sm:h-6 text-accent" />
                 </div>
-                <h3 className="text-xl font-semibold">Network Effect</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="text-lg sm:text-xl font-semibold">Network Effect</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Connect with verified professionals and industry leaders
                 </p>
               </div>
 
-              <div className="glass rounded-2xl p-6 text-left space-y-3 glass-hover">
-                <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center glow-gold">
-                  <Briefcase className="w-6 h-6 text-yellow-500" />
+              <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6 text-left space-y-2 sm:space-y-3 glass-hover">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center glow-gold">
+                  <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
                 </div>
-                <h3 className="text-xl font-semibold">Smart Tools</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="text-lg sm:text-xl font-semibold">Smart Tools</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Access professional tools for batch calculations and recipes
                 </p>
               </div>
