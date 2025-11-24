@@ -959,30 +959,24 @@ export default function StaffScheduling() {
       
       const allStationBartenders = [...shuffledWorkingSeniorBartenders, ...shuffledWorkingBartenders];
       
-      // Separate regular bartenders from seniors/heads
-      const regularBartenders = shuffledWorkingBartenders; // These are just 'bartender' role
-      const seniorStaff = shuffledWorkingSeniorBartenders; // These include both senior_bartender and head_bartender
-      
-      // OUTDOOR ALLOCATION: Always 1 bartender outdoor (minimum 2 total outdoor with barback)
-      // This ensures min 2 outdoor (1 bartender + 1 barback), max 3 outdoor (+ 1 head)
-      const numRegularBartenders = regularBartenders.length;
-      
-      // Create station assignments ONLY for regular bartenders (max 3 stations)
+      // ALL BARTENDERS (senior + regular) should get station assignments
+      // Create station assignments for ALL bartenders (max 3 stations)
       // Station 1, Station 2, Garnishing Station 3
       const stations: string[] = [];
+      const numAllBartenders = allStationBartenders.length;
       
-      if (numRegularBartenders >= 1) {
+      if (numAllBartenders >= 1) {
         stations.push('Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain');
       }
-      if (numRegularBartenders >= 2) {
+      if (numAllBartenders >= 2) {
         stations.push('Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain');
       }
-      if (numRegularBartenders >= 3) {
+      if (numAllBartenders >= 3) {
         stations.push('Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain');
       }
 
-      // Assign stations to REGULAR BARTENDERS ONLY
-      regularBartenders.forEach((schedule, idx) => {
+      // Assign stations to ALL BARTENDERS (senior + regular)
+      allStationBartenders.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
         // Skip if already assigned to avoid duplicates
@@ -1012,7 +1006,7 @@ export default function StaffScheduling() {
         }
         
         if (idx < 3 && idx < stations.length) {
-          // First 3 regular bartenders get numbered stations
+          // First 3 bartenders (senior + regular) get numbered stations
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
@@ -1022,7 +1016,7 @@ export default function StaffScheduling() {
           };
           assignedStaffIds.add(schedule.staff.id);
         } else {
-          // Extra regular bartenders beyond 3 become support
+          // Extra bartenders beyond 3 become support
           newSchedule[key] = {
             staffId: schedule.staff.id,
             day,
@@ -1032,47 +1026,6 @@ export default function StaffScheduling() {
           };
           assignedStaffIds.add(schedule.staff.id);
         }
-      });
-      
-      // Assign SENIORS/HEADS as SUPPORT (no station numbers)
-      seniorStaff.forEach((schedule, idx) => {
-        const key = `${schedule.staff.id}-${day}`;
-        
-        // Skip if already assigned to avoid duplicates
-        if (assignedStaffIds.has(schedule.staff.id)) {
-          console.warn(`⚠️ Skipping duplicate assignment for ${schedule.staff.name} on ${day}`);
-          return;
-        }
-        
-        // Determine time range based on day type
-        let timeRange;
-        let type: ScheduleCell['type'] = 'regular';
-        if (isBrunchDay) {
-          timeRange = '4:00 PM - 1:00 AM';
-          type = 'early_shift';
-        } else if (isPickupDay && idx === 0) {
-          timeRange = '4:00 PM - 1:00 AM';
-          type = 'early_shift';
-        } else if (day === 'Wednesday') {
-          timeRange = idx === 0 ? '4:00 PM - 1:00 AM' : '5:00 PM - 3:00 AM';
-          type = idx === 0 ? 'early_shift' : 'late_shift';
-        } else if (day === 'Saturday') {
-          timeRange = '4:00 PM - 1:00 AM';
-          type = 'early_shift';
-        } else {
-          timeRange = '5:00 PM - 3:00 AM';
-          type = 'late_shift';
-        }
-        
-        // Seniors always get support assignment (no numbered station)
-        newSchedule[key] = {
-          staffId: schedule.staff.id,
-          day,
-          timeRange,
-          type,
-          station: 'Indoor - Support Station 2 or Station 1: Can assist either Station 1 or Station 2'
-        };
-        assignedStaffIds.add(schedule.staff.id);
       });
 
       // === PRIORITY 3: BAR BACKS - PRIORITY ROLE ===
