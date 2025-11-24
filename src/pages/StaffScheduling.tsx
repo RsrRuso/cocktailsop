@@ -1044,11 +1044,12 @@ export default function StaffScheduling() {
         
         // Check area allocation from team_staff
         const staffMember = staffMembers.find(s => s.id === schedule.staff.id);
-        const areaAllocation = staffMember?.area_allocation || 'indoor';
+        // Default to indoor for backward compatibility
+        const areaAllocation = 'indoor';
         
         let station = '';
         
-        // Assign based on area allocation
+        // Assign based on area allocation (for now default to indoor, can be extended later)
         if (areaAllocation === 'indoor' && availableIndoorStations.length > 0) {
           // Calculate rotation for this staff on this date
           const rotationHash = (dateStr + schedule.staff.name).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
