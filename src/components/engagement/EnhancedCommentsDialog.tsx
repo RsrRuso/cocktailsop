@@ -165,7 +165,6 @@ export const EnhancedCommentsDialog = ({
 
       setNewComment('');
       setReplyingTo(null);
-      onCommentChange?.();
     } catch (err) {
       console.error('Error submitting comment:', err);
       toast.error('Failed to post comment');
@@ -183,7 +182,6 @@ export const EnhancedCommentsDialog = ({
         .eq('user_id', user?.id);
 
       if (error) throw error;
-      onCommentChange?.();
     } catch (err) {
       console.error('Error deleting comment:', err);
       toast.error('Failed to delete');
@@ -200,7 +198,6 @@ export const EnhancedCommentsDialog = ({
 
       if (error) throw error;
       setEditingId(null);
-      onCommentChange?.();
     } catch (err) {
       console.error('Error editing comment:', err);
       toast.error('Failed to update');
