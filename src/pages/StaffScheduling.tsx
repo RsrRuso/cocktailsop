@@ -960,22 +960,14 @@ export default function StaffScheduling() {
       const allStationBartenders = [...shuffledWorkingSeniorBartenders, ...shuffledWorkingBartenders];
       
       // ALL BARTENDERS (senior + regular) should get station assignments
-      // Create station assignments for ALL bartenders (max 3 stations)
-      // Station 1, Station 2, Garnishing Station 3
-      const stations: string[] = [];
-      const numAllBartenders = allStationBartenders.length;
-      
-      if (numAllBartenders >= 1) {
-        stations.push('Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain');
-      }
-      if (numAllBartenders >= 2) {
-        stations.push('Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain');
-      }
-      if (numAllBartenders >= 3) {
-        stations.push('Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain');
-      }
+      // Indoor bar has 3 stations - cycle through them for all bartenders
+      const stations = [
+        'Indoor - Station 1: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Indoor - Station 2: Operate station, supervise bar backs, manage closing, refresh & maintain',
+        'Indoor - Garnishing Station 3: Operate station, supervise bar backs, manage closing, refresh & maintain'
+      ];
 
-      // Assign stations to ALL BARTENDERS (senior + regular)
+      // Assign stations to ALL BARTENDERS - cycle through the 3 stations
       allStationBartenders.forEach((schedule, idx) => {
         const key = `${schedule.staff.id}-${day}`;
         
@@ -1005,27 +997,16 @@ export default function StaffScheduling() {
           type = 'late_shift';
         }
         
-        if (idx < 3 && idx < stations.length) {
-          // First 3 bartenders (senior + regular) get numbered stations
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange,
-            type,
-            station: stations[idx]
-          };
-          assignedStaffIds.add(schedule.staff.id);
-        } else {
-          // Extra bartenders beyond 3 become support
-          newSchedule[key] = {
-            staffId: schedule.staff.id,
-            day,
-            timeRange,
-            type,
-            station: 'Indoor - Support Station 2 or Station 1: Can assist either Station 1 or Station 2'
-          };
-          assignedStaffIds.add(schedule.staff.id);
-        }
+        // Cycle through the 3 stations (use modulo to wrap around)
+        const stationIndex = idx % 3;
+        newSchedule[key] = {
+          staffId: schedule.staff.id,
+          day,
+          timeRange,
+          type,
+          station: stations[stationIndex]
+        };
+        assignedStaffIds.add(schedule.staff.id);
       });
 
       // === PRIORITY 3: BAR BACKS - PRIORITY ROLE ===
