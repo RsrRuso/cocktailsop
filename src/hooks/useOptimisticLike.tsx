@@ -51,7 +51,7 @@ export const useOptimisticLike = (
       // Mark as processing
       processingRef.current.add(itemId);
 
-      // Optimistic updates - instant feedback
+      // Optimistic updates - instant feedback (UI only, database trigger handles counts)
       setLikedItems((prev) => {
         const newSet = new Set(prev);
         if (isLiked) {
@@ -61,9 +61,6 @@ export const useOptimisticLike = (
         }
         return newSet;
       });
-
-      // Update count immediately
-      updateCount?.(increment);
 
       // Background API call with request deduplication
       try {
@@ -122,7 +119,6 @@ export const useOptimisticLike = (
           }
           return newSet;
         });
-        updateCount?.(-increment);
       } finally {
         // Remove from processing
         processingRef.current.delete(itemId);
