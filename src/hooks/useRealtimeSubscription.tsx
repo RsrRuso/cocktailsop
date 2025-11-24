@@ -16,10 +16,16 @@ export const useRealtimeSubscription = ({
   filter,
   event = '*',
   onUpdate,
-  debounceMs = 1000,
+  debounceMs = 500,
 }: SubscriptionOptions) => {
   const debounceRef = useRef<NodeJS.Timeout>();
   const isMountedRef = useRef(true);
+  const onUpdateRef = useRef(onUpdate);
+
+  // Keep onUpdate ref fresh without re-subscribing
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -27,7 +33,7 @@ export const useRealtimeSubscription = ({
     const debouncedUpdate = () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        if (isMountedRef.current) onUpdate();
+        if (isMountedRef.current) onUpdateRef.current();
       }, debounceMs);
     };
 

@@ -136,13 +136,14 @@ const StoreManagement = () => {
       setPersonalInventoryName(localStorage.getItem('personalInventoryName') || 'Personal Inventory');
     };
     
+    // Listen for storage events from other tabs
     window.addEventListener('storage', handleStorageChange);
-    // Also check on mount and when returning to this page
-    const interval = setInterval(handleStorageChange, 500);
+    // Check on focus instead of interval for better performance
+    window.addEventListener('focus', handleStorageChange);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
+      window.removeEventListener('focus', handleStorageChange);
     };
   }, []);
 
