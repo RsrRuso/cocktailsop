@@ -57,42 +57,60 @@ export const FeedItem = memo(({
   useViewTracking('post', item.id, currentUserId, true);
 
   return (
-    <div className="glass rounded-xl p-2 space-y-3 border border-border/50">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-2 pt-2">
-        <div 
-          className="relative cursor-pointer"
-          onClick={() => navigate(`/user/${item.user_id}`)}
-        >
-          <OptimizedAvatar
-            src={item.profiles?.avatar_url}
-            alt={item.profiles?.username || 'User'}
-            fallback={item.profiles?.username?.[0] || '?'}
-            userId={item.user_id}
-            className={`w-10 h-10 avatar-3d ring-1 ring-offset-1 ring-offset-background bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-gray-400 to-gray-200'}`}
-          />
-        </div>
-        <div 
-          className="flex-1 cursor-pointer"
-          onClick={() => navigate(`/user/${item.user_id}`)}
-        >
-          <div className="flex items-center gap-2">
-            <div className="flex items-center relative">
-              <p className="font-semibold">{item.profiles?.full_name || item.profiles?.username || 'Unknown User'}</p>
-              {item.profiles?.badge_level && (
-                <div className="relative ml-1.5 group">
-                  <div className={`absolute -inset-1 bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)} blur-md opacity-60 group-hover:opacity-100 transition-all duration-300 rounded-full animate-pulse`} />
-                  <div className={`relative w-5 h-5 rounded-full bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)} flex items-center justify-center text-[9px] font-bold text-white shadow-xl ring-2 ring-white/30 group-hover:scale-110 transition-transform duration-200`}>
-                    {item.profiles.badge_level[0].toUpperCase()}
-                  </div>
-                </div>
-              )}
+    <div className="group relative">
+      {/* Animated Glow Background */}
+      <div className="absolute -inset-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 animate-gradient-xy"></div>
+      
+      <div className="relative bg-gradient-to-br from-card/95 via-card to-card/95 backdrop-blur-xl rounded-2xl border border-border/50 group-hover:border-primary/30 transition-all duration-300 overflow-hidden">
+        {/* Subtle AI Pattern Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 opacity-50"></div>
+        
+        <div className="relative p-4 space-y-4">
+          {/* Enhanced Header */}
+          <div className="flex items-center gap-3">
+            <div 
+              className="relative cursor-pointer group/avatar"
+              onClick={() => navigate(`/user/${item.user_id}`)}
+            >
+              {/* Avatar Glow Effect */}
+              <div className={`absolute -inset-1 bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-purple-500 to-pink-500'} rounded-full blur-md opacity-50 group-hover/avatar:opacity-100 transition-opacity animate-pulse`}></div>
+              
+              <OptimizedAvatar
+                src={item.profiles?.avatar_url}
+                alt={item.profiles?.username || 'User'}
+                fallback={item.profiles?.username?.[0] || '?'}
+                userId={item.user_id}
+                className={`relative w-12 h-12 ring-2 ring-primary/20 group-hover/avatar:ring-primary/50 transition-all duration-300 group-hover/avatar:scale-105 bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-gray-400 to-gray-200'}`}
+              />
             </div>
-          </div>
-          <p className="text-sm text-blue-500 capitalize">
-            {item.profiles?.professional_title?.replace(/_/g, " ") || ''}
-          </p>
-        </div>
+            
+            <div 
+              className="flex-1 cursor-pointer"
+              onClick={() => navigate(`/user/${item.user_id}`)}
+            >
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-lg bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                  {item.profiles?.full_name || item.profiles?.username || 'Unknown User'}
+                </p>
+                {item.profiles?.badge_level && (
+                  <div className="relative group/badge">
+                    <div className={`absolute -inset-2 bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)} blur-lg opacity-50 group-hover/badge:opacity-100 transition-all duration-300 rounded-full animate-pulse`} />
+                    <div className={`relative w-6 h-6 rounded-full bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)} flex items-center justify-center text-[10px] font-black text-white shadow-2xl ring-2 ring-white/40 group-hover/badge:scale-110 group-hover/badge:rotate-12 transition-all duration-300`}>
+                      {item.profiles.badge_level[0].toUpperCase()}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                  {item.profiles?.professional_title?.replace(/_/g, " ") || ''}
+                </p>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Brain className="w-3 h-3 text-purple-400" />
+                  <span>AI</span>
+                </div>
+              </div>
+            </div>
         
         {currentUserId && item.user_id === currentUserId && (
           <DropdownMenu>
@@ -168,55 +186,85 @@ export const FeedItem = memo(({
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex items-center gap-4 px-2 pb-1">
-        <button 
-          onClick={onLike}
-          className={`flex items-center gap-2 transition-all hover:scale-110 ${
-            isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'
-          }`}
-        >
-          <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-          <span 
-            className="text-sm font-bold min-w-[20px] cursor-pointer hover:underline"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowLikes(true);
-            }}
-          >
-            {item.like_count || 0}
-          </span>
-        </button>
-        <button 
-          onClick={() => setShowComments(true)}
-          className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"
-        >
-          <MessageCircle className="w-5 h-5" />
-          <span className="text-sm font-bold min-w-[20px]">{item.comment_count || 0}</span>
-        </button>
-        <button 
-          onClick={onShare}
-          className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-all hover:scale-110"
-        >
-          <Send className="w-5 h-5" />
-          <span className="text-xs">Send</span>
-        </button>
-        
-        {/* AI Insights Button */}
-        <button
-          onClick={() => setShowInsights(true)}
-          className="flex items-center gap-1.5 ml-auto px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 transition-all hover:scale-105 group"
-        >
-          <Brain className="w-4 h-4 text-purple-500 group-hover:text-pink-500 transition-colors" />
-          <Sparkles className="w-3 h-3 text-pink-500 animate-pulse" />
-          <span className="text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-            AI Insights
-          </span>
-        </button>
-        
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Eye className="w-5 h-5" />
-          <span className="text-sm font-bold">{item.view_count || 0}</span>
+          {/* Enhanced Actions Bar with AI Design */}
+          <div className="flex items-center gap-3 pt-2 border-t border-border/30">
+            {/* Like Button with Glow */}
+            <div className="relative group/like">
+              <div className={`absolute -inset-1 rounded-full blur-md transition-all duration-300 ${
+                isLiked 
+                  ? 'bg-gradient-to-r from-red-500 to-pink-500 opacity-50 group-hover/like:opacity-75' 
+                  : 'bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover/like:opacity-30'
+              }`}></div>
+              
+              <button 
+                onClick={onLike}
+                className={`relative flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                  isLiked 
+                    ? 'bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-500/30 text-red-500 hover:scale-110' 
+                    : 'bg-card/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-pink-500/10 border border-transparent hover:border-primary/20 text-muted-foreground hover:text-primary hover:scale-105'
+                }`}
+              >
+                <Heart className={`w-5 h-5 transition-all duration-300 ${isLiked ? 'fill-current scale-110' : ''}`} />
+                <span 
+                  className="text-sm font-bold min-w-[20px] cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowLikes(true);
+                  }}
+                >
+                  {item.like_count || 0}
+                </span>
+              </button>
+            </div>
+
+            {/* Comment Button with Glow */}
+            <div className="relative group/comment">
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur-md opacity-0 group-hover/comment:opacity-30 transition-opacity duration-300"></div>
+              
+              <button 
+                onClick={() => setShowComments(true)}
+                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-500/10 border border-transparent hover:border-primary/20 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-105"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="text-sm font-bold min-w-[20px]">{item.comment_count || 0}</span>
+              </button>
+            </div>
+
+            {/* Share Button with Glow */}
+            <div className="relative group/share">
+              <div className="absolute -inset-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full blur-md opacity-0 group-hover/share:opacity-30 transition-opacity duration-300"></div>
+              
+              <button 
+                onClick={onShare}
+                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 hover:bg-gradient-to-r hover:from-green-500/10 hover:to-emerald-500/10 border border-transparent hover:border-green-500/20 text-muted-foreground hover:text-green-500 transition-all duration-300 hover:scale-105"
+              >
+                <Send className="w-5 h-5" />
+                <span className="text-xs font-medium">Share</span>
+              </button>
+            </div>
+            
+            {/* AI Insights Button - Enhanced */}
+            <div className="relative ml-auto group/ai">
+              <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500 rounded-full blur-md opacity-40 group-hover/ai:opacity-70 transition-opacity duration-300 animate-pulse"></div>
+              
+              <button
+                onClick={() => setShowInsights(true)}
+                className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 hover:from-purple-500/30 hover:via-pink-500/30 hover:to-blue-500/30 border border-purple-500/40 hover:border-purple-500/60 transition-all duration-300 hover:scale-105"
+              >
+                <Brain className="w-4 h-4 text-purple-400 group-hover/ai:text-pink-400 transition-colors" />
+                <Sparkles className="w-3.5 h-3.5 text-pink-400 group-hover/ai:text-blue-400 animate-pulse transition-colors" />
+                <span className="text-xs font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+                  AI Insights
+                </span>
+              </button>
+            </div>
+            
+            {/* Views Counter with Icon */}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-card/30 border border-border/20">
+              <Eye className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-bold text-muted-foreground">{item.view_count || 0}</span>
+            </div>
+          </div>
         </div>
       </div>
 
