@@ -3147,16 +3147,17 @@ export default function StaffScheduling() {
                                 // Generate appropriate station based on role if not already set
                                 let station = cell?.station || '';
                                 if (!station && value !== 'OFF') {
+                                  const area = staff.area_allocation || 'indoor';
                                   if (staff.title === 'head_bartender') {
-                                    station = 'Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow';
+                                    station = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'}: Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow`;
                                   } else if (staff.title === 'bar_back') {
-                                    station = 'Handle pickups and refills, polish glassware, stock supplies and prepare garnishes';
+                                    station = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'}: Handle pickups and refills, polish glassware, stock supplies and prepare garnishes`;
                                   } else if (staff.title === 'support') {
-                                    station = 'Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance';
+                                    station = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'}: Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance`;
                                   } else if (staff.title === 'senior_bartender') {
-                                    station = 'Indoor - Station 1: Work behind assigned bar station, train junior staff members, ensure health and safety compliance';
+                                    station = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Station 1: Work behind assigned bar station, train junior staff members, ensure health and safety compliance`;
                                   } else if (staff.title === 'bartender') {
-                                    station = 'Indoor - Station 1: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards';
+                                    station = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Station 1: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
                                   }
                                 }
                                 
@@ -3180,14 +3181,14 @@ export default function StaffScheduling() {
                             </Select>
                             {cell?.timeRange && cell.timeRange !== 'OFF' && (
                               <Select
-                                value={cell?.station?.toLowerCase().includes('outdoor') ? 'outdoor' : cell?.station?.toLowerCase().includes('indoor') ? 'indoor' : 'indoor'}
+                                value={staff.area_allocation || (cell?.station?.toLowerCase().includes('outdoor') ? 'outdoor' : 'indoor')}
                                 onValueChange={(area) => {
                                   const currentStation = cell?.station || '';
                                   let newStation = '';
                                   
                                   // Generate appropriate station based on staff role and selected area
                                   if (staff.title === 'head_bartender') {
-                                    newStation = 'Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow';
+                                    newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'}: Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow`;
                                   } else if (staff.title === 'senior_bartender') {
                                     if (currentStation.includes('Station 1') || currentStation.includes('Station 2') || currentStation.includes('Station 3')) {
                                       const stationNum = currentStation.match(/Station (\d)/)?.[1] || '1';
@@ -3213,10 +3214,22 @@ export default function StaffScheduling() {
                                       newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'} - Station 1: Work behind assigned bar station, supervise bar backs, maintain hygiene and service standards`;
                                     }
                                   } else if (staff.title === 'bar_back') {
-                                    newStation = 'Handle pickups and refills, polish glassware, stock supplies and prepare garnishes';
+                                    newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'}: Handle pickups and refills, polish glassware, stock supplies and prepare garnishes`;
                                   } else if (staff.title === 'support') {
-                                    newStation = 'Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance';
+                                    newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'}: Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance`;
                                   }
+                                  
+                                  // Update staff area_allocation in database
+                                  supabase
+                                    .from('staff_members')
+                                    .update({ area_allocation: area })
+                                    .eq('id', staff.id)
+                                    .then(() => {
+                                      // Update local state
+                                      setStaffMembers(prev => prev.map(s => 
+                                        s.id === staff.id ? { ...s, area_allocation: area as 'indoor' | 'outdoor' } : s
+                                      ));
+                                    });
                                   
                                   updateScheduleCell(staff.id, day, cell.timeRange, cell.type, newStation, cell?.breakStart, cell?.breakEnd);
                                 }}
