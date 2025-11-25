@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Download, Trash2, FileText, Edit } from "lucide-react";
+import { ArrowLeft, Download, Trash2, FileText, Edit, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -221,6 +221,33 @@ const CocktailSOPLibrary = () => {
       </div>
 
       <div className="container mx-auto px-4 py-6">
+        {/* Classic Cocktails Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <BookOpen className="h-6 w-6" />
+            Classic Cocktails
+          </h2>
+          <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">ATTIKO Classic Cocktails Collection</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Reference guide for timeless cocktail recipes and techniques
+                </p>
+              </div>
+              <Button
+                onClick={() => window.open('/classic-cocktails.pdf', '_blank')}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                View PDF
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        {/* User Recipes Section */}
+        <h2 className="text-2xl font-bold mb-4">My Recipes</h2>
         {loading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading recipes...</p>
