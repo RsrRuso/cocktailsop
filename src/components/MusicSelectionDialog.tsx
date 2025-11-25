@@ -10,6 +10,7 @@ import { toast } from "sonner";
 interface MusicSelectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSelect?: (track: MusicTrack) => void; // Optional callback for story editor
 }
 
 interface MusicTrack {
@@ -23,7 +24,7 @@ interface MusicTrack {
   preview_audio?: string | null; // 30s audio preview
 }
 
-const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps) => {
+const MusicSelectionDialog = ({ open, onOpenChange, onSelect }: MusicSelectionDialogProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [popularTracks, setPopularTracks] = useState<MusicTrack[]>([]);
   const [selectedTrack, setSelectedTrack] = useState<MusicTrack | null>(null);
@@ -100,6 +101,19 @@ const MusicSelectionDialog = ({ open, onOpenChange }: MusicSelectionDialogProps)
       setIsSubmitting(true);
       setSelectedTrack(track);
 
+      // If onSelect callback is provided (for story editor), use it instead of sharing
+      if (onSelect) {
+        onSelect(track);
+        toast.success(`✓ Music added: ${track.title}`);
+        setTimeout(() => {
+          onOpenChange(false);
+          setSelectedTrack(null);
+          setIsSubmitting(false);
+        }, 1000);
+        return;
+      }
+
+      // Otherwise, proceed with normal music sharing flow
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
 
