@@ -264,29 +264,16 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
         <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3">
           {/* Left section */}
           <div className="flex items-center gap-1 sm:gap-2 flex-1">
-            {/* Badge Level Indicator - Moved to left corner */}
-            {displayBadgeProfile?.badge_level && (
-              <div className="relative group">
-                <div className={`absolute -inset-1 sm:-inset-2 bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} blur-lg opacity-50 group-hover:opacity-75 transition-all duration-300 ${displayBadgeProfile.badge_level === 'platinum' ? 'rounded-xl' : 'rounded-full'} animate-pulse`} />
-                {displayBadgeProfile.badge_level === 'platinum' ? (
-                  <div className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
-                    <Star className="w-4 h-4 sm:w-5 sm:h-5 text-white" strokeWidth={2.5} fill="none" />
-                  </div>
-                ) : displayBadgeProfile.badge_level === 'gold' ? (
-                  <div className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
-                    <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-900" strokeWidth={2.5} fill="currentColor" />
-                  </div>
-                ) : displayBadgeProfile.badge_level === 'diamond' ? (
-                  <div className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
-                    <Diamond className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-900" strokeWidth={2} fill="none" />
-                  </div>
-                ) : (
-                  <div className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
-                    <Medal className="w-4 h-4 sm:w-5 sm:h-5 text-white" strokeWidth={2} />
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Business Hub Button - Top left corner */}
+            <button
+              onClick={() => {
+                lightTap();
+                navigate("/business-hub");
+              }}
+              className="glass-hover p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl"
+            >
+              <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
 
             {/* Shop Navigation */}
             <button
@@ -424,17 +411,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 <Wrench className="w-4 h-4 mr-2" />
                 Operations Tools
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/business-hub"); 
-                }}
-                className="cursor-pointer"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Business Hub
-              </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => { 
                   lightTap(); 
                   navigate("/introduction"); 
