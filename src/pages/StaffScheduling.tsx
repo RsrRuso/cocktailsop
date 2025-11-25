@@ -3060,20 +3060,20 @@ export default function StaffScheduling() {
                       </div>
                     )}
 
-                    {/* Low Stock Glassware Section */}
-                    {lowStockItems.length > 0 && (
-                      <div className="mb-4 relative overflow-hidden rounded-lg bg-gradient-to-br from-orange-500/20 via-red-500/20 to-pink-500/20 border border-orange-500/40 p-3">
-                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBzdHJva2Utd2lkdGg9IjIiLz48L2c+PC9zdmc+')] opacity-20"></div>
-                        <div className="relative text-xs font-bold bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent mb-2.5 flex items-center gap-2">
-                          <span>🥂</span>
-                          <span>Low Stock Glassware ({lowStockItems.length} items)</span>
-                        </div>
+                    {/* Low Stock Glassware Section - Always Visible */}
+                    <div className="mb-4 relative overflow-hidden rounded-lg bg-gradient-to-br from-orange-500/20 via-red-500/20 to-pink-500/20 border border-orange-500/40 p-3">
+                      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBzdHJva2Utd2lkdGg9IjIiLz48L2c+PC9zdmc+')] opacity-20"></div>
+                      <div className="relative text-xs font-bold bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent mb-2.5 flex items-center gap-2">
+                        <span>🥂</span>
+                        <span>Low Stock Glassware ({lowStockItems.length} items)</span>
+                      </div>
+                      {lowStockItems.length > 0 ? (
                         <div className="relative space-y-2 max-h-64 overflow-y-auto">
                           {lowStockItems.map((item: any, idx: number) => {
-                            const itemName = item.items?.name || 'Unknown';
-                            const storeName = item.stores?.name || 'Unknown Store';
+                            const itemName = item.items?.name || item.fifo_items?.name || 'Unknown';
+                            const storeName = item.stores?.name || item.fifo_stores?.name || 'Unknown Store';
                             const quantity = item.quantity || 0;
-                            const photoUrl = item.items?.photo_url;
+                            const photoUrl = item.items?.photo_url || item.fifo_items?.photo_url;
                             
                             return (
                               <div key={idx} className="flex gap-2 items-center py-2 px-2.5 bg-gradient-to-r from-orange-950/40 to-red-950/40 border border-orange-800/30 rounded-lg hover:border-orange-600/50 transition-colors">
@@ -3103,8 +3103,13 @@ export default function StaffScheduling() {
                             );
                           })}
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="relative text-center py-4">
+                          <div className="text-xs text-orange-300/70">No low stock glassware at the moment</div>
+                          <div className="text-[10px] text-orange-400/50 mt-1">All glassware items are well stocked</div>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Daily Tasks */}
                     {specialEvents[day] && specialEvents[day].trim() !== '' && (
