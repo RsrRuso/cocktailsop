@@ -261,28 +261,28 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
   return (
     <>
       <div className={`fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3">
           {/* Left section */}
-          <div className="flex items-center gap-2 flex-1">
+          <div className="flex items-center gap-1 sm:gap-2 flex-1">
             {/* Badge Level Indicator - Moved to left corner */}
             {displayBadgeProfile?.badge_level && (
               <div className="relative group">
-                <div className={`absolute -inset-2 bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} blur-lg opacity-50 group-hover:opacity-75 transition-all duration-300 ${displayBadgeProfile.badge_level === 'platinum' ? 'rounded-xl' : 'rounded-full'} animate-pulse`} />
+                <div className={`absolute -inset-1 sm:-inset-2 bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} blur-lg opacity-50 group-hover:opacity-75 transition-all duration-300 ${displayBadgeProfile.badge_level === 'platinum' ? 'rounded-xl' : 'rounded-full'} animate-pulse`} />
                 {displayBadgeProfile.badge_level === 'platinum' ? (
-                  <div className={`relative w-10 h-10 rounded-xl bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
-                    <Star className="w-5 h-5 text-white" strokeWidth={2.5} fill="none" />
+                  <div className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                    <Star className="w-4 h-4 sm:w-5 sm:h-5 text-white" strokeWidth={2.5} fill="none" />
                   </div>
                 ) : displayBadgeProfile.badge_level === 'gold' ? (
-                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
-                    <Star className="w-5 h-5 text-yellow-900" strokeWidth={2.5} fill="currentColor" />
+                  <div className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                    <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-900" strokeWidth={2.5} fill="currentColor" />
                   </div>
                 ) : displayBadgeProfile.badge_level === 'diamond' ? (
-                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
-                    <Diamond className="w-5 h-5 text-cyan-900" strokeWidth={2} fill="none" />
+                  <div className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                    <Diamond className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-900" strokeWidth={2} fill="none" />
                   </div>
                 ) : (
-                  <div className={`relative w-10 h-10 rounded-full bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
-                    <Medal className="w-5 h-5 text-white" strokeWidth={2} />
+                  <div className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br ${getBadgeColor(displayBadgeProfile.badge_level)} flex items-center justify-center shadow-2xl ring-2 ring-white/40 group-hover:scale-110 transition-transform duration-200`}>
+                    <Medal className="w-4 h-4 sm:w-5 sm:h-5 text-white" strokeWidth={2} />
                   </div>
                 )}
               </div>
@@ -294,9 +294,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 lightTap();
                 navigate("/shop");
               }}
-              className="glass-hover p-2.5 rounded-2xl"
+              className="glass-hover p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl"
             >
-              <ShoppingCart className="w-5 h-5" />
+              <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             {/* Music Navigation */}
@@ -305,9 +305,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 lightTap();
                 navigate("/music");
               }}
-              className="glass-hover p-2.5 rounded-2xl"
+              className="glass-hover p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl"
             >
-              <Music className="w-5 h-5" />
+              <Music className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
 
@@ -317,17 +317,17 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
           </div>
 
           {/* Right section */}
-          <div className="flex items-center gap-2 flex-1 justify-end">
+          <div className="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
           <button
             onClick={() => {
               lightTap();
               navigate("/notifications");
             }}
-            className="glass-hover p-2.5 rounded-2xl relative"
+            className="glass-hover p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl relative"
           >
-            <Bell className="w-5 h-5" />
+            <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
             {unreadNotificationsCount > 0 && (
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+              <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white">
                 {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
               </div>
             )}
@@ -338,11 +338,11 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               lightTap();
               navigate("/messages");
             }}
-            className="glass-hover p-2.5 rounded-2xl relative"
+            className="glass-hover p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl relative"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-4 h-4 sm:w-5 sm:h-5" />
             {unreadMessagesCount > 0 && (
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+              <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white">
                 {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
               </div>
             )}
@@ -352,9 +352,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
             <DropdownMenuTrigger asChild>
               <button 
                 onClick={lightTap}
-                className="glass-hover p-2.5 rounded-2xl"
+                className="glass-hover p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl"
               >
-                <Menu className="w-5 h-5" />
+                <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="glass z-[60] bg-background/95 backdrop-blur-xl border border-border/50">
