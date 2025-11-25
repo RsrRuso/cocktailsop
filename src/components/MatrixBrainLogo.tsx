@@ -1,6 +1,6 @@
+import { Brain } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import matrixBrainImage from "@/assets/matrix-brain.png";
 
 export function MatrixBrainLogo() {
   const navigate = useNavigate();
@@ -61,10 +61,6 @@ export function MatrixBrainLogo() {
       {/* Brain icon container with ultra-realistic breathing */}
       <motion.div
         className="relative w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-500/20 to-green-500/20 border-2 border-emerald-500/40 backdrop-blur-sm shadow-[0_0_20px_rgba(16,185,129,0.4)]"
-        style={{ 
-          perspective: '1000px',
-          transformStyle: 'preserve-3d'
-        }}
         animate={{
           scale: [1, 1.15, 0.95, 1.12, 0.98, 1.08, 1],
           borderColor: [
@@ -117,36 +113,21 @@ export function MatrixBrainLogo() {
           }}
         />
 
-        {/* Realistic 3D brain - breathing with complex 3D movement */}
+        {/* Brain icon - realistic breathing with complex movement */}
         <motion.div
-          className="relative z-10"
-          style={{ 
-            transformStyle: 'preserve-3d',
-            perspective: '1000px'
-          }}
           animate={{
-            rotateX: [0, 15, -10, 12, -8, 10, 0],
-            rotateY: [0, -20, 15, -18, 12, -15, 0],
-            rotateZ: [0, 5, -4, 6, -3, 4, 0],
+            rotate: [0, 5, -4, 6, -3, 4, -5, 0],
             scale: [1, 1.08, 0.96, 1.05, 0.98, 1.06, 0.99, 1],
             y: [0, -2, 1, -1, 2, -1, 0],
-            z: [0, 20, -10, 15, -5, 10, 0],
+            x: [0, 1, -1, 2, -2, 1, 0],
           }}
           transition={{
-            duration: 4,
+            duration: 3.5,
             repeat: Infinity,
             ease: [0.42, 0, 0.58, 1],
           }}
         >
-          <img 
-            src={matrixBrainImage} 
-            alt="MATRIX AI Brain" 
-            className="w-8 h-8 object-contain"
-            style={{ 
-              filter: 'brightness(1.2) contrast(1.1) drop-shadow(0 0 12px rgba(16, 185, 129, 1)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5))',
-              transform: 'translateZ(20px)'
-            }}
-          />
+          <Brain className="w-6 h-6 text-emerald-400 relative z-10 drop-shadow-[0_0_12px_rgba(16,185,129,1)]" strokeWidth={2.8} />
         </motion.div>
 
         {/* Ultra chaotic glowing particles around brain */}
