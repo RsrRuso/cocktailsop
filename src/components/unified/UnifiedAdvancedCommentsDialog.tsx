@@ -236,10 +236,10 @@ const UnifiedAdvancedCommentsDialog = ({
     const replies = comments.filter((c) => c.parent_comment_id === comment.id);
 
     return (
-      <div key={comment.id} className={`${isReply ? "ml-10 sm:ml-14" : ""} mb-4`}>
-        <div className="flex gap-3 group">
+      <div key={comment.id} className={`${isReply ? "ml-8 sm:ml-14" : ""} mb-3 sm:mb-4`}>
+        <div className="flex gap-2 sm:gap-3 group">
           <Avatar
-            className="w-10 h-10 sm:w-11 sm:h-11 cursor-pointer shrink-0"
+            className="w-9 h-9 sm:w-11 sm:h-11 cursor-pointer shrink-0 active:scale-95 transition-transform"
             onClick={() => {
               navigate(`/user/${comment.user_id}`);
               onOpenChange(false);
@@ -252,11 +252,11 @@ const UnifiedAdvancedCommentsDialog = ({
           </Avatar>
 
           <div className="flex-1 min-w-0">
-            <div className="bg-accent/30 rounded-2xl px-4 py-3">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2 min-w-0">
+            <div className="bg-accent/30 rounded-2xl px-3 sm:px-4 py-2 sm:py-3 active:bg-accent/50 transition-colors">
+              <div className="flex items-center justify-between mb-1 gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
                   <p
-                    className="font-semibold text-sm cursor-pointer hover:underline truncate"
+                    className="font-semibold text-xs sm:text-sm cursor-pointer hover:underline truncate"
                     onClick={() => {
                       navigate(`/user/${comment.user_id}`);
                       onOpenChange(false);
@@ -264,17 +264,17 @@ const UnifiedAdvancedCommentsDialog = ({
                   >
                     {comment.profiles.full_name}
                   </p>
-                  <span className="text-xs text-muted-foreground shrink-0">
+                  <span className="text-[10px] sm:text-xs text-muted-foreground shrink-0">
                     {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                   </span>
                 </div>
 
                 {currentUserId === comment.user_id && !isEditing && (
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <div className="flex gap-0.5 sm:gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-8 w-8 sm:h-7 sm:w-7"
                       onClick={() => {
                         setEditingComment(comment);
                         setEditContent(comment.content);
@@ -285,10 +285,10 @@ const UnifiedAdvancedCommentsDialog = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      className="h-8 w-8 sm:h-7 sm:w-7 text-destructive hover:text-destructive"
                       onClick={() => handleDeleteComment(comment.id)}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                     </Button>
                   </div>
                 )}
@@ -299,7 +299,7 @@ const UnifiedAdvancedCommentsDialog = ({
                   <Textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="min-h-[60px] resize-none"
+                    className="min-h-[60px] resize-none text-sm sm:text-base"
                     placeholder="Edit your comment..."
                   />
                   <div className="flex gap-2 justify-end">
@@ -319,17 +319,17 @@ const UnifiedAdvancedCommentsDialog = ({
                   </div>
                 </div>
               ) : (
-                <p className="text-sm break-words">{comment.content}</p>
+                <p className="text-xs sm:text-sm break-words">{comment.content}</p>
               )}
             </div>
 
-            <div className="flex items-center gap-4 mt-2 px-2">
+            <div className="flex items-center gap-3 sm:gap-4 mt-2 px-2">
               <button
-                className="flex items-center gap-1.5 group/like"
+                className="flex items-center gap-1.5 group/like active:scale-95 transition-transform"
                 onClick={() => handleToggleLike(comment.id)}
               >
                 <Heart
-                  className={`w-4 h-4 transition-all ${
+                  className={`w-4 h-4 sm:w-5 sm:h-5 transition-all ${
                     isLiked
                       ? "fill-red-500 text-red-500"
                       : "text-muted-foreground group-hover/like:text-red-500"
@@ -344,10 +344,10 @@ const UnifiedAdvancedCommentsDialog = ({
 
               {!isReply && (
                 <button
-                  className="flex items-center gap-1.5 group/reply"
+                  className="flex items-center gap-1.5 group/reply active:scale-95 transition-transform"
                   onClick={() => setReplyTo(comment)}
                 >
-                  <MessageCircle className="w-4 h-4 text-muted-foreground group-hover/reply:text-primary transition-colors" />
+                  <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground group-hover/reply:text-primary transition-colors" />
                   {comment.reply_count > 0 && (
                     <span className="text-xs font-medium text-muted-foreground">
                       {comment.reply_count}
@@ -372,43 +372,43 @@ const UnifiedAdvancedCommentsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 border-b shrink-0">
-          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+      <DialogContent className="w-[96vw] sm:max-w-2xl h-[75vh] sm:h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-3 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-3 border-b shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-xl">
+            <MessageCircle className="w-4 h-4 sm:w-6 sm:h-6" />
             Comments ({comments.length})
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-4 sm:px-6 py-4">
+        <ScrollArea className="flex-1 px-3 sm:px-6 py-3 sm:py-4 min-h-0">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center py-8 sm:py-12">
+              <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-primary"></div>
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-20" />
-              <p>No comments yet</p>
-              <p className="text-sm mt-1">Be the first to comment!</p>
+            <div className="text-center py-8 sm:py-12 text-muted-foreground">
+              <MessageCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-20" />
+              <p className="text-sm sm:text-base">No comments yet</p>
+              <p className="text-xs sm:text-sm mt-1">Be the first to comment!</p>
             </div>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-1 sm:space-y-2">
               {topLevelComments.map((comment) => renderComment(comment))}
             </div>
           )}
         </ScrollArea>
 
-        <div className="border-t p-4 sm:p-6 shrink-0">
+        <div className="border-t p-3 sm:p-6 shrink-0 bg-background">
           {replyTo && (
-            <div className="mb-3 flex items-center gap-2 text-sm bg-accent/30 rounded-lg px-3 py-2">
+            <div className="mb-2 sm:mb-3 flex items-center gap-2 text-xs sm:text-sm bg-accent/30 rounded-lg px-3 py-2">
               <MessageCircle className="w-4 h-4 text-primary" />
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground truncate flex-1">
                 Replying to <span className="font-semibold">{replyTo.profiles.full_name}</span>
               </span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 ml-auto"
+                className="h-7 w-7 flex-shrink-0"
                 onClick={() => setReplyTo(null)}
               >
                 <X className="w-4 h-4" />
@@ -416,10 +416,10 @@ const UnifiedAdvancedCommentsDialog = ({
             </div>
           )}
 
-          <div className="flex gap-3">
-            <Avatar className="w-10 h-10 shrink-0">
+          <div className="flex gap-2 sm:gap-3">
+            <Avatar className="w-9 h-9 sm:w-10 sm:h-10 shrink-0">
               <AvatarImage src={currentUserId ? undefined : undefined} />
-              <AvatarFallback className="text-sm font-semibold bg-primary/10">
+              <AvatarFallback className="text-xs sm:text-sm font-semibold bg-primary/10">
                 {currentUserId ? "U" : "?"}
               </AvatarFallback>
             </Avatar>
@@ -428,7 +428,7 @@ const UnifiedAdvancedCommentsDialog = ({
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder={replyTo ? "Write a reply..." : "Write a comment..."}
-                className="min-h-[44px] max-h-[120px] resize-none"
+                className="min-h-[44px] max-h-[100px] resize-none text-sm sm:text-base"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -440,13 +440,13 @@ const UnifiedAdvancedCommentsDialog = ({
                 size="icon"
                 onClick={handleSubmitComment}
                 disabled={!newComment.trim() || submitting}
-                className="shrink-0 h-11 w-11"
+                className="shrink-0 h-11 w-11 sm:h-12 sm:w-12"
               >
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-2 ml-12">
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 ml-10 sm:ml-12">
             Press Enter to send, Shift+Enter for new line
           </p>
         </div>
