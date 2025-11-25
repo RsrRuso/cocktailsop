@@ -1408,7 +1408,7 @@ export default function StaffScheduling() {
 
     try {
       // Save schedule as JSON to weekly_schedules table
-      const { error } = await supabase
+      const { error: scheduleError } = await supabase
         .from('weekly_schedules')
         .upsert([{
           user_id: user.id,
@@ -1422,9 +1422,57 @@ export default function StaffScheduling() {
           onConflict: 'user_id,week_start_date'
         });
 
-      if (error) throw error;
+      if (scheduleError) throw scheduleError;
 
-      toast.success('Schedule saved successfully');
+      // Delete existing allocations for this week before creating new ones
+      const weekStart = new Date(weekStartDate);
+      const weekEnd = addDays(weekStart, 6);
+      
+      const { error: deleteError } = await supabase
+        .from('staff_allocations')
+        .delete()
+        .eq('user_id', user.id)
+        .gte('allocation_date', format(weekStart, 'yyyy-MM-dd'))
+        .lte('allocation_date', format(weekEnd, 'yyyy-MM-dd'));
+
+      if (deleteError) {
+        console.error('Error deleting old allocations:', deleteError);
+      }
+
+      // Create staff_allocations records for each schedule entry
+      const allocations = [];
+      
+      for (const [key, cell] of Object.entries(schedule)) {
+        const dayIndex = DAYS_OF_WEEK.indexOf(cell.day);
+        const allocationDate = addDays(weekStart, dayIndex);
+        
+        const staff = staffMembers.find(s => s.id === cell.staffId);
+        if (!staff) continue;
+        
+        allocations.push({
+          user_id: user.id,
+          staff_member_id: cell.staffId,
+          allocation_date: format(allocationDate, 'yyyy-MM-dd'),
+          shift_type: cell.type === 'off' ? 'off' : 'regular',
+          station_assignment: cell.station || cell.timeRange,
+          responsibilities: cell.station ? [cell.station] : [],
+          notes: `${cell.day} - ${cell.timeRange}`
+        });
+      }
+
+      // Insert all allocations in batch
+      if (allocations.length > 0) {
+        const { error: allocError } = await supabase
+          .from('staff_allocations')
+          .insert(allocations);
+
+        if (allocError) {
+          console.error('Error creating allocations:', allocError);
+          throw allocError;
+        }
+      }
+
+      toast.success('Schedule and allocations saved successfully');
       
     } catch (error) {
       console.error('Error saving schedule:', error);
