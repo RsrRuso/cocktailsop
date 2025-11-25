@@ -236,10 +236,10 @@ const UnifiedAdvancedCommentsDialog = ({
     const replies = comments.filter((c) => c.parent_comment_id === comment.id);
 
     return (
-      <div key={comment.id} className={`${isReply ? "ml-8 sm:ml-14" : ""} mb-3 sm:mb-4`}>
-        <div className="flex gap-2 sm:gap-3 group">
+      <div key={comment.id} className={`${isReply ? "ml-6 sm:ml-10" : ""} mb-2 sm:mb-2.5`}>
+        <div className="flex gap-2 group">
           <Avatar
-            className="w-9 h-9 sm:w-11 sm:h-11 cursor-pointer shrink-0 active:scale-95 transition-transform"
+            className="w-7 h-7 sm:w-9 sm:h-9 cursor-pointer shrink-0 active:scale-95 transition-transform ring-2 ring-transparent group-hover:ring-primary/20"
             onClick={() => {
               navigate(`/user/${comment.user_id}`);
               onOpenChange(false);
@@ -252,11 +252,12 @@ const UnifiedAdvancedCommentsDialog = ({
           </Avatar>
 
           <div className="flex-1 min-w-0">
-            <div className="bg-accent/30 rounded-2xl px-3 sm:px-4 py-2 sm:py-3 active:bg-accent/50 transition-colors">
-              <div className="flex items-center justify-between mb-1 gap-2">
-                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+            <div className="relative bg-card/30 hover:bg-card/50 rounded-2xl px-2.5 py-2 border border-border/30 hover:border-primary/30 active:bg-card/60 transition-all overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative flex items-center justify-between mb-0.5 gap-1.5">
+                <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
                   <p
-                    className="font-semibold text-xs sm:text-sm cursor-pointer hover:underline truncate"
+                    className="font-semibold text-[11px] sm:text-xs cursor-pointer hover:underline truncate"
                     onClick={() => {
                       navigate(`/user/${comment.user_id}`);
                       onOpenChange(false);
@@ -264,17 +265,17 @@ const UnifiedAdvancedCommentsDialog = ({
                   >
                     {comment.profiles.full_name}
                   </p>
-                  <span className="text-[10px] sm:text-xs text-muted-foreground shrink-0">
+                  <span className="text-[9px] sm:text-[10px] text-muted-foreground shrink-0">
                     {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                   </span>
                 </div>
 
                 {currentUserId === comment.user_id && !isEditing && (
-                  <div className="flex gap-0.5 sm:gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
+                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 sm:h-7 sm:w-7"
+                      className="h-7 w-7"
                       onClick={() => {
                         setEditingComment(comment);
                         setEditContent(comment.content);
@@ -285,24 +286,24 @@ const UnifiedAdvancedCommentsDialog = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 sm:h-7 sm:w-7 text-destructive hover:text-destructive"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
                       onClick={() => handleDeleteComment(comment.id)}
                     >
-                      <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
                 )}
               </div>
 
               {isEditing ? (
-                <div className="space-y-2">
+                <div className="relative space-y-1.5">
                   <Textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="min-h-[60px] resize-none text-sm sm:text-base"
-                    placeholder="Edit your comment..."
+                    className="min-h-[50px] resize-none text-xs sm:text-sm bg-card/50 border-primary/20"
+                    placeholder="Edit comment..."
                   />
-                  <div className="flex gap-2 justify-end">
+                  <div className="flex gap-1.5 justify-end">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -319,24 +320,24 @@ const UnifiedAdvancedCommentsDialog = ({
                   </div>
                 </div>
               ) : (
-                <p className="text-xs sm:text-sm break-words">{comment.content}</p>
+                <p className="relative text-[11px] sm:text-xs break-words">{comment.content}</p>
               )}
             </div>
 
-            <div className="flex items-center gap-3 sm:gap-4 mt-2 px-2">
+            <div className="flex items-center gap-2 sm:gap-3 mt-1 px-1">
               <button
-                className="flex items-center gap-1.5 group/like active:scale-95 transition-transform"
+                className="flex items-center gap-1 group/like active:scale-95 transition-transform"
                 onClick={() => handleToggleLike(comment.id)}
               >
                 <Heart
-                  className={`w-4 h-4 sm:w-5 sm:h-5 transition-all ${
+                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-all ${
                     isLiked
                       ? "fill-red-500 text-red-500"
                       : "text-muted-foreground group-hover/like:text-red-500"
                   }`}
                 />
                 {comment.reaction_count > 0 && (
-                  <span className="text-xs font-medium text-muted-foreground">
+                  <span className="text-[10px] sm:text-xs font-medium text-muted-foreground">
                     {comment.reaction_count}
                   </span>
                 )}
@@ -344,12 +345,12 @@ const UnifiedAdvancedCommentsDialog = ({
 
               {!isReply && (
                 <button
-                  className="flex items-center gap-1.5 group/reply active:scale-95 transition-transform"
+                  className="flex items-center gap-1 group/reply active:scale-95 transition-transform"
                   onClick={() => setReplyTo(comment)}
                 >
-                  <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground group-hover/reply:text-primary transition-colors" />
+                  <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground group-hover/reply:text-primary transition-colors" />
                   {comment.reply_count > 0 && (
-                    <span className="text-xs font-medium text-muted-foreground">
+                    <span className="text-[10px] sm:text-xs font-medium text-muted-foreground">
                       {comment.reply_count}
                     </span>
                   )}
@@ -372,63 +373,74 @@ const UnifiedAdvancedCommentsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[96vw] sm:max-w-2xl h-[75vh] sm:h-[85vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-3 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-3 border-b shrink-0">
-          <DialogTitle className="flex items-center gap-2 text-base sm:text-xl">
-            <MessageCircle className="w-4 h-4 sm:w-6 sm:h-6" />
-            Comments ({comments.length})
+      <DialogContent className="w-[92vw] sm:max-w-xl h-[60vh] sm:h-[70vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5 border-primary/20">
+        <DialogHeader className="px-3 sm:px-5 pt-3 sm:pt-4 pb-2 sm:pb-3 border-b border-primary/20 shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
+          <DialogTitle className="flex items-center gap-2 text-sm sm:text-base font-semibold">
+            <div className="p-1.5 rounded-full bg-gradient-to-br from-primary/20 to-primary/10">
+              <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+            </div>
+            <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+              Comments
+            </span>
+            <span className="text-xs sm:text-sm text-muted-foreground font-normal">({comments.length})</span>
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-3 sm:px-6 py-3 sm:py-4 min-h-0">
+        <ScrollArea className="flex-1 px-2 sm:px-4 py-2 sm:py-3 min-h-0">
           {loading ? (
-            <div className="flex items-center justify-center py-8 sm:py-12">
-              <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center py-6 sm:py-8">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-primary/20 blur-lg animate-pulse"></div>
+                <div className="relative animate-spin rounded-full h-7 w-7 border-2 border-transparent border-t-primary border-r-primary"></div>
+              </div>
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-8 sm:py-12 text-muted-foreground">
-              <MessageCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-20" />
-              <p className="text-sm sm:text-base">No comments yet</p>
-              <p className="text-xs sm:text-sm mt-1">Be the first to comment!</p>
+            <div className="text-center py-6 sm:py-8 text-muted-foreground">
+              <div className="relative inline-block mb-2">
+                <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl"></div>
+                <MessageCircle className="relative w-8 h-8 sm:w-10 sm:h-10 opacity-30" />
+              </div>
+              <p className="text-xs sm:text-sm font-medium">No comments yet</p>
+              <p className="text-[10px] sm:text-xs opacity-70">Be the first to comment!</p>
             </div>
           ) : (
-            <div className="space-y-1 sm:space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               {topLevelComments.map((comment) => renderComment(comment))}
             </div>
           )}
         </ScrollArea>
 
-        <div className="border-t p-3 sm:p-6 shrink-0 bg-background">
+        <div className="border-t border-primary/20 p-2 sm:p-3 shrink-0 bg-gradient-to-r from-background to-primary/5">
           {replyTo && (
-            <div className="mb-2 sm:mb-3 flex items-center gap-2 text-xs sm:text-sm bg-accent/30 rounded-lg px-3 py-2">
-              <MessageCircle className="w-4 h-4 text-primary" />
-              <span className="text-muted-foreground truncate flex-1">
-                Replying to <span className="font-semibold">{replyTo.profiles.full_name}</span>
+            <div className="mb-1.5 sm:mb-2 flex items-center gap-1.5 text-[10px] sm:text-xs bg-primary/10 rounded-lg px-2.5 py-1.5 border border-primary/20">
+              <MessageCircle className="w-3 h-3 text-primary shrink-0" />
+              <span className="text-primary font-medium truncate flex-1">
+                Replying to {replyTo.profiles.full_name}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 flex-shrink-0"
+                className="h-6 w-6 flex-shrink-0"
                 onClick={() => setReplyTo(null)}
               >
-                <X className="w-4 h-4" />
+                <X className="w-3 h-3" />
               </Button>
             </div>
           )}
 
-          <div className="flex gap-2 sm:gap-3">
-            <Avatar className="w-9 h-9 sm:w-10 sm:h-10 shrink-0">
+          <div className="flex gap-2">
+            <Avatar className="w-7 h-7 sm:w-8 sm:h-8 shrink-0 ring-2 ring-primary/10">
               <AvatarImage src={currentUserId ? undefined : undefined} />
-              <AvatarFallback className="text-xs sm:text-sm font-semibold bg-primary/10">
+              <AvatarFallback className="text-[10px] sm:text-xs font-semibold bg-gradient-to-br from-primary/10 to-primary/5">
                 {currentUserId ? "U" : "?"}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 flex gap-2">
+            <div className="flex-1 flex gap-1.5">
               <Textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder={replyTo ? "Write a reply..." : "Write a comment..."}
-                className="min-h-[44px] max-h-[100px] resize-none text-sm sm:text-base"
+                placeholder={replyTo ? "Write reply..." : "Add comment..."}
+                className="min-h-[38px] max-h-[80px] resize-none text-xs sm:text-sm bg-card/50 border-primary/20 focus:border-primary/40 transition-colors"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -440,15 +452,12 @@ const UnifiedAdvancedCommentsDialog = ({
                 size="icon"
                 onClick={handleSubmitComment}
                 disabled={!newComment.trim() || submitting}
-                className="shrink-0 h-11 w-11 sm:h-12 sm:w-12"
+                className="shrink-0 h-[38px] w-[38px] sm:h-10 sm:w-10 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 active:scale-95 transition-transform"
               >
-                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Button>
             </div>
           </div>
-          <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 ml-10 sm:ml-12">
-            Press Enter to send, Shift+Enter for new line
-          </p>
         </div>
       </DialogContent>
     </Dialog>
