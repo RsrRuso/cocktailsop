@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,22 +23,6 @@ export function MatrixChatTab() {
 
   useEffect(() => {
     loadChatHistory();
-    
-    // Subscribe to new messages
-    const channel = supabase
-      .channel('matrix_chat')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'matrix_chat_history'
-      }, () => {
-        loadChatHistory();
-      })
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   useEffect(() => {
@@ -107,73 +91,59 @@ export function MatrixChatTab() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Chat messages area - scrollable */}
-      <ScrollArea className="flex-1 pr-1 sm:pr-2 mb-3">
-        <div className="space-y-2 sm:space-y-3">
-          <AnimatePresence>
-            {messages.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-6 sm:py-8"
-              >
-                <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-2 sm:mb-3 text-primary" />
-                <h3 className="text-sm sm:text-base font-semibold mb-1">
-                  Welcome to MATRIX AI
-                </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Ask me about platform insights, roadmap features, or get guidance
-                </p>
-              </motion.div>
-            )}
+    <div className="flex flex-col h-[500px]">
+      {/* Messages Area */}
+      <ScrollArea className="flex-1 pr-4 mb-4">
+        <div className="space-y-4">
+          {messages.length === 0 && (
+            <div className="text-center py-12">
+              <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary" />
+              <h3 className="text-lg font-semibold mb-2">
+                Welcome to MATRIX AI
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                Ask me about platform insights, roadmap features, or get guidance
+              </p>
+            </div>
+          )}
 
-            {messages.map((msg, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex ${
-                  msg.role === "user" ? "justify-end" : "justify-start"
+          {messages.map((msg, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`flex ${
+                msg.role === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
+              <div
+                className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
                 }`}
               >
-                <div
-                  className={`max-w-[85%] sm:max-w-[75%] rounded-xl sm:rounded-2xl px-2 py-1.5 sm:px-3 sm:py-2 ${
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                  }`}
-                >
-                  <p className="text-[11px] sm:text-sm whitespace-pre-wrap">{msg.content}</p>
-                  <p className="text-[9px] sm:text-xs opacity-60 mt-0.5">
-                    {msg.timestamp.toLocaleTimeString()}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-
-          {loading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex justify-start"
-            >
-              <div className="bg-muted rounded-xl sm:rounded-2xl px-3 py-2">
-                <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce delay-100" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce delay-200" />
-                </div>
+                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                <p className="text-xs opacity-60 mt-1">
+                  {msg.timestamp.toLocaleTimeString()}
+                </p>
               </div>
             </motion.div>
+          ))}
+
+          {loading && (
+            <div className="flex justify-start">
+              <div className="bg-muted rounded-lg px-4 py-3">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              </div>
+            </div>
           )}
           <div ref={scrollRef} />
         </div>
       </ScrollArea>
 
-      {/* Input area - fixed at bottom */}
-      <div className="flex gap-1.5 sm:gap-2 flex-shrink-0 border-t border-emerald-500/30 pt-2">
+      {/* Input Area */}
+      <div className="flex gap-2 border-t pt-4">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -183,17 +153,17 @@ export function MatrixChatTab() {
               handleSend();
             }
           }}
-          placeholder="Ask MATRIX AI..."
-          className="min-h-[40px] sm:min-h-[50px] resize-none text-[11px] sm:text-sm bg-background/60 backdrop-blur-sm border-emerald-500/30"
+          placeholder="Ask MATRIX AI anything..."
+          className="min-h-[60px] resize-none"
           disabled={loading}
         />
         <Button
           onClick={handleSend}
           disabled={!input.trim() || loading}
           size="icon"
-          className="h-[40px] w-[40px] sm:h-[50px] sm:w-[50px] shrink-0"
+          className="h-[60px] w-[60px] shrink-0"
         >
-          <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <Send className="w-5 h-5" />
         </Button>
       </div>
     </div>
