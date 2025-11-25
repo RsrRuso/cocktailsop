@@ -4267,10 +4267,14 @@ export type Database = {
           comment_count: number | null
           created_at: string | null
           expires_at: string | null
+          filters: Json | null
           id: string
           like_count: number | null
           media_types: string[]
           media_urls: string[]
+          music_data: Json | null
+          text_overlays: Json | null
+          trim_data: Json | null
           user_id: string
           view_count: number | null
         }
@@ -4278,10 +4282,14 @@ export type Database = {
           comment_count?: number | null
           created_at?: string | null
           expires_at?: string | null
+          filters?: Json | null
           id?: string
           like_count?: number | null
           media_types?: string[]
           media_urls?: string[]
+          music_data?: Json | null
+          text_overlays?: Json | null
+          trim_data?: Json | null
           user_id: string
           view_count?: number | null
         }
@@ -4289,10 +4297,14 @@ export type Database = {
           comment_count?: number | null
           created_at?: string | null
           expires_at?: string | null
+          filters?: Json | null
           id?: string
           like_count?: number | null
           media_types?: string[]
           media_urls?: string[]
+          music_data?: Json | null
+          text_overlays?: Json | null
+          trim_data?: Json | null
           user_id?: string
           view_count?: number | null
         }
