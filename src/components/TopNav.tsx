@@ -32,7 +32,7 @@ import { CreateEventDialog } from "@/components/CreateEventDialog";
 import { EventsListDialog } from "@/components/EventsListDialog";
 import { useManagerRole } from "@/hooks/useManagerRole";
 import { useToast } from "@/hooks/use-toast";
-import { Matrix3DBrainLogo } from "@/components/Matrix3DBrainLogo";
+import { MatrixBrainLogo } from "@/components/MatrixBrainLogo";
 
 interface TopNavProps {
   isVisible?: boolean;
@@ -313,7 +313,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
 
           {/* Center section - Matrix AI Logo */}
           <div className="flex items-center justify-center flex-shrink-0">
-            <Matrix3DBrainLogo />
+            <MatrixBrainLogo />
           </div>
 
           {/* Right section */}
