@@ -60,25 +60,9 @@ export function MatrixBrainLogo() {
 
       {/* Brain icon container with ultra-realistic breathing */}
       <motion.div
-        className="relative w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-500/20 to-green-500/20 border-2 border-emerald-500/40 backdrop-blur-sm shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+        className="relative w-12 h-12 flex items-center justify-center"
         animate={{
           scale: [1, 1.15, 0.95, 1.12, 0.98, 1.08, 1],
-          borderColor: [
-            "rgba(16, 185, 129, 0.4)",
-            "rgba(16, 185, 129, 1)",
-            "rgba(16, 185, 129, 0.5)",
-            "rgba(16, 185, 129, 0.9)",
-            "rgba(16, 185, 129, 0.6)",
-            "rgba(16, 185, 129, 0.95)",
-            "rgba(16, 185, 129, 0.4)",
-          ],
-          boxShadow: [
-            "0 0 20px rgba(16, 185, 129, 0.4)",
-            "0 0 35px rgba(16, 185, 129, 0.8)",
-            "0 0 25px rgba(16, 185, 129, 0.5)",
-            "0 0 40px rgba(16, 185, 129, 0.9)",
-            "0 0 20px rgba(16, 185, 129, 0.4)",
-          ],
         }}
         transition={{
           duration: 3.5,
