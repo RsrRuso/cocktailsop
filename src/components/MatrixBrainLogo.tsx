@@ -60,7 +60,7 @@ export function MatrixBrainLogo() {
 
       {/* Empty breathing space with chaotic particles */}
       <motion.div
-        className="relative w-12 h-12 flex items-center justify-center"
+        className="relative w-12 h-12 flex items-center justify-center bg-transparent"
       >
         {/* Ultra chaotic glowing particles */}
         {[...Array(25)].map((_, i) => {
