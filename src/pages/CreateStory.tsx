@@ -212,26 +212,35 @@ const CreateStory = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 {previewUrls.map((url, index) => (
-                  <div key={index} className="relative group cursor-pointer" onClick={() => setEditingIndex(index)}>
+                  <div key={index} className="relative group">
                     {selectedMedia[index]?.type.startsWith('video') ? (
                       <video src={url} className="w-full h-48 object-cover rounded-xl" />
                     ) : (
                       <img src={url} alt={`Preview ${index + 1}`} className="w-full h-48 object-cover rounded-xl" />
                     )}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
-                      <p className="text-white text-sm font-medium">Tap to Edit</p>
-                    </div>
+                    
+                    {/* Edit Button - Always Visible */}
+                    <button
+                      onClick={() => setEditingIndex(index)}
+                      className="absolute bottom-2 left-2 right-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-4 py-2 rounded-lg font-medium shadow-lg flex items-center justify-center gap-2 hover:from-primary/90 hover:to-primary/70 transition-all"
+                    >
+                      <Zap className="w-4 h-4" />
+                      Edit & Add Music
+                    </button>
+                    
                     {editedData[index] && (
-                      <div className="absolute top-2 left-2 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium">
-                        Edited ✓
+                      <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Edited
                       </div>
                     )}
+                    
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         removeMedia(index);
                       }}
-                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg"
+                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
                     >
                       <X className="w-4 h-4 text-white" />
                     </button>
