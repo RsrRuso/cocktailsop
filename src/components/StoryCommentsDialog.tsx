@@ -142,62 +142,62 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[92vw] sm:max-w-md h-[60vh] sm:h-[65vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5 border-primary/20">
-        <DialogHeader className="px-3 sm:px-5 pt-3 sm:pt-4 pb-2 sm:pb-3 border-b border-primary/20 shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
-          <DialogTitle className="flex items-center gap-2 text-sm sm:text-base font-semibold">
-            <div className="p-1.5 rounded-full bg-gradient-to-br from-primary/20 to-primary/10">
-              <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+      <DialogContent className="w-[95vw] sm:max-w-md h-[50vh] sm:h-[55vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5 border-primary/20 shadow-2xl">
+        <DialogHeader className="px-3 sm:px-4 pt-2.5 sm:pt-3 pb-1.5 sm:pb-2 border-b border-primary/20 shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
+          <DialogTitle className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold">
+            <div className="p-1 rounded-full bg-gradient-to-br from-primary/20 to-primary/10">
+              <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
             </div>
             <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
               Comments
             </span>
-            <span className="text-xs sm:text-sm text-muted-foreground font-normal">({comments.length})</span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground font-normal">({comments.length})</span>
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-2 sm:px-4 min-h-0">
+        <ScrollArea className="flex-1 px-2 sm:px-3 min-h-0">
           {loading ? (
-            <div className="flex items-center justify-center py-6 sm:py-8">
+            <div className="flex items-center justify-center py-4 sm:py-6">
               <div className="relative">
                 <div className="absolute inset-0 rounded-full bg-primary/20 blur-lg animate-pulse"></div>
-                <div className="relative animate-spin rounded-full h-7 w-7 border-2 border-transparent border-t-primary border-r-primary"></div>
+                <div className="relative animate-spin rounded-full h-6 w-6 border-2 border-transparent border-t-primary border-r-primary"></div>
               </div>
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-6 sm:py-8 text-muted-foreground">
-              <div className="relative inline-block mb-2">
+            <div className="text-center py-4 sm:py-6 text-muted-foreground">
+              <div className="relative inline-block mb-1.5">
                 <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl"></div>
-                <MessageCircle className="relative w-8 h-8 sm:w-10 sm:h-10 opacity-30" />
+                <MessageCircle className="relative w-7 h-7 sm:w-8 sm:h-8 opacity-30" />
               </div>
               <p className="text-xs sm:text-sm font-medium">No comments yet</p>
               <p className="text-[10px] sm:text-xs opacity-70">Be the first to comment!</p>
             </div>
           ) : (
-            <div className="space-y-1.5 sm:space-y-2 py-2 sm:py-3">
+            <div className="space-y-1.5 py-2">
               {comments.map((comment, idx) => (
                 <div
                   key={comment.id}
-                  className="group relative flex gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl bg-card/30 hover:bg-card/60 border border-border/30 hover:border-primary/30 transition-all duration-200 active:scale-[0.98]"
+                  className="group relative flex gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-card/30 hover:bg-card/60 border border-border/30 hover:border-primary/30 transition-all duration-200 active:scale-[0.98]"
                   style={{
                     animationDelay: `${idx * 0.02}s`,
                     animation: 'fadeInUp 0.3s ease-out forwards',
                     opacity: 0
                   }}
                 >
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                   
-                  <Avatar className="relative w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
+                  <Avatar className="relative w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
                     <AvatarImage src={comment.profiles.avatar_url || undefined} />
-                    <AvatarFallback className="text-[10px] sm:text-xs bg-gradient-to-br from-primary/10 to-primary/5">
+                    <AvatarFallback className="text-[9px] sm:text-[10px] bg-gradient-to-br from-primary/10 to-primary/5">
                       {comment.profiles.username[0]}
                     </AvatarFallback>
                   </Avatar>
                   
                   <div className="relative flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-1.5">
+                    <div className="flex items-start justify-between gap-1">
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-[11px] sm:text-xs truncate">{comment.profiles.full_name}</p>
-                        <p className="text-[9px] sm:text-[10px] text-muted-foreground">
+                        <p className="font-semibold text-[10px] sm:text-xs truncate">{comment.profiles.full_name}</p>
+                        <p className="text-[8px] sm:text-[9px] text-muted-foreground">
                           {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                         </p>
                       </div>
@@ -206,14 +206,14 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => handleDelete(comment.id)}
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-2.5 h-2.5" />
                         </Button>
                       )}
                     </div>
-                    <p className="text-[11px] sm:text-xs mt-0.5 sm:mt-1 break-words leading-relaxed text-foreground/90">{comment.content}</p>
+                    <p className="text-[10px] sm:text-xs mt-0.5 break-words leading-relaxed text-foreground/90">{comment.content}</p>
                   </div>
                 </div>
               ))}
@@ -221,13 +221,13 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
           )}
         </ScrollArea>
 
-        <form onSubmit={handleSubmit} className="flex gap-2 p-2 sm:p-3 border-t border-primary/20 shrink-0 bg-gradient-to-r from-background to-primary/5">
+        <form onSubmit={handleSubmit} className="flex gap-1.5 p-2 border-t border-primary/20 shrink-0 bg-background/80 backdrop-blur-sm sticky bottom-0">
           <Textarea
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Add comment..."
             disabled={submitting}
-            className="flex-1 min-h-[38px] max-h-[80px] resize-none text-xs sm:text-sm bg-card/50 border-primary/20 focus:border-primary/40 transition-colors"
+            className="flex-1 min-h-[36px] max-h-[72px] resize-none text-xs bg-card/50 border-primary/20 focus:border-primary/40 transition-colors py-2 px-3"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -240,9 +240,9 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
             type="submit" 
             size="icon" 
             disabled={submitting || !newComment.trim()}
-            className="h-[38px] w-[38px] sm:h-10 sm:w-10 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 flex-shrink-0 active:scale-95 transition-transform"
+            className="h-[36px] w-[36px] bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 flex-shrink-0 active:scale-95 transition-transform"
           >
-            <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Send className="w-3.5 h-3.5" />
           </Button>
         </form>
       </DialogContent>
