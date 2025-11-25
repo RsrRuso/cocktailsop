@@ -410,7 +410,7 @@ export default function MatrixAI() {
           </div>
         </motion.div>
 
-        <Card className="border-emerald-500/30 bg-black/90 backdrop-blur-xl shadow-[0_0_50px_rgba(16,185,129,0.3)] relative overflow-hidden p-2 sm:p-4 flex-1 flex flex-col min-h-0">
+        <Card className="border-emerald-500/20 bg-transparent backdrop-blur-xl shadow-none relative overflow-hidden p-2 sm:p-4 flex-1 flex flex-col min-h-0">
           {/* Animated border glow */}
           <motion.div 
             className="absolute inset-0 rounded-lg pointer-events-none"
@@ -512,10 +512,8 @@ export default function MatrixAI() {
             </TabsList>
 
             <div className="p-2 sm:p-4 relative flex-1 overflow-hidden">
-              {/* Content area glow */}
-              <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/5 to-transparent pointer-events-none rounded-b-lg" />
               
-              <TabsContent value="chat" className="mt-0 relative z-10 h-full">
+              <TabsContent value="chat" className="mt-0 relative z-10 h-full border-0 p-0">
                 <MatrixChatTab />
               </TabsContent>
 
