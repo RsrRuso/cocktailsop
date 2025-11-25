@@ -212,7 +212,7 @@ export default function MatrixAI() {
         ))}
       </div>
       
-      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-6 max-w-7xl relative z-10">
+      <div className="container mx-auto px-2 py-2 max-w-4xl relative z-10">
         {/* Back Button */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -222,10 +222,10 @@ export default function MatrixAI() {
             variant="ghost"
             size="sm"
             onClick={() => navigate(-1)}
-            className="mb-3 sm:mb-4 gap-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-emerald-500/30 font-mono group"
+            className="mb-2 gap-1 sm:gap-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-emerald-500/30 font-mono group"
           >
             <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-[-4px] transition-transform" />
-            <span className="text-xs sm:text-sm">&lt; Back</span>
+            <span className="text-[10px] sm:text-xs">&lt; Back</span>
           </Button>
         </motion.div>
         
@@ -248,7 +248,7 @@ export default function MatrixAI() {
             }}
           />
           
-          <div className="flex items-center gap-2 sm:gap-3 mb-2 relative z-10">
+          <div className="flex items-center gap-1 sm:gap-2 mb-1 relative z-10">
             {/* Animated Matrix Brain Icon with particles */}
             <motion.div
               className="relative"
@@ -261,7 +261,7 @@ export default function MatrixAI() {
                 ease: "easeInOut",
               }}
             >
-              <Brain className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-400 relative z-10" />
+              <Brain className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-400 relative z-10" />
               
               {/* Rotating ring around brain */}
               <motion.div
@@ -334,7 +334,7 @@ export default function MatrixAI() {
             
             <div className="flex flex-col">
               <motion.h1 
-                className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-400 font-mono tracking-wider"
+                className="text-lg sm:text-2xl font-bold text-emerald-400 font-mono tracking-wider"
                 animate={{
                   textShadow: [
                     '0 0 10px rgba(16,185,129,0.5)',
@@ -374,7 +374,7 @@ export default function MatrixAI() {
           </div>
           
           <motion.p 
-            className="text-xs sm:text-sm text-emerald-300/70 font-mono relative z-10"
+            className="text-[10px] sm:text-xs text-emerald-300/70 font-mono relative z-10"
             animate={{
               opacity: [0.7, 1, 0.7],
             }}
@@ -388,9 +388,9 @@ export default function MatrixAI() {
           </motion.p>
           
           {/* System status indicator */}
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-1 sm:gap-2 mt-1 sm:mt-2">
             <motion.div
-              className="w-2 h-2 bg-emerald-400 rounded-full"
+              className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-400 rounded-full"
               animate={{
                 opacity: [1, 0.3, 1],
                 boxShadow: [
@@ -405,11 +405,11 @@ export default function MatrixAI() {
                 ease: "easeInOut",
               }}
             />
-            <span className="text-xs text-emerald-400 font-mono">SYSTEM ONLINE</span>
+            <span className="text-[9px] sm:text-xs text-emerald-400 font-mono">SYSTEM ONLINE</span>
           </div>
         </motion.div>
 
-        <Card className="border-emerald-500/30 bg-black/90 backdrop-blur-xl shadow-[0_0_50px_rgba(16,185,129,0.3)] relative overflow-hidden p-2 sm:p-6">
+        <Card className="border-emerald-500/30 bg-black/90 backdrop-blur-xl shadow-[0_0_50px_rgba(16,185,129,0.3)] relative overflow-hidden p-2 sm:p-4">
           {/* Animated border glow */}
           <motion.div 
             className="absolute inset-0 rounded-lg pointer-events-none"
@@ -470,41 +470,41 @@ export default function MatrixAI() {
               
               <TabsTrigger
                 value="chat"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.5)] rounded-none text-xs sm:text-sm whitespace-nowrap text-emerald-300/60 hover:text-emerald-300 transition-all font-mono px-2 sm:px-4 py-2"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.5)] rounded-none text-[10px] sm:text-xs whitespace-nowrap text-emerald-300/60 hover:text-emerald-300 transition-all font-mono px-1.5 sm:px-3 py-1.5"
               >
-                <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" />
                 <span className="hidden sm:inline">Chat</span>
                 <span className="sm:hidden">Chat</span>
               </TabsTrigger>
               <TabsTrigger
                 value="insights"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.5)] rounded-none text-xs sm:text-sm whitespace-nowrap text-emerald-300/60 hover:text-emerald-300 transition-all font-mono"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.5)] rounded-none text-[10px] sm:text-xs whitespace-nowrap text-emerald-300/60 hover:text-emerald-300 transition-all font-mono px-1.5 sm:px-3 py-1.5"
               >
-                <Lightbulb className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <Lightbulb className="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1.5" />
                 <span className="hidden sm:inline">Submit Insight</span>
                 <span className="sm:hidden">Insight</span>
               </TabsTrigger>
               <TabsTrigger
                 value="patterns"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.5)] rounded-none text-xs sm:text-sm whitespace-nowrap text-emerald-300/60 hover:text-emerald-300 transition-all font-mono"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.5)] rounded-none text-[10px] sm:text-xs whitespace-nowrap text-emerald-300/60 hover:text-emerald-300 transition-all font-mono px-1.5 sm:px-3 py-1.5"
               >
-                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1.5" />
                 Patterns
               </TabsTrigger>
               <TabsTrigger
                 value="roadmap"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.5)] rounded-none text-xs sm:text-sm whitespace-nowrap text-emerald-300/60 hover:text-emerald-300 transition-all font-mono"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.5)] rounded-none text-[10px] sm:text-xs whitespace-nowrap text-emerald-300/60 hover:text-emerald-300 transition-all font-mono px-1.5 sm:px-3 py-1.5"
               >
-                <Brain className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <Brain className="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1.5" />
                 <span className="hidden sm:inline">AI Roadmap</span>
                 <span className="sm:hidden">Roadmap</span>
               </TabsTrigger>
               {profile?.user_type === "founder" && (
                 <TabsTrigger
                   value="admin"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.5)] rounded-none text-xs sm:text-sm whitespace-nowrap text-emerald-300/60 hover:text-emerald-300 transition-all font-mono"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.5)] rounded-none text-[10px] sm:text-xs whitespace-nowrap text-emerald-300/60 hover:text-emerald-300 transition-all font-mono px-1.5 sm:px-3 py-1.5"
                 >
-                  <Settings className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                  <Settings className="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1.5" />
                   Admin
                 </TabsTrigger>
               )}
