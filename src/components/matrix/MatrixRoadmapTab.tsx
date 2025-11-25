@@ -6,13 +6,13 @@ import { motion } from "framer-motion";
 
 interface Feature {
   id: string;
-  title: string;
-  description: string;
-  category: string;
+  feature_title: string;
+  feature_description: string;
+  priority: string;
   priority_score: number;
-  effort_estimate: string;
-  impact_estimate: string;
-  user_value: string;
+  estimated_impact: string;
+  implementation_complexity: string;
+  reasoning: string;
   status: string;
 }
 
@@ -24,24 +24,24 @@ export function MatrixRoadmapTab() {
     setFeatures([
       {
         id: "1",
-        title: "Advanced Search & Filtering",
-        description: "Implement powerful search with filters for posts, reels, and users",
-        category: "feature",
+        feature_title: "Advanced Search & Filtering",
+        feature_description: "Implement powerful search with filters for posts, reels, and users",
+        priority: "high",
         priority_score: 85,
-        effort_estimate: "high",
-        impact_estimate: "high",
-        user_value: "Users can find content and people more efficiently",
+        estimated_impact: "high",
+        implementation_complexity: "high",
+        reasoning: "Users can find content and people more efficiently",
         status: "proposed"
       },
       {
         id: "2",
-        title: "Performance Optimization",
-        description: "Optimize loading times and reduce bundle size",
-        category: "performance",
+        feature_title: "Performance Optimization",
+        feature_description: "Optimize loading times and reduce bundle size",
+        priority: "critical",
         priority_score: 92,
-        effort_estimate: "medium",
-        impact_estimate: "high",
-        user_value: "Faster, smoother experience across all devices",
+        estimated_impact: "high",
+        implementation_complexity: "medium",
+        reasoning: "Faster, smoother experience across all devices",
         status: "in_progress"
       }
     ]);
@@ -86,7 +86,7 @@ export function MatrixRoadmapTab() {
             <div className="flex items-start justify-between mb-2">
               <div>
                 <h3 className="font-semibold mb-1 flex items-center gap-2">
-                  {feature.title}
+                  {feature.feature_title}
                   <Badge variant="outline" className="text-xs">
                     Priority: {feature.priority_score}/100
                   </Badge>
@@ -99,25 +99,25 @@ export function MatrixRoadmapTab() {
             </div>
 
             <p className="text-sm text-muted-foreground mb-3">
-              {feature.description}
+              {feature.feature_description}
             </p>
 
             <div className="space-y-2 mb-3">
               <div className="text-sm">
-                <span className="font-medium">User Value:</span>{" "}
-                <span className="text-muted-foreground">{feature.user_value}</span>
+                <span className="font-medium">Reasoning:</span>{" "}
+                <span className="text-muted-foreground">{feature.reasoning}</span>
               </div>
             </div>
 
             <div className="flex gap-2">
               <Badge variant="secondary" className="text-xs">
-                Effort: {feature.effort_estimate}
+                Complexity: {feature.implementation_complexity}
               </Badge>
               <Badge variant="secondary" className="text-xs">
-                Impact: {feature.impact_estimate}
+                Impact: {feature.estimated_impact}
               </Badge>
               <Badge variant="outline" className="text-xs">
-                {feature.category}
+                {feature.priority}
               </Badge>
             </div>
           </Card>
