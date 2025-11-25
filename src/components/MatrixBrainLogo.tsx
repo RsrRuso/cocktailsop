@@ -58,63 +58,11 @@ export function MatrixBrainLogo() {
         })}
       </div>
 
-      {/* Brain icon container with ultra-realistic breathing */}
+      {/* Empty breathing space with chaotic particles */}
       <motion.div
         className="relative w-12 h-12 flex items-center justify-center"
-        animate={{
-          scale: [1, 1.15, 0.95, 1.12, 0.98, 1.08, 1],
-        }}
-        transition={{
-          duration: 3.5,
-          repeat: Infinity,
-          ease: [0.42, 0, 0.58, 1],
-        }}
       >
-        {/* Inner pulse - multi-layer breathing effect */}
-        <motion.div
-          className="absolute inset-0 rounded-full bg-emerald-500/40"
-          animate={{
-            scale: [0.6, 1.6, 0.8, 1.5, 0.6],
-            opacity: [0.8, 0, 0.5, 0.1, 0.8],
-          }}
-          transition={{
-            duration: 3.5,
-            repeat: Infinity,
-            ease: [0.42, 0, 0.58, 1],
-          }}
-        />
-        <motion.div
-          className="absolute inset-0 rounded-full bg-green-500/30"
-          animate={{
-            scale: [0.8, 1.3, 0.9, 1.4, 0.8],
-            opacity: [0.6, 0.1, 0.7, 0, 0.6],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: [0.42, 0, 0.58, 1],
-            delay: 0.5,
-          }}
-        />
-
-        {/* Brain icon - realistic breathing with complex movement */}
-        <motion.div
-          animate={{
-            rotate: [0, 5, -4, 6, -3, 4, -5, 0],
-            scale: [1, 1.08, 0.96, 1.05, 0.98, 1.06, 0.99, 1],
-            y: [0, -2, 1, -1, 2, -1, 0],
-            x: [0, 1, -1, 2, -2, 1, 0],
-          }}
-          transition={{
-            duration: 3.5,
-            repeat: Infinity,
-            ease: [0.42, 0, 0.58, 1],
-          }}
-        >
-          <Brain className="w-6 h-6 text-emerald-400 relative z-10 drop-shadow-[0_0_12px_rgba(16,185,129,1)]" strokeWidth={2.8} />
-        </motion.div>
-
-        {/* Ultra chaotic glowing particles around brain */}
+        {/* Ultra chaotic glowing particles */}
         {[...Array(25)].map((_, i) => {
           const angle1 = (i * Math.PI * 2) / 25;
           const angle2 = ((i + Math.random() * 8) * Math.PI * 2) / 25;
