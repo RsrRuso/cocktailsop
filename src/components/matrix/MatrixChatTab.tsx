@@ -23,6 +23,22 @@ export function MatrixChatTab() {
 
   useEffect(() => {
     loadChatHistory();
+    
+    // Subscribe to new messages
+    const channel = supabase
+      .channel('matrix_chat')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'matrix_chat_history'
+      }, () => {
+        loadChatHistory();
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {

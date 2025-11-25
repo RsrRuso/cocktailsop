@@ -108,6 +108,7 @@ const ScanTransfer = lazy(() => import("@/pages/ScanTransfer"));
 const ScanReceive = lazy(() => import("@/pages/ScanReceive"));
 const MapPlanner = lazy(() => import("@/pages/MapPlanner"));
 const Install = lazy(() => import("@/pages/Install"));
+const MatrixAI = lazy(() => import("@/pages/MatrixAI"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -231,6 +232,7 @@ const AppContent = () => {
           <Route path="/staff-scheduling" element={<StaffScheduling />} />
           <Route path="/map-planner" element={<MapPlanner />} />
           <Route path="/install" element={<Install />} />
+          <Route path="/matrix-ai" element={<MatrixAI />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
                 </Routes>
