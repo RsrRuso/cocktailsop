@@ -178,30 +178,30 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
   };
 
   const renderComment = (comment: Comment, level: number = 0) => (
-    <div key={comment.id} className={`${level > 0 ? 'ml-8 mt-2' : 'mt-3'}`}>
-      <div className="flex gap-3">
-        <Avatar className="w-8 h-8 flex-shrink-0">
+    <div key={comment.id} className={`${level > 0 ? 'ml-6 sm:ml-8 mt-2' : 'mt-2 sm:mt-3'}`}>
+      <div className="flex gap-2 sm:gap-3">
+        <Avatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0">
           <AvatarImage src={comment.profiles.avatar_url || undefined} />
-          <AvatarFallback>{comment.profiles.username[0]}</AvatarFallback>
+          <AvatarFallback className="text-xs">{comment.profiles.username[0]}</AvatarFallback>
         </Avatar>
         
         <div className="flex-1 min-w-0">
-          <div className="bg-muted/30 rounded-2xl px-3 py-2">
-            <div className="flex items-center gap-2 mb-1">
-              <p className="font-semibold text-sm">{comment.profiles.username}</p>
-              <p className="text-xs text-muted-foreground">
+          <div className="bg-muted/30 rounded-2xl px-3 py-2 active:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <p className="font-semibold text-xs sm:text-sm">{comment.profiles.username}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
               </p>
             </div>
-            <p className="text-sm break-words">{comment.content}</p>
+            <p className="text-xs sm:text-sm break-words">{comment.content}</p>
           </div>
 
-          <div className="flex items-center gap-3 mt-1 ml-2">
+          <div className="flex items-center gap-2 sm:gap-3 mt-1 ml-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setReplyingTo(comment.id)}
-              className="h-7 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+              className="h-8 sm:h-7 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground active:scale-95 transition-transform"
             >
               <MessageCircle className="w-3 h-3 mr-1" />
               Reply
@@ -212,7 +212,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
                 variant="ghost"
                 size="sm"
                 onClick={() => handleDelete(comment.id)}
-                className="h-7 px-2 text-xs font-semibold text-destructive hover:text-destructive"
+                className="h-8 sm:h-7 px-2 text-xs font-semibold text-destructive hover:text-destructive active:scale-95 transition-transform"
               >
                 <Trash2 className="w-3 h-3 mr-1" />
                 Delete
@@ -232,39 +232,39 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg h-[80vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle>Comments</DialogTitle>
+      <DialogContent className="w-[96vw] sm:max-w-lg h-[75vh] sm:h-[80vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b shrink-0">
+          <DialogTitle className="text-base sm:text-lg">Comments</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6">
+        <ScrollArea className="flex-1 px-3 sm:px-6 min-h-0">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-8 sm:py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-20" />
-              <p>No comments yet</p>
-              <p className="text-sm">Be the first to comment!</p>
+            <div className="text-center py-8 sm:py-12 text-muted-foreground">
+              <MessageCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-20" />
+              <p className="text-sm sm:text-base">No comments yet</p>
+              <p className="text-xs sm:text-sm">Be the first to comment!</p>
             </div>
           ) : (
-            <div className="pb-4">
+            <div className="pb-3 sm:pb-4">
               {comments.map((comment) => renderComment(comment))}
             </div>
           )}
         </ScrollArea>
 
-        <form onSubmit={handleSubmit} className="p-4 border-t">
+        <form onSubmit={handleSubmit} className="p-3 sm:p-4 border-t shrink-0 bg-background">
           {replyingTo && (
             <div className="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-lg mb-2">
-              <p className="text-sm text-muted-foreground">Replying to comment</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Replying to comment</p>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => setReplyingTo(null)}
-                className="h-6 text-xs"
+                className="h-7 text-xs"
               >
                 Cancel
               </Button>
@@ -283,16 +283,16 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
                 }
               }}
               disabled={submitting}
-              className="flex-1 min-h-[42px] max-h-[120px] resize-none"
+              className="flex-1 min-h-[44px] max-h-[100px] resize-none text-sm sm:text-base"
               rows={1}
             />
             <Button
               type="submit"
               disabled={submitting || !newComment.trim() || !user}
-              className="glow-primary self-end"
+              className="glow-primary self-end h-11 w-11 sm:h-12 sm:w-12 flex-shrink-0"
               size="icon"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
         </form>
