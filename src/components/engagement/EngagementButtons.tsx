@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Share2, Users } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Users, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,7 @@ interface EngagementButtonsProps {
   onShare?: () => void;
   onViewLikes: () => void;
   onViewAttendees?: () => void;
+  onAIInsights?: () => void;
   className?: string;
   variant?: 'default' | 'compact' | 'minimal';
 }
@@ -30,6 +31,7 @@ export const EngagementButtons = ({
   onShare,
   onViewLikes,
   onViewAttendees,
+  onAIInsights,
   className,
   variant = 'default'
 }: EngagementButtonsProps) => {
@@ -47,7 +49,7 @@ export const EngagementButtons = ({
 
   return (
     <div className={cn(
-      "flex items-center gap-1",
+      "flex items-center gap-1 flex-wrap",
       variant === 'minimal' && "gap-0.5",
       className
     )}>
@@ -151,6 +153,26 @@ export const EngagementButtons = ({
           <Users className="w-5 h-5 group-hover:scale-110 transition-transform" />
           <span className="font-semibold tabular-nums">{attendeeCount}</span>
         </Button>
+      )}
+
+      {/* AI Insights Button */}
+      {onAIInsights && (
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Button
+            variant="outline"
+            size={buttonSize}
+            onClick={onAIInsights}
+            className="gap-1.5 border-2 border-purple-500/50 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 transition-all duration-200"
+            aria-label="AI Insights"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="font-semibold text-xs sm:text-sm">AI Insights</span>
+            <Sparkles className="w-4 h-4" />
+          </Button>
+        </motion.div>
       )}
     </div>
   );
