@@ -32,6 +32,7 @@ import { CreateEventDialog } from "@/components/CreateEventDialog";
 import { EventsListDialog } from "@/components/EventsListDialog";
 import { useManagerRole } from "@/hooks/useManagerRole";
 import { useToast } from "@/hooks/use-toast";
+import { MatrixBrainLogo } from "@/components/MatrixBrainLogo";
 
 interface TopNavProps {
   isVisible?: boolean;
@@ -261,7 +262,8 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
     <>
       <div className={`fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
+          {/* Left section */}
+          <div className="flex items-center gap-2 flex-1">
             {/* Badge Level Indicator - Moved to left corner */}
             {displayBadgeProfile?.badge_level && (
               <div className="relative group">
@@ -309,7 +311,13 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Center section - Matrix AI Logo */}
+          <div className="flex items-center justify-center flex-shrink-0">
+            <MatrixBrainLogo />
+          </div>
+
+          {/* Right section */}
+          <div className="flex items-center gap-2 flex-1 justify-end">
           <button
             onClick={() => {
               lightTap();
