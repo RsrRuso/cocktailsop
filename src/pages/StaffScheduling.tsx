@@ -3005,20 +3005,18 @@ export default function StaffScheduling() {
                         <span>🍸</span>
                         <span>Classic of the Day!</span>
                       </div>
-                      <div className="relative text-sm font-bold text-amber-100">
+                      <div className="relative text-base font-bold text-amber-100">
                         {(() => {
-                          const cocktails = [
-                            "Old Fashioned",
-                            "Negroni", 
-                            "Martini",
-                            "Manhattan",
-                            "Margarita",
-                            "Mojito",
-                            "Whiskey Sour"
-                          ];
-                          const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-                          const dayIndex = days.indexOf(day);
-                          return cocktails[dayIndex] || cocktails[0];
+                          const classicCocktails = {
+                            "Monday": "Old Fashioned",
+                            "Tuesday": "Negroni",
+                            "Wednesday": "Classic Martini",
+                            "Thursday": "Manhattan",
+                            "Friday": "Margarita",
+                            "Saturday": "Mojito",
+                            "Sunday": "Whiskey Sour"
+                          };
+                          return classicCocktails[day] || "Old Fashioned";
                         })()}
                       </div>
                     </div>
