@@ -3060,14 +3060,15 @@ export default function StaffScheduling() {
                       </div>
                     )}
 
-                    {/* Low Stock Glassware Warnings */}
+                    {/* Low Stock Glassware Section */}
                     {lowStockItems.length > 0 && (
-                      <div className="mb-4 p-3 bg-orange-950/30 border border-orange-800/40 rounded-lg">
-                        <div className="text-xs font-bold text-orange-400 mb-2 flex items-center gap-2">
+                      <div className="mb-4 relative overflow-hidden rounded-lg bg-gradient-to-br from-orange-500/20 via-red-500/20 to-pink-500/20 border border-orange-500/40 p-3">
+                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBzdHJva2Utd2lkdGg9IjIiLz48L2c+PC9zdmc+')] opacity-20"></div>
+                        <div className="relative text-xs font-bold bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent mb-2.5 flex items-center gap-2">
                           <span>🥂</span>
                           <span>Low Stock Glassware ({lowStockItems.length} items)</span>
                         </div>
-                        <div className="space-y-2">
+                        <div className="relative space-y-2 max-h-64 overflow-y-auto">
                           {lowStockItems.map((item: any, idx: number) => {
                             const itemName = item.items?.name || 'Unknown';
                             const storeName = item.stores?.name || 'Unknown Store';
@@ -3075,26 +3076,26 @@ export default function StaffScheduling() {
                             const photoUrl = item.items?.photo_url;
                             
                             return (
-                              <div key={idx} className="flex gap-2 items-center py-1.5 px-2 border-b border-orange-800/20 last:border-0 bg-orange-950/20 rounded">
+                              <div key={idx} className="flex gap-2 items-center py-2 px-2.5 bg-gradient-to-r from-orange-950/40 to-red-950/40 border border-orange-800/30 rounded-lg hover:border-orange-600/50 transition-colors">
                                 {photoUrl && (
                                   <div className="shrink-0">
                                     <ZoomableImage
                                       src={photoUrl}
                                       alt={itemName}
-                                      className="w-12 h-12 rounded object-cover"
-                                      containerClassName="w-12 h-12"
-                                      showZoomIcon={false}
+                                      className="w-14 h-14 rounded-lg object-cover ring-2 ring-orange-500/30"
+                                      containerClassName="w-14 h-14"
+                                      showZoomIcon={true}
                                     />
                                   </div>
                                 )}
-                                <div className="flex-1 min-w-0 text-[10px] text-orange-300/90">
-                                  <div className="font-semibold truncate">{itemName}</div>
-                                  <div className="text-orange-400/70">{storeName}</div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-bold text-orange-100 mb-0.5">{itemName}</div>
+                                  <div className="text-[10px] text-orange-300/70">{storeName}</div>
                                 </div>
-                                <span className={`shrink-0 px-1.5 py-0.5 rounded text-[8px] font-medium ${
-                                  quantity === 0 ? 'bg-red-500/20 text-red-300' : 
-                                  quantity <= 3 ? 'bg-orange-500/20 text-orange-300' : 
-                                  'bg-yellow-500/20 text-yellow-300'
+                                <span className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold shadow-sm ${
+                                  quantity === 0 ? 'bg-red-500/30 text-red-200 ring-1 ring-red-400/50' : 
+                                  quantity <= 3 ? 'bg-orange-500/30 text-orange-200 ring-1 ring-orange-400/50' : 
+                                  'bg-yellow-500/30 text-yellow-200 ring-1 ring-yellow-400/50'
                                 }`}>
                                   Qty: {quantity}
                                 </span>
