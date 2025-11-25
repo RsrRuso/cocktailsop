@@ -92,15 +92,15 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
       </button>
 
       {/* Bottom Action Bar - Glassy Transparent with Contours */}
-      <div className="absolute bottom-0 left-0 right-0 h-14 sm:h-16 bg-transparent backdrop-blur-xl border-t-2 border-white/30">
-        <div className="h-full flex items-center justify-around px-2 sm:px-4">
+      <div className="absolute bottom-0 left-0 right-0 h-12 sm:h-14 bg-transparent backdrop-blur-xl border-t-2 border-white/30">
+        <div className="h-full flex items-center justify-around px-1 sm:px-2">
           <button 
             onClick={() => handleLikeReel(reel.id)}
-            className="flex flex-col items-center gap-0.5 sm:gap-1 hover:scale-110 transition-transform active:scale-95"
+            className="flex flex-col items-center gap-0.5 hover:scale-110 transition-transform active:scale-95"
           >
-            <Heart className={`w-6 h-6 sm:w-7 sm:h-7 transition-all ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+            <Heart className={`w-5 h-5 sm:w-6 sm:h-6 transition-all ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
             <span 
-              className="text-white text-[10px] sm:text-xs font-semibold cursor-pointer hover:underline drop-shadow-lg"
+              className="text-white text-[9px] sm:text-[10px] font-semibold cursor-pointer hover:underline drop-shadow-lg"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedReelForLikes(reel.id);
@@ -116,10 +116,10 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
               setSelectedReelForComments(reel.id);
               setShowComments(true);
             }}
-            className="flex flex-col items-center gap-0.5 sm:gap-1 hover:scale-110 transition-transform active:scale-95"
+            className="flex flex-col items-center gap-0.5 hover:scale-110 transition-transform active:scale-95"
           >
-            <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-            <span className="text-white text-[10px] sm:text-xs font-semibold drop-shadow-lg">{reel.comment_count || 0}</span>
+            <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <span className="text-white text-[9px] sm:text-[10px] font-semibold drop-shadow-lg">{reel.comment_count || 0}</span>
           </button>
 
           <button 
@@ -129,22 +129,22 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
               setSelectedReelVideo(reel.video_url);
               setShowShare(true);
             }}
-            className="flex flex-col items-center gap-0.5 sm:gap-1 hover:scale-110 transition-transform active:scale-95 group"
+            className="flex flex-col items-center gap-0.5 hover:scale-110 transition-transform active:scale-95 group"
           >
-            <Send className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-            <span className="text-white text-[10px] sm:text-xs font-semibold drop-shadow-lg">Send</span>
+            <Send className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <span className="text-white text-[9px] sm:text-[10px] font-semibold drop-shadow-lg hidden sm:inline">Send</span>
           </button>
 
-          <button className="flex flex-col items-center gap-0.5 sm:gap-1">
-            <Eye className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-            <span className="text-white text-[10px] sm:text-xs font-semibold drop-shadow-lg">{reel.view_count || 0}</span>
+          <button className="flex flex-col items-center gap-0.5">
+            <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <span className="text-white text-[9px] sm:text-[10px] font-semibold drop-shadow-lg">{reel.view_count || 0}</span>
           </button>
 
           {user && reel.user_id === user.id && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex flex-col items-center gap-0.5 sm:gap-1 hover:scale-110 transition-transform active:scale-95">
-                  <MoreVertical className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                <button className="flex flex-col items-center gap-0.5 hover:scale-110 transition-transform active:scale-95">
+                  <MoreVertical className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-xl border-2 border-white/30">
@@ -185,14 +185,13 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
       </div>
 
       {/* AI Insights Button - Mobile Friendly Positioning */}
-      <div className="absolute bottom-[72px] sm:bottom-[80px] right-2 sm:right-3 z-20">
+      <div className="absolute bottom-[56px] sm:bottom-[64px] right-1 sm:right-2 z-20">
         <button
             onClick={() => setShowInsights(true)}
-            className="relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full bg-transparent border-2 border-purple-400/50 hover:border-purple-400/70 backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95"
+            className="relative flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-full bg-transparent border border-purple-400/50 hover:border-purple-400/70 backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95"
           >
-            <Brain className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-purple-300 group-hover/ai:text-pink-300 transition-colors" />
-            <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-pink-300 group-hover/ai:text-blue-300 animate-pulse transition-colors" />
-            <span className="text-[9px] sm:text-[10px] font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-blue-300 bg-clip-text text-transparent whitespace-nowrap">
+            <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-pink-300 animate-pulse transition-colors" />
+            <span className="text-[8px] sm:text-[9px] font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-blue-300 bg-clip-text text-transparent whitespace-nowrap">
               AI
             </span>
           </button>
