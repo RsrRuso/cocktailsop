@@ -91,7 +91,7 @@ export function MatrixChatTab() {
   };
 
   return (
-    <div className="flex flex-col h-[500px]">
+    <div className="flex flex-col h-full">
       {/* Messages Area */}
       <ScrollArea className="flex-1 pr-4 mb-4">
         <div className="space-y-4">
@@ -143,7 +143,7 @@ export function MatrixChatTab() {
       </ScrollArea>
 
       {/* Input Area */}
-      <div className="flex gap-2 border-t pt-4">
+      <div className="flex gap-2 border-t pt-4 flex-shrink-0">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}

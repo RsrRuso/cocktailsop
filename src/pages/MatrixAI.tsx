@@ -17,10 +17,10 @@ export default function MatrixAI() {
   const [activeTab, setActiveTab] = useState("chat");
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <div className="container mx-auto px-3 py-3 max-w-5xl">
+    <div className="h-screen bg-background overflow-hidden flex flex-col">
+      <div className="container mx-auto px-3 py-3 max-w-5xl flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="mb-4">
+        <div className="mb-4 flex-shrink-0">
           <Button
             variant="ghost"
             size="sm"
@@ -45,8 +45,8 @@ export default function MatrixAI() {
         </div>
 
         {/* Main Content */}
-        <div className="bg-card border rounded-lg shadow-sm">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="bg-card border rounded-lg shadow-sm flex-1 flex flex-col overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col overflow-hidden">
             <TabsList className="w-full justify-start rounded-none border-b bg-transparent h-auto p-0">
               <TabsTrigger
                 value="chat"
@@ -87,25 +87,25 @@ export default function MatrixAI() {
               )}
             </TabsList>
 
-            <div className="p-4">
-              <TabsContent value="chat" className="mt-0">
+            <div className="p-4 flex-1 overflow-hidden">
+              <TabsContent value="chat" className="mt-0 h-full">
                 <MatrixChatTab />
               </TabsContent>
 
-              <TabsContent value="insights" className="mt-0">
+              <TabsContent value="insights" className="mt-0 h-full overflow-y-auto">
                 <MatrixInsightsTab />
               </TabsContent>
 
-              <TabsContent value="patterns" className="mt-0">
+              <TabsContent value="patterns" className="mt-0 h-full overflow-y-auto">
                 <MatrixPatternsTab />
               </TabsContent>
 
-              <TabsContent value="roadmap" className="mt-0">
+              <TabsContent value="roadmap" className="mt-0 h-full overflow-y-auto">
                 <MatrixRoadmapTab />
               </TabsContent>
 
               {profile?.user_type === "founder" && (
-                <TabsContent value="admin" className="mt-0">
+                <TabsContent value="admin" className="mt-0 h-full overflow-y-auto">
                   <MatrixAdminTab />
                 </TabsContent>
               )}
