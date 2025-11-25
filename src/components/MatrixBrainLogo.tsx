@@ -26,80 +26,86 @@ export function MatrixBrainLogo() {
         }}
       />
 
-      {/* Matrix rain particles */}
+      {/* Matrix rain particles - chaotic movement */}
       <div className="absolute inset-0 overflow-hidden rounded-full">
-        {[...Array(8)].map((_, i) => (
+        {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-0.5 h-2 bg-emerald-400/60"
+            className="absolute w-0.5 bg-emerald-400"
             style={{
-              left: `${(i * 100) / 8}%`,
+              left: `${Math.random() * 100}%`,
               top: -10,
+              height: `${Math.random() * 15 + 5}px`,
+              opacity: Math.random() * 0.8 + 0.2,
             }}
             animate={{
-              y: [0, 60, 0],
-              opacity: [0, 1, 0],
+              y: [0, 80, 0],
+              x: [0, (Math.random() - 0.5) * 20, 0],
+              opacity: [0, Math.random() * 0.8 + 0.2, 0],
             }}
             transition={{
-              duration: 2,
+              duration: Math.random() * 2 + 1,
               repeat: Infinity,
-              delay: i * 0.2,
+              delay: Math.random() * 2,
               ease: "linear",
             }}
           />
         ))}
       </div>
 
-      {/* Brain icon container with breathing */}
+      {/* Brain icon container with realistic breathing */}
       <motion.div
         className="relative w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-500/20 to-green-500/20 border-2 border-emerald-500/40 backdrop-blur-sm"
         animate={{
-          scale: [1, 1.05, 1],
+          scale: [1, 1.12, 0.98, 1.08, 1],
           borderColor: [
             "rgba(16, 185, 129, 0.4)",
-            "rgba(16, 185, 129, 0.8)",
+            "rgba(16, 185, 129, 1)",
+            "rgba(16, 185, 129, 0.6)",
+            "rgba(16, 185, 129, 0.9)",
             "rgba(16, 185, 129, 0.4)",
           ],
         }}
         transition={{
-          duration: 2,
+          duration: 3,
           repeat: Infinity,
-          ease: "easeInOut",
+          ease: [0.45, 0.05, 0.55, 0.95],
         }}
       >
-        {/* Inner pulse */}
+        {/* Inner pulse - breathing effect */}
         <motion.div
-          className="absolute inset-0 rounded-full bg-emerald-500/20"
+          className="absolute inset-0 rounded-full bg-emerald-500/30"
           animate={{
-            scale: [0.8, 1.2, 0.8],
-            opacity: [0.5, 0, 0.5],
+            scale: [0.7, 1.4, 0.7],
+            opacity: [0.7, 0, 0.7],
           }}
           transition={{
-            duration: 2,
+            duration: 3,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: [0.45, 0.05, 0.55, 0.95],
           }}
         />
 
-        {/* Brain icon */}
+        {/* Brain icon - breathing and subtle rotation */}
         <motion.div
           animate={{
-            rotate: [0, 5, -5, 0],
+            rotate: [0, 3, -3, 2, -2, 0],
+            scale: [1, 1.05, 0.98, 1.03, 1],
           }}
           transition={{
-            duration: 4,
+            duration: 3,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: [0.45, 0.05, 0.55, 0.95],
           }}
         >
-          <Brain className="w-6 h-6 text-emerald-400 relative z-10" strokeWidth={2.5} />
+          <Brain className="w-6 h-6 text-emerald-400 relative z-10 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" strokeWidth={2.5} />
         </motion.div>
 
-        {/* Glowing dots around brain */}
-        {[...Array(4)].map((_, i) => (
+        {/* Chaotic glowing particles around brain */}
+        {[...Array(12)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 bg-emerald-400 rounded-full"
+            className="absolute w-1 h-1 bg-emerald-400 rounded-full blur-[0.5px]"
             style={{
               left: "50%",
               top: "50%",
@@ -107,20 +113,23 @@ export function MatrixBrainLogo() {
             animate={{
               x: [
                 0,
-                Math.cos((i * Math.PI) / 2) * 20,
+                Math.cos((i * Math.PI * 2) / 12) * (Math.random() * 15 + 15),
+                Math.cos(((i + Math.random() * 3) * Math.PI * 2) / 12) * (Math.random() * 10 + 10),
                 0,
               ],
               y: [
                 0,
-                Math.sin((i * Math.PI) / 2) * 20,
+                Math.sin((i * Math.PI * 2) / 12) * (Math.random() * 15 + 15),
+                Math.sin(((i + Math.random() * 3) * Math.PI * 2) / 12) * (Math.random() * 10 + 10),
                 0,
               ],
-              opacity: [0, 1, 0],
+              opacity: [0, 1, 0.7, 0],
+              scale: [0, 1.5, 1, 0],
             }}
             transition={{
-              duration: 3,
+              duration: Math.random() * 2 + 2,
               repeat: Infinity,
-              delay: i * 0.3,
+              delay: Math.random() * 2,
               ease: "easeInOut",
             }}
           />
