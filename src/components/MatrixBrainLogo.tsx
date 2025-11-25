@@ -207,12 +207,20 @@ export function MatrixBrainLogo() {
           }}
         />
 
-        {/* Real 3D brain with Three.js */}
-        <div className="relative z-10 w-12 h-12">
+        {/* Real 3D brain - no background, only brain visible */}
+        <div className="relative z-10 w-12 h-12" style={{ pointerEvents: 'none' }}>
           <Canvas
             camera={{ position: [0, 0, 3.5], fov: 50 }}
-            gl={{ alpha: true, antialias: true }}
-            style={{ background: 'transparent' }}
+            gl={{ 
+              alpha: true, 
+              antialias: true,
+              preserveDrawingBuffer: true
+            }}
+            style={{ 
+              background: 'transparent',
+              width: '100%',
+              height: '100%'
+            }}
           >
             <ambientLight intensity={0.3} />
             <pointLight position={[5, 5, 5]} intensity={2} color="#10b981" />
