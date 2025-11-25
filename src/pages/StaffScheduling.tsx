@@ -3008,15 +3008,15 @@ export default function StaffScheduling() {
                       <div className="relative text-base font-bold text-amber-100">
                         {(() => {
                           const classicCocktails = {
-                            "Monday": "Old Fashioned",
-                            "Tuesday": "Negroni",
-                            "Wednesday": "Classic Martini",
-                            "Thursday": "Manhattan",
-                            "Friday": "Margarita",
-                            "Saturday": "Mojito",
-                            "Sunday": "Whiskey Sour"
+                            "Monday": "MAI TAI",
+                            "Tuesday": "HEMINGWAY DAIQUIRY",
+                            "Wednesday": "WHITE LADY",
+                            "Thursday": "FRENCH 75",
+                            "Friday": "ESPRESSO MARTINI",
+                            "Saturday": "DARK & STORMY",
+                            "Sunday": "DAIQUIRI"
                           };
-                          return classicCocktails[day] || "Old Fashioned";
+                          return classicCocktails[day] || "MAI TAI";
                         })()}
                       </div>
                     </div>
