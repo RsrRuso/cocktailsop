@@ -1,0 +1,183 @@
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Send, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
+
+export function MatrixChatTab() {
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    loadChatHistory();
+  }, []);
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const loadChatHistory = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("matrix_chat_messages")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true })
+      .limit(50);
+
+    if (error) {
+      console.error("Error loading chat:", error);
+      return;
+    }
+
+    if (data) {
+      setMessages(
+        data.map((msg) => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content,
+          timestamp: new Date(msg.created_at),
+        }))
+      );
+    }
+  };
+
+  const handleSend = async () => {
+    if (!input.trim() || loading) return;
+
+    const userMessage = input.trim();
+    setInput("");
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: userMessage, timestamp: new Date() },
+    ]);
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("matrix-chat", {
+        body: { message: userMessage },
+      });
+
+      if (error) throw error;
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: data.response,
+          timestamp: new Date(),
+        },
+      ]);
+    } catch (error: any) {
+      toast.error("Failed to get response from MATRIX AI");
+      console.error("Chat error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-[600px]">
+      <ScrollArea className="flex-1 pr-4">
+        <div className="space-y-4">
+          <AnimatePresence>
+            {messages.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-12"
+              >
+                <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary" />
+                <h3 className="text-lg font-semibold mb-2">
+                  Welcome to MATRIX AI
+                </h3>
+                <p className="text-muted-foreground">
+                  Ask me about platform insights, roadmap features, or get guidance
+                </p>
+              </motion.div>
+            )}
+
+            {messages.map((msg, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex ${
+                  msg.role === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-xs opacity-60 mt-1">
+                    {msg.timestamp.toLocaleTimeString()}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-start"
+            >
+              <div className="bg-muted rounded-2xl px-4 py-3">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-bounce" />
+                  <div className="w-2 h-2 rounded-full bg-primary animate-bounce delay-100" />
+                  <div className="w-2 h-2 rounded-full bg-primary animate-bounce delay-200" />
+                </div>
+              </div>
+            </motion.div>
+          )}
+          <div ref={scrollRef} />
+        </div>
+      </ScrollArea>
+
+      <div className="flex gap-2 mt-4 pt-4 border-t">
+        <Textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+          placeholder="Ask MATRIX AI anything..."
+          className="min-h-[60px] resize-none"
+          disabled={loading}
+        />
+        <Button
+          onClick={handleSend}
+          disabled={!input.trim() || loading}
+          size="icon"
+          className="h-[60px] w-[60px]"
+        >
+          <Send className="w-5 h-5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
