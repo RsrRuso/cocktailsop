@@ -164,12 +164,13 @@ export function MatrixBrainLogo() {
         })}
       </div>
 
-      {/* Brain icon container without circle - just glow effects */}
+      {/* Container without any background - completely transparent */}
       <motion.div
         className="relative w-12 h-12 flex items-center justify-center"
         style={{ 
           perspective: '1000px',
-          transformStyle: 'preserve-3d'
+          transformStyle: 'preserve-3d',
+          background: 'transparent'
         }}
         animate={{
           scale: [1, 1.1, 1],
@@ -207,8 +208,14 @@ export function MatrixBrainLogo() {
           }}
         />
 
-        {/* Real 3D brain - no background, only brain visible */}
-        <div className="relative z-10 w-12 h-12" style={{ pointerEvents: 'none' }}>
+        {/* Real 3D brain - completely transparent canvas */}
+        <div 
+          className="absolute inset-0 z-10" 
+          style={{ 
+            pointerEvents: 'none',
+            background: 'transparent'
+          }}
+        >
           <Canvas
             camera={{ position: [0, 0, 3.5], fov: 50 }}
             gl={{ 
