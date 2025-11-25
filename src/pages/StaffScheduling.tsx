@@ -3068,7 +3068,7 @@ export default function StaffScheduling() {
                         <span>Low Stock Glassware ({lowStockItems.length} items)</span>
                       </div>
                       {lowStockItems.length > 0 ? (
-                        <div className="relative space-y-2 max-h-64 overflow-y-auto">
+                        <div className="relative space-y-2">
                           {lowStockItems.map((item: any, idx: number) => {
                             const itemName = item.items?.name || item.fifo_items?.name || 'Unknown';
                             const storeName = item.stores?.name || item.fifo_stores?.name || 'Unknown Store';
