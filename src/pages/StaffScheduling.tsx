@@ -2811,16 +2811,17 @@ export default function StaffScheduling() {
                 const working = daySchedule.filter(s => s.timeRange !== 'OFF');
                 const off = daySchedule.filter(s => s.timeRange === 'OFF');
                 
-                // Categorize by area based on staff member area_allocation
+                // Categorize by area based on STATION field (not global area_allocation)
+                // This ensures each day's assignments are independent
                 const indoor = working.filter(s => {
-                  const staff = staffMembers.find(sm => sm.id === s.staffId);
-                  const areaAllocation = staff?.area_allocation || 'indoor';
-                  return areaAllocation === 'indoor';
+                  // Check if station contains "Outdoor" to determine area
+                  const station = s.station?.toLowerCase() || '';
+                  return !station.includes('outdoor');
                 });
                 const outdoor = working.filter(s => {
-                  const staff = staffMembers.find(sm => sm.id === s.staffId);
-                  const areaAllocation = staff?.area_allocation || 'indoor';
-                  return areaAllocation === 'outdoor';
+                  // Check if station contains "Outdoor" to determine area
+                  const station = s.station?.toLowerCase() || '';
+                  return station.includes('outdoor');
                 });
                 
                 // Get staff details - SORT BY ROLE (Head first)
