@@ -1055,8 +1055,10 @@ export default function StaffScheduling() {
           return;
         }
         
-        // Only first head goes outdoor (if dividing and we need max 3 outdoor), rest are indoor
-        const area = shouldDivideHeads && idx === 0 ? 'Outdoor' : 'Indoor';
+        // Get staff member's area allocation
+        const staffMember = staffMembers.find(s => s.id === schedule.staff.id);
+        const areaAllocation = staffMember?.area_allocation || 'indoor';
+        const areaPrefix = areaAllocation === 'outdoor' ? 'Outdoor - ' : 'Indoor - ';
         
         // Determine time range based on day type
         let timeRange;
@@ -1074,7 +1076,7 @@ export default function StaffScheduling() {
           day,
           timeRange,
           type,
-          station: 'Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow'
+          station: `${areaPrefix}Supervise all bar operations, coordinate teams, monitor safety and quality standards, oversee workflow`
         };
         assignedStaffIds.add(schedule.staff.id);
       });
@@ -1254,6 +1256,10 @@ export default function StaffScheduling() {
           return;
         }
         
+        // Get staff member's area allocation
+        const staffMember = staffMembers.find(s => s.id === schedule.staff.id);
+        const areaAllocation = staffMember?.area_allocation || 'indoor';
+        
         // First bar back gets early start for pickup/opening duties (9 hours)
         let timeRange, type;
         if (idx === 0) {
@@ -1281,12 +1287,15 @@ export default function StaffScheduling() {
           }
         }
         
+        // Include area in station description
+        const areaPrefix = areaAllocation === 'outdoor' ? 'Outdoor - ' : 'Indoor - ';
+        
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
           timeRange,
           type,
-          station: 'Handle pickups and refills, polish glassware, stock supplies and prepare garnishes'
+          station: `${areaPrefix}Handle pickups and refills, polish glassware, stock supplies and prepare garnishes`
         };
         assignedStaffIds.add(schedule.staff.id);
       });
@@ -1314,13 +1323,20 @@ export default function StaffScheduling() {
           return;
         }
         
+        // Get staff member's area allocation
+        const staffMember = staffMembers.find(s => s.id === schedule.staff.id);
+        const areaAllocation = staffMember?.area_allocation || 'indoor';
+        
+        // Include area in station description
+        const areaPrefix = areaAllocation === 'outdoor' ? 'Outdoor - ' : 'Indoor - ';
+        
         // Support works 10 hours: 3:00 PM - 1:00 AM
         newSchedule[key] = {
           staffId: schedule.staff.id,
           day,
           timeRange: '3:00 PM - 1:00 AM',
           type: 'regular',
-          station: 'Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance'
+          station: `${areaPrefix}Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance`
         };
         assignedStaffIds.add(schedule.staff.id);
       });
@@ -2772,19 +2788,11 @@ export default function StaffScheduling() {
                 const indoor = working.filter(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
                   const areaAllocation = staff?.area_allocation || 'indoor';
-                  // Head bartenders and support staff default to indoor
-                  if (staff?.title === 'head_bartender' || staff?.title === 'support') {
-                    return true;
-                  }
                   return areaAllocation === 'indoor';
                 });
                 const outdoor = working.filter(s => {
                   const staff = staffMembers.find(sm => sm.id === s.staffId);
                   const areaAllocation = staff?.area_allocation || 'indoor';
-                  // Head bartenders and support are not outdoor-specific
-                  if (staff?.title === 'head_bartender' || staff?.title === 'support') {
-                    return false;
-                  }
                   return areaAllocation === 'outdoor';
                 });
                 
