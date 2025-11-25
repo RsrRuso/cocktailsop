@@ -142,42 +142,62 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[96vw] sm:max-w-md h-[75vh] sm:h-[80vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b shrink-0">
-          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-            Comments ({comments.length})
+      <DialogContent className="w-[92vw] sm:max-w-md h-[60vh] sm:h-[65vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5 border-primary/20">
+        <DialogHeader className="px-3 sm:px-5 pt-3 sm:pt-4 pb-2 sm:pb-3 border-b border-primary/20 shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
+          <DialogTitle className="flex items-center gap-2 text-sm sm:text-base font-semibold">
+            <div className="p-1.5 rounded-full bg-gradient-to-br from-primary/20 to-primary/10">
+              <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+            </div>
+            <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+              Comments
+            </span>
+            <span className="text-xs sm:text-sm text-muted-foreground font-normal">({comments.length})</span>
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-3 sm:px-6 min-h-0">
+        <ScrollArea className="flex-1 px-2 sm:px-4 min-h-0">
           {loading ? (
-            <div className="flex items-center justify-center py-8 sm:py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center py-6 sm:py-8">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-primary/20 blur-lg animate-pulse"></div>
+                <div className="relative animate-spin rounded-full h-7 w-7 border-2 border-transparent border-t-primary border-r-primary"></div>
+              </div>
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-8 sm:py-12 text-muted-foreground">
-              <MessageCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-20" />
-              <p className="text-sm sm:text-base">No comments yet</p>
-              <p className="text-xs sm:text-sm">Be the first to comment!</p>
+            <div className="text-center py-6 sm:py-8 text-muted-foreground">
+              <div className="relative inline-block mb-2">
+                <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl"></div>
+                <MessageCircle className="relative w-8 h-8 sm:w-10 sm:h-10 opacity-30" />
+              </div>
+              <p className="text-xs sm:text-sm font-medium">No comments yet</p>
+              <p className="text-[10px] sm:text-xs opacity-70">Be the first to comment!</p>
             </div>
           ) : (
-            <div className="space-y-2 sm:space-y-3 py-3 sm:py-4">
-              {comments.map((comment) => (
+            <div className="space-y-1.5 sm:space-y-2 py-2 sm:py-3">
+              {comments.map((comment, idx) => (
                 <div
                   key={comment.id}
-                  className="flex gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-xl hover:bg-muted/50 transition-colors active:bg-muted/70"
+                  className="group relative flex gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl bg-card/30 hover:bg-card/60 border border-border/30 hover:border-primary/30 transition-all duration-200 active:scale-[0.98]"
+                  style={{
+                    animationDelay: `${idx * 0.02}s`,
+                    animation: 'fadeInUp 0.3s ease-out forwards',
+                    opacity: 0
+                  }}
                 >
-                  <Avatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0">
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  
+                  <Avatar className="relative w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
                     <AvatarImage src={comment.profiles.avatar_url || undefined} />
-                    <AvatarFallback className="text-xs">{comment.profiles.username[0]}</AvatarFallback>
+                    <AvatarFallback className="text-[10px] sm:text-xs bg-gradient-to-br from-primary/10 to-primary/5">
+                      {comment.profiles.username[0]}
+                    </AvatarFallback>
                   </Avatar>
                   
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
+                  <div className="relative flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-1.5">
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-xs sm:text-sm truncate">{comment.profiles.full_name}</p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">
+                        <p className="font-semibold text-[11px] sm:text-xs truncate">{comment.profiles.full_name}</p>
+                        <p className="text-[9px] sm:text-[10px] text-muted-foreground">
                           {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                         </p>
                       </div>
@@ -186,14 +206,14 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 sm:h-7 sm:w-7 hover:bg-destructive/10 hover:text-destructive flex-shrink-0"
+                          className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => handleDelete(comment.id)}
                         >
-                          <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                          <Trash2 className="w-3 h-3" />
                         </Button>
                       )}
                     </div>
-                    <p className="text-xs sm:text-sm mt-1 sm:mt-1.5 break-words leading-relaxed">{comment.content}</p>
+                    <p className="text-[11px] sm:text-xs mt-0.5 sm:mt-1 break-words leading-relaxed text-foreground/90">{comment.content}</p>
                   </div>
                 </div>
               ))}
@@ -201,13 +221,13 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
           )}
         </ScrollArea>
 
-        <form onSubmit={handleSubmit} className="flex gap-2 p-3 sm:p-4 border-t shrink-0 bg-background">
+        <form onSubmit={handleSubmit} className="flex gap-2 p-2 sm:p-3 border-t border-primary/20 shrink-0 bg-gradient-to-r from-background to-primary/5">
           <Textarea
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Write a comment..."
+            placeholder="Add comment..."
             disabled={submitting}
-            className="flex-1 min-h-[44px] max-h-[100px] resize-none text-sm sm:text-base"
+            className="flex-1 min-h-[38px] max-h-[80px] resize-none text-xs sm:text-sm bg-card/50 border-primary/20 focus:border-primary/40 transition-colors"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -220,9 +240,9 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
             type="submit" 
             size="icon" 
             disabled={submitting || !newComment.trim()}
-            className="h-11 w-11 sm:h-12 sm:w-12 glow-primary flex-shrink-0"
+            className="h-[38px] w-[38px] sm:h-10 sm:w-10 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 flex-shrink-0 active:scale-95 transition-transform"
           >
-            <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </Button>
         </form>
       </DialogContent>

@@ -178,32 +178,33 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
   };
 
   const renderComment = (comment: Comment, level: number = 0) => (
-    <div key={comment.id} className={`${level > 0 ? 'ml-6 sm:ml-8 mt-2' : 'mt-2 sm:mt-3'}`}>
-      <div className="flex gap-2 sm:gap-3">
-        <Avatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0">
+    <div key={comment.id} className={`${level > 0 ? 'ml-4 sm:ml-6 mt-1.5' : 'mt-1.5 sm:mt-2'}`}>
+      <div className="group flex gap-2">
+        <Avatar className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
           <AvatarImage src={comment.profiles.avatar_url || undefined} />
-          <AvatarFallback className="text-xs">{comment.profiles.username[0]}</AvatarFallback>
+          <AvatarFallback className="text-[10px] sm:text-xs bg-gradient-to-br from-primary/10 to-primary/5">{comment.profiles.username[0]}</AvatarFallback>
         </Avatar>
         
         <div className="flex-1 min-w-0">
-          <div className="bg-muted/30 rounded-2xl px-3 py-2 active:bg-muted/50 transition-colors">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <p className="font-semibold text-xs sm:text-sm">{comment.profiles.username}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">
+          <div className="bg-card/30 hover:bg-card/50 rounded-2xl px-2.5 py-2 border border-border/30 hover:border-primary/30 active:bg-card/60 transition-all relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative flex items-center gap-1.5 mb-0.5 flex-wrap">
+              <p className="font-semibold text-[11px] sm:text-xs">{comment.profiles.username}</p>
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground">
                 {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
               </p>
             </div>
-            <p className="text-xs sm:text-sm break-words">{comment.content}</p>
+            <p className="relative text-[11px] sm:text-xs break-words">{comment.content}</p>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 mt-1 ml-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 mt-1 ml-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setReplyingTo(comment.id)}
-              className="h-8 sm:h-7 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground active:scale-95 transition-transform"
+              className="h-6 sm:h-7 px-1.5 text-[10px] sm:text-xs font-semibold text-muted-foreground hover:text-primary active:scale-95 transition-all"
             >
-              <MessageCircle className="w-3 h-3 mr-1" />
+              <MessageCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5" />
               Reply
             </Button>
 
@@ -212,9 +213,9 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
                 variant="ghost"
                 size="sm"
                 onClick={() => handleDelete(comment.id)}
-                className="h-8 sm:h-7 px-2 text-xs font-semibold text-destructive hover:text-destructive active:scale-95 transition-transform"
+                className="h-6 sm:h-7 px-1.5 text-[10px] sm:text-xs font-semibold text-destructive hover:text-destructive active:scale-95 transition-all"
               >
-                <Trash2 className="w-3 h-3 mr-1" />
+                <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5" />
                 Delete
               </Button>
             )}
@@ -232,39 +233,50 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[96vw] sm:max-w-lg h-[75vh] sm:h-[80vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b shrink-0">
-          <DialogTitle className="text-base sm:text-lg">Comments</DialogTitle>
+      <DialogContent className="w-[92vw] sm:max-w-lg h-[60vh] sm:h-[65vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5 border-primary/20">
+        <DialogHeader className="px-3 sm:px-5 pt-3 sm:pt-4 pb-2 sm:pb-3 border-b border-primary/20 shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
+          <DialogTitle className="flex items-center gap-2 text-sm sm:text-base font-semibold">
+            <div className="p-1.5 rounded-full bg-gradient-to-br from-primary/20 to-primary/10">
+              <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+            </div>
+            <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">Comments</span>
+          </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-3 sm:px-6 min-h-0">
+        <ScrollArea className="flex-1 px-2 sm:px-4 min-h-0">
           {loading ? (
-            <div className="flex items-center justify-center py-8 sm:py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center py-6 sm:py-8">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-primary/20 blur-lg animate-pulse"></div>
+                <div className="relative animate-spin rounded-full h-7 w-7 border-2 border-transparent border-t-primary border-r-primary"></div>
+              </div>
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-8 sm:py-12 text-muted-foreground">
-              <MessageCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-20" />
-              <p className="text-sm sm:text-base">No comments yet</p>
-              <p className="text-xs sm:text-sm">Be the first to comment!</p>
+            <div className="text-center py-6 sm:py-8 text-muted-foreground">
+              <div className="relative inline-block mb-2">
+                <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl"></div>
+                <MessageCircle className="relative w-8 h-8 sm:w-10 sm:h-10 opacity-30" />
+              </div>
+              <p className="text-xs sm:text-sm font-medium">No comments yet</p>
+              <p className="text-[10px] sm:text-xs opacity-70">Be the first to comment!</p>
             </div>
           ) : (
-            <div className="pb-3 sm:pb-4">
+            <div className="pb-2 sm:pb-3">
               {comments.map((comment) => renderComment(comment))}
             </div>
           )}
         </ScrollArea>
 
-        <form onSubmit={handleSubmit} className="p-3 sm:p-4 border-t shrink-0 bg-background">
+        <form onSubmit={handleSubmit} className="p-2 sm:p-3 border-t border-primary/20 shrink-0 bg-gradient-to-r from-background to-primary/5">
           {replyingTo && (
-            <div className="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-lg mb-2">
-              <p className="text-xs sm:text-sm text-muted-foreground">Replying to comment</p>
+            <div className="flex items-center justify-between bg-primary/10 px-2.5 py-1.5 rounded-lg mb-2 border border-primary/20">
+              <p className="text-[10px] sm:text-xs text-primary font-medium">Replying...</p>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => setReplyingTo(null)}
-                className="h-7 text-xs"
+                className="h-6 text-[10px] sm:text-xs px-2"
               >
                 Cancel
               </Button>
@@ -275,7 +287,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
             <Textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder={replyingTo ? "Write a reply..." : "Write a comment..."}
+              placeholder={replyingTo ? "Write reply..." : "Add comment..."}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
@@ -283,16 +295,16 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
                 }
               }}
               disabled={submitting}
-              className="flex-1 min-h-[44px] max-h-[100px] resize-none text-sm sm:text-base"
+              className="flex-1 min-h-[38px] max-h-[80px] resize-none text-xs sm:text-sm bg-card/50 border-primary/20 focus:border-primary/40 transition-colors"
               rows={1}
             />
             <Button
               type="submit"
               disabled={submitting || !newComment.trim() || !user}
-              className="glow-primary self-end h-11 w-11 sm:h-12 sm:w-12 flex-shrink-0"
+              className="bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 self-end h-[38px] w-[38px] sm:h-10 sm:w-10 flex-shrink-0 active:scale-95 transition-transform"
               size="icon"
             >
-              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Button>
           </div>
         </form>
