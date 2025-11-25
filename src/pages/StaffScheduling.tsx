@@ -344,6 +344,7 @@ export default function StaffScheduling() {
           name: staff.name,
           title: staff.title as StaffMember['title'],
           email: staff.email,
+          area_allocation: (staff.area_allocation as 'indoor' | 'outdoor') || 'indoor',
           breakTimings: breakTimings || {
             firstWaveStart: '5:30 PM',
             firstWaveEnd: '6:30 PM',
