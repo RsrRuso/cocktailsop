@@ -1,6 +1,6 @@
-import { Brain } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import matrixBrainImage from "@/assets/matrix-brain.png";
 
 export function MatrixBrainLogo() {
   const navigate = useNavigate();
@@ -113,8 +113,9 @@ export function MatrixBrainLogo() {
           }}
         />
 
-        {/* Brain icon - realistic breathing with complex movement */}
+        {/* Realistic brain - breathing with complex movement */}
         <motion.div
+          className="relative z-10"
           animate={{
             rotate: [0, 5, -4, 6, -3, 4, -5, 0],
             scale: [1, 1.08, 0.96, 1.05, 0.98, 1.06, 0.99, 1],
@@ -127,7 +128,12 @@ export function MatrixBrainLogo() {
             ease: [0.42, 0, 0.58, 1],
           }}
         >
-          <Brain className="w-6 h-6 text-emerald-400 relative z-10 drop-shadow-[0_0_12px_rgba(16,185,129,1)]" strokeWidth={2.8} />
+          <img 
+            src={matrixBrainImage} 
+            alt="MATRIX AI Brain" 
+            className="w-8 h-8 object-contain drop-shadow-[0_0_12px_rgba(16,185,129,1)]"
+            style={{ filter: 'brightness(1.2) contrast(1.1)' }}
+          />
         </motion.div>
 
         {/* Ultra chaotic glowing particles around brain */}
