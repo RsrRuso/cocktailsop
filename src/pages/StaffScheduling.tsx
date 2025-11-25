@@ -2998,6 +2998,31 @@ export default function StaffScheduling() {
                       </div>
                     )}
                     
+                    {/* Classic of the Day */}
+                    <div className="mb-4 relative overflow-hidden rounded-lg bg-gradient-to-br from-amber-500/20 via-orange-500/20 to-red-500/20 border border-amber-500/30 p-3">
+                      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBzdHJva2Utd2lkdGg9IjIiLz48L2c+PC9zdmc+')] opacity-20"></div>
+                      <div className="relative text-xs font-bold bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 bg-clip-text text-transparent mb-1.5 flex items-center gap-2">
+                        <span>🍸</span>
+                        <span>Classic of the Day!</span>
+                      </div>
+                      <div className="relative text-sm font-bold text-amber-100">
+                        {(() => {
+                          const cocktails = [
+                            "Old Fashioned",
+                            "Negroni", 
+                            "Martini",
+                            "Manhattan",
+                            "Margarita",
+                            "Mojito",
+                            "Whiskey Sour"
+                          ];
+                          const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+                          const dayIndex = days.indexOf(day);
+                          return cocktails[dayIndex] || cocktails[0];
+                        })()}
+                      </div>
+                    </div>
+                    
                     {/* Expiring Soon Warnings */}
                     {expiringItems.length > 0 && (
                       <div className="mb-4 p-3 bg-red-950/30 border border-red-800/40 rounded-lg">
