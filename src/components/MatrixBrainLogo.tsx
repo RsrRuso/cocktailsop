@@ -1,6 +1,88 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import matrixBrainImage from "@/assets/matrix-brain.png";
+import { Canvas } from "@react-three/fiber";
+import { useRef } from "react";
+import { Group } from "three";
+import { useFrame } from "@react-three/fiber";
+
+function Brain3D() {
+  const brainRef = useRef<Group>(null);
+  
+  useFrame((state) => {
+    if (brainRef.current) {
+      // Organic breathing and rotation
+      brainRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.5) * 0.3;
+      brainRef.current.rotation.y = state.clock.elapsedTime * 0.3;
+      brainRef.current.rotation.z = Math.cos(state.clock.elapsedTime * 0.3) * 0.2;
+      brainRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 0.8) * 0.1);
+    }
+  });
+
+  return (
+    <group ref={brainRef}>
+      {/* Main brain sphere with bumpy surface */}
+      <mesh>
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshStandardMaterial
+          color="#10b981"
+          emissive="#10b981"
+          emissiveIntensity={0.5}
+          roughness={0.3}
+          metalness={0.8}
+        />
+      </mesh>
+      
+      {/* Brain hemisphere details */}
+      <mesh position={[-0.3, 0.2, 0.3]} scale={0.6}>
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshStandardMaterial
+          color="#059669"
+          emissive="#10b981"
+          emissiveIntensity={0.6}
+          roughness={0.4}
+          metalness={0.7}
+          transparent
+          opacity={0.8}
+        />
+      </mesh>
+      
+      <mesh position={[0.3, 0.2, 0.3]} scale={0.6}>
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshStandardMaterial
+          color="#059669"
+          emissive="#10b981"
+          emissiveIntensity={0.6}
+          roughness={0.4}
+          metalness={0.7}
+          transparent
+          opacity={0.8}
+        />
+      </mesh>
+
+      {/* Neural pathways - glowing lines */}
+      {[...Array(8)].map((_, i) => (
+        <mesh
+          key={i}
+          position={[
+            Math.cos((i * Math.PI * 2) / 8) * 0.8,
+            Math.sin((i * Math.PI) / 4) * 0.5,
+            Math.sin((i * Math.PI * 2) / 8) * 0.8,
+          ]}
+          scale={[0.1, 0.1, 0.3]}
+        >
+          <sphereGeometry args={[1, 8, 8]} />
+          <meshStandardMaterial
+            color="#34d399"
+            emissive="#34d399"
+            emissiveIntensity={1}
+            transparent
+            opacity={0.6}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
 
 export function MatrixBrainLogo() {
   const navigate = useNavigate();
@@ -117,37 +199,19 @@ export function MatrixBrainLogo() {
           }}
         />
 
-        {/* Realistic 3D brain - breathing with complex 3D movement */}
-        <motion.div
-          className="relative z-10"
-          style={{ 
-            transformStyle: 'preserve-3d',
-            perspective: '1000px'
-          }}
-          animate={{
-            rotateX: [0, 15, -10, 12, -8, 10, 0],
-            rotateY: [0, -20, 15, -18, 12, -15, 0],
-            rotateZ: [0, 5, -4, 6, -3, 4, 0],
-            scale: [1, 1.08, 0.96, 1.05, 0.98, 1.06, 0.99, 1],
-            y: [0, -2, 1, -1, 2, -1, 0],
-            z: [0, 20, -10, 15, -5, 10, 0],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: [0.42, 0, 0.58, 1],
-          }}
-        >
-          <img 
-            src={matrixBrainImage} 
-            alt="MATRIX AI Brain" 
-            className="w-8 h-8 object-contain"
-            style={{ 
-              filter: 'brightness(1.2) contrast(1.1) drop-shadow(0 0 12px rgba(16, 185, 129, 1)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5))',
-              transform: 'translateZ(20px)'
-            }}
-          />
-        </motion.div>
+        {/* Real 3D brain with Three.js */}
+        <div className="relative z-10 w-10 h-10">
+          <Canvas
+            camera={{ position: [0, 0, 4], fov: 50 }}
+            gl={{ alpha: true, antialias: true }}
+            style={{ background: 'transparent' }}
+          >
+            <ambientLight intensity={0.5} />
+            <pointLight position={[10, 10, 10]} intensity={1} color="#10b981" />
+            <pointLight position={[-10, -10, -10]} intensity={0.5} color="#34d399" />
+            <Brain3D />
+          </Canvas>
+        </div>
 
         {/* Ultra chaotic glowing particles around brain */}
         {[...Array(25)].map((_, i) => {
