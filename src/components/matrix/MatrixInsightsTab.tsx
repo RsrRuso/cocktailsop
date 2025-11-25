@@ -35,17 +35,20 @@ export function MatrixInsightsTab() {
       // Store insight
       const { error: insertError } = await supabase
         .from("matrix_insights")
-        .insert({
-          content: content.trim(),
-          type: analysis.type || type,
+        .insert([{
+          insight_type: analysis.type || type,
+          title: content.substring(0, 100),
+          description: content.trim(),
           category: analysis.category || "other",
-          priority: analysis.priority || "medium",
-          sentiment: analysis.sentiment || "neutral",
-          keywords: analysis.keywords || [],
-          summary: analysis.summary || content.substring(0, 100),
-          actionable: analysis.actionable ?? true,
+          priority_score: analysis.priority === "critical" ? 90 : analysis.priority === "high" ? 70 : analysis.priority === "medium" ? 50 : 30,
+          tags: analysis.keywords || [],
+          context: {
+            sentiment: analysis.sentiment || "neutral",
+            actionable: analysis.actionable ?? true,
+            summary: analysis.summary || content.substring(0, 100)
+          },
           status: "processed",
-        });
+        }] as any);
 
       if (insertError) throw insertError;
 

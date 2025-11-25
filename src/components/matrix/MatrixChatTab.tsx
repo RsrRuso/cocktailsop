@@ -33,7 +33,7 @@ export function MatrixChatTab() {
     if (!user) return;
 
     const { data, error } = await supabase
-      .from("matrix_chat_messages")
+      .from("matrix_chat_history")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: true })
@@ -46,9 +46,9 @@ export function MatrixChatTab() {
 
     if (data) {
       setMessages(
-        data.map((msg) => ({
-          role: msg.role as "user" | "assistant",
-          content: msg.content,
+        data.map((msg: any) => ({
+          role: msg.message_role as "user" | "assistant",
+          content: msg.message_content,
           timestamp: new Date(msg.created_at),
         }))
       );

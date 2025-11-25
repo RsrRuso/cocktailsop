@@ -6,13 +6,13 @@ import { motion } from "framer-motion";
 
 interface Pattern {
   id: string;
-  title: string;
-  description: string;
+  pattern_name: string;
+  pattern_description: string;
   category: string;
-  frequency: number;
-  priority: string;
-  trend: string;
-  related_keywords: string[];
+  occurrence_count: number;
+  trend_direction: string;
+  confidence_score: number;
+  status: string;
 }
 
 export function MatrixPatternsTab() {
@@ -23,23 +23,23 @@ export function MatrixPatternsTab() {
     setPatterns([
       {
         id: "1",
-        title: "Users requesting faster loading times",
-        description: "Multiple users have reported slow performance on mobile devices",
+        pattern_name: "Users requesting faster loading times",
+        pattern_description: "Multiple users have reported slow performance on mobile devices",
         category: "performance",
-        frequency: 15,
-        priority: "high",
-        trend: "growing",
-        related_keywords: ["speed", "performance", "mobile"]
+        occurrence_count: 15,
+        trend_direction: "growing",
+        confidence_score: 0.85,
+        status: "detected"
       },
       {
         id: "2",
-        title: "Dark mode improvements",
-        description: "Users want better contrast and readability in dark mode",
+        pattern_name: "Dark mode improvements",
+        pattern_description: "Users want better contrast and readability in dark mode",
         category: "ui",
-        frequency: 8,
-        priority: "medium",
-        trend: "stable",
-        related_keywords: ["dark mode", "ui", "accessibility"]
+        occurrence_count: 8,
+        trend_direction: "stable",
+        confidence_score: 0.72,
+        status: "detected"
       }
     ]);
   }, []);
@@ -55,17 +55,10 @@ export function MatrixPatternsTab() {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "critical":
-        return "destructive";
-      case "high":
-        return "default";
-      case "medium":
-        return "secondary";
-      default:
-        return "outline";
-    }
+  const getConfidenceColor = (score: number) => {
+    if (score >= 0.8) return "default";
+    if (score >= 0.6) return "secondary";
+    return "outline";
   };
 
   return (
@@ -84,31 +77,27 @@ export function MatrixPatternsTab() {
           <Card className="p-4 hover:border-primary/50 transition-colors">
             <div className="flex items-start justify-between mb-2">
               <h3 className="font-semibold flex items-center gap-2">
-                {pattern.title}
-                <Badge variant={getPriorityColor(pattern.priority)} className="text-xs">
-                  {pattern.priority}
+                {pattern.pattern_name}
+                <Badge variant={getConfidenceColor(pattern.confidence_score)} className="text-xs">
+                  {Math.round(pattern.confidence_score * 100)}% confidence
                 </Badge>
               </h3>
               <div className="flex items-center gap-1 text-muted-foreground">
-                {getTrendIcon(pattern.trend)}
-                <span className="text-xs">{pattern.trend}</span>
+                {getTrendIcon(pattern.trend_direction)}
+                <span className="text-xs">{pattern.trend_direction}</span>
               </div>
             </div>
 
             <p className="text-sm text-muted-foreground mb-3">
-              {pattern.description}
+              {pattern.pattern_description}
             </p>
 
             <div className="flex items-center justify-between">
-              <div className="flex gap-1 flex-wrap">
-                {pattern.related_keywords.map((keyword) => (
-                  <Badge key={keyword} variant="outline" className="text-xs">
-                    {keyword}
-                  </Badge>
-                ))}
-              </div>
+              <Badge variant="outline" className="text-xs">
+                {pattern.category}
+              </Badge>
               <span className="text-sm text-muted-foreground">
-                {pattern.frequency} insights
+                {pattern.occurrence_count} occurrences
               </span>
             </div>
           </Card>
