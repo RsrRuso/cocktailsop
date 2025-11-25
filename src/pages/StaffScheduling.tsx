@@ -3435,7 +3435,7 @@ export default function StaffScheduling() {
                             </Select>
                             {cell?.timeRange && cell.timeRange !== 'OFF' && (
                               <Select
-                                value={staff.area_allocation || (cell?.station?.toLowerCase().includes('outdoor') ? 'outdoor' : 'indoor')}
+                                value={cell?.station?.toLowerCase().includes('outdoor') ? 'outdoor' : 'indoor'}
                                 onValueChange={(area) => {
                                   const currentStation = cell?.station || '';
                                   let newStation = '';
@@ -3473,18 +3473,8 @@ export default function StaffScheduling() {
                                     newStation = `${area === 'outdoor' ? 'Outdoor' : 'Indoor'}: Work 10 hour shifts from 3PM to 1AM, provide glassware support and general assistance`;
                                   }
                                   
-                                  // Update staff area_allocation in database
-                                  supabase
-                                    .from('staff_members')
-                                    .update({ area_allocation: area })
-                                    .eq('id', staff.id)
-                                    .then(() => {
-                                      // Update local state
-                                      setStaffMembers(prev => prev.map(s => 
-                                        s.id === staff.id ? { ...s, area_allocation: area as 'indoor' | 'outdoor' } : s
-                                      ));
-                                    });
-                                  
+                                  // Only update the schedule cell for THIS specific day
+                                  // Do NOT update global area_allocation as it would affect all days
                                   updateScheduleCell(staff.id, day, cell.timeRange, cell.type, newStation, cell?.breakStart, cell?.breakEnd);
                                 }}
                               >
@@ -3505,7 +3495,7 @@ export default function StaffScheduling() {
                                   return stationMatch ? stationMatch[1] : '1';
                                 })()}
                                 onValueChange={(stationNum) => {
-                                  const area = staff.area_allocation || (cell?.station?.toLowerCase().includes('outdoor') ? 'outdoor' : 'indoor');
+                                  const area = cell?.station?.toLowerCase().includes('outdoor') ? 'outdoor' : 'indoor';
                                   let newStation = '';
                                   
                                   if (stationNum === '3') {
