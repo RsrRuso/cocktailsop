@@ -1,42 +1,55 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePageTransition } from "@/hooks/usePageTransition";
+import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
-  usePageTransition(); // Track performance
+  const [isChecking, setIsChecking] = useState(true);
+  usePageTransition();
 
   useEffect(() => {
-    const startTime = performance.now();
-    
-    // Try to get cached session synchronously first
-    const cachedSession = localStorage.getItem('sb-cbfqwaqwliehgxsdueem-auth-token');
-    
-    if (cachedSession) {
-      // Navigate immediately based on cached session
-      const loadTime = performance.now() - startTime;
-      console.log(`Fast auth check: ${loadTime.toFixed(2)}ms`);
-      navigate("/home", { replace: true });
-    } else {
-      // Only check async if no cache
-      checkAuth(startTime);
-    }
-  }, []);
+    const checkAuth = async () => {
+      try {
+        // Quick session check with timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 1000)
+        );
+        
+        const sessionPromise = supabase.auth.getSession();
+        
+        const { data: { session } } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any;
+        
+        if (session) {
+          navigate("/home", { replace: true });
+        } else {
+          navigate("/landing", { replace: true });
+        }
+      } catch (error) {
+        // If timeout or error, assume not logged in
+        console.log('Auth check timeout, redirecting to landing');
+        navigate("/landing", { replace: true });
+      } finally {
+        setIsChecking(false);
+      }
+    };
 
-  const checkAuth = async (startTime: number) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const loadTime = performance.now() - startTime;
-    console.log(`Full auth check: ${loadTime.toFixed(2)}ms`);
-    
-    if (session) {
-      navigate("/home", { replace: true });
-    } else {
-      navigate("/landing", { replace: true });
-    }
-  };
+    checkAuth();
+  }, [navigate]);
 
-  return null; // No UI needed, immediate redirect
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return null;
 };
 
 export default Index;
