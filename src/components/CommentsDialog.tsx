@@ -233,11 +233,11 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[92vw] sm:max-w-lg h-[60vh] sm:h-[65vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5 border-primary/20">
-        <DialogHeader className="px-3 sm:px-5 pt-3 sm:pt-4 pb-2 sm:pb-3 border-b border-primary/20 shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
-          <DialogTitle className="flex items-center gap-2 text-sm sm:text-base font-semibold">
-            <div className="p-1.5 rounded-full bg-gradient-to-br from-primary/20 to-primary/10">
-              <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+      <DialogContent className="w-[95vw] sm:max-w-lg h-[50vh] sm:h-[55vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-primary/5 border-primary/20 shadow-2xl">
+        <DialogHeader className="px-3 sm:px-4 pt-2.5 sm:pt-3 pb-1.5 sm:pb-2 border-b border-primary/20 shrink-0 bg-gradient-to-r from-primary/5 to-transparent">
+          <DialogTitle className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold">
+            <div className="p-1 rounded-full bg-gradient-to-br from-primary/20 to-primary/10">
+              <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
             </div>
             <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">Comments</span>
           </DialogTitle>
@@ -267,23 +267,23 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
           )}
         </ScrollArea>
 
-        <form onSubmit={handleSubmit} className="p-2 sm:p-3 border-t border-primary/20 shrink-0 bg-gradient-to-r from-background to-primary/5">
+        <form onSubmit={handleSubmit} className="p-2 border-t border-primary/20 shrink-0 bg-background/80 backdrop-blur-sm sticky bottom-0">
           {replyingTo && (
-            <div className="flex items-center justify-between bg-primary/10 px-2.5 py-1.5 rounded-lg mb-2 border border-primary/20">
-              <p className="text-[10px] sm:text-xs text-primary font-medium">Replying...</p>
+            <div className="flex items-center justify-between bg-primary/10 px-2 py-1 rounded-lg mb-1.5 border border-primary/20">
+              <p className="text-[9px] sm:text-[10px] text-primary font-medium">Replying...</p>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => setReplyingTo(null)}
-                className="h-6 text-[10px] sm:text-xs px-2"
+                className="h-5 text-[9px] sm:text-[10px] px-1.5"
               >
                 Cancel
               </Button>
             </div>
           )}
           
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <Textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
@@ -295,16 +295,16 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
                 }
               }}
               disabled={submitting}
-              className="flex-1 min-h-[38px] max-h-[80px] resize-none text-xs sm:text-sm bg-card/50 border-primary/20 focus:border-primary/40 transition-colors"
+              className="flex-1 min-h-[36px] max-h-[72px] resize-none text-xs bg-card/50 border-primary/20 focus:border-primary/40 transition-colors py-2 px-3"
               rows={1}
             />
             <Button
               type="submit"
               disabled={submitting || !newComment.trim() || !user}
-              className="bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 self-end h-[38px] w-[38px] sm:h-10 sm:w-10 flex-shrink-0 active:scale-95 transition-transform"
+              className="bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 self-end h-[36px] w-[36px] flex-shrink-0 active:scale-95 transition-transform"
               size="icon"
             >
-              <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <Send className="w-3.5 h-3.5" />
             </Button>
           </div>
         </form>
