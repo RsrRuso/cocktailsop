@@ -18,78 +18,81 @@ export default function MatrixAI() {
   const [activeTab, setActiveTab] = useState("chat");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-20">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
         {/* Back Button */}
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate(-1)}
-          className="mb-4 gap-2"
+          className="mb-3 sm:mb-4 gap-2"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back
+          <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+          <span className="text-xs sm:text-sm">Back</span>
         </Button>
         
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-4 sm:mb-8"
         >
-          <div className="flex items-center gap-3 mb-2">
-            <Brain className="w-10 h-10 text-primary" />
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2">
+            <Brain className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               MATRIX AI
             </h1>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Collective Intelligence System - Powered by Community Insights
           </p>
         </motion.div>
 
         <Card className="border-primary/20 bg-background/95 backdrop-blur-sm">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
+            <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent overflow-x-auto flex-nowrap">
               <TabsTrigger
                 value="chat"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm whitespace-nowrap"
               >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                AI Chat
+                <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">AI Chat</span>
+                <span className="sm:hidden">Chat</span>
               </TabsTrigger>
               <TabsTrigger
                 value="insights"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm whitespace-nowrap"
               >
-                <Lightbulb className="w-4 h-4 mr-2" />
-                Submit Insight
+                <Lightbulb className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Submit Insight</span>
+                <span className="sm:hidden">Insight</span>
               </TabsTrigger>
               <TabsTrigger
                 value="patterns"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm whitespace-nowrap"
               >
-                <TrendingUp className="w-4 h-4 mr-2" />
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Patterns
               </TabsTrigger>
               <TabsTrigger
                 value="roadmap"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm whitespace-nowrap"
               >
-                <Brain className="w-4 h-4 mr-2" />
-                AI Roadmap
+                <Brain className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">AI Roadmap</span>
+                <span className="sm:hidden">Roadmap</span>
               </TabsTrigger>
               {profile?.user_type === "founder" && (
                 <TabsTrigger
                   value="admin"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none text-xs sm:text-sm whitespace-nowrap"
                 >
-                  <Settings className="w-4 h-4 mr-2" />
+                  <Settings className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   Admin
                 </TabsTrigger>
               )}
             </TabsList>
 
-            <div className="p-6">
+            <div className="p-3 sm:p-6">
               <TabsContent value="chat" className="mt-0">
                 <MatrixChatTab />
               </TabsContent>
