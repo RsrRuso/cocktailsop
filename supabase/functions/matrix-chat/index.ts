@@ -51,10 +51,17 @@ Deno.serve(async (req) => {
       .in('status', ['proposed', 'in_progress'])
       .limit(5);
 
+    // Fetch platform members for source verification
+    const { data: members } = await supabaseClient
+      .from('profiles')
+      .select('id, username, full_name, user_type, professional_title, badge_level')
+      .limit(100);
+
     const context = {
       memories: memories?.map(m => m.content) || [],
       patterns: patterns || [],
-      features: features || []
+      features: features || [],
+      platformMembers: members || []
     };
 
     // Call Lovable AI for chat response
@@ -68,14 +75,22 @@ Deno.serve(async (req) => {
         model: 'google/gemini-2.5-pro',
         messages: [{
           role: 'system',
-          content: `You are MATRIX AI, the collective intelligence advisor for SpecVerse. You help users understand platform insights, roadmap features, and provide guidance.
+          content: `You are MATRIX AI, the collective intelligence advisor for SpecVerse. You help users understand platform insights, roadmap features, and provide guidance. You have access to platform members and can verify the source of information.
 
 Context:
 - Recent Patterns: ${JSON.stringify(context.patterns)}
 - Upcoming Features: ${JSON.stringify(context.features)}
 - Memory: ${JSON.stringify(context.memories.slice(0, 3))}
+- Platform Members: ${JSON.stringify(context.platformMembers.slice(0, 20))}
 
-Be helpful, concise, and reference specific insights when relevant. Guide users to submit feedback through proper channels.`
+Source Verification Capabilities:
+- When users ask about information sources, cross-reference with platform member data
+- Verify claims by checking member roles, badge levels, and professional titles
+- Identify if information comes from verified experts (professional_title, badge_level)
+- Flag unverified or suspicious information
+- Provide member context when relevant (e.g., "This suggestion comes from a Gold Badge bartender")
+
+Be helpful, concise, reference specific insights and verified sources when relevant. Guide users to submit feedback through proper channels. Always verify sources when information accuracy is questioned.`
         }, {
           role: 'user',
           content: message

@@ -107,8 +107,8 @@ export function MatrixChatTab() {
   };
 
   return (
-    <div className="flex flex-col h-[600px]">
-      <ScrollArea className="flex-1 pr-4">
+    <div className="flex flex-col h-[500px] sm:h-[600px]">
+      <ScrollArea className="flex-1 pr-2 sm:pr-4">
         <div className="space-y-4">
           <AnimatePresence>
             {messages.length === 0 && (
@@ -137,14 +137,14 @@ export function MatrixChatTab() {
                 }`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-3 py-2 sm:px-4 sm:py-3 ${
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                  <p className="text-xs opacity-60 mt-1">
+                  <p className="text-xs sm:text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-[10px] sm:text-xs opacity-60 mt-1">
                     {msg.timestamp.toLocaleTimeString()}
                   </p>
                 </div>
@@ -171,7 +171,7 @@ export function MatrixChatTab() {
         </div>
       </ScrollArea>
 
-      <div className="flex gap-2 mt-4 pt-4 border-t">
+      <div className="flex gap-2 mt-2 sm:mt-4 pt-2 sm:pt-4 border-t">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -182,16 +182,16 @@ export function MatrixChatTab() {
             }
           }}
           placeholder="Ask MATRIX AI anything..."
-          className="min-h-[60px] resize-none"
+          className="min-h-[50px] sm:min-h-[60px] resize-none text-xs sm:text-sm"
           disabled={loading}
         />
         <Button
           onClick={handleSend}
           disabled={!input.trim() || loading}
           size="icon"
-          className="h-[60px] w-[60px]"
+          className="h-[50px] w-[50px] sm:h-[60px] sm:w-[60px] shrink-0"
         >
-          <Send className="w-5 h-5" />
+          <Send className="w-4 h-4 sm:w-5 sm:h-5" />
         </Button>
       </div>
     </div>

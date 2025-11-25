@@ -212,7 +212,7 @@ export default function MatrixAI() {
         ))}
       </div>
       
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl relative z-10">
+      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-6 max-w-7xl relative z-10">
         {/* Back Button */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -409,7 +409,7 @@ export default function MatrixAI() {
           </div>
         </motion.div>
 
-        <Card className="border-emerald-500/30 bg-black/90 backdrop-blur-xl shadow-[0_0_50px_rgba(16,185,129,0.3)] relative overflow-hidden">
+        <Card className="border-emerald-500/30 bg-black/90 backdrop-blur-xl shadow-[0_0_50px_rgba(16,185,129,0.3)] relative overflow-hidden p-2 sm:p-6">
           {/* Animated border glow */}
           <motion.div 
             className="absolute inset-0 rounded-lg pointer-events-none"
@@ -449,7 +449,7 @@ export default function MatrixAI() {
             }}
           />
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full relative z-10">
-            <TabsList className="w-full justify-start border-b-2 border-emerald-500/30 rounded-none h-auto p-0 bg-black/60 backdrop-blur-sm overflow-x-auto flex-nowrap relative">
+            <TabsList className="w-full justify-start border-b-2 border-emerald-500/30 rounded-none h-auto p-0 bg-black/60 backdrop-blur-sm overflow-x-auto flex-nowrap relative gap-1 sm:gap-2">
               {/* Animated underline */}
               <motion.div
                 className="absolute bottom-0 h-0.5 bg-emerald-400"
@@ -470,10 +470,10 @@ export default function MatrixAI() {
               
               <TabsTrigger
                 value="chat"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.5)] rounded-none text-xs sm:text-sm whitespace-nowrap text-emerald-300/60 hover:text-emerald-300 transition-all font-mono"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.5)] rounded-none text-xs sm:text-sm whitespace-nowrap text-emerald-300/60 hover:text-emerald-300 transition-all font-mono px-2 sm:px-4 py-2"
               >
-                <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">AI Chat</span>
+                <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Chat</span>
                 <span className="sm:hidden">Chat</span>
               </TabsTrigger>
               <TabsTrigger
