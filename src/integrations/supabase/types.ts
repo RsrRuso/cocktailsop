@@ -2469,6 +2469,231 @@ export type Database = {
           },
         ]
       }
+      matrix_chat_history: {
+        Row: {
+          context_insights: string[] | null
+          context_memory: string[] | null
+          created_at: string | null
+          id: string
+          message_content: string
+          message_role: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          context_insights?: string[] | null
+          context_memory?: string[] | null
+          created_at?: string | null
+          id?: string
+          message_content: string
+          message_role: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          context_insights?: string[] | null
+          context_memory?: string[] | null
+          created_at?: string | null
+          id?: string
+          message_content?: string
+          message_role?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      matrix_insights: {
+        Row: {
+          category: string | null
+          context: Json | null
+          created_at: string | null
+          description: string
+          embedding_vector: Json | null
+          id: string
+          insight_type: string
+          priority_score: number | null
+          processed_at: string | null
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          context?: Json | null
+          created_at?: string | null
+          description: string
+          embedding_vector?: Json | null
+          id?: string
+          insight_type: string
+          priority_score?: number | null
+          processed_at?: string | null
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          context?: Json | null
+          created_at?: string | null
+          description?: string
+          embedding_vector?: Json | null
+          id?: string
+          insight_type?: string
+          priority_score?: number | null
+          processed_at?: string | null
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      matrix_memory: {
+        Row: {
+          access_count: number | null
+          content: string
+          created_at: string | null
+          embedding_vector: Json | null
+          expires_at: string | null
+          id: string
+          last_accessed: string | null
+          memory_type: string
+          metadata: Json | null
+          relevance_score: number | null
+        }
+        Insert: {
+          access_count?: number | null
+          content: string
+          created_at?: string | null
+          embedding_vector?: Json | null
+          expires_at?: string | null
+          id?: string
+          last_accessed?: string | null
+          memory_type: string
+          metadata?: Json | null
+          relevance_score?: number | null
+        }
+        Update: {
+          access_count?: number | null
+          content?: string
+          created_at?: string | null
+          embedding_vector?: Json | null
+          expires_at?: string | null
+          id?: string
+          last_accessed?: string | null
+          memory_type?: string
+          metadata?: Json | null
+          relevance_score?: number | null
+        }
+        Relationships: []
+      }
+      matrix_patterns: {
+        Row: {
+          category: string | null
+          confidence_score: number | null
+          detected_at: string | null
+          id: string
+          last_updated: string | null
+          occurrence_count: number | null
+          pattern_description: string | null
+          pattern_name: string
+          related_insight_ids: string[]
+          status: string | null
+          trend_direction: string | null
+        }
+        Insert: {
+          category?: string | null
+          confidence_score?: number | null
+          detected_at?: string | null
+          id?: string
+          last_updated?: string | null
+          occurrence_count?: number | null
+          pattern_description?: string | null
+          pattern_name: string
+          related_insight_ids?: string[]
+          status?: string | null
+          trend_direction?: string | null
+        }
+        Update: {
+          category?: string | null
+          confidence_score?: number | null
+          detected_at?: string | null
+          id?: string
+          last_updated?: string | null
+          occurrence_count?: number | null
+          pattern_description?: string | null
+          pattern_name?: string
+          related_insight_ids?: string[]
+          status?: string | null
+          trend_direction?: string | null
+        }
+        Relationships: []
+      }
+      matrix_roadmap: {
+        Row: {
+          ai_generated: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          completed_at: string | null
+          created_at: string | null
+          estimated_impact: string | null
+          feature_description: string
+          feature_title: string
+          id: string
+          implementation_complexity: string | null
+          priority: string
+          priority_score: number | null
+          reasoning: string | null
+          source_insight_ids: string[] | null
+          source_pattern_ids: string[] | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          estimated_impact?: string | null
+          feature_description: string
+          feature_title: string
+          id?: string
+          implementation_complexity?: string | null
+          priority?: string
+          priority_score?: number | null
+          reasoning?: string | null
+          source_insight_ids?: string[] | null
+          source_pattern_ids?: string[] | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_generated?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          estimated_impact?: string | null
+          feature_description?: string
+          feature_title?: string
+          id?: string
+          implementation_complexity?: string | null
+          priority?: string
+          priority_score?: number | null
+          reasoning?: string | null
+          source_insight_ids?: string[] | null
+          source_pattern_ids?: string[] | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
