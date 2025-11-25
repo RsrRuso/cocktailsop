@@ -221,29 +221,55 @@ const CocktailSOPLibrary = () => {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        {/* Classic Cocktails Section */}
+        {/* Classic Cocktails Section - Enhanced Design */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <BookOpen className="h-6 w-6" />
-            Classic Cocktails
-          </h2>
-          <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">ATTIKO Classic Cocktails Collection</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Reference guide for timeless cocktail recipes and techniques
-                </p>
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/20 via-orange-500/20 to-red-500/20 border-2 border-amber-500/30 backdrop-blur-sm">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnoiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIiBzdHJva2Utd2lkdGg9IjIiLz48L2c+PC9zdmc+')] opacity-20"></div>
+            
+            <div className="relative p-8">
+              <div className="flex items-start justify-between gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-3 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl shadow-lg">
+                      <BookOpen className="h-7 w-7 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-bold bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent">
+                        Classic Cocktails Collection
+                      </h2>
+                      <p className="text-sm text-muted-foreground mt-1">ATTIKO Master Reference Guide</p>
+                    </div>
+                  </div>
+                  
+                  <p className="text-base text-foreground/80 mb-4 leading-relaxed">
+                    Explore timeless cocktail recipes, professional techniques, and essential mixology knowledge 
+                    crafted by industry masters.
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="px-3 py-1 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-full text-xs font-medium border border-amber-500/30">
+                      Timeless Recipes
+                    </span>
+                    <span className="px-3 py-1 bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded-full text-xs font-medium border border-orange-500/30">
+                      Master Techniques
+                    </span>
+                    <span className="px-3 py-1 bg-red-500/20 text-red-600 dark:text-red-400 rounded-full text-xs font-medium border border-red-500/30">
+                      Professional Guide
+                    </span>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={() => window.open('/classic-cocktails.pdf', '_blank')}
+                  size="lg"
+                  className="gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <Download className="h-5 w-5" />
+                  View Collection
+                </Button>
               </div>
-              <Button
-                onClick={() => window.open('/classic-cocktails.pdf', '_blank')}
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                View PDF
-              </Button>
             </div>
-          </Card>
+          </div>
         </div>
 
         {/* User Recipes Section */}
