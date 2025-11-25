@@ -108,7 +108,8 @@ export function MatrixChatTab() {
 
   return (
     <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1 pr-1 sm:pr-2">
+      {/* Chat messages area - scrollable */}
+      <ScrollArea className="flex-1 pr-1 sm:pr-2 mb-3">
         <div className="space-y-2 sm:space-y-3">
           <AnimatePresence>
             {messages.length === 0 && (
@@ -171,7 +172,8 @@ export function MatrixChatTab() {
         </div>
       </ScrollArea>
 
-      <div className="flex gap-1.5 sm:gap-2 mt-2 pt-2 border-t flex-shrink-0">
+      {/* Input area - fixed at bottom */}
+      <div className="flex gap-1.5 sm:gap-2 flex-shrink-0 border-t border-emerald-500/30 pt-2">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -182,7 +184,7 @@ export function MatrixChatTab() {
             }
           }}
           placeholder="Ask MATRIX AI..."
-          className="min-h-[40px] sm:min-h-[50px] resize-none text-[11px] sm:text-sm"
+          className="min-h-[40px] sm:min-h-[50px] resize-none text-[11px] sm:text-sm bg-background/60 backdrop-blur-sm border-emerald-500/30"
           disabled={loading}
         />
         <Button
