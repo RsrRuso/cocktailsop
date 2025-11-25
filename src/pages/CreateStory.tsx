@@ -7,11 +7,14 @@ import { ArrowLeft, Upload, Camera, X, CheckCircle2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
+import { StoryEditor } from "@/components/StoryEditor";
 
 const CreateStory = () => {
   const navigate = useNavigate();
   const [selectedMedia, setSelectedMedia] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editedData, setEditedData] = useState<Record<number, any>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadState, uploadMultiple } = usePowerfulUpload();
 
@@ -73,6 +76,15 @@ const CreateStory = () => {
   const removeMedia = (index: number) => {
     setSelectedMedia(selectedMedia.filter((_, i) => i !== index));
     setPreviewUrls(previewUrls.filter((_, i) => i !== index));
+    const newEditedData = { ...editedData };
+    delete newEditedData[index];
+    setEditedData(newEditedData);
+  };
+
+  const handleSaveEdit = (index: number, data: any) => {
+    setEditedData({ ...editedData, [index]: data });
+    setEditingIndex(null);
+    toast.success("Edits saved!");
   };
 
   const handleCreateStory = async () => {
@@ -165,6 +177,18 @@ const CreateStory = () => {
     }
   };
 
+  if (editingIndex !== null) {
+    return (
+      <StoryEditor
+        media={selectedMedia[editingIndex]}
+        mediaUrl={previewUrls[editingIndex]}
+        isVideo={selectedMedia[editingIndex]?.type.startsWith('video')}
+        onSave={(data) => handleSaveEdit(editingIndex, data)}
+        onCancel={() => setEditingIndex(null)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
@@ -188,15 +212,26 @@ const CreateStory = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 {previewUrls.map((url, index) => (
-                  <div key={index} className="relative">
+                  <div key={index} className="relative group cursor-pointer" onClick={() => setEditingIndex(index)}>
                     {selectedMedia[index]?.type.startsWith('video') ? (
                       <video src={url} className="w-full h-48 object-cover rounded-xl" />
                     ) : (
                       <img src={url} alt={`Preview ${index + 1}`} className="w-full h-48 object-cover rounded-xl" />
                     )}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                      <p className="text-white text-sm font-medium">Tap to Edit</p>
+                    </div>
+                    {editedData[index] && (
+                      <div className="absolute top-2 left-2 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium">
+                        Edited ✓
+                      </div>
+                    )}
                     <button
-                      onClick={() => removeMedia(index)}
-                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeMedia(index);
+                      }}
+                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg"
                     >
                       <X className="w-4 h-4 text-white" />
                     </button>
