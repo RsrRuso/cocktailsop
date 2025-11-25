@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Brain, MessageSquare, Lightbulb, TrendingUp, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Brain, MessageSquare, Lightbulb, TrendingUp, Settings, ArrowLeft } from "lucide-react";
 import { MatrixInsightsTab } from "@/components/matrix/MatrixInsightsTab";
 import { MatrixChatTab } from "@/components/matrix/MatrixChatTab";
 import { MatrixRoadmapTab } from "@/components/matrix/MatrixRoadmapTab";
@@ -12,11 +14,23 @@ import { motion } from "framer-motion";
 
 export default function MatrixAI() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("chat");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(-1)}
+          className="mb-4 gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </Button>
+        
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
