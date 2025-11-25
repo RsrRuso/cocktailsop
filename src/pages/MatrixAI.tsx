@@ -21,7 +21,7 @@ export default function MatrixAI() {
   const matrixChars = ['0', '1', 'ア', 'イ', 'ウ', 'エ', 'オ', 'カ', 'キ', 'ク', 'ケ', 'コ', 'サ', 'シ'];
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden pb-20">
+    <div className="h-screen bg-black relative overflow-hidden flex flex-col">
       {/* Animated grid background */}
       <motion.div 
         className="absolute inset-0 pointer-events-none"
@@ -212,11 +212,12 @@ export default function MatrixAI() {
         ))}
       </div>
       
-      <div className="container mx-auto px-2 py-2 max-w-4xl relative z-10">
+      <div className="container mx-auto px-2 py-2 max-w-4xl relative z-10 h-full flex flex-col overflow-hidden pb-20">
         {/* Back Button */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
+          className="flex-shrink-0"
         >
           <Button
             variant="ghost"
@@ -232,7 +233,7 @@ export default function MatrixAI() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 sm:mb-8 relative"
+          className="mb-2 sm:mb-4 relative flex-shrink-0"
         >
           {/* Glowing background effect behind title */}
           <motion.div
@@ -409,7 +410,7 @@ export default function MatrixAI() {
           </div>
         </motion.div>
 
-        <Card className="border-emerald-500/30 bg-black/90 backdrop-blur-xl shadow-[0_0_50px_rgba(16,185,129,0.3)] relative overflow-hidden p-2 sm:p-4">
+        <Card className="border-emerald-500/30 bg-black/90 backdrop-blur-xl shadow-[0_0_50px_rgba(16,185,129,0.3)] relative overflow-hidden p-2 sm:p-4 flex-1 flex flex-col min-h-0">
           {/* Animated border glow */}
           <motion.div 
             className="absolute inset-0 rounded-lg pointer-events-none"
@@ -448,7 +449,7 @@ export default function MatrixAI() {
               ease: "linear",
             }}
           />
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full relative z-10">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full relative z-10 flex-1 flex flex-col min-h-0">
             <TabsList className="w-full justify-start border-b-2 border-emerald-500/30 rounded-none h-auto p-0 bg-black/60 backdrop-blur-sm overflow-x-auto flex-nowrap relative gap-1 sm:gap-2">
               {/* Animated underline */}
               <motion.div
@@ -510,28 +511,28 @@ export default function MatrixAI() {
               )}
             </TabsList>
 
-            <div className="p-3 sm:p-6 relative">
+            <div className="p-2 sm:p-4 relative flex-1 overflow-hidden">
               {/* Content area glow */}
               <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/5 to-transparent pointer-events-none rounded-b-lg" />
               
-              <TabsContent value="chat" className="mt-0 relative z-10">
+              <TabsContent value="chat" className="mt-0 relative z-10 h-full">
                 <MatrixChatTab />
               </TabsContent>
 
-              <TabsContent value="insights" className="mt-0">
+              <TabsContent value="insights" className="mt-0 h-full overflow-y-auto">
                 <MatrixInsightsTab />
               </TabsContent>
 
-              <TabsContent value="patterns" className="mt-0">
+              <TabsContent value="patterns" className="mt-0 h-full overflow-y-auto">
                 <MatrixPatternsTab />
               </TabsContent>
 
-              <TabsContent value="roadmap" className="mt-0">
+              <TabsContent value="roadmap" className="mt-0 h-full overflow-y-auto">
                 <MatrixRoadmapTab />
               </TabsContent>
 
               {profile?.user_type === "founder" && (
-                <TabsContent value="admin" className="mt-0">
+                <TabsContent value="admin" className="mt-0 h-full overflow-y-auto">
                   <MatrixAdminTab />
                 </TabsContent>
               )}
