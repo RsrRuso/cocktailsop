@@ -117,6 +117,68 @@ const CreateStory = () => {
         throw new Error('All uploads failed');
       }
 
+      // Prepare edited data arrays aligned with uploaded URLs
+      const musicDataArray = uploadedUrls.map((_, urlIndex) => {
+        // Find the original index in selectedMedia that corresponds to this uploaded URL
+        let originalIndex = 0;
+        let uploadCount = 0;
+        for (let i = 0; i < results.length; i++) {
+          if (!results[i].error) {
+            if (uploadCount === urlIndex) {
+              originalIndex = i;
+              break;
+            }
+            uploadCount++;
+          }
+        }
+        return editedData[originalIndex]?.music || null;
+      });
+      
+      const filtersArray = uploadedUrls.map((_, urlIndex) => {
+        let originalIndex = 0;
+        let uploadCount = 0;
+        for (let i = 0; i < results.length; i++) {
+          if (!results[i].error) {
+            if (uploadCount === urlIndex) {
+              originalIndex = i;
+              break;
+            }
+            uploadCount++;
+          }
+        }
+        return editedData[originalIndex]?.filter ? { filter: editedData[originalIndex].filter } : null;
+      });
+      
+      const textOverlaysArray = uploadedUrls.map((_, urlIndex) => {
+        let originalIndex = 0;
+        let uploadCount = 0;
+        for (let i = 0; i < results.length; i++) {
+          if (!results[i].error) {
+            if (uploadCount === urlIndex) {
+              originalIndex = i;
+              break;
+            }
+            uploadCount++;
+          }
+        }
+        return editedData[originalIndex]?.textOverlays || [];
+      });
+      
+      const trimDataArray = uploadedUrls.map((_, urlIndex) => {
+        let originalIndex = 0;
+        let uploadCount = 0;
+        for (let i = 0; i < results.length; i++) {
+          if (!results[i].error) {
+            if (uploadCount === urlIndex) {
+              originalIndex = i;
+              break;
+            }
+            uploadCount++;
+          }
+        }
+        return editedData[originalIndex]?.trim ? { start: editedData[originalIndex].trim.start, end: editedData[originalIndex].trim.end } : null;
+      });
+
       // Check if user has an active story (within last 24 hours)
       const { data: existingStories, error: fetchError } = await supabase
         .from("stories")
@@ -136,12 +198,27 @@ const CreateStory = () => {
         
         const updatedMediaUrls = [...(existingStory.media_urls || []), ...uploadedUrls];
         const updatedMediaTypes = [...(existingStory.media_types || []), ...mediaTypes];
+        
+        // Safely merge edited data arrays, ensuring existing data is an array
+        const existingMusicData = Array.isArray(existingStory.music_data) ? existingStory.music_data : [];
+        const existingFilters = Array.isArray(existingStory.filters) ? existingStory.filters : [];
+        const existingTextOverlays = Array.isArray(existingStory.text_overlays) ? existingStory.text_overlays : [];
+        const existingTrimData = Array.isArray(existingStory.trim_data) ? existingStory.trim_data : [];
+        
+        const updatedMusicData = [...existingMusicData, ...musicDataArray];
+        const updatedFilters = [...existingFilters, ...filtersArray];
+        const updatedTextOverlays = [...existingTextOverlays, ...textOverlaysArray];
+        const updatedTrimData = [...existingTrimData, ...trimDataArray];
 
         const { error: updateError } = await supabase
           .from("stories")
           .update({
             media_urls: updatedMediaUrls,
             media_types: updatedMediaTypes,
+            music_data: updatedMusicData,
+            filters: updatedFilters,
+            text_overlays: updatedTextOverlays,
+            trim_data: updatedTrimData,
           })
           .eq("id", existingStory.id);
 
@@ -152,14 +229,17 @@ const CreateStory = () => {
         
         toast.success(`Added ${uploadedUrls.length} to your story! (${updatedMediaUrls.length} total)`);
       } else {
-        // Create new story
-        
+        // Create new story with edited data
         const { error: insertError } = await supabase
           .from("stories")
           .insert({
             user_id: user.id,
             media_urls: uploadedUrls,
             media_types: mediaTypes,
+            music_data: musicDataArray,
+            filters: filtersArray,
+            text_overlays: textOverlaysArray,
+            trim_data: trimDataArray,
           });
 
         if (insertError) {
