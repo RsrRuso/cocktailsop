@@ -74,56 +74,46 @@ export default function ScanTransfer() {
 
       // Check permissions only when a workspace is involved
       if (workspaceId) {
-        const { data: membership, error: membershipError } = await supabase
-          .from("workspace_members_with_owner")
-          .select("role, permissions")
-          .eq("workspace_id", workspaceId)
-          .eq("user_id", userId)
+        // FIRST: Check if user is workspace owner - instant access, no other checks
+        const { data: workspace, error: workspaceError } = await supabase
+          .from("workspaces")
+          .select("owner_id")
+          .eq("id", workspaceId)
           .maybeSingle();
 
-        if (membershipError) {
-          console.error("[ScanTransfer] Error checking workspace membership:", membershipError);
+        if (workspaceError) {
+          console.error("[ScanTransfer] Error fetching workspace:", workspaceError);
         }
 
-        let effectiveRole = membership?.role as string | undefined;
-        let effectivePermissions = (membership?.permissions as any) || {};
-
-        // Fallback: if no membership row, still allow workspace owner
-        if (!membership) {
-          const { data: workspace, error: workspaceError } = await supabase
-            .from("workspaces")
-            .select("owner_id")
-            .eq("id", workspaceId)
+        // Owner gets instant full access - skip all permission checks
+        if (workspace?.owner_id === userId) {
+          console.log("[ScanTransfer] ✅ User is workspace owner - instant access granted");
+          // Continue to set transfer context below - no permission blocks
+        } else {
+          // Non-owners: check membership permissions
+          const { data: membership, error: membershipError } = await supabase
+            .from("workspace_members_with_owner")
+            .select("role, permissions")
+            .eq("workspace_id", workspaceId)
+            .eq("user_id", userId)
             .maybeSingle();
 
-          if (workspaceError) {
-            console.error("[ScanTransfer] Error fetching workspace for access check:", workspaceError);
+          if (membershipError) {
+            console.error("[ScanTransfer] Error checking workspace membership:", membershipError);
           }
 
-          if (workspace?.owner_id === userId) {
-            effectiveRole = "owner";
-            effectivePermissions = {
-              can_receive: true,
-              can_transfer: true,
-              can_manage: true,
-              can_delete: true,
-            };
-          } else {
-            toast.error("You don't have access to this workspace");
+          const effectiveRole = membership?.role as string | undefined;
+          const effectivePermissions = (membership?.permissions as any) || {};
+
+          const canTransfer =
+            effectiveRole === "admin" ||
+            effectivePermissions?.can_transfer === true;
+
+          if (!canTransfer) {
+            toast.error("You don't have permission to transfer inventory in this workspace");
             navigate("/");
             return;
           }
-        }
-
-        const canTransfer =
-          effectiveRole === "admin" ||
-          effectiveRole === "owner" ||
-          effectivePermissions?.can_transfer === true;
-
-        if (!canTransfer) {
-          toast.error("You don't have permission to transfer inventory in this workspace");
-          navigate("/");
-          return;
         }
       }
 
