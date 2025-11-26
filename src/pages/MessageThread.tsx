@@ -13,6 +13,7 @@ import { MessageInput } from "@/components/MessageInput";
 import { MediaRecorder } from "@/components/MediaRecorder";
 import { ForwardMessageDialog } from "@/components/ForwardMessageDialog";
 import { GroupSettingsDialog } from "@/components/GroupSettingsDialog";
+import { SmartReplySuggestions } from "@/components/SmartReplySuggestions";
 
 const MessageThread = () => {
   const { conversationId } = useParams();
@@ -154,11 +155,12 @@ const MessageThread = () => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-background flex flex-col">
-      {/* Header */}
-      <div className="relative glass backdrop-blur-xl border-b border-primary/20 p-4 flex items-center gap-3 overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-b from-background via-background/95 to-background flex flex-col">
+      {/* Header with Instagram-style design */}
+      <div className="relative backdrop-blur-2xl border-b border-border/10 p-3 flex items-center gap-3 overflow-hidden shadow-lg">
         {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 animate-shimmer pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/30" />
         
         <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} className="glass shrink-0 relative z-10">
           <ArrowLeft className="w-5 h-5" />
@@ -232,8 +234,8 @@ const MessageThread = () => {
         )}
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+      {/* Messages with modern styling */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar bg-gradient-to-b from-transparent via-background/50 to-transparent">
         {messages.map((message) => {
           const isOwn = message.sender_id === currentUser?.id;
           const replyMessage = message.reply_to_id ? messages.find((m) => m.id === message.reply_to_id) : null;
@@ -265,8 +267,8 @@ const MessageThread = () => {
               />
 
               {showEmojiPicker === message.id && (
-                <div className="absolute bottom-full mb-2 neon-blue backdrop-blur-xl rounded-2xl p-4 z-20 neon-blue-glow shadow-2xl max-w-xs">
-                  <div className="flex flex-wrap gap-2">
+                <div className="absolute bottom-full left-0 mb-2 backdrop-blur-2xl rounded-3xl p-4 z-20 border border-border/20 bg-background/90 shadow-2xl max-w-xs animate-in slide-in-from-bottom duration-300">
+                  <div className="flex flex-wrap gap-2 justify-center">
                     {(showAllEmojis ? allEmojis : quickEmojis).map((emoji) => (
                       <button 
                         key={emoji} 
@@ -275,14 +277,14 @@ const MessageThread = () => {
                           setShowEmojiPicker(null); 
                           setShowAllEmojis(false);
                         }} 
-                        className="hover:scale-125 transition-all duration-200 text-3xl w-12 h-12 flex items-center justify-center rounded-xl hover:neon-blue"
+                        className="hover:scale-125 transition-all duration-200 text-3xl w-12 h-12 flex items-center justify-center rounded-2xl hover:bg-primary/10 active:scale-95"
                       >
                         {emoji}
                       </button>
                     ))}
                     <button
                       onClick={() => setShowAllEmojis(!showAllEmojis)}
-                      className="hover:scale-110 transition-all duration-200 text-2xl w-12 h-12 flex items-center justify-center rounded-xl neon-blue font-bold"
+                      className="hover:scale-110 transition-all duration-200 text-xl w-12 h-12 flex items-center justify-center rounded-2xl bg-primary/10 font-bold hover:bg-primary/20"
                     >
                       {showAllEmojis ? "−" : "+"}
                     </button>
@@ -291,18 +293,21 @@ const MessageThread = () => {
               )}
 
               {message.reactions && message.reactions.length > 0 && (
-                <div className="flex gap-2 mt-2 flex-wrap">
+                <div className="flex gap-1.5 mt-2 flex-wrap">
                   {message.reactions.map((reaction, idx) => (
                     <button 
                       key={idx} 
                       onClick={() => handleReaction(message.id, reaction.emoji)} 
-                      className={`backdrop-blur-lg rounded-full px-3 py-1 text-xl flex items-center hover:scale-110 transition-all duration-200 ${
+                      className={`backdrop-blur-xl rounded-full px-3 py-1.5 text-lg flex items-center gap-1 hover:scale-110 transition-all duration-200 border ${
                         reaction.user_ids.includes(currentUser?.id || "") 
-                          ? "neon-blue neon-blue-glow" 
-                          : "glass hover:neon-blue"
+                          ? "bg-primary/20 border-primary/50 shadow-lg shadow-primary/20" 
+                          : "glass border-border/30 hover:bg-primary/10"
                       }`}
                     >
-                      <span>{reaction.emoji}</span>
+                      <span className="text-xl">{reaction.emoji}</span>
+                      {reaction.user_ids.length > 1 && (
+                        <span className="text-xs font-bold">{reaction.user_ids.length}</span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -312,6 +317,18 @@ const MessageThread = () => {
         })}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* AI Smart Reply Suggestions */}
+      {messages.length > 0 && messages[messages.length - 1].sender_id !== currentUser?.id && (
+        <div className="px-3 pb-2">
+          <SmartReplySuggestions
+            lastMessage={messages[messages.length - 1].content}
+            onSelectReply={(reply) => {
+              setNewMessage(reply);
+            }}
+          />
+        </div>
+      )}
 
       <MessageInput
         value={newMessage}
