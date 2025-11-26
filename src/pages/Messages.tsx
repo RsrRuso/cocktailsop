@@ -252,6 +252,14 @@ const Messages = () => {
           </div>
           <div className="flex gap-2">
             <Button 
+              onClick={() => navigate("/email")}
+              size="sm"
+              className="glass bg-accent/20 hover:bg-accent/30 hover:scale-105 transition-all"
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Email
+            </Button>
+            <Button 
               onClick={() => setShowCreateGroup(true)}
               size="sm"
               className="glass bg-primary/20 hover:bg-primary/30 hover:scale-105 transition-all"

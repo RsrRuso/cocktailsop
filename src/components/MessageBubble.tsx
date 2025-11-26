@@ -176,7 +176,7 @@ export const MessageBubble = memo(({
         }}
         whileTap={{ scale: 0.98 }}
         className={`relative group max-w-[75%] z-10 ${
-          message.media_url && (message.media_type === 'image' || message.media_type === 'video')
+          message.media_url && message.media_type === 'image'
             ? ''
             : 'glass backdrop-blur-xl px-4 py-2'
         } rounded-2xl ${isOwn ? 'glow-primary' : ''} touch-pan-y`}
@@ -198,7 +198,7 @@ export const MessageBubble = memo(({
         {message.reply_to_id && replyMessage && (
           <div
             className={`${
-              message.media_url && (message.media_type === 'image' || message.media_type === 'video')
+              message.media_url && message.media_type === 'image'
                 ? 'px-4 pt-2'
                 : ''
             } mb-2 p-2 glass backdrop-blur-lg rounded-lg text-xs opacity-70 border-l-2 border-primary cursor-pointer hover:opacity-100 transition-opacity`}
@@ -218,7 +218,14 @@ export const MessageBubble = memo(({
         )}
 
         {message.media_url && message.media_type === 'video' && (
-          <video src={message.media_url} controls className="w-full max-w-sm rounded-t-2xl" />
+          <div className="relative w-32 h-32 mx-auto">
+            <video 
+              src={message.media_url} 
+              controls 
+              className="w-full h-full rounded-full object-cover ring-2 ring-primary/50 shadow-lg shadow-primary/20"
+              playsInline
+            />
+          </div>
         )}
 
         {message.media_url && message.media_type === 'voice' && (
@@ -242,7 +249,7 @@ export const MessageBubble = memo(({
 
         {(message as any).forwarded && (
           <div className={`${
-            message.media_url && (message.media_type === 'image' || message.media_type === 'video')
+            message.media_url && message.media_type === 'image'
               ? 'px-4 pt-2'
               : ''
           } flex items-center gap-1 text-xs text-muted-foreground mb-1`}>
@@ -253,7 +260,7 @@ export const MessageBubble = memo(({
 
         <p
           className={`${
-            message.media_url && (message.media_type === 'image' || message.media_type === 'video')
+            message.media_url && message.media_type === 'image'
               ? 'px-4 pt-2'
               : ''
           } break-words whitespace-pre-wrap ${message.edited ? 'italic' : ''}`}
@@ -264,7 +271,7 @@ export const MessageBubble = memo(({
 
         <div
           className={`${
-            message.media_url && (message.media_type === 'image' || message.media_type === 'video')
+            message.media_url && message.media_type === 'image'
               ? 'px-4 pb-2'
               : ''
           } flex items-center justify-between gap-2 mt-1`}
