@@ -4,12 +4,14 @@ import { LazyImage } from './LazyImage';
 import { VoiceWaveform } from './VoiceWaveform';
 import { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { EmojiReactionPicker } from './EmojiReactionPicker';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 interface MessageBubbleProps {
   message: Message;
@@ -20,6 +22,7 @@ interface MessageBubbleProps {
   onForward?: () => void;
   onLike?: () => void;
   onEdit?: () => void;
+  onReaction?: (emoji: string) => void;
   children?: React.ReactNode;
 }
 
@@ -32,56 +35,92 @@ export const MessageBubble = memo(({
   onForward,
   onLike,
   onEdit,
+  onReaction,
   children,
 }: MessageBubbleProps) => {
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [emojiPickerPosition, setEmojiPickerPosition] = useState({ x: 0, y: 0 });
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
+  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const touchStartTime = useRef(0);
+  const shortPressTimer = useRef<NodeJS.Timeout>();
   const longPressTimer = useRef<NodeJS.Timeout>();
   const bubbleRef = useRef<HTMLDivElement>(null);
+  const hasMoved = useRef(false);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
     touchStartTime.current = Date.now();
     setIsSwiping(true);
+    hasMoved.current = false;
     
-    // Long press for dropdown
-    longPressTimer.current = setTimeout(() => {
-      setShowDropdown(true);
-      // Haptic feedback
-      if ('vibrate' in navigator) {
-        navigator.vibrate(50);
+    // Short press for edit/delete dropdown (300ms)
+    shortPressTimer.current = setTimeout(() => {
+      if (!hasMoved.current) {
+        setShowDropdown(true);
+        setIsSwiping(false);
+        // Haptic feedback
+        if ('vibrate' in navigator) {
+          navigator.vibrate([30, 10, 30]);
+        }
       }
-    }, 500);
+    }, 300);
+    
+    // Long press for emoji reactions (700ms)
+    longPressTimer.current = setTimeout(() => {
+      if (!hasMoved.current) {
+        const rect = bubbleRef.current?.getBoundingClientRect();
+        if (rect) {
+          setEmojiPickerPosition({
+            x: rect.left + rect.width / 2,
+            y: rect.top - 10,
+          });
+          setShowEmojiPicker(true);
+          setShowDropdown(false);
+          setIsSwiping(false);
+          // Strong haptic feedback
+          if ('vibrate' in navigator) {
+            navigator.vibrate([50, 20, 50]);
+          }
+        }
+      }
+    }, 700);
   }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSwiping) return;
     
-    // Clear long press timer if moved
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-    }
-
     const touchX = e.touches[0].clientX;
     const touchY = e.touches[0].clientY;
     const deltaX = touchX - touchStartX.current;
     const deltaY = touchY - touchStartY.current;
 
+    // Mark as moved if significant movement
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      hasMoved.current = true;
+      // Clear all press timers if moved
+      if (shortPressTimer.current) {
+        clearTimeout(shortPressTimer.current);
+      }
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+      }
+    }
+
     // Only allow horizontal swipe if it's more horizontal than vertical
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
       e.preventDefault();
       
       // Limit swipe distance
-      const maxSwipe = 120;
+      const maxSwipe = 100;
       const newOffset = Math.max(Math.min(deltaX, maxSwipe), -maxSwipe);
       
-      // Allow swipe in both directions for different actions
       setSwipeOffset(newOffset);
     }
   }, [isSwiping]);
@@ -89,39 +128,49 @@ export const MessageBubble = memo(({
   const handleTouchEnd = useCallback(() => {
     setIsSwiping(false);
     
-    // Clear long press timer
+    // Clear all timers
+    if (shortPressTimer.current) {
+      clearTimeout(shortPressTimer.current);
+    }
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
     }
     
-    // Detect double tap for like
-    const tapDuration = Date.now() - touchStartTime.current;
-    if (tapDuration < 300 && Math.abs(swipeOffset) < 10) {
-      if (tapDuration < 200) {
-        setShowLikeAnimation(true);
-        onLike?.();
-        setTimeout(() => setShowLikeAnimation(false), 1000);
-      }
-    }
-    
     // If swiped enough, trigger action
-    if (Math.abs(swipeOffset) > 60) {
+    if (Math.abs(swipeOffset) > 50) {
       if (swipeOffset > 0) {
         // Right swipe - Reply
         onReply(message);
+        // Haptic feedback
+        if ('vibrate' in navigator) {
+          navigator.vibrate(40);
+        }
       } else {
-        // Left swipe - Forward/Delete
-        if (isOwn) {
-          setShowDropdown(true);
-        } else {
-          onForward?.();
+        // Left swipe - Forward
+        onForward?.();
+        // Haptic feedback
+        if ('vibrate' in navigator) {
+          navigator.vibrate(40);
         }
       }
-      setTimeout(() => setSwipeOffset(0), 300);
-    } else {
-      setSwipeOffset(0);
     }
-  }, [swipeOffset, onReply, onForward, onLike, message, isOwn]);
+    
+    // Reset swipe
+    setTimeout(() => setSwipeOffset(0), 200);
+  }, [swipeOffset, onReply, onForward, message]);
+
+  const handleEmojiSelect = useCallback((emoji: string) => {
+    setSelectedEmoji(emoji);
+    setShowEmojiPicker(false);
+    onReaction?.(emoji);
+    
+    // Show quick animation
+    setShowLikeAnimation(true);
+    setTimeout(() => {
+      setShowLikeAnimation(false);
+      setSelectedEmoji(null);
+    }, 1000);
+  }, [onReaction]);
 
   useEffect(() => {
     // Reset swipe when message changes
@@ -132,9 +181,87 @@ export const MessageBubble = memo(({
 
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} relative`}>
+      {/* Emoji Reaction Picker */}
+      <EmojiReactionPicker
+        show={showEmojiPicker}
+        onSelect={handleEmojiSelect}
+        position={emojiPickerPosition}
+      />
+
+      {/* Edit/Delete Dropdown Menu */}
+      <AnimatePresence>
+        {showDropdown && (
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: -10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: -10 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowDropdown(false)}
+          >
+            <motion.div
+              className="glass backdrop-blur-xl rounded-2xl p-4 m-4 max-w-xs w-full border border-primary/20 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="space-y-2">
+                {isOwn && onEdit && (
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-12 hover:bg-primary/10"
+                    onClick={() => {
+                      onEdit();
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <Edit className="w-5 h-5 text-primary" />
+                    <span className="text-base">Edit Message</span>
+                  </Button>
+                )}
+                {onForward && (
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-12 hover:bg-accent/10"
+                    onClick={() => {
+                      onForward();
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <Forward className="w-5 h-5 text-accent-foreground" />
+                    <span className="text-base">Forward Message</span>
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3 h-12 hover:bg-primary/10"
+                  onClick={() => {
+                    navigator.clipboard.writeText(message.content);
+                    setShowDropdown(false);
+                  }}
+                >
+                  <Copy className="w-5 h-5" />
+                  <span className="text-base">Copy Text</span>
+                </Button>
+                {isOwn && onDelete && (
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-12 hover:bg-destructive/10 text-destructive"
+                    onClick={() => {
+                      onDelete();
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    <span className="text-base">Delete Message</span>
+                  </Button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Swipe action indicators */}
       <AnimatePresence>
-        {Math.abs(swipeOffset) > 30 && (
+        {Math.abs(swipeOffset) > 30 && !showDropdown && !showEmojiPicker && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -142,22 +269,13 @@ export const MessageBubble = memo(({
             className={`absolute ${swipeOffset > 0 ? 'left-2' : 'right-2'} top-1/2 -translate-y-1/2 z-0`}
           >
             {swipeOffset > 0 ? (
-              <div className="flex items-center gap-2 backdrop-blur-lg rounded-full px-4 py-2 bg-primary/20">
-                <Reply className="w-5 h-5 text-primary" />
-                <span className="text-sm font-medium text-primary">Reply</span>
-              </div>
-            ) : isOwn ? (
-              <div className="flex items-center gap-3">
-                <div className="backdrop-blur-lg rounded-full p-2 bg-destructive/20">
-                  <Trash2 className="w-5 h-5 text-destructive" />
-                </div>
-                <div className="backdrop-blur-lg rounded-full p-2 bg-accent/20">
-                  <Forward className="w-5 h-5 text-accent-foreground" />
-                </div>
+              <div className="flex items-center gap-2 backdrop-blur-lg rounded-full px-3 py-2 bg-primary/20 border border-primary/30">
+                <Reply className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                <span className="text-xs sm:text-sm font-medium text-primary">Reply</span>
               </div>
             ) : (
-              <div className="backdrop-blur-lg rounded-full px-4 py-2 bg-accent/20">
-                <Forward className="w-5 h-5 text-accent-foreground" />
+              <div className="backdrop-blur-lg rounded-full px-3 py-2 bg-accent/20 border border-accent/30">
+                <Forward className="w-4 h-4 sm:w-5 sm:h-5 text-accent-foreground" />
               </div>
             )}
           </motion.div>
@@ -181,17 +299,23 @@ export const MessageBubble = memo(({
             : 'glass backdrop-blur-xl px-4 py-2'
         } rounded-2xl ${isOwn ? 'glow-primary' : ''} touch-pan-y`}
       >
-        {/* Like Animation Overlay */}
+        {/* Reaction Animation Overlay */}
         <AnimatePresence>
           {showLikeAnimation && (
             <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: [0, 1.2, 1], opacity: [0, 1, 0] }}
+              initial={{ scale: 0, opacity: 0, y: 20 }}
+              animate={{ 
+                scale: [0, 1.5, 1], 
+                opacity: [0, 1, 1, 0],
+                y: [20, -10, -30, -50]
+              }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 1, times: [0, 0.3, 0.6, 1] }}
               className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
             >
-              <Heart className="w-20 h-20 fill-red-500 text-red-500" />
+              <div className="text-5xl sm:text-6xl drop-shadow-2xl">
+                {selectedEmoji || '❤️'}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

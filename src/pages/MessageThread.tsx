@@ -256,6 +256,11 @@ const MessageThread = () => {
                 setForwardingMessage(message);
                 setShowForwardDialog(true);
               }}
+              onReaction={(emoji) => handleReaction(message.id, emoji)}
+              onEdit={isOwn && !message.media_url ? () => { 
+                setEditingMessage(message); 
+                setNewMessage(message.content); 
+              } : undefined}
             >
               <MessageActions
                 message={message}
