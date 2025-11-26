@@ -1087,7 +1087,7 @@ const StoreManagement = () => {
     }
   };
 
-  const handleDownloadSpotCheckReport = (check: any) => {
+  const handleDownloadSpotCheckReport = async (check: any) => {
     try {
       const doc = new jsPDF();
       
@@ -1101,23 +1101,57 @@ const StoreManagement = () => {
       doc.text(`Date: ${new Date(check.check_date).toLocaleString()}`, 14, 37);
       doc.text(`Status: ${check.status}`, 14, 44);
       
-      // Items table
+      // Items with images
       if (check.spot_check_items && check.spot_check_items.length > 0) {
-        const tableData = check.spot_check_items.map((item: any) => [
-          item.items?.name || 'Unknown Item',
-          item.expected_quantity.toString(),
-          item.actual_quantity.toString(),
-          (item.variance || 0).toString(),
-        ]);
+        let yPos = 55;
         
-        autoTable(doc, {
-          startY: 52,
-          head: [['Item Name', 'System Qty', 'Physical Qty', 'Variance']],
-          body: tableData,
-          theme: 'grid',
-          headStyles: { fillColor: [59, 130, 246] },
-          styles: { fontSize: 10 },
-        });
+        for (const item of check.spot_check_items) {
+          // Check if we need a new page
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          // Item section header
+          doc.setFontSize(12);
+          doc.setFont(undefined, 'bold');
+          doc.text(item.items?.name || 'Unknown Item', 14, yPos);
+          yPos += 7;
+          
+          // Item details
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'normal');
+          doc.text(`System Qty: ${item.expected_quantity}`, 14, yPos);
+          doc.text(`Physical Qty: ${item.actual_quantity}`, 80, yPos);
+          doc.text(`Variance: ${item.variance || 0}`, 140, yPos);
+          yPos += 7;
+          
+          // Add image if available
+          if (item.items?.photo_url) {
+            try {
+              const imgData = await fetch(item.items.photo_url)
+                .then(res => res.blob())
+                .then(blob => new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result);
+                  reader.readAsDataURL(blob);
+                }));
+              
+              doc.addImage(imgData as string, 'JPEG', 14, yPos, 40, 40);
+              yPos += 45;
+            } catch (error) {
+              console.error('Error loading image:', error);
+              yPos += 5;
+            }
+          } else {
+            yPos += 5;
+          }
+          
+          // Separator line
+          doc.setDrawColor(200, 200, 200);
+          doc.line(14, yPos, 196, yPos);
+          yPos += 10;
+        }
       }
       
       // Save PDF
