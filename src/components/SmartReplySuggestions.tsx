@@ -27,16 +27,18 @@ export function SmartReplySuggestions({
     
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("ai-message-assistant", {
+      const { data, error } = await supabase.functions.invoke("neuron-ai-assistant", {
         body: { 
-          conversationContext: [lastMessage],
-          action: "suggest_replies"
+          action: "suggest_replies",
+          message: lastMessage,
+          context: "friendly conversation"
         },
       });
 
       if (error) throw error;
-      if (data?.suggestions) {
-        setSuggestions(data.suggestions);
+      if (data?.result) {
+        const parsed = JSON.parse(data.result);
+        setSuggestions(Array.isArray(parsed) ? parsed : []);
       }
     } catch (error: any) {
       console.error("Failed to generate smart replies:", error);
