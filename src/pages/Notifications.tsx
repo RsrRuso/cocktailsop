@@ -274,8 +274,7 @@ const Notifications = () => {
     } else if (notification.music_share_id) {
       navigate('/thunder');
     } else if (notification.event_id) {
-      // Open events dialog - could navigate to home and trigger event dialog
-      navigate('/');
+      navigate(`/event/${notification.event_id}`);
     } else if (notification.reference_user_id) {
       // For follow/unfollow notifications, navigate to the user's profile
       navigate(`/profile/${notification.reference_user_id}`);

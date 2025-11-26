@@ -97,6 +97,7 @@ const QRAccessCode = lazy(() => import("./pages/QRAccessCode"));
 const ScanAccess = lazy(() => import("./pages/ScanAccess"));
 const AccessApproval = lazy(() => import("./pages/AccessApproval"));
 const LowStockInventory = lazy(() => import("./pages/LowStockInventory"));
+const EventDetail = lazy(() => import("./pages/EventDetail"));
 
 const StoreDetail = lazy(() => import("./pages/StoreDetail"));
 const AllInventory = lazy(() => import("./pages/AllInventory"));
@@ -153,6 +154,7 @@ const AppContent = () => {
           <Route path="/edit-post/:id" element={<EditPost />} />
           <Route path="/edit-reel/:id" element={<EditReel />} />
           <Route path="/post/:id" element={<PostDetail />} />
+          <Route path="/event/:id" element={<EventDetail />} />
           <Route path="/thunder" element={<Thunder />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/messages/:conversationId" element={<MessageThread />} />
