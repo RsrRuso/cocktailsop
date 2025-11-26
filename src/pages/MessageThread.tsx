@@ -144,29 +144,42 @@ const MessageThread = () => {
   }, [newMessage, currentUser, conversationId, replyingTo, editingMessage, updateTypingStatus]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-background via-background/95 to-background flex flex-col">
-      {/* Header with Instagram-style design */}
-      <div className="relative backdrop-blur-2xl border-b border-border/10 p-3 flex items-center gap-3 overflow-hidden shadow-lg">
+    <div className="fixed inset-0 bg-gradient-to-br from-background via-primary/5 to-accent/10 flex flex-col">
+      {/* Floating particles background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-10 w-40 h-40 bg-accent/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-primary/5 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+
+      {/* Header with enhanced design */}
+      <div className="relative backdrop-blur-3xl border-b border-primary/20 p-4 flex items-center gap-3 overflow-hidden shadow-2xl z-10">
         {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 animate-pulse" style={{ animationDuration: '3s' }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background/50" />
         
-        <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} className="glass shrink-0 relative z-10">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => navigate("/messages")} 
+          className="glass shrink-0 relative z-10 hover:scale-110 transition-transform hover:bg-primary/20 rounded-full shadow-lg"
+        >
           <ArrowLeft className="w-5 h-5" />
         </Button>
         
         {isGroup ? (
           <>
-            <div className="relative cursor-pointer hover:scale-105 transition-transform shrink-0 z-10" onClick={() => setShowGroupSettings(true)}>
-              <div className="w-14 h-14 rounded-full glass flex items-center justify-center bg-primary/10 avatar-glow">
-                <Settings className="w-7 h-7 text-primary" />
+            <div className="relative cursor-pointer hover:scale-110 transition-all duration-300 shrink-0 z-10" onClick={() => setShowGroupSettings(true)}>
+              <div className="w-16 h-16 rounded-full glass flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 avatar-glow shadow-xl border-2 border-primary/30">
+                <Settings className="w-8 h-8 text-primary drop-shadow-lg" />
               </div>
             </div>
             <div className="flex-1 min-w-0 flex flex-col justify-center z-10">
-              <p className="font-bold text-lg truncate bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+              <p className="font-bold text-xl truncate bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent drop-shadow-sm">
                 {groupName}
               </p>
-              <p className="text-sm text-muted-foreground truncate">
+              <p className="text-sm font-medium text-muted-foreground/80 truncate flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 Group • {messages.length > 0 ? `${messages.length} messages` : 'No messages yet'}
               </p>
             </div>
@@ -183,38 +196,39 @@ const MessageThread = () => {
           </>
         ) : otherUser && (
           <>
-            <div className="relative cursor-pointer hover:scale-105 transition-transform shrink-0 z-10" onClick={() => navigate(`/user/${otherUser.id}`)}>
+            <div className="relative cursor-pointer hover:scale-110 transition-all duration-300 shrink-0 z-10 group" onClick={() => navigate(`/user/${otherUser.id}`)}>
               <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent/30 rounded-full blur-md group-hover:blur-lg transition-all" />
                 <OptimizedAvatar
                   src={otherUser.avatar_url}
                   alt={otherUser.username}
                   fallback={otherUser.username[0].toUpperCase()}
                   userId={otherUser.id}
-                  className="w-14 h-14 border-2 border-background avatar-glow"
+                  className="w-16 h-16 border-3 border-primary/40 avatar-glow shadow-2xl relative"
                 />
                 {isOnline && (
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full neon-green border-2 border-background">
-                    <div className="w-full h-full rounded-full neon-green animate-pulse" />
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 border-3 border-background shadow-lg">
+                    <div className="w-full h-full rounded-full bg-green-400 animate-pulse" />
                   </div>
                 )}
               </div>
             </div>
             <div className="flex-1 min-w-0 flex flex-col justify-center z-10">
-              <p className="font-bold text-lg truncate bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+              <p className="font-bold text-xl truncate bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent drop-shadow-sm">
                 {otherUser.full_name}
               </p>
               {isTyping ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 glass rounded-full px-3 py-1 w-fit">
                   <div className="flex gap-1">
-                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-gradient-to-r from-primary to-accent animate-bounce shadow-sm" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-gradient-to-r from-primary to-accent animate-bounce shadow-sm" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-gradient-to-r from-primary to-accent animate-bounce shadow-sm" style={{ animationDelay: '300ms' }} />
                   </div>
-                  <p className="text-sm text-primary font-medium">typing</p>
+                  <p className="text-sm font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">typing</p>
                 </div>
               ) : (
-                <p className={`text-sm truncate flex items-center gap-1 ${isOnline ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                  {isOnline && <span className="w-2 h-2 rounded-full bg-primary" />}
+                <p className={`text-sm truncate flex items-center gap-1.5 font-medium ${isOnline ? 'text-primary' : 'text-muted-foreground/80'}`}>
+                  {isOnline && <span className="w-2 h-2 rounded-full bg-gradient-to-r from-primary to-accent animate-pulse shadow-sm" />}
                   {isOnline ? 'Active now' : '@' + otherUser.username}
                 </p>
               )}
@@ -223,8 +237,8 @@ const MessageThread = () => {
         )}
       </div>
 
-      {/* Messages with modern styling */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar bg-gradient-to-b from-transparent via-background/50 to-transparent">
+      {/* Messages with enhanced styling */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gradient-to-b from-transparent via-background/30 to-transparent relative">
         {messages.map((message) => {
           const isOwn = message.sender_id === currentUser?.id;
           const replyMessage = message.reply_to_id ? messages.find((m) => m.id === message.reply_to_id) : null;
@@ -252,20 +266,20 @@ const MessageThread = () => {
               } : undefined}
             >
               {message.reactions && message.reactions.length > 0 && (
-                <div className="flex gap-1.5 mt-2 flex-wrap">
+                <div className="flex gap-2 mt-3 flex-wrap">
                   {message.reactions.map((reaction, idx) => (
                     <button 
                       key={idx} 
                       onClick={() => handleReaction(message.id, reaction.emoji)} 
-                      className={`backdrop-blur-xl rounded-full px-3 py-1.5 text-lg flex items-center gap-1 hover:scale-110 transition-all duration-200 border ${
+                      className={`backdrop-blur-2xl rounded-full px-4 py-2 text-lg flex items-center gap-1.5 hover:scale-125 transition-all duration-300 border-2 shadow-xl ${
                         reaction.user_ids.includes(currentUser?.id || "") 
-                          ? "bg-primary/20 border-primary/50 shadow-lg shadow-primary/20" 
-                          : "glass border-border/30 hover:bg-primary/10"
+                          ? "bg-gradient-to-r from-primary/30 to-accent/30 border-primary/60 shadow-primary/30 scale-105" 
+                          : "glass border-border/40 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
                       }`}
                     >
-                      <span className="text-xl">{reaction.emoji}</span>
+                      <span className="text-2xl drop-shadow-lg">{reaction.emoji}</span>
                       {reaction.user_ids.length > 1 && (
-                        <span className="text-xs font-bold">{reaction.user_ids.length}</span>
+                        <span className="text-xs font-bold bg-background/50 px-1.5 py-0.5 rounded-full">{reaction.user_ids.length}</span>
                       )}
                     </button>
                   ))}
