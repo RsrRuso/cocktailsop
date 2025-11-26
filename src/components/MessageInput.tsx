@@ -6,6 +6,7 @@ import { Send, Paperclip, Mic, Reply, Edit2, X, Loader2 } from 'lucide-react';
 import { Message } from '@/hooks/useMessageThread';
 import { AttachmentMenu } from './AttachmentMenu';
 import MusicSelectionDialog from './MusicSelectionDialog';
+import { AIMessageToolsWrapper } from './neuron/AIMessageToolsWrapper';
 
 interface MessageInputProps {
   value: string;
@@ -187,6 +188,11 @@ export const MessageInput = memo(({
           onKeyPress={handleKeyPress}
           placeholder="Message..."
           className="flex-1 glass backdrop-blur-2xl border-2 border-primary/20 focus:border-primary/50 rounded-full px-6 py-4 text-base transition-all shadow-lg hover:shadow-xl focus:shadow-2xl focus:shadow-primary/20"
+        />
+
+        <AIMessageToolsWrapper 
+          message={value} 
+          onMessageUpdate={handleChange}
         />
 
         {value.trim() ? (
