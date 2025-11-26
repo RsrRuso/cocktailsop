@@ -72,56 +72,46 @@ export default function ScanReceive() {
 
       // Check permissions only when a workspace is involved
       if (workspaceId) {
-        const { data: membership, error: membershipError } = await supabase
-          .from("workspace_members_with_owner")
-          .select("role, permissions")
-          .eq("workspace_id", workspaceId)
-          .eq("user_id", userId)
+        // FIRST: Check if user is workspace owner - instant access, no other checks
+        const { data: workspace, error: workspaceError } = await supabase
+          .from("workspaces")
+          .select("owner_id")
+          .eq("id", workspaceId)
           .maybeSingle();
 
-        if (membershipError) {
-          console.error("[ScanReceive] Error checking workspace membership:", membershipError);
+        if (workspaceError) {
+          console.error("[ScanReceive] Error fetching workspace:", workspaceError);
         }
 
-        let effectiveRole = membership?.role as string | undefined;
-        let effectivePermissions = (membership?.permissions as any) || {};
-
-        // Fallback: if no membership row, still allow workspace owner
-        if (!membership) {
-          const { data: workspace, error: workspaceError } = await supabase
-            .from("workspaces")
-            .select("owner_id")
-            .eq("id", workspaceId)
+        // Owner gets instant full access - skip all permission checks
+        if (workspace?.owner_id === userId) {
+          console.log("[ScanReceive] ✅ User is workspace owner - instant access granted");
+          // Continue to set receive context below - no permission blocks
+        } else {
+          // Non-owners: check membership permissions
+          const { data: membership, error: membershipError } = await supabase
+            .from("workspace_members_with_owner")
+            .select("role, permissions")
+            .eq("workspace_id", workspaceId)
+            .eq("user_id", userId)
             .maybeSingle();
 
-          if (workspaceError) {
-            console.error("[ScanReceive] Error fetching workspace for access check:", workspaceError);
+          if (membershipError) {
+            console.error("[ScanReceive] Error checking workspace membership:", membershipError);
           }
 
-          if (workspace?.owner_id === userId) {
-            effectiveRole = "owner";
-            effectivePermissions = {
-              can_receive: true,
-              can_transfer: true,
-              can_manage: true,
-              can_delete: true,
-            };
-          } else {
-            toast.error("You don't have access to this workspace");
+          const effectiveRole = membership?.role as string | undefined;
+          const effectivePermissions = (membership?.permissions as any) || {};
+
+          const canReceive =
+            effectiveRole === "admin" ||
+            effectivePermissions?.can_receive === true;
+
+          if (!canReceive) {
+            toast.error("You don't have permission to receive inventory in this workspace");
             navigate("/");
             return;
           }
-        }
-
-        const canReceive =
-          effectiveRole === "admin" ||
-          effectiveRole === "owner" ||
-          effectivePermissions?.can_receive === true;
-
-        if (!canReceive) {
-          toast.error("You don't have permission to receive inventory in this workspace");
-          navigate("/");
-          return;
         }
       }
 
