@@ -233,80 +233,6 @@ export const MessageBubble = memo(({
         position={emojiPickerPosition}
       />
 
-      {/* Edit/Delete Menu - Long press alternative */}
-      <AnimatePresence>
-        {showDropdown && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowDropdown(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="glass backdrop-blur-xl rounded-2xl p-4 m-4 max-w-xs w-full border border-primary/20 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="space-y-2">
-                {isOwn && onEdit && (
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 h-12 hover:bg-primary/10"
-                    onClick={() => {
-                      onEdit();
-                      setShowDropdown(false);
-                    }}
-                  >
-                    <Edit className="w-5 h-5 text-primary" />
-                    <span className="text-base">Edit Message</span>
-                  </Button>
-                )}
-                {onForward && (
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 h-12 hover:bg-accent/10"
-                    onClick={() => {
-                      onForward();
-                      setShowDropdown(false);
-                    }}
-                  >
-                    <Forward className="w-5 h-5 text-accent-foreground" />
-                    <span className="text-base">Forward Message</span>
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-3 h-12 hover:bg-primary/10"
-                  onClick={() => {
-                    navigator.clipboard.writeText(message.content);
-                    setShowDropdown(false);
-                  }}
-                >
-                  <Copy className="w-5 h-5" />
-                  <span className="text-base">Copy Text</span>
-                </Button>
-                {isOwn && onDelete && (
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-3 h-12 hover:bg-destructive/10 text-destructive"
-                    onClick={() => {
-                      onDelete();
-                      setShowDropdown(false);
-                    }}
-                  >
-                    <Trash2 className="w-5 h-5" />
-                    <span className="text-base">Delete Message</span>
-                  </Button>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Swipe action indicators */}
       <AnimatePresence>
         {Math.abs(swipeOffset) > 30 && !showDropdown && !showEmojiPicker && (
@@ -477,28 +403,79 @@ export const MessageBubble = memo(({
               : ''
           } flex items-center justify-between gap-2 mt-2`}
         >
-          <span className="text-[10px] font-semibold opacity-80">
-            {new Date(message.created_at).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </span>
-          {isOwn && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 500 }}
-              className="flex items-center gap-1"
-              title={message.read ? 'Read' : message.delivered ? 'Delivered' : 'Sent'}
-            >
-              {message.read ? (
-                <CheckCheck className="w-3.5 h-3.5 text-primary animate-pulse drop-shadow-sm" />
-              ) : message.delivered ? (
-                <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
-              ) : (
-                <Check className="w-3.5 h-3.5 text-muted-foreground" />
-              )}
-            </motion.div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold opacity-80">
+              {new Date(message.created_at).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </span>
+            {isOwn && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 500 }}
+                className="flex items-center gap-1"
+                title={message.read ? 'Read' : message.delivered ? 'Delivered' : 'Sent'}
+              >
+                {message.read ? (
+                  <CheckCheck className="w-3.5 h-3.5 text-primary animate-pulse drop-shadow-sm" />
+                ) : message.delivered ? (
+                  <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                ) : (
+                  <Check className="w-3.5 h-3.5 text-muted-foreground" />
+                )}
+              </motion.div>
+            )}
+          </div>
+          
+          {/* Edit/Delete Menu Button */}
+          {isOwn && (onEdit || onDelete) && (
+            <DropdownMenu open={showDropdown} onOpenChange={setShowDropdown}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 rounded-full hover:bg-primary/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDropdown(!showDropdown);
+                  }}
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align={isOwn ? "end" : "start"} className="glass backdrop-blur-xl border-primary/20">
+                {onEdit && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit();
+                      setShowDropdown(false);
+                    }}
+                    className="gap-2 cursor-pointer"
+                  >
+                    <Edit className="w-4 h-4 text-primary" />
+                    <span>Edit</span>
+                  </DropdownMenuItem>
+                )}
+                {onDelete && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('Delete this message?')) {
+                        onDelete();
+                      }
+                      setShowDropdown(false);
+                    }}
+                    className="gap-2 cursor-pointer text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete</span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
 
