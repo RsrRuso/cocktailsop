@@ -60,38 +60,44 @@ export const MessageBubble = memo(({
     setIsSwiping(true);
     hasMoved.current = false;
     
-    // Short press for edit/delete dropdown (300ms)
+    // Short hold for edit/delete dropdown (350ms)
     shortPressTimer.current = setTimeout(() => {
-      if (!hasMoved.current) {
+      if (!hasMoved.current && !showEmojiPicker) {
         setShowDropdown(true);
         setIsSwiping(false);
+        // Clear long press timer since we're showing dropdown
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+        }
         // Haptic feedback
         if ('vibrate' in navigator) {
           navigator.vibrate([30, 10, 30]);
         }
       }
-    }, 300);
+    }, 350);
     
-    // Long press for emoji reactions (700ms)
+    // Longer hold for emoji reactions (800ms)
     longPressTimer.current = setTimeout(() => {
-      if (!hasMoved.current) {
+      if (!hasMoved.current && !showDropdown) {
+        // Clear dropdown if it was shown
+        setShowDropdown(false);
+        
         const rect = bubbleRef.current?.getBoundingClientRect();
         if (rect) {
           setEmojiPickerPosition({
             x: rect.left + rect.width / 2,
-            y: rect.top - 10,
+            y: rect.top - 20,
           });
           setShowEmojiPicker(true);
-          setShowDropdown(false);
           setIsSwiping(false);
           // Strong haptic feedback
           if ('vibrate' in navigator) {
-            navigator.vibrate([50, 20, 50]);
+            navigator.vibrate([50, 20, 50, 20, 50]);
           }
         }
       }
-    }, 700);
-  }, []);
+    }, 800);
+  }, [showDropdown, showEmojiPicker]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSwiping) return;
@@ -164,12 +170,17 @@ export const MessageBubble = memo(({
     setShowEmojiPicker(false);
     onReaction?.(emoji);
     
+    // Haptic feedback
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
+    
     // Show quick animation
     setShowLikeAnimation(true);
     setTimeout(() => {
       setShowLikeAnimation(false);
       setSelectedEmoji(null);
-    }, 1000);
+    }, 1200);
   }, [onReaction]);
 
   useEffect(() => {
@@ -181,6 +192,15 @@ export const MessageBubble = memo(({
 
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} relative`}>
+      {/* Emoji Reaction Picker - Overlay to close */}
+      {showEmojiPicker && (
+        <div 
+          className="fixed inset-0 z-[99]" 
+          onClick={() => setShowEmojiPicker(false)}
+          onTouchStart={() => setShowEmojiPicker(false)}
+        />
+      )}
+      
       {/* Emoji Reaction Picker */}
       <EmojiReactionPicker
         show={showEmojiPicker}

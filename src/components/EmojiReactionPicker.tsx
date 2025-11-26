@@ -24,35 +24,38 @@ export const EmojiReactionPicker = memo(({ show, onSelect, position }: EmojiReac
           damping: 25,
           mass: 0.5
         }}
-        className="fixed z-[100] glass backdrop-blur-xl border border-primary/20 rounded-full px-3 py-2 shadow-2xl"
+        className="fixed z-[100] bg-background/95 backdrop-blur-xl border-2 border-primary/30 rounded-full px-4 py-3 shadow-2xl"
         style={{
           left: `${position.x}px`,
           top: `${position.y}px`,
           transform: 'translate(-50%, -100%)',
+          touchAction: 'none',
         }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {EMOJIS.map((emoji, index) => (
             <motion.button
               key={emoji}
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ 
-                delay: index * 0.05,
+                delay: index * 0.04,
                 type: "spring",
                 stiffness: 500,
                 damping: 20
               }}
-              whileHover={{ scale: 1.3, rotate: 10 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => {
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.85 }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 onSelect(emoji);
                 // Haptic feedback
                 if ('vibrate' in navigator) {
                   navigator.vibrate(30);
                 }
               }}
-              className="text-2xl sm:text-3xl hover:drop-shadow-lg transition-all active:scale-90 touch-manipulation"
+              className="text-3xl sm:text-4xl hover:drop-shadow-2xl transition-all active:scale-90 touch-manipulation cursor-pointer select-none min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               {emoji}
             </motion.button>
