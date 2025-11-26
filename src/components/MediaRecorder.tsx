@@ -29,19 +29,19 @@ export const MediaRecorder = ({
   if (!isRecordingVideo) return null;
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex-1 relative">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center">
+      <div className="relative w-[80vmin] h-[80vmin] max-w-[500px] max-h-[500px]">
         <video
           ref={videoPreviewRef}
           autoPlay
           muted
           playsInline
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover rounded-full"
         />
       </div>
-      <div className="p-4 bg-background/95 backdrop-blur-xl flex flex-col gap-3">
+      <div className="absolute bottom-8 left-0 right-0 px-4 flex flex-col gap-3">
         {isUploading && (
-          <div className="glass backdrop-blur-lg rounded-lg p-3 border border-primary/20">
+          <div className="bg-background/95 backdrop-blur-xl rounded-full px-6 py-3 mx-auto">
             <div className="flex items-center gap-3">
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
               <span className="text-sm">Uploading video message...</span>
@@ -49,11 +49,11 @@ export const MediaRecorder = ({
           </div>
         )}
         <div className="flex justify-center gap-4">
-          <Button size="lg" variant="destructive" onClick={onStop} disabled={isUploading} className="flex items-center gap-2">
+          <Button size="lg" variant="destructive" onClick={onStop} disabled={isUploading} className="flex items-center gap-2 rounded-full">
             <StopCircle className="w-5 h-5" />
             Stop & Send
           </Button>
-          <Button size="lg" variant="outline" onClick={onCancel} disabled={isUploading} className="flex items-center gap-2">
+          <Button size="lg" variant="outline" onClick={onCancel} disabled={isUploading} className="flex items-center gap-2 rounded-full">
             <X className="w-5 h-5" />
             Cancel
           </Button>
