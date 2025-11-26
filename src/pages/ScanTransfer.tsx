@@ -72,7 +72,7 @@ export default function ScanTransfer() {
     // Check permissions if this is a workspace store
     if (fromStore?.workspace_id) {
       const { data: membership } = await supabase
-        .from("workspace_members")
+        .from("workspace_members_with_owner")
         .select("role, permissions")
         .eq("workspace_id", fromStore.workspace_id)
         .eq("user_id", userId)

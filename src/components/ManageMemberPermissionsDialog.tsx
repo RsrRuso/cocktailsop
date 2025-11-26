@@ -53,7 +53,7 @@ export const ManageMemberPermissionsDialog = ({
     setLoading(true);
     try {
       const { data: membersData, error: membersError } = await supabase
-        .from("workspace_members")
+        .from("workspace_members_with_owner")
         .select("id, user_id, role, permissions")
         .eq("workspace_id", workspaceId)
         .order("role", { ascending: false });

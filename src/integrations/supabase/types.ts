@@ -5627,6 +5627,18 @@ export type Database = {
         }
         Relationships: []
       }
+      workspace_members_with_owner: {
+        Row: {
+          id: string | null
+          invited_by: string | null
+          joined_at: string | null
+          permissions: Json | null
+          role: string | null
+          user_id: string | null
+          workspace_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_fifo_priority: {
