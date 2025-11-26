@@ -41,6 +41,7 @@ interface Profile {
   username: string;
   full_name: string;
   avatar_url: string;
+  internal_email?: string;
 }
 
 const Email = () => {
@@ -66,11 +67,28 @@ const Email = () => {
       }
       setCurrentUser(user);
       
+      // Fetch current user's profile
+      const { data: currentProfile } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+      
       // Fetch followers as available contacts for internal email
       const { data: followsData } = await supabase
         .from("follows")
         .select("follower_id")
         .eq("following_id", user.id);
+      
+      const allProfiles = [];
+      
+      // Add current user to profiles
+      if (currentProfile) {
+        allProfiles.push({
+          ...currentProfile,
+          internal_email: `${currentProfile.username}@sv.internal`
+        });
+      }
       
       if (followsData && followsData.length > 0) {
         const followerIds = followsData.map(f => f.follower_id);
@@ -79,8 +97,17 @@ const Email = () => {
           .select("id, username, full_name, avatar_url")
           .in("id", followerIds);
         
-        if (profilesData) setProfiles(profilesData);
+        if (profilesData) {
+          // Add internal email addresses
+          const profilesWithEmail = profilesData.map(p => ({
+            ...p,
+            internal_email: `${p.username}@sv.internal`
+          }));
+          allProfiles.push(...profilesWithEmail);
+        }
       }
+      
+      setProfiles(allProfiles);
       
       fetchEmails(user.id);
     };
@@ -219,14 +246,24 @@ const Email = () => {
       <TopNav isVisible={true} />
       <div className="container max-w-4xl mx-auto px-2 sm:px-4 pt-20 pb-24">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
-            Internal Email
-          </h1>
-          <Button onClick={() => setShowCompose(true)} className="gap-2">
-            <Send className="w-4 h-4" />
-            Compose
-          </Button>
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+              Internal Email
+            </h1>
+            <Button onClick={() => setShowCompose(true)} className="gap-2">
+              <Send className="w-4 h-4" />
+              Compose
+            </Button>
+          </div>
+          {currentUser && (
+            <div className="mt-2 glass p-3 rounded-lg border border-primary/20">
+              <p className="text-sm text-muted-foreground">Your IE Account:</p>
+              <p className="text-sm font-mono font-semibold text-primary">
+                {profiles.find(p => p.id === currentUser.id)?.username || 'loading'}@sv.internal
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Filters */}
@@ -332,7 +369,12 @@ const Email = () => {
                 <SelectContent>
                   {profiles.map((profile) => (
                     <SelectItem key={profile.id} value={profile.id}>
-                      {profile.full_name} (@{profile.username})
+                      <div className="flex flex-col">
+                        <span className="font-medium">{profile.full_name}</span>
+                        <span className="text-xs font-mono text-muted-foreground">
+                          {profile.internal_email}
+                        </span>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
