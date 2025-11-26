@@ -153,6 +153,32 @@ const AllInventory = () => {
       toast.loading("Generating PDF with images...");
       const doc = new jsPDF();
       
+      // Helper function to convert color names to RGB
+      const getColorRGB = (colorName: string): [number, number, number] => {
+        const colorMap: { [key: string]: [number, number, number] } = {
+          'red': [220, 38, 38],
+          'blue': [59, 130, 246],
+          'green': [34, 197, 94],
+          'yellow': [234, 179, 8],
+          'orange': [249, 115, 22],
+          'purple': [168, 85, 247],
+          'pink': [236, 72, 153],
+          'brown': [120, 53, 15],
+          'black': [0, 0, 0],
+          'white': [255, 255, 255],
+          'gray': [156, 163, 175],
+          'grey': [156, 163, 175],
+          'clear': [229, 231, 235],
+          'transparent': [229, 231, 235],
+          'amber': [245, 158, 11],
+          'gold': [234, 179, 8],
+          'silver': [203, 213, 225],
+        };
+        
+        const normalizedColor = colorName?.toLowerCase().trim() || '';
+        return colorMap[normalizedColor] || [156, 163, 175]; // Default to gray
+      };
+      
       // Title
       doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
@@ -247,10 +273,20 @@ const AllInventory = () => {
         doc.text(`${brand} | ${category}`, textX, textY);
         
         textY += lineHeight;
+        // Draw color ball
+        const colorRGB = getColorRGB(colorCode);
+        doc.setFillColor(colorRGB[0], colorRGB[1], colorRGB[2]);
+        doc.circle(textX + 2, textY - 1, 2, 'F');
+        
+        // Add white border for visibility
+        doc.setDrawColor(100, 100, 100);
+        doc.setLineWidth(0.2);
+        doc.circle(textX + 2, textY - 1, 2, 'S');
+        
         doc.setFontSize(7.5);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(220, 38, 38);
-        doc.text(`Color: ${colorCode}`, textX, textY);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(75, 85, 99);
+        doc.text(`Color: ${colorCode}`, textX + 6, textY);
         
         textY += lineHeight;
         doc.setFont("helvetica", "bold");
