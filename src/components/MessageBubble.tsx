@@ -460,10 +460,14 @@ export const MessageBubble = memo(({
             message.media_url && message.media_type === 'image'
               ? 'px-4 pt-2'
               : ''
-          } break-words whitespace-pre-wrap ${message.edited ? 'italic' : ''}`}
+          } break-words whitespace-pre-wrap text-base leading-relaxed font-medium ${message.edited ? 'italic' : ''}`}
         >
           {message.content}
-          {message.edited && <span className="text-xs opacity-50 ml-2">(edited)</span>}
+          {message.edited && (
+            <span className="text-[10px] glass backdrop-blur-xl px-2 py-0.5 rounded-full ml-2 border border-border/20">
+              edited
+            </span>
+          )}
         </p>
 
         <div
@@ -471,24 +475,30 @@ export const MessageBubble = memo(({
             message.media_url && message.media_type === 'image'
               ? 'px-4 pb-2'
               : ''
-          } flex items-center justify-between gap-2 mt-1`}
+          } flex items-center justify-between gap-2 mt-2`}
         >
-          <span className="text-xs opacity-70">
+          <span className="text-[10px] font-semibold opacity-80">
             {new Date(message.created_at).toLocaleTimeString([], {
               hour: '2-digit',
               minute: '2-digit',
             })}
           </span>
           {isOwn && (
-            <div className="flex items-center gap-1" title={message.read ? 'Read' : message.delivered ? 'Delivered' : 'Sent'}>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 500 }}
+              className="flex items-center gap-1"
+              title={message.read ? 'Read' : message.delivered ? 'Delivered' : 'Sent'}
+            >
               {message.read ? (
-                <CheckCheck className="w-4 h-4 text-emerald-500 animate-pulse" />
+                <CheckCheck className="w-3.5 h-3.5 text-primary animate-pulse drop-shadow-sm" />
               ) : message.delivered ? (
-                <CheckCheck className="w-4 h-4 text-muted-foreground" />
+                <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
               ) : (
-                <Check className="w-4 h-4 text-muted-foreground" />
+                <Check className="w-3.5 h-3.5 text-muted-foreground" />
               )}
-            </div>
+            </motion.div>
           )}
         </div>
 
