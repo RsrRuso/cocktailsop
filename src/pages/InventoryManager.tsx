@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useInventoryAccess } from "@/hooks/useInventoryAccess";
 import { useManagerRole } from "@/hooks/useManagerRole";
 import { usePendingAccessRequests } from "@/hooks/usePendingAccessRequests";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -39,6 +40,7 @@ const InventoryManager = () => {
   const { hasAccess, isLoading: accessLoading, refetch: refetchAccess } = useInventoryAccess();
   const { isManager } = useManagerRole();
   const { count: pendingRequestsCount } = usePendingAccessRequests();
+  const { currentWorkspace, workspaces, switchWorkspace } = useWorkspace();
   const navigate = useNavigate();
   const [stores, setStores] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
@@ -126,33 +128,59 @@ const InventoryManager = () => {
   const fetchData = async () => {
     if (!user || !hasAccess) return;
 
-    console.log('=== FETCHING FIFO DATA (Personal Only) ===');
+    const workspaceId = currentWorkspace?.id;
+    console.log('=== FETCHING FIFO DATA ===', { workspaceId, workspaceName: currentWorkspace?.name });
 
     try {
-      // Query FIFO tables (personal only, no workspace)
+      // Build queries based on workspace or personal
+      const storesQuery = supabase.from("fifo_stores").select("*").eq("user_id", user.id);
+      const itemsQuery = supabase.from("fifo_items").select("*").eq("user_id", user.id);
+      const employeesQuery = supabase.from("fifo_employees").select("*").eq("user_id", user.id);
+      const inventoryQuery = supabase.from("fifo_inventory").select(`
+        *,
+        stores:fifo_stores!fifo_inventory_store_id_fkey(name, location, store_type),
+        items:fifo_items!fifo_inventory_item_id_fkey(name, brand, color_code, category)
+      `).eq("user_id", user.id);
+      const transfersQuery = supabase.from("fifo_transfers").select(`
+        *,
+        from_store:fifo_stores!fifo_transfers_from_store_id_fkey(name),
+        to_store:fifo_stores!fifo_transfers_to_store_id_fkey(name),
+        employees:fifo_employees!fifo_transfers_transferred_by_fkey(name),
+        inventory:fifo_inventory!fifo_transfers_inventory_id_fkey(
+          items:fifo_items!fifo_inventory_item_id_fkey(name, brand, category)
+        )
+      `).eq("user_id", user.id);
+      const activityQuery = supabase.from("fifo_activity_log").select(`
+        *,
+        stores:fifo_stores!fifo_activity_log_store_id_fkey(name),
+        employees:fifo_employees!fifo_activity_log_employee_id_fkey(name)
+      `).eq("user_id", user.id);
+
+      // Add workspace filter if workspace is selected
+      if (workspaceId) {
+        storesQuery.eq("workspace_id", workspaceId);
+        itemsQuery.eq("workspace_id", workspaceId);
+        employeesQuery.eq("workspace_id", workspaceId);
+        inventoryQuery.eq("workspace_id", workspaceId);
+        transfersQuery.eq("workspace_id", workspaceId);
+        activityQuery.eq("workspace_id", workspaceId);
+      } else {
+        // Personal inventory only (no workspace)
+        storesQuery.is("workspace_id", null);
+        itemsQuery.is("workspace_id", null);
+        employeesQuery.is("workspace_id", null);
+        inventoryQuery.is("workspace_id", null);
+        transfersQuery.is("workspace_id", null);
+        activityQuery.is("workspace_id", null);
+      }
+
       const [storesRes, itemsRes, employeesRes, inventoryRes, transfersRes, activityRes] = await Promise.all([
-        supabase.from("fifo_stores").select("*").eq("user_id", user.id).order("name"),
-        supabase.from("fifo_items").select("*").eq("user_id", user.id).order("name"),
-        supabase.from("fifo_employees").select("*").eq("user_id", user.id).order("name"),
-        supabase.from("fifo_inventory").select(`
-          *,
-          stores:fifo_stores!fifo_inventory_store_id_fkey(name, location, store_type),
-          items:fifo_items!fifo_inventory_item_id_fkey(name, brand, color_code, category)
-        `).eq("user_id", user.id).order("priority_score", { ascending: false }),
-        supabase.from("fifo_transfers").select(`
-          *,
-          from_store:fifo_stores!fifo_transfers_from_store_id_fkey(name),
-          to_store:fifo_stores!fifo_transfers_to_store_id_fkey(name),
-          employees:fifo_employees!fifo_transfers_transferred_by_fkey(name),
-          inventory:fifo_inventory!fifo_transfers_inventory_id_fkey(
-            items:fifo_items!fifo_inventory_item_id_fkey(name, brand, category)
-          )
-        `).eq("user_id", user.id).order("transfer_date", { ascending: false }).limit(20),
-        supabase.from("fifo_activity_log").select(`
-          *,
-          stores:fifo_stores!fifo_activity_log_store_id_fkey(name),
-          employees:fifo_employees!fifo_activity_log_employee_id_fkey(name)
-        `).eq("user_id", user.id).order("created_at", { ascending: false }).limit(50)
+        storesQuery.order("name"),
+        itemsQuery.order("name"),
+        employeesQuery.order("name"),
+        inventoryQuery.order("priority_score", { ascending: false }),
+        transfersQuery.order("transfer_date", { ascending: false }).limit(20),
+        activityQuery.order("created_at", { ascending: false }).limit(50)
       ]);
 
       console.log('=== FIFO FETCH RESULTS ===');
@@ -222,6 +250,7 @@ const InventoryManager = () => {
               .from("fifo_items")
               .insert({
                 user_id: user.id,
+                workspace_id: currentWorkspace?.id || null,
                 name: rowData.item_name || rowData.name,
                 brand: rowData.brand,
                 color_code: rowData.color_code,
@@ -243,6 +272,7 @@ const InventoryManager = () => {
           if (store && itemId) {
             await supabase.from("fifo_inventory").insert({
               user_id: user.id,
+              workspace_id: currentWorkspace?.id || null,
               store_id: store.id,
               item_id: itemId,
               quantity: rowData.quantity || 1,
@@ -399,6 +429,7 @@ const InventoryManager = () => {
 
     const { error } = await supabase.from("fifo_stores").insert({
       user_id: user.id,
+      workspace_id: currentWorkspace?.id || null,
       name: formData.get("storeName") as string,
       location: formData.get("address") as string,
       store_type: formData.get("storeType") as string,
@@ -443,6 +474,7 @@ const InventoryManager = () => {
     // Use the selected item from master list directly
     const { error: inventoryError } = await supabase.from("fifo_inventory").insert({
       user_id: user.id,
+      workspace_id: currentWorkspace?.id || null,
       item_id: selectedMasterItemId,
       store_id: storeId,
       quantity: quantity,
@@ -471,6 +503,7 @@ const InventoryManager = () => {
 
     const { error } = await supabase.from("fifo_employees").insert({
       user_id: user.id,
+      workspace_id: currentWorkspace?.id || null,
       name: formData.get("employeeName") as string,
       title: formData.get("title") as string,
     });
@@ -554,6 +587,7 @@ const InventoryManager = () => {
 
     const { error } = await supabase.from("fifo_inventory").insert({
       user_id: user.id,
+      workspace_id: currentWorkspace?.id || null,
       store_id: formData.get("storeId") as string,
       item_id: formData.get("itemId") as string,
       quantity: parseFloat(formData.get("quantity") as string),
@@ -570,6 +604,7 @@ const InventoryManager = () => {
       
       await supabase.from("fifo_activity_log").insert({
         user_id: user.id,
+        workspace_id: currentWorkspace?.id || null,
         store_id: formData.get("storeId") as string,
         action_type: "received",
         quantity_after: parseFloat(formData.get("quantity") as string),
@@ -601,6 +636,7 @@ const InventoryManager = () => {
       
       await supabase.from("fifo_activity_log").insert({
         user_id: user.id,
+        workspace_id: currentWorkspace?.id || null,
         inventory_id: inventoryId,
         store_id: inv?.store_id,
         action_type: "sold",
@@ -708,6 +744,7 @@ const InventoryManager = () => {
       .from("fifo_transfers")
       .insert({
         user_id: user.id,
+        workspace_id: currentWorkspace?.id || null,
         inventory_id: sourceInv.id,
         from_store_id: sourceInv.store_id,
         to_store_id: toStoreId,
@@ -758,6 +795,7 @@ const InventoryManager = () => {
     } else {
       await supabase.from("fifo_inventory").insert({
         user_id: user.id,
+        workspace_id: currentWorkspace?.id || null,
         store_id: toStoreId,
         item_id: sourceInv.item_id,
         quantity: quantity,
@@ -770,6 +808,7 @@ const InventoryManager = () => {
 
     await supabase.from("fifo_activity_log").insert({
       user_id: user.id,
+      workspace_id: currentWorkspace?.id || null,
       inventory_id: sourceInv.id,
       store_id: sourceInv.store_id,
       action_type: "transferred",
@@ -854,6 +893,39 @@ const InventoryManager = () => {
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">FIFO Inventory</h1>
             <p className="text-xs sm:text-sm text-muted-foreground">Track inventory with FIFO priority</p>
+          </div>
+          <div className="flex gap-2">
+            <Select
+              value={currentWorkspace?.id || "personal"}
+              onValueChange={(value) => {
+                if (value === "personal") {
+                  switchWorkspace("");
+                } else {
+                  switchWorkspace(value);
+                }
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select workspace" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="personal">Personal Inventory</SelectItem>
+                {workspaces
+                  .filter(w => w.workspace_type === 'fifo_inventory')
+                  .map((workspace) => (
+                    <SelectItem key={workspace.id} value={workspace.id}>
+                      {workspace.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate("/workspace-management")}
+            >
+              Manage
+            </Button>
           </div>
         </div>
 

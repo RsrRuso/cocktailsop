@@ -10,6 +10,7 @@ interface Workspace {
   created_at: string;
   updated_at: string;
   settings: any;
+  workspace_type: string;
 }
 
 interface WorkspaceContextType {
@@ -47,19 +48,19 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // Fetch workspaces user owns
+      // Fetch workspaces user owns (both types)
       const { data: ownedWorkspaces } = await supabase
         .from('workspaces')
         .select('*')
         .eq('owner_id', user.id)
-        .eq('workspace_type', 'store_management');
+        .in('workspace_type', ['store_management', 'fifo_inventory']);
 
-      // Fetch workspaces user is member of
+      // Fetch workspaces user is member of (both types)
       const { data: memberWorkspaces } = await supabase
         .from('workspace_members')
         .select('workspace:workspaces!inner(*)')
         .eq('user_id', user.id)
-        .eq('workspace.workspace_type', 'store_management');
+        .in('workspace.workspace_type', ['store_management', 'fifo_inventory']);
 
       const memberWorkspacesData = memberWorkspaces?.map((m: any) => m.workspace).filter(Boolean) || [];
       const allWorkspaces = [...(ownedWorkspaces || []), ...memberWorkspacesData];
