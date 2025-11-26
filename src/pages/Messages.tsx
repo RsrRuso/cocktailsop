@@ -240,38 +240,43 @@ const Messages = () => {
       <TopNav />
       
       <div className="pt-16 px-4">
-        <div className="flex items-center justify-between py-4">
-          <div className="flex items-center gap-3">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient">
+        <div className="flex items-center justify-between py-3 sm:py-4 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient">
               Neuron
             </h1>
-            <div className="glass backdrop-blur-xl rounded-full px-3 py-1 border border-primary/30 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-              <span className="text-xs font-semibold text-primary">AI-Powered</span>
-            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="glass backdrop-blur-xl rounded-full px-2 sm:px-3 py-1 border border-primary/30 hover:scale-105 transition-all h-7 sm:h-8"
+            >
+              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary animate-pulse" />
+              <span className="text-xs font-semibold text-primary ml-1 hidden sm:inline">Smart Features</span>
+              <span className="text-xs font-semibold text-primary ml-1 sm:hidden">AI</span>
+            </Button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto whitespace-nowrap">
             <Button 
               onClick={() => navigate("/email")}
               size="sm"
-              className="glass bg-accent/20 hover:bg-accent/30 hover:scale-105 transition-all"
+              className="glass bg-accent/20 hover:bg-accent/30 hover:scale-105 transition-all h-8 text-xs shrink-0"
             >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Email
+              <MessageCircle className="w-3.5 h-3.5 sm:mr-2" />
+              <span className="hidden sm:inline">Email</span>
             </Button>
             <Button 
               onClick={() => setShowCreateGroup(true)}
               size="sm"
-              className="glass bg-primary/20 hover:bg-primary/30 hover:scale-105 transition-all"
+              className="glass bg-primary/20 hover:bg-primary/30 hover:scale-105 transition-all h-8 text-xs shrink-0"
             >
-              <Users className="w-4 h-4 mr-2" />
-              New Group
+              <Users className="w-3.5 h-3.5 sm:mr-2" />
+              <span className="hidden sm:inline">New Group</span>
             </Button>
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => setShowArchived(!showArchived)}
-              className="glass hover:scale-105 transition-all"
+              className="glass hover:scale-105 transition-all h-8 text-xs shrink-0"
             >
               {showArchived ? 'Active' : 'Archived'}
             </Button>
@@ -279,31 +284,31 @@ const Messages = () => {
         </div>
 
         {/* Search with modern styling */}
-        <div className="relative mb-4">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        <div className="relative mb-3 sm:mb-4">
+          <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Search messages..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-11 glass backdrop-blur-xl border-border/30 focus:border-primary/50 transition-all rounded-full h-12 text-base"
+            className="pl-10 sm:pl-11 glass backdrop-blur-xl border-border/30 focus:border-primary/50 transition-all rounded-full h-10 sm:h-12 text-sm sm:text-base"
           />
         </div>
 
         {/* Stats with improved design */}
         {!showArchived && (
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="glass backdrop-blur-xl rounded-2xl p-4 text-center border border-border/10 hover:scale-105 transition-all">
-              <p className="text-3xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{conversations.filter(c => !c.isArchived).length}</p>
-              <p className="text-xs text-muted-foreground font-medium mt-1">Active</p>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="glass backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center border border-border/10 hover:scale-105 transition-all">
+              <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{conversations.filter(c => !c.isArchived).length}</p>
+              <p className="text-xs text-muted-foreground font-medium mt-0.5 sm:mt-1">Active</p>
             </div>
-            <div className="glass backdrop-blur-xl rounded-2xl p-4 text-center border border-border/10 hover:scale-105 transition-all">
-              <p className="text-3xl font-bold bg-gradient-to-br from-accent to-primary bg-clip-text text-transparent">{conversations.filter(c => c.unreadCount! > 0).length}</p>
-              <p className="text-xs text-muted-foreground font-medium mt-1">Unread</p>
+            <div className="glass backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center border border-border/10 hover:scale-105 transition-all">
+              <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-br from-accent to-primary bg-clip-text text-transparent">{conversations.filter(c => c.unreadCount! > 0).length}</p>
+              <p className="text-xs text-muted-foreground font-medium mt-0.5 sm:mt-1">Unread</p>
             </div>
-            <div className="glass backdrop-blur-xl rounded-2xl p-4 text-center border border-border/10 hover:scale-105 transition-all">
-              <p className="text-3xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{pinnedChats.size}</p>
-              <p className="text-xs text-muted-foreground font-medium mt-1">Pinned</p>
+            <div className="glass backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center border border-border/10 hover:scale-105 transition-all">
+              <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{pinnedChats.size}</p>
+              <p className="text-xs text-muted-foreground font-medium mt-0.5 sm:mt-1">Pinned</p>
             </div>
           </div>
         )}
@@ -337,18 +342,18 @@ const Messages = () => {
             filteredConversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className={`relative group glass-hover rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02] backdrop-blur-xl border ${
+                className={`relative group glass-hover rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02] backdrop-blur-xl border ${
                   conversation.isPinned ? 'ring-2 ring-primary/50 shadow-lg shadow-primary/10 border-primary/30' : 'border-border/10'
                 }`}
               >
                 <div
-                  className="p-4 flex items-start gap-3 cursor-pointer"
+                  className="p-3 sm:p-4 flex items-start gap-2.5 sm:gap-3 cursor-pointer"
                   onClick={() => navigate(`/messages/${conversation.id}`)}
                 >
                 <div className="relative shrink-0">
                   {conversation.is_group ? (
-                    <div className="relative w-16 h-16 rounded-full glass flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20">
-                      <Users className="w-8 h-8 text-primary" />
+                    <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full glass flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20">
+                      <Users className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
                     </div>
                   ) : (
                     <OptimizedAvatar
@@ -356,53 +361,54 @@ const Messages = () => {
                       alt={conversation.otherUser?.username || 'User'}
                       fallback={conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
                       userId={conversation.otherUser?.id}
-                      className={`w-16 h-16 ${conversation.unreadCount! > 0 ? 'ring-2 ring-primary shadow-lg shadow-primary/20' : ''}`}
+                      className={`w-12 h-12 sm:w-16 sm:h-16 ${conversation.unreadCount! > 0 ? 'ring-2 ring-primary shadow-lg shadow-primary/20' : ''}`}
                     />
                   )}
                   {conversation.isPinned && (
-                    <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                      <Pin className="w-3 h-3 text-white" />
+                    <div className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                      <Pin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
                     </div>
                   )}
                 </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <p className={`font-semibold truncate ${conversation.unreadCount! > 0 ? 'text-foreground' : ''}`}>
+                    <div className="flex items-center justify-between gap-2 mb-0.5 sm:mb-1">
+                      <p className={`text-sm sm:text-base font-semibold truncate ${conversation.unreadCount! > 0 ? 'text-foreground' : ''}`}>
                         {conversation.is_group 
                           ? conversation.group_name 
                           : (conversation.otherUser?.full_name || 'Unknown User')}
                       </p>
-                      <p className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}
+                      <p className="text-xs text-muted-foreground shrink-0 flex items-center gap-0.5 sm:gap-1">
+                        <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                        <span className="hidden sm:inline">{formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}</span>
+                        <span className="sm:hidden">{formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: false })}</span>
                       </p>
                     </div>
                     
-                    <p className="text-xs text-muted-foreground truncate mb-1">
+                    <p className="text-xs text-muted-foreground truncate mb-0.5 sm:mb-1">
                       {conversation.is_group 
                         ? `${conversation.memberCount} members`
                         : `@${conversation.otherUser?.username || 'unknown'}`}
                     </p>
                     
                     {conversation.lastMessage && (
-                      <p className={`text-sm truncate ${conversation.unreadCount! > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                      <p className={`text-xs sm:text-sm truncate ${conversation.unreadCount! > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                         {conversation.lastMessage}
                       </p>
                     )}
                   </div>
 
-                  <div className="flex flex-col items-end gap-2 shrink-0">
+                  <div className="flex flex-col items-end gap-1.5 sm:gap-2 shrink-0">
                     {conversation.unreadCount! > 0 && (
-                      <Badge variant="default" className="bg-primary glow-primary">
+                      <Badge variant="default" className="bg-primary glow-primary text-xs h-5 min-w-[20px] sm:h-6 sm:min-w-[24px]">
                         {conversation.unreadCount}
                       </Badge>
                     )}
                     
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <MoreVertical className="w-4 h-4" />
+                        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="glass backdrop-blur-xl">
