@@ -298,25 +298,35 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
     if (!message) return;
 
     const reactions = message.reactions || [];
-    const existingReaction = reactions.find((r) => r.emoji === emoji);
+    
+    // First, remove any existing reaction from this user (enforce one emoji per user)
+    const userExistingReaction = reactions.find((r) => r.user_ids.includes(currentUser.id));
+    let cleanedReactions = reactions;
+    
+    if (userExistingReaction) {
+      // Remove user from their previous reaction
+      cleanedReactions = reactions.map((r) => ({
+        ...r,
+        user_ids: r.user_ids.filter((id) => id !== currentUser.id)
+      })).filter((r) => r.user_ids.length > 0);
+    }
+    
+    // Now handle the new emoji
+    const existingReaction = cleanedReactions.find((r) => r.emoji === emoji);
 
     let updatedReactions;
     if (existingReaction) {
-      if (existingReaction.user_ids.includes(currentUser.id)) {
-        existingReaction.user_ids = existingReaction.user_ids.filter(
-          (id) => id !== currentUser.id
-        );
-        if (existingReaction.user_ids.length === 0) {
-          updatedReactions = reactions.filter((r) => r.emoji !== emoji);
-        } else {
-          updatedReactions = reactions;
-        }
+      // If clicking the same emoji they had, remove it (toggle off)
+      if (userExistingReaction && userExistingReaction.emoji === emoji) {
+        updatedReactions = cleanedReactions;
       } else {
+        // Add user to this emoji
         existingReaction.user_ids.push(currentUser.id);
-        updatedReactions = reactions;
+        updatedReactions = cleanedReactions;
       }
     } else {
-      updatedReactions = [...reactions, { emoji, user_ids: [currentUser.id] }];
+      // Create new reaction entry with this user
+      updatedReactions = [...cleanedReactions, { emoji, user_ids: [currentUser.id] }];
     }
 
     // Optimistic update
