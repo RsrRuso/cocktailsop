@@ -78,15 +78,37 @@ export default function ScanTransfer() {
         .eq("user_id", userId)
         .maybeSingle();
 
+      let effectiveRole = membership?.role as string | undefined;
+      let effectivePermissions = (membership?.permissions as any) || {};
+
+      // Fallback: if no membership row, still allow workspace owner
       if (!membership) {
-        toast.error("You don't have access to this workspace");
-        setLoading(false);
-        navigate("/");
-        return;
+        const { data: workspace } = await supabase
+          .from("workspaces")
+          .select("owner_id")
+          .eq("id", fromStore.workspace_id)
+          .maybeSingle();
+
+        if (workspace?.owner_id === userId) {
+          effectiveRole = "owner";
+          effectivePermissions = {
+            can_receive: true,
+            can_transfer: true,
+            can_manage: true,
+            can_delete: true,
+          };
+        } else {
+          toast.error("You don't have access to this workspace");
+          setLoading(false);
+          navigate("/");
+          return;
+        }
       }
 
-      const permissions = membership.permissions as any;
-      const canTransfer = membership.role === "admin" || permissions?.can_transfer === true;
+      const canTransfer =
+        effectiveRole === "admin" ||
+        effectiveRole === "owner" ||
+        effectivePermissions?.can_transfer === true;
       
       if (!canTransfer) {
         toast.error("You don't have permission to transfer inventory in this workspace");
