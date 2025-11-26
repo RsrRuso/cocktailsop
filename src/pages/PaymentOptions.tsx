@@ -92,6 +92,25 @@ const PaymentOptions = () => {
 
       const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
 
+      // ============================================================
+      // TODO: STRIPE PAYMENT INTEGRATION
+      // ============================================================
+      // When Stripe is configured, add payment processing here:
+      // 
+      // 1. Create Stripe Payment Intent:
+      //    const { data: paymentIntent } = await supabase.functions.invoke('create-payment-intent', {
+      //      body: { amount: total * 100, currency: 'usd' }
+      //    });
+      //
+      // 2. Confirm payment with Stripe:
+      //    const { error: stripeError } = await stripe.confirmCardPayment(
+      //      paymentIntent.client_secret,
+      //      { payment_method: { card: cardElement } }
+      //    );
+      //
+      // 3. Handle payment success/failure before creating order
+      // ============================================================
+
       // Create order in database
       const { data: order, error: orderError } = await supabase
         .from("orders")
@@ -99,7 +118,7 @@ const PaymentOptions = () => {
           user_id: user.id,
           order_number: orderNumber,
           total_amount: total,
-          status: "pending",
+          status: "pending", // Will be updated to "paid" after Stripe confirmation
           payment_method: selectedMethod,
           shipping_address: addressInput?.value || "N/A",
           shipping_city: cityInput?.value || "N/A",
