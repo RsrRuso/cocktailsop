@@ -12,38 +12,21 @@ const EMOJIS = ['❤️', '😂', '😮', '😢', '😍', '🙏', '👍', '🔥'
 export const EmojiReactionPicker = memo(({ show, onSelect, position }: EmojiReactionPickerProps) => {
   if (!show) return null;
 
-  // Calculate safe positioning to prevent cutoff on all devices
+  // Center picker to avoid being cut off and keep it fully visible
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 400;
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
 
   // Responsive picker dimensions
   const isCompact = viewportWidth < 480;
   const pickerHeight = isCompact ? 64 : 80;
-  const edgeMargin = 16;
 
-  // Calculate safe position
-  let safeX = position.x;
-  let safeY = position.y;
-  let showBelow = false;
+  // Place picker roughly in the middle of the screen
+  const safeX = viewportWidth / 2;
+  const safeY = viewportHeight / 2;
 
-  // Prevent horizontal overflow by clamping within viewport with padding
+  // Compute max width so we can scroll horizontally if needed
   const horizontalPadding = 24;
   const maxWidth = viewportWidth - horizontalPadding * 2;
-  safeX = Math.max(
-    horizontalPadding,
-    Math.min(safeX, viewportWidth - horizontalPadding)
-  );
-
-  // Prefer showing above the touch point, but flip below/above when needed
-  if (safeY < pickerHeight + edgeMargin) {
-    // Too close to top, show below bubble instead
-    safeY = position.y + 72;
-    showBelow = true;
-  } else if (safeY + pickerHeight + edgeMargin > viewportHeight) {
-    // Too close to bottom, lift it above
-    safeY = position.y - 72;
-    showBelow = false;
-  }
   return (
     <>
       {/* Backdrop to close picker */}
@@ -67,7 +50,8 @@ export const EmojiReactionPicker = memo(({ show, onSelect, position }: EmojiReac
           style={{
             left: `${safeX}px`,
             top: `${safeY}px`,
-            transform: showBelow ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+            // Fully center the picker on screen
+            transform: 'translate(-50%, -50%)',
             touchAction: 'none',
             padding: '8px 10px',
             maxWidth: `${maxWidth}px`,
