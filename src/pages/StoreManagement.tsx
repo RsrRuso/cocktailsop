@@ -41,7 +41,7 @@ import {
 import { InviteWorkspaceMemberDialog } from "@/components/InviteWorkspaceMemberDialog";
 import { ManageMemberPermissionsDialog } from "@/components/ManageMemberPermissionsDialog";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 interface Transaction {
   id: string;
   type: 'transfer' | 'receiving' | 'spot_check' | 'variance';
@@ -1110,7 +1110,7 @@ const StoreManagement = () => {
           (item.variance || 0).toString(),
         ]);
         
-        (doc as any).autoTable({
+        autoTable(doc, {
           startY: 52,
           head: [['Item Name', 'System Qty', 'Physical Qty', 'Variance']],
           body: tableData,
