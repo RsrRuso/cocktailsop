@@ -266,7 +266,24 @@ const AllInventory = () => {
             ctx?.drawImage(img, 0, 0);
             const highQualityDataUrl = canvas.toDataURL('image/png', 1.0); // Maximum quality
             
-            doc.addImage(highQualityDataUrl, 'PNG', margin + 2.5, yPosition + 0.5, imageSize - 1, imageSize - 1);
+            // Calculate aspect ratio to maintain original proportions
+            const imgAspectRatio = img.width / img.height;
+            let drawWidth = imageSize - 1;
+            let drawHeight = imageSize - 1;
+            
+            if (imgAspectRatio > 1) {
+              // Wider than tall
+              drawHeight = drawWidth / imgAspectRatio;
+            } else {
+              // Taller than wide
+              drawWidth = drawHeight * imgAspectRatio;
+            }
+            
+            // Center the image in the box
+            const xOffset = (imageSize - drawWidth) / 2;
+            const yOffset = (imageSize - drawHeight) / 2;
+            
+            doc.addImage(highQualityDataUrl, 'PNG', margin + 2.5 + xOffset, yPosition + 0.5 + yOffset, drawWidth, drawHeight);
           } catch (error) {
             console.error('Failed to load image:', error);
             // Draw placeholder
