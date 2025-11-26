@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback, memo } from 'react';
+import { useState, useRef, useCallback, memo, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
 import { Progress } from './ui/progress';
 import { Send, Paperclip, Mic, Reply, Edit2, X, Loader2 } from 'lucide-react';
 import { Message } from '@/hooks/useMessageThread';
@@ -46,9 +46,19 @@ export const MessageInput = memo(({
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showMusicDialog, setShowMusicDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  // Auto-resize textarea
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    }
+  }, [value]);
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     onChange(newValue);
 
@@ -63,7 +73,7 @@ export const MessageInput = memo(({
     }, 1500);
   }, [onChange, onTyping]);
 
-  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onSend();
@@ -182,17 +192,19 @@ export const MessageInput = memo(({
           onOpenChange={setShowMusicDialog}
         />
 
-        <Input
+        <Textarea
+          ref={textareaRef}
           value={value}
           onChange={handleChange}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
           placeholder="Message..."
-          className="flex-1 glass backdrop-blur-2xl border-2 border-primary/20 focus:border-primary/50 rounded-full px-6 py-4 text-base transition-all shadow-lg hover:shadow-xl focus:shadow-2xl focus:shadow-primary/20"
+          className="flex-1 glass backdrop-blur-2xl border-2 border-primary/20 focus:border-primary/50 rounded-3xl px-6 py-4 text-base transition-all shadow-lg hover:shadow-xl focus:shadow-2xl focus:shadow-primary/20 resize-none min-h-[48px] max-h-[200px] overflow-y-auto"
+          rows={1}
         />
 
         <AIMessageToolsWrapper 
           message={value} 
-          onMessageUpdate={handleChange}
+          onMessageUpdate={(e) => onChange(e.target.value)}
         />
 
         {value.trim() ? (
