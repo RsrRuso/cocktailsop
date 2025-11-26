@@ -8,7 +8,6 @@ import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useMessageThread, Message } from "@/hooks/useMessageThread";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { MessageBubble } from "@/components/MessageBubble";
-import { MessageActions } from "@/components/MessageActions";
 import { MessageInput } from "@/components/MessageInput";
 import { MediaRecorder } from "@/components/MediaRecorder";
 import { ForwardMessageDialog } from "@/components/ForwardMessageDialog";
@@ -22,8 +21,6 @@ const MessageThread = () => {
   const [newMessage, setNewMessage] = useState("");
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
-  const [showAllEmojis, setShowAllEmojis] = useState(false);
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
   const [showForwardDialog, setShowForwardDialog] = useState(false);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
@@ -146,14 +143,6 @@ const MessageThread = () => {
     }
   }, [newMessage, currentUser, conversationId, replyingTo, editingMessage, updateTypingStatus]);
 
-  const quickEmojis = ["🔥", "❤️", "👍", "😂", "😮", "😢", "🎉", "👏"];
-  const allEmojis = [
-    "🔥", "❤️", "👍", "😂", "😮", "😢", "🎉", "👏",
-    "💯", "✨", "⚡", "💪", "🙌", "🤝", "💖", "🌟",
-    "🎊", "🎈", "🎁", "🌈", "☀️", "🌙", "⭐", "💫",
-    "😍", "🥰", "😎", "🤩", "🤗", "🥳", "😊", "🙏"
-  ];
-
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-background via-background/95 to-background flex flex-col">
       {/* Header with Instagram-style design */}
@@ -262,41 +251,6 @@ const MessageThread = () => {
                 setNewMessage(message.content); 
               } : undefined}
             >
-              <MessageActions
-                message={message}
-                isOwn={isOwn}
-                onReaction={() => setShowEmojiPicker(showEmojiPicker === message.id ? null : message.id)}
-                onReply={() => setReplyingTo(message)}
-                onEdit={isOwn && !message.media_url ? () => { setEditingMessage(message); setNewMessage(message.content); } : undefined}
-                onDelete={isOwn ? () => handleDelete(message.id) : undefined}
-              />
-
-              {showEmojiPicker === message.id && (
-                <div className="absolute bottom-full left-0 mb-2 backdrop-blur-2xl rounded-3xl p-4 z-20 border border-border/20 bg-background/90 shadow-2xl max-w-xs animate-in slide-in-from-bottom duration-300">
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {(showAllEmojis ? allEmojis : quickEmojis).map((emoji) => (
-                      <button 
-                        key={emoji} 
-                        onClick={() => { 
-                          handleReaction(message.id, emoji); 
-                          setShowEmojiPicker(null); 
-                          setShowAllEmojis(false);
-                        }} 
-                        className="hover:scale-125 transition-all duration-200 text-3xl w-12 h-12 flex items-center justify-center rounded-2xl hover:bg-primary/10 active:scale-95"
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setShowAllEmojis(!showAllEmojis)}
-                      className="hover:scale-110 transition-all duration-200 text-xl w-12 h-12 flex items-center justify-center rounded-2xl bg-primary/10 font-bold hover:bg-primary/20"
-                    >
-                      {showAllEmojis ? "−" : "+"}
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {message.reactions && message.reactions.length > 0 && (
                 <div className="flex gap-1.5 mt-2 flex-wrap">
                   {message.reactions.map((reaction, idx) => (

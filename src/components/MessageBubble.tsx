@@ -336,9 +336,18 @@ export const MessageBubble = memo(({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onContextMenu={(e) => {
+          // Prevent native context menu on long press
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }}
         style={{
           transform: `translateX(${swipeOffset}px)`,
           transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          WebkitTouchCallout: 'none', // Prevent iOS callout
+          WebkitUserSelect: 'none', // Prevent text selection
+          userSelect: 'none',
         }}
         whileTap={{ scale: 0.98 }}
         className={`relative group max-w-[75%] z-10 ${
