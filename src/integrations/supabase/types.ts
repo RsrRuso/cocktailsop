@@ -1990,6 +1990,45 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_emails: {
+        Row: {
+          archived: boolean | null
+          body: string
+          created_at: string | null
+          id: string
+          read: boolean | null
+          recipient_id: string
+          sender_id: string
+          starred: boolean | null
+          subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          archived?: boolean | null
+          body: string
+          created_at?: string | null
+          id?: string
+          read?: boolean | null
+          recipient_id: string
+          sender_id: string
+          starred?: boolean | null
+          subject: string
+          updated_at?: string | null
+        }
+        Update: {
+          archived?: boolean | null
+          body?: string
+          created_at?: string | null
+          id?: string
+          read?: boolean | null
+          recipient_id?: string
+          sender_id?: string
+          starred?: boolean | null
+          subject?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           batch_number: string | null

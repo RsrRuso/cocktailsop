@@ -31,6 +31,7 @@ const PostDetail = lazy(() => import("./pages/PostDetail"));
 const Thunder = lazy(() => import("./pages/Thunder"));
 const Messages = lazy(() => import("./pages/Messages"));
 const MessageThread = lazy(() => import("./pages/MessageThread"));
+const Email = lazy(() => import("./pages/Email"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Tools = lazy(() => import("./pages/Tools"));
 const BusinessHub = lazy(() => import("./pages/BusinessHub"));
@@ -155,6 +156,7 @@ const AppContent = () => {
           <Route path="/thunder" element={<Thunder />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/messages/:conversationId" element={<MessageThread />} />
+          <Route path="/email" element={<Email />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/business-hub" element={<BusinessHub />} />
