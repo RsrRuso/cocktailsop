@@ -183,6 +183,7 @@ const AllInventory = () => {
         const itemName = item.items?.name || 'Unknown Item';
         const brand = item.items?.brand || '-';
         const category = item.items?.category || '-';
+        const colorCode = item.items?.color_code || '-';
         const totalQty = item.totalQuantity.toString();
         const storeBreakdown = item.storeQuantities
           .map((sq: any) => `  • ${sq.store?.name || 'Unknown'}: ${sq.quantity}`)
@@ -242,7 +243,7 @@ const AllInventory = () => {
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(75, 85, 99);
-        doc.text(`Brand: ${brand} | Category: ${category}`, textX, textY);
+        doc.text(`Brand: ${brand} | Category: ${category} | Color: ${colorCode}`, textX, textY);
         
         textY += lineHeight;
         doc.setFont("helvetica", "bold");
