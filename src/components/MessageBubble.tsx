@@ -1,8 +1,15 @@
 import { Message } from '@/hooks/useMessageThread';
-import { Check, CheckCheck, Reply, Trash2, Forward } from 'lucide-react';
+import { Check, CheckCheck, Reply, Trash2, Forward, Heart, Edit, MoreVertical, Copy } from 'lucide-react';
 import { LazyImage } from './LazyImage';
 import { VoiceWaveform } from './VoiceWaveform';
 import { useState, useRef, useEffect, memo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface MessageBubbleProps {
   message: Message;
@@ -11,6 +18,8 @@ interface MessageBubbleProps {
   onReply: (message: Message) => void;
   onDelete?: () => void;
   onForward?: () => void;
+  onLike?: () => void;
+  onEdit?: () => void;
   children?: React.ReactNode;
 }
 
@@ -21,22 +30,43 @@ export const MessageBubble = memo(({
   onReply,
   onDelete,
   onForward,
+  onLike,
+  onEdit,
   children,
 }: MessageBubbleProps) => {
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showLikeAnimation, setShowLikeAnimation] = useState(false);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const touchStartTime = useRef(0);
+  const longPressTimer = useRef<NodeJS.Timeout>();
   const bubbleRef = useRef<HTMLDivElement>(null);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
+    touchStartTime.current = Date.now();
     setIsSwiping(true);
+    
+    // Long press for dropdown
+    longPressTimer.current = setTimeout(() => {
+      setShowDropdown(true);
+      // Haptic feedback
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+    }, 500);
   }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSwiping) return;
+    
+    // Clear long press timer if moved
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
 
     const touchX = e.touches[0].clientX;
     const touchY = e.touches[0].clientY;
@@ -48,29 +78,50 @@ export const MessageBubble = memo(({
       e.preventDefault();
       
       // Limit swipe distance
-      const maxSwipe = isOwn ? -120 : 120;
-      const newOffset = Math.max(Math.min(deltaX, Math.abs(maxSwipe)), -Math.abs(maxSwipe));
+      const maxSwipe = 120;
+      const newOffset = Math.max(Math.min(deltaX, maxSwipe), -maxSwipe);
       
-      // Only allow swipe in the correct direction
-      if ((isOwn && newOffset < 0) || (!isOwn && newOffset > 0)) {
-        setSwipeOffset(newOffset);
-      }
+      // Allow swipe in both directions for different actions
+      setSwipeOffset(newOffset);
     }
-  }, [isSwiping, isOwn]);
+  }, [isSwiping]);
 
   const handleTouchEnd = useCallback(() => {
     setIsSwiping(false);
     
+    // Clear long press timer
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+    
+    // Detect double tap for like
+    const tapDuration = Date.now() - touchStartTime.current;
+    if (tapDuration < 300 && Math.abs(swipeOffset) < 10) {
+      if (tapDuration < 200) {
+        setShowLikeAnimation(true);
+        onLike?.();
+        setTimeout(() => setShowLikeAnimation(false), 1000);
+      }
+    }
+    
     // If swiped enough, trigger action
     if (Math.abs(swipeOffset) > 60) {
-      // Keep it open for a moment to show the action
-      setTimeout(() => {
-        setSwipeOffset(0);
-      }, 300);
+      if (swipeOffset > 0) {
+        // Right swipe - Reply
+        onReply(message);
+      } else {
+        // Left swipe - Forward/Delete
+        if (isOwn) {
+          setShowDropdown(true);
+        } else {
+          onForward?.();
+        }
+      }
+      setTimeout(() => setSwipeOffset(0), 300);
     } else {
       setSwipeOffset(0);
     }
-  }, [swipeOffset]);
+  }, [swipeOffset, onReply, onForward, onLike, message, isOwn]);
 
   useEffect(() => {
     // Reset swipe when message changes
@@ -81,54 +132,39 @@ export const MessageBubble = memo(({
 
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} relative`}>
-      {/* Action buttons for left swipe (own messages) */}
-      {isOwn && shouldShowActions && (
-        <div className="absolute right-0 top-0 h-full flex items-center gap-2 pr-2 z-0">
-          <button
-            onClick={() => {
-              onForward?.();
-              setSwipeOffset(0);
-            }}
-            className="w-10 h-10 rounded-full bg-accent/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
+      {/* Swipe action indicators */}
+      <AnimatePresence>
+        {Math.abs(swipeOffset) > 30 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className={`absolute ${swipeOffset > 0 ? 'left-2' : 'right-2'} top-1/2 -translate-y-1/2 z-0`}
           >
-            <Forward className="w-5 h-5 text-accent-foreground" />
-          </button>
-          <button
-            onClick={() => {
-              onDelete?.();
-              setSwipeOffset(0);
-            }}
-            className="w-10 h-10 rounded-full bg-destructive/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
-          >
-            <Trash2 className="w-5 h-5 text-destructive-foreground" />
-          </button>
-        </div>
-      )}
+            {swipeOffset > 0 ? (
+              <div className="flex items-center gap-2 backdrop-blur-lg rounded-full px-4 py-2 bg-primary/20">
+                <Reply className="w-5 h-5 text-primary" />
+                <span className="text-sm font-medium text-primary">Reply</span>
+              </div>
+            ) : isOwn ? (
+              <div className="flex items-center gap-3">
+                <div className="backdrop-blur-lg rounded-full p-2 bg-destructive/20">
+                  <Trash2 className="w-5 h-5 text-destructive" />
+                </div>
+                <div className="backdrop-blur-lg rounded-full p-2 bg-accent/20">
+                  <Forward className="w-5 h-5 text-accent-foreground" />
+                </div>
+              </div>
+            ) : (
+              <div className="backdrop-blur-lg rounded-full px-4 py-2 bg-accent/20">
+                <Forward className="w-5 h-5 text-accent-foreground" />
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Action buttons for right swipe (other's messages) */}
-      {!isOwn && shouldShowActions && (
-        <div className="absolute left-0 top-0 h-full flex items-center gap-2 pl-2 z-0">
-          <button
-            onClick={() => {
-              onReply(message);
-              setSwipeOffset(0);
-            }}
-            className="w-10 h-10 rounded-full bg-primary/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
-          >
-            <Reply className="w-5 h-5 text-primary-foreground" />
-          </button>
-          <button
-            onClick={() => {
-              onForward?.();
-              setSwipeOffset(0);
-            }}
-            className="w-10 h-10 rounded-full bg-accent/90 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
-          >
-            <Forward className="w-5 h-5 text-accent-foreground" />
-          </button>
-        </div>
-      )}
-      <div
+      <motion.div
         ref={bubbleRef}
         id={`message-${message.id}`}
         onTouchStart={handleTouchStart}
@@ -138,12 +174,27 @@ export const MessageBubble = memo(({
           transform: `translateX(${swipeOffset}px)`,
           transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
+        whileTap={{ scale: 0.98 }}
         className={`relative group max-w-[75%] z-10 ${
           message.media_url && (message.media_type === 'image' || message.media_type === 'video')
             ? ''
             : 'glass backdrop-blur-xl px-4 py-2'
         } rounded-2xl ${isOwn ? 'glow-primary' : ''} touch-pan-y`}
       >
+        {/* Like Animation Overlay */}
+        <AnimatePresence>
+          {showLikeAnimation && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: [0, 1.2, 1], opacity: [0, 1, 0] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.6 }}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
+            >
+              <Heart className="w-20 h-20 fill-red-500 text-red-500" />
+            </motion.div>
+          )}
+        </AnimatePresence>
         {message.reply_to_id && replyMessage && (
           <div
             className={`${
