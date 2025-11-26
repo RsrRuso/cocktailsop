@@ -76,15 +76,37 @@ export default function ScanReceive() {
         .eq("user_id", userId)
         .maybeSingle();
 
+      let effectiveRole = membership?.role as string | undefined;
+      let effectivePermissions = (membership?.permissions as any) || {};
+
+      // Fallback: if no membership row, still allow workspace owner
       if (!membership) {
-        toast.error("You don't have access to this workspace");
-        setLoading(false);
-        navigate("/");
-        return;
+        const { data: workspace } = await supabase
+          .from("workspaces")
+          .select("owner_id")
+          .eq("id", toStore.workspace_id)
+          .maybeSingle();
+
+        if (workspace?.owner_id === userId) {
+          effectiveRole = "owner";
+          effectivePermissions = {
+            can_receive: true,
+            can_transfer: true,
+            can_manage: true,
+            can_delete: true,
+          };
+        } else {
+          toast.error("You don't have access to this workspace");
+          setLoading(false);
+          navigate("/");
+          return;
+        }
       }
 
-      const permissions = membership.permissions as any;
-      const canReceive = membership.role === "admin" || permissions?.can_receive === true;
+      const canReceive =
+        effectiveRole === "admin" ||
+        effectiveRole === "owner" ||
+        effectivePermissions?.can_receive === true;
       
       if (!canReceive) {
         toast.error("You don't have permission to receive inventory in this workspace");
