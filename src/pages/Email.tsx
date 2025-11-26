@@ -265,76 +265,83 @@ const Email = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background/95 to-background">
       <TopNav isVisible={true} />
-      <div className="container max-w-4xl mx-auto px-2 sm:px-4 pt-20 pb-24">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
-              Internal Email
+      <div className="container max-w-4xl mx-auto px-3 pt-16 sm:pt-20 pb-20 sm:pb-24">
+        {/* Header - Mobile Optimized */}
+        <div className="mb-4 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+              Neuron Email
             </h1>
-            <Button onClick={() => setShowCompose(true)} className="gap-2">
-              <Send className="w-4 h-4" />
-              Compose
+            <Button 
+              onClick={() => setShowCompose(true)} 
+              size="sm"
+              className="gap-1 sm:gap-2 text-xs sm:text-sm h-8 sm:h-10"
+            >
+              <Send className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Compose</span>
+              <span className="sm:hidden">New</span>
             </Button>
           </div>
+          
           {currentUser && (
-            <div className="mt-2 glass p-3 rounded-lg border border-primary/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Your IE Account:</p>
-                  <p className="text-sm font-mono font-semibold text-primary">
+            <div className="glass p-3 rounded-xl border border-primary/20">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground">Your IE Account</p>
+                  <p className="text-xs sm:text-sm font-mono font-semibold text-primary truncate">
                     {profiles.find(p => p.id === currentUser.id)?.username || 'loading'}@sv.internal
                   </p>
                 </div>
-                <div className="text-xs text-muted-foreground text-right">
-                  <p>{profiles.length - 1} contacts</p>
-                  <p className="text-green-500">✓ Unique address</p>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="whitespace-nowrap">{profiles.length - 1} contacts</span>
+                  <span className="text-green-500 whitespace-nowrap">✓ Unique</span>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Send emails to your followers using their @sv.internal addresses
-              </p>
             </div>
           )}
         </div>
 
-        {/* Filters */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        {/* Filters - Mobile Optimized */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-2 -mx-3 px-3 scrollbar-hide">
           <Button
             variant={filter === "inbox" ? "default" : "outline"}
             onClick={() => setFilter("inbox")}
-            className="gap-2 whitespace-nowrap"
+            size="sm"
+            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
           >
-            <Inbox className="w-4 h-4" />
-            Inbox
+            <Inbox className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Inbox</span>
           </Button>
           <Button
             variant={filter === "sent" ? "default" : "outline"}
             onClick={() => setFilter("sent")}
-            className="gap-2 whitespace-nowrap"
+            size="sm"
+            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
           >
-            <Send className="w-4 h-4" />
-            Sent
+            <Send className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Sent</span>
           </Button>
           <Button
             variant={filter === "starred" ? "default" : "outline"}
             onClick={() => setFilter("starred")}
-            className="gap-2 whitespace-nowrap"
+            size="sm"
+            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
           >
-            <Star className="w-4 h-4" />
-            Starred
+            <Star className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Starred</span>
           </Button>
           <Button
             variant={filter === "archived" ? "default" : "outline"}
             onClick={() => setFilter("archived")}
-            className="gap-2 whitespace-nowrap"
+            size="sm"
+            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
           >
-            <Archive className="w-4 h-4" />
-            Archived
+            <Archive className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Archived</span>
           </Button>
         </div>
 
-        {/* Email List */}
+        {/* Email List - Mobile Optimized */}
         <div className="space-y-2">
           {emails.map((email) => (
             <div
@@ -345,63 +352,65 @@ const Email = () => {
                   markAsRead(email.id);
                 }
               }}
-              className={`glass p-4 rounded-2xl cursor-pointer hover:bg-accent/50 transition-all ${
+              className={`glass p-3 rounded-xl cursor-pointer hover:bg-accent/50 transition-all active:scale-[0.98] ${
                 !email.read && email.recipient_id === currentUser?.id ? "border-2 border-primary" : ""
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-2.5">
                 <OptimizedAvatar
                   src={filter === "sent" ? email.recipient?.avatar_url : email.sender?.avatar_url}
                   alt={filter === "sent" ? email.recipient?.username : email.sender?.username}
                   fallback={(filter === "sent" ? email.recipient?.username?.[0] : email.sender?.username?.[0]) || "U"}
                   userId={filter === "sent" ? email.recipient?.id : email.sender?.id}
-                  className="w-12 h-12"
+                  className="w-10 h-10 sm:w-12 sm:h-12"
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold truncate">
-                      {filter === "sent" ? email.recipient?.full_name : email.sender?.full_name}
-                    </p>
-                    {email.starred && <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="text-sm sm:text-base font-semibold truncate">
+                        {filter === "sent" ? email.recipient?.full_name : email.sender?.full_name}
+                      </p>
+                      {email.starred && <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 flex-shrink-0" />}
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
+                      {new Date(email.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </span>
                   </div>
-                  <p className="text-sm font-medium truncate">{email.subject}</p>
+                  <p className="text-xs sm:text-sm font-medium truncate mb-0.5">{email.subject}</p>
                   <p className="text-xs text-muted-foreground truncate">{email.body}</p>
-                </div>
-                <div className="text-xs text-muted-foreground whitespace-nowrap">
-                  {new Date(email.created_at).toLocaleDateString()}
                 </div>
               </div>
             </div>
           ))}
           {emails.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
-              <Mail className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No emails found</p>
+              <Mail className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">No emails found</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Compose Dialog */}
+      {/* Compose Dialog - Mobile Optimized */}
       <Dialog open={showCompose} onOpenChange={setShowCompose}>
-        <DialogContent className="glass max-w-2xl">
+        <DialogContent className="glass max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="w-5 h-5" />
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
               Compose Email
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Recipient</label>
+              <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">Recipient</label>
               <Select value={recipient} onValueChange={setRecipient}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a follower to send email" />
+                <SelectTrigger className="h-9 sm:h-10 text-sm">
+                  <SelectValue placeholder="Select follower" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60">
                   {profiles.filter(p => p.id !== currentUser?.id).map((profile) => (
-                    <SelectItem key={profile.id} value={profile.id}>
-                      <div className="flex flex-col">
+                    <SelectItem key={profile.id} value={profile.id} className="text-sm">
+                      <div className="flex flex-col py-1">
                         <span className="font-medium">{profile.full_name}</span>
                         <span className="text-xs font-mono text-muted-foreground">
                           {profile.internal_email}
@@ -410,28 +419,30 @@ const Email = () => {
                     </SelectItem>
                   ))}
                   {profiles.filter(p => p.id !== currentUser?.id).length === 0 && (
-                    <div className="p-2 text-sm text-muted-foreground">
-                      No followers available. Add followers to send emails.
+                    <div className="p-3 text-xs text-muted-foreground text-center">
+                      No followers available
                     </div>
                   )}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Subject</label>
+              <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">Subject</label>
               <Input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="Email subject"
+                className="h-9 sm:h-10 text-sm"
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Message</label>
+              <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">Message</label>
               <Textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Write your email..."
-                rows={8}
+                rows={6}
+                className="text-sm resize-none"
               />
             </div>
             
@@ -440,33 +451,38 @@ const Email = () => {
               variant="outline"
               onClick={generateAiSuggestion}
               disabled={isGenerating}
-              className="w-full gap-2"
+              size="sm"
+              className="w-full gap-1.5 sm:gap-2 h-9 text-xs sm:text-sm"
             >
-              <Sparkles className="w-4 h-4" />
-              {isGenerating ? "Generating..." : "Get AI Writing Suggestion"}
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              {isGenerating ? "Generating..." : "AI Suggestion"}
             </Button>
             
             {aiSuggestion && (
-              <div className="glass p-4 rounded-xl border border-primary/20">
-                <p className="text-sm font-medium mb-2 text-primary">AI Suggestion:</p>
-                <p className="text-sm">{aiSuggestion}</p>
+              <div className="glass p-3 rounded-xl border border-primary/20">
+                <p className="text-xs sm:text-sm font-medium mb-2 text-primary">AI Suggestion:</p>
+                <p className="text-xs sm:text-sm">{aiSuggestion}</p>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setBody(aiSuggestion)}
-                  className="mt-2"
+                  className="mt-2 h-8 text-xs"
                 >
                   Use This
                 </Button>
               </div>
             )}
 
-            <div className="flex gap-2">
-              <Button onClick={sendEmail} className="flex-1 gap-2">
-                <Send className="w-4 h-4" />
-                Send Email
+            <div className="flex gap-2 pt-2">
+              <Button onClick={sendEmail} className="flex-1 gap-1.5 h-9 sm:h-10 text-sm">
+                <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                Send
               </Button>
-              <Button variant="outline" onClick={() => setShowCompose(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCompose(false)}
+                className="h-9 sm:h-10 text-sm"
+              >
                 Cancel
               </Button>
             </div>
@@ -474,56 +490,59 @@ const Email = () => {
         </DialogContent>
       </Dialog>
 
-      {/* View Email Dialog */}
+      {/* View Email Dialog - Mobile Optimized */}
       <Dialog open={!!selectedEmail} onOpenChange={() => setSelectedEmail(null)}>
-        <DialogContent className="glass max-w-2xl">
+        <DialogContent className="glass max-w-2xl max-h-[85vh] overflow-y-auto">
           {selectedEmail && (
             <>
               <DialogHeader>
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-2.5">
                   <OptimizedAvatar
                     src={filter === "sent" ? selectedEmail.recipient?.avatar_url : selectedEmail.sender?.avatar_url}
                     alt={filter === "sent" ? selectedEmail.recipient?.username : selectedEmail.sender?.username}
                     fallback={(filter === "sent" ? selectedEmail.recipient?.username?.[0] : selectedEmail.sender?.username?.[0]) || "U"}
                     userId={filter === "sent" ? selectedEmail.recipient?.id : selectedEmail.sender?.id}
-                    className="w-10 h-10"
+                    className="w-9 h-9 sm:w-10 sm:h-10"
                   />
-                  <div className="flex-1">
-                    <DialogTitle>{selectedEmail.subject}</DialogTitle>
-                    <p className="text-sm text-muted-foreground">
+                  <div className="flex-1 min-w-0">
+                    <DialogTitle className="text-sm sm:text-base leading-tight">{selectedEmail.subject}</DialogTitle>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                       From: {selectedEmail.sender?.full_name}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 flex-shrink-0">
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => toggleStar(selectedEmail.id, selectedEmail.starred)}
+                      className="h-8 w-8"
                     >
-                      <Star className={`w-4 h-4 ${selectedEmail.starred ? "fill-yellow-500 text-yellow-500" : ""}`} />
+                      <Star className={`w-3.5 h-3.5 ${selectedEmail.starred ? "fill-yellow-500 text-yellow-500" : ""}`} />
                     </Button>
                     {filter === "inbox" && (
                       <Button
                         size="icon"
                         variant="ghost"
                         onClick={() => toggleArchive(selectedEmail.id, selectedEmail.archived)}
+                        className="h-8 w-8"
                       >
-                        <Archive className="w-4 h-4" />
+                        <Archive className="w-3.5 h-3.5" />
                       </Button>
                     )}
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => deleteEmail(selectedEmail.id)}
+                      className="h-8 w-8"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
                 </div>
               </DialogHeader>
-              <div className="mt-4">
-                <p className="text-sm whitespace-pre-wrap">{selectedEmail.body}</p>
-                <p className="text-xs text-muted-foreground mt-4">
+              <div className="mt-3 sm:mt-4">
+                <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">{selectedEmail.body}</p>
+                <p className="text-xs text-muted-foreground mt-3 sm:mt-4">
                   {new Date(selectedEmail.created_at).toLocaleString()}
                 </p>
               </div>
