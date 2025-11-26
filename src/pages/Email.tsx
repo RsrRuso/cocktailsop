@@ -186,6 +186,26 @@ const Email = () => {
       return;
     }
 
+    // Validate recipient is a follower
+    const recipientProfile = profiles.find(p => p.id === recipient);
+    if (!recipientProfile) {
+      toast.error("Recipient not found in your contacts");
+      return;
+    }
+
+    // Check if recipient is actually a follower
+    const { data: followCheck } = await supabase
+      .from("follows")
+      .select("*")
+      .eq("following_id", currentUser.id)
+      .eq("follower_id", recipient)
+      .maybeSingle();
+
+    if (!followCheck && recipient !== currentUser.id) {
+      toast.error("You can only send emails to your followers");
+      return;
+    }
+
     const { error } = await supabase.from("internal_emails").insert({
       sender_id: currentUser.id,
       recipient_id: recipient,
@@ -195,10 +215,11 @@ const Email = () => {
 
     if (error) {
       toast.error("Failed to send email");
+      console.error("Email send error:", error);
       return;
     }
 
-    toast.success("Email sent!");
+    toast.success(`Email sent to ${recipientProfile.internal_email}!`);
     setShowCompose(false);
     setRecipient("");
     setSubject("");
@@ -258,9 +279,20 @@ const Email = () => {
           </div>
           {currentUser && (
             <div className="mt-2 glass p-3 rounded-lg border border-primary/20">
-              <p className="text-sm text-muted-foreground">Your IE Account:</p>
-              <p className="text-sm font-mono font-semibold text-primary">
-                {profiles.find(p => p.id === currentUser.id)?.username || 'loading'}@sv.internal
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Your IE Account:</p>
+                  <p className="text-sm font-mono font-semibold text-primary">
+                    {profiles.find(p => p.id === currentUser.id)?.username || 'loading'}@sv.internal
+                  </p>
+                </div>
+                <div className="text-xs text-muted-foreground text-right">
+                  <p>{profiles.length - 1} contacts</p>
+                  <p className="text-green-500">✓ Unique address</p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Send emails to your followers using their @sv.internal addresses
               </p>
             </div>
           )}
@@ -364,10 +396,10 @@ const Email = () => {
               <label className="text-sm font-medium mb-2 block">Recipient</label>
               <Select value={recipient} onValueChange={setRecipient}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select recipient" />
+                  <SelectValue placeholder="Select a follower to send email" />
                 </SelectTrigger>
                 <SelectContent>
-                  {profiles.map((profile) => (
+                  {profiles.filter(p => p.id !== currentUser?.id).map((profile) => (
                     <SelectItem key={profile.id} value={profile.id}>
                       <div className="flex flex-col">
                         <span className="font-medium">{profile.full_name}</span>
@@ -377,6 +409,11 @@ const Email = () => {
                       </div>
                     </SelectItem>
                   ))}
+                  {profiles.filter(p => p.id !== currentUser?.id).length === 0 && (
+                    <div className="p-2 text-sm text-muted-foreground">
+                      No followers available. Add followers to send emails.
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
