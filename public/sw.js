@@ -1,6 +1,6 @@
 // Service Worker for offline caching, faster loads, and push notifications
-const CACHE_NAME = 'app-cache-v1';
-const RUNTIME_CACHE = 'runtime-cache-v1';
+const CACHE_NAME = 'app-cache-v2';
+const RUNTIME_CACHE = 'runtime-cache-v2';
 
 // Assets to cache immediately
 const PRECACHE_URLS = [
