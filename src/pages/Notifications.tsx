@@ -272,11 +272,11 @@ const Notifications = () => {
     } else if (notification.type === 'follow' || notification.type === 'unfollow') {
       // For follow/unfollow notifications, navigate to the user's profile
       if (notification.reference_user_id) {
-        navigate(`/profile/${notification.reference_user_id}`);
+        navigate(`/user/${notification.reference_user_id}`);
       }
     } else if (notification.type === 'profile_view') {
       if (notification.reference_user_id) {
-        navigate(`/profile/${notification.reference_user_id}`);
+        navigate(`/user/${notification.reference_user_id}`);
       }
     } else if (notification.type === 'new_user') {
       navigate('/explore');
@@ -284,8 +284,8 @@ const Notifications = () => {
       navigate(`/post/${notification.post_id}`);
     } else if (notification.type === 'new_reel' && notification.reel_id) {
       navigate('/reels');
-    } else if (notification.type === 'new_story' && notification.story_id) {
-      navigate(`/story/${notification.story_id}`);
+    } else if (notification.type === 'new_story' && notification.reference_user_id) {
+      navigate(`/story/${notification.reference_user_id}`);
     } else if (notification.type === 'new_event' && notification.event_id) {
       navigate(`/event/${notification.event_id}`);
     } else if (notification.type === 'event_attendance' && notification.event_id) {
@@ -295,15 +295,15 @@ const Notifications = () => {
       navigate(`/post/${notification.post_id}`);
     } else if (notification.reel_id) {
       navigate('/reels');
-    } else if (notification.story_id) {
-      navigate(`/story/${notification.story_id}`);
+    } else if (notification.story_id && notification.reference_user_id) {
+      navigate(`/story/${notification.reference_user_id}`);
     } else if (notification.music_share_id) {
       navigate('/thunder');
     } else if (notification.event_id) {
       navigate(`/event/${notification.event_id}`);
     } else if (notification.reference_user_id) {
       // Fallback: any notification with reference_user_id goes to that user's profile
-      navigate(`/profile/${notification.reference_user_id}`);
+      navigate(`/user/${notification.reference_user_id}`);
     }
   };
 
