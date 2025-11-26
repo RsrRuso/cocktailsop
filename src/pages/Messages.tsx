@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Send, Search, Pin, Archive, MoreVertical, Clock, Users, Plus } from "lucide-react";
+import { MessageCircle, Send, Search, Pin, Archive, MoreVertical, Clock, Users, Plus, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -241,9 +241,15 @@ const Messages = () => {
       
       <div className="pt-16 px-4">
         <div className="flex items-center justify-between py-4">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient">
-            Neuron
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient">
+              Neuron
+            </h1>
+            <div className="glass backdrop-blur-xl rounded-full px-3 py-1 border border-primary/30 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+              <span className="text-xs font-semibold text-primary">AI-Powered</span>
+            </div>
+          </div>
           <div className="flex gap-2">
             <Button 
               onClick={() => setShowCreateGroup(true)}

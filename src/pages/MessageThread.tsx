@@ -319,15 +319,13 @@ const MessageThread = () => {
       </div>
 
       {/* AI Smart Reply Suggestions */}
-      {messages.length > 0 && messages[messages.length - 1].sender_id !== currentUser?.id && (
-        <div className="px-3 pb-2">
-          <SmartReplySuggestions
-            lastMessage={messages[messages.length - 1].content}
-            onSelectReply={(reply) => {
-              setNewMessage(reply);
-            }}
-          />
-        </div>
+      {messages.length > 0 && messages[messages.length - 1].sender_id !== currentUser?.id && !replyingTo && !editingMessage && (
+        <SmartReplySuggestions
+          lastMessage={messages[messages.length - 1].content}
+          onSelectReply={(reply) => {
+            setNewMessage(reply);
+          }}
+        />
       )}
 
       <MessageInput

@@ -24,4 +24,9 @@ verify_jwt = false
 [functions.transcribe-audio]
 verify_jwt = false
 
+[functions.ai-email-assistant]
+verify_jwt = false
+
+[functions.ai-message-assistant]
+verify_jwt = false
 
