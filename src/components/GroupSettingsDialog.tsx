@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Users, UserPlus, UserMinus, Settings, Save, Trash2, LogOut, Camera } from 'lucide-react';
+import { Users, UserPlus, UserMinus, Settings, Save, Trash2, LogOut, Camera, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import OptimizedAvatar from './OptimizedAvatar';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { AddGroupMembersDialog } from './AddGroupMembersDialog';
 
 interface GroupMember {
   id: string;
@@ -52,6 +53,7 @@ export const GroupSettingsDialog = ({
   const [isSaving, setIsSaving] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showAddMembersDialog, setShowAddMembersDialog] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -267,6 +269,66 @@ export const GroupSettingsDialog = ({
     }
   };
 
+  const handlePromoteToAdmin = async (memberId: string) => {
+    if (!isAdmin) return;
+
+    try {
+      await supabase
+        .from('group_members')
+        .update({ role: 'admin' })
+        .eq('conversation_id', conversationId)
+        .eq('user_id', memberId);
+
+      setMembers(prev =>
+        prev.map(m =>
+          m.id === memberId ? { ...m, role: 'admin' as const } : m
+        )
+      );
+
+      toast({
+        title: 'Member promoted',
+        description: 'Member has been promoted to admin',
+      });
+    } catch (error) {
+      console.error('Error promoting member:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to promote member',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDemoteFromAdmin = async (memberId: string) => {
+    if (!isAdmin) return;
+
+    try {
+      await supabase
+        .from('group_members')
+        .update({ role: 'member' })
+        .eq('conversation_id', conversationId)
+        .eq('user_id', memberId);
+
+      setMembers(prev =>
+        prev.map(m =>
+          m.id === memberId ? { ...m, role: 'member' as const } : m
+        )
+      );
+
+      toast({
+        title: 'Admin status removed',
+        description: 'Member has been demoted to regular member',
+      });
+    } catch (error) {
+      console.error('Error demoting member:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to demote member',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -340,6 +402,16 @@ export const GroupSettingsDialog = ({
                   <Users className="w-4 h-4" />
                   Members ({members.length})
                 </h3>
+                {isAdmin && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowAddMembersDialog(true)}
+                    className="glass hover:bg-primary/20"
+                  >
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Add
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -372,14 +444,38 @@ export const GroupSettingsDialog = ({
                         </p>
                       </div>
                       {isAdmin && member.id !== currentUserId && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleRemoveMember(member.id)}
-                          className="h-8 w-8 text-destructive hover:bg-destructive/20"
-                        >
-                          <UserMinus className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          {member.role === 'member' ? (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handlePromoteToAdmin(member.id)}
+                              className="h-8 w-8 text-primary hover:bg-primary/20"
+                              title="Promote to admin"
+                            >
+                              <Shield className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDemoteFromAdmin(member.id)}
+                              className="h-8 w-8 text-orange-500 hover:bg-orange-500/20"
+                              title="Remove admin status"
+                            >
+                              <Shield className="w-4 h-4 fill-current" />
+                            </Button>
+                          )}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleRemoveMember(member.id)}
+                            className="h-8 w-8 text-destructive hover:bg-destructive/20"
+                            title="Remove from group"
+                          >
+                            <UserMinus className="w-4 h-4" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   ))
@@ -457,6 +553,15 @@ export const GroupSettingsDialog = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddGroupMembersDialog
+        open={showAddMembersDialog}
+        onOpenChange={setShowAddMembersDialog}
+        conversationId={conversationId}
+        currentUserId={currentUserId}
+        existingMemberIds={members.map(m => m.id)}
+        onMembersAdded={fetchGroupInfo}
+      />
     </>
   );
 };
