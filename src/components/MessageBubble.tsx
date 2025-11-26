@@ -280,15 +280,15 @@ export const MessageBubble = memo(({
         }}
         whileTap={{ scale: 0.98 }}
         className={`relative group max-w-[75%] z-10 ${
-          message.media_url && (message.media_type === 'image' || message.media_type === 'video')
+          message.media_url && (message.media_type === 'image' || message.media_type === 'video' || message.media_type === 'voice')
             ? ''
             : 'glass backdrop-blur-xl px-4 py-2'
         } ${
-          message.media_url && message.media_type === 'video'
+          message.media_url && (message.media_type === 'video' || message.media_type === 'voice')
             ? ''
             : 'rounded-2xl'
         } ${
-          isOwn && !(message.media_url && message.media_type === 'video')
+          isOwn && !(message.media_url && (message.media_type === 'video' || message.media_type === 'voice'))
             ? 'glow-primary'
             : ''
         } touch-pan-y`}
@@ -382,7 +382,7 @@ export const MessageBubble = memo(({
           </div>
         )}
 
-        {(message as any).forwarded && !(message.media_url && message.media_type === 'video') && (
+        {(message as any).forwarded && !(message.media_url && message.media_type === 'video') && !(message.media_url && message.media_type === 'voice') && (
           <div className={`${
             message.media_url && message.media_type === 'image'
               ? 'px-4 pt-2'
@@ -393,7 +393,7 @@ export const MessageBubble = memo(({
           </div>
         )}
 
-        {!(message.media_url && message.media_type === 'video') && (
+        {!(message.media_url && (message.media_type === 'video' || message.media_type === 'voice')) && (
           <p
             className={`${
               message.media_url && message.media_type === 'image'
@@ -410,7 +410,7 @@ export const MessageBubble = memo(({
           </p>
         )}
 
-        {!(message.media_url && message.media_type === 'video') && (
+        {!(message.media_url && (message.media_type === 'video' || message.media_type === 'voice')) && (
           <div
             className={`${
               message.media_url && message.media_type === 'image'
