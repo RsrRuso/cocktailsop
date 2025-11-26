@@ -2,7 +2,7 @@
   "name": "SV",
   "short_name": "SV",
   "description": "Professional operations suite for beverage industry professionals",
-  "start_url": "/",
+  "start_url": "/landing",
   "scope": "/",
   "display": "standalone",
   "background_color": "#000000",
