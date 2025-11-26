@@ -258,13 +258,9 @@ const Notifications = () => {
     if (notification.type === 'access_request') {
       navigate('/access-approval');
     } else if (notification.type === 'stock_alert') {
-      // Navigate to low stock inventory with workspace ID
-      const workspaceId = notification.post_id;
-      if (!workspaceId) {
-        toast.error('Unable to navigate - workspace information missing');
-        return;
-      }
-      navigate(`/low-stock-inventory/${workspaceId}`);
+      // Navigate to all inventory or store management for stock alerts
+      // Since stock_alert notifications don't include workspace_id, navigate to general inventory page
+      navigate('/all-inventory');
     } else if (notification.post_id) {
       navigate(`/post/${notification.post_id}`);
     } else if (notification.reel_id) {
@@ -275,13 +271,30 @@ const Notifications = () => {
       navigate('/thunder');
     } else if (notification.event_id) {
       navigate(`/event/${notification.event_id}`);
-    } else if (notification.reference_user_id) {
+    } else if (notification.type === 'follow' || notification.type === 'unfollow') {
       // For follow/unfollow notifications, navigate to the user's profile
-      navigate(`/profile/${notification.reference_user_id}`);
-    } else if (notification.type === 'profile_view' && notification.reference_user_id) {
-      navigate(`/profile/${notification.reference_user_id}`);
+      if (notification.reference_user_id) {
+        navigate(`/profile/${notification.reference_user_id}`);
+      }
+    } else if (notification.type === 'profile_view') {
+      if (notification.reference_user_id) {
+        navigate(`/profile/${notification.reference_user_id}`);
+      }
     } else if (notification.type === 'new_user') {
       navigate('/explore');
+    } else if (notification.type === 'new_post' && notification.post_id) {
+      navigate(`/post/${notification.post_id}`);
+    } else if (notification.type === 'new_reel' && notification.reel_id) {
+      navigate('/reels');
+    } else if (notification.type === 'new_story' && notification.story_id) {
+      navigate(`/story/${notification.story_id}`);
+    } else if (notification.type === 'new_event' && notification.event_id) {
+      navigate(`/event/${notification.event_id}`);
+    } else if (notification.type === 'event_attendance' && notification.event_id) {
+      navigate(`/event/${notification.event_id}`);
+    } else if (notification.reference_user_id) {
+      // Fallback: any notification with reference_user_id goes to that user's profile
+      navigate(`/profile/${notification.reference_user_id}`);
     }
   };
 
