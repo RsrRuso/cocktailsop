@@ -66,13 +66,21 @@ const Email = () => {
       }
       setCurrentUser(user);
       
-      // Fetch profiles for recipient selection
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, avatar_url")
-        .limit(100);
+      // Fetch followers as available contacts for internal email
+      const { data: followsData } = await supabase
+        .from("follows")
+        .select("follower_id")
+        .eq("following_id", user.id);
       
-      if (profilesData) setProfiles(profilesData);
+      if (followsData && followsData.length > 0) {
+        const followerIds = followsData.map(f => f.follower_id);
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .in("id", followerIds);
+        
+        if (profilesData) setProfiles(profilesData);
+      }
       
       fetchEmails(user.id);
     };
