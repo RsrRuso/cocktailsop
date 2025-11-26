@@ -142,316 +142,56 @@ const AllInventory = () => {
 
   const inventoryList = Object.values(aggregatedInventory);
 
-  const generatePDF = async () => {
-    try {
-      const doc = new jsPDF('landscape'); // Use landscape for side-by-side tables
-      let yPosition = 20;
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    
+    // Title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("All Inventory Across Stores", 14, 20);
+    
+    // Summary
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Total Items: ${inventoryList.length}`, 14, 30);
+    doc.text(`Total Stores: ${stores.length}`, 14, 36);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 42);
+    
+    // Prepare table data
+    const tableData = inventoryList.map((item: any) => {
+      const storeDetails = item.storeQuantities
+        .map((sq: any) => `${sq.store?.name || 'Unknown'}: ${sq.quantity}`)
+        .join('\n');
       
-      // Title
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.text("All Inventory Across Stores", 14, yPosition);
-      yPosition += 10;
-      
-      // Summary
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, yPosition);
-      yPosition += 10;
-      
-      // Helper function to load image as base64
-      const loadImageAsBase64 = (url: string): Promise<string> => {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL('image/jpeg', 0.7));
-          };
-          img.onerror = () => resolve('');
-          img.src = url;
-        });
-      };
-      
-      // Group inventory by store
-      const inventoryByStore: Record<string, any[]> = {};
-      filteredInventory.forEach(inv => {
-        const storeId = inv.store_id;
-        const storeName = inv.stores?.name || 'Unknown Store';
-        if (!inventoryByStore[storeId]) {
-          inventoryByStore[storeId] = [];
-        }
-        inventoryByStore[storeId].push({
-          ...inv,
-          storeName
-        });
-      });
-      
-      // Find Attiko and Jerry stores
-      const attikoStore = Object.entries(inventoryByStore).find(([_, items]) => 
-        items[0]?.storeName?.toLowerCase().includes('attiko')
-      );
-      const jerryStore = Object.entries(inventoryByStore).find(([_, items]) => 
-        items[0]?.storeName?.toLowerCase().includes('jerry')
-      );
-      
-      // Prepare data for both stores
-      const prepareStoreData = async (storeItems: any[]) => {
-        return await Promise.all(
-          storeItems.map(async (item: any) => {
-            let imageData = '';
-            if (item.items?.photo_url) {
-              imageData = await loadImageAsBase64(item.items.photo_url);
-            }
-            
-            return {
-              image: imageData,
-              name: item.items?.name || 'Unknown Item',
-              brand: item.items?.brand || '-',
-              category: item.items?.category || '-',
-              quantity: item.quantity?.toString() || '0'
-            };
-          })
-        );
-      };
-      
-      // Prepare data for both stores first
-      let attikoData: any[] = [];
-      let jerryData: any[] = [];
-      
-      if (attikoStore) {
-        const [_, attikoItems] = attikoStore;
-        attikoData = await prepareStoreData(attikoItems);
+      return [
+        item.items?.name || 'Unknown Item',
+        item.items?.brand || '-',
+        item.items?.category || '-',
+        item.totalQuantity.toString(),
+        storeDetails
+      ];
+    });
+    
+    // Generate table
+    autoTable(doc, {
+      startY: 50,
+      head: [['Item Name', 'Brand', 'Category', 'Total Qty', 'Store Breakdown']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [41, 128, 185], fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 3 },
+      columnStyles: {
+        0: { cellWidth: 40 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 60 }
       }
-      
-      if (jerryStore) {
-        const [_, jerryItems] = jerryStore;
-        jerryData = await prepareStoreData(jerryItems);
-      }
-      
-      // Generate Attiko table on the left
-      if (attikoStore && attikoData.length > 0) {
-        const [_, attikoItems] = attikoStore;
-        const storeName = attikoItems[0]?.storeName || 'Attiko';
-        
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text(storeName, 14, yPosition);
-        
-        autoTable(doc, {
-          startY: yPosition + 5,
-          head: [['Img', 'Item', 'Brand', 'Category', 'Qty']],
-          body: attikoData.map(row => [
-            row.image ? 'IMG' : '-',
-            row.name,
-            row.brand,
-            row.category,
-            row.quantity
-          ]),
-          didDrawCell: (data: any) => {
-            if (data.column.index === 0 && data.cell.section === 'body') {
-              const rowData = attikoData[data.row.index];
-              if (rowData && rowData.image) {
-                try {
-                  doc.addImage(
-                    rowData.image,
-                    'JPEG',
-                    data.cell.x + 1,
-                    data.cell.y + 1,
-                    8,
-                    8
-                  );
-                } catch (e) {
-                  console.error('Error adding image:', e);
-                }
-              }
-            }
-          },
-          margin: { left: 14 },
-          tableWidth: 125,
-          theme: 'striped',
-          headStyles: { fillColor: [41, 128, 185], fontStyle: 'bold', fontSize: 9 },
-          styles: { fontSize: 8, cellPadding: 1.5, minCellHeight: 10 },
-          columnStyles: {
-            0: { cellWidth: 12 },
-            1: { cellWidth: 45 },
-            2: { cellWidth: 25 },
-            3: { cellWidth: 28 },
-            4: { cellWidth: 15 }
-          }
-        });
-      }
-      
-      // Generate Jerry table on the right
-      if (jerryStore && jerryData.length > 0) {
-        const [_, jerryItems] = jerryStore;
-        const storeName = jerryItems[0]?.storeName || 'Jerry';
-        
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text(storeName, 155, yPosition);
-        
-        autoTable(doc, {
-          startY: yPosition + 5,
-          head: [['Img', 'Item', 'Brand', 'Category', 'Qty']],
-          body: jerryData.map(row => [
-            row.image ? 'IMG' : '-',
-            row.name,
-            row.brand,
-            row.category,
-            row.quantity
-          ]),
-          didDrawCell: (data: any) => {
-            if (data.column.index === 0 && data.cell.section === 'body') {
-              const rowData = jerryData[data.row.index];
-              if (rowData && rowData.image) {
-                try {
-                  doc.addImage(
-                    rowData.image,
-                    'JPEG',
-                    data.cell.x + 1,
-                    data.cell.y + 1,
-                    8,
-                    8
-                  );
-                } catch (e) {
-                  console.error('Error adding image:', e);
-                }
-              }
-            }
-          },
-          margin: { left: 155 },
-          tableWidth: 125,
-          theme: 'striped',
-          headStyles: { fillColor: [41, 128, 185], fontStyle: 'bold', fontSize: 9 },
-          styles: { fontSize: 8, cellPadding: 1.5, minCellHeight: 10 },
-          columnStyles: {
-            0: { cellWidth: 12 },
-            1: { cellWidth: 45 },
-            2: { cellWidth: 25 },
-            3: { cellWidth: 28 },
-            4: { cellWidth: 15 }
-          }
-        });
-      }
-      
-      // Calculate position for total table (below both store tables)
-      const maxTableHeight = Math.max(
-        attikoStore ? (doc as any).lastAutoTable?.finalY || 0 : 0,
-        jerryStore ? (doc as any).lastAutoTable?.finalY || 0 : 0
-      );
-      yPosition = maxTableHeight + 15;
-      
-      // Check if we need a new page for the total
-      if (yPosition > 180) {
-        doc.addPage('landscape');
-        yPosition = 20;
-      }
-      
-      // Generate Total table
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("Total (Combined Inventory)", 14, yPosition);
-      yPosition += 5;
-      
-      // Aggregate items from both stores
-      const totalInventoryMap = new Map();
-      filteredInventory.forEach(inv => {
-        const itemId = inv.items?.id || inv.item_id;
-        if (!itemId) return;
-        
-        if (totalInventoryMap.has(itemId)) {
-          const existing = totalInventoryMap.get(itemId);
-          existing.quantity += Number(inv.quantity || 0);
-        } else {
-          totalInventoryMap.set(itemId, {
-            name: inv.items?.name || 'Unknown Item',
-            brand: inv.items?.brand || '-',
-            category: inv.items?.category || '-',
-            quantity: Number(inv.quantity || 0),
-            photo_url: inv.items?.photo_url
-          });
-        }
-      });
-      
-      const totalData = await Promise.all(
-        Array.from(totalInventoryMap.values()).map(async (item: any) => {
-          let imageData = '';
-          if (item.photo_url) {
-            imageData = await loadImageAsBase64(item.photo_url);
-          }
-          
-          return {
-            image: imageData,
-            name: item.name,
-            brand: item.brand,
-            category: item.category,
-            quantity: item.quantity.toString()
-          };
-        })
-      );
-      
-      autoTable(doc, {
-        startY: yPosition,
-        head: [['Image', 'Item Name', 'Brand', 'Category', 'Total Quantity']],
-        body: totalData.map(row => [
-          row.image ? 'IMG' : '-',
-          row.name,
-          row.brand,
-          row.category,
-          row.quantity
-        ]),
-        didDrawCell: (data: any) => {
-          if (data.column.index === 0 && data.cell.section === 'body') {
-            const rowData = totalData[data.row.index];
-            if (rowData.image) {
-              try {
-                doc.addImage(
-                  rowData.image,
-                  'JPEG',
-                  data.cell.x + 2,
-                  data.cell.y + 2,
-                  10,
-                  10
-                );
-              } catch (e) {
-                console.error('Error adding image:', e);
-              }
-            }
-          }
-        },
-        theme: 'grid',
-        headStyles: { fillColor: [52, 152, 219], fontStyle: 'bold', fontSize: 10 },
-        styles: { fontSize: 9, cellPadding: 2.5, minCellHeight: 14 },
-        columnStyles: {
-          0: { cellWidth: 20 },
-          1: { cellWidth: 90 },
-          2: { cellWidth: 60 },
-          3: { cellWidth: 60 },
-          4: { cellWidth: 30 }
-        }
-      });
-      
-      // Grand total
-      const grandTotal = Array.from(totalInventoryMap.values()).reduce((sum, item: any) => sum + item.quantity, 0);
-      yPosition = (doc as any).lastAutoTable.finalY + 10;
-      
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text(`Grand Total Quantity: ${grandTotal}`, 14, yPosition);
-      doc.text(`Total Unique Items: ${totalInventoryMap.size}`, 14, yPosition + 7);
-      
-      // Save PDF
-      doc.save(`all-inventory-${new Date().toISOString().split('T')[0]}.pdf`);
-      toast.success("PDF downloaded successfully");
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error("Failed to generate PDF");
-    }
+    });
+    
+    // Save PDF
+    doc.save(`all-inventory-${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success("PDF downloaded successfully");
   };
 
   if (loading) {
