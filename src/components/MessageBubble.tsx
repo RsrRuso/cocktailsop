@@ -55,6 +55,9 @@ export const MessageBubble = memo(({
   const tapCount = useRef(0);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    // Don't handle touch events for video messages
+    if (message.media_url && message.media_type === 'video') return;
+    
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
     touchStartTime.current = Date.now();
@@ -93,7 +96,7 @@ export const MessageBubble = memo(({
         }
       }
     }, 500);
-  }, []);
+  }, [message.media_url, message.media_type]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSwiping) return;
@@ -349,13 +352,13 @@ export const MessageBubble = memo(({
         )}
 
         {message.media_url && message.media_type === 'video' && (
-          <div className="relative mx-auto w-24 h-24 sm:w-28 sm:h-28">
+          <div className="relative mx-auto w-24 h-24 sm:w-28 sm:h-28 pointer-events-auto">
             <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/60 via-primary/30 to-transparent opacity-80"></div>
             <div className="relative w-full h-full rounded-full overflow-hidden shadow-lg shadow-primary/30 bg-black/60">
               <video 
                 src={message.media_url} 
                 controls 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover pointer-events-auto"
                 playsInline
               />
             </div>
@@ -381,7 +384,7 @@ export const MessageBubble = memo(({
           </div>
         )}
 
-        {(message as any).forwarded && (
+        {(message as any).forwarded && !(message.media_url && message.media_type === 'video') && (
           <div className={`${
             message.media_url && message.media_type === 'image'
               ? 'px-4 pt-2'
@@ -392,103 +395,107 @@ export const MessageBubble = memo(({
           </div>
         )}
 
-        <p
-          className={`${
-            message.media_url && message.media_type === 'image'
-              ? 'px-4 pt-2'
-              : ''
-          } break-words whitespace-pre-wrap text-base leading-relaxed font-medium ${message.edited ? 'italic' : ''}`}
-        >
-          {message.content}
-          {message.edited && (
-            <span className="text-[10px] glass backdrop-blur-xl px-2 py-0.5 rounded-full ml-2 border border-border/20">
-              edited
-            </span>
-          )}
-        </p>
+        {!(message.media_url && message.media_type === 'video') && (
+          <p
+            className={`${
+              message.media_url && message.media_type === 'image'
+                ? 'px-4 pt-2'
+                : ''
+            } break-words whitespace-pre-wrap text-base leading-relaxed font-medium ${message.edited ? 'italic' : ''}`}
+          >
+            {message.content}
+            {message.edited && (
+              <span className="text-[10px] glass backdrop-blur-xl px-2 py-0.5 rounded-full ml-2 border border-border/20">
+                edited
+              </span>
+            )}
+          </p>
+        )}
 
-        <div
-          className={`${
-            message.media_url && message.media_type === 'image'
-              ? 'px-4 pb-2'
-              : ''
-          } flex items-center justify-between gap-2 mt-2`}
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold opacity-80">
-              {new Date(message.created_at).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
-            {isOwn && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 500 }}
-                className="flex items-center gap-1"
-                title={message.read ? 'Read' : message.delivered ? 'Delivered' : 'Sent'}
-              >
-                {message.read ? (
-                  <CheckCheck className="w-3.5 h-3.5 text-primary animate-pulse drop-shadow-sm" />
-                ) : message.delivered ? (
-                  <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
-                ) : (
-                  <Check className="w-3.5 h-3.5 text-muted-foreground" />
-                )}
-              </motion.div>
+        {!(message.media_url && message.media_type === 'video') && (
+          <div
+            className={`${
+              message.media_url && message.media_type === 'image'
+                ? 'px-4 pb-2'
+                : ''
+            } flex items-center justify-between gap-2 mt-2`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold opacity-80">
+                {new Date(message.created_at).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+              {isOwn && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 500 }}
+                  className="flex items-center gap-1"
+                  title={message.read ? 'Read' : message.delivered ? 'Delivered' : 'Sent'}
+                >
+                  {message.read ? (
+                    <CheckCheck className="w-3.5 h-3.5 text-primary animate-pulse drop-shadow-sm" />
+                  ) : message.delivered ? (
+                    <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5 text-muted-foreground" />
+                  )}
+                </motion.div>
+              )}
+            </div>
+            
+            {/* Edit/Delete Menu Button */}
+            {isOwn && (onEdit || onDelete) && (
+              <DropdownMenu open={showDropdown} onOpenChange={setShowDropdown}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 rounded-full hover:bg-primary/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDropdown(!showDropdown);
+                    }}
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align={isOwn ? "end" : "start"} className="glass backdrop-blur-xl border-primary/20">
+                  {onEdit && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit();
+                        setShowDropdown(false);
+                      }}
+                      className="gap-2 cursor-pointer"
+                    >
+                      <Edit className="w-4 h-4 text-primary" />
+                      <span>Edit</span>
+                    </DropdownMenuItem>
+                  )}
+                  {onDelete && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm('Delete this message?')) {
+                          onDelete();
+                        }
+                        setShowDropdown(false);
+                      }}
+                      className="gap-2 cursor-pointer text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete</span>
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
-          
-          {/* Edit/Delete Menu Button */}
-          {isOwn && (onEdit || onDelete) && (
-            <DropdownMenu open={showDropdown} onOpenChange={setShowDropdown}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 rounded-full hover:bg-primary/10"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDropdown(!showDropdown);
-                  }}
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align={isOwn ? "end" : "start"} className="glass backdrop-blur-xl border-primary/20">
-                {onEdit && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit();
-                      setShowDropdown(false);
-                    }}
-                    className="gap-2 cursor-pointer"
-                  >
-                    <Edit className="w-4 h-4 text-primary" />
-                    <span>Edit</span>
-                  </DropdownMenuItem>
-                )}
-                {onDelete && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (confirm('Delete this message?')) {
-                        onDelete();
-                      }
-                      setShowDropdown(false);
-                    }}
-                    className="gap-2 cursor-pointer text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Delete</span>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
+        )}
 
         {children}
       </motion.div>
