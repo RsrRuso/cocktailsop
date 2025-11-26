@@ -26,6 +26,7 @@ const MessageThread = () => {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [isGroup, setIsGroup] = useState(false);
   const [groupName, setGroupName] = useState('');
+  const [groupAvatarUrl, setGroupAvatarUrl] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -66,13 +67,14 @@ const MessageThread = () => {
       if (conversationId) {
         const { data: conv } = await supabase
           .from('conversations')
-          .select('is_group, group_name, created_by')
+          .select('is_group, group_name, group_avatar_url, created_by')
           .eq('id', conversationId)
           .single();
 
         if (conv) {
           setIsGroup(conv.is_group || false);
           setGroupName(conv.group_name || '');
+          setGroupAvatarUrl(conv.group_avatar_url);
           setIsAdmin(conv.created_by === user.id);
         }
       }
@@ -170,9 +172,19 @@ const MessageThread = () => {
         {isGroup ? (
           <>
             <div className="relative cursor-pointer hover:scale-110 transition-all duration-300 shrink-0 z-10" onClick={() => setShowGroupSettings(true)}>
-              <div className="w-16 h-16 rounded-full glass flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 avatar-glow shadow-xl border-2 border-primary/30">
-                <Settings className="w-8 h-8 text-primary drop-shadow-lg" />
-              </div>
+              {groupAvatarUrl ? (
+                <div className="w-16 h-16 rounded-full overflow-hidden glass border-2 border-primary/30 avatar-glow shadow-xl">
+                  <img 
+                    src={groupAvatarUrl} 
+                    alt={groupName || 'Group'} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-full glass flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 avatar-glow shadow-xl border-2 border-primary/30">
+                  <Settings className="w-8 h-8 text-primary drop-shadow-lg" />
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0 flex flex-col justify-center z-10">
               <p className="font-bold text-xl truncate bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent drop-shadow-sm">

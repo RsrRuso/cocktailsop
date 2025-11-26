@@ -352,9 +352,19 @@ const Messages = () => {
                 >
                 <div className="relative shrink-0">
                   {conversation.is_group ? (
-                    <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full glass flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20">
-                      <Users className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-                    </div>
+                    conversation.group_avatar_url ? (
+                      <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden glass border-2 border-primary/20">
+                        <img 
+                          src={conversation.group_avatar_url} 
+                          alt={conversation.group_name || 'Group'} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full glass flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20">
+                        <Users className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                      </div>
+                    )
                   ) : (
                     <OptimizedAvatar
                       src={conversation.otherUser?.avatar_url}
