@@ -510,8 +510,8 @@ const Email = () => {
             
             {aiSuggestion && (
               <div className="glass p-3 rounded-xl border border-primary/20">
-                <p className="text-xs sm:text-sm font-medium mb-2 text-primary">AI Suggestion:</p>
-                <p className="text-xs sm:text-sm">{aiSuggestion}</p>
+                <p className="text-xs font-medium mb-2 text-primary">AI Suggestion:</p>
+                <p className="text-xs leading-relaxed">{aiSuggestion}</p>
                 <div className="flex gap-2 mt-2">
                   <Button
                     size="sm"
