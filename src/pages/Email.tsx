@@ -511,7 +511,9 @@ const Email = () => {
             {aiSuggestion && (
               <div className="glass p-3 rounded-xl border border-primary/20">
                 <p className="text-xs font-medium mb-2 text-primary">AI Suggestion:</p>
-                <p className="text-xs leading-relaxed">{aiSuggestion}</p>
+                <p className="text-xs leading-relaxed select-text whitespace-pre-wrap break-words">
+                  {aiSuggestion}
+                </p>
                 <div className="flex gap-2 mt-2">
                   <Button
                     size="sm"
@@ -525,9 +527,10 @@ const Email = () => {
                     size="sm"
                     variant="outline"
                     onClick={() => copyToClipboard(aiSuggestion)}
-                    className="h-8 text-xs"
+                    className="h-8 text-xs flex items-center gap-1"
                   >
                     <Copy className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Copy</span>
                   </Button>
                 </div>
               </div>
