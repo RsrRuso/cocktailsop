@@ -273,10 +273,18 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
         .map((msg) => msg.id);
 
       if (unreadIds.length > 0) {
-        // Batch mark as read
-        requestAnimationFrame(() => {
-          supabase.from('messages').update({ read: true }).in('id', unreadIds);
-        });
+        // Batch mark as read and delivered immediately when conversation opens
+        await supabase
+          .from('messages')
+          .update({ read: true, delivered: true })
+          .in('id', unreadIds);
+        
+        // Update local state to reflect read status
+        setMessages((prev) =>
+          prev.map((msg) =>
+            unreadIds.includes(msg.id) ? { ...msg, read: true, delivered: true } : msg
+          )
+        );
       }
     }
   }, [conversationId, currentUser]);
