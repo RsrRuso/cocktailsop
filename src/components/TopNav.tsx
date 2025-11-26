@@ -326,6 +326,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               navigate("/messages");
             }}
             className="glass-hover p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl relative"
+            title="Neuron"
           >
             <Send className="w-4 h-4 sm:w-5 sm:h-5" />
             {unreadMessagesCount > 0 && (
@@ -333,6 +334,17 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
               </div>
             )}
+          </button>
+
+          <button
+            onClick={() => {
+              lightTap();
+              navigate("/email");
+            }}
+            className="glass-hover p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl"
+            title="Internal Email"
+          >
+            <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           <DropdownMenu>

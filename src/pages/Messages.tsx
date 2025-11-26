@@ -242,7 +242,7 @@ const Messages = () => {
       <div className="pt-16 px-4">
         <div className="flex items-center justify-between py-4">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient">
-            Messages
+            Neuron
           </h1>
           <div className="flex gap-2">
             <Button 
