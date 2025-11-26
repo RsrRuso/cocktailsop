@@ -11,16 +11,12 @@ export const VoiceWaveform = ({ audioUrl, duration }: VoiceWaveformProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(duration || 0);
-  const [waveformData, setWaveformData] = useState<number[]>([]);
+  const [amplitude, setAmplitude] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const animationFrameRef = useRef<number>();
-
-  // Generate waveform bars (simplified visualization)
-  useEffect(() => {
-    // Generate 40 bars with random heights for visual effect
-    const bars = Array.from({ length: 40 }, () => Math.random() * 0.7 + 0.3);
-    setWaveformData(bars);
-  }, [audioUrl]);
 
   useEffect(() => {
     const audio = new Audio(audioUrl);
@@ -33,11 +29,27 @@ export const VoiceWaveform = ({ audioUrl, duration }: VoiceWaveformProps) => {
     audio.addEventListener('ended', () => {
       setIsPlaying(false);
       setCurrentTime(0);
+      setAmplitude(0);
     });
+
+    // Setup Web Audio API for real-time visualization
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    audioContextRef.current = audioContext;
+
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    analyserRef.current = analyser;
+
+    const source = audioContext.createMediaElementSource(audio);
+    sourceRef.current = source;
+    
+    source.connect(analyser);
+    analyser.connect(audioContext.destination);
 
     return () => {
       audio.pause();
       audio.src = '';
+      audioContext.close();
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -45,15 +57,32 @@ export const VoiceWaveform = ({ audioUrl, duration }: VoiceWaveformProps) => {
   }, [audioUrl]);
 
   useEffect(() => {
-    const updateTime = () => {
-      if (audioRef.current && isPlaying) {
+    const updateVisualization = () => {
+      if (audioRef.current && isPlaying && analyserRef.current) {
         setCurrentTime(audioRef.current.currentTime);
-        animationFrameRef.current = requestAnimationFrame(updateTime);
+        
+        // Get frequency data
+        const bufferLength = analyserRef.current.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyserRef.current.getByteFrequencyData(dataArray);
+        
+        // Calculate average amplitude
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / bufferLength;
+        const normalizedAmplitude = average / 255; // Normalize to 0-1
+        setAmplitude(normalizedAmplitude);
+        
+        animationFrameRef.current = requestAnimationFrame(updateVisualization);
+      } else if (!isPlaying) {
+        setAmplitude(0);
       }
     };
 
     if (isPlaying) {
-      animationFrameRef.current = requestAnimationFrame(updateTime);
+      animationFrameRef.current = requestAnimationFrame(updateVisualization);
     } else {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -68,7 +97,11 @@ export const VoiceWaveform = ({ audioUrl, duration }: VoiceWaveformProps) => {
   }, [isPlaying]);
 
   const togglePlayPause = () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current || !audioContextRef.current) return;
+
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
 
     if (isPlaying) {
       audioRef.current.pause();
@@ -79,22 +112,14 @@ export const VoiceWaveform = ({ audioUrl, duration }: VoiceWaveformProps) => {
     }
   };
 
-  const handleWaveformClick = (index: number) => {
-    if (!audioRef.current || audioDuration === 0) return;
-
-    const clickPosition = index / waveformData.length;
-    const newTime = clickPosition * audioDuration;
-    audioRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-  };
-
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const progress = audioDuration > 0 ? currentTime / audioDuration : 0;
+  // Calculate line height based on amplitude (20% to 100% of container)
+  const lineHeight = isPlaying ? `${20 + amplitude * 80}%` : '30%';
 
   return (
     <div className="flex items-center gap-3 min-w-[240px] max-w-md">
@@ -112,54 +137,25 @@ export const VoiceWaveform = ({ audioUrl, duration }: VoiceWaveformProps) => {
         )}
       </Button>
 
-      {/* Animated Waveform Lines */}
-      <div className="flex-1 flex items-center gap-1 h-8">
-        {waveformData.map((height, index) => {
-          const isPast = index / waveformData.length < progress;
-          const isNearPlayhead = isPlaying && Math.abs(index / waveformData.length - progress) < 0.08;
-          
-          return (
-            <button
-              key={index}
-              onClick={() => handleWaveformClick(index)}
-              className="flex-1 flex items-center justify-center min-w-[2px] max-w-[3px]"
-            >
-              <div
-                className={`w-full rounded-full transition-all duration-100 ${
-                  isPlaying && isPast
-                    ? 'bg-primary'
-                    : 'bg-muted-foreground/40'
-                } ${
-                  isNearPlayhead
-                    ? 'animate-pulse scale-110'
-                    : ''
-                }`}
-                style={{
-                  height: isPlaying && isNearPlayhead 
-                    ? `${Math.min(height * 120, 100)}%` 
-                    : `${height * 100}%`,
-                  maxHeight: '32px',
-                  animation: isPlaying && isNearPlayhead 
-                    ? 'wave-vibrate 0.3s ease-in-out infinite' 
-                    : 'none',
-                }}
-              />
-            </button>
-          );
-        })}
+      {/* Single Vibrating Line */}
+      <div className="flex-1 flex items-center justify-center h-8">
+        <div 
+          className={`w-full rounded-full transition-all duration-75 ${
+            isPlaying ? 'bg-primary shadow-lg shadow-primary/50' : 'bg-muted-foreground/40'
+          }`}
+          style={{
+            height: lineHeight,
+            maxHeight: '32px',
+            transform: isPlaying ? `scaleY(${1 + amplitude * 0.5})` : 'scaleY(1)',
+            transition: 'height 0.05s ease-out, transform 0.05s ease-out',
+          }}
+        />
       </div>
 
       {/* Time Display */}
       <span className="text-[10px] text-muted-foreground/70 shrink-0 min-w-[32px] text-right">
         {formatTime(isPlaying ? currentTime : audioDuration)}
       </span>
-      
-      <style>{`
-        @keyframes wave-vibrate {
-          0%, 100% { transform: scaleY(1); }
-          50% { transform: scaleY(1.2); }
-        }
-      `}</style>
     </div>
   );
 };
