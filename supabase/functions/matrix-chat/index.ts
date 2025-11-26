@@ -258,7 +258,7 @@ Remember: You are the complete guide to SpecVerse. Users rely on you to understa
         model: imageUrl ? 'google/gemini-2.5-pro' : 'google/gemini-2.5-flash',
         messages,
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 8000
       })
     });
 

@@ -142,14 +142,14 @@ export function MatrixChatTab() {
 
     const userMessage = input.trim();
     const imageUrl = selectedImage;
-    setInput("");
-    setSelectedImage(null);
     
     setMessages((prev) => [
       ...prev,
       { role: "user", content: userMessage || "Analyzing image...", timestamp: new Date(), imageUrl },
     ]);
 
+    setInput("");
+    setSelectedImage(null);
     setLoading(true);
 
     try {
@@ -178,6 +178,7 @@ export function MatrixChatTab() {
     } catch (error: any) {
       toast.error("Failed to get response from MATRIX AI");
       console.error("Chat error:", error);
+      setMessages((prev) => prev.slice(0, -1)); // Remove user message on error
     } finally {
       setLoading(false);
     }
