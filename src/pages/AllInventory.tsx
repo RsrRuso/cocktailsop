@@ -167,7 +167,7 @@ const AllInventory = () => {
       let yPosition = 55;
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 14;
-      const imageSize = 25;
+      const imageSize = 35; // Increased for better quality
       const lineHeight = 6;
       
       // Process each item
@@ -203,11 +203,20 @@ const AllInventory = () => {
               img.src = item.items.photo_url;
             });
             
-            // Add image with border
+            // Add image with border - use PNG for higher quality
             doc.setDrawColor(229, 231, 235);
             doc.setLineWidth(0.5);
             doc.rect(margin + 2, yPosition, imageSize, imageSize);
-            doc.addImage(img, 'JPEG', margin + 2.5, yPosition + 0.5, imageSize - 1, imageSize - 1);
+            
+            // Create a canvas to draw high quality image
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx?.drawImage(img, 0, 0);
+            const highQualityDataUrl = canvas.toDataURL('image/png', 1.0); // Maximum quality
+            
+            doc.addImage(highQualityDataUrl, 'PNG', margin + 2.5, yPosition + 0.5, imageSize - 1, imageSize - 1);
           } catch (error) {
             console.error('Failed to load image:', error);
             // Draw placeholder
