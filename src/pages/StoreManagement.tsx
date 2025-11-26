@@ -19,7 +19,7 @@ import {
   Users, Camera, Bell, Clock, Package, Upload, 
   CheckCircle2, AlertCircle, UserPlus, UserMinus, Shield,
   ExternalLink, BarChart3, Trash2, Activity, Edit, X, Check,
-  Building2, Plus
+  Building2, Plus, Download
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,6 +40,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { InviteWorkspaceMemberDialog } from "@/components/InviteWorkspaceMemberDialog";
 import { ManageMemberPermissionsDialog } from "@/components/ManageMemberPermissionsDialog";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 interface Transaction {
   id: string;
   type: 'transfer' | 'receiving' | 'spot_check' | 'variance';
@@ -1082,6 +1084,48 @@ const StoreManagement = () => {
     } catch (error) {
       console.error("Error removing member:", error);
       toast.error("Failed to remove member");
+    }
+  };
+
+  const handleDownloadSpotCheckReport = (check: any) => {
+    try {
+      const doc = new jsPDF();
+      
+      // Header
+      doc.setFontSize(20);
+      doc.text("Spot Check Report", 14, 20);
+      
+      // Store and date info
+      doc.setFontSize(12);
+      doc.text(`Store: ${check.stores?.name || 'Unknown'}`, 14, 30);
+      doc.text(`Date: ${new Date(check.check_date).toLocaleString()}`, 14, 37);
+      doc.text(`Status: ${check.status}`, 14, 44);
+      
+      // Items table
+      if (check.spot_check_items && check.spot_check_items.length > 0) {
+        const tableData = check.spot_check_items.map((item: any) => [
+          item.items?.name || 'Unknown Item',
+          item.expected_quantity.toString(),
+          item.actual_quantity.toString(),
+          (item.variance || 0).toString(),
+        ]);
+        
+        (doc as any).autoTable({
+          startY: 52,
+          head: [['Item Name', 'System Qty', 'Physical Qty', 'Variance']],
+          body: tableData,
+          theme: 'grid',
+          headStyles: { fillColor: [59, 130, 246] },
+          styles: { fontSize: 10 },
+        });
+      }
+      
+      // Save PDF
+      doc.save(`spot-check-${check.stores?.name}-${new Date(check.check_date).toLocaleDateString()}.pdf`);
+      toast.success("Report downloaded successfully");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to download report");
     }
   };
 
@@ -2235,6 +2279,17 @@ const StoreManagement = () => {
                                 {new Date(check.check_date).toLocaleString()}
                               </p>
                             </div>
+                            {check.status === 'completed' && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleDownloadSpotCheckReport(check)}
+                                className="flex-shrink-0"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Download Report
+                              </Button>
+                            )}
                           </div>
                           
                           {check.spot_check_items && check.spot_check_items.length > 0 && (
