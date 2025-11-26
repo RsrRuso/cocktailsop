@@ -266,20 +266,20 @@ const MessageThread = () => {
               } : undefined}
             >
               {message.reactions && message.reactions.length > 0 && (
-                <div className="flex gap-2 mt-3 flex-wrap">
+                <div className="flex gap-1.5 mt-2 flex-wrap">
                   {message.reactions.map((reaction, idx) => (
                     <button 
                       key={idx} 
                       onClick={() => handleReaction(message.id, reaction.emoji)} 
-                      className={`backdrop-blur-2xl rounded-full px-4 py-2 text-lg flex items-center gap-1.5 hover:scale-125 transition-all duration-300 border-2 shadow-xl ${
+                      className={`backdrop-blur-2xl rounded-full px-2.5 py-1 text-sm flex items-center gap-1 hover:scale-110 transition-all duration-300 border shadow-lg ${
                         reaction.user_ids.includes(currentUser?.id || "") 
-                          ? "bg-gradient-to-r from-primary/30 to-accent/30 border-primary/60 shadow-primary/30 scale-105" 
-                          : "glass border-border/40 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
+                          ? "bg-gradient-to-r from-primary/30 to-accent/30 border-primary/50 shadow-primary/20 scale-105" 
+                          : "glass border-border/30 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
                       }`}
                     >
-                      <span className="text-2xl drop-shadow-lg">{reaction.emoji}</span>
+                      <span className="text-base">{reaction.emoji}</span>
                       {reaction.user_ids.length > 1 && (
-                        <span className="text-xs font-bold bg-background/50 px-1.5 py-0.5 rounded-full">{reaction.user_ids.length}</span>
+                        <span className="text-[10px] font-bold bg-background/50 px-1 py-0.5 rounded-full">{reaction.user_ids.length}</span>
                       )}
                     </button>
                   ))}
