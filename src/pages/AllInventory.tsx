@@ -10,7 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ZoomableImage } from "@/components/ZoomableImage";
-import { ArrowLeft, Package, Search, Filter, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Package, Search, Filter, Image as ImageIcon, Download } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
@@ -140,6 +142,58 @@ const AllInventory = () => {
 
   const inventoryList = Object.values(aggregatedInventory);
 
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    
+    // Title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("All Inventory Across Stores", 14, 20);
+    
+    // Summary
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Total Items: ${inventoryList.length}`, 14, 30);
+    doc.text(`Total Stores: ${stores.length}`, 14, 36);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 42);
+    
+    // Prepare table data
+    const tableData = inventoryList.map((item: any) => {
+      const storeDetails = item.storeQuantities
+        .map((sq: any) => `${sq.store?.name || 'Unknown'}: ${sq.quantity}`)
+        .join('\n');
+      
+      return [
+        item.items?.name || 'Unknown Item',
+        item.items?.brand || '-',
+        item.items?.category || '-',
+        item.totalQuantity.toString(),
+        storeDetails
+      ];
+    });
+    
+    // Generate table
+    autoTable(doc, {
+      startY: 50,
+      head: [['Item Name', 'Brand', 'Category', 'Total Qty', 'Store Breakdown']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [41, 128, 185], fontStyle: 'bold' },
+      styles: { fontSize: 9, cellPadding: 3 },
+      columnStyles: {
+        0: { cellWidth: 40 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 60 }
+      }
+    });
+    
+    // Save PDF
+    doc.save(`all-inventory-${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success("PDF downloaded successfully");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -168,10 +222,16 @@ const AllInventory = () => {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <Package className="h-6 w-6" />
-              All Inventory Across Stores
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <Package className="h-6 w-6" />
+                All Inventory Across Stores
+              </CardTitle>
+              <Button onClick={generatePDF} variant="default" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col md:flex-row gap-4">
