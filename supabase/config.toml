@@ -21,4 +21,7 @@ verify_jwt = false
 [functions.daily-fifo-alerts]
 verify_jwt = false
 
+[functions.transcribe-audio]
+verify_jwt = false
+
 
