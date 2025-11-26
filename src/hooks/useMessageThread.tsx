@@ -247,17 +247,21 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
     ]);
 
     if (conversationResult.data && currentUser) {
-      const otherUserId = conversationResult.data.participant_ids.find(
-        (id: string) => id !== currentUser.id
-      );
+      const isGroup = conversationResult.data.is_group;
+      
+      if (!isGroup) {
+        const otherUserId = conversationResult.data.participant_ids.find(
+          (id: string) => id !== currentUser.id
+        );
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', otherUserId)
-        .single();
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', otherUserId)
+          .single();
 
-      setOtherUser(profile);
+        setOtherUser(profile);
+      }
     }
 
     if (messagesResult.data && currentUser) {
@@ -268,23 +272,26 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
         }))
       );
 
+      // Mark all messages from others as read when opening conversation (works for both 1-on-1 and groups)
       const unreadIds = messagesResult.data
         .filter((msg) => !msg.read && msg.sender_id !== currentUser.id)
         .map((msg) => msg.id);
 
       if (unreadIds.length > 0) {
-        // Batch mark as read and delivered immediately when conversation opens
-        await supabase
+        // Mark as read immediately
+        const { error } = await supabase
           .from('messages')
           .update({ read: true, delivered: true })
           .in('id', unreadIds);
         
-        // Update local state to reflect read status
-        setMessages((prev) =>
-          prev.map((msg) =>
-            unreadIds.includes(msg.id) ? { ...msg, read: true, delivered: true } : msg
-          )
-        );
+        if (!error) {
+          // Update local state to reflect read status
+          setMessages((prev) =>
+            prev.map((msg) =>
+              unreadIds.includes(msg.id) ? { ...msg, read: true, delivered: true } : msg
+            )
+          );
+        }
       }
     }
   }, [conversationId, currentUser]);
