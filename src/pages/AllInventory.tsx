@@ -222,9 +222,7 @@ const AllInventory = () => {
               name: item.items?.name || 'Unknown Item',
               brand: item.items?.brand || '-',
               category: item.items?.category || '-',
-              quantity: item.quantity?.toString() || '0',
-              batch: item.batch_number || '-',
-              expiry: item.expiration_date ? new Date(item.expiration_date).toLocaleDateString() : '-'
+              quantity: item.quantity?.toString() || '0'
             };
           })
         );
@@ -232,15 +230,13 @@ const AllInventory = () => {
         // Generate table with images
         autoTable(doc, {
           startY: yPosition,
-          head: [['Image', 'Item Name', 'Brand', 'Category', 'Qty', 'Batch', 'Expiry']],
+          head: [['Image', 'Item Name', 'Brand', 'Category', 'Quantity']],
           body: tableData.map(row => [
             row.image ? 'IMG' : '-',
             row.name,
             row.brand,
             row.category,
-            row.quantity,
-            row.batch,
-            row.expiry
+            row.quantity
           ]),
           didDrawCell: (data: any) => {
             if (data.column.index === 0 && data.cell.section === 'body') {
@@ -262,16 +258,14 @@ const AllInventory = () => {
             }
           },
           theme: 'striped',
-          headStyles: { fillColor: [41, 128, 185], fontStyle: 'bold', fontSize: 9 },
-          styles: { fontSize: 8, cellPadding: 2, minCellHeight: 14 },
+          headStyles: { fillColor: [41, 128, 185], fontStyle: 'bold', fontSize: 10 },
+          styles: { fontSize: 9, cellPadding: 2, minCellHeight: 14 },
           columnStyles: {
-            0: { cellWidth: 15 },
-            1: { cellWidth: 40 },
-            2: { cellWidth: 25 },
-            3: { cellWidth: 25 },
-            4: { cellWidth: 15 },
-            5: { cellWidth: 25 },
-            6: { cellWidth: 25 }
+            0: { cellWidth: 20 },
+            1: { cellWidth: 60 },
+            2: { cellWidth: 40 },
+            3: { cellWidth: 40 },
+            4: { cellWidth: 25 }
           }
         });
         
