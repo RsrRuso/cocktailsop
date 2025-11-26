@@ -1273,11 +1273,11 @@ const StoreManagement = () => {
         const transaction = transactions[i];
         const item = items.find(it => it.name === transaction.item_name);
         
-        // Calculate height needed (more if image present)
-        const boxHeight = item?.photo_url ? 60 : 45;
+        // Smaller box height to fit more items
+        const boxHeight = 38;
         
-        // Check if we need a new page
-        if (yPos + boxHeight > 270) {
+        // Check if we need a new page - allow more items per page
+        if (yPos + boxHeight > 275) {
           doc.addPage();
           pageCount++;
           yPos = 20;
@@ -1285,6 +1285,7 @@ const StoreManagement = () => {
           // Add page number
           doc.setFontSize(8);
           doc.setFont(undefined, 'normal');
+          doc.setTextColor(100, 100, 100);
           doc.text(`Page ${pageCount}`, 190, 285);
         }
         
@@ -1313,7 +1314,7 @@ const StoreManagement = () => {
         doc.setFontSize(8);
         doc.text(transaction.type.toUpperCase(), 37, yPos);
         
-        // Add product image if available
+        // Add product image if available - smaller size with aspect ratio preserved
         if (item?.photo_url) {
           try {
             const imgData = await fetch(item.photo_url)
@@ -1324,8 +1325,9 @@ const StoreManagement = () => {
                 reader.readAsDataURL(blob);
               }));
             
-            // Add image on right side
-            doc.addImage(imgData as string, 'JPEG', 165, yPos + 2, 30, 30);
+            // Smaller image size - 20x20 to fit more items per page, maintain aspect ratio
+            const imgSize = 20;
+            doc.addImage(imgData as string, 'JPEG', 175, yPos + 2, imgSize, imgSize, undefined, 'NONE');
           } catch (error) {
             console.error('Error loading image:', error);
           }
@@ -1333,57 +1335,60 @@ const StoreManagement = () => {
         
         // Item name
         doc.setTextColor(0, 0, 0);
-        doc.setFontSize(12);
+        doc.setFontSize(11);
         doc.setFont(undefined, 'bold');
         const itemName = transaction.item_name || 'Multiple Items';
-        doc.text(itemName.length > 35 ? itemName.substring(0, 35) + '...' : itemName, 14, yPos + 8);
-        yPos += 4;
+        doc.text(itemName.length > 38 ? itemName.substring(0, 38) + '...' : itemName, 14, yPos + 8);
         
-        // Details section
-        doc.setFontSize(9);
+        // Details section - more compact
+        doc.setFontSize(8);
         doc.setFont(undefined, 'normal');
         doc.setTextColor(60, 60, 60);
         
         if (transaction.type === 'transfer') {
-          doc.text(`From Store:`, 14, yPos + 8);
+          doc.text(`From:`, 14, yPos + 14);
           doc.setFont(undefined, 'bold');
-          doc.text(transaction.from_store || 'Unknown', 38, yPos + 8);
+          const fromStore = (transaction.from_store || 'Unknown').substring(0, 12);
+          doc.text(fromStore, 26, yPos + 14);
           
           doc.setFont(undefined, 'normal');
-          doc.text(`To Store:`, 14, yPos + 13);
+          doc.text(`To:`, 14, yPos + 19);
           doc.setFont(undefined, 'bold');
-          doc.text(transaction.to_store || 'Unknown', 38, yPos + 13);
+          const toStore = (transaction.to_store || 'Unknown').substring(0, 12);
+          doc.text(toStore, 22, yPos + 19);
         } else {
-          doc.text(`Store:`, 14, yPos + 8);
+          doc.text(`Store:`, 14, yPos + 14);
           doc.setFont(undefined, 'bold');
-          doc.text(transaction.store || 'Unknown', 30, yPos + 8);
+          const storeName = (transaction.store || 'Unknown').substring(0, 15);
+          doc.text(storeName, 27, yPos + 14);
         }
         
-        // Quantity
+        // Quantity and Status on same line
         doc.setFont(undefined, 'normal');
-        doc.text(`Quantity:`, 14, yPos + 18);
+        doc.text(`Qty:`, 70, yPos + 14);
         doc.setFont(undefined, 'bold');
         doc.setTextColor(59, 130, 246);
-        doc.text(`${transaction.item_count}`, 34, yPos + 18);
+        doc.text(`${transaction.item_count}`, 80, yPos + 14);
         
         // Status
         doc.setFont(undefined, 'normal');
         doc.setTextColor(60, 60, 60);
-        doc.text(`Status:`, 70, yPos + 18);
+        doc.text(`Status:`, 100, yPos + 14);
         doc.setFont(undefined, 'bold');
         const statusColor = transaction.status === 'completed' ? [34, 197, 94] : [234, 179, 8];
         doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-        doc.text(transaction.status.toUpperCase(), 86, yPos + 18);
+        doc.text(transaction.status.toUpperCase(), 114, yPos + 14);
         
-        // User and timestamp
+        // User and timestamp - compact
         doc.setFont(undefined, 'normal');
         doc.setTextColor(100, 100, 100);
-        doc.setFontSize(8);
-        doc.text(`Submitted by: ${transaction.user_email || 'Unknown'}`, 14, yPos + 28);
-        doc.text(`Date: ${new Date(transaction.timestamp).toLocaleString()}`, 14, yPos + 33);
+        doc.setFontSize(7);
+        const userEmail = (transaction.user_email || 'Unknown').substring(0, 25);
+        doc.text(`By: ${userEmail}`, 14, yPos + 24);
+        doc.text(`${new Date(transaction.timestamp).toLocaleString()}`, 14, yPos + 28);
         
-        // Move to next transaction
-        yPos += boxHeight + 7;
+        // Move to next transaction - smaller gap
+        yPos += boxHeight + 5;
       }
       
       // Add page number to last page
