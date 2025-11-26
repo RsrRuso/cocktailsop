@@ -1314,7 +1314,7 @@ const StoreManagement = () => {
         doc.setFontSize(8);
         doc.text(transaction.type.toUpperCase(), 37, yPos);
         
-        // Add product image if available - smaller size with aspect ratio preserved
+        // Add product image if available - maintain original aspect ratio
         if (item?.photo_url) {
           try {
             const imgData = await fetch(item.photo_url)
@@ -1325,9 +1325,25 @@ const StoreManagement = () => {
                 reader.readAsDataURL(blob);
               }));
             
-            // Smaller image size - 20x20 to fit more items per page, maintain aspect ratio
-            const imgSize = 20;
-            doc.addImage(imgData as string, 'JPEG', 175, yPos + 2, imgSize, imgSize, undefined, 'NONE');
+            // Load image to get dimensions and maintain aspect ratio
+            const img = new Image();
+            img.src = imgData as string;
+            await new Promise((resolve) => { img.onload = resolve; });
+            
+            const maxSize = 20;
+            const aspectRatio = img.width / img.height;
+            let imgWidth = maxSize;
+            let imgHeight = maxSize;
+            
+            if (aspectRatio > 1) {
+              // Wider than tall
+              imgHeight = maxSize / aspectRatio;
+            } else {
+              // Taller than wide
+              imgWidth = maxSize * aspectRatio;
+            }
+            
+            doc.addImage(imgData as string, 'JPEG', 175, yPos + 2, imgWidth, imgHeight, undefined, 'NONE');
           } catch (error) {
             console.error('Error loading image:', error);
           }
