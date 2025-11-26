@@ -1547,6 +1547,7 @@ export type Database = {
           quantity_before: number | null
           store_id: string | null
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           action_type: string
@@ -1560,6 +1561,7 @@ export type Database = {
           quantity_before?: number | null
           store_id?: string | null
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           action_type?: string
@@ -1573,6 +1575,7 @@ export type Database = {
           quantity_before?: number | null
           store_id?: string | null
           user_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -1596,6 +1599,13 @@ export type Database = {
             referencedRelation: "fifo_stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fifo_activity_log_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fifo_employees: {
@@ -1605,6 +1615,7 @@ export type Database = {
           name: string
           title: string
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -1612,6 +1623,7 @@ export type Database = {
           name: string
           title: string
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -1619,8 +1631,17 @@ export type Database = {
           name?: string
           title?: string
           user_id?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fifo_employees_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fifo_inventory: {
         Row: {
@@ -1640,6 +1661,7 @@ export type Database = {
           store_id: string
           updated_at: string | null
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           batch_number?: string | null
@@ -1658,6 +1680,7 @@ export type Database = {
           store_id: string
           updated_at?: string | null
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           batch_number?: string | null
@@ -1676,6 +1699,7 @@ export type Database = {
           store_id?: string
           updated_at?: string | null
           user_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -1692,6 +1716,13 @@ export type Database = {
             referencedRelation: "fifo_stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fifo_inventory_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fifo_items: {
@@ -1706,6 +1737,7 @@ export type Database = {
           name: string
           photo_url: string | null
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           barcode?: string | null
@@ -1718,6 +1750,7 @@ export type Database = {
           name: string
           photo_url?: string | null
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           barcode?: string | null
@@ -1730,8 +1763,17 @@ export type Database = {
           name?: string
           photo_url?: string | null
           user_id?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fifo_items_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fifo_stores: {
         Row: {
@@ -1743,6 +1785,7 @@ export type Database = {
           store_type: string | null
           updated_at: string | null
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -1753,6 +1796,7 @@ export type Database = {
           store_type?: string | null
           updated_at?: string | null
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -1763,8 +1807,17 @@ export type Database = {
           store_type?: string | null
           updated_at?: string | null
           user_id?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fifo_stores_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fifo_transfers: {
         Row: {
@@ -1781,6 +1834,7 @@ export type Database = {
           transfer_date: string | null
           transferred_by: string | null
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -1796,6 +1850,7 @@ export type Database = {
           transfer_date?: string | null
           transferred_by?: string | null
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -1811,6 +1866,7 @@ export type Database = {
           transfer_date?: string | null
           transferred_by?: string | null
           user_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -1839,6 +1895,13 @@ export type Database = {
             columns: ["transferred_by"]
             isOneToOne: false
             referencedRelation: "fifo_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fifo_transfers_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
