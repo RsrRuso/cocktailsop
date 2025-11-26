@@ -164,14 +164,18 @@ const AllInventory = () => {
       doc.text(`Total Stores: ${stores.length}`, 14, 36);
       doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 42);
       
-      let yPosition = 50;
+      let yPosition = 55;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 14;
+      const imageSize = 25;
+      const lineHeight = 6;
       
-      // Process each item with image
-      for (const inventoryItem of inventoryList) {
-        const item = inventoryItem as any;
+      // Process each item
+      for (let i = 0; i < inventoryList.length; i++) {
+        const item = inventoryList[i] as any;
         
-        // Check if we need a new page
-        if (yPosition > 250) {
+        // Check if we need a new page (need space for image + text)
+        if (yPosition > 260) {
           doc.addPage();
           yPosition = 20;
         }
@@ -180,9 +184,13 @@ const AllInventory = () => {
         const brand = item.items?.brand || '-';
         const category = item.items?.category || '-';
         const totalQty = item.totalQuantity.toString();
-        const storeDetails = item.storeQuantities
-          .map((sq: any) => `${sq.store?.name || 'Unknown'}: ${sq.quantity}`)
-          .join(', ');
+        const storeBreakdown = item.storeQuantities
+          .map((sq: any) => `  • ${sq.store?.name || 'Unknown'}: ${sq.quantity}`)
+          .join('\n');
+        
+        // Draw background box
+        doc.setFillColor(249, 250, 251);
+        doc.rect(margin, yPosition - 3, pageWidth - (margin * 2), imageSize + 6, 'F');
         
         // Add image if available
         if (item.items?.photo_url) {
@@ -195,38 +203,66 @@ const AllInventory = () => {
               img.src = item.items.photo_url;
             });
             
-            // Add image (30x30 size)
-            doc.addImage(img, 'JPEG', 14, yPosition, 30, 30);
+            // Add image with border
+            doc.setDrawColor(229, 231, 235);
+            doc.setLineWidth(0.5);
+            doc.rect(margin + 2, yPosition, imageSize, imageSize);
+            doc.addImage(img, 'JPEG', margin + 2.5, yPosition + 0.5, imageSize - 1, imageSize - 1);
           } catch (error) {
             console.error('Failed to load image:', error);
+            // Draw placeholder
+            doc.setFillColor(229, 231, 235);
+            doc.rect(margin + 2, yPosition, imageSize, imageSize, 'F');
           }
+        } else {
+          // Draw placeholder
+          doc.setFillColor(229, 231, 235);
+          doc.rect(margin + 2, yPosition, imageSize, imageSize, 'F');
         }
         
-        // Add text info next to image
+        // Add item details next to image
+        const textX = margin + imageSize + 8;
+        let textY = yPosition + 4;
+        
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
-        doc.text(itemName, 48, yPosition + 5);
+        doc.setTextColor(17, 24, 39);
+        doc.text(`${i + 1}. ${itemName}`, textX, textY);
         
+        textY += lineHeight;
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
-        doc.text(`Brand: ${brand}`, 48, yPosition + 11);
-        doc.text(`Category: ${category}`, 48, yPosition + 17);
-        doc.text(`Total Qty: ${totalQty}`, 48, yPosition + 23);
-        doc.text(`Stores: ${storeDetails}`, 48, yPosition + 29, { maxWidth: 140 });
+        doc.setTextColor(75, 85, 99);
+        doc.text(`Brand: ${brand} | Category: ${category}`, textX, textY);
+        
+        textY += lineHeight;
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(59, 130, 246);
+        doc.text(`Total Quantity: ${totalQty}`, textX, textY);
+        
+        // Store breakdown below the main info
+        yPosition += imageSize + 8;
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(107, 114, 128);
+        const splitStores = doc.splitTextToSize(storeBreakdown, pageWidth - textX - margin);
+        doc.text(splitStores, textX, yPosition);
+        
+        yPosition += (splitStores.length * 4) + 8;
         
         // Draw separator line
-        yPosition += 35;
-        doc.setDrawColor(200, 200, 200);
-        doc.line(14, yPosition, 196, yPosition);
-        yPosition += 5;
+        doc.setDrawColor(229, 231, 235);
+        doc.setLineWidth(0.3);
+        doc.line(margin, yPosition, pageWidth - margin, yPosition);
+        yPosition += 8;
       }
       
       // Save PDF
       doc.save(`all-inventory-${new Date().toISOString().split('T')[0]}.pdf`);
       toast.dismiss();
-      toast.success("PDF downloaded successfully with images");
+      toast.success("PDF downloaded with images");
     } catch (error) {
-      console.error("Error generating all inventory PDF:", error);
+      console.error("Error generating PDF:", error);
       toast.dismiss();
       toast.error("Failed to generate PDF");
     }
