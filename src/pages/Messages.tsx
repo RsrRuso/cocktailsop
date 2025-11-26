@@ -236,60 +236,56 @@ const Messages = () => {
     });
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background/98 to-background pb-20">
+    <div className="min-h-screen bg-background pb-20">
       <TopNav />
       
       <div className="pt-16 px-4">
-        <div className="flex items-center justify-between py-4">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient">
-            Messages
-          </h1>
+        <div className="flex items-center justify-between py-3">
+          <h1 className="text-2xl font-bold">Messages</h1>
           <div className="flex gap-2">
             <Button 
               onClick={() => setShowCreateGroup(true)}
               size="sm"
-              className="glass bg-primary/20 hover:bg-primary/30 hover:scale-105 transition-all"
             >
-              <Users className="w-4 h-4 mr-2" />
-              New Group
+              <Users className="w-4 h-4 mr-1" />
+              Group
             </Button>
             <Button 
               variant="ghost" 
               size="sm"
               onClick={() => setShowArchived(!showArchived)}
-              className="glass hover:scale-105 transition-all"
             >
-              {showArchived ? 'Active' : 'Archived'}
+              {showArchived ? 'Active' : 'Archive'}
             </Button>
           </div>
         </div>
 
-        {/* Search with modern styling */}
-        <div className="relative mb-4">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        {/* Simplified Search */}
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search messages..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-11 glass backdrop-blur-xl border-border/30 focus:border-primary/50 transition-all rounded-full h-12 text-base"
+            className="pl-9"
           />
         </div>
 
-        {/* Stats with improved design */}
+        {/* Simplified Stats */}
         {!showArchived && (
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="glass backdrop-blur-xl rounded-2xl p-4 text-center border border-border/10 hover:scale-105 transition-all">
-              <p className="text-3xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{conversations.filter(c => !c.isArchived).length}</p>
-              <p className="text-xs text-muted-foreground font-medium mt-1">Active</p>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="bg-muted rounded-lg p-2 text-center">
+              <p className="text-xl font-bold">{conversations.filter(c => !c.isArchived).length}</p>
+              <p className="text-xs text-muted-foreground">Active</p>
             </div>
-            <div className="glass backdrop-blur-xl rounded-2xl p-4 text-center border border-border/10 hover:scale-105 transition-all">
-              <p className="text-3xl font-bold bg-gradient-to-br from-accent to-primary bg-clip-text text-transparent">{conversations.filter(c => c.unreadCount! > 0).length}</p>
-              <p className="text-xs text-muted-foreground font-medium mt-1">Unread</p>
+            <div className="bg-muted rounded-lg p-2 text-center">
+              <p className="text-xl font-bold">{conversations.filter(c => c.unreadCount! > 0).length}</p>
+              <p className="text-xs text-muted-foreground">Unread</p>
             </div>
-            <div className="glass backdrop-blur-xl rounded-2xl p-4 text-center border border-border/10 hover:scale-105 transition-all">
-              <p className="text-3xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{pinnedChats.size}</p>
-              <p className="text-xs text-muted-foreground font-medium mt-1">Pinned</p>
+            <div className="bg-muted rounded-lg p-2 text-center">
+              <p className="text-xl font-bold">{pinnedChats.size}</p>
+              <p className="text-xs text-muted-foreground">Pinned</p>
             </div>
           </div>
         )}
@@ -323,18 +319,18 @@ const Messages = () => {
             filteredConversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className={`relative group glass-hover rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02] backdrop-blur-xl border ${
-                  conversation.isPinned ? 'ring-2 ring-primary/50 shadow-lg shadow-primary/10 border-primary/30' : 'border-border/10'
+                className={`relative bg-background border border-border rounded-lg overflow-hidden ${
+                  conversation.isPinned ? 'ring-1 ring-primary' : ''
                 }`}
               >
                 <div
-                  className="p-4 flex items-start gap-3 cursor-pointer"
+                  className="p-3 flex items-start gap-3 cursor-pointer"
                   onClick={() => navigate(`/messages/${conversation.id}`)}
                 >
                 <div className="relative shrink-0">
                   {conversation.is_group ? (
-                    <div className="relative w-16 h-16 rounded-full glass flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20">
-                      <Users className="w-8 h-8 text-primary" />
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-primary/10">
+                      <Users className="w-6 h-6" />
                     </div>
                   ) : (
                     <OptimizedAvatar
@@ -342,12 +338,12 @@ const Messages = () => {
                       alt={conversation.otherUser?.username || 'User'}
                       fallback={conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
                       userId={conversation.otherUser?.id}
-                      className={`w-16 h-16 ${conversation.unreadCount! > 0 ? 'ring-2 ring-primary shadow-lg shadow-primary/20' : ''}`}
+                      className={`w-12 h-12 ${conversation.unreadCount! > 0 ? 'ring-1 ring-primary' : ''}`}
                     />
                   )}
                   {conversation.isPinned && (
-                    <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                      <Pin className="w-3 h-3 text-white" />
+                    <div className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                      <Pin className="w-2 h-2 text-white" />
                     </div>
                   )}
                 </div>
@@ -378,20 +374,20 @@ const Messages = () => {
                     )}
                   </div>
 
-                  <div className="flex flex-col items-end gap-2 shrink-0">
+                  <div className="flex flex-col items-end gap-1 shrink-0">
                     {conversation.unreadCount! > 0 && (
-                      <Badge variant="default" className="bg-primary glow-primary">
+                      <Badge variant="default" className="bg-primary">
                         {conversation.unreadCount}
                       </Badge>
                     )}
                     
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <MoreVertical className="w-4 h-4" />
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <MoreVertical className="w-3 h-3" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="glass backdrop-blur-xl">
+                      <DropdownMenuContent align="end" className="bg-background">
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); togglePin(conversation.id); }}>
                           <Pin className="w-4 h-4 mr-2" />
                           {conversation.isPinned ? 'Unpin' : 'Pin'}
@@ -404,9 +400,6 @@ const Messages = () => {
                     </DropdownMenu>
                   </div>
                 </div>
-
-                {/* Gradient border effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
               </div>
             ))
           )}

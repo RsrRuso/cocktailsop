@@ -70,36 +70,35 @@ export const MessageInput = memo(({
   }, [onSend]);
 
   return (
-    <div className="p-3 border-t backdrop-blur-2xl border-border/10 bg-background/80 shadow-lg">
+    <div className="p-2 border-t border-border bg-background">
       {isUploading && (
-        <div className="mb-2 glass backdrop-blur-xl rounded-2xl p-3 border border-primary/20">
-          <div className="flex items-center gap-3 mb-2">
-            <Loader2 className="w-4 h-4 animate-spin text-primary" />
-            <span className="text-sm font-medium">Uploading... {uploadProgress}%</span>
+        <div className="mb-2 bg-muted rounded-lg p-2">
+          <div className="flex items-center gap-2 mb-1">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm">Uploading {uploadProgress}%</span>
           </div>
-          <Progress value={uploadProgress} className="h-1.5" />
+          <Progress value={uploadProgress} className="h-1" />
         </div>
       )}
       {replyingTo && (
-        <div className="mb-2 glass backdrop-blur-xl rounded-2xl p-2 flex items-center justify-between border border-primary/30 animate-in slide-in-from-bottom duration-300">
+        <div className="mb-2 bg-muted rounded-lg p-2 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm">
-            <Reply className="w-4 h-4 text-primary" />
-            <span className="opacity-70 font-medium">Replying to:</span>
-            <span className="truncate max-w-[200px] font-semibold">{replyingTo.content}</span>
+            <Reply className="w-4 h-4" />
+            <span className="truncate max-w-[200px]">{replyingTo.content}</span>
           </div>
-          <Button size="icon" variant="ghost" className="h-7 w-7 hover:bg-destructive/20" onClick={onCancelReply}>
-            <X className="h-4 w-4" />
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onCancelReply}>
+            <X className="h-3 w-3" />
           </Button>
         </div>
       )}
       {editingMessage && (
-        <div className="mb-2 glass backdrop-blur-xl rounded-2xl p-2 flex items-center justify-between border border-accent/30 animate-in slide-in-from-bottom duration-300">
+        <div className="mb-2 bg-muted rounded-lg p-2 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm">
-            <Edit2 className="w-4 h-4 text-accent" />
-            <span className="opacity-70 font-medium">Editing message</span>
+            <Edit2 className="w-4 h-4" />
+            <span>Editing</span>
           </div>
-          <Button size="icon" variant="ghost" className="h-7 w-7 hover:bg-destructive/20" onClick={onCancelEdit}>
-            <X className="h-4 w-4" />
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onCancelEdit}>
+            <X className="h-3 w-3" />
           </Button>
         </div>
       )}
@@ -130,9 +129,9 @@ export const MessageInput = memo(({
             size="icon"
             variant="ghost"
             onClick={() => setShowAttachMenu(!showAttachMenu)}
-            className="shrink-0 glass hover:scale-110 transition-transform"
+            className="shrink-0"
           >
-            <Paperclip className="h-5 w-5" />
+            <Paperclip className="h-4 w-4" />
           </Button>
 
           {showAttachMenu && (
@@ -174,12 +173,12 @@ export const MessageInput = memo(({
           onChange={handleChange}
           onKeyPress={handleKeyPress}
           placeholder="Message..."
-          className="flex-1 glass backdrop-blur-xl border-border/30 focus:border-primary/50 rounded-full px-5 py-3 text-base transition-all"
+          className="flex-1"
         />
 
         {value.trim() ? (
-          <Button onClick={onSend} size="icon" className="shrink-0 bg-gradient-to-r from-primary to-accent hover:scale-110 transition-transform rounded-full h-11 w-11">
-            <Send className="h-5 w-5" />
+          <Button onClick={onSend} size="icon" className="shrink-0">
+            <Send className="h-4 w-4" />
           </Button>
         ) : (
           <Button
@@ -189,9 +188,9 @@ export const MessageInput = memo(({
             onMouseUp={onStopVoiceRecording}
             onTouchStart={isRecording ? onStopVoiceRecording : onStartVoiceRecording}
             onTouchEnd={onStopVoiceRecording}
-            className={`shrink-0 glass rounded-full h-11 w-11 ${isRecording ? 'bg-red-500/30 animate-pulse scale-110' : 'hover:scale-110'} transition-all`}
+            className={`shrink-0 ${isRecording ? 'bg-red-500/20' : ''}`}
           >
-            <Mic className="h-5 w-5" />
+            <Mic className="h-4 w-4" />
           </Button>
         )}
       </div>

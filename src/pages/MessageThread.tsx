@@ -13,7 +13,6 @@ import { MessageInput } from "@/components/MessageInput";
 import { MediaRecorder } from "@/components/MediaRecorder";
 import { ForwardMessageDialog } from "@/components/ForwardMessageDialog";
 import { GroupSettingsDialog } from "@/components/GroupSettingsDialog";
-import { SmartReplySuggestions } from "@/components/SmartReplySuggestions";
 
 const MessageThread = () => {
   const { conversationId } = useParams();
@@ -155,26 +154,23 @@ const MessageThread = () => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-background via-background/95 to-background flex flex-col">
-      {/* Header with Instagram-style design */}
-      <div className="relative backdrop-blur-2xl border-b border-border/10 p-3 flex items-center gap-3 overflow-hidden shadow-lg">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/30" />
+    <div className="fixed inset-0 bg-background flex flex-col">
+      {/* Simplified Header */}
+      <div className="border-b border-border p-3 flex items-center gap-3 bg-background">
         
-        <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} className="glass shrink-0 relative z-10">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} className="shrink-0">
           <ArrowLeft className="w-5 h-5" />
         </Button>
         
         {isGroup ? (
           <>
-            <div className="relative cursor-pointer hover:scale-105 transition-transform shrink-0 z-10" onClick={() => setShowGroupSettings(true)}>
-              <div className="w-14 h-14 rounded-full glass flex items-center justify-center bg-primary/10 avatar-glow">
-                <Settings className="w-7 h-7 text-primary" />
+            <div className="relative cursor-pointer shrink-0" onClick={() => setShowGroupSettings(true)}>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-primary/10">
+                <Settings className="w-6 h-6 text-primary" />
               </div>
             </div>
-            <div className="flex-1 min-w-0 flex flex-col justify-center z-10">
-              <p className="font-bold text-lg truncate bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+              <p className="font-bold truncate">
                 {groupName}
               </p>
               <p className="text-sm text-muted-foreground truncate">
@@ -186,7 +182,7 @@ const MessageThread = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowGroupSettings(true)}
-                className="glass shrink-0 relative z-10"
+                className="shrink-0"
               >
                 <Settings className="w-5 h-5" />
               </Button>
@@ -194,39 +190,27 @@ const MessageThread = () => {
           </>
         ) : otherUser && (
           <>
-            <div className="relative cursor-pointer hover:scale-105 transition-transform shrink-0 z-10" onClick={() => navigate(`/user/${otherUser.id}`)}>
-              <div className="relative">
-                <OptimizedAvatar
-                  src={otherUser.avatar_url}
-                  alt={otherUser.username}
-                  fallback={otherUser.username[0].toUpperCase()}
-                  userId={otherUser.id}
-                  className="w-14 h-14 border-2 border-background avatar-glow"
-                />
-                {isOnline && (
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full neon-green border-2 border-background">
-                    <div className="w-full h-full rounded-full neon-green animate-pulse" />
-                  </div>
-                )}
-              </div>
+            <div className="relative cursor-pointer shrink-0" onClick={() => navigate(`/user/${otherUser.id}`)}>
+              <OptimizedAvatar
+                src={otherUser.avatar_url}
+                alt={otherUser.username}
+                fallback={otherUser.username[0].toUpperCase()}
+                userId={otherUser.id}
+                className="w-12 h-12"
+              />
+              {isOnline && (
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-background" />
+              )}
             </div>
-            <div className="flex-1 min-w-0 flex flex-col justify-center z-10">
-              <p className="font-bold text-lg truncate bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+              <p className="font-bold truncate">
                 {otherUser.full_name}
               </p>
               {isTyping ? (
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                  <p className="text-sm text-primary font-medium">typing</p>
-                </div>
+                <p className="text-sm text-primary">typing...</p>
               ) : (
-                <p className={`text-sm truncate flex items-center gap-1 ${isOnline ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                  {isOnline && <span className="w-2 h-2 rounded-full bg-primary" />}
-                  {isOnline ? 'Active now' : '@' + otherUser.username}
+                <p className="text-sm text-muted-foreground truncate">
+                  {isOnline ? 'Active' : '@' + otherUser.username}
                 </p>
               )}
             </div>
@@ -234,8 +218,8 @@ const MessageThread = () => {
         )}
       </div>
 
-      {/* Messages with modern styling */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar bg-gradient-to-b from-transparent via-background/50 to-transparent">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {messages.map((message) => {
           const isOwn = message.sender_id === currentUser?.id;
           const replyMessage = message.reply_to_id ? messages.find((m) => m.id === message.reply_to_id) : null;
@@ -267,8 +251,8 @@ const MessageThread = () => {
               />
 
               {showEmojiPicker === message.id && (
-                <div className="absolute bottom-full left-0 mb-2 backdrop-blur-2xl rounded-3xl p-4 z-20 border border-border/20 bg-background/90 shadow-2xl max-w-xs animate-in slide-in-from-bottom duration-300">
-                  <div className="flex flex-wrap gap-2 justify-center">
+                <div className="absolute bottom-full left-0 mb-2 bg-background border border-border rounded-lg p-2 z-20 shadow-lg">
+                  <div className="flex flex-wrap gap-1">
                     {(showAllEmojis ? allEmojis : quickEmojis).map((emoji) => (
                       <button 
                         key={emoji} 
@@ -277,14 +261,14 @@ const MessageThread = () => {
                           setShowEmojiPicker(null); 
                           setShowAllEmojis(false);
                         }} 
-                        className="hover:scale-125 transition-all duration-200 text-3xl w-12 h-12 flex items-center justify-center rounded-2xl hover:bg-primary/10 active:scale-95"
+                        className="text-2xl w-10 h-10 flex items-center justify-center rounded hover:bg-muted"
                       >
                         {emoji}
                       </button>
                     ))}
                     <button
                       onClick={() => setShowAllEmojis(!showAllEmojis)}
-                      className="hover:scale-110 transition-all duration-200 text-xl w-12 h-12 flex items-center justify-center rounded-2xl bg-primary/10 font-bold hover:bg-primary/20"
+                      className="text-lg w-10 h-10 flex items-center justify-center rounded bg-muted font-bold"
                     >
                       {showAllEmojis ? "−" : "+"}
                     </button>
@@ -293,20 +277,20 @@ const MessageThread = () => {
               )}
 
               {message.reactions && message.reactions.length > 0 && (
-                <div className="flex gap-1.5 mt-2 flex-wrap">
+                <div className="flex gap-1 mt-1 flex-wrap">
                   {message.reactions.map((reaction, idx) => (
                     <button 
                       key={idx} 
                       onClick={() => handleReaction(message.id, reaction.emoji)} 
-                      className={`backdrop-blur-xl rounded-full px-3 py-1.5 text-lg flex items-center gap-1 hover:scale-110 transition-all duration-200 border ${
+                      className={`rounded-full px-2 py-0.5 text-sm flex items-center gap-1 ${
                         reaction.user_ids.includes(currentUser?.id || "") 
-                          ? "bg-primary/20 border-primary/50 shadow-lg shadow-primary/20" 
-                          : "glass border-border/30 hover:bg-primary/10"
+                          ? "bg-primary/20" 
+                          : "bg-muted"
                       }`}
                     >
-                      <span className="text-xl">{reaction.emoji}</span>
+                      <span>{reaction.emoji}</span>
                       {reaction.user_ids.length > 1 && (
-                        <span className="text-xs font-bold">{reaction.user_ids.length}</span>
+                        <span className="text-xs">{reaction.user_ids.length}</span>
                       )}
                     </button>
                   ))}
@@ -317,18 +301,6 @@ const MessageThread = () => {
         })}
         <div ref={messagesEndRef} />
       </div>
-
-      {/* AI Smart Reply Suggestions */}
-      {messages.length > 0 && messages[messages.length - 1].sender_id !== currentUser?.id && (
-        <div className="px-3 pb-2">
-          <SmartReplySuggestions
-            lastMessage={messages[messages.length - 1].content}
-            onSelectReply={(reply) => {
-              setNewMessage(reply);
-            }}
-          />
-        </div>
-      )}
 
       <MessageInput
         value={newMessage}
