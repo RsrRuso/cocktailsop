@@ -132,28 +132,32 @@ export const MessageBubble = memo(({
 
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} relative`}>
-      {/* Swipe action indicators - Simplified */}
+      {/* Swipe action indicators */}
       <AnimatePresence>
         {Math.abs(swipeOffset) > 30 && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
             className={`absolute ${swipeOffset > 0 ? 'left-2' : 'right-2'} top-1/2 -translate-y-1/2 z-0`}
           >
             {swipeOffset > 0 ? (
-              <div className="flex items-center gap-2 bg-primary/20 rounded-full px-3 py-1">
-                <Reply className="w-4 h-4 text-primary" />
+              <div className="flex items-center gap-2 backdrop-blur-lg rounded-full px-4 py-2 bg-primary/20">
+                <Reply className="w-5 h-5 text-primary" />
+                <span className="text-sm font-medium text-primary">Reply</span>
               </div>
             ) : isOwn ? (
-              <div className="flex items-center gap-2">
-                <div className="rounded-full p-1.5 bg-destructive/20">
-                  <Trash2 className="w-4 h-4 text-destructive" />
+              <div className="flex items-center gap-3">
+                <div className="backdrop-blur-lg rounded-full p-2 bg-destructive/20">
+                  <Trash2 className="w-5 h-5 text-destructive" />
+                </div>
+                <div className="backdrop-blur-lg rounded-full p-2 bg-accent/20">
+                  <Forward className="w-5 h-5 text-accent-foreground" />
                 </div>
               </div>
             ) : (
-              <div className="bg-muted rounded-full px-3 py-1">
-                <Forward className="w-4 h-4" />
+              <div className="backdrop-blur-lg rounded-full px-4 py-2 bg-accent/20">
+                <Forward className="w-5 h-5 text-accent-foreground" />
               </div>
             )}
           </motion.div>
@@ -168,25 +172,26 @@ export const MessageBubble = memo(({
         onTouchEnd={handleTouchEnd}
         style={{
           transform: `translateX(${swipeOffset}px)`,
-          transition: isSwiping ? 'none' : 'transform 0.2s ease-out',
+          transition: isSwiping ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
+        whileTap={{ scale: 0.98 }}
         className={`relative group max-w-[75%] z-10 ${
           message.media_url && (message.media_type === 'image' || message.media_type === 'video')
             ? ''
-            : 'bg-muted px-3 py-2'
-        } rounded-xl ${isOwn ? '' : ''}`}
+            : 'glass backdrop-blur-xl px-4 py-2'
+        } rounded-2xl ${isOwn ? 'glow-primary' : ''} touch-pan-y`}
       >
-        {/* Like Animation Overlay - Simplified */}
+        {/* Like Animation Overlay */}
         <AnimatePresence>
           {showLikeAnimation && (
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+              animate={{ scale: [0, 1.2, 1], opacity: [0, 1, 0] }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.6 }}
               className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
             >
-              <Heart className="w-16 h-16 fill-red-500 text-red-500" />
+              <Heart className="w-20 h-20 fill-red-500 text-red-500" />
             </motion.div>
           )}
         </AnimatePresence>
@@ -194,9 +199,9 @@ export const MessageBubble = memo(({
           <div
             className={`${
               message.media_url && (message.media_type === 'image' || message.media_type === 'video')
-                ? 'px-3 pt-2'
+                ? 'px-4 pt-2'
                 : ''
-            } mb-2 p-2 bg-muted rounded-lg text-xs border-l-2 border-primary cursor-pointer`}
+            } mb-2 p-2 glass backdrop-blur-lg rounded-lg text-xs opacity-70 border-l-2 border-primary cursor-pointer hover:opacity-100 transition-opacity`}
             onClick={() => onReply(replyMessage)}
           >
             <p className="font-semibold">Replying to</p>
@@ -249,7 +254,7 @@ export const MessageBubble = memo(({
         <p
           className={`${
             message.media_url && (message.media_type === 'image' || message.media_type === 'video')
-              ? 'px-3 pt-2'
+              ? 'px-4 pt-2'
               : ''
           } break-words whitespace-pre-wrap ${message.edited ? 'italic' : ''}`}
         >
@@ -260,7 +265,7 @@ export const MessageBubble = memo(({
         <div
           className={`${
             message.media_url && (message.media_type === 'image' || message.media_type === 'video')
-              ? 'px-3 pb-2'
+              ? 'px-4 pb-2'
               : ''
           } flex items-center justify-between gap-2 mt-1`}
         >
@@ -273,11 +278,11 @@ export const MessageBubble = memo(({
           {isOwn && (
             <div className="flex items-center gap-1" title={message.read ? 'Read' : message.delivered ? 'Delivered' : 'Sent'}>
               {message.read ? (
-                <CheckCheck className="w-3 h-3 text-emerald-500" />
+                <CheckCheck className="w-4 h-4 text-emerald-500 animate-pulse" />
               ) : message.delivered ? (
-                <CheckCheck className="w-3 h-3 text-muted-foreground" />
+                <CheckCheck className="w-4 h-4 text-muted-foreground" />
               ) : (
-                <Check className="w-3 h-3 text-muted-foreground" />
+                <Check className="w-4 h-4 text-muted-foreground" />
               )}
             </div>
           )}
