@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Smile, Settings } from "lucide-react";
+import { ArrowLeft, Smile, Settings, Video, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -233,12 +233,30 @@ const MessageThread = () => {
                 </p>
               )}
             </div>
+            
+            {/* Call Buttons */}
+            <div className="flex gap-2 shrink-0 z-10">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="glass hover:scale-110 transition-all hover:bg-primary/20 rounded-full h-10 w-10"
+              >
+                <Phone className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="glass hover:scale-110 transition-all hover:bg-primary/20 rounded-full h-10 w-10"
+              >
+                <Video className="w-5 h-5" />
+              </Button>
+            </div>
           </>
         )}
       </div>
 
       {/* Messages with enhanced styling */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gradient-to-b from-transparent via-background/30 to-transparent relative">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 custom-scrollbar bg-gradient-to-b from-transparent via-background/30 to-transparent relative">
         {messages.map((message) => {
           const isOwn = message.sender_id === currentUser?.id;
           const replyMessage = message.reply_to_id ? messages.find((m) => m.id === message.reply_to_id) : null;
@@ -259,13 +277,13 @@ const MessageThread = () => {
                 setForwardingMessage(message);
                 setShowForwardDialog(true);
               }}
-              onReaction={message.media_type !== 'video' ? (emoji) => handleReaction(message.id, emoji) : undefined}
+              onReaction={(emoji) => handleReaction(message.id, emoji)}
               onEdit={isOwn && !message.media_url ? () => { 
                 setEditingMessage(message); 
                 setNewMessage(message.content); 
               } : undefined}
             >
-              {message.reactions && message.reactions.length > 0 && message.media_type !== 'video' && (
+              {message.reactions && message.reactions.length > 0 && (
                 <div className="flex gap-1.5 mt-2 flex-wrap">
                   {message.reactions.map((reaction, idx) => (
                     <button 
