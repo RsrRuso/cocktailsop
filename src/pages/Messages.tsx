@@ -377,42 +377,42 @@ const Messages = () => {
                 </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <p className={`font-semibold truncate ${conversation.unreadCount! > 0 ? 'text-foreground' : ''}`}>
+                    <div className="flex items-center justify-between gap-2 mb-0.5 sm:mb-1">
+                      <p className={`text-sm sm:text-base font-semibold truncate ${conversation.unreadCount! > 0 ? 'text-foreground' : ''}`}>
                         {conversation.is_group 
                           ? conversation.group_name 
                           : (conversation.otherUser?.full_name || 'Unknown User')}
                       </p>
-                      <p className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
+                      <p className="text-xs text-muted-foreground shrink-0 flex items-center gap-0.5 sm:gap-1">
+                        <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                         {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}
                       </p>
                     </div>
                     
-                    <p className="text-xs text-muted-foreground truncate mb-1">
+                    <p className="text-xs text-muted-foreground truncate mb-0.5 sm:mb-1">
                       {conversation.is_group 
                         ? `${conversation.memberCount} members`
                         : `@${conversation.otherUser?.username || 'unknown'}`}
                     </p>
                     
                     {conversation.lastMessage && (
-                      <p className={`text-sm truncate ${conversation.unreadCount! > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                      <p className={`text-xs sm:text-sm truncate ${conversation.unreadCount! > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                         {conversation.lastMessage}
                       </p>
                     )}
                   </div>
 
-                  <div className="flex flex-col items-end gap-2 shrink-0">
+                  <div className="flex flex-col items-end gap-1.5 sm:gap-2 shrink-0">
                     {conversation.unreadCount! > 0 && (
-                      <Badge variant="default" className="bg-primary glow-primary">
+                      <Badge variant="default" className="bg-primary glow-primary text-xs h-5 min-w-[20px] sm:h-6 sm:min-w-[24px]">
                         {conversation.unreadCount}
                       </Badge>
                     )}
                     
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <MoreVertical className="w-4 h-4" />
+                        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="glass backdrop-blur-xl">
