@@ -236,19 +236,19 @@ const Messages = () => {
     });
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background/98 to-background pb-20">
       <TopNav />
       
       <div className="pt-16 px-4">
         <div className="flex items-center justify-between py-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient">
             Messages
           </h1>
           <div className="flex gap-2">
             <Button 
               onClick={() => setShowCreateGroup(true)}
               size="sm"
-              className="glass bg-primary/20 hover:bg-primary/30"
+              className="glass bg-primary/20 hover:bg-primary/30 hover:scale-105 transition-all"
             >
               <Users className="w-4 h-4 mr-2" />
               New Group
@@ -257,39 +257,39 @@ const Messages = () => {
               variant="ghost" 
               size="sm"
               onClick={() => setShowArchived(!showArchived)}
-              className="glass"
+              className="glass hover:scale-105 transition-all"
             >
               {showArchived ? 'Active' : 'Archived'}
             </Button>
           </div>
         </div>
 
-        {/* Search */}
+        {/* Search with modern styling */}
         <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Search messages..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 glass border-border/50 focus:border-primary/50 transition-all"
+            className="pl-11 glass backdrop-blur-xl border-border/30 focus:border-primary/50 transition-all rounded-full h-12 text-base"
           />
         </div>
 
-        {/* Stats */}
+        {/* Stats with improved design */}
         {!showArchived && (
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <div className="glass rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-primary">{conversations.filter(c => !c.isArchived).length}</p>
-              <p className="text-xs text-muted-foreground">Active</p>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="glass backdrop-blur-xl rounded-2xl p-4 text-center border border-border/10 hover:scale-105 transition-all">
+              <p className="text-3xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{conversations.filter(c => !c.isArchived).length}</p>
+              <p className="text-xs text-muted-foreground font-medium mt-1">Active</p>
             </div>
-            <div className="glass rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-accent">{conversations.filter(c => c.unreadCount! > 0).length}</p>
-              <p className="text-xs text-muted-foreground">Unread</p>
+            <div className="glass backdrop-blur-xl rounded-2xl p-4 text-center border border-border/10 hover:scale-105 transition-all">
+              <p className="text-3xl font-bold bg-gradient-to-br from-accent to-primary bg-clip-text text-transparent">{conversations.filter(c => c.unreadCount! > 0).length}</p>
+              <p className="text-xs text-muted-foreground font-medium mt-1">Unread</p>
             </div>
-            <div className="glass rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-primary">{pinnedChats.size}</p>
-              <p className="text-xs text-muted-foreground">Pinned</p>
+            <div className="glass backdrop-blur-xl rounded-2xl p-4 text-center border border-border/10 hover:scale-105 transition-all">
+              <p className="text-3xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{pinnedChats.size}</p>
+              <p className="text-xs text-muted-foreground font-medium mt-1">Pinned</p>
             </div>
           </div>
         )}
@@ -323,8 +323,8 @@ const Messages = () => {
             filteredConversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className={`relative group glass-hover rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] ${
-                  conversation.isPinned ? 'ring-2 ring-primary/50 glow-primary' : ''
+                className={`relative group glass-hover rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02] backdrop-blur-xl border ${
+                  conversation.isPinned ? 'ring-2 ring-primary/50 shadow-lg shadow-primary/10 border-primary/30' : 'border-border/10'
                 }`}
               >
                 <div
@@ -333,7 +333,7 @@ const Messages = () => {
                 >
                 <div className="relative shrink-0">
                   {conversation.is_group ? (
-                    <div className="relative w-16 h-16 rounded-full glass flex items-center justify-center bg-primary/10">
+                    <div className="relative w-16 h-16 rounded-full glass flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20">
                       <Users className="w-8 h-8 text-primary" />
                     </div>
                   ) : (
@@ -342,12 +342,12 @@ const Messages = () => {
                       alt={conversation.otherUser?.username || 'User'}
                       fallback={conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
                       userId={conversation.otherUser?.id}
-                      className={`w-16 h-16 ${conversation.unreadCount! > 0 ? 'ring-2 ring-primary' : ''}`}
+                      className={`w-16 h-16 ${conversation.unreadCount! > 0 ? 'ring-2 ring-primary shadow-lg shadow-primary/20' : ''}`}
                     />
                   )}
                   {conversation.isPinned && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                      <Pin className="w-3 h-3 text-primary-foreground" />
+                    <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                      <Pin className="w-3 h-3 text-white" />
                     </div>
                   )}
                 </div>
