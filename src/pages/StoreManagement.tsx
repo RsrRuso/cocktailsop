@@ -1271,9 +1271,13 @@ const StoreManagement = () => {
       
       for (let i = 0; i < transactions.length; i++) {
         const transaction = transactions[i];
+        const item = items.find(it => it.name === transaction.item_name);
+        
+        // Calculate height needed (more if image present)
+        const boxHeight = item?.photo_url ? 60 : 45;
         
         // Check if we need a new page
-        if (yPos > 260) {
+        if (yPos + boxHeight > 270) {
           doc.addPage();
           pageCount++;
           yPos = 20;
@@ -1286,7 +1290,7 @@ const StoreManagement = () => {
         
         // Transaction box with background
         doc.setFillColor(245, 247, 250);
-        doc.roundedRect(10, yPos - 5, 190, 45, 3, 3, 'F');
+        doc.roundedRect(10, yPos - 5, 190, boxHeight, 3, 3, 'F');
         
         // Transaction number
         doc.setFontSize(9);
@@ -1309,12 +1313,30 @@ const StoreManagement = () => {
         doc.setFontSize(8);
         doc.text(transaction.type.toUpperCase(), 37, yPos);
         
+        // Add product image if available
+        if (item?.photo_url) {
+          try {
+            const imgData = await fetch(item.photo_url)
+              .then(res => res.blob())
+              .then(blob => new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+              }));
+            
+            // Add image on right side
+            doc.addImage(imgData as string, 'JPEG', 165, yPos + 2, 30, 30);
+          } catch (error) {
+            console.error('Error loading image:', error);
+          }
+        }
+        
         // Item name
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
         const itemName = transaction.item_name || 'Multiple Items';
-        doc.text(itemName.length > 40 ? itemName.substring(0, 40) + '...' : itemName, 14, yPos + 8);
+        doc.text(itemName.length > 35 ? itemName.substring(0, 35) + '...' : itemName, 14, yPos + 8);
         yPos += 4;
         
         // Details section
@@ -1339,29 +1361,29 @@ const StoreManagement = () => {
         
         // Quantity
         doc.setFont(undefined, 'normal');
-        doc.text(`Quantity:`, 110, yPos + 8);
+        doc.text(`Quantity:`, 14, yPos + 18);
         doc.setFont(undefined, 'bold');
         doc.setTextColor(59, 130, 246);
-        doc.text(`${transaction.item_count}`, 130, yPos + 8);
+        doc.text(`${transaction.item_count}`, 34, yPos + 18);
         
         // Status
         doc.setFont(undefined, 'normal');
         doc.setTextColor(60, 60, 60);
-        doc.text(`Status:`, 150, yPos + 8);
+        doc.text(`Status:`, 70, yPos + 18);
         doc.setFont(undefined, 'bold');
         const statusColor = transaction.status === 'completed' ? [34, 197, 94] : [234, 179, 8];
         doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-        doc.text(transaction.status.toUpperCase(), 166, yPos + 8);
+        doc.text(transaction.status.toUpperCase(), 86, yPos + 18);
         
         // User and timestamp
         doc.setFont(undefined, 'normal');
         doc.setTextColor(100, 100, 100);
         doc.setFontSize(8);
-        doc.text(`Submitted by: ${transaction.user_email || 'Unknown'}`, 14, yPos + 20);
-        doc.text(`Date: ${new Date(transaction.timestamp).toLocaleString()}`, 14, yPos + 25);
+        doc.text(`Submitted by: ${transaction.user_email || 'Unknown'}`, 14, yPos + 28);
+        doc.text(`Date: ${new Date(transaction.timestamp).toLocaleString()}`, 14, yPos + 33);
         
         // Move to next transaction
-        yPos += 52;
+        yPos += boxHeight + 7;
       }
       
       // Add page number to last page
