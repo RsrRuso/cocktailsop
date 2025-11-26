@@ -47,152 +47,154 @@ export default function ScanTransfer() {
 
   const fetchTransferContext = async (userId: string) => {
     setLoading(true);
-    
-    const { data: context, error: contextError } = await supabase
-      .from("transfer_qr_codes" as any)
-      .select("*")
-      .eq("qr_code_id", qrCodeId)
-      .single();
 
-    if (contextError || !context) {
-      console.error("QR code lookup error:", contextError);
-      toast.error("Invalid or expired QR code. Please generate a new one.");
-      setLoading(false);
-      return;
-    }
+    try {
+      const { data: context, error: contextError } = await supabase
+        .from("transfer_qr_codes" as any)
+        .select("*")
+        .eq("qr_code_id", qrCodeId)
+        .single();
 
-    const contextData = context as any;
-    
-    const { data: fromStore } = await supabase
-      .from("stores")
-      .select("id, name, workspace_id")
-      .eq("id", contextData.from_store_id)
-      .maybeSingle();
+      if (contextError || !context) {
+        console.error("[ScanTransfer] QR code lookup error:", contextError);
+        toast.error("Invalid or expired QR code. Please generate a new one.");
+        return;
+      }
 
-    // Check permissions if this is a workspace store
-    if (fromStore?.workspace_id) {
-      const { data: membership } = await supabase
-        .from("workspace_members_with_owner")
-        .select("role, permissions")
-        .eq("workspace_id", fromStore.workspace_id)
-        .eq("user_id", userId)
+      const contextData = context as any;
+
+      const { data: fromStore } = await supabase
+        .from("stores")
+        .select("id, name, workspace_id")
+        .eq("id", contextData.from_store_id)
         .maybeSingle();
 
-      let effectiveRole = membership?.role as string | undefined;
-      let effectivePermissions = (membership?.permissions as any) || {};
-
-      // Fallback: if no membership row, still allow workspace owner
-      if (!membership) {
-        const { data: workspace } = await supabase
-          .from("workspaces")
-          .select("owner_id")
-          .eq("id", fromStore.workspace_id)
+      // Check permissions if this is a workspace store
+      if (fromStore?.workspace_id) {
+        const { data: membership } = await supabase
+          .from("workspace_members_with_owner")
+          .select("role, permissions")
+          .eq("workspace_id", fromStore.workspace_id)
+          .eq("user_id", userId)
           .maybeSingle();
 
-        if (workspace?.owner_id === userId) {
-          effectiveRole = "owner";
-          effectivePermissions = {
-            can_receive: true,
-            can_transfer: true,
-            can_manage: true,
-            can_delete: true,
-          };
-        } else {
-          toast.error("You don't have access to this workspace");
-          setLoading(false);
+        let effectiveRole = membership?.role as string | undefined;
+        let effectivePermissions = (membership?.permissions as any) || {};
+
+        // Fallback: if no membership row, still allow workspace owner
+        if (!membership) {
+          const { data: workspace } = await supabase
+            .from("workspaces")
+            .select("owner_id")
+            .eq("id", fromStore.workspace_id)
+            .maybeSingle();
+
+          if (workspace?.owner_id === userId) {
+            effectiveRole = "owner";
+            effectivePermissions = {
+              can_receive: true,
+              can_transfer: true,
+              can_manage: true,
+              can_delete: true,
+            };
+          } else {
+            toast.error("You don't have access to this workspace");
+            navigate("/");
+            return;
+          }
+        }
+
+        const canTransfer =
+          effectiveRole === "admin" ||
+          effectiveRole === "owner" ||
+          effectivePermissions?.can_transfer === true;
+
+        if (!canTransfer) {
+          toast.error("You don't have permission to transfer inventory in this workspace");
           navigate("/");
           return;
         }
       }
 
-      const canTransfer =
-        effectiveRole === "admin" ||
-        effectiveRole === "owner" ||
-        effectivePermissions?.can_transfer === true;
-      
-      if (!canTransfer) {
-        toast.error("You don't have permission to transfer inventory in this workspace");
-        setLoading(false);
-        navigate("/");
-        return;
+      setTransferContext({ ...contextData, fromStoreName: fromStore?.name });
+
+      console.log(
+        "[ScanTransfer] Using from store",
+        { id: fromStore?.id, name: fromStore?.name, workspace_id: fromStore?.workspace_id ?? "personal" }
+      );
+
+      // Fetch all active stores in the same workspace context as the QR code
+      let storesQuery = supabase
+        .from("stores")
+        .select("*")
+        .eq("is_active", true);
+
+      if (fromStore?.workspace_id) {
+        storesQuery = storesQuery.eq("workspace_id", fromStore.workspace_id);
+      } else {
+        storesQuery = storesQuery.eq("user_id", userId).is("workspace_id", null);
       }
+
+      const { data: allStoresData, error: storesError } = await storesQuery.order("name");
+
+      if (storesError) {
+        console.error("[ScanTransfer] Error fetching stores:", storesError);
+      }
+
+      console.log(
+        `[ScanTransfer] Fetched ${allStoresData?.length || 0} stores`,
+        allStoresData?.map((s) => s.name)
+      );
+
+      setFromStores(allStoresData || []);
+      setFromStoreId(contextData.from_store_id);
+
+      // Fetch destination stores (exclude selected from store)
+      const destStores = (allStoresData || []).filter(
+        (store) => store.id !== contextData.from_store_id
+      );
+
+      setStores(destStores);
+      if (destStores.length > 0) {
+        setToStoreId(destStores[0].id);
+      }
+
+      // Fetch items in the same workspace context
+      let itemsQuery = supabase
+        .from("items")
+        .select("*");
+
+      if (fromStore?.workspace_id) {
+        itemsQuery = itemsQuery.eq("workspace_id", fromStore.workspace_id);
+      } else {
+        itemsQuery = itemsQuery.eq("user_id", userId).is("workspace_id", null);
+      }
+
+      const { data: itemsData } = await itemsQuery.order("name");
+
+      // Filter to show only glassware items
+      const glasswareItems = (itemsData || []).filter(
+        (item) => item.name.toLowerCase().includes("glass")
+      );
+
+      setItems(glasswareItems);
+      if (glasswareItems.length > 0) {
+        setSelectedItemId(glasswareItems[0].id);
+      }
+
+      const { data: inventoryData } = await supabase
+        .from("inventory")
+        .select("*, items(*)")
+        .eq("store_id", contextData.from_store_id)
+        .gt("quantity", 0);
+
+      setInventory(inventoryData || []);
+    } catch (error) {
+      console.error("[ScanTransfer] Unexpected error while loading transfer context:", error);
+      toast.error("Failed to load transfer details. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setTransferContext({ ...contextData, fromStoreName: fromStore?.name });
-
-    console.log(
-      "[ScanTransfer] Using from store",
-      { id: fromStore?.id, name: fromStore?.name, workspace_id: fromStore?.workspace_id ?? "personal" }
-    );
-
-    // Fetch all active stores in the same workspace context as the QR code
-    let storesQuery = supabase
-      .from("stores")
-      .select("*")
-      .eq("is_active", true);
-
-    if (fromStore?.workspace_id) {
-      storesQuery = storesQuery.eq("workspace_id", fromStore.workspace_id);
-    } else {
-      storesQuery = storesQuery.eq("user_id", userId).is("workspace_id", null);
-    }
-
-    const { data: allStoresData, error: storesError } = await storesQuery.order("name");
-
-    if (storesError) {
-      console.error("[ScanTransfer] Error fetching stores:", storesError);
-    }
-
-    console.log(
-      `[ScanTransfer] Fetched ${allStoresData?.length || 0} stores`,
-      allStoresData?.map((s) => s.name)
-    );
-
-    setFromStores(allStoresData || []);
-    setFromStoreId(contextData.from_store_id);
-
-    // Fetch destination stores (exclude selected from store)
-    const destStores = (allStoresData || []).filter(
-      store => store.id !== contextData.from_store_id
-    );
-
-    setStores(destStores);
-    if (destStores.length > 0) {
-      setToStoreId(destStores[0].id);
-    }
-
-    // Fetch items in the same workspace context
-    let itemsQuery = supabase
-      .from("items")
-      .select("*");
-
-    if (fromStore?.workspace_id) {
-      itemsQuery = itemsQuery.eq("workspace_id", fromStore.workspace_id);
-    } else {
-      itemsQuery = itemsQuery.eq("user_id", userId).is("workspace_id", null);
-    }
-
-    const { data: itemsData } = await itemsQuery.order("name");
-
-    // Filter to show only glassware items
-    const glasswareItems = (itemsData || []).filter(
-      item => item.name.toLowerCase().includes("glass")
-    );
-
-    setItems(glasswareItems);
-    if (glasswareItems.length > 0) {
-      setSelectedItemId(glasswareItems[0].id);
-    }
-
-    const { data: inventoryData } = await supabase
-      .from("inventory")
-      .select("*, items(*)")
-      .eq("store_id", contextData.from_store_id)
-      .gt("quantity", 0);
-
-    setInventory(inventoryData || []);
-
-    setLoading(false);
   };
 
   // Update destination stores when from store changes
