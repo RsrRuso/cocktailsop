@@ -5441,6 +5441,13 @@ export type Database = {
             referencedRelation: "workspace_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "workspace_member_permissions_workspace_member_id_fkey"
+            columns: ["workspace_member_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_members_with_owner"
+            referencedColumns: ["id"]
+          },
         ]
       }
       workspace_members: {
@@ -5637,7 +5644,33 @@ export type Database = {
           user_id: string | null
           workspace_id: string | null
         }
-        Relationships: []
+        Insert: {
+          id?: string | null
+          invited_by?: string | null
+          joined_at?: string | null
+          permissions?: Json | null
+          role?: string | null
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          id?: string | null
+          invited_by?: string | null
+          joined_at?: string | null
+          permissions?: Json | null
+          role?: string | null
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
