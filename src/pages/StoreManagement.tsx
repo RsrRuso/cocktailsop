@@ -1163,6 +1163,147 @@ const StoreManagement = () => {
     }
   };
 
+  const handleDownloadReceivingsReport = async () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Header
+      doc.setFontSize(20);
+      doc.text("Receivings Report", 14, 20);
+      
+      // Workspace and date info
+      doc.setFontSize(12);
+      doc.text(`Workspace: ${currentWorkspace?.name || personalInventoryName}`, 14, 30);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 37);
+      doc.text(`Total Receivings: ${receivings.length}`, 14, 44);
+      
+      let yPos = 55;
+      
+      for (const receiving of receivings) {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        const itemId = receiving.details?.item_id;
+        const item = items.find((i: any) => i.id === itemId);
+        const quantityBefore = typeof receiving.quantity_before === 'number' ? receiving.quantity_before : 0;
+        const quantityAfter = typeof receiving.quantity_after === 'number' ? receiving.quantity_after : 0;
+        const receivedQty = typeof receiving.details?.received_quantity === 'number'
+          ? receiving.details.received_quantity
+          : (quantityAfter - quantityBefore) || quantityAfter || 0;
+        
+        // Item name
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text(item?.name || 'Unknown Item', 14, yPos);
+        yPos += 7;
+        
+        // Details
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Store: ${receiving.stores?.name}`, 14, yPos);
+        doc.text(`Qty: ${receivedQty}`, 100, yPos);
+        yPos += 5;
+        doc.text(`Date: ${new Date(receiving.created_at).toLocaleString()}`, 14, yPos);
+        yPos += 7;
+        
+        // Add image if available
+        if (item?.photo_url) {
+          try {
+            const imgData = await fetch(item.photo_url)
+              .then(res => res.blob())
+              .then(blob => new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+              }));
+            
+            doc.addImage(imgData as string, 'JPEG', 14, yPos, 30, 30);
+            yPos += 35;
+          } catch (error) {
+            console.error('Error loading image:', error);
+            yPos += 5;
+          }
+        } else {
+          yPos += 5;
+        }
+        
+        // Separator
+        doc.setDrawColor(200, 200, 200);
+        doc.line(14, yPos, 196, yPos);
+        yPos += 10;
+      }
+      
+      doc.save(`receivings-report-${new Date().toLocaleDateString()}.pdf`);
+      toast.success("Receivings report downloaded");
+    } catch (error) {
+      console.error("Error generating receivings PDF:", error);
+      toast.error("Failed to download receivings report");
+    }
+  };
+
+  const handleDownloadLiveTransactionsReport = async () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Header
+      doc.setFontSize(20);
+      doc.text("Live Transactions Report", 14, 20);
+      
+      // Info
+      doc.setFontSize(12);
+      doc.text(`Workspace: ${currentWorkspace?.name || personalInventoryName}`, 14, 30);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 37);
+      doc.text(`Total Transactions: ${transactions.length}`, 14, 44);
+      
+      let yPos = 55;
+      
+      for (const transaction of transactions) {
+        if (yPos > 250) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        // Transaction type and item
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text(`${transaction.type.toUpperCase()}: ${transaction.item_name || 'Multiple Items'}`, 14, yPos);
+        yPos += 7;
+        
+        // Details
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        
+        if (transaction.type === 'transfer') {
+          doc.text(`From: ${transaction.from_store} → To: ${transaction.to_store}`, 14, yPos);
+        } else {
+          doc.text(`Store: ${transaction.store}`, 14, yPos);
+        }
+        yPos += 5;
+        
+        doc.text(`Quantity: ${transaction.item_count}`, 14, yPos);
+        doc.text(`Status: ${transaction.status}`, 100, yPos);
+        yPos += 5;
+        doc.text(`By: ${transaction.user_email}`, 14, yPos);
+        yPos += 5;
+        doc.text(`Date: ${new Date(transaction.timestamp).toLocaleString()}`, 14, yPos);
+        yPos += 10;
+        
+        // Separator
+        doc.setDrawColor(200, 200, 200);
+        doc.line(14, yPos, 196, yPos);
+        yPos += 10;
+      }
+      
+      doc.save(`live-transactions-${new Date().toLocaleDateString()}.pdf`);
+      toast.success("Live transactions report downloaded");
+    } catch (error) {
+      console.error("Error generating live transactions PDF:", error);
+      toast.error("Failed to download transactions report");
+    }
+  };
+
   const handleDeleteReceiving = async (receiving: any) => {
     if (!user || !currentWorkspace) return;
 
@@ -1654,13 +1795,28 @@ const StoreManagement = () => {
           <TabsContent value="transactions" className="space-y-4">
             <Card className="border-none shadow-lg">
               <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10">
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Clock className="w-6 h-6 text-primary" />
-                  Live Transaction Feed
-                </CardTitle>
-                <CardDescription>
-                  Real-time updates from all store activities
-                </CardDescription>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-2xl">
+                      <Clock className="w-6 h-6 text-primary" />
+                      Live Transaction Feed
+                    </CardTitle>
+                    <CardDescription>
+                      Real-time updates from all store activities
+                    </CardDescription>
+                  </div>
+                  {transactions.length > 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleDownloadLiveTransactionsReport}
+                      className="flex-shrink-0"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Report
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 <ScrollArea className="h-[600px]">
@@ -1938,13 +2094,28 @@ const StoreManagement = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="w-5 h-5" />
-                  Recent Receivings ({receivings.length})
-                </CardTitle>
-                <CardDescription>
-                  All recorded receiving transactions
-                </CardDescription>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Package className="w-5 h-5" />
+                      Recent Receivings ({receivings.length})
+                    </CardTitle>
+                    <CardDescription>
+                      All recorded receiving transactions
+                    </CardDescription>
+                  </div>
+                  {receivings.length > 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleDownloadReceivingsReport}
+                      className="flex-shrink-0"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Report
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {receivings.length === 0 ? (
