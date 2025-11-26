@@ -12,28 +12,38 @@ const EMOJIS = ['❤️', '😂', '😮', '😢', '😍', '🙏', '👍', '🔥'
 export const EmojiReactionPicker = memo(({ show, onSelect, position }: EmojiReactionPickerProps) => {
   if (!show) return null;
 
-  // Calculate safe positioning to prevent cutoff
+  // Calculate safe positioning to prevent cutoff on all devices
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 400;
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
-  
-  // Emoji picker dimensions (approximate)
-  const pickerWidth = EMOJIS.length * 56; // 48px emoji + 8px gap
-  const pickerHeight = 80;
-  
+
+  // Responsive picker dimensions
+  const isCompact = viewportWidth < 480;
+  const pickerHeight = isCompact ? 64 : 80;
+  const edgeMargin = 16;
+
   // Calculate safe position
   let safeX = position.x;
   let safeY = position.y;
-  
-  // Prevent horizontal overflow
-  const leftEdge = pickerWidth / 2 + 20;
-  const rightEdge = viewportWidth - (pickerWidth / 2) - 20;
-  safeX = Math.max(leftEdge, Math.min(safeX, rightEdge));
-  
-  // Prevent vertical overflow
-  if (safeY < pickerHeight + 20) {
-    safeY = position.y + 100; // Position below instead
-  }
+  let showBelow = false;
 
+  // Prevent horizontal overflow by clamping within viewport with padding
+  const horizontalPadding = 24;
+  const maxWidth = viewportWidth - horizontalPadding * 2;
+  safeX = Math.max(
+    horizontalPadding,
+    Math.min(safeX, viewportWidth - horizontalPadding)
+  );
+
+  // Prefer showing above the touch point, but flip below/above when needed
+  if (safeY < pickerHeight + edgeMargin) {
+    // Too close to top, show below bubble instead
+    safeY = position.y + 72;
+    showBelow = true;
+  } else if (safeY + pickerHeight + edgeMargin > viewportHeight) {
+    // Too close to bottom, lift it above
+    safeY = position.y - 72;
+    showBelow = false;
+  }
   return (
     <>
       {/* Backdrop to close picker */}
@@ -57,13 +67,14 @@ export const EmojiReactionPicker = memo(({ show, onSelect, position }: EmojiReac
           style={{
             left: `${safeX}px`,
             top: `${safeY}px`,
-            transform: 'translate(-50%, -100%)',
+            transform: showBelow ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
             touchAction: 'none',
-            padding: '10px 14px',
+            padding: '8px 10px',
+            maxWidth: `${maxWidth}px`,
             background: 'linear-gradient(135deg, hsl(var(--background) / 0.95), hsl(var(--background) / 0.98))',
           }}
         >
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto px-0.5">
             {EMOJIS.map((emoji, index) => (
               <motion.button
                 key={emoji}
@@ -75,8 +86,8 @@ export const EmojiReactionPicker = memo(({ show, onSelect, position }: EmojiReac
                   stiffness: 600,
                   damping: 25
                 }}
-                whileTap={{ scale: 1.4 }}
-                whileHover={{ scale: 1.15, y: -8 }}
+                whileTap={{ scale: 1.3 }}
+                whileHover={{ scale: 1.1, y: -6 }}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -85,12 +96,12 @@ export const EmojiReactionPicker = memo(({ show, onSelect, position }: EmojiReac
                     navigator.vibrate(40);
                   }
                 }}
-                className="relative text-3xl transition-all active:scale-125 touch-manipulation cursor-pointer select-none min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-primary/10"
+                className="relative text-2xl transition-all active:scale-110 touch-manipulation cursor-pointer select-none min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full hover:bg-primary/10"
                 style={{
                   filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))',
                 }}
               >
-                <span className="relative z-10">{emoji}</span>
+                <span className="relative z-10 leading-none">{emoji}</span>
               </motion.button>
             ))}
           </div>
