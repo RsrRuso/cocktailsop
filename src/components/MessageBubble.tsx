@@ -366,9 +366,7 @@ export const MessageBubble = memo(({
         )}
 
         {message.media_url && message.media_type === 'voice' && (
-          <div className="px-2 py-2">
-            <VoiceWaveform audioUrl={message.media_url} />
-          </div>
+          <VoiceWaveform audioUrl={message.media_url} />
         )}
 
         {message.media_url && message.media_type === 'document' && (

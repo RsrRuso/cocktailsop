@@ -97,59 +97,69 @@ export const VoiceWaveform = ({ audioUrl, duration }: VoiceWaveformProps) => {
   const progress = audioDuration > 0 ? currentTime / audioDuration : 0;
 
   return (
-    <div className="flex items-center gap-3 min-w-[280px] max-w-md">
+    <div className="flex items-center gap-3 min-w-[240px] max-w-md">
       {/* Play/Pause Button */}
       <Button
         size="icon"
         variant="ghost"
         onClick={togglePlayPause}
-        className="h-10 w-10 rounded-full glass hover:scale-110 transition-transform shrink-0"
+        className="h-9 w-9 rounded-full bg-primary/10 hover:bg-primary/20 hover:scale-105 transition-all shrink-0"
       >
         {isPlaying ? (
-          <Pause className="h-5 w-5 text-primary" fill="currentColor" />
+          <Pause className="h-4 w-4 text-primary" fill="currentColor" />
         ) : (
-          <Play className="h-5 w-5 text-primary" fill="currentColor" />
+          <Play className="h-4 w-4 text-primary ml-0.5" fill="currentColor" />
         )}
       </Button>
 
-      {/* Waveform */}
-      <div className="flex-1 flex flex-col gap-1">
-        <div className="flex items-center gap-0.5 h-12 cursor-pointer">
-          {waveformData.map((height, index) => {
-            const isPast = index / waveformData.length < progress;
-            return (
-              <button
-                key={index}
-                onClick={() => handleWaveformClick(index)}
-                className="flex-1 flex items-center justify-center group"
-                style={{ minWidth: '2px' }}
-              >
-                <div
-                  className={`w-full rounded-full transition-all duration-150 ${
-                    isPlaying && isPast
-                      ? 'bg-primary glow-primary'
-                      : 'bg-muted-foreground/30 group-hover:bg-muted-foreground/50'
-                  } ${
-                    isPlaying && Math.abs(index / waveformData.length - progress) < 0.05
-                      ? 'animate-pulse'
-                      : ''
-                  }`}
-                  style={{
-                    height: `${height * 100}%`,
-                    maxHeight: '48px',
-                  }}
-                />
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Time Display */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-          <span>{formatTime(currentTime)}</span>
-          <span>{formatTime(audioDuration)}</span>
-        </div>
+      {/* Animated Waveform Lines */}
+      <div className="flex-1 flex items-center gap-1 h-8">
+        {waveformData.map((height, index) => {
+          const isPast = index / waveformData.length < progress;
+          const isNearPlayhead = isPlaying && Math.abs(index / waveformData.length - progress) < 0.08;
+          
+          return (
+            <button
+              key={index}
+              onClick={() => handleWaveformClick(index)}
+              className="flex-1 flex items-center justify-center min-w-[2px] max-w-[3px]"
+            >
+              <div
+                className={`w-full rounded-full transition-all duration-100 ${
+                  isPlaying && isPast
+                    ? 'bg-primary'
+                    : 'bg-muted-foreground/40'
+                } ${
+                  isNearPlayhead
+                    ? 'animate-pulse scale-110'
+                    : ''
+                }`}
+                style={{
+                  height: isPlaying && isNearPlayhead 
+                    ? `${Math.min(height * 120, 100)}%` 
+                    : `${height * 100}%`,
+                  maxHeight: '32px',
+                  animation: isPlaying && isNearPlayhead 
+                    ? 'wave-vibrate 0.3s ease-in-out infinite' 
+                    : 'none',
+                }}
+              />
+            </button>
+          );
+        })}
       </div>
+
+      {/* Time Display */}
+      <span className="text-[10px] text-muted-foreground/70 shrink-0 min-w-[32px] text-right">
+        {formatTime(isPlaying ? currentTime : audioDuration)}
+      </span>
+      
+      <style>{`
+        @keyframes wave-vibrate {
+          0%, 100% { transform: scaleY(1); }
+          50% { transform: scaleY(1.2); }
+        }
+      `}</style>
     </div>
   );
 };
