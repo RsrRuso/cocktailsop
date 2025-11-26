@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { ZoomableImage } from "@/components/ZoomableImage";
 import { ArrowLeft, Package, Search, Filter, Image as ImageIcon, Download } from "lucide-react";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
@@ -179,7 +179,7 @@ const AllInventory = () => {
       });
       
       // Generate table
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: 50,
         head: [['Item Name', 'Brand', 'Category', 'Total Qty', 'Store Breakdown']],
         body: tableData,
