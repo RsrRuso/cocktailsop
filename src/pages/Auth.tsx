@@ -10,25 +10,24 @@ import { z } from "zod";
 // Validation schemas
 const signUpSchema = z.object({
   email: z.string()
-    .email('Invalid email format')
-    .max(255, 'Email too long')
+    .email('Please enter a valid email address')
+    .max(255, 'Email is too long')
     .toLowerCase(),
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password too long')
-    .regex(/[A-Z]/, 'Must contain uppercase letter')
-    .regex(/[a-z]/, 'Must contain lowercase letter')
-    .regex(/[0-9]/, 'Must contain number')
-    .regex(/[^A-Za-z0-9]/, 'Must contain special character'),
+    .max(128, 'Password is too long')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
   username: z.string()
     .min(3, 'Username must be at least 3 characters')
-    .max(30, 'Username too long')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers, and underscore allowed'),
+    .max(30, 'Username is too long')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
   fullName: z.string()
     .trim()
-    .min(1, 'Name is required')
-    .max(100, 'Name too long')
-    .regex(/^[a-zA-Z\s'-]+$/, 'Invalid characters in name'),
+    .min(1, 'Full name is required')
+    .max(100, 'Name is too long')
+    .regex(/^[a-zA-Z\s'-]+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes'),
   dateOfBirth: z.string()
     .min(1, 'Date of birth is required')
     .refine((date) => {
@@ -36,7 +35,7 @@ const signUpSchema = z.object({
       const today = new Date();
       const age = today.getFullYear() - birthDate.getFullYear();
       return age >= 18 && age <= 120;
-    }, 'You must be at least 18 years old')
+    }, 'You must be at least 18 years old to sign up')
 });
 
 const signInSchema = z.object({
@@ -129,7 +128,7 @@ const Auth = () => {
           dateOfBirth
         });
 
-        const { error } = await supabase.auth.signUp({
+        const { error, data } = await supabase.auth.signUp({
           email: validated.email,
           password: validated.password,
           options: {
@@ -141,8 +140,13 @@ const Auth = () => {
             },
           },
         });
-        if (error) throw error;
-        toast.success("Account created! Welcome to SpecVerse");
+        if (error) {
+          if (error.message.includes('already registered')) {
+            throw new Error('This email is already registered. Please sign in instead.');
+          }
+          throw error;
+        }
+        toast.success("🎉 Welcome to SV! Your account has been created successfully!");
         navigate(redirectTo);
       } else {
         // Validate signin inputs
@@ -179,10 +183,10 @@ const Auth = () => {
       <div className="w-full max-w-md glass glow-primary rounded-2xl p-8 space-y-6 relative z-10">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-gradient-primary">
-            SpecVerse
+            SV
           </h1>
           <p className="text-muted-foreground">
-            The Professional Network for Beverage Industry
+            {isSignUp ? "Join the Professional Network for Beverage Industry" : "Sign in to your account"}
           </p>
         </div>
 
@@ -278,24 +282,21 @@ const Auth = () => {
                       className="glass"
                       placeholder={isSignUp ? "Create a strong password" : "Enter password"}
                     />
-                    {isSignUp && (
-                      <div className="text-xs space-y-1 mt-2 p-3 glass rounded-lg">
-                        <p className="font-semibold text-foreground mb-1">Password must contain:</p>
+                    {isSignUp && password && (
+                      <div className="text-xs space-y-1 mt-2 p-3 glass rounded-lg border border-border/50">
+                        <p className="font-semibold text-foreground mb-1.5">Password strength:</p>
                         <div className="space-y-1">
-                          <p className={password.length >= 8 ? "text-green-500" : "text-muted-foreground"}>
-                            ✓ At least 8 characters
+                          <p className={password.length >= 8 ? "text-green-500 font-medium" : "text-muted-foreground"}>
+                            {password.length >= 8 ? "✓" : "○"} At least 8 characters
                           </p>
-                          <p className={/[A-Z]/.test(password) ? "text-green-500" : "text-muted-foreground"}>
-                            ✓ One uppercase letter (A-Z)
+                          <p className={/[A-Z]/.test(password) ? "text-green-500 font-medium" : "text-muted-foreground"}>
+                            {/[A-Z]/.test(password) ? "✓" : "○"} One uppercase letter (A-Z)
                           </p>
-                          <p className={/[a-z]/.test(password) ? "text-green-500" : "text-muted-foreground"}>
-                            ✓ One lowercase letter (a-z)
+                          <p className={/[a-z]/.test(password) ? "text-green-500 font-medium" : "text-muted-foreground"}>
+                            {/[a-z]/.test(password) ? "✓" : "○"} One lowercase letter (a-z)
                           </p>
-                          <p className={/[0-9]/.test(password) ? "text-green-500" : "text-muted-foreground"}>
-                            ✓ One number (0-9)
-                          </p>
-                          <p className={/[^A-Za-z0-9]/.test(password) ? "text-green-500" : "text-muted-foreground"}>
-                            ✓ One special character (!@#$%^&*)
+                          <p className={/[0-9]/.test(password) ? "text-green-500 font-medium" : "text-muted-foreground"}>
+                            {/[0-9]/.test(password) ? "✓" : "○"} One number (0-9)
                           </p>
                         </div>
                       </div>
@@ -342,10 +343,15 @@ const Auth = () => {
 
           <Button
             type="submit"
-            className="w-full glow-primary"
-            disabled={loading}
+            className="w-full glow-primary font-semibold"
+            disabled={loading || (isSignUp && password !== confirmPassword)}
           >
-            {loading ? "Processing..." : isResettingPassword ? "Update Password" : isForgotPassword ? "Send Reset Link" : isSignUp ? "Sign Up" : "Sign In"}
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <span>Processing...</span>
+              </div>
+            ) : isResettingPassword ? "Update Password" : isForgotPassword ? "Send Reset Link" : isSignUp ? "Create Account" : "Sign In"}
           </Button>
         </form>
 
