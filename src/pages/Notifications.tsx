@@ -258,19 +258,17 @@ const Notifications = () => {
     if (notification.type === 'access_request') {
       navigate('/access-approval');
     } else if (notification.type === 'stock_alert') {
-      // Navigate to all inventory or store management for stock alerts
-      // Since stock_alert notifications don't include workspace_id, navigate to general inventory page
+      // General low-stock alert → go to all inventory overview
       navigate('/all-inventory');
-    } else if (notification.post_id) {
-      navigate(`/post/${notification.post_id}`);
-    } else if (notification.reel_id) {
-      navigate('/reels');
-    } else if (notification.story_id) {
-      navigate(`/story/${notification.story_id}`);
-    } else if (notification.music_share_id) {
-      navigate('/thunder');
-    } else if (notification.event_id) {
-      navigate(`/event/${notification.event_id}`);
+    } else if (notification.type === 'fifo_alert') {
+      // FIFO expiry alert → open FIFO / inventory manager view
+      navigate('/inventory-manager');
+    } else if (notification.type === 'inventory_transfer' || notification.type === 'inventory_receiving' || notification.type === 'spot_check') {
+      // All inventory operations → live transactions feed
+      navigate('/inventory-transactions');
+    } else if (notification.type === 'internal_email') {
+      // Internal email notification → open email page
+      navigate('/email');
     } else if (notification.type === 'follow' || notification.type === 'unfollow') {
       // For follow/unfollow notifications, navigate to the user's profile
       if (notification.reference_user_id) {
@@ -291,6 +289,17 @@ const Notifications = () => {
     } else if (notification.type === 'new_event' && notification.event_id) {
       navigate(`/event/${notification.event_id}`);
     } else if (notification.type === 'event_attendance' && notification.event_id) {
+      navigate(`/event/${notification.event_id}`);
+    } else if (notification.post_id) {
+      // Generic post-related notification
+      navigate(`/post/${notification.post_id}`);
+    } else if (notification.reel_id) {
+      navigate('/reels');
+    } else if (notification.story_id) {
+      navigate(`/story/${notification.story_id}`);
+    } else if (notification.music_share_id) {
+      navigate('/thunder');
+    } else if (notification.event_id) {
       navigate(`/event/${notification.event_id}`);
     } else if (notification.reference_user_id) {
       // Fallback: any notification with reference_user_id goes to that user's profile
