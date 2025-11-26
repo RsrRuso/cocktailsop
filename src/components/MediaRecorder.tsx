@@ -31,13 +31,15 @@ export const MediaRecorder = ({
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center">
       <div className="relative w-[80vmin] h-[80vmin] max-w-[500px] max-h-[500px]">
-        <video
-          ref={videoPreviewRef}
-          autoPlay
-          muted
-          playsInline
-          className="w-full h-full object-cover rounded-full shadow-2xl"
-        />
+        <div className="w-full h-full rounded-full overflow-hidden shadow-2xl">
+          <video
+            ref={videoPreviewRef}
+            autoPlay
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          />
+        </div>
       </div>
       <div className="absolute bottom-8 left-0 right-0 px-4 flex flex-col gap-3">
         {isUploading && (
