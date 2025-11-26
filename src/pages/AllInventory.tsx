@@ -143,57 +143,66 @@ const AllInventory = () => {
   const inventoryList = Object.values(aggregatedInventory);
 
   const generatePDF = () => {
-    const doc = new jsPDF();
-    
-    // Title
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text("All Inventory Across Stores", 14, 20);
-    
-    // Summary
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Total Items: ${inventoryList.length}`, 14, 30);
-    doc.text(`Total Stores: ${stores.length}`, 14, 36);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 42);
-    
-    // Prepare table data
-    const tableData = inventoryList.map((item: any) => {
-      const storeDetails = item.storeQuantities
-        .map((sq: any) => `${sq.store?.name || 'Unknown'}: ${sq.quantity}`)
-        .join('\n');
-      
-      return [
-        item.items?.name || 'Unknown Item',
-        item.items?.brand || '-',
-        item.items?.category || '-',
-        item.totalQuantity.toString(),
-        storeDetails
-      ];
-    });
-    
-    // Generate table
-    (doc as any).autoTable({
-      startY: 50,
-      head: [['Item Name', 'Brand', 'Category', 'Total Qty', 'Store Breakdown']],
-      body: tableData,
-      theme: 'striped',
-      headStyles: { fillColor: [41, 128, 185], fontStyle: 'bold' },
-      styles: { fontSize: 9, cellPadding: 3 },
-      columnStyles: {
-        0: { cellWidth: 40 },
-        1: { cellWidth: 30 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 20 },
-        4: { cellWidth: 60 }
-      }
-    });
-    
-    // Save PDF
-    doc.save(`all-inventory-${new Date().toISOString().split('T')[0]}.pdf`);
-    toast.success("PDF downloaded successfully");
-  };
+    if (inventoryList.length === 0) {
+      toast.error("No inventory items to export");
+      return;
+    }
 
+    try {
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("All Inventory Across Stores", 14, 20);
+      
+      // Summary
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Total Items: ${inventoryList.length}`, 14, 30);
+      doc.text(`Total Stores: ${stores.length}`, 14, 36);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 42);
+      
+      // Prepare table data
+      const tableData = inventoryList.map((item: any) => {
+        const storeDetails = item.storeQuantities
+          .map((sq: any) => `${sq.store?.name || 'Unknown'}: ${sq.quantity}`)
+          .join('\n');
+        
+        return [
+          item.items?.name || 'Unknown Item',
+          item.items?.brand || '-',
+          item.items?.category || '-',
+          item.totalQuantity.toString(),
+          storeDetails
+        ];
+      });
+      
+      // Generate table
+      (doc as any).autoTable({
+        startY: 50,
+        head: [['Item Name', 'Brand', 'Category', 'Total Qty', 'Store Breakdown']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [41, 128, 185], fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: {
+          0: { cellWidth: 40 },
+          1: { cellWidth: 30 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 20 },
+          4: { cellWidth: 60 }
+        }
+      });
+      
+      // Save PDF
+      doc.save(`all-inventory-${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success("PDF downloaded successfully");
+    } catch (error) {
+      console.error("Error generating all inventory PDF:", error);
+      toast.error("Failed to generate PDF");
+    }
+  };
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
