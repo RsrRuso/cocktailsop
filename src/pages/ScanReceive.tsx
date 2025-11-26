@@ -67,25 +67,36 @@ export default function ScanReceive() {
         .eq("id", contextData.to_store_id)
         .maybeSingle();
 
-      // Check permissions if this is a workspace store
-      if (toStore?.workspace_id) {
-        const { data: membership } = await supabase
+      // Determine workspace from QR context first, then fall back to store
+      const workspaceId = contextData.workspace_id || toStore?.workspace_id || null;
+
+      // Check permissions only when a workspace is involved
+      if (workspaceId) {
+        const { data: membership, error: membershipError } = await supabase
           .from("workspace_members_with_owner")
           .select("role, permissions")
-          .eq("workspace_id", toStore.workspace_id)
+          .eq("workspace_id", workspaceId)
           .eq("user_id", userId)
           .maybeSingle();
+
+        if (membershipError) {
+          console.error("[ScanReceive] Error checking workspace membership:", membershipError);
+        }
 
         let effectiveRole = membership?.role as string | undefined;
         let effectivePermissions = (membership?.permissions as any) || {};
 
         // Fallback: if no membership row, still allow workspace owner
         if (!membership) {
-          const { data: workspace } = await supabase
+          const { data: workspace, error: workspaceError } = await supabase
             .from("workspaces")
             .select("owner_id")
-            .eq("id", toStore.workspace_id)
+            .eq("id", workspaceId)
             .maybeSingle();
+
+          if (workspaceError) {
+            console.error("[ScanReceive] Error fetching workspace for access check:", workspaceError);
+          }
 
           if (workspace?.owner_id === userId) {
             effectiveRole = "owner";
