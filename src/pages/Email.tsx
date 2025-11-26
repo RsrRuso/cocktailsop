@@ -301,48 +301,44 @@ const Email = () => {
           )}
         </div>
 
-        {/* Filters - Mobile Optimized with Clear Labels */}
-        <div className="mb-4">
-          <p className="text-xs text-muted-foreground mb-2 px-1">Filter by:</p>
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-3 px-3 scrollbar-hide">
-            <Button
-              variant={filter === "inbox" ? "default" : "outline"}
-              onClick={() => setFilter("inbox")}
-              size="sm"
-              className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
-            >
-              <Inbox className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Inbox</span>
-              <span className="sm:hidden">In</span>
-            </Button>
-            <Button
-              variant={filter === "sent" ? "default" : "outline"}
-              onClick={() => setFilter("sent")}
-              size="sm"
-              className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sent</span>
-            </Button>
-            <Button
-              variant={filter === "starred" ? "default" : "outline"}
-              onClick={() => setFilter("starred")}
-              size="sm"
-              className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
-            >
-              <Star className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Starred</span>
-            </Button>
-            <Button
-              variant={filter === "archived" ? "default" : "outline"}
-              onClick={() => setFilter("archived")}
-              size="sm"
-              className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
-            >
-              <Archive className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Archived</span>
-            </Button>
-          </div>
+        {/* Filters - Mobile Optimized */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-2 -mx-3 px-3 scrollbar-hide">
+          <Button
+            variant={filter === "inbox" ? "default" : "outline"}
+            onClick={() => setFilter("inbox")}
+            size="sm"
+            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
+          >
+            <Inbox className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Inbox</span>
+          </Button>
+          <Button
+            variant={filter === "sent" ? "default" : "outline"}
+            onClick={() => setFilter("sent")}
+            size="sm"
+            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Sent</span>
+          </Button>
+          <Button
+            variant={filter === "starred" ? "default" : "outline"}
+            onClick={() => setFilter("starred")}
+            size="sm"
+            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
+          >
+            <Star className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Starred</span>
+          </Button>
+          <Button
+            variant={filter === "archived" ? "default" : "outline"}
+            onClick={() => setFilter("archived")}
+            size="sm"
+            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
+          >
+            <Archive className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Archived</span>
+          </Button>
         </div>
 
         {/* Email List - Mobile Optimized */}
@@ -466,27 +462,14 @@ const Email = () => {
               <div className="glass p-3 rounded-xl border border-primary/20">
                 <p className="text-xs sm:text-sm font-medium mb-2 text-primary">AI Suggestion:</p>
                 <p className="text-xs sm:text-sm">{aiSuggestion}</p>
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setBody(aiSuggestion)}
-                    className="h-8 text-xs flex-1"
-                  >
-                    Use This
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      navigator.clipboard.writeText(aiSuggestion);
-                      toast.success("Copied to clipboard!");
-                    }}
-                    className="h-8 text-xs"
-                  >
-                    Copy
-                  </Button>
-                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setBody(aiSuggestion)}
+                  className="mt-2 h-8 text-xs"
+                >
+                  Use This
+                </Button>
               </div>
             )}
 
