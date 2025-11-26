@@ -142,56 +142,192 @@ const AllInventory = () => {
 
   const inventoryList = Object.values(aggregatedInventory);
 
-  const generatePDF = () => {
-    const doc = new jsPDF();
-    
-    // Title
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text("All Inventory Across Stores", 14, 20);
-    
-    // Summary
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Total Items: ${inventoryList.length}`, 14, 30);
-    doc.text(`Total Stores: ${stores.length}`, 14, 36);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 42);
-    
-    // Prepare table data
-    const tableData = inventoryList.map((item: any) => {
-      const storeDetails = item.storeQuantities
-        .map((sq: any) => `${sq.store?.name || 'Unknown'}: ${sq.quantity}`)
-        .join('\n');
+  const generatePDF = async () => {
+    try {
+      const doc = new jsPDF();
+      let yPosition = 20;
       
-      return [
+      // Title
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("All Inventory Across Stores", 14, yPosition);
+      yPosition += 10;
+      
+      // Summary
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, yPosition);
+      yPosition += 6;
+      doc.text(`Total Stores: ${stores.length} | Total Items: ${inventoryList.length}`, 14, yPosition);
+      yPosition += 10;
+      
+      // Helper function to load image as base64
+      const loadImageAsBase64 = (url: string): Promise<string> => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
+          };
+          img.onerror = () => resolve('');
+          img.src = url;
+        });
+      };
+      
+      // Group inventory by store
+      const inventoryByStore: Record<string, any[]> = {};
+      filteredInventory.forEach(inv => {
+        const storeId = inv.store_id;
+        const storeName = inv.stores?.name || 'Unknown Store';
+        if (!inventoryByStore[storeId]) {
+          inventoryByStore[storeId] = [];
+        }
+        inventoryByStore[storeId].push({
+          ...inv,
+          storeName
+        });
+      });
+      
+      // Generate table for each store
+      for (const [storeId, storeItems] of Object.entries(inventoryByStore)) {
+        const storeName = storeItems[0]?.storeName || 'Unknown Store';
+        
+        // Check if we need a new page
+        if (yPosition > 250) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        // Store header
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text(storeName, 14, yPosition);
+        yPosition += 8;
+        
+        // Prepare table data with images
+        const tableData = await Promise.all(
+          storeItems.map(async (item: any) => {
+            let imageData = '';
+            if (item.items?.photo_url) {
+              imageData = await loadImageAsBase64(item.items.photo_url);
+            }
+            
+            return {
+              image: imageData,
+              name: item.items?.name || 'Unknown Item',
+              brand: item.items?.brand || '-',
+              category: item.items?.category || '-',
+              quantity: item.quantity?.toString() || '0',
+              batch: item.batch_number || '-',
+              expiry: item.expiration_date ? new Date(item.expiration_date).toLocaleDateString() : '-'
+            };
+          })
+        );
+        
+        // Generate table with images
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Image', 'Item Name', 'Brand', 'Category', 'Qty', 'Batch', 'Expiry']],
+          body: tableData.map(row => [
+            row.image ? 'IMG' : '-',
+            row.name,
+            row.brand,
+            row.category,
+            row.quantity,
+            row.batch,
+            row.expiry
+          ]),
+          didDrawCell: (data: any) => {
+            if (data.column.index === 0 && data.cell.section === 'body') {
+              const rowData = tableData[data.row.index];
+              if (rowData.image) {
+                try {
+                  doc.addImage(
+                    rowData.image,
+                    'JPEG',
+                    data.cell.x + 2,
+                    data.cell.y + 2,
+                    10,
+                    10
+                  );
+                } catch (e) {
+                  console.error('Error adding image:', e);
+                }
+              }
+            }
+          },
+          theme: 'striped',
+          headStyles: { fillColor: [41, 128, 185], fontStyle: 'bold', fontSize: 9 },
+          styles: { fontSize: 8, cellPadding: 2, minCellHeight: 14 },
+          columnStyles: {
+            0: { cellWidth: 15 },
+            1: { cellWidth: 40 },
+            2: { cellWidth: 25 },
+            3: { cellWidth: 25 },
+            4: { cellWidth: 15 },
+            5: { cellWidth: 25 },
+            6: { cellWidth: 25 }
+          }
+        });
+        
+        yPosition = (doc as any).lastAutoTable.finalY + 10;
+      }
+      
+      // Add total summary on new page
+      doc.addPage();
+      yPosition = 20;
+      
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("Total Summary", 14, yPosition);
+      yPosition += 10;
+      
+      // Prepare total summary data
+      const totalSummaryData = inventoryList.map((item: any) => [
         item.items?.name || 'Unknown Item',
         item.items?.brand || '-',
         item.items?.category || '-',
         item.totalQuantity.toString(),
-        storeDetails
-      ];
-    });
-    
-    // Generate table
-    autoTable(doc, {
-      startY: 50,
-      head: [['Item Name', 'Brand', 'Category', 'Total Qty', 'Store Breakdown']],
-      body: tableData,
-      theme: 'striped',
-      headStyles: { fillColor: [41, 128, 185], fontStyle: 'bold' },
-      styles: { fontSize: 9, cellPadding: 3 },
-      columnStyles: {
-        0: { cellWidth: 40 },
-        1: { cellWidth: 30 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 20 },
-        4: { cellWidth: 60 }
-      }
-    });
-    
-    // Save PDF
-    doc.save(`all-inventory-${new Date().toISOString().split('T')[0]}.pdf`);
-    toast.success("PDF downloaded successfully");
+        item.storeQuantities.length.toString()
+      ]);
+      
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Item Name', 'Brand', 'Category', 'Total Quantity', 'Stores Count']],
+        body: totalSummaryData,
+        theme: 'grid',
+        headStyles: { fillColor: [52, 152, 219], fontStyle: 'bold', fontSize: 10 },
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: {
+          0: { cellWidth: 60 },
+          1: { cellWidth: 40 },
+          2: { cellWidth: 40 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 25 }
+        }
+      });
+      
+      // Calculate grand totals
+      const grandTotal = inventoryList.reduce((sum, item: any) => sum + item.totalQuantity, 0);
+      yPosition = (doc as any).lastAutoTable.finalY + 10;
+      
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Grand Total Quantity: ${grandTotal}`, 14, yPosition);
+      doc.text(`Total Unique Items: ${inventoryList.length}`, 14, yPosition + 7);
+      
+      // Save PDF
+      doc.save(`all-inventory-${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success("PDF downloaded successfully");
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error("Failed to generate PDF");
+    }
   };
 
   if (loading) {
