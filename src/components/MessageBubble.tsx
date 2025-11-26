@@ -289,7 +289,7 @@ export const MessageBubble = memo(({
         </div>
 
         {children}
-      </div>
+      </motion.div>
     </div>
   );
 }, (prevProps, nextProps) => {
