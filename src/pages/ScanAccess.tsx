@@ -66,7 +66,7 @@ const ScanAccess = () => {
 
         // Check if user is already a member
         const { data: membership } = await supabase
-          .from("workspace_members")
+          .from("workspace_members_with_owner")
           .select("*")
           .eq("workspace_id", workspaceId)
           .eq("user_id", user.id)
@@ -123,7 +123,7 @@ const ScanAccess = () => {
     try {
       // Check if user is already a workspace member first
       const { data: membership } = await supabase
-        .from("workspace_members")
+        .from("workspace_members_with_owner")
         .select("*")
         .eq("workspace_id", workspaceId)
         .eq("user_id", user.id)

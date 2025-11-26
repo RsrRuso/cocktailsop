@@ -57,7 +57,7 @@ export const useInventoryAccess = () => {
 
       // Check if user is a workspace member
       const { data: memberData, error: memberError } = await supabase
-        .from('workspace_members')
+        .from('workspace_members_with_owner')
         .select('id')
         .eq('user_id', user.id)
         .limit(1);
@@ -96,7 +96,7 @@ export const useInventoryAccess = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'workspace_members',
+          table: 'workspace_members_with_owner',
           filter: `user_id=eq.${user?.id}`
         },
         () => {
