@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Users, Check, X } from 'lucide-react';
+import { Search, Users, Check, X, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import OptimizedAvatar from './OptimizedAvatar';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +29,8 @@ export const CreateGroupDialog = ({
 }: CreateGroupDialogProps) => {
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
+  const [groupAvatar, setGroupAvatar] = useState<File | null>(null);
+  const [groupAvatarPreview, setGroupAvatarPreview] = useState<string | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
@@ -36,12 +38,15 @@ export const CreateGroupDialog = ({
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       fetchContacts();
       setGroupName('');
       setGroupDescription('');
+      setGroupAvatar(null);
+      setGroupAvatarPreview(null);
       setSelectedMembers(new Set());
       setSearchQuery('');
     }
@@ -98,6 +103,22 @@ export const CreateGroupDialog = ({
     });
   };
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Avatar must be less than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setGroupAvatar(file);
+      setGroupAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleCreateGroup = async () => {
     if (!groupName.trim() || selectedMembers.size === 0) {
       toast({
@@ -110,6 +131,27 @@ export const CreateGroupDialog = ({
 
     setIsCreating(true);
     try {
+      let avatarUrl: string | null = null;
+
+      // Upload avatar if provided
+      if (groupAvatar) {
+        const fileExt = groupAvatar.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `group-avatars/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, groupAvatar);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        avatarUrl = publicUrl;
+      }
+
       // Create group conversation
       const participantIds = [currentUserId, ...Array.from(selectedMembers)];
       
@@ -120,6 +162,7 @@ export const CreateGroupDialog = ({
           is_group: true,
           group_name: groupName.trim(),
           group_description: groupDescription.trim() || null,
+          group_avatar_url: avatarUrl,
           created_by: currentUserId,
           last_message_at: new Date().toISOString(),
         })
@@ -176,6 +219,38 @@ export const CreateGroupDialog = ({
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+          {/* Group Avatar */}
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full overflow-hidden glass border-2 border-primary/20">
+                {groupAvatarPreview ? (
+                  <img src={groupAvatarPreview} alt="Group avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted">
+                    <Users className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center shadow-lg"
+              >
+                <Camera className="w-4 h-4 text-primary-foreground" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">Group Photo</p>
+              <p className="text-xs text-muted-foreground">Click camera to upload</p>
+            </div>
+          </div>
+
           {/* Group Info */}
           <div className="space-y-3">
             <Input

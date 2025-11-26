@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Users, UserPlus, UserMinus, Settings, Save, Trash2, LogOut } from 'lucide-react';
+import { Users, UserPlus, UserMinus, Settings, Save, Trash2, LogOut, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import OptimizedAvatar from './OptimizedAvatar';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +44,9 @@ export const GroupSettingsDialog = ({
 }: GroupSettingsDialogProps) => {
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
+  const [groupAvatarUrl, setGroupAvatarUrl] = useState<string | null>(null);
+  const [groupAvatar, setGroupAvatar] = useState<File | null>(null);
+  const [groupAvatarPreview, setGroupAvatarPreview] = useState<string | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -51,6 +54,7 @@ export const GroupSettingsDialog = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -64,13 +68,15 @@ export const GroupSettingsDialog = ({
       // Fetch conversation info
       const { data: conv } = await supabase
         .from('conversations')
-        .select('group_name, group_description')
+        .select('group_name, group_description, group_avatar_url')
         .eq('id', conversationId)
         .single();
 
       if (conv) {
         setGroupName(conv.group_name || '');
         setGroupDescription(conv.group_description || '');
+        setGroupAvatarUrl(conv.group_avatar_url);
+        setGroupAvatarPreview(conv.group_avatar_url);
       }
 
       // Fetch group members
@@ -105,6 +111,22 @@ export const GroupSettingsDialog = ({
     }
   };
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Avatar must be less than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setGroupAvatar(file);
+      setGroupAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSave = async () => {
     if (!groupName.trim()) {
       toast({
@@ -117,11 +139,33 @@ export const GroupSettingsDialog = ({
 
     setIsSaving(true);
     try {
+      let avatarUrl = groupAvatarUrl;
+
+      // Upload new avatar if provided
+      if (groupAvatar) {
+        const fileExt = groupAvatar.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `group-avatars/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, groupAvatar);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        avatarUrl = publicUrl;
+      }
+
       const { error } = await supabase
         .from('conversations')
         .update({
           group_name: groupName.trim(),
           group_description: groupDescription.trim() || null,
+          group_avatar_url: avatarUrl,
         })
         .eq('id', conversationId);
 
@@ -238,6 +282,38 @@ export const GroupSettingsDialog = ({
             {/* Group Info */}
             {isAdmin && (
               <div className="space-y-3 pb-4 border-b border-border/50">
+                {/* Group Avatar */}
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-20 h-20 rounded-full overflow-hidden glass border-2 border-primary/20">
+                      {groupAvatarPreview ? (
+                        <img src={groupAvatarPreview} alt="Group avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-muted">
+                          <Users className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center shadow-lg"
+                    >
+                      <Camera className="w-4 h-4 text-primary-foreground" />
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      className="hidden"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Group Photo</p>
+                    <p className="text-xs text-muted-foreground">Click camera to change</p>
+                  </div>
+                </div>
+
                 <Input
                   placeholder="Group name"
                   value={groupName}
