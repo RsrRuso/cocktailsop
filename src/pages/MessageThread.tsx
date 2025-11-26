@@ -259,13 +259,13 @@ const MessageThread = () => {
                 setForwardingMessage(message);
                 setShowForwardDialog(true);
               }}
-              onReaction={message.media_type !== 'video' ? (emoji) => handleReaction(message.id, emoji) : undefined}
+              onReaction={(emoji) => handleReaction(message.id, emoji)}
               onEdit={isOwn && !message.media_url ? () => { 
                 setEditingMessage(message); 
                 setNewMessage(message.content); 
               } : undefined}
             >
-              {message.reactions && message.reactions.length > 0 && message.media_type !== 'video' && (
+              {message.reactions && message.reactions.length > 0 && (
                 <div className="flex gap-1.5 mt-2 flex-wrap">
                   {message.reactions.map((reaction, idx) => (
                     <button 

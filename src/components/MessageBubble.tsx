@@ -55,8 +55,6 @@ export const MessageBubble = memo(({
   const tapCount = useRef(0);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    // Don't handle touch events for video messages
-    if (message.media_url && message.media_type === 'video') return;
     
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
