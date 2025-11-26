@@ -277,10 +277,18 @@ export const MessageBubble = memo(({
         }}
         whileTap={{ scale: 0.98 }}
         className={`relative group max-w-[75%] z-10 ${
-          message.media_url && message.media_type === 'image'
+          message.media_url && (message.media_type === 'image' || message.media_type === 'video')
             ? ''
             : 'glass backdrop-blur-xl px-4 py-2'
-        } rounded-2xl ${isOwn ? 'glow-primary' : ''} touch-pan-y`}
+        } ${
+          message.media_url && message.media_type === 'video'
+            ? ''
+            : 'rounded-2xl'
+        } ${
+          isOwn && !(message.media_url && message.media_type === 'video')
+            ? 'glow-primary'
+            : ''
+        } touch-pan-y`}
       >
         {/* Reaction Animation Overlay */}
         <AnimatePresence>
@@ -341,13 +349,16 @@ export const MessageBubble = memo(({
         )}
 
         {message.media_url && message.media_type === 'video' && (
-          <div className="relative w-32 h-32 mx-auto">
-            <video 
-              src={message.media_url} 
-              controls 
-              className="w-full h-full rounded-full object-cover ring-2 ring-primary/50 shadow-lg shadow-primary/20"
-              playsInline
-            />
+          <div className="relative mx-auto w-24 h-24 sm:w-28 sm:h-28">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/60 via-primary/30 to-transparent opacity-80"></div>
+            <div className="relative w-full h-full rounded-full overflow-hidden shadow-lg shadow-primary/30 bg-black/60">
+              <video 
+                src={message.media_url} 
+                controls 
+                className="w-full h-full object-cover"
+                playsInline
+              />
+            </div>
           </div>
         )}
 
