@@ -142,13 +142,14 @@ const AllInventory = () => {
 
   const inventoryList = Object.values(aggregatedInventory);
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     if (inventoryList.length === 0) {
       toast.error("No inventory items to export");
       return;
     }
 
     try {
+      toast.loading("Generating PDF with images...");
       const doc = new jsPDF();
       
       // Title
@@ -163,43 +164,70 @@ const AllInventory = () => {
       doc.text(`Total Stores: ${stores.length}`, 14, 36);
       doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 42);
       
-      // Prepare table data
-      const tableData = inventoryList.map((item: any) => {
+      let yPosition = 50;
+      
+      // Process each item with image
+      for (const inventoryItem of inventoryList) {
+        const item = inventoryItem as any;
+        
+        // Check if we need a new page
+        if (yPosition > 250) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        const itemName = item.items?.name || 'Unknown Item';
+        const brand = item.items?.brand || '-';
+        const category = item.items?.category || '-';
+        const totalQty = item.totalQuantity.toString();
         const storeDetails = item.storeQuantities
           .map((sq: any) => `${sq.store?.name || 'Unknown'}: ${sq.quantity}`)
-          .join('\n');
+          .join(', ');
         
-        return [
-          item.items?.name || 'Unknown Item',
-          item.items?.brand || '-',
-          item.items?.category || '-',
-          item.totalQuantity.toString(),
-          storeDetails
-        ];
-      });
-      
-      // Generate table
-      autoTable(doc, {
-        startY: 50,
-        head: [['Item Name', 'Brand', 'Category', 'Total Qty', 'Store Breakdown']],
-        body: tableData,
-        theme: 'striped',
-        headStyles: { fillColor: [41, 128, 185], fontStyle: 'bold' },
-        styles: { fontSize: 9, cellPadding: 3 },
-        columnStyles: {
-          0: { cellWidth: 40 },
-          1: { cellWidth: 30 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 20 },
-          4: { cellWidth: 60 }
+        // Add image if available
+        if (item.items?.photo_url) {
+          try {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            await new Promise((resolve, reject) => {
+              img.onload = resolve;
+              img.onerror = reject;
+              img.src = item.items.photo_url;
+            });
+            
+            // Add image (30x30 size)
+            doc.addImage(img, 'JPEG', 14, yPosition, 30, 30);
+          } catch (error) {
+            console.error('Failed to load image:', error);
+          }
         }
-      });
+        
+        // Add text info next to image
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text(itemName, 48, yPosition + 5);
+        
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Brand: ${brand}`, 48, yPosition + 11);
+        doc.text(`Category: ${category}`, 48, yPosition + 17);
+        doc.text(`Total Qty: ${totalQty}`, 48, yPosition + 23);
+        doc.text(`Stores: ${storeDetails}`, 48, yPosition + 29, { maxWidth: 140 });
+        
+        // Draw separator line
+        yPosition += 35;
+        doc.setDrawColor(200, 200, 200);
+        doc.line(14, yPosition, 196, yPosition);
+        yPosition += 5;
+      }
       
       // Save PDF
       doc.save(`all-inventory-${new Date().toISOString().split('T')[0]}.pdf`);
-      toast.success("PDF downloaded successfully");
+      toast.dismiss();
+      toast.success("PDF downloaded successfully with images");
     } catch (error) {
       console.error("Error generating all inventory PDF:", error);
+      toast.dismiss();
       toast.error("Failed to generate PDF");
     }
   };
