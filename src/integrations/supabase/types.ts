@@ -1996,6 +1996,7 @@ export type Database = {
           body: string
           created_at: string | null
           id: string
+          is_draft: boolean | null
           read: boolean | null
           recipient_id: string
           sender_id: string
@@ -2008,6 +2009,7 @@ export type Database = {
           body: string
           created_at?: string | null
           id?: string
+          is_draft?: boolean | null
           read?: boolean | null
           recipient_id: string
           sender_id: string
@@ -2020,6 +2022,7 @@ export type Database = {
           body?: string
           created_at?: string | null
           id?: string
+          is_draft?: boolean | null
           read?: boolean | null
           recipient_id?: string
           sender_id?: string

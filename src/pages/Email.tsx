@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Mail, Send, Star, Archive, Inbox, Sparkles, Trash2 } from "lucide-react";
+import { Mail, Send, Star, Archive, Inbox, Sparkles, Trash2, Copy, FileText, Save } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -49,7 +49,7 @@ const Email = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [emails, setEmails] = useState<Email[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [filter, setFilter] = useState<"inbox" | "sent" | "starred" | "archived">("inbox");
+  const [filter, setFilter] = useState<"inbox" | "sent" | "starred" | "archived" | "drafts">("inbox");
   const [showCompose, setShowCompose] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [recipient, setRecipient] = useState("");
@@ -121,13 +121,15 @@ const Email = () => {
       .order("created_at", { ascending: false });
 
     if (filter === "inbox") {
-      query = query.eq("recipient_id", userId).eq("archived", false);
+      query = query.eq("recipient_id", userId).eq("archived", false).eq("is_draft", false);
     } else if (filter === "sent") {
-      query = query.eq("sender_id", userId);
+      query = query.eq("sender_id", userId).eq("is_draft", false);
     } else if (filter === "starred") {
-      query = query.or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).eq("starred", true);
+      query = query.or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).eq("starred", true).eq("is_draft", false);
     } else if (filter === "archived") {
-      query = query.eq("recipient_id", userId).eq("archived", true);
+      query = query.eq("recipient_id", userId).eq("archived", true).eq("is_draft", false);
+    } else if (filter === "drafts") {
+      query = query.eq("sender_id", userId).eq("is_draft", true);
     }
 
     const { data, error } = await query;
@@ -211,6 +213,7 @@ const Email = () => {
       recipient_id: recipient,
       subject,
       body,
+      is_draft: false,
     });
 
     if (error) {
@@ -226,6 +229,44 @@ const Email = () => {
     setBody("");
     setAiSuggestion("");
     fetchEmails(currentUser.id);
+  };
+
+  const saveDraft = async () => {
+    if (!subject && !body) {
+      toast.error("Please enter at least a subject or message");
+      return;
+    }
+
+    const { error } = await supabase.from("internal_emails").insert({
+      sender_id: currentUser.id,
+      recipient_id: recipient || currentUser.id,
+      subject: subject || "(No subject)",
+      body: body || "",
+      is_draft: true,
+    });
+
+    if (error) {
+      toast.error("Failed to save draft");
+      console.error("Draft save error:", error);
+      return;
+    }
+
+    toast.success("Draft saved!");
+    setShowCompose(false);
+    setRecipient("");
+    setSubject("");
+    setBody("");
+    setAiSuggestion("");
+    fetchEmails(currentUser.id);
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard!");
+    } catch (err) {
+      toast.error("Failed to copy");
+    }
   };
 
   const toggleStar = async (emailId: string, currentStarred: boolean) => {
@@ -338,6 +379,15 @@ const Email = () => {
           >
             <Archive className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Archived</span>
+          </Button>
+          <Button
+            variant={filter === "drafts" ? "default" : "outline"}
+            onClick={() => setFilter("drafts")}
+            size="sm"
+            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Drafts</span>
           </Button>
         </div>
 
@@ -462,14 +512,24 @@ const Email = () => {
               <div className="glass p-3 rounded-xl border border-primary/20">
                 <p className="text-xs sm:text-sm font-medium mb-2 text-primary">AI Suggestion:</p>
                 <p className="text-xs sm:text-sm">{aiSuggestion}</p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setBody(aiSuggestion)}
-                  className="mt-2 h-8 text-xs"
-                >
-                  Use This
-                </Button>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setBody(aiSuggestion)}
+                    className="h-8 text-xs flex-1"
+                  >
+                    Use This
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(aiSuggestion)}
+                    className="h-8 text-xs"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -480,8 +540,16 @@ const Email = () => {
               </Button>
               <Button 
                 variant="outline" 
+                onClick={saveDraft}
+                className="gap-1.5 h-9 sm:h-10 text-sm"
+              >
+                <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Draft</span>
+              </Button>
+              <Button 
+                variant="outline" 
                 onClick={() => setShowCompose(false)}
-                className="h-9 sm:h-10 text-sm"
+                className="h-9 sm:h-10 text-sm px-3"
               >
                 Cancel
               </Button>
