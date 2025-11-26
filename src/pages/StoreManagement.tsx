@@ -1247,54 +1247,132 @@ const StoreManagement = () => {
     try {
       const doc = new jsPDF();
       
-      // Header
-      doc.setFontSize(20);
+      // Header with styling
+      doc.setFillColor(59, 130, 246);
+      doc.rect(0, 0, 210, 35, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont(undefined, 'bold');
       doc.text("Live Transactions Report", 14, 20);
       
-      // Info
-      doc.setFontSize(12);
-      doc.text(`Workspace: ${currentWorkspace?.name || personalInventoryName}`, 14, 30);
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 37);
-      doc.text(`Total Transactions: ${transactions.length}`, 14, 44);
+      // Info section
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Workspace: ${currentWorkspace?.name || personalInventoryName}`, 14, 28);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 120, 28);
       
-      let yPos = 55;
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text(`Total Transactions: ${transactions.length}`, 14, 45);
       
-      for (const transaction of transactions) {
-        if (yPos > 250) {
+      let yPos = 58;
+      let pageCount = 1;
+      
+      for (let i = 0; i < transactions.length; i++) {
+        const transaction = transactions[i];
+        
+        // Check if we need a new page
+        if (yPos > 260) {
           doc.addPage();
+          pageCount++;
           yPos = 20;
+          
+          // Add page number
+          doc.setFontSize(8);
+          doc.setFont(undefined, 'normal');
+          doc.text(`Page ${pageCount}`, 190, 285);
         }
         
-        // Transaction type and item
+        // Transaction box with background
+        doc.setFillColor(245, 247, 250);
+        doc.roundedRect(10, yPos - 5, 190, 45, 3, 3, 'F');
+        
+        // Transaction number
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(100, 100, 100);
+        doc.text(`#${i + 1}`, 14, yPos);
+        
+        // Transaction type badge
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        
+        let badgeColor = [59, 130, 246]; // default blue
+        if (transaction.type === 'receiving') badgeColor = [168, 85, 247]; // purple
+        if (transaction.type === 'spot_check') badgeColor = [34, 197, 94]; // green
+        if (transaction.type === 'variance') badgeColor = [251, 146, 60]; // orange
+        
+        doc.setFillColor(badgeColor[0], badgeColor[1], badgeColor[2]);
+        doc.roundedRect(35, yPos - 4, 28, 6, 2, 2, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.text(transaction.type.toUpperCase(), 37, yPos);
+        
+        // Item name
+        doc.setTextColor(0, 0, 0);
         doc.setFontSize(12);
         doc.setFont(undefined, 'bold');
-        doc.text(`${transaction.type.toUpperCase()}: ${transaction.item_name || 'Multiple Items'}`, 14, yPos);
-        yPos += 7;
+        const itemName = transaction.item_name || 'Multiple Items';
+        doc.text(itemName.length > 40 ? itemName.substring(0, 40) + '...' : itemName, 14, yPos + 8);
+        yPos += 4;
         
-        // Details
-        doc.setFontSize(10);
+        // Details section
+        doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
+        doc.setTextColor(60, 60, 60);
         
         if (transaction.type === 'transfer') {
-          doc.text(`From: ${transaction.from_store} → To: ${transaction.to_store}`, 14, yPos);
+          doc.text(`From Store:`, 14, yPos + 8);
+          doc.setFont(undefined, 'bold');
+          doc.text(transaction.from_store || 'Unknown', 38, yPos + 8);
+          
+          doc.setFont(undefined, 'normal');
+          doc.text(`To Store:`, 14, yPos + 13);
+          doc.setFont(undefined, 'bold');
+          doc.text(transaction.to_store || 'Unknown', 38, yPos + 13);
         } else {
-          doc.text(`Store: ${transaction.store}`, 14, yPos);
+          doc.text(`Store:`, 14, yPos + 8);
+          doc.setFont(undefined, 'bold');
+          doc.text(transaction.store || 'Unknown', 30, yPos + 8);
         }
-        yPos += 5;
         
-        doc.text(`Quantity: ${transaction.item_count}`, 14, yPos);
-        doc.text(`Status: ${transaction.status}`, 100, yPos);
-        yPos += 5;
-        doc.text(`By: ${transaction.user_email}`, 14, yPos);
-        yPos += 5;
-        doc.text(`Date: ${new Date(transaction.timestamp).toLocaleString()}`, 14, yPos);
-        yPos += 10;
+        // Quantity
+        doc.setFont(undefined, 'normal');
+        doc.text(`Quantity:`, 110, yPos + 8);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(59, 130, 246);
+        doc.text(`${transaction.item_count}`, 130, yPos + 8);
         
-        // Separator
-        doc.setDrawColor(200, 200, 200);
-        doc.line(14, yPos, 196, yPos);
-        yPos += 10;
+        // Status
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(60, 60, 60);
+        doc.text(`Status:`, 150, yPos + 8);
+        doc.setFont(undefined, 'bold');
+        const statusColor = transaction.status === 'completed' ? [34, 197, 94] : [234, 179, 8];
+        doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+        doc.text(transaction.status.toUpperCase(), 166, yPos + 8);
+        
+        // User and timestamp
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.setFontSize(8);
+        doc.text(`Submitted by: ${transaction.user_email || 'Unknown'}`, 14, yPos + 20);
+        doc.text(`Date: ${new Date(transaction.timestamp).toLocaleString()}`, 14, yPos + 25);
+        
+        // Move to next transaction
+        yPos += 52;
       }
+      
+      // Add page number to last page
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Page ${pageCount}`, 190, 285);
+      
+      // Summary footer on last page
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'bold');
+      doc.text(`Report Summary: ${transactions.length} total transactions`, 14, 280);
       
       doc.save(`live-transactions-${new Date().toLocaleDateString()}.pdf`);
       toast.success("Live transactions report downloaded");
