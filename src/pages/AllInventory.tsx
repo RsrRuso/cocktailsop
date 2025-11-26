@@ -219,16 +219,28 @@ const AllInventory = () => {
         );
       };
       
-      // Generate Attiko table on the left
+      // Prepare data for both stores first
+      let attikoData: any[] = [];
+      let jerryData: any[] = [];
+      
       if (attikoStore) {
+        const [_, attikoItems] = attikoStore;
+        attikoData = await prepareStoreData(attikoItems);
+      }
+      
+      if (jerryStore) {
+        const [_, jerryItems] = jerryStore;
+        jerryData = await prepareStoreData(jerryItems);
+      }
+      
+      // Generate Attiko table on the left
+      if (attikoStore && attikoData.length > 0) {
         const [_, attikoItems] = attikoStore;
         const storeName = attikoItems[0]?.storeName || 'Attiko';
         
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text(storeName, 14, yPosition);
-        
-        const attikoData = await prepareStoreData(attikoItems);
         
         autoTable(doc, {
           startY: yPosition + 5,
@@ -243,7 +255,7 @@ const AllInventory = () => {
           didDrawCell: (data: any) => {
             if (data.column.index === 0 && data.cell.section === 'body') {
               const rowData = attikoData[data.row.index];
-              if (rowData.image) {
+              if (rowData && rowData.image) {
                 try {
                   doc.addImage(
                     rowData.image,
@@ -275,15 +287,13 @@ const AllInventory = () => {
       }
       
       // Generate Jerry table on the right
-      if (jerryStore) {
+      if (jerryStore && jerryData.length > 0) {
         const [_, jerryItems] = jerryStore;
         const storeName = jerryItems[0]?.storeName || 'Jerry';
         
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text(storeName, 155, yPosition);
-        
-        const jerryData = await prepareStoreData(jerryItems);
         
         autoTable(doc, {
           startY: yPosition + 5,
@@ -298,7 +308,7 @@ const AllInventory = () => {
           didDrawCell: (data: any) => {
             if (data.column.index === 0 && data.cell.section === 'body') {
               const rowData = jerryData[data.row.index];
-              if (rowData.image) {
+              if (rowData && rowData.image) {
                 try {
                   doc.addImage(
                     rowData.image,
