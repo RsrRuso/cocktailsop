@@ -167,15 +167,15 @@ const AllInventory = () => {
       let yPosition = 55;
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 14;
-      const imageSize = 50; // Maximum size for best quality
-      const lineHeight = 7;
+      const imageSize = 40; // Balanced size for quality
+      const lineHeight = 5.5;
       
       // Process each item
       for (let i = 0; i < inventoryList.length; i++) {
         const item = inventoryList[i] as any;
         
         // Check if we need a new page (need space for image + text)
-        if (yPosition > 240) {
+        if (yPosition > 250) {
           doc.addPage();
           yPosition = 20;
         }
@@ -191,7 +191,7 @@ const AllInventory = () => {
         
         // Draw background box
         doc.setFillColor(249, 250, 251);
-        doc.rect(margin, yPosition - 3, pageWidth - (margin * 2), imageSize + 6, 'F');
+        doc.rect(margin, yPosition - 2, pageWidth - (margin * 2), imageSize + 4, 'F');
         
         // Add image if available
         if (item.items?.photo_url) {
@@ -234,19 +234,19 @@ const AllInventory = () => {
         const textX = margin + imageSize + 8;
         let textY = yPosition + 4;
         
-        doc.setFontSize(12);
+        doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(17, 24, 39);
         doc.text(`${i + 1}. ${itemName}`, textX, textY);
         
         textY += lineHeight;
-        doc.setFontSize(10);
+        doc.setFontSize(8.5);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(75, 85, 99);
         doc.text(`Brand: ${brand} | Category: ${category}`, textX, textY);
         
         textY += lineHeight;
-        doc.setFontSize(10);
+        doc.setFontSize(8.5);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(220, 38, 38);
         doc.text(`Color Code: ${colorCode}`, textX, textY);
@@ -257,20 +257,20 @@ const AllInventory = () => {
         doc.text(`Total Quantity: ${totalQty}`, textX, textY);
         
         // Store breakdown below the main info
-        yPosition += imageSize + 8;
-        doc.setFontSize(8);
+        yPosition += imageSize + 6;
+        doc.setFontSize(7.5);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(107, 114, 128);
         const splitStores = doc.splitTextToSize(storeBreakdown, pageWidth - textX - margin);
         doc.text(splitStores, textX, yPosition);
         
-        yPosition += (splitStores.length * 4) + 8;
+        yPosition += (splitStores.length * 3.5) + 6;
         
         // Draw separator line
         doc.setDrawColor(229, 231, 235);
         doc.setLineWidth(0.3);
         doc.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 8;
+        yPosition += 6;
       }
       
       // Save PDF
