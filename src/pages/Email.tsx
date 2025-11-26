@@ -304,95 +304,126 @@ const Email = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background/95 to-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 relative overflow-hidden">
+      {/* Floating particles background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-20 left-20 w-40 h-40 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-40 right-20 w-48 h-48 bg-accent/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-primary/5 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+
       <TopNav isVisible={true} />
-      <div className="container max-w-4xl mx-auto px-3 pt-16 sm:pt-20 pb-20 sm:pb-24">
-        {/* Header - Mobile Optimized */}
-        <div className="mb-4 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+      <div className="container max-w-4xl mx-auto px-3 pt-16 sm:pt-20 pb-20 sm:pb-24 relative z-10">
+        {/* Header - Enhanced Design */}
+        <div className="mb-6 space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent drop-shadow-lg animate-pulse" style={{ animationDuration: '3s' }}>
               Neuron Email
             </h1>
             <Button 
               onClick={() => setShowCompose(true)} 
               size="sm"
-              className="gap-1 sm:gap-2 text-xs sm:text-sm h-8 sm:h-10"
+              className="gap-2 text-xs sm:text-sm h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-primary via-accent to-primary hover:scale-110 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-primary/40 rounded-full"
             >
-              <Send className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Compose</span>
-              <span className="sm:hidden">New</span>
+              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline font-semibold">Compose</span>
+              <span className="sm:hidden font-semibold">New</span>
             </Button>
           </div>
           
           {currentUser && (
-            <div className="glass p-3 rounded-xl border border-primary/20">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="glass backdrop-blur-2xl p-4 rounded-2xl border-2 border-primary/30 shadow-xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 animate-pulse" style={{ animationDuration: '3s' }} />
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative z-10">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground">Your IE Account</p>
-                  <p className="text-xs sm:text-sm font-mono font-semibold text-primary truncate">
+                  <p className="text-xs font-semibold text-muted-foreground/80 mb-1">Your IE Account</p>
+                  <p className="text-sm sm:text-base font-mono font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent truncate">
                     {profiles.find(p => p.id === currentUser.id)?.username || 'loading'}@sv.internal
                   </p>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="whitespace-nowrap">{profiles.length - 1} contacts</span>
-                  <span className="text-green-500 whitespace-nowrap">✓ Unique</span>
+                <div className="flex items-center gap-4 text-xs font-medium">
+                  <span className="glass px-3 py-1.5 rounded-full whitespace-nowrap">{profiles.length - 1} contacts</span>
+                  <span className="glass px-3 py-1.5 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-500 whitespace-nowrap flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    Unique
+                  </span>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Filters - Mobile Optimized */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-2 -mx-3 px-3 scrollbar-hide">
+        {/* Filters - Enhanced Design */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-3 px-3 scrollbar-hide">
           <Button
             variant={filter === "inbox" ? "default" : "outline"}
             onClick={() => setFilter("inbox")}
             size="sm"
-            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
+            className={`gap-2 whitespace-nowrap text-xs h-10 min-w-fit px-4 rounded-full transition-all duration-300 ${
+              filter === "inbox" 
+                ? "bg-gradient-to-r from-primary to-accent shadow-xl scale-105" 
+                : "glass hover:scale-105 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
+            }`}
           >
-            <Inbox className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Inbox</span>
+            <Inbox className="w-4 h-4" />
+            <span className="hidden sm:inline font-semibold">Inbox</span>
           </Button>
           <Button
             variant={filter === "sent" ? "default" : "outline"}
             onClick={() => setFilter("sent")}
             size="sm"
-            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
+            className={`gap-2 whitespace-nowrap text-xs h-10 min-w-fit px-4 rounded-full transition-all duration-300 ${
+              filter === "sent" 
+                ? "bg-gradient-to-r from-primary to-accent shadow-xl scale-105" 
+                : "glass hover:scale-105 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
+            }`}
           >
-            <Send className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Sent</span>
+            <Send className="w-4 h-4" />
+            <span className="hidden sm:inline font-semibold">Sent</span>
           </Button>
           <Button
             variant={filter === "starred" ? "default" : "outline"}
             onClick={() => setFilter("starred")}
             size="sm"
-            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
+            className={`gap-2 whitespace-nowrap text-xs h-10 min-w-fit px-4 rounded-full transition-all duration-300 ${
+              filter === "starred" 
+                ? "bg-gradient-to-r from-primary to-accent shadow-xl scale-105" 
+                : "glass hover:scale-105 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
+            }`}
           >
-            <Star className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Starred</span>
+            <Star className="w-4 h-4" />
+            <span className="hidden sm:inline font-semibold">Starred</span>
           </Button>
           <Button
             variant={filter === "archived" ? "default" : "outline"}
             onClick={() => setFilter("archived")}
             size="sm"
-            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
+            className={`gap-2 whitespace-nowrap text-xs h-10 min-w-fit px-4 rounded-full transition-all duration-300 ${
+              filter === "archived" 
+                ? "bg-gradient-to-r from-primary to-accent shadow-xl scale-105" 
+                : "glass hover:scale-105 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
+            }`}
           >
-            <Archive className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Archived</span>
+            <Archive className="w-4 h-4" />
+            <span className="hidden sm:inline font-semibold">Archived</span>
           </Button>
           <Button
             variant={filter === "drafts" ? "default" : "outline"}
             onClick={() => setFilter("drafts")}
             size="sm"
-            className="gap-1.5 whitespace-nowrap text-xs h-8 min-w-fit"
+            className={`gap-2 whitespace-nowrap text-xs h-10 min-w-fit px-4 rounded-full transition-all duration-300 ${
+              filter === "drafts" 
+                ? "bg-gradient-to-r from-primary to-accent shadow-xl scale-105" 
+                : "glass hover:scale-105 hover:bg-gradient-to-r hover:from-primary/20 hover:to-accent/20"
+            }`}
           >
-            <FileText className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Drafts</span>
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline font-semibold">Drafts</span>
           </Button>
         </div>
 
-        {/* Email List - Mobile Optimized */}
-        <div className="space-y-2">
+        {/* Email List - Enhanced Design */}
+        <div className="space-y-3">
           {emails.map((email) => (
             <div
               key={email.id}
@@ -402,10 +433,13 @@ const Email = () => {
                   markAsRead(email.id);
                 }
               }}
-              className={`glass p-3 rounded-xl cursor-pointer hover:bg-accent/50 transition-all active:scale-[0.98] ${
-                !email.read && email.recipient_id === currentUser?.id ? "border-2 border-primary" : ""
+              className={`glass backdrop-blur-2xl p-4 rounded-2xl cursor-pointer hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 transition-all duration-300 active:scale-[0.97] hover:scale-[1.02] shadow-lg hover:shadow-2xl relative overflow-hidden ${
+                !email.read && email.recipient_id === currentUser?.id ? "border-2 border-primary shadow-primary/30" : "border border-border/20"
               }`}
             >
+              {!email.read && email.recipient_id === currentUser?.id && (
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 animate-pulse" />
+              )}
               <div className="flex items-start gap-2.5">
                 <OptimizedAvatar
                   src={filter === "sent" ? email.recipient?.avatar_url : email.sender?.avatar_url}

@@ -70,41 +70,53 @@ export const MessageInput = memo(({
   }, [onSend]);
 
   return (
-    <div className="p-3 border-t backdrop-blur-2xl border-border/10 bg-background/80 shadow-lg">
+    <div className="p-4 border-t backdrop-blur-3xl border-primary/30 bg-gradient-to-b from-background/90 to-background/95 shadow-2xl relative">
+      {/* Glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 opacity-50 blur-xl" />
+      
       {isUploading && (
-        <div className="mb-2 glass backdrop-blur-xl rounded-2xl p-3 border border-primary/20">
-          <div className="flex items-center gap-3 mb-2">
-            <Loader2 className="w-4 h-4 animate-spin text-primary" />
-            <span className="text-sm font-medium">Uploading... {uploadProgress}%</span>
+        <div className="mb-3 glass backdrop-blur-2xl rounded-3xl p-4 border-2 border-primary/30 shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 animate-pulse" />
+          <div className="flex items-center gap-3 mb-2 relative z-10">
+            <div className="p-2 rounded-full bg-gradient-to-br from-primary/30 to-accent/30">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+            <span className="text-sm font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">Uploading... {uploadProgress}%</span>
           </div>
-          <Progress value={uploadProgress} className="h-1.5" />
+          <Progress value={uploadProgress} className="h-2 relative z-10" />
         </div>
       )}
       {replyingTo && (
-        <div className="mb-2 glass backdrop-blur-xl rounded-2xl p-2 flex items-center justify-between border border-primary/30 animate-in slide-in-from-bottom duration-300">
-          <div className="flex items-center gap-2 text-sm">
-            <Reply className="w-4 h-4 text-primary" />
-            <span className="opacity-70 font-medium">Replying to:</span>
-            <span className="truncate max-w-[200px] font-semibold">{replyingTo.content}</span>
+        <div className="mb-3 glass backdrop-blur-2xl rounded-3xl p-3 flex items-center justify-between border-2 border-primary/40 animate-in slide-in-from-bottom duration-300 shadow-lg relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10" />
+          <div className="flex items-center gap-3 text-sm relative z-10">
+            <div className="p-2 rounded-full bg-gradient-to-br from-primary/20 to-accent/20">
+              <Reply className="w-4 h-4 text-primary" />
+            </div>
+            <span className="font-semibold text-muted-foreground">Replying to:</span>
+            <span className="truncate max-w-[200px] font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">{replyingTo.content}</span>
           </div>
-          <Button size="icon" variant="ghost" className="h-7 w-7 hover:bg-destructive/20" onClick={onCancelReply}>
+          <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-destructive/30 rounded-full hover:scale-110 transition-all relative z-10" onClick={onCancelReply}>
             <X className="h-4 w-4" />
           </Button>
         </div>
       )}
       {editingMessage && (
-        <div className="mb-2 glass backdrop-blur-xl rounded-2xl p-2 flex items-center justify-between border border-accent/30 animate-in slide-in-from-bottom duration-300">
-          <div className="flex items-center gap-2 text-sm">
-            <Edit2 className="w-4 h-4 text-accent" />
-            <span className="opacity-70 font-medium">Editing message</span>
+        <div className="mb-3 glass backdrop-blur-2xl rounded-3xl p-3 flex items-center justify-between border-2 border-accent/40 animate-in slide-in-from-bottom duration-300 shadow-lg relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-accent/10 to-primary/10" />
+          <div className="flex items-center gap-3 text-sm relative z-10">
+            <div className="p-2 rounded-full bg-gradient-to-br from-accent/20 to-primary/20">
+              <Edit2 className="w-4 h-4 text-accent" />
+            </div>
+            <span className="font-semibold text-muted-foreground">Editing message</span>
           </div>
-          <Button size="icon" variant="ghost" className="h-7 w-7 hover:bg-destructive/20" onClick={onCancelEdit}>
+          <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-destructive/30 rounded-full hover:scale-110 transition-all relative z-10" onClick={onCancelEdit}>
             <X className="h-4 w-4" />
           </Button>
         </div>
       )}
 
-      <div className="flex gap-2 items-end relative">
+      <div className="flex gap-3 items-end relative z-10">
         <input
           ref={fileInputRef}
           type="file"
@@ -130,7 +142,7 @@ export const MessageInput = memo(({
             size="icon"
             variant="ghost"
             onClick={() => setShowAttachMenu(!showAttachMenu)}
-            className="shrink-0 glass hover:scale-110 transition-transform"
+            className="shrink-0 glass hover:scale-125 transition-all duration-300 rounded-full h-12 w-12 hover:bg-gradient-to-br hover:from-primary/20 hover:to-accent/20 shadow-lg"
           >
             <Paperclip className="h-5 w-5" />
           </Button>
@@ -174,11 +186,16 @@ export const MessageInput = memo(({
           onChange={handleChange}
           onKeyPress={handleKeyPress}
           placeholder="Message..."
-          className="flex-1 glass backdrop-blur-xl border-border/30 focus:border-primary/50 rounded-full px-5 py-3 text-base transition-all"
+          className="flex-1 glass backdrop-blur-2xl border-2 border-primary/20 focus:border-primary/50 rounded-full px-6 py-4 text-base transition-all shadow-lg hover:shadow-xl focus:shadow-2xl focus:shadow-primary/20"
         />
 
         {value.trim() ? (
-          <Button onClick={onSend} size="icon" className="shrink-0 bg-gradient-to-r from-primary to-accent hover:scale-110 transition-transform rounded-full h-11 w-11">
+          <Button 
+            onClick={onSend} 
+            size="icon" 
+            className="shrink-0 bg-gradient-to-r from-primary via-accent to-primary hover:scale-125 transition-all duration-300 rounded-full h-12 w-12 shadow-xl hover:shadow-2xl hover:shadow-primary/40 animate-pulse"
+            style={{ animationDuration: '2s' }}
+          >
             <Send className="h-5 w-5" />
           </Button>
         ) : (
@@ -189,7 +206,7 @@ export const MessageInput = memo(({
             onMouseUp={onStopVoiceRecording}
             onTouchStart={isRecording ? onStopVoiceRecording : onStartVoiceRecording}
             onTouchEnd={onStopVoiceRecording}
-            className={`shrink-0 glass rounded-full h-11 w-11 ${isRecording ? 'bg-red-500/30 animate-pulse scale-110' : 'hover:scale-110'} transition-all`}
+            className={`shrink-0 glass rounded-full h-12 w-12 shadow-lg ${isRecording ? 'bg-gradient-to-r from-red-500/30 to-red-600/30 animate-pulse scale-125 shadow-red-500/50' : 'hover:scale-125 hover:bg-gradient-to-br hover:from-primary/20 hover:to-accent/20'} transition-all duration-300`}
           >
             <Mic className="h-5 w-5" />
           </Button>
