@@ -61,18 +61,32 @@ export const MessageBubble = memo(({
     setIsSwiping(true);
     hasMoved.current = false;
     
-    // Long press for emoji picker (500ms - Instagram timing)
+    // Long press for emoji picker (Instagram-style)
     longPressTimer.current = setTimeout(() => {
       if (!hasMoved.current) {
         const rect = bubbleRef.current?.getBoundingClientRect();
         if (rect) {
+          // Clamp position to viewport so the emoji bar never goes off-screen on mobile
+          const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : rect.width;
+          const horizontalMargin = 56; // enough space for emojis on both sides
+          let centerX = rect.left + rect.width / 2;
+          centerX = Math.max(horizontalMargin, Math.min(centerX, viewportWidth - horizontalMargin));
+
+          // Keep some space from very top on small screens
+          const minY = 88;
+          let posY = rect.top - 24;
+          if (posY < minY) {
+            posY = rect.bottom + 24; // if too high, show below the bubble instead
+          }
+
           setEmojiPickerPosition({
-            x: rect.left + rect.width / 2,
-            y: rect.top - 20,
+            x: centerX,
+            y: posY,
           });
           setShowEmojiPicker(true);
           setIsSwiping(false);
-          // Strong haptic feedback
+          
+          // Strong haptic feedback on long-press
           if ('vibrate' in navigator) {
             navigator.vibrate([50, 30, 50]);
           }
