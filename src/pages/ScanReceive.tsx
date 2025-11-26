@@ -45,124 +45,126 @@ export default function ScanReceive() {
 
   const fetchReceivingContext = async (userId: string) => {
     setLoading(true);
-    
-    const { data: context, error: contextError } = await supabase
-      .from("receiving_qr_codes" as any)
-      .select("*")
-      .eq("qr_code_id", qrCodeId)
-      .single();
 
-    if (contextError || !context) {
-      console.error("QR code lookup error:", contextError);
-      toast.error("Invalid or expired QR code. Please generate a new one.");
-      setLoading(false);
-      return;
-    }
+    try {
+      const { data: context, error: contextError } = await supabase
+        .from("receiving_qr_codes" as any)
+        .select("*")
+        .eq("qr_code_id", qrCodeId)
+        .single();
 
-    const contextData = context as any;
-    
-    const { data: toStore } = await supabase
-      .from("stores")
-      .select("id, name, workspace_id")
-      .eq("id", contextData.to_store_id)
-      .maybeSingle();
+      if (contextError || !context) {
+        console.error("[ScanReceive] QR code lookup error:", contextError);
+        toast.error("Invalid or expired QR code. Please generate a new one.");
+        return;
+      }
 
-    // Check permissions if this is a workspace store
-    if (toStore?.workspace_id) {
-      const { data: membership } = await supabase
-        .from("workspace_members_with_owner")
-        .select("role, permissions")
-        .eq("workspace_id", toStore.workspace_id)
-        .eq("user_id", userId)
+      const contextData = context as any;
+
+      const { data: toStore } = await supabase
+        .from("stores")
+        .select("id, name, workspace_id")
+        .eq("id", contextData.to_store_id)
         .maybeSingle();
 
-      let effectiveRole = membership?.role as string | undefined;
-      let effectivePermissions = (membership?.permissions as any) || {};
-
-      // Fallback: if no membership row, still allow workspace owner
-      if (!membership) {
-        const { data: workspace } = await supabase
-          .from("workspaces")
-          .select("owner_id")
-          .eq("id", toStore.workspace_id)
+      // Check permissions if this is a workspace store
+      if (toStore?.workspace_id) {
+        const { data: membership } = await supabase
+          .from("workspace_members_with_owner")
+          .select("role, permissions")
+          .eq("workspace_id", toStore.workspace_id)
+          .eq("user_id", userId)
           .maybeSingle();
 
-        if (workspace?.owner_id === userId) {
-          effectiveRole = "owner";
-          effectivePermissions = {
-            can_receive: true,
-            can_transfer: true,
-            can_manage: true,
-            can_delete: true,
-          };
-        } else {
-          toast.error("You don't have access to this workspace");
-          setLoading(false);
+        let effectiveRole = membership?.role as string | undefined;
+        let effectivePermissions = (membership?.permissions as any) || {};
+
+        // Fallback: if no membership row, still allow workspace owner
+        if (!membership) {
+          const { data: workspace } = await supabase
+            .from("workspaces")
+            .select("owner_id")
+            .eq("id", toStore.workspace_id)
+            .maybeSingle();
+
+          if (workspace?.owner_id === userId) {
+            effectiveRole = "owner";
+            effectivePermissions = {
+              can_receive: true,
+              can_transfer: true,
+              can_manage: true,
+              can_delete: true,
+            };
+          } else {
+            toast.error("You don't have access to this workspace");
+            navigate("/");
+            return;
+          }
+        }
+
+        const canReceive =
+          effectiveRole === "admin" ||
+          effectiveRole === "owner" ||
+          effectivePermissions?.can_receive === true;
+
+        if (!canReceive) {
+          toast.error("You don't have permission to receive inventory in this workspace");
           navigate("/");
           return;
         }
       }
 
-      const canReceive =
-        effectiveRole === "admin" ||
-        effectiveRole === "owner" ||
-        effectivePermissions?.can_receive === true;
-      
-      if (!canReceive) {
-        toast.error("You don't have permission to receive inventory in this workspace");
-        setLoading(false);
-        navigate("/");
-        return;
+      setReceivingContext({ ...contextData, toStoreName: toStore?.name });
+
+      // Fetch all stores in the same workspace context
+      let storesQuery = supabase
+        .from("stores")
+        .select("*")
+        .eq("is_active", true);
+
+      if (toStore?.workspace_id) {
+        storesQuery = storesQuery.eq("workspace_id", toStore.workspace_id);
+      } else {
+        storesQuery = storesQuery.eq("user_id", userId).is("workspace_id", null);
       }
+
+      const { data: storesData } = await storesQuery.order("name");
+      setStores(storesData || []);
+
+      // Pre-select the store from QR code
+      if (storesData && storesData.length > 0) {
+        setSelectedStoreId(contextData.to_store_id);
+      }
+
+      // Fetch all items in the same workspace context
+      let itemsQuery = supabase
+        .from("items")
+        .select("*");
+
+      if (toStore?.workspace_id) {
+        itemsQuery = itemsQuery.eq("workspace_id", toStore.workspace_id);
+      } else {
+        itemsQuery = itemsQuery.eq("user_id", userId).is("workspace_id", null);
+      }
+
+      const { data: itemsData, error: itemsError } = await itemsQuery.order("name");
+
+      if (itemsError) {
+        console.error("[ScanReceive] Error fetching items:", itemsError);
+      }
+
+      console.log(`[ScanReceive] Fetched ${itemsData?.length || 0} items`);
+      setItems(itemsData || []);
+
+      if (itemsData && itemsData.length > 0) {
+        setSelectedItemId(itemsData[0].id);
+      }
+    } catch (error) {
+      console.error("[ScanReceive] Unexpected error while loading receiving context:", error);
+      toast.error("Failed to load receiving details. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setReceivingContext({ ...contextData, toStoreName: toStore?.name });
-
-    // Fetch all stores in the same workspace context
-    let storesQuery = supabase
-      .from("stores")
-      .select("*")
-      .eq("is_active", true);
-
-    if (toStore?.workspace_id) {
-      storesQuery = storesQuery.eq("workspace_id", toStore.workspace_id);
-    } else {
-      storesQuery = storesQuery.eq("user_id", userId).is("workspace_id", null);
-    }
-
-    const { data: storesData } = await storesQuery.order("name");
-    setStores(storesData || []);
-    
-    // Pre-select the store from QR code
-    if (storesData && storesData.length > 0) {
-      setSelectedStoreId(contextData.to_store_id);
-    }
-
-    // Fetch all items in the same workspace context
-    let itemsQuery = supabase
-      .from("items")
-      .select("*");
-
-    if (toStore?.workspace_id) {
-      itemsQuery = itemsQuery.eq("workspace_id", toStore.workspace_id);
-    } else {
-      itemsQuery = itemsQuery.eq("user_id", userId).is("workspace_id", null);
-    }
-
-    const { data: itemsData, error: itemsError } = await itemsQuery.order("name");
-
-    if (itemsError) {
-      console.error("[ScanReceive] Error fetching items:", itemsError);
-    }
-
-    console.log(`[ScanReceive] Fetched ${itemsData?.length || 0} items`);
-    setItems(itemsData || []);
-
-    if (itemsData && itemsData.length > 0) {
-      setSelectedItemId(itemsData[0].id);
-    }
-
-    setLoading(false);
   };
 
   const handleReceive = async () => {
