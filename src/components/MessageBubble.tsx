@@ -48,10 +48,11 @@ export const MessageBubble = memo(({
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const touchStartTime = useRef(0);
-  const shortPressTimer = useRef<NodeJS.Timeout>();
+  const lastTapTime = useRef(0);
   const longPressTimer = useRef<NodeJS.Timeout>();
   const bubbleRef = useRef<HTMLDivElement>(null);
   const hasMoved = useRef(false);
+  const tapCount = useRef(0);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -60,28 +61,9 @@ export const MessageBubble = memo(({
     setIsSwiping(true);
     hasMoved.current = false;
     
-    // Short hold for edit/delete dropdown (350ms)
-    shortPressTimer.current = setTimeout(() => {
-      if (!hasMoved.current && !showEmojiPicker) {
-        setShowDropdown(true);
-        setIsSwiping(false);
-        // Clear long press timer since we're showing dropdown
-        if (longPressTimer.current) {
-          clearTimeout(longPressTimer.current);
-        }
-        // Haptic feedback
-        if ('vibrate' in navigator) {
-          navigator.vibrate([30, 10, 30]);
-        }
-      }
-    }, 350);
-    
-    // Longer hold for emoji reactions (800ms)
+    // Long press for emoji picker (500ms - Instagram timing)
     longPressTimer.current = setTimeout(() => {
-      if (!hasMoved.current && !showDropdown) {
-        // Clear dropdown if it was shown
-        setShowDropdown(false);
-        
+      if (!hasMoved.current) {
         const rect = bubbleRef.current?.getBoundingClientRect();
         if (rect) {
           setEmojiPickerPosition({
@@ -92,12 +74,12 @@ export const MessageBubble = memo(({
           setIsSwiping(false);
           // Strong haptic feedback
           if ('vibrate' in navigator) {
-            navigator.vibrate([50, 20, 50, 20, 50]);
+            navigator.vibrate([50, 30, 50]);
           }
         }
       }
-    }, 800);
-  }, [showDropdown, showEmojiPicker]);
+    }, 500);
+  }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSwiping) return;
@@ -108,19 +90,16 @@ export const MessageBubble = memo(({
     const deltaY = touchY - touchStartY.current;
 
     // Mark as moved if significant movement
-    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+    if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
       hasMoved.current = true;
-      // Clear all press timers if moved
-      if (shortPressTimer.current) {
-        clearTimeout(shortPressTimer.current);
-      }
+      // Clear long press timer if moved
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
       }
     }
 
     // Only allow horizontal swipe if it's more horizontal than vertical
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 15) {
       e.preventDefault();
       
       // Limit swipe distance
@@ -134,12 +113,41 @@ export const MessageBubble = memo(({
   const handleTouchEnd = useCallback(() => {
     setIsSwiping(false);
     
-    // Clear all timers
-    if (shortPressTimer.current) {
-      clearTimeout(shortPressTimer.current);
-    }
+    // Clear long press timer
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
+    }
+    
+    const now = Date.now();
+    const touchDuration = now - touchStartTime.current;
+    
+    // Double tap detection for quick heart reaction (Instagram style)
+    if (!hasMoved.current && touchDuration < 300 && Math.abs(swipeOffset) < 10) {
+      const timeSinceLastTap = now - lastTapTime.current;
+      
+      if (timeSinceLastTap < 400) {
+        // Double tap detected - quick heart reaction
+        setSelectedEmoji('❤️');
+        onReaction?.('❤️');
+        setShowLikeAnimation(true);
+        
+        // Haptic feedback
+        if ('vibrate' in navigator) {
+          navigator.vibrate([30, 20, 30]);
+        }
+        
+        setTimeout(() => {
+          setShowLikeAnimation(false);
+          setSelectedEmoji(null);
+        }, 1000);
+        
+        tapCount.current = 0;
+      } else {
+        // First tap
+        tapCount.current = 1;
+      }
+      
+      lastTapTime.current = now;
     }
     
     // If swiped enough, trigger action
@@ -163,7 +171,7 @@ export const MessageBubble = memo(({
     
     // Reset swipe
     setTimeout(() => setSwipeOffset(0), 200);
-  }, [swipeOffset, onReply, onForward, message]);
+  }, [swipeOffset, onReply, onForward, onReaction, message]);
 
   const handleEmojiSelect = useCallback((emoji: string) => {
     setSelectedEmoji(emoji);
@@ -192,10 +200,13 @@ export const MessageBubble = memo(({
 
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} relative`}>
-      {/* Emoji Reaction Picker - Overlay to close */}
+      {/* Emoji Reaction Picker - Backdrop to close */}
       {showEmojiPicker && (
-        <div 
-          className="fixed inset-0 z-[99]" 
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[99] bg-black/20 backdrop-blur-sm" 
           onClick={() => setShowEmojiPicker(false)}
           onTouchStart={() => setShowEmojiPicker(false)}
         />
@@ -208,17 +219,20 @@ export const MessageBubble = memo(({
         position={emojiPickerPosition}
       />
 
-      {/* Edit/Delete Dropdown Menu */}
+      {/* Edit/Delete Menu - Long press alternative */}
       <AnimatePresence>
         {showDropdown && (
           <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: -10 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: -10 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
             onClick={() => setShowDropdown(false)}
           >
             <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
               className="glass backdrop-blur-xl rounded-2xl p-4 m-4 max-w-xs w-full border border-primary/20 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
@@ -323,19 +337,35 @@ export const MessageBubble = memo(({
         <AnimatePresence>
           {showLikeAnimation && (
             <motion.div
-              initial={{ scale: 0, opacity: 0, y: 20 }}
+              initial={{ scale: 0, opacity: 0 }}
               animate={{ 
-                scale: [0, 1.5, 1], 
-                opacity: [0, 1, 1, 0],
-                y: [20, -10, -30, -50]
+                scale: [0, 1.3, 1],
+                opacity: [0, 1, 1, 0.8, 0]
               }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 1, times: [0, 0.3, 0.6, 1] }}
+              transition={{ 
+                duration: 0.8,
+                times: [0, 0.3, 0.5, 0.8, 1],
+                ease: "easeOut"
+              }}
               className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
             >
-              <div className="text-5xl sm:text-6xl drop-shadow-2xl">
+              <motion.div
+                animate={{ 
+                  y: [0, -20, -40],
+                  scale: [1, 1.2, 0.9]
+                }}
+                transition={{ 
+                  duration: 0.8,
+                  ease: "easeOut"
+                }}
+                className="text-6xl sm:text-7xl drop-shadow-2xl"
+                style={{
+                  filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))'
+                }}
+              >
                 {selectedEmoji || '❤️'}
-              </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
