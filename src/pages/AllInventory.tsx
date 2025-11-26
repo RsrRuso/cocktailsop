@@ -153,8 +153,30 @@ const AllInventory = () => {
       toast.loading("Generating PDF with images...");
       const doc = new jsPDF();
       
-      // Helper function to convert color names to RGB
-      const getColorRGB = (colorName: string): [number, number, number] => {
+      // Helper function to convert color codes to RGB
+      const getColorRGB = (colorCode: string): [number, number, number] => {
+        if (!colorCode || colorCode === '-') {
+          return [156, 163, 175]; // Default gray
+        }
+        
+        const code = colorCode.trim();
+        
+        // Handle hex color codes (e.g., #FF5733 or FF5733)
+        if (code.match(/^#?[0-9A-Fa-f]{6}$/)) {
+          const hex = code.replace('#', '');
+          const r = parseInt(hex.substring(0, 2), 16);
+          const g = parseInt(hex.substring(2, 4), 16);
+          const b = parseInt(hex.substring(4, 6), 16);
+          return [r, g, b];
+        }
+        
+        // Handle rgb(r, g, b) format
+        const rgbMatch = code.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+        if (rgbMatch) {
+          return [parseInt(rgbMatch[1]), parseInt(rgbMatch[2]), parseInt(rgbMatch[3])];
+        }
+        
+        // Fallback color name mapping for common names
         const colorMap: { [key: string]: [number, number, number] } = {
           'red': [220, 38, 38],
           'blue': [59, 130, 246],
@@ -175,8 +197,8 @@ const AllInventory = () => {
           'silver': [203, 213, 225],
         };
         
-        const normalizedColor = colorName?.toLowerCase().trim() || '';
-        return colorMap[normalizedColor] || [156, 163, 175]; // Default to gray
+        const normalizedColor = code.toLowerCase();
+        return colorMap[normalizedColor] || [156, 163, 175];
       };
       
       // Title
