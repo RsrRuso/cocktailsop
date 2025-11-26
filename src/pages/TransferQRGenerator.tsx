@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, QrCode, Store as StoreIcon, PackageOpen } from "lucide-react";
+import { Copy, QrCode, Store as StoreIcon, PackageOpen, ArrowLeft } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 
@@ -184,6 +184,14 @@ export default function TransferQRGenerator() {
       <div className="container mx-auto p-4 pt-20">
         <Card className="p-6 max-w-2xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="flex-shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <QrCode className="w-8 h-8 text-primary" />
             <h1 className="text-2xl font-bold">QR Code Generator</h1>
           </div>
