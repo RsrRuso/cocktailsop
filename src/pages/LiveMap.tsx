@@ -20,6 +20,7 @@ const LiveMap = () => {
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
+    // Using Mapbox demo token - replace with your own from https://mapbox.com
     mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
     
     map.current = new mapboxgl.Map({
