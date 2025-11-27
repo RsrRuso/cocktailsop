@@ -3562,6 +3562,44 @@ export type Database = {
         }
         Relationships: []
       }
+      qr_codes: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          metadata: Json | null
+          qr_type: string
+          updated_at: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          qr_type: string
+          updated_at?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          qr_type?: string
+          updated_at?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_codes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       receiving_qr_codes: {
         Row: {
           created_at: string | null
