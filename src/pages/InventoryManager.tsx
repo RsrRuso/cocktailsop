@@ -1805,8 +1805,9 @@ const InventoryManager = () => {
                                     return;
                                   }
 
-                                  const itemsToInsert = newNames.map(name => ({
+                                   const itemsToInsert = newNames.map(name => ({
                                     user_id: user?.id,
+                                    workspace_id: currentWorkspace?.id || null,
                                     name: name,
                                   }));
 
@@ -1856,6 +1857,7 @@ const InventoryManager = () => {
 
                           const itemsToInsert = jsonData.map((row: any) => ({
                             user_id: user?.id,
+                            workspace_id: currentWorkspace?.id || null,
                             name: row.name || row.Name || row.item || row.Item || row.product || row.Product,
                             brand: row.brand || row.Brand || null,
                             category: row.category || row.Category || null,
