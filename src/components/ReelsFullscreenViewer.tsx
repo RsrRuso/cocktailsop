@@ -79,12 +79,12 @@ export const ReelsFullscreenViewer = ({
   };
 
   const handleDragEnd = (event: any, info: PanInfo) => {
-    const threshold = 20; // Even lower threshold for maximum momentum sensitivity
+    const threshold = 15; // Ultra-low threshold for instant momentum response
     const velocity = info.velocity.y;
     const offset = info.offset.y;
 
-    // Velocity-based detection for momentum swipes (maximum momentum!)
-    if (Math.abs(velocity) > 200) {
+    // Ultra-sensitive velocity detection - maximum momentum feel!
+    if (Math.abs(velocity) > 120) {
       if (velocity < 0 && currentIndex < reels.length - 1) {
         // Fast swipe up - next reel
         handleNext();
@@ -145,13 +145,13 @@ export const ReelsFullscreenViewer = ({
           className="relative w-full h-full flex items-center justify-center bg-black"
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.2}
+          dragElastic={0.3}
           dragMomentum={true}
           dragTransition={{ 
-            bounceStiffness: 400,
-            bounceDamping: 12,
-            power: 0.5,
-            timeConstant: 150
+            bounceStiffness: 300,
+            bounceDamping: 8,
+            power: 0.7,
+            timeConstant: 100
           }}
           onDragEnd={handleDragEnd}
           onClick={handleDoubleTap}
