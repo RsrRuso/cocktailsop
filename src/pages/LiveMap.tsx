@@ -46,12 +46,21 @@ const LiveMap = () => {
           try {
             map.current = new mapboxgl.Map({
               container: mapContainer.current,
-              style: 'mapbox://styles/mapbox/dark-v11',
+              style: 'mapbox://styles/mapbox/streets-v12',
               center: position ? [position.longitude, position.latitude] : [-74.5, 40],
               zoom: 12,
             });
 
             map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+            map.current.on('load', () => {
+              console.log('Mapbox map loaded');
+              map.current?.resize();
+            });
+
+            map.current.on('error', (e: any) => {
+              console.error('Mapbox GL error', e?.error || e);
+            });
           } catch (error) {
             console.error('Map initialization error:', error);
             setMapError('Failed to initialize map');
@@ -218,7 +227,7 @@ const LiveMap = () => {
 
   return (
     <div className="relative w-full h-screen bg-background">
-      <div ref={mapContainer} className="absolute inset-0" />
+      <div ref={mapContainer} className="absolute inset-0 bg-muted" />
       
       {/* Controls */}
       <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
