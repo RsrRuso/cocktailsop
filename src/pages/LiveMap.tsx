@@ -2,10 +2,20 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useGPSTracking } from '@/hooks/useGPSTracking';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff, MapPin } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { Eye, EyeOff, MapPin, Settings2, X, Navigation, Users } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const createUserIcon = (label: string, avatarUrl?: string, isCurrentUser = false) => {
   const sizeClass = isCurrentUser ? 'w-10 h-10 border-4' : 'w-8 h-8 border-2';
@@ -33,6 +43,9 @@ const LiveMap = () => {
   const [ghostMode, setGhostMode] = useState(false);
   const [locations, setLocations] = useState<any[]>([]);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [autoCenter, setAutoCenter] = useState(true);
+  const [showNearbyOnly, setShowNearbyOnly] = useState(false);
   const { position, isTracking, toggleGhostMode } = useGPSTracking(!ghostMode);
   const { toast } = useToast();
 
@@ -74,7 +87,10 @@ const LiveMap = () => {
     const map = mapRef.current;
     const userKey = 'current-user';
 
-    map.flyTo([position.latitude, position.longitude], 12);
+    // Only auto-center if the setting is enabled
+    if (autoCenter) {
+      map.flyTo([position.latitude, position.longitude], 12);
+    }
 
     if (markersRef.current[userKey]) {
       markersRef.current[userKey].setLatLng([position.latitude, position.longitude]);
@@ -86,7 +102,7 @@ const LiveMap = () => {
       marker.addTo(map);
       markersRef.current[userKey] = marker;
     }
-  }, [position, ghostMode]);
+  }, [position, ghostMode, autoCenter]);
 
   const fetchLocations = async () => {
     const { data, error } = await supabase
@@ -161,6 +177,16 @@ const LiveMap = () => {
     });
   };
 
+  const handleCenterOnUser = () => {
+    if (mapRef.current && position) {
+      mapRef.current.flyTo([position.latitude, position.longitude], 15);
+      toast({
+        title: 'Centered on your location',
+        description: 'Map view updated',
+      });
+    }
+  };
+
   if (mapError) {
     return (
       <div className="flex items-center justify-center w-full h-screen bg-background">
@@ -181,37 +207,156 @@ const LiveMap = () => {
   }
 
   return (
-    <div className="relative w-full h-screen bg-background">
+    <div className="relative w-full h-screen bg-background overflow-hidden">
       <div ref={mapContainerRef} className="absolute inset-0 bg-muted" />
 
-      {/* Controls */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+      {/* Mobile-Friendly Control Panel - Top Left */}
+      <motion.div 
+        className="absolute top-4 left-4 flex flex-col gap-3 z-[1000]"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+      >
+        {/* Settings Button */}
+        <Button
+          onClick={() => setShowSettings(true)}
+          variant="default"
+          size="icon"
+          className="w-14 h-14 sm:w-12 sm:h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 border-primary/20 hover:border-primary/40 transition-all"
+        >
+          <Settings2 className="w-6 h-6 sm:w-5 sm:h-5" />
+        </Button>
+
+        {/* Ghost Mode Toggle */}
         <Button
           onClick={handleToggleGhostMode}
           variant={ghostMode ? 'destructive' : 'default'}
           size="icon"
-          className="w-12 h-12 rounded-full shadow-lg"
+          className="w-14 h-14 sm:w-12 sm:h-12 rounded-full shadow-xl backdrop-blur-xl border-2"
         >
-          {ghostMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          {ghostMode ? <EyeOff className="w-6 h-6 sm:w-5 sm:h-5" /> : <Eye className="w-6 h-6 sm:w-5 sm:h-5" />}
         </Button>
-      </div>
 
-      {/* Status indicator */}
-      <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg z-10">
-        <div className="flex items-center gap-2">
-          <MapPin className={`w-4 h-4 ${isTracking ? 'text-green-500' : 'text-red-500'}`} />
-          <span className="text-sm font-medium">
-            {ghostMode ? 'Hidden' : isTracking ? 'Tracking' : 'Not Tracking'}
-          </span>
+        {/* Center on User Button */}
+        {position && (
+          <Button
+            onClick={handleCenterOnUser}
+            variant="default"
+            size="icon"
+            className="w-14 h-14 sm:w-12 sm:h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 border-blue-500/20 hover:border-blue-500/40 transition-all"
+          >
+            <Navigation className="w-6 h-6 sm:w-5 sm:h-5 text-blue-500" />
+          </Button>
+        )}
+      </motion.div>
+
+      {/* Status Indicator - Bottom Left */}
+      <motion.div 
+        className="absolute bottom-20 sm:bottom-4 left-4 bg-background/95 backdrop-blur-xl rounded-2xl px-4 py-3 shadow-2xl z-[1000] border border-border/50"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-3 h-3 rounded-full animate-pulse ${isTracking ? 'bg-green-500' : 'bg-red-500'}`} />
+          <div className="flex flex-col">
+            <span className="text-xs font-semibold text-muted-foreground">Status</span>
+            <span className="text-sm font-bold">
+              {ghostMode ? 'Hidden' : isTracking ? 'Tracking' : 'Not Tracking'}
+            </span>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Mutual follows count */}
-      <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg z-10">
-        <p className="text-sm font-medium">
-          {locations.length} mutual {locations.length === 1 ? 'follow' : 'follows'} nearby
-        </p>
-      </div>
+      {/* Nearby Users Count - Top Right */}
+      <motion.div 
+        className="absolute top-4 right-4 bg-background/95 backdrop-blur-xl rounded-2xl px-4 py-3 shadow-2xl z-[1000] border border-border/50"
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+      >
+        <div className="flex items-center gap-3">
+          <Users className="w-5 h-5 text-primary" />
+          <div className="flex flex-col">
+            <span className="text-xs font-semibold text-muted-foreground">Nearby</span>
+            <span className="text-sm font-bold">
+              {locations.length} {locations.length === 1 ? 'friend' : 'friends'}
+            </span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Settings Sheet - Mobile Friendly */}
+      <Sheet open={showSettings} onOpenChange={setShowSettings}>
+        <SheetContent side="bottom" className="h-[400px] rounded-t-3xl">
+          <SheetHeader>
+            <SheetTitle>Map Settings</SheetTitle>
+            <SheetDescription>
+              Customize your map tracking and visibility preferences
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="space-y-6 mt-6">
+            {/* Auto-Center Setting */}
+            <div className="flex items-center justify-between space-x-4">
+              <div className="flex-1 space-y-1">
+                <Label htmlFor="auto-center" className="text-base font-medium">
+                  Auto-Center on Location
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Automatically center map as you move
+                </p>
+              </div>
+              <Switch
+                id="auto-center"
+                checked={autoCenter}
+                onCheckedChange={setAutoCenter}
+              />
+            </div>
+
+            {/* Ghost Mode Setting */}
+            <div className="flex items-center justify-between space-x-4">
+              <div className="flex-1 space-y-1">
+                <Label htmlFor="ghost-mode" className="text-base font-medium">
+                  Ghost Mode
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Hide your location from others
+                </p>
+              </div>
+              <Switch
+                id="ghost-mode"
+                checked={ghostMode}
+                onCheckedChange={handleToggleGhostMode}
+              />
+            </div>
+
+            {/* GPS Tracking Status */}
+            <div className="flex items-center justify-between space-x-4 p-4 rounded-xl bg-muted/50">
+              <div className="flex items-center gap-3">
+                <MapPin className={`w-5 h-5 ${isTracking ? 'text-green-500' : 'text-red-500'}`} />
+                <div className="flex-1 space-y-1">
+                  <Label className="text-base font-medium">GPS Tracking</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {isTracking ? 'Location services active' : 'Location services inactive'}
+                  </p>
+                </div>
+              </div>
+              <div className={`w-3 h-3 rounded-full animate-pulse ${isTracking ? 'bg-green-500' : 'bg-red-500'}`} />
+            </div>
+
+            {/* Nearby Friends Info */}
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+              <div className="flex items-center gap-3">
+                <Users className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Nearby Friends</p>
+                  <p className="text-xs text-muted-foreground">
+                    {locations.length} mutual {locations.length === 1 ? 'follow' : 'follows'} visible on map
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
