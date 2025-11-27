@@ -1644,6 +1644,7 @@ const InventoryManager = () => {
                         try {
                           const { error } = await supabase.from("fifo_items").insert({
                             user_id: user?.id,
+                            workspace_id: currentWorkspace?.id || null,
                             name,
                             brand: brand || null,
                             category: category || null,
@@ -1653,7 +1654,7 @@ const InventoryManager = () => {
 
                           if (error) throw error;
                           toast.success("Item added to master list");
-                          fetchData();
+                          await fetchData(); // Force refresh
                           e.currentTarget.reset();
                         } catch (error: any) {
                           toast.error(error.message);
@@ -1811,7 +1812,7 @@ const InventoryManager = () => {
                                     name: name,
                                   }));
 
-                                  const { error } = await supabase.from("fifo_items").insert(itemsToInsert);
+                                   const { error } = await supabase.from("fifo_items").insert(itemsToInsert);
 
                                   if (error) throw error;
 
@@ -1820,7 +1821,7 @@ const InventoryManager = () => {
                                     : `${itemsToInsert.length} items added to master list`;
                                   
                                   toast.success(message);
-                                  fetchData();
+                                  await fetchData(); // Force immediate refresh
                                   setParsedItems([]);
                                   setPastedText("");
                                 } catch (error: any) {
@@ -1876,7 +1877,7 @@ const InventoryManager = () => {
                           if (error) throw error;
 
                           toast.success(`${itemsToInsert.length} items added to master list`);
-                          fetchData();
+                          await fetchData(); // Force immediate refresh
                         } catch (error: any) {
                           toast.error(`Upload failed: ${error.message}`);
                         }
