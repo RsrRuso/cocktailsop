@@ -78,41 +78,51 @@ export const ReelsFullscreenViewer = ({
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
     setTouchStart(e.touches[0].clientY);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
     setTouchEnd(e.touches[0].clientY);
   };
 
-  const handleTouchEnd = () => {
-    if (touchStart - touchEnd > 75) {
-      // Swipe up - next reel
-      handleNext();
-    }
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    setTouchEnd(e.touches[0].clientY);
+  };
 
-    if (touchStart - touchEnd < -75) {
-      // Swipe down - previous reel
-      handlePrevious();
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault();
+    const distance = touchStart - touchEnd;
+    
+    if (Math.abs(distance) > 50) {
+      if (distance > 0) {
+        // Swipe up - next reel
+        handleNext();
+      } else {
+        // Swipe down - previous reel
+        handlePrevious();
+      }
     }
   };
 
   const handleWheel = (e: React.WheelEvent) => {
-    if (e.deltaY > 0) {
-      handleNext();
-    } else {
-      handlePrevious();
+    e.preventDefault();
+    if (Math.abs(e.deltaY) > 10) {
+      if (e.deltaY > 0) {
+        handleNext();
+      } else {
+        handlePrevious();
+      }
     }
   };
 
   return (
     <div 
       ref={containerRef}
-      className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-black flex items-center justify-center touch-none overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onWheel={handleWheel}
+      style={{ touchAction: 'none' }}
     >
       {/* Close Button */}
       <button
