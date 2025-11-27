@@ -151,7 +151,7 @@ const FifoRequestAccess = () => {
                   </p>
                 </div>
                 <Button 
-                  onClick={() => navigate('/auth')} 
+                  onClick={() => navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)} 
                   className="w-full"
                   size="lg"
                 >

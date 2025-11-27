@@ -263,7 +263,7 @@ export default function FifoQRAccessCode() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 <Button onClick={downloadQRCode} variant="outline" className="w-full">
                   <Download className="w-4 h-4 mr-2" />
                   Download
@@ -284,6 +284,13 @@ export default function FifoQRAccessCode() {
                       Copy Link
                     </>
                   )}
+                </Button>
+                <Button
+                  onClick={() => navigate(`/fifo-request-access?workspace=${selectedWorkspaceId}`)}
+                  variant="default"
+                  className="w-full"
+                >
+                  Test Request Flow
                 </Button>
               </div>
 
