@@ -24,6 +24,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { FileDown } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -833,6 +836,137 @@ const InventoryManager = () => {
     return "bg-yellow-500";
   };
 
+  // PDF Export Functions
+  const exportActiveInventoryPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Active Inventory Report", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Workspace: ${currentWorkspace?.name || 'Personal Inventory'}`, 14, 28);
+
+    const filteredInventory = inventory.filter(inv => (inv.quantity ?? 0) > 0);
+    const tableData = filteredInventory.map(inv => {
+      const daysUntilExpiry = getDaysUntilExpiry(inv.expiration_date);
+      return [
+        inv.items?.name || '',
+        inv.items?.brand || '',
+        inv.stores?.name || '',
+        inv.quantity,
+        new Date(inv.expiration_date).toLocaleDateString(),
+        `${daysUntilExpiry} days`,
+        inv.priority_score || 0
+      ];
+    });
+
+    autoTable(doc, {
+      head: [['Item', 'Brand', 'Store', 'Qty', 'Expires', 'Days Left', 'Priority']],
+      body: tableData,
+      startY: 35,
+      styles: { fontSize: 8 }
+    });
+
+    doc.save(`Active_Inventory_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success("Active inventory PDF downloaded");
+  };
+
+  const exportReceiveHistoryPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Receive History Report", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Workspace: ${currentWorkspace?.name || 'Personal Inventory'}`, 14, 28);
+
+    const receiveActivity = activityLog.filter(log => log.action_type === 'received');
+    const tableData = receiveActivity.map(log => [
+      log.stores?.name || '',
+      log.employees?.name || '',
+      log.quantity_after || 0,
+      new Date(log.created_at).toLocaleString()
+    ]);
+
+    autoTable(doc, {
+      head: [['Store', 'Received By', 'Quantity', 'Date']],
+      body: tableData,
+      startY: 35,
+      styles: { fontSize: 8 }
+    });
+
+    doc.save(`Receive_History_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success("Receive history PDF downloaded");
+  };
+
+  const exportFIFOPriorityPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("FIFO Priority Report", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Workspace: ${currentWorkspace?.name || 'Personal Inventory'}`, 14, 28);
+
+    const fifoItems = inventory
+      .filter(inv => inv.quantity > 0 && inv.status === 'available')
+      .sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0))
+      .slice(0, 20);
+
+    const tableData = fifoItems.map((item, index) => {
+      const daysUntilExpiry = getDaysUntilExpiry(item.expiration_date);
+      return [
+        index + 1,
+        item.items?.name || '',
+        item.items?.brand || '',
+        item.stores?.name || '',
+        item.quantity,
+        new Date(item.expiration_date).toLocaleDateString(),
+        `${daysUntilExpiry} days`,
+        item.priority_score || 0
+      ];
+    });
+
+    autoTable(doc, {
+      head: [['#', 'Item', 'Brand', 'Store', 'Qty', 'Expires', 'Days Left', 'Priority']],
+      body: tableData,
+      startY: 35,
+      styles: { fontSize: 8 }
+    });
+
+    doc.save(`FIFO_Priority_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success("FIFO priority PDF downloaded");
+  };
+
+  const exportTransferHistoryPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Transfer History Report", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Workspace: ${currentWorkspace?.name || 'Personal Inventory'}`, 14, 28);
+
+    const tableData = transfers
+      .filter(transfer => transfer.from_store_id !== transfer.to_store_id)
+      .slice(0, 50)
+      .map(transfer => [
+        transfer.inventory?.items?.name || 'Item',
+        transfer.from_store?.name || '',
+        transfer.to_store?.name || '',
+        transfer.quantity,
+        transfer.employees?.name || '',
+        new Date(transfer.transfer_date || transfer.created_at).toLocaleString(),
+        transfer.status
+      ]);
+
+    autoTable(doc, {
+      head: [['Item', 'From Store', 'To Store', 'Qty', 'By', 'Date', 'Status']],
+      body: tableData,
+      startY: 35,
+      styles: { fontSize: 7 }
+    });
+
+    doc.save(`Transfer_History_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success("Transfer history PDF downloaded");
+  };
+
   if (accessLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -1024,14 +1158,23 @@ const InventoryManager = () => {
           </TabsList>
 
           <TabsContent value="inventory" className="space-y-2">
-            {/* Search Bar */}
-            <div className="px-2">
+            {/* Search Bar and PDF Button */}
+            <div className="px-2 flex gap-2">
               <Input
                 placeholder="Search items by name, brand, or store..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-9 text-sm"
+                className="h-9 text-sm flex-1"
               />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportActiveInventoryPDF}
+                className="h-9"
+              >
+                <FileDown className="w-4 h-4 mr-1" />
+                PDF
+              </Button>
             </div>
             
             {/* Card-based List View */}
@@ -1192,14 +1335,25 @@ const InventoryManager = () => {
 
           <TabsContent value="fifo" className="space-y-2">
             <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">
-                  FIFO Priority {selectedStore && selectedStore !== 'all' 
-                    ? `- ${stores.find(s => s.id === selectedStore)?.name || 'Selected Store'}`
-                    : '- All Stores'
-                  }
-                </CardTitle>
-                <CardDescription className="text-xs">Items ordered by expiration urgency</CardDescription>
+              <CardHeader className="py-3 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-medium">
+                    FIFO Priority {selectedStore && selectedStore !== 'all' 
+                      ? `- ${stores.find(s => s.id === selectedStore)?.name || 'Selected Store'}`
+                      : '- All Stores'
+                    }
+                  </CardTitle>
+                  <CardDescription className="text-xs">Items ordered by expiration urgency</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportFIFOPriorityPDF}
+                  className="h-8"
+                >
+                  <FileDown className="w-3 h-3 mr-1" />
+                  PDF
+                </Button>
               </CardHeader>
               <CardContent className="p-2">
                 {selectedStore && selectedStore !== 'all' ? (
@@ -1415,9 +1569,20 @@ const InventoryManager = () => {
 
           <TabsContent value="items">
             <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">Receiving</CardTitle>
-                <CardDescription className="text-xs">Select items from master list to receive inventory</CardDescription>
+              <CardHeader className="py-3 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-medium">Receiving</CardTitle>
+                  <CardDescription className="text-xs">Select items from master list to receive inventory</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportReceiveHistoryPDF}
+                  className="h-8"
+                >
+                  <FileDown className="w-3 h-3 mr-1" />
+                  PDF
+                </Button>
               </CardHeader>
               <CardContent className="space-y-3">
                 {/* Master List Management Buttons */}
@@ -1983,8 +2148,17 @@ const InventoryManager = () => {
 
           <TabsContent value="transfer">
             <Card>
-              <CardHeader className="py-3">
+              <CardHeader className="py-3 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium">Transfer Inventory</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportTransferHistoryPDF}
+                  className="h-8"
+                >
+                  <FileDown className="w-3 h-3 mr-1" />
+                  PDF
+                </Button>
               </CardHeader>
               <CardContent className="space-y-3">
                 <form onSubmit={handleTransfer} className="space-y-2">
