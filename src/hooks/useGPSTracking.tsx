@@ -44,13 +44,16 @@ export const useGPSTracking = (enabled: boolean = true) => {
         if (user) {
           await supabase
             .from('user_locations')
-            .upsert({
-              user_id: user.id,
-              latitude: newPosition.latitude,
-              longitude: newPosition.longitude,
-              accuracy: newPosition.accuracy,
-              last_updated: new Date().toISOString()
-            });
+            .upsert(
+              {
+                user_id: user.id,
+                latitude: newPosition.latitude,
+                longitude: newPosition.longitude,
+                accuracy: newPosition.accuracy,
+                last_updated: new Date().toISOString()
+              },
+              { onConflict: 'user_id' }
+            );
         }
 
         // Watch position for continuous updates
@@ -69,13 +72,16 @@ export const useGPSTracking = (enabled: boolean = true) => {
             if (user) {
               await supabase
                 .from('user_locations')
-                .upsert({
-                  user_id: user.id,
-                  latitude: updatedPosition.latitude,
-                  longitude: updatedPosition.longitude,
-                  accuracy: updatedPosition.accuracy,
-                  last_updated: new Date().toISOString()
-                });
+                .upsert(
+                  {
+                    user_id: user.id,
+                    latitude: updatedPosition.latitude,
+                    longitude: updatedPosition.longitude,
+                    accuracy: updatedPosition.accuracy,
+                    last_updated: new Date().toISOString()
+                  },
+                  { onConflict: 'user_id' }
+                );
             }
           },
           (error) => {
