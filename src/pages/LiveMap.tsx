@@ -60,10 +60,14 @@ const LiveMap = () => {
 
       const map = L.map(mapContainerRef.current).setView(initialCenter, 12);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 19,
-      }).addTo(map);
+      L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        {
+          attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+          subdomains: 'abcd',
+          maxZoom: 19,
+        }
+      ).addTo(map);
 
       mapRef.current = map;
     } catch (error) {
@@ -260,6 +264,7 @@ const LiveMap = () => {
   return (
     <div className="relative w-full h-screen bg-background overflow-hidden">
       <div ref={mapContainerRef} className="absolute inset-0 bg-muted" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/20 via-transparent to-background/80" />
 
       {/* Mobile-Friendly Control Panel - Top Left */}
       <motion.div 
