@@ -51,9 +51,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
   const BadgeIcon = professionalBadge.icon;
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-  const [theme, setTheme] = useState<'light' | 'grey' | 'dark' | 'black'>(() => {
+  const [theme, setTheme] = useState<'light' | 'grey' | 'dark' | 'black' | 'ocean' | 'sunset' | 'forest' | 'purple' | 'neon' | 'midnight'>(() => {
     const saved = localStorage.getItem('theme');
-    return (saved as 'light' | 'grey' | 'dark' | 'black') || 'dark';
+    return (saved as 'light' | 'grey' | 'dark' | 'black' | 'ocean' | 'sunset' | 'forest' | 'purple' | 'neon' | 'midnight') || 'dark';
   });
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
@@ -234,9 +234,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
     setUnreadMessagesCount(count || 0);
   };
 
-  const changeTheme = (newTheme: 'light' | 'grey' | 'dark' | 'black') => {
+  const changeTheme = (newTheme: 'light' | 'grey' | 'dark' | 'black' | 'ocean' | 'sunset' | 'forest' | 'purple' | 'neon' | 'midnight') => {
     const html = document.documentElement;
-    html.classList.remove('light', 'grey', 'dark', 'black');
+    html.classList.remove('light', 'grey', 'dark', 'black', 'ocean', 'sunset', 'forest', 'purple', 'neon', 'midnight');
     html.classList.add(newTheme);
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
@@ -436,22 +436,58 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               
               <div className="my-1 h-px bg-border/50" />
               
-              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('light'); }} className="cursor-pointer">
-                <Sun className="w-4 h-4 mr-2" />
-                Light Theme
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('grey'); }} className="cursor-pointer">
-                <Palette className="w-4 h-4 mr-2" />
-                Grey Theme
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('dark'); }} className="cursor-pointer">
-                <Moon className="w-4 h-4 mr-2" />
-                Dark Theme
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { lightTap(); changeTheme('black'); }} className="cursor-pointer">
-                <Moon className="w-4 h-4 mr-2 fill-current" />
-                Black Theme
-              </DropdownMenuItem>
+              {/* Theme Modes with Collapsible */}
+              <Collapsible>
+                <CollapsibleTrigger className="w-full px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Palette className="w-4 h-4" />
+                    <span>Theme Modes</span>
+                  </span>
+                  <span className="text-xs">▼</span>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('light'); }} className="cursor-pointer ml-4">
+                    <Sun className="w-4 h-4 mr-2" />
+                    Light
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('grey'); }} className="cursor-pointer ml-4">
+                    <Palette className="w-4 h-4 mr-2" />
+                    Grey
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('dark'); }} className="cursor-pointer ml-4">
+                    <Moon className="w-4 h-4 mr-2" />
+                    Dark
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('black'); }} className="cursor-pointer ml-4">
+                    <Moon className="w-4 h-4 mr-2 fill-current" />
+                    Black
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('ocean'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-blue-400 to-cyan-600" />
+                    Ocean
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('sunset'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-orange-400 to-pink-600" />
+                    Sunset
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('forest'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-green-400 to-emerald-700" />
+                    Forest
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('purple'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-purple-400 to-indigo-700" />
+                    Purple Dream
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('neon'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-pink-500 to-cyan-500" />
+                    Neon
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('midnight'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-blue-900 to-slate-950" />
+                    Midnight
+                  </DropdownMenuItem>
+                </CollapsibleContent>
+              </Collapsible>
             </DropdownMenuContent>
           </DropdownMenu>
           </div>
