@@ -1,119 +1,61 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useGPSTracking } from '@/hooks/useGPSTracking';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, MapPin } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+const AnyMapContainer: any = MapContainer;
+const AnyTileLayer: any = TileLayer;
+const AnyMarker: any = Marker;
+
+const createUserIcon = (label: string, avatarUrl?: string, isCurrentUser = false) => {
+  const sizeClass = isCurrentUser ? 'w-10 h-10 border-4' : 'w-8 h-8 border-2';
+  const bgClass = isCurrentUser ? 'bg-primary' : 'bg-blue-500';
+
+  return L.divIcon({
+    html: `
+      <div class="${sizeClass} ${bgClass} rounded-full border-white shadow-lg flex items-center justify-center text-white text-xs font-bold overflow-hidden"
+        style="${avatarUrl ? `background-image:url(${avatarUrl});background-size:cover;background-position:center;` : ''}"
+      >
+        ${avatarUrl ? '' : label}
+      </div>
+    `,
+    className: '',
+    iconSize: isCurrentUser ? [40, 40] : [32, 32],
+    iconAnchor: isCurrentUser ? [20, 20] : [16, 16],
+  });
+};
+
+const UserLocationUpdater = ({
+  position,
+  ghostMode,
+}: {
+  position: any;
+  ghostMode: boolean;
+}) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!ghostMode && position) {
+      map.flyTo([position.latitude, position.longitude], 12);
+    }
+  }, [ghostMode, position, map]);
+
+  return null;
+};
 
 const LiveMap = () => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<any>(null);
-  const markers = useRef<{ [key: string]: any }>({});
   const [ghostMode, setGhostMode] = useState(false);
   const [locations, setLocations] = useState<any[]>([]);
   const [mapError, setMapError] = useState<string | null>(null);
   const { position, isTracking, toggleGhostMode } = useGPSTracking(!ghostMode);
   const { toast } = useToast();
 
-  // Load and initialize map
-  useEffect(() => {
-    let isMounted = true;
 
-    const initMap = async () => {
-      if (!mapContainer.current || map.current) return;
-
-      try {
-        // Load Mapbox GL CSS
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css';
-        document.head.appendChild(link);
-
-        // Load Mapbox GL JS
-        const script = document.createElement('script');
-        script.src = 'https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js';
-        script.onload = () => {
-          if (!isMounted) return;
-
-          const mapboxgl = (window as any).mapboxgl;
-          if (!mapboxgl) {
-            setMapError('Failed to load Mapbox library');
-            return;
-          }
-
-          mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ._JcFZ4Zp8Z_Hdpc_JcD7mg';
-
-          try {
-            map.current = new mapboxgl.Map({
-              container: mapContainer.current,
-              style: 'mapbox://styles/mapbox/streets-v12',
-              center: position ? [position.longitude, position.latitude] : [-74.5, 40],
-              zoom: 12,
-            });
-
-            map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-            map.current.on('load', () => {
-              console.log('Mapbox map loaded');
-              map.current?.resize();
-            });
-
-            map.current.on('error', (e: any) => {
-              console.error('Mapbox GL error', e?.error || e);
-            });
-          } catch (error) {
-            console.error('Map initialization error:', error);
-            setMapError('Failed to initialize map');
-          }
-        };
-        script.onerror = () => {
-          setMapError('Failed to load Mapbox script');
-        };
-        document.head.appendChild(script);
-      } catch (error) {
-        console.error('Error loading Mapbox:', error);
-        setMapError('Failed to load map library');
-      }
-    };
-
-    initMap();
-
-    return () => {
-      isMounted = false;
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
-    };
-  }, []);
-
-  // Update map center when user position changes
-  useEffect(() => {
-    if (map.current && position && !ghostMode) {
-      const mapboxgl = (window as any).mapboxgl;
-      if (!mapboxgl) return;
-
-      map.current.flyTo({
-        center: [position.longitude, position.latitude],
-        zoom: 12,
-        essential: true
-      });
-
-      // Add or update user's own marker
-      const userId = 'current-user';
-      if (markers.current[userId]) {
-        markers.current[userId].setLngLat([position.longitude, position.latitude]);
-      } else {
-        const el = document.createElement('div');
-        el.className = 'w-10 h-10 rounded-full bg-primary border-4 border-white shadow-lg flex items-center justify-center text-white font-bold text-xs';
-        el.textContent = 'You';
-        
-        markers.current[userId] = new mapboxgl.Marker(el)
-          .setLngLat([position.longitude, position.latitude])
-          .addTo(map.current);
-      }
-    }
-  }, [position, ghostMode]);
 
   // Subscribe to location updates
   useEffect(() => {
@@ -134,7 +76,7 @@ const LiveMap = () => {
   }, []);
 
   const fetchLocations = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_locations')
       .select(`
         *,
@@ -146,50 +88,14 @@ const LiveMap = () => {
       `)
       .eq('ghost_mode', false);
 
-    if (data && map.current) {
+    if (error) {
+      console.error('Error fetching locations:', error);
+      setMapError('Failed to load locations');
+      return;
+    }
+
+    if (data) {
       setLocations(data);
-
-      const mapboxgl = (window as any).mapboxgl;
-      if (!mapboxgl) return;
-
-      // Clear old markers (except current user)
-      Object.keys(markers.current).forEach(key => {
-        if (key !== 'current-user') {
-          markers.current[key].remove();
-          delete markers.current[key];
-        }
-      });
-
-      // Add new markers
-      data.forEach(location => {
-        if (location.user_id && map.current) {
-          const profile = location.profiles as any;
-          
-          const el = document.createElement('div');
-          el.className = 'w-8 h-8 rounded-full bg-blue-500 border-2 border-white shadow-lg cursor-pointer hover:scale-110 transition-transform';
-          
-          if (profile?.avatar_url) {
-            el.style.backgroundImage = `url(${profile.avatar_url})`;
-            el.style.backgroundSize = 'cover';
-            el.style.backgroundPosition = 'center';
-          }
-
-          const marker = new mapboxgl.Marker(el)
-            .setLngLat([location.longitude, location.latitude])
-            .setPopup(
-              new mapboxgl.Popup({ offset: 25 })
-                .setHTML(`
-                  <div class="p-2">
-                    <p class="font-semibold">${profile?.username || 'Unknown'}</p>
-                    <p class="text-sm text-muted-foreground">${profile?.full_name || ''}</p>
-                  </div>
-                `)
-            )
-            .addTo(map.current);
-
-          markers.current[location.user_id] = marker;
-        }
-      });
     }
   };
 
@@ -227,7 +133,54 @@ const LiveMap = () => {
 
   return (
     <div className="relative w-full h-screen bg-background">
-      <div ref={mapContainer} className="absolute inset-0 bg-muted" />
+      <AnyMapContainer
+        center={position ? [position.latitude, position.longitude] : [40, -74.5]}
+        zoom={12}
+        className="absolute inset-0 bg-muted"
+        zoomControl={false}
+      >
+        <AnyTileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+
+        {!ghostMode && position && (
+          <AnyMarker
+            position={[position.latitude, position.longitude]}
+            icon={createUserIcon('You', undefined, true)}
+          >
+            <Popup>You are here</Popup>
+          </AnyMarker>
+        )}
+
+        {locations.map((location: any) => {
+          if (!location.user_id) return null;
+          const profile = location.profiles as any;
+
+          return (
+            <AnyMarker
+              key={location.user_id}
+              position={[location.latitude, location.longitude]}
+              icon={createUserIcon(
+                profile?.username?.charAt(0)?.toUpperCase() || 'U',
+                profile?.avatar_url || undefined,
+                false
+              )}
+            >
+              <Popup>
+                <div className="space-y-1">
+                  <p className="font-semibold">{profile?.username || 'Unknown'}</p>
+                  {profile?.full_name && (
+                    <p className="text-sm text-muted-foreground">{profile.full_name}</p>
+                  )}
+                </div>
+              </Popup>
+            </AnyMarker>
+          );
+        })}
+
+        <UserLocationUpdater position={position} ghostMode={ghostMode} />
+      </AnyMapContainer>
       
       {/* Controls */}
       <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
