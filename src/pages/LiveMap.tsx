@@ -46,6 +46,7 @@ const LiveMap = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [autoCenter, setAutoCenter] = useState(true);
   const [showNearbyOnly, setShowNearbyOnly] = useState(false);
+  const [satelliteMode, setSatelliteMode] = useState(false);
   const { position, isTracking, toggleGhostMode } = useGPSTracking(!ghostMode);
   const { toast } = useToast();
 
@@ -60,15 +61,24 @@ const LiveMap = () => {
 
       const map = L.map(mapContainerRef.current).setView(initialCenter, 12);
 
-      L.tileLayer(
+      const streetLayer = L.tileLayer(
         'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
         {
           attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
           subdomains: 'abcd',
           maxZoom: 19,
         }
-      ).addTo(map);
+      );
 
+      const satelliteLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: '&copy; Esri',
+          maxZoom: 19,
+        }
+      );
+
+      (satelliteMode ? satelliteLayer : streetLayer).addTo(map);
       mapRef.current = map;
     } catch (error) {
       console.error('Error initializing Leaflet map:', error);
@@ -82,7 +92,7 @@ const LiveMap = () => {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [satelliteMode]);
 
   // Center map and update current user marker when GPS position changes
   useEffect(() => {
@@ -313,6 +323,16 @@ const LiveMap = () => {
             <Navigation className="w-6 h-6 sm:w-5 sm:h-5 text-blue-500" />
           </Button>
         )}
+
+        {/* Satellite Mode Toggle */}
+        <Button
+          onClick={() => setSatelliteMode(!satelliteMode)}
+          variant="default"
+          size="icon"
+          className="w-14 h-14 sm:w-12 sm:h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 border-primary/20 hover:border-primary/40 transition-all"
+        >
+          <MapPin className="w-6 h-6 sm:w-5 sm:h-5" />
+        </Button>
       </motion.div>
 
       {/* Status Indicator - Bottom Left */}
@@ -406,6 +426,23 @@ const LiveMap = () => {
                 </div>
               </div>
               <div className={`w-3 h-3 rounded-full animate-pulse ${isTracking ? 'bg-green-500' : 'bg-red-500'}`} />
+            </div>
+
+            {/* Satellite Mode Setting */}
+            <div className="flex items-center justify-between space-x-4">
+              <div className="flex-1 space-y-1">
+                <Label htmlFor="satellite-mode" className="text-base font-medium">
+                  Satellite View
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Switch between street and satellite imagery
+                </p>
+              </div>
+              <Switch
+                id="satellite-mode"
+                checked={satelliteMode}
+                onCheckedChange={setSatelliteMode}
+              />
             </div>
 
             {/* Nearby Friends Info */}
