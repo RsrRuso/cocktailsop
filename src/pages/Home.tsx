@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import ShareDialog from "@/components/ShareDialog";
 import CommentsDialog from "@/components/CommentsDialog";
 import LikesDialog from "@/components/LikesDialog";
-import { ReelFullscreen } from "@/components/ReelFullscreen";
+import { ReelsFullscreenViewer } from "@/components/ReelsFullscreenViewer";
 import { FeedItem } from "@/components/FeedItem";
 import { useFeedData } from "@/hooks/useFeedData";
 import { useOptimisticLike } from "@/hooks/useOptimisticLike";
@@ -89,7 +89,8 @@ const Home = () => {
   const [isReelDialogOpen, setIsReelDialogOpen] = useState(false);
   const [selectedReelId, setSelectedReelId] = useState("");
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
-  const [fullscreenReel, setFullscreenReel] = useState<FeedItem | null>(null);
+  const [showFullscreenViewer, setShowFullscreenViewer] = useState(false);
+  const [fullscreenReelIndex, setFullscreenReelIndex] = useState(0);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(() => {
     return localStorage.getItem('selectedRegion') || null;
   });
@@ -466,7 +467,14 @@ const Home = () => {
                 setShareDialogOpen(true);
               }}
               onToggleMute={handleToggleMute}
-              onFullscreen={() => setFullscreenReel(item)}
+              onFullscreen={() => {
+                if (item.type === 'reel') {
+                  const reelItems = filteredFeed.filter(f => f.type === 'reel');
+                  const index = reelItems.findIndex(r => r.id === item.id);
+                  setFullscreenReelIndex(index);
+                  setShowFullscreenViewer(true);
+                }
+              }}
               onViewLikes={() => {
                 setSelectedLikesPostId(item.id);
                 setIsReelLikes(item.type === 'reel');
@@ -524,42 +532,38 @@ const Home = () => {
         isReel={isReelLikes}
       />
 
-      {fullscreenReel && (
-        <ReelFullscreen
-          isOpen={!!fullscreenReel}
-          onClose={() => setFullscreenReel(null)}
-          videoUrl={fullscreenReel.media_urls[0]}
-          postId={fullscreenReel.id}
-          postType={fullscreenReel.type}
-          content={fullscreenReel.type === 'post' ? fullscreenReel.content : fullscreenReel.caption}
-          likeCount={fullscreenReel.like_count}
-          commentCount={fullscreenReel.comment_count}
-          isLiked={fullscreenReel.type === 'post' ? likedPosts.has(fullscreenReel.id) : likedReels.has(fullscreenReel.id)}
-          isOwnPost={currentUser?.id === fullscreenReel.user_id}
-          userId={fullscreenReel.user_id}
-          onLike={() => {
-            fullscreenReel.type === 'post' ? handleLikePost(fullscreenReel.id) : handleLikeReel(fullscreenReel.id);
-          }}
-          onComment={() => {
-            setSelectedPostId(fullscreenReel.id);
-            setCommentsDialogOpen(true);
-          }}
-          onShare={() => {
-            setSelectedPostId(fullscreenReel.id);
-            setSelectedPostContent(fullscreenReel.type === 'post' ? fullscreenReel.content : fullscreenReel.caption);
-            setSelectedPostType(fullscreenReel.type);
-            setSelectedMediaUrls(fullscreenReel.media_urls || []);
-            setShareDialogOpen(true);
-          }}
-          onEdit={() => {
-            navigate(fullscreenReel.type === 'post' ? `/edit-post/${fullscreenReel.id}` : `/edit-reel/${fullscreenReel.id}`);
-          }}
-          onDelete={() => {
-            fullscreenReel.type === 'post' ? handleDeletePost(fullscreenReel.id) : handleDeleteReel(fullscreenReel.id);
-            setFullscreenReel(null);
-          }}
-        />
-      )}
+      <ReelsFullscreenViewer
+        isOpen={showFullscreenViewer}
+        onClose={() => setShowFullscreenViewer(false)}
+        reels={filteredFeed.filter(item => item.type === 'reel').map(item => ({
+          id: item.id,
+          video_url: item.media_urls[0],
+          caption: item.type === 'reel' ? item.caption : item.content,
+          like_count: item.like_count,
+          comment_count: item.comment_count,
+          view_count: item.type === 'reel' ? item.view_count : 0,
+          user_id: item.user_id,
+          created_at: item.created_at,
+          profiles: item.profiles
+        }))}
+        initialIndex={fullscreenReelIndex}
+        currentUserId={currentUser?.id || ''}
+        likedReels={likedReels}
+        onLike={handleLikeReel}
+        onComment={(reelId) => {
+          setSelectedPostId(reelId);
+          setSelectedPostType('reel');
+          setCommentsDialogOpen(true);
+        }}
+        onShare={(reelId, caption, videoUrl) => {
+          setSelectedPostId(reelId);
+          setSelectedPostContent(caption);
+          setSelectedPostType('reel');
+          setSelectedMediaUrls([videoUrl]);
+          setShareDialogOpen(true);
+        }}
+        onDelete={handleDeleteReel}
+      />
 
       <BottomNav />
     </div>
