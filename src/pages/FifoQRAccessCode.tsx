@@ -97,7 +97,7 @@ export default function FifoQRAccessCode() {
 
   const copyLink = () => {
     if (!selectedWorkspaceId) return;
-    const link = `https://cocktailsop.com/fifo-request-access?workspace=${selectedWorkspaceId}`;
+    const link = `${window.location.origin}/fifo-request-access?workspace=${selectedWorkspaceId}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     toast.success("Link copied to clipboard");
@@ -106,7 +106,7 @@ export default function FifoQRAccessCode() {
 
   const shareQRCode = async () => {
     if (!selectedWorkspaceId) return;
-    const link = `https://cocktailsop.com/fifo-request-access?workspace=${selectedWorkspaceId}`;
+    const link = `${window.location.origin}/fifo-request-access?workspace=${selectedWorkspaceId}`;
     
     if (navigator.share) {
       try {
@@ -256,7 +256,7 @@ export default function FifoQRAccessCode() {
               <div className="flex justify-center p-8 bg-white rounded-lg">
                 <QRCodeSVG
                   id="qr-code"
-                  value={`https://cocktailsop.com/fifo-request-access?workspace=${selectedWorkspaceId}`}
+                  value={`${window.location.origin}/fifo-request-access?workspace=${selectedWorkspaceId}`}
                   size={256}
                   level="H"
                   includeMargin
