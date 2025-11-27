@@ -60,7 +60,18 @@ export const ReelsFullscreenViewer = ({
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
-  }, [initialIndex]);
+
+    const body = document.body;
+    if (isOpen) {
+      body.style.overflow = "hidden";
+    } else {
+      body.style.overflow = "";
+    }
+
+    return () => {
+      body.style.overflow = "";
+    };
+  }, [initialIndex, isOpen]);
 
   if (!isOpen || reels.length === 0) return null;
 
