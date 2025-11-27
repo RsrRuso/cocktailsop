@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { Package, Store, Users, ArrowRightLeft, Upload, Camera, Scan, TrendingUp, Pencil, Trash2, Loader2, Lock, X } from "lucide-react";
+import { Package, Store, Users, ArrowRightLeft, Upload, Camera, Scan, TrendingUp, Pencil, Trash2, Loader2, Lock, X, UserPlus } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AddFifoEmployeeDialog } from "@/components/AddFifoEmployeeDialog";
 
 const InventoryManager = () => {
   const { user } = useAuth();
@@ -67,6 +68,7 @@ const InventoryManager = () => {
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [selectedTransferItemId, setSelectedTransferItemId] = useState<string>("");
   const [selectedFromStoreId, setSelectedFromStoreId] = useState<string>("");
+  const [inviteMemberDialogOpen, setInviteMemberDialogOpen] = useState(false);
   const scannerRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -2081,19 +2083,42 @@ const InventoryManager = () => {
                 <CardTitle className="text-sm font-medium">Manage Staff</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <form onSubmit={handleAddEmployee} className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs">Employee Name</Label>
-                      <Input name="employeeName" className="h-8 text-sm" required />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Title/Position</Label>
-                      <Input name="title" className="h-8 text-sm" required />
-                    </div>
-                  </div>
-                  <Button type="submit" size="sm">Add Employee</Button>
-                </form>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setInviteMemberDialogOpen(true)}
+                    className="w-full"
+                  >
+                    <Users className="w-3 h-3 mr-2" />
+                    Add from Network
+                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" className="w-full">
+                        <UserPlus className="w-3 h-3 mr-2" />
+                        Add Manually
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Employee Manually</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleAddEmployee} className="space-y-3">
+                        <div>
+                          <Label className="text-xs">Employee Name</Label>
+                          <Input name="employeeName" className="h-8 text-sm" required />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Title/Position</Label>
+                          <Input name="title" className="h-8 text-sm" required />
+                        </div>
+                        <Button type="submit" size="sm" className="w-full">Add Employee</Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
 
                 <div className="grid gap-2 mt-4">
                   {employees.map((emp) => (
@@ -2690,6 +2715,13 @@ const InventoryManager = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <AddFifoEmployeeDialog
+        open={inviteMemberDialogOpen}
+        onOpenChange={setInviteMemberDialogOpen}
+        workspaceId={currentWorkspace?.id || null}
+        onEmployeeAdded={fetchData}
+      />
 
       <BottomNav />
     </div>
