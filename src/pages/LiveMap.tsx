@@ -41,7 +41,7 @@ const LiveMap = () => {
             return;
           }
 
-          mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
+          mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ._JcFZ4Zp8Z_Hdpc_JcD7mg';
 
           try {
             map.current = new mapboxgl.Map({
