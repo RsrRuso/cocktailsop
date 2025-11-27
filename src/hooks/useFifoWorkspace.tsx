@@ -53,14 +53,14 @@ export const FifoWorkspaceProvider = ({ children }: { children: ReactNode }) => 
         .from('workspaces')
         .select('*')
         .eq('owner_id', user.id)
-        .eq('workspace_type', 'fifo_inventory');
+        .eq('workspace_type', 'fifo');
 
       // Fetch FIFO workspaces user is member of
       const { data: memberWorkspaces } = await supabase
         .from('workspace_members')
         .select('workspace:workspaces!inner(*)')
         .eq('user_id', user.id)
-        .eq('workspace.workspace_type', 'fifo_inventory');
+        .eq('workspace.workspace_type', 'fifo');
 
       const memberWorkspacesData = memberWorkspaces?.map((m: any) => m.workspace).filter(Boolean) || [];
       const allWorkspaces = [...(ownedWorkspaces || []), ...memberWorkspacesData];
@@ -115,7 +115,7 @@ export const FifoWorkspaceProvider = ({ children }: { children: ReactNode }) => 
           name,
           description,
           owner_id: user.id,
-          workspace_type: 'fifo_inventory',
+          workspace_type: 'fifo',
         })
         .select()
         .single();
