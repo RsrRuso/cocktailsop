@@ -55,6 +55,7 @@ export const ReelsFullscreenViewer = ({
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [lastTap, setLastTap] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,14 +68,18 @@ export const ReelsFullscreenViewer = ({
   const isOwnReel = currentReel.user_id === currentUserId;
 
   const handlePrevious = () => {
-    if (currentIndex > 0) {
+    if (currentIndex > 0 && !isTransitioning) {
+      setIsTransitioning(true);
       setCurrentIndex(currentIndex - 1);
+      setTimeout(() => setIsTransitioning(false), 300);
     }
   };
 
   const handleNext = () => {
-    if (currentIndex < reels.length - 1) {
+    if (currentIndex < reels.length - 1 && !isTransitioning) {
+      setIsTransitioning(true);
       setCurrentIndex(currentIndex + 1);
+      setTimeout(() => setIsTransitioning(false), 300);
     }
   };
 
@@ -143,17 +148,25 @@ export const ReelsFullscreenViewer = ({
       </button>
 
       {/* Video - Full screen 9:16 aspect ratio */}
-      <div className="relative w-full h-full flex items-center justify-center bg-black">
-        <video
-          key={currentReel.id}
-          src={currentReel.video_url}
-          className="w-full h-full object-cover"
-          style={{ aspectRatio: '9/16', maxHeight: '100vh' }}
-          loop
-          playsInline
-          autoPlay
-          muted={isMuted}
-        />
+      <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
+        <div 
+          className="w-full h-full transition-transform duration-300 ease-out"
+          style={{ 
+            transform: isTransitioning ? 'scale(0.95)' : 'scale(1)',
+            opacity: isTransitioning ? 0.7 : 1
+          }}
+        >
+          <video
+            key={currentReel.id}
+            src={currentReel.video_url}
+            className="w-full h-full object-cover animate-fade-in"
+            style={{ aspectRatio: '9/16', maxHeight: '100vh' }}
+            loop
+            playsInline
+            autoPlay
+            muted={isMuted}
+          />
+        </div>
       </div>
 
       {/* Mute/Unmute Button */}
