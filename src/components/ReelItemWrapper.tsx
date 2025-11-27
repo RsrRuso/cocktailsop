@@ -1,5 +1,5 @@
 import { FC, useState } from 'react';
-import { Heart, MessageCircle, Send, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX, Eye, Brain, Sparkles } from 'lucide-react';
+import { Heart, MessageCircle, Send, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX, Eye, Sparkles, Share2, Bookmark } from 'lucide-react';
 import OptimizedAvatar from '@/components/OptimizedAvatar';
 import {
   DropdownMenu,
@@ -52,16 +52,35 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
   handleDeleteReel,
 }) => {
   const [showInsights, setShowInsights] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Track view when this reel is visible
   useViewTracking('reel', reel.id, user?.id, index === currentIndex);
 
+  // Parse caption for hashtags and mentions
+  const renderCaption = (text: string) => {
+    const parts = text.split(/(\s+)/);
+    return parts.map((part, i) => {
+      if (part.startsWith('#')) {
+        return <span key={i} className="text-blue-400 font-semibold">{part}</span>;
+      }
+      if (part.startsWith('@')) {
+        return <span key={i} className="text-blue-400 font-semibold">{part}</span>;
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
   return (
-    <div className="h-screen snap-start relative flex items-center justify-center bg-black">
-      {/* Video Player - Only autoplay visible reel */}
+    <div 
+      className="h-screen snap-start relative flex items-center justify-center bg-black"
+      onClick={() => !isFullscreen && setIsFullscreen(true)}
+    >
+      {/* Video Player - Full screen, 9:16 aspect ratio like Instagram */}
       <video
         src={reel.video_url}
-        className="absolute inset-0 w-full h-full object-cover"
+        className="w-full h-full object-cover"
+        style={{ aspectRatio: '9/16' }}
         loop
         playsInline
         muted={mutedVideos.has(reel.id)}
@@ -69,9 +88,10 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
         preload={Math.abs(index - currentIndex) <= 1 ? "auto" : "none"}
       />
 
-      {/* Mute/Unmute Button - Glassy with Contours */}
+      {/* Mute/Unmute Button */}
       <button
-        onClick={() => {
+        onClick={(e) => {
+          e.stopPropagation();
           setMutedVideos(prev => {
             const newSet = new Set(prev);
             if (newSet.has(reel.id)) {
@@ -82,120 +102,263 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
             return newSet;
           });
         }}
-        className="absolute top-20 right-3 sm:right-4 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-transparent backdrop-blur-xl border-2 border-white/40 flex items-center justify-center hover:border-white/60 hover:bg-white/5 transition-all"
+        className="absolute top-20 right-4 z-30 w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-black/50 transition-all"
       >
         {mutedVideos.has(reel.id) ? (
-          <VolumeX className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <VolumeX className="w-5 h-5 text-white" />
         ) : (
-          <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <Volume2 className="w-5 h-5 text-white" />
         )}
       </button>
 
-      {/* Bottom Action Bar - Glassy Transparent with Contours */}
-      <div className="absolute bottom-0 left-0 right-0 h-12 sm:h-14 bg-transparent backdrop-blur-xl border-t-2 border-white/30">
-        <div className="h-full flex items-center justify-around px-1 sm:px-2">
-          <button 
-            onClick={() => handleLikeReel(reel.id)}
-            className="flex flex-col items-center gap-0.5 hover:scale-110 transition-transform active:scale-95"
-          >
-            <Heart className={`w-5 h-5 sm:w-6 sm:h-6 transition-all ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
-            <span 
-              className="text-white text-[9px] sm:text-[10px] font-semibold cursor-pointer hover:underline drop-shadow-lg"
+      {!isFullscreen ? (
+        // FEED VIEW - Horizontal buttons at bottom
+        <>
+          <div className="absolute bottom-0 left-0 right-0 pb-safe">
+            {/* Bottom Action Bar */}
+            <div className="h-16 bg-gradient-to-t from-black/80 via-black/40 to-transparent backdrop-blur-sm">
+              <div className="h-full flex items-center justify-around px-4">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLikeReel(reel.id);
+                  }}
+                  className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+                >
+                  <Heart className={`w-7 h-7 transition-all ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+                  <span className="text-white text-xs font-bold drop-shadow-lg">{reel.like_count || 0}</span>
+                </button>
+
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedReelForComments(reel.id);
+                    setShowComments(true);
+                  }}
+                  className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+                >
+                  <MessageCircle className="w-7 h-7 text-white" />
+                  <span className="text-white text-xs font-bold drop-shadow-lg">{reel.comment_count || 0}</span>
+                </button>
+
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedReelId(reel.id);
+                    setSelectedReelCaption(reel.caption || '');
+                    setSelectedReelVideo(reel.video_url);
+                    setShowShare(true);
+                  }}
+                  className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+                >
+                  <Share2 className="w-7 h-7 text-white" />
+                </button>
+
+                <button 
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+                >
+                  <Bookmark className="w-7 h-7 text-white" />
+                </button>
+
+                {user && reel.user_id === user.id && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button 
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+                      >
+                        <MoreVertical className="w-7 h-7 text-white" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md">
+                      <DropdownMenuItem onClick={() => navigate(`/edit-reel/${reel.id}`)}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDeleteReel(reel.id)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* User Info + Caption - Bottom Left */}
+          <div className="absolute bottom-20 left-4 right-24 z-10 space-y-2">
+            <div className="flex items-center gap-3">
+              <OptimizedAvatar
+                src={reel.profiles?.avatar_url}
+                alt={reel.profiles?.username || 'User'}
+                fallback={reel.profiles?.username?.[0] || '?'}
+                userId={reel.user_id}
+                className="w-11 h-11 border-2 border-white"
+              />
+              <span className="text-white font-bold text-base drop-shadow-lg">@{reel.profiles?.username}</span>
+            </div>
+            <p className="text-white text-sm leading-relaxed drop-shadow-lg line-clamp-2">
+              {renderCaption(reel.caption || '')}
+            </p>
+            <div className="flex items-center gap-2">
+              <Music className="w-4 h-4 text-white" />
+              <span className="text-white text-xs drop-shadow-lg">Original Audio</span>
+            </div>
+          </div>
+        </>
+      ) : (
+        // FULLSCREEN VIEW - Vertical buttons on right like Instagram
+        <>
+          {/* Right Side Vertical Action Buttons */}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-6 z-20">
+            <button 
               onClick={(e) => {
                 e.stopPropagation();
-                setSelectedReelForLikes(reel.id);
-                setShowLikes(true);
+                handleLikeReel(reel.id);
               }}
+              className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
             >
-              {reel.like_count || 0}
-            </span>
-          </button>
+              <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
+                <Heart className={`w-7 h-7 transition-all ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+              </div>
+              <span 
+                className="text-white text-xs font-bold drop-shadow-lg cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedReelForLikes(reel.id);
+                  setShowLikes(true);
+                }}
+              >
+                {reel.like_count || 0}
+              </span>
+            </button>
 
-          <button 
-            onClick={() => {
-              setSelectedReelForComments(reel.id);
-              setShowComments(true);
-            }}
-            className="flex flex-col items-center gap-0.5 hover:scale-110 transition-transform active:scale-95"
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedReelForComments(reel.id);
+                setShowComments(true);
+              }}
+              className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+            >
+              <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
+                <MessageCircle className="w-7 h-7 text-white" />
+              </div>
+              <span className="text-white text-xs font-bold drop-shadow-lg">{reel.comment_count || 0}</span>
+            </button>
+
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedReelId(reel.id);
+                setSelectedReelCaption(reel.caption || '');
+                setSelectedReelVideo(reel.video_url);
+                setShowShare(true);
+              }}
+              className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+            >
+              <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
+                <Share2 className="w-7 h-7 text-white" />
+              </div>
+            </button>
+
+            <button 
+              onClick={(e) => e.stopPropagation()}
+              className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+            >
+              <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
+                <Bookmark className="w-7 h-7 text-white" />
+              </div>
+            </button>
+
+            <button 
+              onClick={(e) => e.stopPropagation()}
+              className="flex flex-col items-center gap-1"
+            >
+              <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center">
+                <Eye className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-white text-xs font-bold drop-shadow-lg">{reel.view_count || 0}</span>
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowInsights(true);
+              }}
+              className="flex items-center gap-1 px-2 py-1 rounded-full bg-purple-500/20 border border-purple-400/50 backdrop-blur-md hover:bg-purple-500/30 transition-all"
+            >
+              <Sparkles className="w-3 h-3 text-pink-300 animate-pulse" />
+              <span className="text-[9px] font-bold text-white">AI</span>
+            </button>
+
+            {user && reel.user_id === user.id && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
+                      <MoreVertical className="w-7 h-7 text-white" />
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md">
+                  <DropdownMenuItem onClick={() => navigate(`/edit-reel/${reel.id}`)}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleDeleteReel(reel.id)}
+                    className="text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+
+          {/* Animated Caption - Bottom (slides up when fullscreen) */}
+          <div 
+            className="absolute bottom-4 left-4 right-20 z-10 space-y-2 animate-slide-in-right"
+            onClick={(e) => e.stopPropagation()}
           >
-            <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            <span className="text-white text-[9px] sm:text-[10px] font-semibold drop-shadow-lg">{reel.comment_count || 0}</span>
-          </button>
+            <div className="flex items-center gap-3">
+              <OptimizedAvatar
+                src={reel.profiles?.avatar_url}
+                alt={reel.profiles?.username || 'User'}
+                fallback={reel.profiles?.username?.[0] || '?'}
+                userId={reel.user_id}
+                className="w-11 h-11 border-2 border-white"
+              />
+              <span className="text-white font-bold text-base drop-shadow-lg">@{reel.profiles?.username}</span>
+            </div>
+            <p className="text-white text-sm leading-relaxed drop-shadow-lg max-h-20 overflow-y-auto">
+              {renderCaption(reel.caption || '')}
+            </p>
+            <div className="flex items-center gap-2">
+              <Music className="w-4 h-4 text-white" />
+              <span className="text-white text-xs drop-shadow-lg">Original Audio</span>
+            </div>
+          </div>
 
-          <button 
-            onClick={() => {
-              setSelectedReelId(reel.id);
-              setSelectedReelCaption(reel.caption || '');
-              setSelectedReelVideo(reel.video_url);
-              setShowShare(true);
-            }}
-            className="flex flex-col items-center gap-0.5 hover:scale-110 transition-transform active:scale-95 group"
+          {/* Exit fullscreen indicator */}
+          <div 
+            onClick={() => setIsFullscreen(false)}
+            className="absolute top-20 left-4 z-30 text-white/70 text-xs cursor-pointer hover:text-white"
           >
-            <Send className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            <span className="text-white text-[9px] sm:text-[10px] font-semibold drop-shadow-lg hidden sm:inline">Send</span>
-          </button>
-
-          <button className="flex flex-col items-center gap-0.5">
-            <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            <span className="text-white text-[9px] sm:text-[10px] font-semibold drop-shadow-lg">{reel.view_count || 0}</span>
-          </button>
-
-          {user && reel.user_id === user.id && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex flex-col items-center gap-0.5 hover:scale-110 transition-transform active:scale-95">
-                  <MoreVertical className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-xl border-2 border-white/30">
-                <DropdownMenuItem onClick={() => navigate(`/edit-reel/${reel.id}`)}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => handleDeleteReel(reel.id)}
-                  className="text-destructive"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
-
-      {/* User Info - Left Bottom */}
-      <div className="absolute bottom-20 left-4 right-20 z-10 space-y-3">
-        <div className="flex items-center gap-2">
-          <OptimizedAvatar
-            src={reel.profiles?.avatar_url}
-            alt={reel.profiles?.username || 'User'}
-            fallback={reel.profiles?.username?.[0] || '?'}
-            userId={reel.user_id}
-            className="w-10 h-10 border-2 border-white avatar-3d"
-          />
-          <p className="text-white font-bold text-lg text-3d-neon">@{reel.profiles?.username}</p>
-        </div>
-        <p className="text-white text-base line-clamp-3 caption-3d-neon">{reel.caption}</p>
-        <div className="flex items-center gap-2">
-          <Music className="w-5 h-5 text-white drop-shadow-[0_0_10px_rgba(195,221,253,0.8)]" />
-          <p className="text-white text-sm font-semibold text-3d-neon">Original Audio</p>
-        </div>
-      </div>
-
-      {/* AI Insights Button - Mobile Friendly Positioning */}
-      <div className="absolute bottom-[56px] sm:bottom-[64px] right-1 sm:right-2 z-20">
-        <button
-            onClick={() => setShowInsights(true)}
-            className="relative flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-full bg-transparent border border-purple-400/50 hover:border-purple-400/70 backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95"
-          >
-            <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-pink-300 animate-pulse transition-colors" />
-            <span className="text-[8px] sm:text-[9px] font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-blue-300 bg-clip-text text-transparent whitespace-nowrap">
-              AI
-            </span>
-          </button>
-      </div>
+            Tap to exit fullscreen
+          </div>
+        </>
+      )}
 
       {/* AI Insights Dialog */}
       <EngagementInsightsDialog
