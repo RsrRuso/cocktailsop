@@ -30,6 +30,7 @@ export const ReelFullscreen = ({
   isOpen,
   onClose,
   videoUrl,
+  content,
   likeCount,
   commentCount,
   isLiked,
@@ -55,15 +56,17 @@ export const ReelFullscreen = ({
       </button>
 
       {/* Video - Full screen 9:16 aspect ratio */}
-      <video
-        src={videoUrl}
-        className="w-full h-full object-cover"
-        style={{ aspectRatio: '9/16' }}
-        loop
-        playsInline
-        autoPlay
-        muted={isMuted}
-      />
+      <div className="relative w-full h-full flex items-center justify-center bg-black">
+        <video
+          src={videoUrl}
+          className="w-full h-full object-cover"
+          style={{ aspectRatio: '9/16', maxHeight: '100vh' }}
+          loop
+          playsInline
+          autoPlay
+          muted={isMuted}
+        />
+      </div>
 
       {/* Mute/Unmute Button */}
       <button
@@ -77,8 +80,23 @@ export const ReelFullscreen = ({
         )}
       </button>
 
+      {/* Caption - Bottom positioned exactly like Instagram */}
+      <div className="absolute bottom-20 left-4 right-20 z-30 space-y-2 animate-slide-in-right">
+        <p className="text-white text-sm leading-relaxed drop-shadow-lg">
+          {content.split(/(\s+)/).map((part, i) => {
+            if (part.startsWith('#')) {
+              return <span key={i} className="text-blue-400 font-semibold">{part}</span>;
+            }
+            if (part.startsWith('@')) {
+              return <span key={i} className="text-blue-400 font-semibold">{part}</span>;
+            }
+            return <span key={i}>{part}</span>;
+          })}
+        </p>
+      </div>
+
       {/* Action Buttons - Right Side Vertical (Instagram Style) */}
-      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-6 z-40">
+      <div className="absolute right-3 bottom-20 flex flex-col gap-6 z-40">
         {/* Like Button */}
         <button
           onClick={onLike}

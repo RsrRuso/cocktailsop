@@ -267,7 +267,8 @@ const Reels = () => {
         </div>
       ) : (
         <div 
-          className="h-full snap-y snap-mandatory overflow-y-scroll scrollbar-hide pt-16"
+          className="h-full snap-y snap-mandatory overflow-y-scroll scrollbar-hide pt-16 scroll-smooth"
+          style={{ scrollBehavior: 'smooth' }}
           onScroll={(e) => {
             const scrollTop = e.currentTarget.scrollTop;
             const windowHeight = window.innerHeight;
