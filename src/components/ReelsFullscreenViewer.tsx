@@ -122,13 +122,14 @@ export const ReelsFullscreenViewer = ({
     <motion.div 
       ref={containerRef}
       className="fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden scrollbar-hide"
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.98 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{ 
-        duration: 0.25,
-        ease: [0.22, 1, 0.36, 1]
+        duration: 0.2,
+        ease: "easeInOut"
       }}
+      style={{ overflow: 'hidden' }}
     >
       {/* Close Button with Smooth Bounce */}
       <motion.button
@@ -141,32 +142,33 @@ export const ReelsFullscreenViewer = ({
         <X className="w-6 h-6 text-white drop-shadow-lg" />
       </motion.button>
 
-      {/* Video Container with Smooth Slow-Motion Swipe */}
+      {/* Video Container with Ultra Smooth Transitions */}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={currentIndex}
-          className="relative w-full h-full flex items-center justify-center bg-black scrollbar-hide"
+          className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden"
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.2}
+          dragElastic={0.15}
           dragMomentum={true}
           onDragEnd={handleDragEnd}
           onClick={handleDoubleTap}
-          initial={{ y: direction === 1 ? 50 : -50, opacity: 0, scale: 0.98 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: direction === 1 ? -50 : 50, opacity: 0, scale: 0.98 }}
+          initial={{ y: direction === 1 ? 40 : -40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: direction === 1 ? -40 : 40, opacity: 0 }}
           transition={{
-            duration: 0.4,
-            ease: [0.25, 0.1, 0.25, 1]
+            duration: 0.35,
+            ease: [0.22, 0.61, 0.36, 1]
           }}
           style={{ 
             touchAction: 'pan-y',
+            overflow: 'hidden'
           }}
         >
           <video
             key={currentReel.id}
             src={currentReel.video_url}
-            className="w-full h-full object-cover scrollbar-hide"
+            className="w-full h-full object-cover"
             style={{ aspectRatio: '9/16', maxHeight: '100vh' }}
             loop
             playsInline
