@@ -5251,6 +5251,42 @@ export type Database = {
           },
         ]
       }
+      user_locations: {
+        Row: {
+          accuracy: number | null
+          created_at: string | null
+          custom_status: string | null
+          ghost_mode: boolean | null
+          id: string
+          last_updated: string | null
+          latitude: number
+          longitude: number
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string | null
+          custom_status?: string | null
+          ghost_mode?: boolean | null
+          id?: string
+          last_updated?: string | null
+          latitude: number
+          longitude: number
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string | null
+          custom_status?: string | null
+          ghost_mode?: boolean | null
+          id?: string
+          last_updated?: string | null
+          latitude?: number
+          longitude?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null

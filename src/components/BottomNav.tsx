@@ -1,4 +1,4 @@
-import { Home, PlusSquare, Search, Video } from "lucide-react";
+import { Home, PlusSquare, Search, Video, MapPin } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,14 +46,14 @@ const BottomNav = () => {
           </button>
 
           <button
-            onClick={() => navigate("/reels")}
+            onClick={() => navigate("/map")}
             className={`flex items-center justify-center w-12 h-12 transition-all ${
-              isActive("/reels") 
+              isActive("/map") 
                 ? "text-foreground scale-110" 
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Video className={`w-7 h-7 ${isActive("/reels") ? "fill-current" : ""}`} />
+            <MapPin className={`w-7 h-7 ${isActive("/map") ? "fill-current" : ""}`} />
           </button>
 
           <button
