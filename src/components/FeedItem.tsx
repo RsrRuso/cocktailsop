@@ -142,7 +142,10 @@ export const FeedItem = memo(({
                     <audio src={url} controls className="w-full" />
                   </div>
                 ) : item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
-                  <div className="relative w-full">
+                  <div 
+                    className="relative w-full cursor-pointer"
+                    onClick={item.type === 'reel' ? onFullscreen : undefined}
+                  >
                     <LazyVideo
                       src={url}
                       muted={!mutedVideos.has(item.id + url)}
