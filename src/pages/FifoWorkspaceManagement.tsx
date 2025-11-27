@@ -287,7 +287,7 @@ export default function FifoWorkspaceManagement() {
                         variant="outline"
                         className="flex-1"
                         onClick={() => {
-                          const inviteUrl = `https://cocktailsop.com/fifo-request-access?workspace=${workspace.id}`;
+                          const inviteUrl = `${window.location.origin}/fifo-request-access?workspace=${workspace.id}`;
                           navigator.clipboard.writeText(inviteUrl);
                           toast.success("Invite link copied to clipboard!");
                         }}
