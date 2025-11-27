@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, ArrowRightLeft, Clock, User, Package } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Clock, User, Package, FileText } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
 
 interface Transaction {
   id: string;
@@ -198,6 +199,71 @@ const InventoryTransactions = () => {
     }
   };
 
+  const generateTransactionsPDF = () => {
+    try {
+      const pdf = new jsPDF();
+      
+      pdf.setFontSize(20);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Live Inventory Transactions", 105, 20, { align: "center" });
+      
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 35);
+      pdf.text(`Total Transactions: ${transactions.length}`, 20, 42);
+      
+      let yPos = 55;
+      
+      transactions.forEach((transaction, index) => {
+        if (yPos > 250) {
+          pdf.addPage();
+          yPos = 20;
+        }
+        
+        pdf.setFontSize(11);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(`Transaction ${index + 1}`, 20, yPos);
+        yPos += 7;
+        
+        pdf.setFontSize(9);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`Type: ${transaction.type.toUpperCase()}`, 20, yPos);
+        yPos += 5;
+        pdf.text(`User: ${transaction.user_name || transaction.user_email}`, 20, yPos);
+        yPos += 5;
+        pdf.text(`Item: ${transaction.item_name}`, 20, yPos);
+        yPos += 5;
+        pdf.text(`Quantity: ${transaction.quantity} units`, 20, yPos);
+        yPos += 5;
+        pdf.text(`Status: ${transaction.status}`, 20, yPos);
+        yPos += 5;
+        
+        if (transaction.type === 'transfer') {
+          pdf.text(`From: ${transaction.from_store}`, 20, yPos);
+          yPos += 5;
+          pdf.text(`To: ${transaction.to_store}`, 20, yPos);
+          yPos += 5;
+        } else {
+          pdf.text(`Store: ${transaction.store}`, 20, yPos);
+          yPos += 5;
+        }
+        
+        pdf.text(`Date: ${new Date(transaction.timestamp).toLocaleString()}`, 20, yPos);
+        yPos += 10;
+      });
+      
+      pdf.setFontSize(8);
+      pdf.setTextColor(128);
+      pdf.text("Store Management System - Live Transactions", 105, 285, { align: "center" });
+      
+      pdf.save(`Transactions_${Date.now()}.pdf`);
+      toast.success("PDF downloaded successfully");
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      toast.error("Failed to generate PDF");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -215,14 +281,24 @@ const InventoryTransactions = () => {
       <TopNav />
       
       <div className="container mx-auto px-4 py-6 max-w-7xl">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/store-management')}
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Store Management
-        </Button>
+        <div className="flex items-center justify-between mb-4">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/store-management')}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Store Management
+          </Button>
+
+          <Button
+            variant="default"
+            onClick={generateTransactionsPDF}
+            disabled={transactions.length === 0}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Export PDF Report
+          </Button>
+        </div>
 
         <Card className="mb-6">
           <CardHeader>

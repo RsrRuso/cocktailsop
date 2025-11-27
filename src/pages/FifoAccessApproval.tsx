@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFifoWorkspace } from "@/hooks/useFifoWorkspace";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,10 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, Package } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Package, ArrowLeft } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function FifoAccessApproval() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { currentWorkspace, workspaces } = useFifoWorkspace();
   const [accessRequests, setAccessRequests] = useState<any[]>([]);
@@ -129,6 +131,15 @@ export default function FifoAccessApproval() {
       <TopNav />
 
       <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/inventory-manager")}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to FIFO Inventory
+        </Button>
+
         <h1 className="text-3xl font-bold mb-6">FIFO Access Requests</h1>
 
         <Card className="mb-6">

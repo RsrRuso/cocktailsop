@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeftRight, Loader2, PackageOpen, AlertCircle, Search, Download, FileText } from "lucide-react";
+import { ArrowLeftRight, Loader2, PackageOpen, AlertCircle, Search, Download, FileText, ArrowLeft } from "lucide-react";
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 
@@ -622,6 +622,15 @@ export default function ScanTransfer() {
     <div className="min-h-screen bg-background">
       
       <div className="container mx-auto p-4 pt-20">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/store-management")}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Store Management
+        </Button>
+
         <Card className="p-6 max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
