@@ -82,7 +82,7 @@ const LiveMap = () => {
 
   // Center map and update current user marker when GPS position changes
   useEffect(() => {
-    if (!mapRef.current || !position || ghostMode) return;
+    if (!mapRef.current || !position) return;
 
     const map = mapRef.current;
     const userKey = 'current-user';
@@ -92,6 +92,16 @@ const LiveMap = () => {
       map.flyTo([position.latitude, position.longitude], 12);
     }
 
+    // If ghost mode is enabled, remove marker but keep tracking
+    if (ghostMode) {
+      if (markersRef.current[userKey]) {
+        markersRef.current[userKey].remove();
+        delete markersRef.current[userKey];
+      }
+      return;
+    }
+
+    // Normal mode: show marker
     if (markersRef.current[userKey]) {
       markersRef.current[userKey].setLatLng([position.latitude, position.longitude]);
     } else {
