@@ -50,9 +50,9 @@ export const ReelFullscreen = ({
       {/* Close Button */}
       <button
         onClick={onClose}
-        className="absolute top-4 left-4 z-50 w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10 transition-all"
+        className="absolute top-4 left-4 z-50 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
       >
-        <X className="w-6 h-6 text-white" />
+        <X className="w-7 h-7 text-white drop-shadow-lg" />
       </button>
 
       {/* Video - Full screen 9:16 aspect ratio */}
@@ -71,12 +71,12 @@ export const ReelFullscreen = ({
       {/* Mute/Unmute Button */}
       <button
         onClick={() => setIsMuted(!isMuted)}
-        className="absolute top-4 right-4 z-50 w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-black/50 transition-all"
+        className="absolute top-4 right-4 z-50 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
       >
         {isMuted ? (
-          <VolumeX className="w-5 h-5 text-white" />
+          <VolumeX className="w-7 h-7 text-white drop-shadow-lg" />
         ) : (
-          <Volume2 className="w-5 h-5 text-white" />
+          <Volume2 className="w-7 h-7 text-white drop-shadow-lg" />
         )}
       </button>
 
