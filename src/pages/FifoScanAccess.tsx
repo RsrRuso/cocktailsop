@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,6 +16,8 @@ import jsPDF from "jspdf";
 
 export default function FifoScanAccess() {
   const { qrCodeId } = useParams<{ qrCodeId: string }>();
+  const [searchParams] = useSearchParams();
+  const workspaceIdFromQuery = searchParams.get('workspace');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -23,6 +25,7 @@ export default function FifoScanAccess() {
   const [workspace, setWorkspace] = useState<any>(null);
   const [email, setEmail] = useState("");
   const [requested, setRequested] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -35,10 +38,28 @@ export default function FifoScanAccess() {
   }, [qrCodeId]);
 
   const fetchQRCodeAndWorkspace = async () => {
-    if (!qrCodeId) return;
-
     try {
       setLoading(true);
+
+      // Try workspace query parameter first (direct link)
+      if (workspaceIdFromQuery) {
+        const { data: workspaceData, error: workspaceError } = await supabase
+          .from('workspaces')
+          .select('*')
+          .eq('id', workspaceIdFromQuery)
+          .eq('workspace_type', 'fifo')
+          .single();
+
+        if (workspaceError) throw workspaceError;
+        setWorkspace(workspaceData);
+        return;
+      }
+
+      // Otherwise try QR code lookup
+      if (!qrCodeId) {
+        setShowFallback(true);
+        return;
+      }
 
       // Fetch QR code
       const { data: qrData, error: qrError } = await supabase
@@ -48,7 +69,12 @@ export default function FifoScanAccess() {
         .eq('qr_type', 'fifo_workspace_access')
         .single();
 
-      if (qrError) throw qrError;
+      if (qrError) {
+        console.error('QR code not found:', qrError);
+        setShowFallback(true);
+        return;
+      }
+      
       setQrCode(qrData);
 
       // Fetch workspace
@@ -59,12 +85,17 @@ export default function FifoScanAccess() {
         .eq('workspace_type', 'fifo')
         .single();
 
-      if (workspaceError) throw workspaceError;
+      if (workspaceError) {
+        console.error('Workspace not found:', workspaceError);
+        setShowFallback(true);
+        return;
+      }
+      
       setWorkspace(workspaceData);
 
     } catch (error) {
       console.error('Error fetching QR code:', error);
-      toast.error("Invalid or expired QR code");
+      setShowFallback(true);
     } finally {
       setLoading(false);
     }
@@ -187,15 +218,57 @@ export default function FifoScanAccess() {
     );
   }
 
-  if (!qrCode || !workspace) {
+  if (showFallback || (!workspace && !loading)) {
     return (
       <div className="min-h-screen bg-background pb-20">
         <TopNav />
-        <div className="container mx-auto px-4 py-12 text-center">
-          <p className="text-destructive">Invalid or expired QR code</p>
-          <Button onClick={() => navigate('/inventory-manager')} className="mt-4">
-            Go to FIFO Inventory
+        <div className="container mx-auto px-4 pt-20 pb-6 max-w-2xl">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/inventory-manager")}
+            className="mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to FIFO Inventory
           </Button>
+          
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <Package className="w-8 h-8 text-primary" />
+                <CardTitle className="text-2xl">Request to Join FIFO Workspace</CardTitle>
+              </div>
+              <CardDescription>
+                The QR code link may be invalid or expired. You can browse available workspaces or contact the workspace owner for a new invite link.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted/50 p-4 rounded-lg text-sm">
+                <p className="font-semibold mb-2">Need access to a FIFO workspace?</p>
+                <p className="text-muted-foreground">
+                  Ask the workspace owner to share a new invite link with you, or browse available workspaces to request access.
+                </p>
+              </div>
+              
+              <div className="flex flex-col gap-3">
+                <Button 
+                  onClick={() => navigate('/fifo-workspace-management')}
+                  className="w-full"
+                  size="lg"
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Browse My Workspaces
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/inventory-manager')}
+                  className="w-full"
+                >
+                  Go to FIFO Inventory
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
         <BottomNav />
       </div>
