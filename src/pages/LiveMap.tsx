@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useGPSTracking } from '@/hooks/useGPSTracking';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff, MapPin, Settings2, X, Navigation, Users } from 'lucide-react';
+import { Eye, EyeOff, MapPin, Settings2, X, Navigation, Users, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -257,6 +257,16 @@ const LiveMap = () => {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
       >
+        {/* Back Button */}
+        <Button
+          onClick={() => window.history.back()}
+          variant="default"
+          size="icon"
+          className="w-14 h-14 sm:w-12 sm:h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 border-primary/20 hover:border-primary/40 transition-all"
+        >
+          <ArrowLeft className="w-6 h-6 sm:w-5 sm:h-5" />
+        </Button>
+
         {/* Settings Button */}
         <Button
           onClick={() => setShowSettings(true)}
