@@ -375,6 +375,75 @@ export default function ScanReceive() {
     }
   };
 
+  const exportAllReceivesPDF = async () => {
+    if (!user) return;
+
+    try {
+      const { data: activities } = await supabase
+        .from('inventory_activity_log')
+        .select('*, stores(name), inventory(items(name))')
+        .eq('user_id', user.id)
+        .eq('action_type', 'received')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (!activities || activities.length === 0) {
+        toast.info("No receive transactions to export");
+        return;
+      }
+
+      const pdf = new jsPDF();
+      pdf.setFontSize(18);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("FIFO Receive Transactions Report", 105, 20, { align: "center" });
+
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 35);
+      pdf.text(`Total Transactions: ${activities.length}`, 20, 42);
+
+      let yPos = 58;
+
+      activities.forEach((activity: any, index) => {
+        if (yPos > 270) {
+          pdf.addPage();
+          yPos = 20;
+        }
+
+        const details = activity.details || {};
+        
+        pdf.setFont("helvetica", "bold");
+        pdf.text(`Transaction #${index + 1}`, 20, yPos);
+        pdf.setFont("helvetica", "normal");
+        yPos += 7;
+
+        pdf.text(`Item: ${details.item_name || 'N/A'}`, 25, yPos);
+        yPos += 6;
+        pdf.text(`Store: ${activity.stores?.name || 'N/A'}`, 25, yPos);
+        yPos += 6;
+        pdf.text(`Quantity: ${details.received_quantity || activity.quantity_after}`, 25, yPos);
+        yPos += 6;
+        pdf.text(`Batch: ${details.batch_number || 'N/A'}`, 25, yPos);
+        yPos += 6;
+        pdf.text(`Date: ${new Date(activity.created_at).toLocaleString()}`, 25, yPos);
+        yPos += 6;
+
+        if (details.notes) {
+          pdf.text(`Notes: ${details.notes}`, 25, yPos);
+          yPos += 6;
+        }
+
+        yPos += 8;
+      });
+
+      pdf.save(`FIFO-Receive-Transactions-${Date.now()}.pdf`);
+      toast.success("PDF exported successfully");
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error("Failed to export PDF");
+    }
+  };
+
   const generateReceivePDF = async () => {
     if (!lastReceive) return;
 
@@ -525,14 +594,23 @@ export default function ScanReceive() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4 pt-20">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/store-management")}
-          className="mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Store Management
-        </Button>
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/store-management")}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Store Management
+          </Button>
+          <Button
+            variant="outline"
+            onClick={exportAllReceivesPDF}
+            className="gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Export Report PDF
+          </Button>
+        </div>
 
         <Card className="p-6 max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-6">

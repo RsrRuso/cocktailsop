@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Package, CheckCircle, ArrowLeft } from "lucide-react";
+import { Package, CheckCircle, ArrowLeft, FileText } from "lucide-react";
+import jsPDF from "jspdf";
 
 export default function FifoScanAccess() {
   const { qrCodeId } = useParams<{ qrCodeId: string }>();
@@ -112,6 +113,68 @@ export default function FifoScanAccess() {
     }
   };
 
+  const exportAccessRequestsPDF = async () => {
+    if (!workspace) return;
+
+    try {
+      const { data: requests } = await supabase
+        .from('access_requests')
+        .select('*')
+        .eq('workspace_id', workspace.id)
+        .order('created_at', { ascending: false });
+
+      if (!requests || requests.length === 0) {
+        toast.info("No access requests to export");
+        return;
+      }
+
+      const pdf = new jsPDF();
+      pdf.setFontSize(18);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("FIFO Workspace Access Requests", 105, 20, { align: "center" });
+
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(`Workspace: ${workspace.name}`, 20, 35);
+      pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 42);
+      pdf.text(`Total Requests: ${requests.length}`, 20, 49);
+
+      let yPos = 65;
+
+      requests.forEach((request, index) => {
+        if (yPos > 270) {
+          pdf.addPage();
+          yPos = 20;
+        }
+
+        pdf.setFont("helvetica", "bold");
+        pdf.text(`Request #${index + 1}`, 20, yPos);
+        pdf.setFont("helvetica", "normal");
+        yPos += 7;
+
+        pdf.text(`Email: ${request.user_email || 'N/A'}`, 25, yPos);
+        yPos += 6;
+        pdf.text(`Status: ${request.status}`, 25, yPos);
+        yPos += 6;
+        pdf.text(`Requested: ${new Date(request.created_at).toLocaleString()}`, 25, yPos);
+        yPos += 6;
+
+        if (request.approved_at) {
+          pdf.text(`Approved: ${new Date(request.approved_at).toLocaleString()}`, 25, yPos);
+          yPos += 6;
+        }
+
+        yPos += 8;
+      });
+
+      pdf.save(`FIFO-Access-Requests-${workspace.name}-${Date.now()}.pdf`);
+      toast.success("PDF exported successfully");
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error("Failed to export PDF");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background pb-20">
@@ -144,14 +207,23 @@ export default function FifoScanAccess() {
       <TopNav />
 
       <div className="container mx-auto px-4 py-6 max-w-2xl">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/inventory-manager")}
-          className="mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to FIFO Inventory
-        </Button>
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/inventory-manager")}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to FIFO Inventory
+          </Button>
+          <Button
+            variant="outline"
+            onClick={exportAccessRequestsPDF}
+            className="gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Export PDF
+          </Button>
+        </div>
 
         <Card>
           <CardHeader>
