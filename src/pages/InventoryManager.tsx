@@ -137,6 +137,18 @@ const InventoryManager = () => {
           fetchData(); // Refresh data on transfer changes
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'fifo_items'
+        },
+        (payload) => {
+          console.log('Items changed:', payload);
+          fetchData(); // Refresh items dropdown on any item changes
+        }
+      )
       .subscribe();
 
     return () => {
