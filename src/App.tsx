@@ -107,6 +107,9 @@ const StoresAdmin = lazy(() => import("./pages/StoresAdmin"));
 const MasterItems = lazy(() => import("./pages/MasterItems"));
 const WorkspaceManagement = lazy(() => import("./pages/WorkspaceManagement"));
 const FifoWorkspaceManagement = lazy(() => import("./pages/FifoWorkspaceManagement"));
+const FifoQRAccessCode = lazy(() => import("./pages/FifoQRAccessCode"));
+const FifoScanAccess = lazy(() => import("./pages/FifoScanAccess"));
+const FifoAccessApproval = lazy(() => import("./pages/FifoAccessApproval"));
 const TransferQRGenerator = lazy(() => import("@/pages/TransferQRGenerator"));
 const ScanTransfer = lazy(() => import("@/pages/ScanTransfer"));
 const ScanReceive = lazy(() => import("@/pages/ScanReceive"));
@@ -187,6 +190,9 @@ const AppContent = () => {
                <Route path="/master-items" element={<MasterItems />} />
                <Route path="/workspace-management" element={<WorkspaceManagement />} />
                <Route path="/fifo-workspace-management" element={<FifoWorkspaceManagement />} />
+               <Route path="/fifo-qr-access-code" element={<FifoQRAccessCode />} />
+               <Route path="/fifo-scan-access/:qrCodeId" element={<FifoScanAccess />} />
+               <Route path="/fifo-access-approval" element={<FifoAccessApproval />} />
                <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
           <Route path="/abv-calculator" element={<ABVCalculator />} />
