@@ -87,6 +87,26 @@ const InventoryManager = () => {
     }
   }, [hasAccess]);
 
+  // Refetch data when workspace changes
+  useEffect(() => {
+    if (hasAccess) {
+      console.log('Workspace changed, refetching data...', { 
+        workspaceId: currentWorkspace?.id, 
+        workspaceName: currentWorkspace?.name 
+      });
+      // Clear all data first
+      setStores([]);
+      setItems([]);
+      setInventory([]);
+      setTransfers([]);
+      setActivityLog([]);
+      setFifoRecommendations([]);
+      setSelectedStore("");
+      // Then fetch new data
+      fetchData();
+    }
+  }, [currentWorkspace?.id, hasAccess]);
+
   useEffect(() => {
     if (!user || !hasAccess) return;
 
