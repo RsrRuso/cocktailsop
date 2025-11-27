@@ -79,14 +79,26 @@ export const ReelsFullscreenViewer = ({
   };
 
   const handleDragEnd = (event: any, info: PanInfo) => {
-    const threshold = 50;
+    const threshold = 30; // Lower threshold for more responsive swiping
     const velocity = info.velocity.y;
+    const offset = info.offset.y;
 
-    if (Math.abs(velocity) > 500 || Math.abs(info.offset.y) > threshold) {
-      if (info.offset.y > 0) {
+    // Velocity-based detection for momentum swipes (buttery smooth!)
+    if (Math.abs(velocity) > 300) {
+      if (velocity < 0 && currentIndex < reels.length - 1) {
+        // Fast swipe up - next reel
+        handleNext();
+      } else if (velocity > 0 && currentIndex > 0) {
+        // Fast swipe down - previous reel
+        handlePrevious();
+      }
+    } 
+    // Distance-based detection for slower swipes
+    else if (Math.abs(offset) > threshold) {
+      if (offset > 0 && currentIndex > 0) {
         // Swipe down - previous reel
         handlePrevious();
-      } else {
+      } else if (offset < 0 && currentIndex < reels.length - 1) {
         // Swipe up - next reel
         handleNext();
       }
@@ -107,43 +119,57 @@ export const ReelsFullscreenViewer = ({
     <motion.div 
       ref={containerRef}
       className="fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ 
+        duration: 0.25,
+        ease: [0.22, 1, 0.36, 1]
+      }}
     >
-      {/* Close Button */}
+      {/* Close Button with Smooth Bounce */}
       <motion.button
         onClick={onClose}
         className="absolute top-4 left-4 z-50 flex items-center justify-center"
         whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
+        whileTap={{ scale: 0.85 }}
+        transition={{ type: "spring", stiffness: 500, damping: 15 }}
       >
         <X className="w-6 h-6 text-white drop-shadow-lg" />
       </motion.button>
 
-      {/* Video Container with Smooth Swipe */}
+      {/* Video Container with Buttery Smooth Swipe */}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={currentIndex}
           className="relative w-full h-full flex items-center justify-center bg-black"
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.2}
+          dragElastic={0.15}
+          dragMomentum={true}
+          dragTransition={{ 
+            bounceStiffness: 600,
+            bounceDamping: 20,
+            power: 0.3,
+            timeConstant: 200
+          }}
           onDragEnd={handleDragEnd}
           onClick={handleDoubleTap}
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -100, opacity: 0 }}
+          initial={{ y: 100, opacity: 0, scale: 0.95 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: -100, opacity: 0, scale: 0.95 }}
           transition={{
             type: "spring",
-            stiffness: 300,
-            damping: 30,
-            mass: 0.5
+            stiffness: 400,
+            damping: 28,
+            mass: 0.4,
+            velocity: 2
           }}
           style={{ 
             touchAction: 'pan-y',
-            willChange: 'transform'
+            willChange: 'transform, opacity',
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden'
           }}
         >
           <video
@@ -159,12 +185,13 @@ export const ReelsFullscreenViewer = ({
         </motion.div>
       </AnimatePresence>
 
-      {/* Mute/Unmute Button */}
+      {/* Mute/Unmute Button with Smooth Bounce */}
       <motion.button
         onClick={() => setIsMuted(!isMuted)}
         className="absolute top-4 right-4 z-50 flex items-center justify-center"
         whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
+        whileTap={{ scale: 0.85 }}
+        transition={{ type: "spring", stiffness: 500, damping: 15 }}
       >
         {isMuted ? (
           <VolumeX className="w-6 h-6 text-white drop-shadow-lg" />
@@ -173,12 +200,17 @@ export const ReelsFullscreenViewer = ({
         )}
       </motion.button>
 
-      {/* User Info - Top Left */}
+      {/* User Info - Top Left with Smooth Entry */}
       <motion.div 
         className="absolute top-20 left-4 z-30 flex items-center gap-3"
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ 
+          delay: 0.15,
+          type: "spring",
+          stiffness: 300,
+          damping: 25
+        }}
       >
         <OptimizedAvatar
           src={currentReel.profiles?.avatar_url}
@@ -195,12 +227,17 @@ export const ReelsFullscreenViewer = ({
         </div>
       </motion.div>
 
-      {/* Caption - Bottom positioned exactly like Instagram */}
+      {/* Caption - Bottom with Smooth Slide Up */}
       <motion.div 
         className="absolute bottom-24 left-4 right-20 z-30 space-y-2"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ 
+          delay: 0.2,
+          type: "spring",
+          stiffness: 300,
+          damping: 25
+        }}
       >
         <p className="text-white text-sm leading-relaxed drop-shadow-lg">
           {currentReel.caption.split(/(\s+)/).map((part, i) => {
@@ -215,18 +252,24 @@ export const ReelsFullscreenViewer = ({
         </p>
       </motion.div>
 
-      {/* Action Buttons - Right Side Vertical (Instagram Style) */}
+      {/* Action Buttons - Right Side with Smooth Slide In */}
       <motion.div 
         className="absolute right-2 bottom-24 flex flex-col gap-4 z-40"
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ 
+          delay: 0.15,
+          type: "spring",
+          stiffness: 300,
+          damping: 25
+        }}
       >
-        {/* Like Button */}
+        {/* Like Button with Bounce */}
         <motion.button
           onClick={() => onLike(currentReel.id)}
           className="flex flex-col items-center gap-0.5"
-          whileTap={{ scale: 0.85 }}
+          whileTap={{ scale: 0.8 }}
+          transition={{ type: "spring", stiffness: 500, damping: 15 }}
         >
           <Heart
             className={`w-7 h-7 transition-colors drop-shadow-lg ${
@@ -236,29 +279,32 @@ export const ReelsFullscreenViewer = ({
           <span className="text-white text-xs font-semibold drop-shadow-lg">{currentReel.like_count || 0}</span>
         </motion.button>
 
-        {/* Comment Button */}
+        {/* Comment Button with Bounce */}
         <motion.button
           onClick={() => onComment(currentReel.id)}
           className="flex flex-col items-center gap-0.5"
-          whileTap={{ scale: 0.85 }}
+          whileTap={{ scale: 0.8 }}
+          transition={{ type: "spring", stiffness: 500, damping: 15 }}
         >
           <MessageCircle className="w-7 h-7 text-white drop-shadow-lg" />
           <span className="text-white text-xs font-semibold drop-shadow-lg">{currentReel.comment_count || 0}</span>
         </motion.button>
 
-        {/* Share/Send Button */}
+        {/* Share/Send Button with Bounce */}
         <motion.button
           onClick={() => onShare(currentReel.id, currentReel.caption, currentReel.video_url)}
           className="flex flex-col items-center gap-0.5"
-          whileTap={{ scale: 0.85 }}
+          whileTap={{ scale: 0.8 }}
+          transition={{ type: "spring", stiffness: 500, damping: 15 }}
         >
           <Send className="w-7 h-7 text-white drop-shadow-lg" />
         </motion.button>
 
-        {/* Bookmark Button */}
+        {/* Bookmark Button with Bounce */}
         <motion.button
           className="flex flex-col items-center gap-0.5"
-          whileTap={{ scale: 0.85 }}
+          whileTap={{ scale: 0.8 }}
+          transition={{ type: "spring", stiffness: 500, damping: 15 }}
         >
           <Bookmark className="w-7 h-7 text-white drop-shadow-lg" />
         </motion.button>
@@ -269,7 +315,8 @@ export const ReelsFullscreenViewer = ({
             <DropdownMenuTrigger asChild>
               <motion.button 
                 className="flex flex-col items-center gap-0.5"
-                whileTap={{ scale: 0.85 }}
+                whileTap={{ scale: 0.8 }}
+                transition={{ type: "spring", stiffness: 500, damping: 15 }}
               >
                 <MoreVertical className="w-7 h-7 text-white drop-shadow-lg" />
               </motion.button>
@@ -284,12 +331,17 @@ export const ReelsFullscreenViewer = ({
         )}
       </motion.div>
 
-      {/* Progress Indicator */}
+      {/* Progress Indicator with Smooth Fade */}
       <motion.div 
         className="absolute top-16 left-1/2 -translate-x-1/2 z-30 text-white/60 text-xs"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ 
+          delay: 0.3,
+          type: "spring",
+          stiffness: 300,
+          damping: 25
+        }}
       >
         {currentIndex + 1} / {reels.length}
       </motion.div>
