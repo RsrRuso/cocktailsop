@@ -11,64 +11,84 @@ const LiveMap = () => {
   const markers = useRef<{ [key: string]: any }>({});
   const [ghostMode, setGhostMode] = useState(false);
   const [locations, setLocations] = useState<any[]>([]);
-  const [mapboxLoaded, setMapboxLoaded] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
   const { position, isTracking, toggleGhostMode } = useGPSTracking(!ghostMode);
   const { toast } = useToast();
 
-  // Dynamically load mapbox-gl
+  // Load and initialize map
   useEffect(() => {
-    const loadMapbox = async () => {
+    let isMounted = true;
+
+    const initMap = async () => {
+      if (!mapContainer.current || map.current) return;
+
       try {
-        const mapboxgl = await import('mapbox-gl');
-        (window as any).mapboxgl = mapboxgl.default;
-        setMapboxLoaded(true);
+        // Load Mapbox GL CSS
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css';
+        document.head.appendChild(link);
+
+        // Load Mapbox GL JS
+        const script = document.createElement('script');
+        script.src = 'https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js';
+        script.onload = () => {
+          if (!isMounted) return;
+
+          const mapboxgl = (window as any).mapboxgl;
+          if (!mapboxgl) {
+            setMapError('Failed to load Mapbox library');
+            return;
+          }
+
+          mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
+
+          try {
+            map.current = new mapboxgl.Map({
+              container: mapContainer.current,
+              style: 'mapbox://styles/mapbox/dark-v11',
+              center: position ? [position.longitude, position.latitude] : [-74.5, 40],
+              zoom: 12,
+            });
+
+            map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+          } catch (error) {
+            console.error('Map initialization error:', error);
+            setMapError('Failed to initialize map');
+          }
+        };
+        script.onerror = () => {
+          setMapError('Failed to load Mapbox script');
+        };
+        document.head.appendChild(script);
       } catch (error) {
-        console.error('Failed to load Mapbox GL:', error);
-        toast({
-          title: "Map Loading Error",
-          description: "Failed to load map library. Please refresh the page.",
-          variant: "destructive"
-        });
+        console.error('Error loading Mapbox:', error);
+        setMapError('Failed to load map library');
       }
     };
-    loadMapbox();
-  }, []);
 
-  // Initialize map
-  useEffect(() => {
-    if (!mapContainer.current || map.current || !mapboxLoaded) return;
-
-    const mapboxgl = (window as any).mapboxgl;
-    if (!mapboxgl) return;
-
-    // Using Mapbox demo token - replace with your own from https://mapbox.com
-    mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
-    
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      zoom: 12,
-      center: position ? [position.longitude, position.latitude] : [0, 0],
-    });
-
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    initMap();
 
     return () => {
-      map.current?.remove();
+      isMounted = false;
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
     };
-  }, [mapboxLoaded]);
+  }, []);
 
   // Update map center when user position changes
   useEffect(() => {
     if (map.current && position && !ghostMode) {
+      const mapboxgl = (window as any).mapboxgl;
+      if (!mapboxgl) return;
+
       map.current.flyTo({
         center: [position.longitude, position.latitude],
         zoom: 12,
         essential: true
       });
-
-      const mapboxgl = (window as any).mapboxgl;
-      if (!mapboxgl) return;
 
       // Add or update user's own marker
       const userId = 'current-user';
@@ -76,30 +96,24 @@ const LiveMap = () => {
         markers.current[userId].setLngLat([position.longitude, position.latitude]);
       } else {
         const el = document.createElement('div');
-        el.className = 'w-10 h-10 rounded-full bg-primary border-4 border-white shadow-lg';
-        el.innerHTML = '<div class="w-full h-full rounded-full flex items-center justify-center text-white font-bold">You</div>';
+        el.className = 'w-10 h-10 rounded-full bg-primary border-4 border-white shadow-lg flex items-center justify-center text-white font-bold text-xs';
+        el.textContent = 'You';
         
         markers.current[userId] = new mapboxgl.Marker(el)
           .setLngLat([position.longitude, position.latitude])
           .addTo(map.current);
       }
     }
-  }, [position, ghostMode, mapboxLoaded]);
+  }, [position, ghostMode]);
 
-  // Subscribe to location updates from mutual follows
+  // Subscribe to location updates
   useEffect(() => {
     const channel = supabase
       .channel('user-locations')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_locations'
-        },
-        (payload) => {
-          fetchLocations();
-        }
+        { event: '*', schema: 'public', table: 'user_locations' },
+        () => fetchLocations()
       )
       .subscribe();
 
@@ -111,7 +125,7 @@ const LiveMap = () => {
   }, []);
 
   const fetchLocations = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('user_locations')
       .select(`
         *,
@@ -183,12 +197,20 @@ const LiveMap = () => {
     });
   };
 
-  if (!mapboxLoaded) {
+  if (mapError) {
     return (
       <div className="flex items-center justify-center w-full h-screen bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-sm text-muted-foreground">Loading map...</p>
+        <div className="text-center space-y-4 p-6">
+          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+            <MapPin className="w-8 h-8 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">Map Loading Failed</h3>
+            <p className="text-sm text-muted-foreground">{mapError}</p>
+            <Button onClick={() => window.location.reload()} className="mt-4">
+              Reload Page
+            </Button>
+          </div>
         </div>
       </div>
     );
