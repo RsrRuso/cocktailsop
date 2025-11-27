@@ -93,28 +93,28 @@ export const ReelsFullscreenViewer = ({
   };
 
   const handleDragEnd = (event: any, info: PanInfo) => {
-    const threshold = 15; // Ultra-low threshold for instant momentum response
+    const threshold = 50; // Instagram-style threshold
     const velocity = info.velocity.y;
     const offset = info.offset.y;
 
-    // Ultra-sensitive velocity detection - maximum momentum feel!
-    if (Math.abs(velocity) > 120) {
+    // Instagram-perfect momentum detection
+    if (Math.abs(velocity) > 300) {
       if (velocity < 0 && currentIndex < reels.length - 1) {
-        // Fast swipe up - next reel
-        handleNext();
+        setDirection(1);
+        setCurrentIndex(currentIndex + 1);
       } else if (velocity > 0 && currentIndex > 0) {
-        // Fast swipe down - previous reel
-        handlePrevious();
+        setDirection(-1);
+        setCurrentIndex(currentIndex - 1);
       }
     } 
-    // Distance-based detection for slower swipes
+    // Distance-based for slower swipes
     else if (Math.abs(offset) > threshold) {
       if (offset > 0 && currentIndex > 0) {
-        // Swipe down - previous reel
-        handlePrevious();
+        setDirection(-1);
+        setCurrentIndex(currentIndex - 1);
       } else if (offset < 0 && currentIndex < reels.length - 1) {
-        // Swipe up - next reel
-        handleNext();
+        setDirection(1);
+        setCurrentIndex(currentIndex + 1);
       }
     }
   };
@@ -153,23 +153,37 @@ export const ReelsFullscreenViewer = ({
         <X className="w-6 h-6 text-white drop-shadow-lg" />
       </motion.button>
 
-      {/* Video Container with Ultra Smooth Transitions */}
+      {/* Video Container with Instagram-Perfect Smooth Transitions */}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={currentIndex}
           className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden"
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.15}
+          dragElastic={0.2}
           dragMomentum={true}
           onDragEnd={handleDragEnd}
           onClick={handleDoubleTap}
-          initial={{ y: direction === 1 ? 40 : -40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: direction === 1 ? -40 : 40, opacity: 0 }}
+          initial={{ 
+            y: direction === 1 ? "100%" : "-100%", 
+            scale: 0.9,
+            opacity: 0 
+          }}
+          animate={{ 
+            y: 0, 
+            scale: 1,
+            opacity: 1 
+          }}
+          exit={{ 
+            y: direction === 1 ? "-100%" : "100%", 
+            scale: 0.9,
+            opacity: 0 
+          }}
           transition={{
-            duration: 0.35,
-            ease: [0.22, 0.61, 0.36, 1]
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+            mass: 0.8
           }}
           style={{ 
             touchAction: 'pan-y',
