@@ -56,7 +56,7 @@ export default function FifoScanAccess() {
         .from('workspaces')
         .select('*')
         .eq('id', qrData.workspace_id)
-        .eq('workspace_type', 'fifo_inventory')
+        .eq('workspace_type', 'fifo')
         .single();
 
       if (workspaceError) throw workspaceError;

@@ -110,6 +110,8 @@ const FifoWorkspaceManagement = lazy(() => import("./pages/FifoWorkspaceManageme
 const FifoQRAccessCode = lazy(() => import("./pages/FifoQRAccessCode"));
 const FifoScanAccess = lazy(() => import("./pages/FifoScanAccess"));
 const FifoAccessApproval = lazy(() => import("./pages/FifoAccessApproval"));
+const FifoRequestAccess = lazy(() => import("./pages/FifoRequestAccess"));
+const FifoAccessApprovalPage = lazy(() => import("./pages/FifoAccessApprovalPage"));
 const TransferQRGenerator = lazy(() => import("@/pages/TransferQRGenerator"));
 const ScanTransfer = lazy(() => import("@/pages/ScanTransfer"));
 const ScanReceive = lazy(() => import("@/pages/ScanReceive"));
@@ -190,9 +192,11 @@ const AppContent = () => {
                <Route path="/master-items" element={<MasterItems />} />
                <Route path="/workspace-management" element={<WorkspaceManagement />} />
                <Route path="/fifo-workspace-management" element={<FifoWorkspaceManagement />} />
-               <Route path="/fifo-qr-access-code" element={<FifoQRAccessCode />} />
-               <Route path="/fifo-scan-access/:qrCodeId" element={<FifoScanAccess />} />
-               <Route path="/fifo-access-approval" element={<FifoAccessApproval />} />
+                <Route path="/fifo-qr-access-code" element={<FifoQRAccessCode />} />
+                <Route path="/fifo-scan-access/:qrCodeId" element={<FifoScanAccess />} />
+                <Route path="/fifo-access-approval" element={<FifoAccessApproval />} />
+                <Route path="/fifo-request-access" element={<FifoRequestAccess />} />
+                <Route path="/fifo-access-approval-page" element={<FifoAccessApprovalPage />} />
                <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
           <Route path="/abv-calculator" element={<ABVCalculator />} />
