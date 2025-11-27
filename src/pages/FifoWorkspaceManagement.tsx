@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Plus, Edit, Trash2, Users, Package, UserPlus } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Package, UserPlus, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { InviteFifoMemberDialog } from "@/components/InviteFifoMemberDialog";
 
@@ -26,6 +27,7 @@ interface Workspace {
 
 export default function FifoWorkspaceManagement() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { refreshWorkspaces } = useFifoWorkspace();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -196,7 +198,17 @@ export default function FifoWorkspaceManagement() {
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
 
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <div className="container mx-auto px-4 py-6 max-w-4xl pt-20">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(-1)}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+        
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">FIFO Inventory Workspaces</h1>
           <Button onClick={() => setShowCreateDialog(true)}>
