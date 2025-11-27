@@ -33,32 +33,40 @@ const FifoRequestAccess = () => {
   }, [workspaceId]);
 
   const fetchWorkspaceInfo = async () => {
+    if (!workspaceId) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('workspaces')
         .select('*')
         .eq('id', workspaceId)
         .eq('workspace_type', 'fifo')
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching workspace:', error);
+        toast.error("Failed to load workspace");
+        setWorkspace(null);
+        return;
+      }
 
       if (!data) {
         toast.error("Workspace not found");
-        navigate('/home');
+        setWorkspace(null);
         return;
       }
 
       setWorkspace(data);
     } catch (error: any) {
-      console.error('Error fetching workspace:', error);
+      console.error('Unexpected error fetching workspace:', error);
       toast.error("Failed to load workspace");
-      navigate('/home');
     } finally {
       setLoading(false);
     }
   };
-
   const handleRequestAccess = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !workspaceId) return;
