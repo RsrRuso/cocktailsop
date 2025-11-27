@@ -246,11 +246,11 @@ const QRAccessCode = () => {
       <main className="flex-1 container mx-auto px-4 py-8 pb-32 max-w-2xl overflow-y-auto">
         <Card>
           <CardHeader>
-            <CardTitle>Workspace Access QR Code</CardTitle>
+            <CardTitle>Store Management Workspace QR Code</CardTitle>
             <CardDescription>
               {currentWorkspace 
-                ? `Share this QR code to invite people to ${currentWorkspace.name}`
-                : "Create or select a workspace to generate a QR code"
+                ? `Share this QR code to invite people to ${currentWorkspace.name} (Store Management)`
+                : "Create or select a store management workspace to generate a QR code"
               }
             </CardDescription>
           </CardHeader>
@@ -276,11 +276,13 @@ const QRAccessCode = () => {
                     <SelectValue placeholder="Select a workspace" />
                   </SelectTrigger>
                   <SelectContent>
-                    {workspaces.map((workspace) => (
-                      <SelectItem key={workspace.id} value={workspace.id}>
-                        {workspace.name}
-                      </SelectItem>
-                    ))}
+                    {workspaces
+                      .filter(w => w.workspace_type === 'store_management')
+                      .map((workspace) => (
+                        <SelectItem key={workspace.id} value={workspace.id}>
+                          {workspace.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 
@@ -291,12 +293,12 @@ const QRAccessCode = () => {
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create Workspace</DialogTitle>
-                      <DialogDescription>
-                        Create a new workspace for team collaboration
-                      </DialogDescription>
-                    </DialogHeader>
+                     <DialogHeader>
+                       <DialogTitle>Create Store Management Workspace</DialogTitle>
+                       <DialogDescription>
+                         Create a new workspace for store management and team collaboration
+                       </DialogDescription>
+                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
                         <Label htmlFor="workspace-name">Workspace Name</Label>
