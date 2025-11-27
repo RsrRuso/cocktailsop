@@ -104,28 +104,35 @@ export const ReelsFullscreenViewer = ({
   };
 
   const handleDragEnd = (event: any, info: PanInfo) => {
-    const threshold = 50; // Instagram-style threshold
+    const offsetThreshold = 30;
+    const velocityThreshold = 200;
     const velocity = info.velocity.y;
     const offset = info.offset.y;
 
-    // Instagram-perfect momentum detection
-    if (Math.abs(velocity) > 300) {
+    // Fast flicks based on velocity
+    if (Math.abs(velocity) > velocityThreshold) {
       if (velocity < 0 && currentIndex < reels.length - 1) {
+        // Swipe up -> next reel
         setDirection(1);
         setCurrentIndex(currentIndex + 1);
       } else if (velocity > 0 && currentIndex > 0) {
+        // Swipe down -> previous reel
         setDirection(-1);
         setCurrentIndex(currentIndex - 1);
       }
-    } 
-    // Distance-based for slower swipes
-    else if (Math.abs(offset) > threshold) {
-      if (offset > 0 && currentIndex > 0) {
-        setDirection(-1);
-        setCurrentIndex(currentIndex - 1);
-      } else if (offset < 0 && currentIndex < reels.length - 1) {
+      return;
+    }
+
+    // Slower drags based on distance
+    if (Math.abs(offset) > offsetThreshold) {
+      if (offset < 0 && currentIndex < reels.length - 1) {
+        // Drag up -> next reel
         setDirection(1);
         setCurrentIndex(currentIndex + 1);
+      } else if (offset > 0 && currentIndex > 0) {
+        // Drag down -> previous reel
+        setDirection(-1);
+        setCurrentIndex(currentIndex - 1);
       }
     }
   };
@@ -177,7 +184,7 @@ export const ReelsFullscreenViewer = ({
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.2}
-          dragMomentum={true}
+          dragMomentum={false}
           onDragEnd={handleDragEnd}
           onClick={handleDoubleTap}
           initial={{ 
