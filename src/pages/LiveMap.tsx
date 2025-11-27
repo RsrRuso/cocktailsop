@@ -4,21 +4,42 @@ import { useGPSTracking } from '@/hooks/useGPSTracking';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, MapPin } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
 
 const LiveMap = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
+  const map = useRef<any>(null);
+  const markers = useRef<{ [key: string]: any }>({});
   const [ghostMode, setGhostMode] = useState(false);
   const [locations, setLocations] = useState<any[]>([]);
+  const [mapboxLoaded, setMapboxLoaded] = useState(false);
   const { position, isTracking, toggleGhostMode } = useGPSTracking(!ghostMode);
   const { toast } = useToast();
 
+  // Dynamically load mapbox-gl
+  useEffect(() => {
+    const loadMapbox = async () => {
+      try {
+        const mapboxgl = await import('mapbox-gl');
+        (window as any).mapboxgl = mapboxgl.default;
+        setMapboxLoaded(true);
+      } catch (error) {
+        console.error('Failed to load Mapbox GL:', error);
+        toast({
+          title: "Map Loading Error",
+          description: "Failed to load map library. Please refresh the page.",
+          variant: "destructive"
+        });
+      }
+    };
+    loadMapbox();
+  }, []);
+
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || map.current) return;
+    if (!mapContainer.current || map.current || !mapboxLoaded) return;
+
+    const mapboxgl = (window as any).mapboxgl;
+    if (!mapboxgl) return;
 
     // Using Mapbox demo token - replace with your own from https://mapbox.com
     mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
@@ -35,7 +56,7 @@ const LiveMap = () => {
     return () => {
       map.current?.remove();
     };
-  }, []);
+  }, [mapboxLoaded]);
 
   // Update map center when user position changes
   useEffect(() => {
@@ -45,6 +66,9 @@ const LiveMap = () => {
         zoom: 12,
         essential: true
       });
+
+      const mapboxgl = (window as any).mapboxgl;
+      if (!mapboxgl) return;
 
       // Add or update user's own marker
       const userId = 'current-user';
@@ -60,7 +84,7 @@ const LiveMap = () => {
           .addTo(map.current);
       }
     }
-  }, [position, ghostMode]);
+  }, [position, ghostMode, mapboxLoaded]);
 
   // Subscribe to location updates from mutual follows
   useEffect(() => {
@@ -101,6 +125,9 @@ const LiveMap = () => {
 
     if (data && map.current) {
       setLocations(data);
+
+      const mapboxgl = (window as any).mapboxgl;
+      if (!mapboxgl) return;
 
       // Clear old markers (except current user)
       Object.keys(markers.current).forEach(key => {
@@ -155,6 +182,17 @@ const LiveMap = () => {
         : "Your location is now visible to mutual follows"
     });
   };
+
+  if (!mapboxLoaded) {
+    return (
+      <div className="flex items-center justify-center w-full h-screen bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-sm text-muted-foreground">Loading map...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-screen bg-background">
