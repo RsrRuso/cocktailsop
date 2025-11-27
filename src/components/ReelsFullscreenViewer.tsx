@@ -61,15 +61,26 @@ export const ReelsFullscreenViewer = ({
   useEffect(() => {
     setCurrentIndex(initialIndex);
 
+    const html = document.documentElement;
     const body = document.body;
+    
     if (isOpen) {
+      html.style.overflow = "hidden";
       body.style.overflow = "hidden";
+      html.style.scrollbarWidth = "none";
+      body.style.scrollbarWidth = "none";
     } else {
+      html.style.overflow = "";
       body.style.overflow = "";
+      html.style.scrollbarWidth = "";
+      body.style.scrollbarWidth = "";
     }
 
     return () => {
+      html.style.overflow = "";
       body.style.overflow = "";
+      html.style.scrollbarWidth = "";
+      body.style.scrollbarWidth = "";
     };
   }, [initialIndex, isOpen]);
 
@@ -132,7 +143,7 @@ export const ReelsFullscreenViewer = ({
   return (
     <motion.div 
       ref={containerRef}
-      className="fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden scrollbar-hide"
+      className="fixed inset-0 z-50 bg-black flex items-center justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -140,7 +151,12 @@ export const ReelsFullscreenViewer = ({
         duration: 0.2,
         ease: "easeInOut"
       }}
-      style={{ overflow: 'hidden' }}
+      style={{ 
+        overflow: 'hidden',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch'
+      }}
     >
       {/* Close Button with Smooth Bounce */}
       <motion.button
