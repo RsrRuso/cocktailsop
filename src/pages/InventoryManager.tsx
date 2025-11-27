@@ -1044,10 +1044,10 @@ const InventoryManager = () => {
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select workspace" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" className="bg-popover border z-[100]">
                 <SelectItem value="personal">Personal Inventory</SelectItem>
                 {workspaces
-                  .filter(w => w.workspace_type === 'fifo_inventory')
+                  .filter(w => w.workspace_type === 'fifo')
                   .map((workspace) => (
                     <SelectItem key={workspace.id} value={workspace.id}>
                       {workspace.name}
