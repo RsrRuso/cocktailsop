@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useInventoryAccess } from "@/hooks/useInventoryAccess";
 import { useManagerRole } from "@/hooks/useManagerRole";
 import { usePendingAccessRequests } from "@/hooks/usePendingAccessRequests";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useFifoWorkspace } from "@/hooks/useFifoWorkspace";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -40,7 +40,7 @@ const InventoryManager = () => {
   const { hasAccess, isLoading: accessLoading, refetch: refetchAccess } = useInventoryAccess();
   const { isManager } = useManagerRole();
   const { count: pendingRequestsCount } = usePendingAccessRequests();
-  const { currentWorkspace, workspaces, switchWorkspace } = useWorkspace();
+  const { currentWorkspace, workspaces, switchWorkspace } = useFifoWorkspace();
   const navigate = useNavigate();
   const [stores, setStores] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);

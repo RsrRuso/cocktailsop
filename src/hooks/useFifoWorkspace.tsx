@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface Workspace {
+interface FifoWorkspace {
   id: string;
   name: string;
   description: string | null;
@@ -13,16 +13,16 @@ interface Workspace {
   workspace_type: string;
 }
 
-interface WorkspaceContextType {
-  currentWorkspace: Workspace | null;
-  workspaces: Workspace[];
+interface FifoWorkspaceContextType {
+  currentWorkspace: FifoWorkspace | null;
+  workspaces: FifoWorkspace[];
   isLoading: boolean;
   switchWorkspace: (workspaceId: string) => void;
-  createWorkspace: (name: string, description?: string) => Promise<Workspace | null>;
+  createWorkspace: (name: string, description?: string) => Promise<FifoWorkspace | null>;
   refreshWorkspaces: () => Promise<void>;
 }
 
-const WorkspaceContext = createContext<WorkspaceContextType>({
+const FifoWorkspaceContext = createContext<FifoWorkspaceContextType>({
   currentWorkspace: null,
   workspaces: [],
   isLoading: true,
@@ -31,12 +31,12 @@ const WorkspaceContext = createContext<WorkspaceContextType>({
   refreshWorkspaces: async () => {},
 });
 
-export const useWorkspace = () => useContext(WorkspaceContext);
+export const useFifoWorkspace = () => useContext(FifoWorkspaceContext);
 
-export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
+export const FifoWorkspaceProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [currentWorkspace, setCurrentWorkspace] = useState<FifoWorkspace | null>(null);
+  const [workspaces, setWorkspaces] = useState<FifoWorkspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchWorkspaces = async () => {
@@ -48,19 +48,19 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // Fetch workspaces user owns (store management only)
+      // Fetch FIFO workspaces user owns
       const { data: ownedWorkspaces } = await supabase
         .from('workspaces')
         .select('*')
         .eq('owner_id', user.id)
-        .eq('workspace_type', 'store_management');
+        .eq('workspace_type', 'fifo_inventory');
 
-      // Fetch workspaces user is member of (store management only)
+      // Fetch FIFO workspaces user is member of
       const { data: memberWorkspaces } = await supabase
         .from('workspace_members')
         .select('workspace:workspaces!inner(*)')
         .eq('user_id', user.id)
-        .eq('workspace.workspace_type', 'store_management');
+        .eq('workspace.workspace_type', 'fifo_inventory');
 
       const memberWorkspacesData = memberWorkspaces?.map((m: any) => m.workspace).filter(Boolean) || [];
       const allWorkspaces = [...(ownedWorkspaces || []), ...memberWorkspacesData];
@@ -73,14 +73,14 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       setWorkspaces(uniqueWorkspaces);
 
       // Set current workspace from localStorage or first workspace
-      const savedWorkspaceId = localStorage.getItem('currentWorkspaceId');
+      const savedWorkspaceId = localStorage.getItem('currentFifoWorkspaceId');
       const workspace = savedWorkspaceId
         ? uniqueWorkspaces.find(w => w.id === savedWorkspaceId)
         : uniqueWorkspaces[0];
 
       setCurrentWorkspace(workspace || null);
     } catch (error) {
-      console.error('Error fetching workspaces:', error);
+      console.error('Error fetching FIFO workspaces:', error);
     } finally {
       setIsLoading(false);
     }
@@ -94,17 +94,18 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
     // Handle personal inventory (no workspace)
     if (!workspaceId || workspaceId === 'personal') {
       setCurrentWorkspace(null);
-      localStorage.removeItem('currentWorkspaceId');
+      localStorage.removeItem('currentFifoWorkspaceId');
       return;
     }
 
     const workspace = workspaces.find(w => w.id === workspaceId);
     if (workspace) {
       setCurrentWorkspace(workspace);
-      localStorage.setItem('currentWorkspaceId', workspaceId);
+      localStorage.setItem('currentFifoWorkspaceId', workspaceId);
     }
   };
-  const createWorkspace = async (name: string, description?: string): Promise<Workspace | null> => {
+
+  const createWorkspace = async (name: string, description?: string): Promise<FifoWorkspace | null> => {
     if (!user) return null;
 
     try {
@@ -114,7 +115,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
           name,
           description,
           owner_id: user.id,
-          workspace_type: 'store_management',
+          workspace_type: 'fifo_inventory',
         })
         .select()
         .single();
@@ -124,13 +125,13 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       await fetchWorkspaces();
       return data;
     } catch (error) {
-      console.error('Error creating workspace:', error);
+      console.error('Error creating FIFO workspace:', error);
       return null;
     }
   };
 
   return (
-    <WorkspaceContext.Provider
+    <FifoWorkspaceContext.Provider
       value={{
         currentWorkspace,
         workspaces,
@@ -141,6 +142,6 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       }}
     >
       {children}
-    </WorkspaceContext.Provider>
+    </FifoWorkspaceContext.Provider>
   );
 };

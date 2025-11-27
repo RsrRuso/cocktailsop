@@ -7,6 +7,7 @@ import { InAppNotificationProvider } from "@/contexts/InAppNotificationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
+import { FifoWorkspaceProvider } from "@/hooks/useFifoWorkspace";
 import { RoutePreloader } from "@/components/RoutePreloader";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -105,6 +106,7 @@ const InventoryTransactions = lazy(() => import("./pages/InventoryTransactions")
 const StoresAdmin = lazy(() => import("./pages/StoresAdmin"));
 const MasterItems = lazy(() => import("./pages/MasterItems"));
 const WorkspaceManagement = lazy(() => import("./pages/WorkspaceManagement"));
+const FifoWorkspaceManagement = lazy(() => import("./pages/FifoWorkspaceManagement"));
 const TransferQRGenerator = lazy(() => import("@/pages/TransferQRGenerator"));
 const ScanTransfer = lazy(() => import("@/pages/ScanTransfer"));
 const ScanReceive = lazy(() => import("@/pages/ScanReceive"));
@@ -184,6 +186,7 @@ const AppContent = () => {
                <Route path="/stores-admin" element={<StoresAdmin />} />
                <Route path="/master-items" element={<MasterItems />} />
                <Route path="/workspace-management" element={<WorkspaceManagement />} />
+               <Route path="/fifo-workspace-management" element={<FifoWorkspaceManagement />} />
                <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
           <Route path="/abv-calculator" element={<ABVCalculator />} />
@@ -251,9 +254,11 @@ const App = () => (
       <AuthProvider>
         <InAppNotificationProvider>
           <WorkspaceProvider>
-            <CartProvider>
-              <AppContent />
-            </CartProvider>
+            <FifoWorkspaceProvider>
+              <CartProvider>
+                <AppContent />
+              </CartProvider>
+            </FifoWorkspaceProvider>
           </WorkspaceProvider>
         </InAppNotificationProvider>
       </AuthProvider>
