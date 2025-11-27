@@ -94,12 +94,12 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
             return newSet;
           });
         }}
-        className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center hover:bg-black/50 transition-all"
+        className="absolute top-4 right-4 z-30 flex items-center justify-center hover:scale-110 transition-all active:scale-90"
       >
         {mutedVideos.has(reel.id) ? (
-          <VolumeX className="w-4 h-4 text-white" />
+          <VolumeX className="w-7 h-7 text-white drop-shadow-lg" />
         ) : (
-          <Volume2 className="w-4 h-4 text-white" />
+          <Volume2 className="w-7 h-7 text-white drop-shadow-lg" />
         )}
       </button>
 
