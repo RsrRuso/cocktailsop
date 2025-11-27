@@ -167,16 +167,22 @@ const FifoAccessApprovalPage = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
-      <div className="container max-w-4xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="container max-w-4xl mx-auto px-3 py-4 pt-20">
+        {/* Header - Mobile optimized */}
+        <div className="mb-4 space-y-3">
           <div>
-            <h1 className="text-2xl font-bold">Access Requests</h1>
+            <h1 className="text-xl md:text-2xl font-bold">Access Requests</h1>
             <p className="text-sm text-muted-foreground">
               {workspace?.name || 'No workspace selected'}
             </p>
           </div>
           {requests.length > 0 && (
-            <Button variant="outline" size="sm" onClick={exportPDF}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={exportPDF}
+              className="w-full sm:w-auto"
+            >
               <FileDown className="w-4 h-4 mr-2" />
               Export PDF
             </Button>
@@ -184,36 +190,39 @@ const FifoAccessApprovalPage = () => {
         </div>
 
         {/* Pending Requests */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="w-5 h-5 text-orange-500" />
-              Pending Requests ({pendingRequests.length})
+        <Card className="mb-4">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base md:text-lg flex items-center gap-2">
+              <Clock className="w-4 h-4 md:w-5 md:h-5 text-orange-500" />
+              Pending ({pendingRequests.length})
             </CardTitle>
-            <CardDescription>Awaiting your approval</CardDescription>
+            <CardDescription className="text-xs">Awaiting approval</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 md:px-6">
             {pendingRequests.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No pending access requests
+              <p className="text-sm text-muted-foreground text-center py-6">
+                No pending requests
               </p>
             ) : (
               <div className="space-y-3">
                 {pendingRequests.map((request) => (
-                  <Card key={request.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <p className="font-medium">{request.user_email}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Requested: {new Date(request.created_at).toLocaleString()}
+                  <Card key={request.id} className="border-orange-200/50">
+                    <CardContent className="p-3">
+                      {/* Mobile-friendly stacked layout */}
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <p className="font-medium text-sm break-all">{request.user_email}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(request.created_at).toLocaleString()}
                           </p>
                         </div>
-                        <div className="flex gap-2">
+                        {/* Buttons stacked on mobile, side-by-side on larger screens */}
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <Button
                             size="sm"
                             variant="default"
                             onClick={() => handleApprove(request.id, request.user_id)}
+                            className="w-full sm:flex-1"
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
                             Approve
@@ -222,6 +231,7 @@ const FifoAccessApprovalPage = () => {
                             size="sm"
                             variant="destructive"
                             onClick={() => handleReject(request.id)}
+                            className="w-full sm:flex-1"
                           >
                             <XCircle className="w-4 h-4 mr-1" />
                             Reject
@@ -238,13 +248,13 @@ const FifoAccessApprovalPage = () => {
 
         {/* Processed Requests */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Request History</CardTitle>
-            <CardDescription>Previously processed requests</CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base md:text-lg">History</CardTitle>
+            <CardDescription className="text-xs">Previously processed</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 md:px-6">
             {processedRequests.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
+              <p className="text-sm text-muted-foreground text-center py-6">
                 No processed requests yet
               </p>
             ) : (
@@ -252,16 +262,17 @@ const FifoAccessApprovalPage = () => {
                 {processedRequests.map((request) => (
                   <div
                     key={request.id}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-muted/50 rounded-lg"
                   >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{request.user_email}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{request.user_email}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(request.created_at).toLocaleString()}
+                        {new Date(request.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <Badge
                       variant={request.status === 'approved' ? 'default' : 'destructive'}
+                      className="self-start sm:self-center"
                     >
                       {request.status.toUpperCase()}
                     </Badge>
