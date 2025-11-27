@@ -192,7 +192,7 @@ export default function FifoAccessApproval() {
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
 
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <div className="container mx-auto px-4 pt-20 pb-6 max-w-4xl">
         <div className="flex items-center justify-between mb-4">
           <Button
             variant="ghost"
