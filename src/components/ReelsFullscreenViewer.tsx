@@ -1,5 +1,6 @@
 import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Trash2, X, Volume2, VolumeX } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,10 +53,8 @@ export const ReelsFullscreenViewer = ({
 }: ReelsFullscreenViewerProps) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isMuted, setIsMuted] = useState(false);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
   const [lastTap, setLastTap] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const y = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,121 +67,119 @@ export const ReelsFullscreenViewer = ({
   const isOwnReel = currentReel.user_id === currentUserId;
 
   const handlePrevious = () => {
-    if (currentIndex > 0 && !isTransitioning) {
-      setIsTransitioning(true);
+    if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
-      setTimeout(() => setIsTransitioning(false), 300);
     }
   };
 
   const handleNext = () => {
-    if (currentIndex < reels.length - 1 && !isTransitioning) {
-      setIsTransitioning(true);
+    if (currentIndex < reels.length - 1) {
       setCurrentIndex(currentIndex + 1);
-      setTimeout(() => setIsTransitioning(false), 300);
     }
   };
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.preventDefault();
-    setTouchStart(e.touches[0].clientY);
-    setTouchEnd(e.touches[0].clientY);
+  const handleDragEnd = (event: any, info: PanInfo) => {
+    const threshold = 50;
+    const velocity = info.velocity.y;
+
+    if (Math.abs(velocity) > 500 || Math.abs(info.offset.y) > threshold) {
+      if (info.offset.y > 0) {
+        // Swipe down - previous reel
+        handlePrevious();
+      } else {
+        // Swipe up - next reel
+        handleNext();
+      }
+    }
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.preventDefault();
-    setTouchEnd(e.touches[0].clientY);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.preventDefault();
-    const distance = touchStart - touchEnd;
+  const handleDoubleTap = () => {
     const now = Date.now();
-    
-    // Double tap to like
-    if (Math.abs(distance) < 10 && now - lastTap < 300) {
+    if (now - lastTap < 300) {
       onLike(currentReel.id);
       setLastTap(0);
       return;
     }
     setLastTap(now);
-    
-    if (Math.abs(distance) > 50) {
-      if (distance > 0) {
-        // Swipe up - next reel
-        handleNext();
-      } else {
-        // Swipe down - previous reel
-        handlePrevious();
-      }
-    }
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    if (Math.abs(e.deltaY) > 10) {
-      if (e.deltaY > 0) {
-        handleNext();
-      } else {
-        handlePrevious();
-      }
-    }
   };
 
   return (
-    <div 
+    <motion.div 
       ref={containerRef}
-      className="fixed inset-0 z-50 bg-black flex items-center justify-center touch-none overflow-hidden"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onWheel={handleWheel}
-      style={{ touchAction: 'none' }}
+      className="fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
     >
       {/* Close Button */}
-      <button
+      <motion.button
         onClick={onClose}
-        className="absolute top-4 left-4 z-50 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+        className="absolute top-4 left-4 z-50 flex items-center justify-center"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
       >
         <X className="w-6 h-6 text-white drop-shadow-lg" />
-      </button>
+      </motion.button>
 
-      {/* Video - Full screen 9:16 aspect ratio */}
-      <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
-        <div 
-          className="w-full h-full transition-transform duration-300 ease-out"
+      {/* Video Container with Smooth Swipe */}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={currentIndex}
+          className="relative w-full h-full flex items-center justify-center bg-black"
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.2}
+          onDragEnd={handleDragEnd}
+          onClick={handleDoubleTap}
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -100, opacity: 0 }}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+            mass: 0.5
+          }}
           style={{ 
-            transform: isTransitioning ? 'scale(0.95)' : 'scale(1)',
-            opacity: isTransitioning ? 0.7 : 1
+            touchAction: 'pan-y',
+            willChange: 'transform'
           }}
         >
           <video
             key={currentReel.id}
             src={currentReel.video_url}
-            className="w-full h-full object-cover animate-fade-in"
+            className="w-full h-full object-cover"
             style={{ aspectRatio: '9/16', maxHeight: '100vh' }}
             loop
             playsInline
             autoPlay
             muted={isMuted}
           />
-        </div>
-      </div>
+        </motion.div>
+      </AnimatePresence>
 
       {/* Mute/Unmute Button */}
-      <button
+      <motion.button
         onClick={() => setIsMuted(!isMuted)}
-        className="absolute top-4 right-4 z-50 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+        className="absolute top-4 right-4 z-50 flex items-center justify-center"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
       >
         {isMuted ? (
           <VolumeX className="w-6 h-6 text-white drop-shadow-lg" />
         ) : (
           <Volume2 className="w-6 h-6 text-white drop-shadow-lg" />
         )}
-      </button>
+      </motion.button>
 
       {/* User Info - Top Left */}
-      <div className="absolute top-20 left-4 z-30 flex items-center gap-3">
+      <motion.div 
+        className="absolute top-20 left-4 z-30 flex items-center gap-3"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.2 }}
+      >
         <OptimizedAvatar
           src={currentReel.profiles?.avatar_url}
           alt={currentReel.profiles?.username}
@@ -196,10 +193,15 @@ export const ReelsFullscreenViewer = ({
             {currentReel.profiles?.full_name}
           </p>
         </div>
-      </div>
+      </motion.div>
 
       {/* Caption - Bottom positioned exactly like Instagram */}
-      <div className="absolute bottom-24 left-4 right-20 z-30 space-y-2 animate-slide-in-right">
+      <motion.div 
+        className="absolute bottom-24 left-4 right-20 z-30 space-y-2"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
         <p className="text-white text-sm leading-relaxed drop-shadow-lg">
           {currentReel.caption.split(/(\s+)/).map((part, i) => {
             if (part.startsWith('#')) {
@@ -211,14 +213,20 @@ export const ReelsFullscreenViewer = ({
             return <span key={i}>{part}</span>;
           })}
         </p>
-      </div>
+      </motion.div>
 
       {/* Action Buttons - Right Side Vertical (Instagram Style) */}
-      <div className="absolute right-2 bottom-24 flex flex-col gap-4 z-40">
+      <motion.div 
+        className="absolute right-2 bottom-24 flex flex-col gap-4 z-40"
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.2 }}
+      >
         {/* Like Button */}
-        <button
+        <motion.button
           onClick={() => onLike(currentReel.id)}
-          className="flex flex-col items-center gap-0.5 transition-all active:scale-90"
+          className="flex flex-col items-center gap-0.5"
+          whileTap={{ scale: 0.85 }}
         >
           <Heart
             className={`w-7 h-7 transition-colors drop-shadow-lg ${
@@ -226,39 +234,45 @@ export const ReelsFullscreenViewer = ({
             }`}
           />
           <span className="text-white text-xs font-semibold drop-shadow-lg">{currentReel.like_count || 0}</span>
-        </button>
+        </motion.button>
 
         {/* Comment Button */}
-        <button
+        <motion.button
           onClick={() => onComment(currentReel.id)}
-          className="flex flex-col items-center gap-0.5 transition-all active:scale-90"
+          className="flex flex-col items-center gap-0.5"
+          whileTap={{ scale: 0.85 }}
         >
           <MessageCircle className="w-7 h-7 text-white drop-shadow-lg" />
           <span className="text-white text-xs font-semibold drop-shadow-lg">{currentReel.comment_count || 0}</span>
-        </button>
+        </motion.button>
 
         {/* Share/Send Button */}
-        <button
+        <motion.button
           onClick={() => onShare(currentReel.id, currentReel.caption, currentReel.video_url)}
-          className="flex flex-col items-center gap-0.5 transition-all active:scale-90"
+          className="flex flex-col items-center gap-0.5"
+          whileTap={{ scale: 0.85 }}
         >
           <Send className="w-7 h-7 text-white drop-shadow-lg" />
-        </button>
+        </motion.button>
 
         {/* Bookmark Button */}
-        <button
-          className="flex flex-col items-center gap-0.5 transition-all active:scale-90"
+        <motion.button
+          className="flex flex-col items-center gap-0.5"
+          whileTap={{ scale: 0.85 }}
         >
           <Bookmark className="w-7 h-7 text-white drop-shadow-lg" />
-        </button>
+        </motion.button>
 
         {/* Three Dot Menu - Only for own posts */}
         {isOwnReel && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex flex-col items-center gap-0.5 transition-all active:scale-90">
+              <motion.button 
+                className="flex flex-col items-center gap-0.5"
+                whileTap={{ scale: 0.85 }}
+              >
                 <MoreVertical className="w-7 h-7 text-white drop-shadow-lg" />
-              </button>
+              </motion.button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md border border-border/50">
               <DropdownMenuItem onClick={() => onDelete(currentReel.id)} className="text-destructive">
@@ -268,12 +282,17 @@ export const ReelsFullscreenViewer = ({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-      </div>
+      </motion.div>
 
       {/* Progress Indicator */}
-      <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 text-white/60 text-xs">
+      <motion.div 
+        className="absolute top-16 left-1/2 -translate-x-1/2 z-30 text-white/60 text-xs"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
         {currentIndex + 1} / {reels.length}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
