@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Building2 } from "lucide-react";
 import TopNav from "@/components/TopNav";
+import BottomNav from "@/components/BottomNav";
 
 const FifoRequestAccess = () => {
   const { user } = useAuth();
@@ -22,11 +23,6 @@ const FifoRequestAccess = () => {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-
     if (!workspaceId) {
       toast.error("No workspace specified");
       navigate('/inventory-manager');
@@ -34,7 +30,7 @@ const FifoRequestAccess = () => {
     }
 
     fetchWorkspaceInfo();
-  }, [user, workspaceId]);
+  }, [workspaceId]);
 
   const fetchWorkspaceInfo = async () => {
     try {
@@ -133,9 +129,9 @@ const FifoRequestAccess = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       <TopNav />
-      <div className="container max-w-md mx-auto px-4 py-8">
+      <div className="container max-w-md mx-auto px-4 py-8 pt-20">
         <Card>
           <CardHeader className="text-center space-y-2">
             <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
@@ -147,70 +143,95 @@ const FifoRequestAccess = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleRequestAccess} className="space-y-4">
-              <div>
-                <Label className="text-sm">Workspace Name</Label>
-                <Input 
-                  value={workspace?.name || ''} 
-                  disabled 
-                  className="bg-muted"
-                />
-              </div>
-              
-              <div>
-                <Label className="text-sm">Your Email</Label>
-                <Input 
-                  value={user?.email || ''} 
-                  disabled 
-                  className="bg-muted"
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm">Message to Owner (Optional)</Label>
-                <Input 
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Why do you want to join?"
-                  className="h-9"
-                />
-              </div>
-
-              <div className="bg-muted/50 p-3 rounded-lg">
-                <p className="text-xs text-muted-foreground">
-                  Your request will be sent to the workspace owner for approval.
-                  You'll be notified once your request is reviewed.
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate('/inventory-manager')}
-                  className="flex-1"
+            {!user ? (
+              <div className="space-y-4">
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <p className="text-sm text-muted-foreground text-center">
+                    Please sign in to request access to this FIFO workspace
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => navigate('/auth')} 
+                  className="w-full"
+                  size="lg"
                 >
-                  Cancel
+                  Sign In to Request Access
                 </Button>
                 <Button 
-                  type="submit" 
-                  disabled={submitting}
-                  className="flex-1"
+                  variant="outline"
+                  onClick={() => navigate('/inventory-manager')}
+                  className="w-full"
                 >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    "Request Access"
-                  )}
+                  Go to FIFO Inventory
                 </Button>
               </div>
-            </form>
+            ) : (
+              <form onSubmit={handleRequestAccess} className="space-y-4">
+                <div>
+                  <Label className="text-sm">Workspace Name</Label>
+                  <Input 
+                    value={workspace?.name || ''} 
+                    disabled 
+                    className="bg-muted"
+                  />
+                </div>
+                
+                <div>
+                  <Label className="text-sm">Your Email</Label>
+                  <Input 
+                    value={user?.email || ''} 
+                    disabled 
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm">Message to Owner (Optional)</Label>
+                  <Input 
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Why do you want to join?"
+                    className="h-9"
+                  />
+                </div>
+
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    Your request will be sent to the workspace owner for approval.
+                    You'll be notified once your request is reviewed.
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate('/inventory-manager')}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={submitting}
+                    className="flex-1"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Request Access"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>
+      <BottomNav />
     </div>
   );
 };
