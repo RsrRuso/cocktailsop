@@ -125,21 +125,10 @@ const LiveMap = () => {
       if (follow.following_id === user.id) friendIds.add(follow.follower_id);
     });
 
-    // Fetch ALL locations of followers/followings with profile data
-    // Ghost mode only hides YOUR location from others, not others from you
-    const { data, error } = await supabase
+    // Fetch locations for followers/followings (no join to avoid FK requirement)
+    const { data: locationRows, error } = await supabase
       .from('user_locations')
-      .select(`
-        user_id,
-        latitude,
-        longitude,
-        ghost_mode,
-        last_updated,
-        profiles:user_id (
-          username,
-          avatar_url
-        )
-      `)
+      .select('user_id, latitude, longitude, ghost_mode, last_updated')
       .in('user_id', Array.from(friendIds))
       .not('latitude', 'is', null)
       .not('longitude', 'is', null);
@@ -150,8 +139,19 @@ const LiveMap = () => {
       return;
     }
 
-    if (data) {
-      setLocations(data);
+    // Fetch profile data separately for usernames / avatars (non-blocking)
+    const { data: profileRows } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url')
+      .in('id', Array.from(friendIds));
+
+    const profileById: Record<string, { username: string; avatar_url: string | null }> = {};
+    profileRows?.forEach((p: any) => {
+      if (p?.id) profileById[p.id] = p;
+    });
+
+    if (locationRows) {
+      setLocations(locationRows as any);
 
       if (mapRef.current) {
         const map = mapRef.current;
@@ -165,15 +165,15 @@ const LiveMap = () => {
         });
 
         // Add markers for all followers/followings
-        data.forEach((location: any) => {
+        locationRows.forEach((location: any) => {
           if (!location.user_id || location.latitude == null || location.longitude == null) return;
 
-          const profile = location.profiles;
+          const profile = profileById[location.user_id];
           const username = profile?.username || 'Friend';
-          const avatarUrl = profile?.avatar_url;
+          const avatarUrl = profile?.avatar_url || undefined;
           
           const marker = L.marker([location.latitude, location.longitude], {
-            icon: createUserIcon(username[0].toUpperCase(), avatarUrl),
+            icon: createUserIcon(username[0]?.toUpperCase() || 'F', avatarUrl),
           }).bindPopup(`
             <div class="font-semibold">${username}</div>
             ${location.ghost_mode ? '<div class="text-xs text-muted-foreground">👻 Ghost Mode</div>' : ''}
