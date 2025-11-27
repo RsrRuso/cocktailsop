@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Edit, Trash2, X, Volume2, VolumeX, ChevronUp, ChevronDown } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Trash2, X, Volume2, VolumeX } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import {
   DropdownMenu,
@@ -54,6 +54,7 @@ export const ReelsFullscreenViewer = ({
   const [isMuted, setIsMuted] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [lastTap, setLastTap] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -91,6 +92,15 @@ export const ReelsFullscreenViewer = ({
   const handleTouchEnd = (e: React.TouchEvent) => {
     e.preventDefault();
     const distance = touchStart - touchEnd;
+    const now = Date.now();
+    
+    // Double tap to like
+    if (Math.abs(distance) < 10 && now - lastTap < 300) {
+      onLike(currentReel.id);
+      setLastTap(0);
+      return;
+    }
+    setLastTap(now);
     
     if (Math.abs(distance) > 50) {
       if (distance > 0) {
@@ -127,29 +137,10 @@ export const ReelsFullscreenViewer = ({
       {/* Close Button */}
       <button
         onClick={onClose}
-        className="absolute top-4 left-4 z-50 w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10 transition-all"
+        className="absolute top-4 left-4 z-50 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-black/60 transition-all"
       >
-        <X className="w-6 h-6 text-white" />
+        <X className="w-5 h-5 text-white" />
       </button>
-
-      {/* Navigation Arrows */}
-      {currentIndex > 0 && (
-        <button
-          onClick={handlePrevious}
-          className="absolute top-1/2 left-4 -translate-y-1/2 z-40 w-12 h-12 rounded-full bg-black/40 backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10 transition-all"
-        >
-          <ChevronUp className="w-6 h-6 text-white" />
-        </button>
-      )}
-
-      {currentIndex < reels.length - 1 && (
-        <button
-          onClick={handleNext}
-          className="absolute bottom-32 left-4 z-40 w-12 h-12 rounded-full bg-black/40 backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10 transition-all"
-        >
-          <ChevronDown className="w-6 h-6 text-white" />
-        </button>
-      )}
 
       {/* Video - Full screen 9:16 aspect ratio */}
       <div className="relative w-full h-full flex items-center justify-center bg-black">
@@ -168,12 +159,12 @@ export const ReelsFullscreenViewer = ({
       {/* Mute/Unmute Button */}
       <button
         onClick={() => setIsMuted(!isMuted)}
-        className="absolute top-4 right-4 z-50 w-11 h-11 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-black/50 transition-all"
+        className="absolute top-4 right-4 z-50 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center hover:bg-black/60 transition-all"
       >
         {isMuted ? (
-          <VolumeX className="w-5 h-5 text-white" />
+          <VolumeX className="w-4 h-4 text-white" />
         ) : (
-          <Volume2 className="w-5 h-5 text-white" />
+          <Volume2 className="w-4 h-4 text-white" />
         )}
       </button>
 
@@ -210,60 +201,50 @@ export const ReelsFullscreenViewer = ({
       </div>
 
       {/* Action Buttons - Right Side Vertical (Instagram Style) */}
-      <div className="absolute right-3 bottom-24 flex flex-col gap-6 z-40">
+      <div className="absolute right-2 bottom-24 flex flex-col gap-4 z-40">
         {/* Like Button */}
         <button
           onClick={() => onLike(currentReel.id)}
-          className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
+          className="flex flex-col items-center gap-0.5 transition-all active:scale-90"
         >
-          <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-            <Heart
-              className={`w-7 h-7 transition-colors ${
-                likedReels.has(currentReel.id) ? "fill-red-500 text-red-500" : "text-white"
-              }`}
-            />
-          </div>
-          <span className="text-white text-xs font-bold drop-shadow-lg">{currentReel.like_count || 0}</span>
+          <Heart
+            className={`w-7 h-7 transition-colors drop-shadow-lg ${
+              likedReels.has(currentReel.id) ? "fill-red-500 text-red-500" : "text-white"
+            }`}
+          />
+          <span className="text-white text-xs font-semibold drop-shadow-lg">{currentReel.like_count || 0}</span>
         </button>
 
         {/* Comment Button */}
         <button
           onClick={() => onComment(currentReel.id)}
-          className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
+          className="flex flex-col items-center gap-0.5 transition-all active:scale-90"
         >
-          <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-            <MessageCircle className="w-7 h-7 text-white" />
-          </div>
-          <span className="text-white text-xs font-bold drop-shadow-lg">{currentReel.comment_count || 0}</span>
+          <MessageCircle className="w-7 h-7 text-white drop-shadow-lg" />
+          <span className="text-white text-xs font-semibold drop-shadow-lg">{currentReel.comment_count || 0}</span>
         </button>
 
         {/* Share/Send Button */}
         <button
           onClick={() => onShare(currentReel.id, currentReel.caption, currentReel.video_url)}
-          className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
+          className="flex flex-col items-center gap-0.5 transition-all active:scale-90"
         >
-          <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-            <Send className="w-7 h-7 text-white" />
-          </div>
+          <Send className="w-7 h-7 text-white drop-shadow-lg" />
         </button>
 
         {/* Bookmark Button */}
         <button
-          className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
+          className="flex flex-col items-center gap-0.5 transition-all active:scale-90"
         >
-          <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-            <Bookmark className="w-7 h-7 text-white" />
-          </div>
+          <Bookmark className="w-7 h-7 text-white drop-shadow-lg" />
         </button>
 
         {/* Three Dot Menu - Only for own posts */}
         {isOwnReel && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95">
-                <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-                  <MoreVertical className="w-7 h-7 text-white" />
-                </div>
+              <button className="flex flex-col items-center gap-0.5 transition-all active:scale-90">
+                <MoreVertical className="w-7 h-7 text-white drop-shadow-lg" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md border border-border/50">
