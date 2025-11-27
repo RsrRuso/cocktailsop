@@ -1,16 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useGPSTracking } from '@/hooks/useGPSTracking';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, MapPin } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-
-const AnyMapContainer: any = MapContainer;
-const AnyTileLayer: any = TileLayer;
-const AnyMarker: any = Marker;
 
 const createUserIcon = (label: string, avatarUrl?: string, isCurrentUser = false) => {
   const sizeClass = isCurrentUser ? 'w-10 h-10 border-4' : 'w-8 h-8 border-2';
@@ -30,34 +25,111 @@ const createUserIcon = (label: string, avatarUrl?: string, isCurrentUser = false
   });
 };
 
-const UserLocationUpdater = ({
-  position,
-  ghostMode,
-}: {
-  position: any;
-  ghostMode: boolean;
-}) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!ghostMode && position) {
-      map.flyTo([position.latitude, position.longitude], 12);
-    }
-  }, [ghostMode, position, map]);
-
-  return null;
-};
-
 const LiveMap = () => {
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<Record<string, L.Marker>>({});
+
   const [ghostMode, setGhostMode] = useState(false);
   const [locations, setLocations] = useState<any[]>([]);
   const [mapError, setMapError] = useState<string | null>(null);
   const { position, isTracking, toggleGhostMode } = useGPSTracking(!ghostMode);
   const { toast } = useToast();
 
+  // Initialize Leaflet map (OpenStreetMap tiles, no API token needed)
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
 
+    try {
+      const initialCenter: [number, number] = position
+        ? [position.latitude, position.longitude]
+        : [40, -74.5];
 
-  // Subscribe to location updates
+      const map = L.map(mapContainerRef.current).setView(initialCenter, 12);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19,
+      }).addTo(map);
+
+      mapRef.current = map;
+    } catch (error) {
+      console.error('Error initializing Leaflet map:', error);
+      setMapError('Failed to initialize map');
+    }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Center map and update current user marker when GPS position changes
+  useEffect(() => {
+    if (!mapRef.current || !position || ghostMode) return;
+
+    const map = mapRef.current;
+    const userKey = 'current-user';
+
+    map.flyTo([position.latitude, position.longitude], 12);
+
+    if (markersRef.current[userKey]) {
+      markersRef.current[userKey].setLatLng([position.latitude, position.longitude]);
+    } else {
+      const marker = L.marker([position.latitude, position.longitude], {
+        icon: createUserIcon('You', undefined, true),
+      }).bindPopup('You are here');
+
+      marker.addTo(map);
+      markersRef.current[userKey] = marker;
+    }
+  }, [position, ghostMode]);
+
+  const fetchLocations = async () => {
+    const { data, error } = await supabase
+      .from('user_locations')
+      .select('*')
+      .eq('ghost_mode', false);
+
+    if (error) {
+      console.error('Error fetching locations:', error);
+      setMapError('Failed to load locations');
+      return;
+    }
+
+    if (data) {
+      setLocations(data);
+
+      if (mapRef.current) {
+        const map = mapRef.current;
+
+        // Clear old markers except current user
+        Object.keys(markersRef.current).forEach((key) => {
+          if (key !== 'current-user') {
+            markersRef.current[key].remove();
+            delete markersRef.current[key];
+          }
+        });
+
+        // Add markers for other users
+        data.forEach((location: any) => {
+          if (!location.user_id || location.latitude == null || location.longitude == null) return;
+
+          const marker = L.marker([location.latitude, location.longitude], {
+            icon: createUserIcon('U'),
+          }).bindPopup('<div class="font-semibold">Friend</div>');
+
+          marker.addTo(map);
+          markersRef.current[location.user_id] = marker;
+        });
+      }
+    }
+  };
+
+  // Subscribe to realtime location updates
   useEffect(() => {
     const channel = supabase
       .channel('user-locations')
@@ -73,42 +145,19 @@ const LiveMap = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const fetchLocations = async () => {
-    const { data, error } = await supabase
-      .from('user_locations')
-      .select(`
-        *,
-        profiles:user_id (
-          username,
-          avatar_url,
-          full_name
-        )
-      `)
-      .eq('ghost_mode', false);
-
-    if (error) {
-      console.error('Error fetching locations:', error);
-      setMapError('Failed to load locations');
-      return;
-    }
-
-    if (data) {
-      setLocations(data);
-    }
-  };
 
   const handleToggleGhostMode = async () => {
     const newGhostMode = !ghostMode;
     setGhostMode(newGhostMode);
     await toggleGhostMode(newGhostMode);
-    
+
     toast({
-      title: newGhostMode ? "Ghost Mode Enabled" : "Ghost Mode Disabled",
-      description: newGhostMode 
-        ? "Your location is now hidden from others" 
-        : "Your location is now visible to mutual follows"
+      title: newGhostMode ? 'Ghost Mode Enabled' : 'Ghost Mode Disabled',
+      description: newGhostMode
+        ? 'Your location is now hidden from others'
+        : 'Your location is now visible to mutual follows',
     });
   };
 
@@ -133,60 +182,13 @@ const LiveMap = () => {
 
   return (
     <div className="relative w-full h-screen bg-background">
-      <AnyMapContainer
-        center={position ? [position.latitude, position.longitude] : [40, -74.5]}
-        zoom={12}
-        className="absolute inset-0 bg-muted"
-        zoomControl={false}
-      >
-        <AnyTileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+      <div ref={mapContainerRef} className="absolute inset-0 bg-muted" />
 
-        {!ghostMode && position && (
-          <AnyMarker
-            position={[position.latitude, position.longitude]}
-            icon={createUserIcon('You', undefined, true)}
-          >
-            <Popup>You are here</Popup>
-          </AnyMarker>
-        )}
-
-        {locations.map((location: any) => {
-          if (!location.user_id) return null;
-          const profile = location.profiles as any;
-
-          return (
-            <AnyMarker
-              key={location.user_id}
-              position={[location.latitude, location.longitude]}
-              icon={createUserIcon(
-                profile?.username?.charAt(0)?.toUpperCase() || 'U',
-                profile?.avatar_url || undefined,
-                false
-              )}
-            >
-              <Popup>
-                <div className="space-y-1">
-                  <p className="font-semibold">{profile?.username || 'Unknown'}</p>
-                  {profile?.full_name && (
-                    <p className="text-sm text-muted-foreground">{profile.full_name}</p>
-                  )}
-                </div>
-              </Popup>
-            </AnyMarker>
-          );
-        })}
-
-        <UserLocationUpdater position={position} ghostMode={ghostMode} />
-      </AnyMapContainer>
-      
       {/* Controls */}
       <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
         <Button
           onClick={handleToggleGhostMode}
-          variant={ghostMode ? "destructive" : "default"}
+          variant={ghostMode ? 'destructive' : 'default'}
           size="icon"
           className="w-12 h-12 rounded-full shadow-lg"
         >
