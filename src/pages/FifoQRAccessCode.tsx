@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFifoWorkspace } from "@/hooks/useFifoWorkspace";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,13 +8,14 @@ import BottomNav from "@/components/BottomNav";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QRCodeSVG } from "qrcode.react";
-import { Download, Share2, Copy, Check } from "lucide-react";
+import { Download, Share2, Copy, Check, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const anySupabase = supabase as any;
 
 export default function FifoQRAccessCode() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { currentWorkspace, workspaces } = useFifoWorkspace();
   const [qrCode, setQrCode] = useState<any>(null);
@@ -129,6 +131,15 @@ export default function FifoQRAccessCode() {
       <TopNav />
 
       <div className="container mx-auto px-4 py-6 max-w-2xl">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/inventory-manager")}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to FIFO Inventory
+        </Button>
+
         <h1 className="text-3xl font-bold mb-6">FIFO Workspace QR Access</h1>
 
         <Card className="mb-6">
