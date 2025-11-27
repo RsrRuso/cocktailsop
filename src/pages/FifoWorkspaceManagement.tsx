@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Plus, Edit, Trash2, Users, Package, UserPlus, ArrowLeft } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Package, UserPlus, ArrowLeft, QrCode, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { InviteFifoMemberDialog } from "@/components/InviteFifoMemberDialog";
@@ -270,14 +270,40 @@ export default function FifoWorkspaceManagement() {
                   )}
                 </CardHeader>
                 <CardContent>
-                  <div className="flex gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Package className="w-4 h-4" />
-                      <span>{workspace.store_count || 0} stores</span>
+                  <div className="space-y-3">
+                    <div className="flex gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Package className="w-4 h-4" />
+                        <span>{workspace.store_count || 0} stores</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        <span>{workspace.member_count || 0} members</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      <span>{workspace.member_count || 0} members</span>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          const inviteUrl = `${window.location.origin}/fifo-request-access?workspace=${workspace.id}`;
+                          navigator.clipboard.writeText(inviteUrl);
+                          toast.success("Invite link copied to clipboard!");
+                        }}
+                      >
+                        <QrCode className="w-4 h-4 mr-1" />
+                        Share Invite
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => navigate(`/fifo-access-approval-page?workspace=${workspace.id}`)}
+                      >
+                        <Shield className="w-4 h-4 mr-1" />
+                        Approvals
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

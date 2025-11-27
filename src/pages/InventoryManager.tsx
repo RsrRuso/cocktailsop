@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useInventoryAccess } from "@/hooks/useInventoryAccess";
 import { useManagerRole } from "@/hooks/useManagerRole";
 import { usePendingAccessRequests } from "@/hooks/usePendingAccessRequests";
+import { usePendingFifoAccessRequests } from "@/hooks/usePendingFifoAccessRequests";
 import { useFifoWorkspace } from "@/hooks/useFifoWorkspace";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
@@ -44,6 +45,7 @@ const InventoryManager = () => {
   const { hasAccess, isLoading: accessLoading, refetch: refetchAccess } = useInventoryAccess();
   const { isManager } = useManagerRole();
   const { count: pendingRequestsCount } = usePendingAccessRequests();
+  const { count: pendingFifoRequestsCount } = usePendingFifoAccessRequests();
   const { currentWorkspace, workspaces, switchWorkspace } = useFifoWorkspace();
   const navigate = useNavigate();
   const [stores, setStores] = useState<any[]>([]);
@@ -1105,18 +1107,18 @@ const InventoryManager = () => {
               <span className="ml-[-16px]">QR Code</span>
             </Button>
           )}
-          {(isManager || pendingRequestsCount > 0) && (
+          {(isManager || pendingFifoRequestsCount > 0) && (
             <Button 
-              onClick={() => navigate("/fifo-access-approval")} 
+              onClick={() => navigate("/fifo-access-approval-page?workspace=" + currentWorkspace?.id)} 
               size="sm" 
               variant="outline"
               className="relative"
             >
               <Lock className="w-3 h-3 mr-1" />
               Approvals
-              {pendingRequestsCount > 0 && (
+              {pendingFifoRequestsCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground animate-pulse">
-                  {pendingRequestsCount}
+                  {pendingFifoRequestsCount}
                 </span>
               )}
             </Button>
