@@ -46,7 +46,7 @@ export default function FifoWorkspaceManagement() {
         .from('workspaces')
         .select('*')
         .eq('owner_id', user.id)
-        .eq('workspace_type', 'fifo_inventory')
+        .eq('workspace_type', 'fifo')
         .order('created_at', { ascending: false });
 
       if (ownedError) throw ownedError;
@@ -56,7 +56,7 @@ export default function FifoWorkspaceManagement() {
         .from('workspace_members')
         .select('workspace:workspaces!inner(*)')
         .eq('user_id', user.id)
-        .eq('workspace.workspace_type', 'fifo_inventory');
+        .eq('workspace.workspace_type', 'fifo');
 
       if (memberError) throw memberError;
 
@@ -116,7 +116,7 @@ export default function FifoWorkspaceManagement() {
           name: formData.name,
           description: formData.description,
           owner_id: user.id,
-          workspace_type: 'fifo_inventory',
+          workspace_type: 'fifo',
         });
 
       if (error) throw error;
