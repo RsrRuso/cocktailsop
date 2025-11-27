@@ -141,7 +141,7 @@ export const ReelsFullscreenViewer = ({
         <X className="w-6 h-6 text-white drop-shadow-lg" />
       </motion.button>
 
-      {/* Video Container with Smooth Natural Swipe */}
+      {/* Video Container with Smooth Slow-Motion Swipe */}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={currentIndex}
@@ -152,12 +152,12 @@ export const ReelsFullscreenViewer = ({
           dragMomentum={true}
           onDragEnd={handleDragEnd}
           onClick={handleDoubleTap}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          initial={{ y: direction === 1 ? 50 : -50, opacity: 0, scale: 0.98 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: direction === 1 ? -50 : 50, opacity: 0, scale: 0.98 }}
           transition={{
-            duration: 0.2,
-            ease: "easeInOut"
+            duration: 0.4,
+            ease: [0.25, 0.1, 0.25, 1]
           }}
           style={{ 
             touchAction: 'pan-y',
