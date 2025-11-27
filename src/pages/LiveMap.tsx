@@ -105,10 +105,44 @@ const LiveMap = () => {
   }, [position, ghostMode, autoCenter]);
 
   const fetchLocations = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Get followers and followings (mutual follows)
+    const { data: follows } = await supabase
+      .from('follows')
+      .select('follower_id, following_id')
+      .or(`follower_id.eq.${user.id},following_id.eq.${user.id}`);
+
+    if (!follows || follows.length === 0) {
+      setLocations([]);
+      return;
+    }
+
+    const friendIds = new Set<string>();
+    follows.forEach(follow => {
+      if (follow.follower_id === user.id) friendIds.add(follow.following_id);
+      if (follow.following_id === user.id) friendIds.add(follow.follower_id);
+    });
+
+    // Fetch ALL locations of followers/followings with profile data
+    // Ghost mode only hides YOUR location from others, not others from you
     const { data, error } = await supabase
       .from('user_locations')
-      .select('*')
-      .eq('ghost_mode', false);
+      .select(`
+        user_id,
+        latitude,
+        longitude,
+        ghost_mode,
+        last_updated,
+        profiles:user_id (
+          username,
+          avatar_url
+        )
+      `)
+      .in('user_id', Array.from(friendIds))
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null);
 
     if (error) {
       console.error('Error fetching locations:', error);
@@ -130,13 +164,20 @@ const LiveMap = () => {
           }
         });
 
-        // Add markers for other users
+        // Add markers for all followers/followings
         data.forEach((location: any) => {
           if (!location.user_id || location.latitude == null || location.longitude == null) return;
 
+          const profile = location.profiles;
+          const username = profile?.username || 'Friend';
+          const avatarUrl = profile?.avatar_url;
+          
           const marker = L.marker([location.latitude, location.longitude], {
-            icon: createUserIcon('U'),
-          }).bindPopup('<div class="font-semibold">Friend</div>');
+            icon: createUserIcon(username[0].toUpperCase(), avatarUrl),
+          }).bindPopup(`
+            <div class="font-semibold">${username}</div>
+            ${location.ghost_mode ? '<div class="text-xs text-muted-foreground">👻 Ghost Mode</div>' : ''}
+          `);
 
           marker.addTo(map);
           markersRef.current[location.user_id] = marker;
@@ -170,10 +211,10 @@ const LiveMap = () => {
     await toggleGhostMode(newGhostMode);
 
     toast({
-      title: newGhostMode ? 'Ghost Mode Enabled' : 'Ghost Mode Disabled',
+      title: newGhostMode ? '👻 Ghost Mode Enabled' : '📍 Ghost Mode Disabled',
       description: newGhostMode
-        ? 'Your location is now hidden from others'
-        : 'Your location is now visible to mutual follows',
+        ? 'You\'re hidden from the map. Others can\'t see your location.'
+        : 'You\'re visible on the map. Friends can see your location.',
     });
   };
 
