@@ -54,6 +54,7 @@ export const ReelsFullscreenViewer = ({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isMuted, setIsMuted] = useState(false);
   const [lastTap, setLastTap] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
   const y = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -68,12 +69,14 @@ export const ReelsFullscreenViewer = ({
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
+      setDirection(-1);
       setCurrentIndex(currentIndex - 1);
     }
   };
-
+ 
   const handleNext = () => {
     if (currentIndex < reels.length - 1) {
+      setDirection(1);
       setCurrentIndex(currentIndex + 1);
     }
   };
@@ -155,9 +158,9 @@ export const ReelsFullscreenViewer = ({
           }}
           onDragEnd={handleDragEnd}
           onClick={handleDoubleTap}
-          initial={{ y: 100, opacity: 0, scale: 0.95 }}
+          initial={{ y: direction === 1 ? 100 : -100, opacity: 0, scale: 0.95 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: -100, opacity: 0, scale: 0.95 }}
+          exit={{ y: direction === 1 ? -100 : 100, opacity: 0, scale: 0.95 }}
           transition={{
             type: "spring",
             stiffness: 400,
