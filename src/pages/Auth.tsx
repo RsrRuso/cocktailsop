@@ -58,7 +58,6 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -70,43 +69,25 @@ const Auth = () => {
   // Get redirect URL from query params
   const redirectTo = searchParams.get('redirect') || '/home';
 
-  // Check if user is coming from password reset link
+  // Check if user is coming from password reset link and redirect to password reset page
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     if (hashParams.get('type') === 'recovery') {
-      setIsResettingPassword(true);
+      navigate('/password-reset' + window.location.hash);
     }
-  }, []);
+  }, [navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (isResettingPassword) {
-        // Validate new password
-        if (password !== confirmPassword) {
-          toast.error("Passwords don't match");
-          setLoading(false);
-          return;
-        }
-
-        const validated = signUpSchema.shape.password.parse(password);
-
-        const { error } = await supabase.auth.updateUser({
-          password: validated
-        });
-        
-        if (error) throw error;
-        toast.success("Password updated successfully!");
-        setIsResettingPassword(false);
-        navigate(redirectTo);
-      } else if (isForgotPassword) {
+      if (isForgotPassword) {
         // Validate email
         const validated = resetPasswordSchema.parse({ email });
 
         const { error } = await supabase.auth.resetPasswordForEmail(validated.email, {
-          redirectTo: `${window.location.origin}/auth`,
+          redirectTo: `${window.location.origin}/password-reset`,
         });
         if (error) throw error;
         toast.success("Password reset link sent! Check your email");
@@ -191,35 +172,6 @@ const Auth = () => {
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
-          {isResettingPassword ? (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="password">New Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="glass"
-                  placeholder="Enter new password"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className="glass"
-                  placeholder="Confirm new password"
-                />
-              </div>
-            </>
-          ) : (
-            <>
               {isSignUp && !isForgotPassword && (
                 <>
                   <div className="space-y-2">
@@ -338,8 +290,6 @@ const Auth = () => {
                   )}
                 </>
               )}
-            </>
-          )}
 
           <Button
             type="submit"
@@ -351,22 +301,12 @@ const Auth = () => {
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 <span>Processing...</span>
               </div>
-            ) : isResettingPassword ? "Update Password" : isForgotPassword ? "Send Reset Link" : isSignUp ? "Create Account" : "Sign In"}
+            ) : isForgotPassword ? "Send Reset Link" : isSignUp ? "Create Account" : "Sign In"}
           </Button>
         </form>
 
         <div className="text-center space-y-2">
-          {isResettingPassword ? (
-            <button
-              onClick={() => {
-                setIsResettingPassword(false);
-                navigate("/auth");
-              }}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              Back to sign in
-            </button>
-          ) : isForgotPassword ? (
+          {isForgotPassword ? (
             <button
               onClick={() => setIsForgotPassword(false)}
               className="text-sm text-muted-foreground hover:text-primary transition-colors"

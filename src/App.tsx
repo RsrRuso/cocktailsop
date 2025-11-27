@@ -19,6 +19,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import PasswordReset from "./pages/PasswordReset";
 import StoreManagement from "./pages/StoreManagement";
 
 // Lazy load ALL other routes including Home for code splitting
@@ -155,6 +156,7 @@ const AppContent = () => {
           <Route path="/" element={<Index />} />
           <Route path="/landing" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/password-reset" element={<PasswordReset />} />
           <Route path="/home" element={<Home />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/user/:userId" element={<UserProfile />} />
