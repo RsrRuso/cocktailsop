@@ -17,6 +17,7 @@ import LikesDialog from "@/components/LikesDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useViewTracking } from "@/hooks/useViewTracking";
 import { ReelItemWrapper } from "@/components/ReelItemWrapper";
+import { ReelsFullscreenViewer } from "@/components/ReelsFullscreenViewer";
 
 interface Reel {
   id: string;
@@ -52,6 +53,8 @@ const Reels = () => {
   const [showLikes, setShowLikes] = useState(false);
   const [selectedReelForLikes, setSelectedReelForLikes] = useState("");
   const [targetReelId, setTargetReelId] = useState<string | null>(null);
+  const [showFullscreenViewer, setShowFullscreenViewer] = useState(false);
+  const [fullscreenStartIndex, setFullscreenStartIndex] = useState(0);
 
   // Auto-unmute current reel, mute others
   useEffect(() => {
@@ -239,6 +242,11 @@ const Reels = () => {
 
   const currentReel = reels[currentIndex];
 
+  const handleReelClick = (index: number) => {
+    setFullscreenStartIndex(index);
+    setShowFullscreenViewer(true);
+  };
+
   return (
     <div className="h-screen bg-background overflow-hidden relative">
       <TopNav />
@@ -277,27 +285,32 @@ const Reels = () => {
           }}
         >
           {reels.map((reel, index) => (
-            <ReelItemWrapper
+            <div 
               key={reel.id}
-              reel={reel}
-              index={index}
-              currentIndex={currentIndex}
-              user={user}
-              mutedVideos={mutedVideos}
-              likedReels={likedReels}
-              setMutedVideos={setMutedVideos}
-              handleLikeReel={handleLikeReel}
-              setSelectedReelForLikes={setSelectedReelForLikes}
-              setShowLikes={setShowLikes}
-              setSelectedReelForComments={setSelectedReelForComments}
-              setShowComments={setShowComments}
-              setSelectedReelId={setSelectedReelId}
-              setSelectedReelCaption={setSelectedReelCaption}
-              setSelectedReelVideo={setSelectedReelVideo}
-              setShowShare={setShowShare}
-              navigate={navigate}
-              handleDeleteReel={handleDeleteReel}
-            />
+              onClick={() => handleReelClick(index)}
+              className="cursor-pointer"
+            >
+              <ReelItemWrapper
+                reel={reel}
+                index={index}
+                currentIndex={currentIndex}
+                user={user}
+                mutedVideos={mutedVideos}
+                likedReels={likedReels}
+                setMutedVideos={setMutedVideos}
+                handleLikeReel={handleLikeReel}
+                setSelectedReelForLikes={setSelectedReelForLikes}
+                setShowLikes={setShowLikes}
+                setSelectedReelForComments={setSelectedReelForComments}
+                setShowComments={setShowComments}
+                setSelectedReelId={setSelectedReelId}
+                setSelectedReelCaption={setSelectedReelCaption}
+                setSelectedReelVideo={setSelectedReelVideo}
+                setShowShare={setShowShare}
+                navigate={navigate}
+                handleDeleteReel={handleDeleteReel}
+              />
+            </div>
           ))}
         </div>
       )}
@@ -324,6 +337,27 @@ const Reels = () => {
         onOpenChange={setShowLikes}
         postId={selectedReelForLikes}
         isReel={true}
+      />
+
+      <ReelsFullscreenViewer
+        isOpen={showFullscreenViewer}
+        onClose={() => setShowFullscreenViewer(false)}
+        reels={reels}
+        initialIndex={fullscreenStartIndex}
+        currentUserId={user?.id || ''}
+        likedReels={likedReels}
+        onLike={handleLikeReel}
+        onComment={(reelId) => {
+          setSelectedReelForComments(reelId);
+          setShowComments(true);
+        }}
+        onShare={(reelId, caption, videoUrl) => {
+          setSelectedReelId(reelId);
+          setSelectedReelCaption(caption);
+          setSelectedReelVideo(videoUrl);
+          setShowShare(true);
+        }}
+        onDelete={handleDeleteReel}
       />
     </div>
   );
