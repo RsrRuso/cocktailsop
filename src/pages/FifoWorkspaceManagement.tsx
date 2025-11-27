@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Plus, Edit, Trash2, Users, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Package, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { InviteFifoMemberDialog } from "@/components/InviteFifoMemberDialog";
 
 interface Workspace {
   id: string;
@@ -30,6 +31,7 @@ export default function FifoWorkspaceManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
 
@@ -227,6 +229,17 @@ export default function FifoWorkspaceManagement() {
                       <Button
                         size="icon"
                         variant="ghost"
+                        onClick={() => {
+                          setSelectedWorkspace(workspace);
+                          setShowInviteDialog(true);
+                        }}
+                        title="Add members"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
                         onClick={() => openEditDialog(workspace)}
                       >
                         <Edit className="w-4 h-4" />
@@ -337,6 +350,17 @@ export default function FifoWorkspaceManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Invite Members Dialog */}
+      {selectedWorkspace && (
+        <InviteFifoMemberDialog
+          open={showInviteDialog}
+          onOpenChange={setShowInviteDialog}
+          workspaceId={selectedWorkspace.id}
+          workspaceName={selectedWorkspace.name}
+          onSuccess={fetchWorkspaces}
+        />
+      )}
 
       <BottomNav />
     </div>
