@@ -25,7 +25,7 @@ const FifoRequestAccess = () => {
   useEffect(() => {
     if (!workspaceId) {
       toast.error("No workspace specified");
-      navigate('/inventory-manager');
+      navigate('/home');
       return;
     }
 
@@ -45,7 +45,7 @@ const FifoRequestAccess = () => {
 
       if (!data) {
         toast.error("Workspace not found");
-        navigate('/inventory-manager');
+        navigate('/home');
         return;
       }
 
@@ -53,7 +53,7 @@ const FifoRequestAccess = () => {
     } catch (error: any) {
       console.error('Error fetching workspace:', error);
       toast.error("Failed to load workspace");
-      navigate('/inventory-manager');
+      navigate('/home');
     } finally {
       setLoading(false);
     }
@@ -90,7 +90,7 @@ const FifoRequestAccess = () => {
 
       if (existingMember) {
         toast.success("You're already a member of this workspace!");
-        navigate('/inventory-manager');
+        navigate('/home');
         return;
       }
 
@@ -108,7 +108,7 @@ const FifoRequestAccess = () => {
       if (error) throw error;
 
       toast.success("Access request submitted! Waiting for approval...");
-      navigate('/inventory-manager');
+      navigate('/home');
     } catch (error: any) {
       console.error('Error requesting access:', error);
       toast.error(error.message || "Failed to submit access request");
@@ -159,10 +159,10 @@ const FifoRequestAccess = () => {
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => navigate('/inventory-manager')}
+                  onClick={() => navigate('/home')}
                   className="w-full"
                 >
-                  Go to FIFO Inventory
+                  Go to Home
                 </Button>
               </div>
             ) : (
@@ -206,7 +206,7 @@ const FifoRequestAccess = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => navigate('/inventory-manager')}
+                    onClick={() => navigate('/home')}
                     className="flex-1"
                   >
                     Cancel
