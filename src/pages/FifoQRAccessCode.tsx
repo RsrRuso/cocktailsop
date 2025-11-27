@@ -96,8 +96,8 @@ export default function FifoQRAccessCode() {
   };
 
   const copyLink = () => {
-    if (!qrCode) return;
-    const link = `${window.location.origin}/fifo-scan-access/${qrCode.id}`;
+    if (!selectedWorkspaceId) return;
+    const link = `https://cocktailsop.com/fifo-request-access?workspace=${selectedWorkspaceId}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     toast.success("Link copied to clipboard");
@@ -105,8 +105,8 @@ export default function FifoQRAccessCode() {
   };
 
   const shareQRCode = async () => {
-    if (!qrCode) return;
-    const link = `${window.location.origin}/fifo-scan-access/${qrCode.id}`;
+    if (!selectedWorkspaceId) return;
+    const link = `https://cocktailsop.com/fifo-request-access?workspace=${selectedWorkspaceId}`;
     
     if (navigator.share) {
       try {
@@ -256,7 +256,7 @@ export default function FifoQRAccessCode() {
               <div className="flex justify-center p-8 bg-white rounded-lg">
                 <QRCodeSVG
                   id="qr-code"
-                  value={`${window.location.origin}/fifo-scan-access/${qrCode.id}`}
+                  value={`https://cocktailsop.com/fifo-request-access?workspace=${selectedWorkspaceId}`}
                   size={256}
                   level="H"
                   includeMargin
@@ -288,8 +288,8 @@ export default function FifoQRAccessCode() {
               </div>
 
               <div className="text-sm text-muted-foreground text-center">
-                When someone scans this code, they can request access to your FIFO workspace.
-                You'll receive a notification to approve or deny their request.
+                When someone scans this code via cocktailsop.com, they'll be taken directly to a request form to join your FIFO workspace.
+                You'll receive their request and can approve or deny it from the Approvals page.
               </div>
             </CardContent>
           </Card>
