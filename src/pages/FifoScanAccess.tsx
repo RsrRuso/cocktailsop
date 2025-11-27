@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+
+const anySupabase = supabase as any;
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

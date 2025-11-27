@@ -922,7 +922,7 @@ const InventoryManager = () => {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => navigate("/workspace-management")}
+              onClick={() => navigate("/fifo-workspace-management")}
             >
               Manage
             </Button>
@@ -932,14 +932,14 @@ const InventoryManager = () => {
         {/* Quick Actions - Compact horizontal bar */}
         <div className="flex flex-wrap gap-2 bg-card p-2 rounded-lg border">
           {isManager && (
-            <Button onClick={() => navigate("/qr-access-code")} size="sm" variant="default">
+            <Button onClick={() => navigate("/fifo-qr-access-code")} size="sm" variant="default">
               <QRCodeSVG value="qr" className="w-3 h-3 mr-1 opacity-0" />
               <span className="ml-[-16px]">QR Code</span>
             </Button>
           )}
           {(isManager || pendingRequestsCount > 0) && (
             <Button 
-              onClick={() => navigate("/access-approval")} 
+              onClick={() => navigate("/fifo-access-approval")} 
               size="sm" 
               variant="outline"
               className="relative"

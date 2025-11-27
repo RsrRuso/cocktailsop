@@ -11,6 +11,8 @@ import { Download, Share2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+const anySupabase = supabase as any;
+
 export default function FifoQRAccessCode() {
   const { user } = useAuth();
   const { currentWorkspace, workspaces } = useFifoWorkspace();
@@ -30,7 +32,7 @@ export default function FifoQRAccessCode() {
 
     try {
       // Check if QR code already exists for this workspace
-      const { data: existing } = await supabase
+      const { data: existing } = await anySupabase
         .from('qr_codes')
         .select('*')
         .eq('workspace_id', workspaceId)
@@ -41,7 +43,7 @@ export default function FifoQRAccessCode() {
         setQrCode(existing);
       } else {
         // Create new QR code
-        const { data: newQR, error } = await supabase
+        const { data: newQR, error } = await anySupabase
           .from('qr_codes')
           .insert({
             workspace_id: workspaceId,
