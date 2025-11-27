@@ -8,9 +8,10 @@ import BottomNav from "@/components/BottomNav";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QRCodeSVG } from "qrcode.react";
-import { Download, Share2, Copy, Check, ArrowLeft } from "lucide-react";
+import { Download, Share2, Copy, Check, ArrowLeft, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import jsPDF from "jspdf";
 
 const anySupabase = supabase as any;
 
@@ -122,6 +123,75 @@ export default function FifoQRAccessCode() {
     }
   };
 
+  const exportAccessRequestsPDF = async () => {
+    if (!selectedWorkspaceId) {
+      toast.error("Please select a workspace");
+      return;
+    }
+
+    try {
+      const workspace = workspaces.find(w => w.id === selectedWorkspaceId);
+
+      const { data: accessRequests, error } = await supabase
+        .from('access_requests')
+        .select('*')
+        .eq('workspace_id', selectedWorkspaceId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (!workspace || !accessRequests || accessRequests.length === 0) {
+        toast.info("No access requests to export");
+        return;
+      }
+
+      const pdf = new jsPDF();
+      pdf.setFontSize(18);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("FIFO Access Requests Report", 105, 20, { align: "center" });
+
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(`Workspace: ${workspace.name}`, 20, 35);
+      pdf.text(`Generated: ${new Date().toLocaleString()}`, 20, 42);
+      pdf.text(`Total Requests: ${accessRequests.length}`, 20, 49);
+
+      let yPos = 65;
+
+      accessRequests.forEach((request, index) => {
+        if (yPos > 270) {
+          pdf.addPage();
+          yPos = 20;
+        }
+
+        pdf.setFont("helvetica", "bold");
+        pdf.text(`Request #${index + 1}`, 20, yPos);
+        pdf.setFont("helvetica", "normal");
+        yPos += 7;
+
+        pdf.text(`Email: ${request.user_email || 'N/A'}`, 25, yPos);
+        yPos += 6;
+        pdf.text(`Status: ${request.status}`, 25, yPos);
+        yPos += 6;
+        pdf.text(`Requested: ${new Date(request.created_at).toLocaleString()}`, 25, yPos);
+        yPos += 6;
+
+        if (request.approved_at) {
+          pdf.text(`Processed: ${new Date(request.approved_at).toLocaleString()}`, 25, yPos);
+          yPos += 6;
+        }
+
+        yPos += 8;
+      });
+
+      pdf.save(`FIFO-Access-Requests-${workspace.name}-${Date.now()}.pdf`);
+      toast.success("PDF exported successfully");
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error("Failed to export PDF");
+    }
+  };
+
   if (!user) {
     return null;
   }
@@ -130,15 +200,24 @@ export default function FifoQRAccessCode() {
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
 
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/inventory-manager")}
-          className="mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to FIFO Inventory
-        </Button>
+      <div className="container mx-auto px-4 pt-20 pb-6 max-w-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/inventory-manager")}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to FIFO Inventory
+          </Button>
+          <Button
+            variant="outline"
+            onClick={exportAccessRequestsPDF}
+            className="gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Export PDF
+          </Button>
+        </div>
 
         <h1 className="text-3xl font-bold mb-6">FIFO Workspace QR Access</h1>
 
