@@ -51,9 +51,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
   const BadgeIcon = professionalBadge.icon;
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-  const [theme, setTheme] = useState<'light' | 'grey' | 'dark' | 'black' | 'ocean' | 'sunset' | 'forest' | 'purple' | 'neon' | 'midnight'>(() => {
+  const [theme, setTheme] = useState<'light' | 'grey' | 'dark' | 'black' | 'ocean' | 'sunset' | 'forest' | 'purple' | 'neon' | 'midnight' | 'sakura' | 'arctic' | 'lava' | 'mint' | 'rosegold' | 'cyber'>(() => {
     const saved = localStorage.getItem('theme');
-    return (saved as 'light' | 'grey' | 'dark' | 'black' | 'ocean' | 'sunset' | 'forest' | 'purple' | 'neon' | 'midnight') || 'dark';
+    return (saved as 'light' | 'grey' | 'dark' | 'black' | 'ocean' | 'sunset' | 'forest' | 'purple' | 'neon' | 'midnight' | 'sakura' | 'arctic' | 'lava' | 'mint' | 'rosegold' | 'cyber') || 'dark';
   });
   const [badgeDialogOpen, setBadgeDialogOpen] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
@@ -234,9 +234,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
     setUnreadMessagesCount(count || 0);
   };
 
-  const changeTheme = (newTheme: 'light' | 'grey' | 'dark' | 'black' | 'ocean' | 'sunset' | 'forest' | 'purple' | 'neon' | 'midnight') => {
+  const changeTheme = (newTheme: 'light' | 'grey' | 'dark' | 'black' | 'ocean' | 'sunset' | 'forest' | 'purple' | 'neon' | 'midnight' | 'sakura' | 'arctic' | 'lava' | 'mint' | 'rosegold' | 'cyber') => {
     const html = document.documentElement;
-    html.classList.remove('light', 'grey', 'dark', 'black', 'ocean', 'sunset', 'forest', 'purple', 'neon', 'midnight');
+    html.classList.remove('light', 'grey', 'dark', 'black', 'ocean', 'sunset', 'forest', 'purple', 'neon', 'midnight', 'sakura', 'arctic', 'lava', 'mint', 'rosegold', 'cyber');
     html.classList.add(newTheme);
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
@@ -485,6 +485,30 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                   <DropdownMenuItem onClick={() => { lightTap(); changeTheme('midnight'); }} className="cursor-pointer ml-4">
                     <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-blue-900 to-slate-950" />
                     Midnight
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('sakura'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-pink-300 to-rose-500" />
+                    Sakura
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('arctic'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-cyan-200 to-blue-400" />
+                    Arctic
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('lava'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-red-600 to-orange-500" />
+                    Lava
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('mint'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-green-300 to-teal-400" />
+                    Mint
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('rosegold'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-rose-300 to-amber-400" />
+                    Rose Gold
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('cyber'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600" />
+                    Cyber
                   </DropdownMenuItem>
                 </CollapsibleContent>
               </Collapsible>
