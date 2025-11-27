@@ -185,15 +185,15 @@ export const FeedItem = memo(({
             {/* Like Button */}
             <button
                 onClick={onLike}
-                className={`relative flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-2 rounded-full transition-all duration-300 backdrop-blur-xl ${
+                className={`relative flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold transition-all duration-300 ${
                   isLiked 
-                    ? 'bg-transparent border border-red-500/50 text-red-500 hover:scale-110 hover:border-red-500/70' 
-                    : 'bg-transparent hover:bg-white/5 border border-white/20 hover:border-white/30 text-muted-foreground hover:text-primary hover:scale-105'
+                    ? 'text-red-500 hover:scale-110' 
+                    : 'text-muted-foreground hover:text-primary hover:scale-105'
                 }`}
               >
                 <Heart className={`w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300 ${isLiked ? 'fill-current scale-110' : ''}`} />
                 <span 
-                  className="text-xs sm:text-sm font-bold min-w-[16px] cursor-pointer"
+                  className="min-w-[16px] cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowLikes(true);
@@ -206,16 +206,16 @@ export const FeedItem = memo(({
             {/* Comment Button */}
             <button
                 onClick={() => setShowComments(true)}
-                className="relative flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border border-white/20 hover:border-white/30 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-105"
+                className="relative flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-105"
               >
                 <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="text-xs sm:text-sm font-bold min-w-[16px]">{item.comment_count || 0}</span>
+                <span className="min-w-[16px]">{item.comment_count || 0}</span>
               </button>
 
             {/* Share Button */}
             <button
                 onClick={onShare}
-                className="relative flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border border-white/20 hover:border-green-500/30 text-muted-foreground hover:text-green-500 transition-all duration-300 hover:scale-105"
+                className="relative flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold text-muted-foreground hover:text-green-500 transition-all duration-300 hover:scale-105"
               >
                 <Send className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -223,18 +223,16 @@ export const FeedItem = memo(({
             {/* AI Insights Button */}
             <button
                 onClick={() => setShowInsights(true)}
-                className="relative flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-2 rounded-full bg-transparent backdrop-blur-xl hover:bg-white/5 border border-purple-500/40 hover:border-purple-500/60 transition-all duration-300 hover:scale-105"
+                className="relative flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-[10px] sm:text-xs font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent hover:scale-105 transition-all duration-300"
               >
                 <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-pink-400 animate-pulse transition-colors" />
-                <span className="text-[10px] sm:text-xs font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent whitespace-nowrap">
-                  AI
-                </span>
+                <span className="whitespace-nowrap">AI</span>
               </button>
             
             {/* Views Counter */}
-            <div className="flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-2 rounded-full bg-transparent backdrop-blur-xl border border-white/20">
-              <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
-              <span className="text-xs sm:text-sm font-bold text-muted-foreground">{item.view_count || 0}</span>
+            <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold text-muted-foreground">
+              <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span>{item.view_count || 0}</span>
             </div>
           </div>
         </div>
