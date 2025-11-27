@@ -331,20 +331,7 @@ export const ReelsFullscreenViewer = ({
         )}
       </motion.div>
 
-      {/* Progress Indicator with Smooth Fade */}
-      <motion.div 
-        className="absolute top-16 left-1/2 -translate-x-1/2 z-30 text-white/60 text-xs"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ 
-          delay: 0.3,
-          type: "spring",
-          stiffness: 300,
-          damping: 25
-        }}
-      >
-        {currentIndex + 1} / {reels.length}
-      </motion.div>
+      {/* Progress Indicator - Hidden for cleaner UI */}
     </motion.div>
   );
 };
