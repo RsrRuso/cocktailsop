@@ -12,6 +12,9 @@ export const queryClient = new QueryClient({
       retryDelay: 100,
       networkMode: 'offlineFirst',
       placeholderData: (previousData: any) => previousData,
+      // CRITICAL: Deduplicate identical requests
+      refetchInterval: false,
+      refetchIntervalInBackground: false,
     },
     mutations: {
       retry: 1,
