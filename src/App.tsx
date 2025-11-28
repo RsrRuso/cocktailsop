@@ -20,7 +20,6 @@ import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import PasswordReset from "./pages/PasswordReset";
-import StoreManagement from "./pages/StoreManagement";
 
 // Lazy load ALL other routes including Home for code splitting
 const Home = lazy(() => import("./pages/Home"));
@@ -108,6 +107,7 @@ const StoresAdmin = lazy(() => import("./pages/StoresAdmin"));
 const MasterItems = lazy(() => import("./pages/MasterItems"));
 const WorkspaceManagement = lazy(() => import("./pages/WorkspaceManagement"));
 const FifoWorkspaceManagement = lazy(() => import("./pages/FifoWorkspaceManagement"));
+const StoreManagement = lazy(() => import("./pages/StoreManagement"));
 const FifoQRAccessCode = lazy(() => import("./pages/FifoQRAccessCode"));
 const FifoScanAccess = lazy(() => import("./pages/FifoScanAccess"));
 const FifoAccessApproval = lazy(() => import("./pages/FifoAccessApproval"));
