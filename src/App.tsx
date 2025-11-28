@@ -1,7 +1,7 @@
+import React, { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InAppNotificationProvider } from "@/contexts/InAppNotificationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
