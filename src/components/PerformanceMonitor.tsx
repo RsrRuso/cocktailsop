@@ -109,7 +109,7 @@ export const PerformanceMonitor = () => {
             <Clock className="h-5 w-5 text-muted-foreground" />
             <div>
               <div className="text-sm text-muted-foreground">Page Load</div>
-              <div className="text-2xl font-bold">{(metrics.pageLoadTime / 1000).toFixed(2)}s</div>
+              <div className="text-2xl font-bold">{isNaN(metrics.pageLoadTime) ? '0.00' : (metrics.pageLoadTime / 1000).toFixed(2)}s</div>
               <Badge variant={getPerformanceColor(metrics.pageLoadTime, { good: 1000, ok: 3000 })}>
                 {metrics.pageLoadTime < 1000 ? 'Excellent' : metrics.pageLoadTime < 3000 ? 'Good' : 'Slow'}
               </Badge>
@@ -120,7 +120,7 @@ export const PerformanceMonitor = () => {
             <Database className="h-5 w-5 text-muted-foreground" />
             <div>
               <div className="text-sm text-muted-foreground">API Calls</div>
-              <div className="text-2xl font-bold">{metrics.apiCallCount}</div>
+              <div className="text-2xl font-bold">{isNaN(metrics.apiCallCount) ? 0 : metrics.apiCallCount}</div>
               <Badge variant={getPerformanceColor(metrics.apiCallCount, { good: 5, ok: 10 })}>
                 {metrics.apiCallCount <= 5 ? 'Optimal' : metrics.apiCallCount <= 10 ? 'Good' : 'High'}
               </Badge>
@@ -131,7 +131,7 @@ export const PerformanceMonitor = () => {
             <Zap className="h-5 w-5 text-muted-foreground" />
             <div>
               <div className="text-sm text-muted-foreground">Cache Hit Rate</div>
-              <div className="text-2xl font-bold">{metrics.cacheHitRate}%</div>
+              <div className="text-2xl font-bold">{isNaN(metrics.cacheHitRate) ? 0 : metrics.cacheHitRate}%</div>
               <Badge variant={metrics.cacheHitRate >= 70 ? 'default' : metrics.cacheHitRate >= 40 ? 'secondary' : 'destructive'}>
                 {metrics.cacheHitRate >= 70 ? 'Excellent' : metrics.cacheHitRate >= 40 ? 'Good' : 'Poor'}
               </Badge>
@@ -142,7 +142,7 @@ export const PerformanceMonitor = () => {
             <Activity className="h-5 w-5 text-muted-foreground" />
             <div>
               <div className="text-sm text-muted-foreground">FPS</div>
-              <div className="text-2xl font-bold">{metrics.fps}</div>
+              <div className="text-2xl font-bold">{isNaN(metrics.fps) ? 0 : metrics.fps}</div>
               <Badge variant={getFPSColor(metrics.fps)}>
                 {metrics.fps >= 55 ? 'Smooth' : metrics.fps >= 30 ? 'Acceptable' : 'Laggy'}
               </Badge>
