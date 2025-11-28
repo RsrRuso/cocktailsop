@@ -12,13 +12,17 @@ export const deduplicateRequest = async <T>(
   // Check cache first
   const cached = requestCache.get(key);
   if (cached && now - cached.timestamp < CACHE_DURATION) {
+    console.log(`[DEDUP] Cache HIT for: ${key}`);
     return cached.data;
   }
 
   // If same request is already pending, return that promise
   if (pendingRequests.has(key)) {
+    console.log(`[DEDUP] Request PENDING for: ${key}, reusing existing promise`);
     return pendingRequests.get(key) as Promise<T>;
   }
+
+  console.log(`[DEDUP] Cache MISS for: ${key}, making new request`);
 
   // Create new request
   const promise = requestFn()

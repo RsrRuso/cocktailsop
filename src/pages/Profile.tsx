@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOptimizedProfileData } from "@/hooks/useOptimizedProfile";
+import { useRegionalRanking } from "@/hooks/useRegionalRanking";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import MusicTicker from "@/components/MusicTicker";
@@ -115,10 +116,22 @@ const Profile = () => {
   const [showAddExperience, setShowAddExperience] = useState(false);
   const [showAddCertification, setShowAddCertification] = useState(false);
   const [showAddRecognition, setShowAddRecognition] = useState(false);
-  const [regionalData, setRegionalData] = useState<{ maxScore: number; userRank: number; totalUsers: number } | null>(null);
-  
   const { data: userStatus, refetch: refetchStatus } = useUserStatus(user?.id || "");
   const { data: birthdayData } = useUserBirthday(user?.id || null);
+
+  // Calculate career score (memoized)
+  const careerMetrics = useMemo(() => {
+    if (!experiences || !certifications || !recognitions || !competitions) {
+      return { rawScore: 0, metrics: {} };
+    }
+    return calculateCareerScore(experiences, certifications, recognitions, competitions);
+  }, [experiences, certifications, recognitions, competitions]);
+
+  // Fetch regional ranking with caching and deduplication
+  const { data: regionalData } = useRegionalRanking(
+    profile?.region || null,
+    careerMetrics.rawScore
+  );
 
   useEffect(() => {
     if (!user) {
@@ -133,49 +146,20 @@ const Profile = () => {
     }
   }, [profile]);
 
-  // Update career score and fetch regional comparison when data changes
+  // Update career score in database (debounced to prevent excessive writes)
   useEffect(() => {
     const updateCareerScore = async () => {
-      if (!profile || !user?.id) return;
-
-      const rawMetrics = calculateCareerScore(experiences, certifications, recognitions, competitions);
-      const rawScore = rawMetrics.rawScore;
+      if (!profile || !user?.id || careerMetrics.rawScore === 0) return;
 
       await supabase
         .from('profiles')
-        .update({ career_score: rawScore })
+        .update({ career_score: careerMetrics.rawScore })
         .eq('id', user.id);
-
-      const region = profile.region || 'All';
-      
-      let query = supabase
-        .from('profiles')
-        .select('career_score');
-      
-      if (region !== 'All') {
-        query = query.eq('region', region);
-      }
-      
-      const { data: regionalProfiles } = await query
-        .order('career_score', { ascending: false });
-
-      if (regionalProfiles && regionalProfiles.length > 0) {
-        const scores = regionalProfiles.map(p => p.career_score || 0);
-        const maxScore = Math.max(...scores);
-        const userRank = scores.findIndex(s => s <= rawScore) + 1;
-        
-        setRegionalData({
-          maxScore,
-          userRank,
-          totalUsers: regionalProfiles.length
-        });
-      }
     };
 
-    if (profile && experiences && certifications && recognitions && competitions && user?.id) {
-      updateCareerScore();
-    }
-  }, [experiences, certifications, recognitions, competitions, profile, user?.id]);
+    const timeoutId = setTimeout(updateCareerScore, 1000); // Debounce 1 second
+    return () => clearTimeout(timeoutId);
+  }, [careerMetrics.rawScore, profile, user?.id]);
 
   const fetchStories = async () => {
     if (!user?.id) return;
