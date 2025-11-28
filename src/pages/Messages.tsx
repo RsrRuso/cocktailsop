@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { MessageCircle, Send, Search, Pin, Archive, MoreVertical, Clock, Users, Plus, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { CreateGroupDialog } from "@/components/CreateGroupDialog";
+import { ConversationItem } from "@/components/ConversationItem";
 
 interface Profile {
   id: string;
@@ -216,24 +217,28 @@ const Messages = () => {
     });
   };
 
-  const filteredConversations = conversations
-    .filter(conv => {
-      const matchesSearch = searchQuery === "" || 
-        conv.otherUser?.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        conv.otherUser?.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        conv.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesArchive = showArchived ? conv.isArchived : !conv.isArchived;
-      
-      return matchesSearch && matchesArchive;
-    })
-    .sort((a, b) => {
-      // Pinned chats first
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      // Then by last message time
-      return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
-    });
+  // Memoize filtered conversations to prevent recalculation
+  const filteredConversations = useMemo(() => {
+    return conversations
+      .filter(conv => {
+        const matchesSearch = searchQuery === "" || 
+          conv.otherUser?.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          conv.otherUser?.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          conv.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (conv.is_group && conv.group_name?.toLowerCase().includes(searchQuery.toLowerCase()));
+        
+        const matchesArchive = showArchived ? conv.isArchived : !conv.isArchived;
+        
+        return matchesSearch && matchesArchive;
+      })
+      .sort((a, b) => {
+        // Pinned chats first
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        // Then by last message time
+        return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+      });
+  }, [conversations, searchQuery, showArchived]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background/98 to-background pb-20">
