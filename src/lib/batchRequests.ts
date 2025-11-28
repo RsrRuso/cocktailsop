@@ -8,7 +8,7 @@ type BatchRequest = {
 const requestQueues = new Map<string, BatchRequest[]>();
 const batchTimeouts = new Map<string, NodeJS.Timeout>();
 
-const BATCH_DELAY = 5; // ms - reduced from 10ms for faster batching
+const BATCH_DELAY = 3; // 3ms - ultra-fast batching for Instagram-level speed
 
 export const batchRequest = <T>(
   key: string,
