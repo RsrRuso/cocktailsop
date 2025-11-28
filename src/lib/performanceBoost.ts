@@ -3,45 +3,41 @@
  * This file contains critical performance optimizations that run on app startup
  */
 
-import { connectionPool } from './connectionPool';
-import { clearCache } from './indexedDBCache';
-
 // Preload critical resources on idle
 export const initPerformanceBoost = () => {
-  // Clear old cache on app start (keep only fresh data)
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-      cleanupOldCache();
-    });
-  } else {
-    setTimeout(cleanupOldCache, 1000);
+  try {
+    // Prefetch DNS for external services
+    prefetchDNS();
+
+    // Enable HTTP/2 server push hints
+    enableResourceHints();
+
+    // Clean old cache in background (non-blocking)
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => {
+        cleanupOldCache();
+      });
+    } else {
+      setTimeout(cleanupOldCache, 2000);
+    }
+  } catch (error) {
+    console.error('Performance boost initialization failed:', error);
   }
-
-  // Prefetch DNS for external services
-  prefetchDNS();
-
-  // Enable HTTP/2 server push hints
-  enableResourceHints();
 };
 
 // Cleanup cache older than 24 hours
-const cleanupOldCache = async () => {
-  const lastCleanup = localStorage.getItem('lastCacheCleanup');
-  const now = Date.now();
-  
-  if (!lastCleanup || now - parseInt(lastCleanup) > 24 * 60 * 60 * 1000) {
-    try {
-      // Clear old IndexedDB cache
-      await Promise.all([
-        clearCache('stories'),
-        clearCache('posts'),
-        clearCache('reels'),
-      ]);
+const cleanupOldCache = () => {
+  try {
+    const lastCleanup = localStorage.getItem('lastCacheCleanup');
+    const now = Date.now();
+    
+    if (!lastCleanup || now - parseInt(lastCleanup) > 24 * 60 * 60 * 1000) {
+      // Clear localStorage cache markers
       localStorage.setItem('lastCacheCleanup', now.toString());
-      console.log('✅ Cache cleanup complete');
-    } catch (error) {
-      console.error('Cache cleanup failed:', error);
+      console.log('✅ Cache cleanup markers updated');
     }
+  } catch (error) {
+    console.error('Cache cleanup failed:', error);
   }
 };
 
