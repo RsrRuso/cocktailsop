@@ -37,13 +37,23 @@ export function MixologistGroupMembersDialog({
   }, [open, groupId]);
 
   const fetchMembers = async () => {
-    const { data, error } = await supabase
-      .from('mixologist_group_members')
-      .select('*, profiles(id, username, full_name, avatar_url)')
-      .eq('group_id', groupId);
-    
-    if (data && !error) {
-      setMembers(data);
+    try {
+      const { data, error } = await supabase
+        .from('mixologist_group_members')
+        .select('*, profiles(id, username, full_name, avatar_url)')
+        .eq('group_id', groupId);
+      
+      if (error) {
+        console.error('Error fetching members:', error);
+        toast.error('Failed to fetch members: ' + error.message);
+        return;
+      }
+      
+      console.log('Fetched members:', data);
+      setMembers(data || []);
+    } catch (err: any) {
+      console.error('Exception fetching members:', err);
+      toast.error('Error: ' + err.message);
     }
   };
 
