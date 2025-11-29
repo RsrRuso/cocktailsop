@@ -62,6 +62,34 @@ const BatchCalculator = () => {
   const [aiSuggestions, setAiSuggestions] = useState<any>(null);
   const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
 
+  const aiAnalysisText =
+    typeof aiSuggestions === "string"
+      ? aiSuggestions
+      : aiSuggestions
+      ? JSON.stringify(aiSuggestions, null, 2)
+      : "";
+
+  const weeklyAnalysis =
+    aiAnalysisText && aiAnalysisText.includes("**WEEKLY ANALYSIS:**")
+      ? aiAnalysisText
+          .split("**MONTHLY ANALYSIS:**")[0]
+          .replace("**WEEKLY ANALYSIS:**", "")
+          .trim()
+      : aiAnalysisText;
+
+  const monthlyAnalysis =
+    aiAnalysisText && aiAnalysisText.includes("**MONTHLY ANALYSIS:**")
+      ? aiAnalysisText
+          .split("**MONTHLY ANALYSIS:**")[1]
+          ?.split("**QUARTERLY ANALYSIS:**")[0]
+          ?.trim() || ""
+      : "";
+
+  const quarterlyAnalysis =
+    aiAnalysisText && aiAnalysisText.includes("**QUARTERLY ANALYSIS:**")
+      ? aiAnalysisText.split("**QUARTERLY ANALYSIS:**")[1]?.trim() || ""
+      : "";
+
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes();
   const { productions, createProduction } = useBatchProductions(
     selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined
@@ -1440,7 +1468,7 @@ const BatchCalculator = () => {
                             Week-by-Week Analysis
                           </p>
                           <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                            {aiSuggestions.split('**MONTHLY ANALYSIS:**')[0].replace('**WEEKLY ANALYSIS:**', '').trim()}
+                            {weeklyAnalysis || "No weekly data available"}
                           </p>
                         </div>
 
@@ -1450,7 +1478,7 @@ const BatchCalculator = () => {
                             Monthly Trends
                           </p>
                           <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                            {aiSuggestions.split('**MONTHLY ANALYSIS:**')[1]?.split('**QUARTERLY ANALYSIS:**')[0]?.trim() || 'No monthly data available'}
+                            {monthlyAnalysis || "No monthly data available"}
                           </p>
                         </div>
 
@@ -1460,7 +1488,7 @@ const BatchCalculator = () => {
                             Long-term Forecast
                           </p>
                           <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                            {aiSuggestions.split('**QUARTERLY ANALYSIS:**')[1]?.trim() || 'No quarterly data available'}
+                            {quarterlyAnalysis || "No quarterly data available"}
                           </p>
                         </div>
 
