@@ -644,9 +644,7 @@ const BatchCalculator = () => {
       // Calculate recipe-specific production totals
       let totalBatchesProduced = allProductions?.length || 0;
       let totalLitersProduced = 0;
-      let totalBottlesUsed = 0;
-      let totalMlConsumed = 0;
-      let overallIngredientsMap = new Map<string, { amount: number; unit: string }>();
+      let overallIngredientsMap = new Map<string, { amountMl: number; bottles: number; leftoverMl: number }>();
       
       if (allProductions) {
         allProductions.forEach((prod: any) => {
@@ -656,22 +654,15 @@ const BatchCalculator = () => {
             prod.batch_production_ingredients.forEach((ing: any) => {
               const key = `${ing.ingredient_name}`;
               const amountInMl = ing.unit === 'ml' ? parseFloat(ing.scaled_amount || 0) : parseFloat(ing.scaled_amount || 0) * 1000;
-              totalMlConsumed += amountInMl;
-              
-              // Calculate bottles used
-              const spirit = spiritsMap.get(ing.ingredient_name);
-              if (spirit && spirit.bottle_size_ml) {
-                const bottlesNeeded = Math.ceil(amountInMl / spirit.bottle_size_ml);
-                totalBottlesUsed += bottlesNeeded;
-              }
               
               const existing = overallIngredientsMap.get(key);
               if (existing) {
-                existing.amount += parseFloat(ing.scaled_amount || 0);
+                existing.amountMl += amountInMl;
               } else {
                 overallIngredientsMap.set(key, {
-                  amount: parseFloat(ing.scaled_amount || 0),
-                  unit: ing.unit
+                  amountMl: amountInMl,
+                  bottles: 0,
+                  leftoverMl: 0
                 });
               }
             });
@@ -679,17 +670,14 @@ const BatchCalculator = () => {
         });
       }
       
-      // Calculate leftover ml
-      let totalBottleCapacityMl = 0;
+      // Calculate bottles and leftover per ingredient
       overallIngredientsMap.forEach((data, name) => {
         const spirit = spiritsMap.get(name);
         if (spirit && spirit.bottle_size_ml) {
-          const amountInMl = data.unit === 'ml' ? data.amount : data.amount * 1000;
-          const bottlesNeeded = Math.ceil(amountInMl / spirit.bottle_size_ml);
-          totalBottleCapacityMl += bottlesNeeded * spirit.bottle_size_ml;
+          data.bottles = Math.ceil(data.amountMl / spirit.bottle_size_ml);
+          data.leftoverMl = (data.bottles * spirit.bottle_size_ml) - data.amountMl;
         }
       });
-      const leftoverMl = totalBottleCapacityMl - totalMlConsumed;
       
       // Modern Color Palette
       const deepBlue: [number, number, number] = [30, 58, 138];
@@ -889,10 +877,10 @@ const BatchCalculator = () => {
       
       doc.setTextColor(...slate);
       doc.setFillColor(240, 253, 244);
-      doc.roundedRect(12, yPos, 186, 32, 3, 3, 'F');
+      doc.roundedRect(12, yPos, 186, 20, 3, 3, 'F');
       doc.setDrawColor(...emerald);
       doc.setLineWidth(0.4);
-      doc.roundedRect(12, yPos, 186, 32, 3, 3, 'S');
+      doc.roundedRect(12, yPos, 186, 20, 3, 3, 'S');
       
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
@@ -912,60 +900,81 @@ const BatchCalculator = () => {
       doc.setTextColor(...slate);
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Unique Ingredients:", 16, yPos + 19);
+      doc.text("Unique Ingredients:", 110, yPos + 10);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...amber);
-      doc.text(`${overallIngredientsMap.size} Types`, 56, yPos + 19);
+      doc.text(`${overallIngredientsMap.size} Types`, 160, yPos + 10);
       
-      // Total bottles and leftover ml
-      doc.setTextColor(...slate);
-      doc.setFont("helvetica", "bold");
-      doc.text("Total Bottles Used:", 16, yPos + 25);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...deepBlue);
-      doc.text(`${totalBottlesUsed} Bottles`, 58, yPos + 25);
+      yPos += 24;
       
-      doc.setTextColor(...slate);
-      doc.setFont("helvetica", "bold");
-      doc.text("Leftover ML:", 110, yPos + 25);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...amber);
-      doc.text(`${leftoverMl.toFixed(0)} ml`, 142, yPos + 25);
-      
-      yPos += 36;
-      
-      // Ingredients consumed breakdown - expanded multi-column
+      // Ingredients breakdown table with bottles and leftover
       if (overallIngredientsMap.size > 0) {
-        doc.setFontSize(9);
+        doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...slate);
-        doc.text("Total Ingredients Consumed:", 16, yPos);
-        yPos += 6;
+        doc.setTextColor(...deepBlue);
+        doc.text("INGREDIENTS BREAKDOWN", 105, yPos, { align: "center" });
+        yPos += 7;
         
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "normal");
+        // Table header
+        doc.setFillColor(30, 58, 138);
+        doc.rect(12, yPos, 186, 7, 'F');
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(255, 255, 255);
+        doc.text("Ingredient Name", 14, yPos + 5);
+        doc.text("Qty (ml)", 100, yPos + 5);
+        doc.text("Bottles", 135, yPos + 5);
+        doc.text("Leftover (ml)", 165, yPos + 5);
+        yPos += 7;
         
-        let col = 0;
-        let rowY = yPos;
-        Array.from(overallIngredientsMap.entries()).forEach(([name, data]) => {
-          const xPos = 16 + (col * 62);
-          const displayName = name.length > 18 ? name.substring(0, 18) + '...' : name;
-          doc.setTextColor(...slate);
-          doc.text(`• ${displayName}:`, xPos, rowY);
-          doc.setTextColor(...emerald);
-          doc.setFont("helvetica", "bold");
-          doc.text(`${data.amount.toFixed(1)} ${data.unit}`, xPos + 30, rowY);
-          doc.setFont("helvetica", "normal");
-          
-          col++;
-          if (col >= 3) {
-            col = 0;
-            rowY += 5;
+        // Table rows
+        const ingredientsArray = Array.from(overallIngredientsMap.entries());
+        ingredientsArray.forEach(([name, data], idx) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+            
+            // Repeat header on new page
+            doc.setFillColor(30, 58, 138);
+            doc.rect(12, yPos, 186, 7, 'F');
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(255, 255, 255);
+            doc.text("Ingredient Name", 14, yPos + 5);
+            doc.text("Qty (ml)", 100, yPos + 5);
+            doc.text("Bottles", 135, yPos + 5);
+            doc.text("Leftover (ml)", 165, yPos + 5);
+            yPos += 7;
           }
+          
+          // Alternate row colors
+          if (idx % 2 === 0) {
+            doc.setFillColor(249, 250, 251);
+            doc.rect(12, yPos, 186, 6, 'F');
+          }
+          
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(...slate);
+          
+          // Truncate long names
+          const maxNameLength = 40;
+          const displayName = name.length > maxNameLength ? name.substring(0, maxNameLength) + '...' : name;
+          doc.text(displayName, 14, yPos + 4);
+          
+          doc.setTextColor(...emerald);
+          doc.text(data.amountMl.toFixed(0), 100, yPos + 4);
+          
+          doc.setTextColor(...deepBlue);
+          doc.text(data.bottles.toString(), 135, yPos + 4);
+          
+          doc.setTextColor(...amber);
+          doc.text(data.leftoverMl.toFixed(0), 165, yPos + 4);
+          
+          yPos += 6;
         });
         
-        if (col > 0) rowY += 5;
-        yPos = rowY + 6;
+        yPos += 4;
       }
 
       // Notes Section - if exists (expanded)
