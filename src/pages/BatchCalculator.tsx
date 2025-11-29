@@ -638,18 +638,6 @@ const BatchCalculator = () => {
         throw productionError;
       }
 
-      // Optimistically update local cache so UI updates immediately
-      const batchQueryKey: any[] = [
-        "batch-productions",
-        selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined,
-        selectedGroupId,
-      ];
-
-      queryClient.setQueryData(batchQueryKey, (oldData: any) => {
-        if (!oldData) return oldData;
-        return oldData.filter((p: any) => p.id !== productionId);
-      });
-
       await queryClient.invalidateQueries({ queryKey: ["batch-productions"] });
       toast.success("Batch production deleted");
     } catch (error) {
