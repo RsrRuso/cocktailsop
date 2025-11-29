@@ -170,20 +170,32 @@ const BatchCalculator = () => {
       });
 
       if (response.data?.result) {
-        toast.success("AI suggestions loaded!");
         try {
-          const suggested = JSON.parse(response.data.result);
-          if (Array.isArray(suggested)) {
+          // Extract JSON from AI response (handles markdown code blocks)
+          let jsonText = response.data.result;
+          const jsonMatch = jsonText.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            jsonText = jsonMatch[0];
+          }
+          
+          const suggested = JSON.parse(jsonText);
+          if (Array.isArray(suggested) && suggested.length > 0) {
             setIngredients(suggested.map((ing: any, idx: number) => ({
               id: `${Date.now()}-${idx}`,
               name: ing.name || "",
               amount: String(ing.amount || ""),
               unit: ing.unit || "ml"
             })));
+            toast.success("AI suggestions loaded!");
+          } else {
+            toast.error("No ingredients suggested");
           }
         } catch (e) {
+          console.error("Parse error:", e, "Response:", response.data.result);
           toast.error("Could not parse AI suggestions");
         }
+      } else if (response.error) {
+        toast.error(response.error.message || "Failed to get AI suggestions");
       }
     } catch (error) {
       toast.error("Failed to get AI suggestions");
