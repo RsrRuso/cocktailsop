@@ -1180,10 +1180,8 @@ const BatchCalculator = () => {
         };
         
         const dailyAvg7Days = calculateDailyAvgForWindow(7);
-        const dailyAvg14Days = calculateDailyAvgForWindow(14);
-        const dailyAvg30Days = calculateDailyAvgForWindow(30);
-        const dailyAvg90Days = calculateDailyAvgForWindow(90);
         
+        const dailyAvg30Days = calculateDailyAvgForWindow(30);
         const trendFactor = dailyAvg30Days > 0 ? dailyAvg7Days / dailyAvg30Days : 1;
         const trendPercent = ((trendFactor - 1) * 100).toFixed(1);
         
@@ -1191,9 +1189,9 @@ const BatchCalculator = () => {
         
         const suggestedDaily = dailyAvg7Days * buffer;
         const suggestedWeekly = dailyAvg7Days * buffer * 7;
-        const suggestedBiWeekly = dailyAvg14Days * buffer * 14;
-        const suggestedMonthly = dailyAvg30Days * buffer * 30;
-        const suggestedQuarterly = dailyAvg90Days * buffer * 90;
+        const suggestedBiWeekly = dailyAvg7Days * buffer * 14;
+        const suggestedMonthly = dailyAvg7Days * buffer * 30;
+        const suggestedQuarterly = dailyAvg7Days * buffer * 90;
         
         // Batch card with enhanced visuals
         const bgColor = index % 2 === 0 ? [248, 250, 252] as [number, number, number] : [255, 255, 255] as [number, number, number];
@@ -1827,25 +1825,23 @@ const BatchCalculator = () => {
                           return totalInWindow / days;
                         };
                         
-                        // Calculate daily average for each period window
+                        // Calculate daily average from last 7 days
                         const dailyAvg7Days = calculateDailyAvgForWindow(7);
-                        const dailyAvg14Days = calculateDailyAvgForWindow(14);
-                        const dailyAvg30Days = calculateDailyAvgForWindow(30);
-                        const dailyAvg90Days = calculateDailyAvgForWindow(90);
                         
                         // Calculate trend based on 7-day vs 30-day comparison
+                        const dailyAvg30Days = calculateDailyAvgForWindow(30);
                         const trendFactor = dailyAvg30Days > 0 ? dailyAvg7Days / dailyAvg30Days : 1;
                         const trendPercent = ((trendFactor - 1) * 100).toFixed(1);
                         
                         // Overall base daily average
                         const baseDailyAvg = totalLiters / daysDiff;
                         
-                        // Calculate suggested par levels using period-specific daily averages × buffer
+                        // All par levels based on 7-day daily average × period length × buffer
                         const suggestedDaily = dailyAvg7Days * buffer;
                         const suggestedWeekly = dailyAvg7Days * buffer * 7;
-                        const suggestedBiWeekly = dailyAvg14Days * buffer * 14;
-                        const suggestedMonthly = dailyAvg30Days * buffer * 30;
-                        const suggestedQuarterly = dailyAvg90Days * buffer * 90;
+                        const suggestedBiWeekly = dailyAvg7Days * buffer * 14;
+                        const suggestedMonthly = dailyAvg7Days * buffer * 30;
+                        const suggestedQuarterly = dailyAvg7Days * buffer * 90;
 
                         return (
                           <div key={name} className="p-4 bg-muted/20 rounded-lg border border-border/50">
