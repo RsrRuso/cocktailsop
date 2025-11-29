@@ -108,29 +108,13 @@ const BatchCalculator = () => {
       : "";
 
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes(selectedGroupId);
-  const { productions, createProduction, updateProduction, deleteProduction, getProductionIngredients } = useBatchProductions(
+  const { productions, createProduction, getProductionIngredients } = useBatchProductions(
     selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined,
     selectedGroupId
   );
   const { groups, createGroup } = useMixologistGroups();
   const { spirits, calculateBottles } = useMasterSpirits();
   const queryClient = useQueryClient();
-
-  const normalizeName = (name: string) =>
-    name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-
-  const findSpirit = (ingredientName: string) => {
-    if (!spirits) return undefined;
-    const normalizedIngredient = normalizeName(ingredientName);
-    return spirits.find((s) => {
-      const normalizedSpirit = normalizeName(s.name);
-      return (
-        normalizedSpirit === normalizedIngredient ||
-        normalizedSpirit.includes(normalizedIngredient) ||
-        normalizedIngredient.includes(normalizedSpirit)
-      );
-    });
-  };
 
   // Set default producer to current user
   useEffect(() => {
@@ -510,35 +494,59 @@ const BatchCalculator = () => {
 
     const selectedUser = registeredUsers.find(u => u.id === producedByUserId);
 
-    const ingredientPayload = calculation.scaledIngredients.map(ing => ({
-      ingredient_name: ing.name,
-      original_amount: parseFloat(ing.amount),
-      scaled_amount: parseFloat(ing.scaledAmount),
-      unit: ing.unit,
-    }));
-
     if (editingProductionId) {
-      // Update existing production via shared hook
-      updateProduction({
-        productionId: editingProductionId,
-        production: {
-          recipe_id: recipeId!,
-          batch_name: recipeName,
-          target_serves: Math.round(actualServings),
-          target_liters: totalLiters,
-          produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
-          produced_by_user_id: producedByUserId,
-          qr_code_data: qrData,
-          notes,
-          group_id: selectedGroupId || undefined,
-        },
-        ingredients: ingredientPayload,
-      });
+      // Update existing production
+      try {
+        // Update production
+        const { error: productionError } = await supabase
+          .from('batch_productions')
+          .update({
+            batch_name: recipeName,
+            target_serves: Math.round(actualServings),
+            target_liters: totalLiters,
+            produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
+            produced_by_user_id: producedByUserId,
+            qr_code_data: qrData,
+            notes: notes,
+            group_id: selectedGroupId
+          })
+          .eq('id', editingProductionId);
+
+        if (productionError) throw productionError;
+
+        // Delete old ingredients
+        await supabase
+          .from('batch_production_ingredients')
+          .delete()
+          .eq('production_id', editingProductionId);
+
+        // Insert new ingredients
+        const { error: ingredientsError } = await supabase
+          .from('batch_production_ingredients')
+          .insert(
+            calculation.scaledIngredients.map(ing => ({
+              production_id: editingProductionId,
+              ingredient_name: ing.name,
+              original_amount: parseFloat(ing.amount),
+              scaled_amount: parseFloat(ing.scaledAmount),
+              unit: ing.unit
+            }))
+          );
+
+        if (ingredientsError) throw ingredientsError;
+
+        await queryClient.invalidateQueries({ queryKey: ["batch-productions"] });
+        toast.success("Batch production updated!");
+      } catch (error) {
+        console.error("Update error:", error);
+        toast.error("Failed to update production");
+        return;
+      }
     } else {
       // Create new production
       createProduction({
         production: {
-          recipe_id: recipeId!,
+          recipe_id: recipeId,
           batch_name: recipeName,
           target_serves: Math.round(actualServings),
           target_liters: totalLiters,
@@ -547,10 +555,15 @@ const BatchCalculator = () => {
           produced_by_email: selectedUser ? null : null,
           produced_by_user_id: producedByUserId,
           qr_code_data: qrData,
-          notes,
-          group_id: selectedGroupId || undefined,
+          notes: notes,
+          group_id: selectedGroupId
         },
-        ingredients: ingredientPayload,
+        ingredients: calculation.scaledIngredients.map(ing => ({
+          ingredient_name: ing.name,
+          original_amount: parseFloat(ing.amount),
+          scaled_amount: parseFloat(ing.scaledAmount),
+          unit: ing.unit
+        }))
       });
     }
 
@@ -562,6 +575,7 @@ const BatchCalculator = () => {
     setTargetLiters("");
     setEditingProductionId(null);
   };
+
   const handleEditProduction = async (production: any) => {
     // Fetch production ingredients
     const { data: prodIngredients } = await supabase
@@ -591,20 +605,33 @@ const BatchCalculator = () => {
     toast.success("Production loaded for editing");
   };
 
-  const handleDeleteProduction = (productionId: string) => {
-    if (confirm("Are you sure you want to delete this batch production?")) {
-      // Optimistically update the current history list so the card disappears immediately
-      queryClient.setQueryData(
-        [
-          "batch-productions",
-          selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined,
-          selectedGroupId,
-        ],
-        (old: any) => (old ? old.filter((p: any) => p.id !== productionId) : old)
-      );
+  const handleDeleteProduction = async (productionId: string) => {
+    if (!confirm("Are you sure you want to delete this batch production?")) {
+      return;
+    }
 
-      // Also trigger the backend deletion mutation
-      deleteProduction(productionId);
+    try {
+      // Delete production ingredients first
+      const { error: ingredientsError } = await supabase
+        .from('batch_production_ingredients')
+        .delete()
+        .eq('production_id', productionId);
+
+      if (ingredientsError) throw ingredientsError;
+
+      // Delete production
+      const { error: productionError } = await supabase
+        .from('batch_productions')
+        .delete()
+        .eq('id', productionId);
+
+      if (productionError) throw productionError;
+
+      await queryClient.invalidateQueries({ queryKey: ["batch-productions"] });
+      toast.success("Batch production deleted");
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete production");
     }
   };
 
@@ -723,15 +750,7 @@ const BatchCalculator = () => {
         .from('master_spirits')
         .select('*');
       
-      const spiritsMap = new Map<string, any>();
-      if (masterSpirits) {
-        masterSpirits.forEach((s: any) => {
-          const key = normalizeName(s.name);
-          if (!spiritsMap.has(key)) {
-            spiritsMap.set(key, s);
-          }
-        });
-      }
+      const spiritsMap = new Map(masterSpirits?.map(s => [s.name, s]) || []);
 
       const doc = new jsPDF();
       
@@ -766,7 +785,7 @@ const BatchCalculator = () => {
       
       // Calculate bottles and leftover per ingredient
       overallIngredientsMap.forEach((data, name) => {
-        const spirit = spiritsMap.get(normalizeName(name));
+        const spirit = spiritsMap.get(name);
         if (spirit && spirit.bottle_size_ml) {
           const fullBottles = Math.floor(data.amountMl / spirit.bottle_size_ml);
           const leftoverMl = data.amountMl % spirit.bottle_size_ml;
@@ -815,335 +834,375 @@ const BatchCalculator = () => {
       });
       doc.text(productionDate, 105, 38, { align: 'center' });
       
-      // Compact Batch Summary
+      // Batch Summary Card - Modern Design
       let yPos = 45;
       
-      // Single compact header card
+      // Left card - Batch Info
       doc.setFillColor(255, 255, 255);
-      doc.rect(12, yPos, 120, 14, 'F');
+      doc.roundedRect(12, yPos, 88, 38, 3, 3, 'F');
       doc.setDrawColor(...skyBlue);
-      doc.setLineWidth(0.3);
-      doc.rect(12, yPos, 120, 14, 'S');
+      doc.setLineWidth(0.4);
+      doc.roundedRect(12, yPos, 88, 38, 3, 3, 'S');
       
+      // Accent corner
       doc.setFillColor(...deepBlue);
-      doc.rect(12, yPos, 120, 4, 'F');
-      doc.setFontSize(6);
+      doc.roundedRect(12, yPos, 88, 7, 3, 3, 'F');
+      
+      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(255, 255, 255);
-      doc.text("BATCH DETAILS", 72, yPos + 2.5, { align: 'center' });
+      doc.text("BATCH DETAILS", 56, yPos + 4.5, { align: 'center' });
       
       doc.setTextColor(...slate);
-      doc.setFontSize(5);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Batch:", 14, yPos + 7);
+      doc.text("Batch:", 16, yPos + 13);
       doc.setFont("helvetica", "normal");
-      const batchName = production.batch_name.length > 40 ? production.batch_name.substring(0, 40) + '...' : production.batch_name;
-      doc.text(batchName, 28, yPos + 7);
+      const batchName = production.batch_name.length > 28 ? production.batch_name.substring(0, 28) + '...' : production.batch_name;
+      doc.text(batchName, 16, yPos + 19);
       
       doc.setFont("helvetica", "bold");
-      doc.text("Vol:", 14, yPos + 10);
+      doc.text("Volume:", 16, yPos + 25);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...emerald);
-      doc.text(`${production.target_liters.toFixed(2)}L`, 24, yPos + 10);
+      doc.setFontSize(10);
+      doc.text(`${production.target_liters.toFixed(2)} L`, 38, yPos + 25);
       
       doc.setTextColor(...slate);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Serves:", 50, yPos + 10);
+      doc.text("Servings:", 16, yPos + 31);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...amber);
-      doc.text(`${production.target_serves || 0}`, 65, yPos + 10);
+      doc.setFontSize(10);
+      doc.text(`${production.target_serves || 0}`, 40, yPos + 31);
       
       doc.setTextColor(...slate);
+      doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.text("By:", 14, yPos + 13);
+      doc.text("Producer:", 16, yPos + 36);
       doc.setFont("helvetica", "normal");
       const producerName = production.produced_by_name || 'N/A';
-      doc.text(producerName.length > 30 ? producerName.substring(0, 30) + '...' : producerName, 22, yPos + 13);
+      doc.text(producerName.length > 25 ? producerName.substring(0, 25) + '...' : producerName, 38, yPos + 36);
       
-      // Compact QR Code
+      // Right card - QR Code Sticker
       if (production.qr_code_data) {
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(110, yPos, 88, 38, 3, 3, 'F');
+        doc.setDrawColor(...skyBlue);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(110, yPos, 88, 38, 3, 3, 'S');
+        
+        // Accent corner
+        doc.setFillColor(...deepBlue);
+        doc.roundedRect(110, yPos, 88, 7, 3, 3, 'F');
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(255, 255, 255);
+        doc.text("WATERPROOF STICKER", 154, yPos + 4.5, { align: 'center' });
+        
+        // High-res QR for sticker printing
         const qrCodeDataUrl = await QRCode.toDataURL(production.qr_code_data, {
-          width: 400,
+          width: 1000,
           margin: 1,
-          color: { dark: '#000000', light: '#FFFFFF' },
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          },
           errorCorrectionLevel: 'H'
         });
-        doc.addImage(qrCodeDataUrl, 'PNG', 140, yPos + 1, 12, 12);
-        doc.setFontSize(4);
+        doc.addImage(qrCodeDataUrl, 'PNG', 143, yPos + 10, 22, 22);
+        
+        doc.setFontSize(7);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(...slate);
-        doc.text("QR", 146, yPos + 13.5, { align: 'center' });
+        doc.text(production.batch_name.substring(0, 30), 154, yPos + 35, { align: 'center' });
       }
       
-      yPos += 16;
+      yPos += 43;
       
-      // Compact Ingredients Section
+      // Ingredients Section with modern styling
       doc.setFillColor(...deepBlue);
-      doc.rect(12, yPos, 186, 5, 'F');
+      doc.rect(12, yPos, 186, 8, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(7);
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("INGREDIENTS", 15, yPos + 3.5);
-      yPos += 6;
+      doc.text("INGREDIENTS", 15, yPos + 5.5);
+      yPos += 12;
       
       doc.setTextColor(...slate);
       doc.setFontSize(8);
       
-      // Compact ingredients table
+      // Modern ingredients table
       if (ingredients && ingredients.length > 0) {
-        // Compact table header
+        // Table header with gradient effect
         doc.setFont("helvetica", "bold");
         doc.setFillColor(...deepBlue);
-        doc.rect(12, yPos, 186, 4, 'F');
+        doc.rect(12, yPos - 2, 186, 7, 'F');
         doc.setTextColor(255, 255, 255);
-        doc.setFontSize(6);
-        doc.text("#", 14, yPos + 2.5);
-        doc.text("Ingredient", 20, yPos + 2.5);
-        doc.text("Qty", 145, yPos + 2.5);
-        doc.text("Unit", 170, yPos + 2.5);
-        yPos += 5;
+        doc.text("#", 15, yPos + 2.5);
+        doc.text("Ingredient Name", 25, yPos + 2.5);
+        doc.text("Quantity", 145, yPos + 2.5);
+        doc.text("Unit", 175, yPos + 2.5);
+        yPos += 8;
         
-        // Compact table rows
+        // Table rows with alternating colors
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(5);
+        let totalIngredientsQty = 0;
         
         ingredients.forEach((ing: any, index: number) => {
           if (index % 2 === 0) {
             doc.setFillColor(...lightGray);
-            doc.rect(12, yPos - 1, 186, 3.5, 'F');
+            doc.rect(12, yPos - 2, 186, 5.5, 'F');
           }
           
           doc.setTextColor(...slate);
-          doc.text(`${index + 1}`, 14, yPos + 1.5);
-          const ingName = ing.ingredient_name.length > 45 ? ing.ingredient_name.substring(0, 45) + '...' : ing.ingredient_name;
-          doc.text(ingName, 20, yPos + 1.5);
+          doc.text(`${index + 1}`, 15, yPos + 2);
+          const ingName = ing.ingredient_name.length > 55 ? ing.ingredient_name.substring(0, 55) + '...' : ing.ingredient_name;
+          doc.text(ingName, 25, yPos + 2);
           doc.setTextColor(...emerald);
           doc.setFont("helvetica", "bold");
-          doc.text(ing.scaled_amount.toString(), 145, yPos + 1.5);
+          doc.text(ing.scaled_amount.toString(), 145, yPos + 2);
           doc.setFont("helvetica", "normal");
           doc.setTextColor(...slate);
-          doc.text(ing.unit, 170, yPos + 1.5);
-          yPos += 3.5;
+          doc.text(ing.unit, 175, yPos + 2);
+          totalIngredientsQty += parseFloat(ing.scaled_amount);
+          yPos += 5.5;
         });
         
-        // Compact total row
+        // Total row with emphasis
         doc.setFillColor(...emerald);
-        doc.rect(12, yPos - 1, 186, 4, 'F');
+        doc.rect(12, yPos - 2, 186, 7, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(6);
-        doc.text("TOTAL:", 20, yPos + 2);
-        doc.text(`${ingredients.length} Items`, 145, yPos + 2);
-        yPos += 5;
+        doc.text("TOTAL:", 25, yPos + 2.5);
+        doc.text(`${ingredients.length} Items`, 145, yPos + 2.5);
+        yPos += 10;
         
         // Separate ingredients into sharp bottles and required ml
         const sharpBottles: any[] = [];
         const requiredMlItems: any[] = [];
-        let summaryTotalMl = 0;
-        let summaryTotalBottles = 0;
-        let summaryTotalLeftoverMl = 0;
         
-          ingredients.forEach((ing: any) => {
-            const amountInMl = ing.unit === 'ml'
-              ? parseFloat(ing.scaled_amount)
-              : parseFloat(ing.scaled_amount) * 1000;
-            const spirit = spiritsMap.get(normalizeName(ing.ingredient_name));
-            
-            summaryTotalMl += amountInMl;
-            
-            if (spirit && spirit.bottle_size_ml) {
-              const fullBottles = Math.floor(amountInMl / spirit.bottle_size_ml);
-              const leftoverMl = amountInMl % spirit.bottle_size_ml;
-              
-              summaryTotalBottles += fullBottles;
-              summaryTotalLeftoverMl += leftoverMl;
-
-              if (fullBottles > 0) {
-                sharpBottles.push({
-                  name: ing.ingredient_name,
-                  bottles: fullBottles,
-                });
-              }
-
-              if (leftoverMl > 0) {
-                requiredMlItems.push({
-                  name: ing.ingredient_name,
-                  mlNeeded: leftoverMl,
-                });
-              }
-            } else {
-              // No bottle size defined - show total ML as required
-              requiredMlItems.push({
-                name: ing.ingredient_name,
-                mlNeeded: amountInMl,
-              });
-            }
-          });
-        
-        // Compact Sharp Bottles section (no page break)
-        doc.setFillColor(...emerald);
-        doc.rect(12, yPos, 186, 4, 'F');
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(255, 255, 255);
-        doc.text("SHARP BOTTLES", 15, yPos + 2.5);
-        yPos += 5;
-        
-        // Show all ingredients with bottle calculations
-        const allIngredientsWithBottles: any[] = [];
         ingredients.forEach((ing: any) => {
-          const amountInMl = ing.unit === 'ml' ? parseFloat(ing.scaled_amount) : parseFloat(ing.scaled_amount) * 1000;
-          const spirit = spiritsMap.get(normalizeName(ing.ingredient_name));
+          const amountInMl = ing.unit === 'ml'
+            ? parseFloat(ing.scaled_amount)
+            : parseFloat(ing.scaled_amount) * 1000;
+          const spirit = spiritsMap.get(ing.ingredient_name);
           
           if (spirit && spirit.bottle_size_ml) {
             const fullBottles = Math.floor(amountInMl / spirit.bottle_size_ml);
-            allIngredientsWithBottles.push({
-              name: ing.ingredient_name,
-              bottles: fullBottles,
-            });
+            const leftoverMl = amountInMl % spirit.bottle_size_ml;
+
+            if (fullBottles > 0) {
+              sharpBottles.push({
+                name: ing.ingredient_name,
+                bottles: fullBottles,
+              });
+            }
+
+            if (leftoverMl > 0) {
+              requiredMlItems.push({
+                name: ing.ingredient_name,
+                mlNeeded: leftoverMl,
+              });
+            }
           } else {
-            allIngredientsWithBottles.push({
+            // No bottle size defined - show total ML as required
+            requiredMlItems.push({
               name: ing.ingredient_name,
-              bottles: 0,
+              mlNeeded: amountInMl,
             });
           }
         });
         
-        doc.setFillColor(...slate);
-        doc.rect(12, yPos, 186, 3.5, 'F');
-        doc.setFontSize(5);
+        // ALWAYS show Sharp Bottles section
+        const sharpEstimatedHeight = 20 + (sharpBottles.length * 5.5);
+        if (yPos + sharpEstimatedHeight > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFillColor(...emerald);
+        doc.rect(12, yPos, 186, 7, 'F');
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
-        doc.text("Ingredient", 14, yPos + 2);
-        doc.text("Bottles", 140, yPos + 2);
-        yPos += 4;
+        doc.text("SHARP BOTTLES", 15, yPos + 4.5);
+        yPos += 8;
         
-        doc.setFont('helvetica', 'normal');
-        allIngredientsWithBottles.forEach((item, idx) => {
-          if (idx % 2 === 0) {
-            doc.setFillColor(249, 250, 251);
-            doc.rect(12, yPos, 186, 3, 'F');
-          }
-          
-          doc.setFontSize(5);
-          doc.setTextColor(...slate);
-          const displayName = item.name.length > 40 ? item.name.substring(0, 40) + '...' : item.name;
-          doc.text(displayName, 14, yPos + 1.8);
-          
-          doc.setTextColor(...deepBlue);
-          doc.setFont('helvetica', 'bold');
-          doc.text(item.bottles + " btl", 140, yPos + 1.8);
-          
-          yPos += 3;
-        });
-        
-        yPos += 2;
-        
-        // Compact Required ML section (no page break)
-        doc.setFillColor(...amber);
-        doc.rect(12, yPos, 186, 4, 'F');
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(255, 255, 255);
-        doc.text("REQUIRED ML", 15, yPos + 2.5);
-        yPos += 5;
-        
-        if (requiredMlItems.length > 0) {
+        if (sharpBottles.length > 0) {
           doc.setFillColor(...slate);
-          doc.rect(12, yPos, 186, 3.5, 'F');
-          doc.setFontSize(5);
+          doc.rect(12, yPos, 186, 6, 'F');
+          doc.setFontSize(8);
           doc.setFont('helvetica', 'bold');
           doc.setTextColor(255, 255, 255);
-          doc.text("Ingredient", 14, yPos + 2);
-          doc.text("ML", 140, yPos + 2);
-          yPos += 4;
+          doc.text("Ingredient", 14, yPos + 4);
+          doc.text("Bottles", 135, yPos + 4);
+          yPos += 7;
           
           doc.setFont('helvetica', 'normal');
-          requiredMlItems.forEach((item, idx) => {
-            if (idx % 2 === 0) {
-              doc.setFillColor(249, 250, 251);
-              doc.rect(12, yPos, 186, 3, 'F');
+          sharpBottles.forEach((item, idx) => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
             }
             
-            doc.setFontSize(5);
+            if (idx % 2 === 0) {
+              doc.setFillColor(249, 250, 251);
+              doc.rect(12, yPos, 186, 5.5, 'F');
+            }
+            
+            doc.setFontSize(7);
             doc.setTextColor(...slate);
-            const displayName = item.name.length > 40 ? item.name.substring(0, 40) + '...' : item.name;
-            doc.text(displayName, 14, yPos + 1.8);
+            const maxNameLength = 42;
+            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
+            doc.text(displayName, 14, yPos + 3.5);
             
-            doc.setTextColor(...amber);
+            doc.setTextColor(...deepBlue);
             doc.setFont('helvetica', 'bold');
-            doc.text(item.mlNeeded.toFixed(0) + " ml", 140, yPos + 1.8);
+            doc.text(item.bottles.toString() + " btl", 135, yPos + 3.5);
             
-            yPos += 3;
+            yPos += 5.5;
           });
         } else {
           doc.setFillColor(249, 250, 251);
-          doc.rect(12, yPos, 186, 4, 'F');
-          doc.setFontSize(5);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(...amber);
-          doc.text(`Total ML: ${summaryTotalMl.toFixed(0)} ml | Extra ML: ${summaryTotalLeftoverMl.toFixed(0)} ml`, 105, yPos + 2.5, { align: 'center' });
-          yPos += 4;
+          doc.rect(12, yPos, 186, 8, 'F');
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(100, 116, 139);
+          doc.text("No full bottles required for this batch", 105, yPos + 5, { align: 'center' });
+          yPos += 8;
         }
         
-        yPos += 2;
+        yPos += 6;
+        
+        // ALWAYS show Required ML section
+        const reqEstimatedHeight = 20 + (requiredMlItems.length * 5.5);
+        if (yPos + reqEstimatedHeight > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFillColor(...amber);
+        doc.rect(12, yPos, 186, 7, 'F');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+        doc.text("REQUIRED ML", 15, yPos + 4.5);
+        yPos += 8;
+        
+        if (requiredMlItems.length > 0) {
+          doc.setFillColor(...slate);
+          doc.rect(12, yPos, 186, 6, 'F');
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("Ingredient", 14, yPos + 4);
+          doc.text("ML Needed", 135, yPos + 4);
+          yPos += 7;
+          
+          doc.setFont('helvetica', 'normal');
+          requiredMlItems.forEach((item, idx) => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+            
+            if (idx % 2 === 0) {
+              doc.setFillColor(249, 250, 251);
+              doc.rect(12, yPos, 186, 5.5, 'F');
+            }
+            
+            doc.setFontSize(7);
+            doc.setTextColor(...slate);
+            const maxNameLength = 42;
+            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
+            doc.text(displayName, 14, yPos + 3.5);
+            
+            doc.setTextColor(...amber);
+            doc.setFont('helvetica', 'bold');
+            doc.text(item.mlNeeded.toFixed(0) + " ml", 135, yPos + 3.5);
+            
+            yPos += 5.5;
+          });
+        } else {
+          doc.setFillColor(249, 250, 251);
+          doc.rect(12, yPos, 186, 8, 'F');
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(100, 116, 139);
+          doc.text("No additional ML required for this batch", 105, yPos + 5, { align: 'center' });
+          yPos += 8;
+        }
+        
+        yPos += 6;
       }
       
       doc.setTextColor(...slate);
       
-      // Compact Recipe Production Summary (no page break)
+      // Check space before Recipe Production Summary
+      if (yPos > 240) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      // Recipe-Specific Production Summary - Eye-catching design
       doc.setFillColor(...emerald);
-      doc.rect(12, yPos, 186, 4, 'F');
+      doc.rect(12, yPos, 186, 8, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(6);
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("RECIPE SUMMARY", 15, yPos + 2.5);
-      yPos += 5;
+      doc.text("RECIPE PRODUCTION SUMMARY", 15, yPos + 5.5);
+      yPos += 12;
       
       doc.setTextColor(...slate);
       doc.setFillColor(240, 253, 244);
-      doc.rect(12, yPos, 186, 8, 'F');
+      doc.roundedRect(12, yPos, 186, 20, 3, 3, 'F');
+      doc.setDrawColor(...emerald);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(12, yPos, 186, 20, 3, 3, 'S');
       
-      doc.setFontSize(5);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Batches:", 16, yPos + 3);
+      doc.text("Total Batches (This Recipe):", 16, yPos + 7);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...deepBlue);
-      doc.text(`${totalBatchesProduced}`, 35, yPos + 3);
+      doc.text(`${totalBatchesProduced} Batches`, 72, yPos + 7);
       
       doc.setTextColor(...slate);
       doc.setFont("helvetica", "bold");
-      doc.text("Volume:", 16, yPos + 6);
+      doc.text("Total Volume (This Recipe):", 16, yPos + 13);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...emerald);
-      doc.text(`${totalLitersProduced.toFixed(2)} L`, 35, yPos + 6);
+      doc.setFontSize(10);
+      doc.text(`${totalLitersProduced.toFixed(2)} L`, 72, yPos + 13);
       
       doc.setTextColor(...slate);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Ingredients:", 80, yPos + 4.5);
+      doc.text("Unique Ingredients:", 110, yPos + 10);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...amber);
-      doc.text(`${overallIngredientsMap.size}`, 110, yPos + 4.5);
+      doc.text(`${overallIngredientsMap.size} Types`, 160, yPos + 10);
       
-      yPos += 10;
+      yPos += 28;
       
-      // Compact ingredients breakdown (no page check)
+      // Ingredients breakdown table with bottles and leftover - Add page check
       if (overallIngredientsMap.size > 0) {
+        // Check if we need a new page for Overall sections
+        if (yPos > 200) {
+          doc.addPage();
+          yPos = 20;
+        }
         
         // Table rows
         const ingredientsArray = Array.from(overallIngredientsMap.entries());
         const overallSharpBottles: any[] = [];
         const overallRequiredMlItems: any[] = [];
-        let overallSummaryTotalMl = 0;
-        let overallSummaryTotalBottles = 0;
-        let overallSummaryTotalLeftoverMl = 0;
         
         // Split into sharp bottles and required ML
         ingredientsArray.forEach(([name, data]) => {
-          overallSummaryTotalMl += data.amountMl;
-          overallSummaryTotalBottles += data.bottles;
-          overallSummaryTotalLeftoverMl += data.leftoverMl;
-          
           if (data.bottleSize) {
             // Has bottle size defined - can calculate bottles
             if (data.bottles > 0) {
@@ -1168,126 +1227,166 @@ const BatchCalculator = () => {
           }
         });
         
-        // Compact Overall Sharp Bottles (no page break)
+        // ALWAYS show Overall Sharp Bottles section (even if empty, show message)
+        if (yPos > 230) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
         doc.setFillColor(...emerald);
-        doc.rect(12, yPos, 186, 4, 'F');
-        doc.setFontSize(6);
+        doc.rect(12, yPos, 186, 7, 'F');
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
-        doc.text("OVERALL SHARP BOTTLES", 15, yPos + 2.5);
-        yPos += 5;
+        doc.text("OVERALL SHARP BOTTLES", 15, yPos + 4.5);
+        yPos += 8;
         
-        // Show all ingredients with bottle calculations
-        const allOverallIngredientsWithBottles = ingredientsArray.map(([name, data]) => ({
-          name,
-          bottles: data.bottles,
-        }));
-        
-        doc.setFillColor(...slate);
-        doc.rect(12, yPos, 186, 3.5, 'F');
-        doc.setFontSize(5);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(255, 255, 255);
-        doc.text("Ingredient", 14, yPos + 2);
-        doc.text("Bottles", 140, yPos + 2);
-        yPos += 4;
-        
-        doc.setFont('helvetica', 'normal');
-        allOverallIngredientsWithBottles.forEach((item, idx) => {
-          if (idx % 2 === 0) {
-            doc.setFillColor(249, 250, 251);
-            doc.rect(12, yPos, 186, 3, 'F');
-          }
-          
-          doc.setFontSize(5);
-          doc.setTextColor(...slate);
-          const displayName = item.name.length > 40 ? item.name.substring(0, 40) + '...' : item.name;
-          doc.text(displayName, 14, yPos + 1.8);
-          
-          doc.setTextColor(...deepBlue);
+        if (overallSharpBottles.length > 0) {
+          doc.setFillColor(...slate);
+          doc.rect(12, yPos, 186, 6, 'F');
+          doc.setFontSize(8);
           doc.setFont('helvetica', 'bold');
-          doc.text(item.bottles + " btl", 140, yPos + 1.8);
+          doc.setTextColor(255, 255, 255);
+          doc.text("Ingredient", 14, yPos + 4);
+          doc.text("Bottles", 135, yPos + 4);
+          yPos += 7;
           
-          yPos += 3;
-        });
+          doc.setFont('helvetica', 'normal');
+          overallSharpBottles.forEach((item, idx) => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+            
+            if (idx % 2 === 0) {
+              doc.setFillColor(249, 250, 251);
+              doc.rect(12, yPos, 186, 6, 'F');
+            }
+            
+            doc.setFontSize(7);
+            doc.setTextColor(...slate);
+            const maxNameLength = 45;
+            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
+            doc.text(displayName, 14, yPos + 4);
+            
+            doc.setTextColor(...deepBlue);
+            doc.setFont('helvetica', 'bold');
+            doc.text(item.bottles.toString() + " btl", 135, yPos + 4);
+            
+            yPos += 6;
+          });
+        } else {
+          // Show message if no sharp bottles
+          doc.setFillColor(249, 250, 251);
+          doc.rect(12, yPos, 186, 10, 'F');
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(100, 116, 139);
+          doc.text("No full bottles calculated for this recipe production", 105, yPos + 6, { align: 'center' });
+          yPos += 10;
+        }
         
-        yPos += 2;
+        yPos += 6;
         
-        // Compact Overall Required ML (no page break)
+        // ALWAYS show Overall Required ML section
+        const estimatedHeight = 20 + (overallRequiredMlItems.length * 6);
+        if (yPos + estimatedHeight > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
         doc.setFillColor(...amber);
-        doc.rect(12, yPos, 186, 4, 'F');
-        doc.setFontSize(6);
+        doc.rect(12, yPos, 186, 7, 'F');
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
-        doc.text("OVERALL REQUIRED ML", 15, yPos + 2.5);
-        yPos += 5;
+        doc.text("OVERALL REQUIRED ML", 15, yPos + 4.5);
+        yPos += 8;
         
         if (overallRequiredMlItems.length > 0) {
           doc.setFillColor(...slate);
-          doc.rect(12, yPos, 186, 3.5, 'F');
-          doc.setFontSize(5);
+          doc.rect(12, yPos, 186, 6, 'F');
+          doc.setFontSize(8);
           doc.setFont('helvetica', 'bold');
           doc.setTextColor(255, 255, 255);
-          doc.text("Ingredient", 14, yPos + 2);
-          doc.text("ML", 140, yPos + 2);
-          yPos += 4;
+          doc.text("Ingredient", 14, yPos + 4);
+          doc.text("ML Needed", 135, yPos + 4);
+          yPos += 7;
           
           doc.setFont('helvetica', 'normal');
           overallRequiredMlItems.forEach((item, idx) => {
-            if (idx % 2 === 0) {
-              doc.setFillColor(249, 250, 251);
-              doc.rect(12, yPos, 186, 3, 'F');
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
             }
             
-            doc.setFontSize(5);
+            if (idx % 2 === 0) {
+              doc.setFillColor(249, 250, 251);
+              doc.rect(12, yPos, 186, 6, 'F');
+            }
+            
+            doc.setFontSize(7);
             doc.setTextColor(...slate);
-            const displayName = item.name.length > 40 ? item.name.substring(0, 40) + '...' : item.name;
-            doc.text(displayName, 14, yPos + 1.8);
+            const maxNameLength = 45;
+            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
+            doc.text(displayName, 14, yPos + 4);
             
             doc.setTextColor(...amber);
             doc.setFont('helvetica', 'bold');
-            doc.text(item.mlNeeded.toFixed(0) + " ml", 140, yPos + 1.8);
+            doc.text(item.mlNeeded.toFixed(0) + " ml", 135, yPos + 4);
             
-            yPos += 3;
+            yPos += 6;
           });
         } else {
+          // Show message if no required ML
           doc.setFillColor(249, 250, 251);
-          doc.rect(12, yPos, 186, 4, 'F');
-          doc.setFontSize(5);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(...amber);
-          doc.text(`Total ML: ${overallSummaryTotalMl.toFixed(0)} ml | Extra ML: ${overallSummaryTotalLeftoverMl.toFixed(0)} ml`, 105, yPos + 2.5, { align: 'center' });
-          yPos += 4;
+          doc.rect(12, yPos, 186, 10, 'F');
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(100, 116, 139);
+          doc.text("No additional ML required for this recipe production", 105, yPos + 6, { align: 'center' });
+          yPos += 10;
         }
+        
+        yPos += 6;
       }
 
-      // Compact Notes Section - if exists
+      // Notes Section - if exists (expanded)
       if (production.notes) {
         doc.setFillColor(255, 251, 235);
-        doc.rect(12, yPos, 186, 6, 'F');
+        doc.roundedRect(12, yPos, 186, 18, 3, 3, 'F');
+        doc.setDrawColor(...amber);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(12, yPos, 186, 18, 3, 3, 'S');
         
-        doc.setFontSize(4.5);
+        doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(...slate);
-        doc.text("Notes:", 14, yPos + 2);
+        doc.text("Notes:", 16, yPos + 6);
         
-        doc.setFontSize(4);
+        doc.setFontSize(7.5);
         doc.setFont("helvetica", "normal");
         const splitNotes = doc.splitTextToSize(production.notes, 175);
-        doc.text(splitNotes.slice(0, 2), 14, yPos + 4.5);
-        yPos += 7;
+        doc.text(splitNotes.slice(0, 3), 16, yPos + 11);
+        yPos += 22;
       }
       
-      // Compact Footer
+      // Calculate remaining space and add padding if needed
+      const remainingSpace = 287 - yPos;
+      if (remainingSpace > 10) {
+        yPos = 283; // Position footer near bottom
+      }
+      
+      // Modern Footer
       doc.setDrawColor(...skyBlue);
-      doc.setLineWidth(0.2);
+      doc.setLineWidth(0.4);
       doc.line(12, yPos, 198, yPos);
-      doc.setFontSize(4);
+      doc.setFontSize(7.5);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(148, 163, 184);
       const timestamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + 
-                       ' | ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      doc.text(`Generated: ${timestamp}`, 105, yPos + 3, { align: 'center' });
+                       ' at ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      doc.text(`Generated: ${timestamp} | Professional Batch Tracking System`, 105, yPos + 5, { align: 'center' });
       
       const fileName = `Batch_Report_${batchName}.pdf`;
       doc.save(fileName);
@@ -1440,12 +1539,10 @@ const BatchCalculator = () => {
         let batchTotalLeftoverMl = 0;
         
         batchIngredients.forEach((ing: any) => {
-          const scaledMl = ing.unit && ing.unit.toLowerCase() === 'l'
-            ? parseFloat(ing.scaled_amount || 0) * 1000
-            : parseFloat(ing.scaled_amount || 0);
+          const scaledMl = parseFloat(ing.scaled_amount || 0);
           batchTotalMl += scaledMl;
           
-          const matchingSpirit = findSpirit(ing.ingredient_name);
+          const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
           let bottles = 0;
           let leftoverMl = 0;
           
@@ -1615,10 +1712,8 @@ const BatchCalculator = () => {
             const batchBottleData = new Map<string, { totalMl: number; bottleSize: number | null }>();
             
             batchIngredients.forEach((ing: any) => {
-              const scaledMl = ing.unit && ing.unit.toLowerCase() === 'l'
-                ? parseFloat(ing.scaled_amount || 0) * 1000
-                : parseFloat(ing.scaled_amount || 0);
-              const matchingSpirit = findSpirit(ing.ingredient_name);
+              const scaledMl = parseFloat(ing.scaled_amount || 0);
+              const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
               
               const existing = batchBottleData.get(ing.ingredient_name);
               if (existing) {
@@ -1733,12 +1828,10 @@ const BatchCalculator = () => {
       
       if (allIngredients && spirits) {
         allIngredients.forEach((ing: any) => {
-          const scaledMl = ing.unit && ing.unit.toLowerCase() === 'l'
-            ? parseFloat(ing.scaled_amount || 0) * 1000
-            : parseFloat(ing.scaled_amount || 0);
+          const scaledMl = parseFloat(ing.scaled_amount || 0);
           grandTotalMl += scaledMl;
           
-          const matchingSpirit = findSpirit(ing.ingredient_name);
+          const matchingSpirit = spirits.find(s => s.name === ing.ingredient_name);
           if (matchingSpirit && matchingSpirit.bottle_size_ml) {
             const bottles = Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
             grandTotalBottles += bottles;
@@ -1776,10 +1869,8 @@ const BatchCalculator = () => {
       
       if (allIngredients && spirits) {
         allIngredients.forEach((ing: any) => {
-          const scaledMl = ing.unit && ing.unit.toLowerCase() === 'l'
-            ? parseFloat(ing.scaled_amount || 0) * 1000
-            : parseFloat(ing.scaled_amount || 0);
-          const matchingSpirit = findSpirit(ing.ingredient_name);
+          const scaledMl = parseFloat(ing.scaled_amount || 0);
+          const matchingSpirit = spirits.find(s => s.name === ing.ingredient_name);
           
           const existing = ingredientConsumption.get(ing.ingredient_name);
           if (existing) {
@@ -1878,15 +1969,13 @@ const BatchCalculator = () => {
       if (allIngredients) {
         allIngredients.forEach((ing: any) => {
           const existing = bottleData.get(ing.ingredient_name);
-          const scaledMl = ing.unit && ing.unit.toLowerCase() === 'l'
-            ? parseFloat(ing.scaled_amount || 0) * 1000
-            : parseFloat(ing.scaled_amount || 0);
+          const scaledMl = parseFloat(ing.scaled_amount || 0);
           
           if (existing) {
             existing.totalMl += scaledMl;
           } else {
             // Try to find bottle size from master spirits
-            const matchingSpirit = findSpirit(ing.ingredient_name);
+            const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
             bottleData.set(ing.ingredient_name, {
               name: ing.ingredient_name,
               totalMl: scaledMl,
@@ -2785,13 +2874,10 @@ const BatchCalculator = () => {
                             const ingredientDetails: any[] = [];
                             
                             ingredients.forEach((ing: any) => {
-                              // Convert to ML if unit is in liters
-                              const scaledMl = ing.unit && ing.unit.toLowerCase() === 'l'
-                                ? parseFloat(ing.scaled_amount || 0) * 1000
-                                : parseFloat(ing.scaled_amount || 0);
+                              const scaledMl = parseFloat(ing.scaled_amount || 0);
                               totalMl += scaledMl;
                               
-                              const matchingSpirit = findSpirit(ing.ingredient_name);
+                              const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
                               let bottles = 0;
                               let leftoverMl = 0;
                               
@@ -2799,10 +2885,6 @@ const BatchCalculator = () => {
                                 bottles = Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
                                 leftoverMl = scaledMl % matchingSpirit.bottle_size_ml;
                                 totalBottles += bottles;
-                                totalLeftoverMl += leftoverMl;
-                              } else {
-                                // If no bottle size, all is leftover ML
-                                leftoverMl = scaledMl;
                                 totalLeftoverMl += leftoverMl;
                               }
                               
