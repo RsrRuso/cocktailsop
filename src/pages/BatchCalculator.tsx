@@ -460,7 +460,35 @@ const BatchCalculator = () => {
       ingredients: calculation.scaledIngredients
     });
 
-    const recipeId = selectedRecipeId || `temp-${Date.now()}`;
+    let recipeId = selectedRecipeId;
+
+    // If no recipe is selected, auto-create one
+    if (!recipeId) {
+      try {
+        const { data: newRecipe, error: recipeError } = await supabase
+          .from('batch_recipes')
+          .insert({
+            recipe_name: recipeName,
+            description: batchDescription,
+            current_serves: parseFloat(currentServes),
+            ingredients: ingredients.map(ing => ({
+              id: ing.id,
+              name: ing.name,
+              amount: ing.amount,
+              unit: ing.unit
+            })),
+            user_id: user!.id
+          })
+          .select()
+          .single();
+
+        if (recipeError) throw recipeError;
+        recipeId = newRecipe.id;
+      } catch (error) {
+        toast.error("Failed to create recipe");
+        return;
+      }
+    }
 
     const selectedUser = registeredUsers.find(u => u.id === producedByUserId);
 
@@ -488,7 +516,7 @@ const BatchCalculator = () => {
 
     // Reset form after submission
     setProducedByName("");
-    setProducedByUserId("");
+    setProducedByUserId(user?.id || "");
     setNotes("");
     setTargetBatchSize("");
     setTargetLiters("");
