@@ -1045,16 +1045,17 @@ const BatchCalculator = () => {
         yPos = 20;
       }
       
-      doc.setFillColor(249, 250, 251);
+      // Enhanced section background with gradient effect
+      doc.setFillColor(245, 247, 250);
       doc.roundedRect(12, yPos, 186, 75, 3, 3, 'F');
-      doc.setDrawColor(...skyBlue);
-      doc.setLineWidth(0.5);
-      doc.roundedRect(12, yPos, 186, 75, 3, 3, 'S');
       
-      doc.setTextColor(...deepBlue);
-      doc.setFontSize(11);
+      // Section header bar
+      doc.setFillColor(...deepBlue);
+      doc.roundedRect(12, yPos, 186, 9, 3, 3, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("📈 PRODUCTION VOLUME BY RECIPE TYPE", 15, yPos + 8);
+      doc.text("PRODUCTION VOLUME BY RECIPE TYPE", 15, yPos + 6);
       
       // Top 8 recipes by volume
       const topRecipes = Object.entries(
@@ -1109,14 +1110,14 @@ const BatchCalculator = () => {
         yPos = 20;
       }
       
-      // Section Header with Modern Design
+      // Section Header with Professional Design
       doc.setFillColor(...deepBlue);
-      doc.roundedRect(12, yPos, 186, 10, 2, 2, 'F');
+      doc.roundedRect(12, yPos, 186, 11, 2, 2, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("📊 FORECAST ANALYTICS - SUGGESTED PAR LEVELS", 15, yPos + 6.5);
-      yPos += 15;
+      doc.text("FORECAST ANALYTICS - SUGGESTED PAR LEVELS", 15, yPos + 7);
+      yPos += 16;
       
       // Calculate forecast data by batch type
       const forecastData = Object.entries(
@@ -1193,64 +1194,85 @@ const BatchCalculator = () => {
         const suggestedMonthly = dailyAvg7Days * buffer * 30;
         const suggestedQuarterly = dailyAvg7Days * buffer * 90;
         
-        // Batch card with enhanced visuals
+        // Enhanced card design with shadow effect
         const bgColor = index % 2 === 0 ? [248, 250, 252] as [number, number, number] : [255, 255, 255] as [number, number, number];
         doc.setFillColor(...bgColor);
-        doc.roundedRect(12, yPos, 186, 55, 2, 2, 'F');
+        doc.roundedRect(12, yPos, 186, 55, 3, 3, 'F');
         doc.setDrawColor(...skyBlue);
-        doc.setLineWidth(0.4);
-        doc.roundedRect(12, yPos, 186, 55, 2, 2, 'S');
+        doc.setLineWidth(0.5);
+        doc.roundedRect(12, yPos, 186, 55, 3, 3, 'S');
         
-        // Header section
-        doc.setTextColor(...slate);
-        doc.setFontSize(9);
+        // Recipe name header with background
+        doc.setFillColor(241, 245, 249);
+        doc.roundedRect(14, yPos + 2, 182, 8, 2, 2, 'F');
+        doc.setTextColor(...deepBlue);
+        doc.setFontSize(8.5);
         doc.setFont("helvetica", "bold");
         const displayName = name.length > 50 ? name.substring(0, 50) + '...' : name;
-        doc.text(displayName, 15, yPos + 6);
+        doc.text(displayName, 17, yPos + 7);
         
-        doc.setFontSize(7);
+        // Metadata line with icons
+        doc.setFontSize(6.5);
         doc.setFont("helvetica", "normal");
-        doc.text(`${data.batches.length} batches | ${daysDiff} days | ${totalSubmissions} submissions`, 15, yPos + 11);
+        doc.setTextColor(...slate);
+        doc.text(`Batches: ${data.batches.length}`, 17, yPos + 13);
+        doc.text(`|`, 45, yPos + 13);
+        doc.text(`Days: ${daysDiff}`, 50, yPos + 13);
+        doc.text(`|`, 73, yPos + 13);
+        doc.text(`Submissions: ${totalSubmissions}`, 78, yPos + 13);
         
-        // Trend indicator with visual
+        // Trend and daily average section with divider
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.2);
+        doc.line(15, yPos + 16, 195, yPos + 16);
+        
         const trendColor: [number, number, number] = trendFactor > 1.05 ? emerald : trendFactor < 0.95 ? [249, 115, 22] : slate;
-        const trendArrow = trendFactor > 1.05 ? '↗' : trendFactor < 0.95 ? '↘' : '→';
+        const trendText = trendFactor > 1.05 ? 'RISING' : trendFactor < 0.95 ? 'FALLING' : 'STABLE';
+        const trendSymbol = trendFactor > 1.05 ? '^' : trendFactor < 0.95 ? 'v' : '-';
         doc.setTextColor(...trendColor);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(7.5);
-        doc.text(`${trendArrow} Trend: ${parseFloat(trendPercent) > 0 ? '+' : ''}${trendPercent}%`, 15, yPos + 16);
+        doc.setFontSize(7);
+        doc.text(`[${trendSymbol}] Trend: ${trendText} ${parseFloat(trendPercent) > 0 ? '+' : ''}${trendPercent}%`, 17, yPos + 21);
         
         doc.setTextColor(...slate);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(6.5);
-        doc.text(`Daily Avg: ${baseDailyAvg.toFixed(2)} L`, 15, yPos + 21);
+        doc.text(`Daily Avg: ${baseDailyAvg.toFixed(2)} L`, 100, yPos + 21);
         
-        // Numerical data only - no graphics
-        const dataStartY = yPos + 26;
-        const dataSpacing = 5;
+        // Par levels data section with enhanced layout
+        const dataStartY = yPos + 27;
+        const dataSpacing = 5.5;
         const labels = ['Daily', 'Weekly', '2-Week', 'Monthly', 'Quarterly'];
         const values = [suggestedDaily, suggestedWeekly, suggestedBiWeekly, suggestedMonthly, suggestedQuarterly];
         const submissions = [submissionsPerDay, submissionsPerWeek, submissionsPerBiWeek, submissionsPerMonth, submissionsPerQuarter];
         
+        // Par levels header
+        doc.setFillColor(241, 245, 249);
+        doc.roundedRect(14, dataStartY - 1, 182, 5, 1, 1, 'F');
+        doc.setTextColor(...deepBlue);
+        doc.setFontSize(6.5);
+        doc.setFont("helvetica", "bold");
+        doc.text("PAR LEVELS & FORECASTS:", 17, dataStartY + 2.5);
+        
         labels.forEach((label, i) => {
-          const currentY = dataStartY + (i * dataSpacing);
+          const currentY = dataStartY + 6 + (i * dataSpacing);
           
-          // Label
+          // Label with bullet point
           doc.setTextColor(...slate);
           doc.setFontSize(6.5);
           doc.setFont("helvetica", "bold");
-          doc.text(label + ':', 15, currentY + 3);
+          doc.text(`• ${label}:`, 17, currentY);
           
           // Value
           doc.setTextColor(...deepBlue);
-          doc.setFontSize(6.5);
           doc.setFont("helvetica", "bold");
-          doc.text(`${values[i].toFixed(1)} L`, 40, currentY + 3);
+          doc.text(`${values[i].toFixed(1)} L`, 50, currentY);
           
           // Submission count
           doc.setTextColor(...emerald);
-          doc.setFontSize(5.5);
-          doc.text(`(${submissions[i].toFixed(2)} batches)`, 65, currentY + 3);
+          doc.setFontSize(6);
+          doc.setFont("helvetica", "normal");
+          doc.text(`(${submissions[i].toFixed(2)} batches)`, 77, currentY);
         });
         
         yPos += 60;
@@ -1262,32 +1284,48 @@ const BatchCalculator = () => {
         yPos = 20;
       }
       
+      // Info box with enhanced styling
       doc.setFillColor(240, 249, 255);
-      doc.rect(12, yPos, 186, 15, 'F');
-      doc.setDrawColor(...skyBlue);
-      doc.setLineWidth(0.3);
-      doc.rect(12, yPos, 186, 15, 'S');
-      
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "italic");
-      doc.setTextColor(...slate);
-      doc.text("💡 Par levels include 20% safety buffer and are dynamically adjusted based on production trends.", 15, yPos + 5);
-      doc.text("Growing trends increase par recommendations; declining trends reduce them for optimal inventory management.", 15, yPos + 9);
-      doc.text("Submission frequency shows average batch production count per period to inform production planning.", 15, yPos + 13);
-      
-      yPos += 18;
-      
-      // Footer
-      const footerY = 287;
+      doc.roundedRect(12, yPos, 186, 18, 2, 2, 'F');
       doc.setDrawColor(...skyBlue);
       doc.setLineWidth(0.4);
-      doc.line(12, footerY, 198, footerY);
-      doc.setFontSize(7.5);
-      doc.setFont("helvetica", "italic");
-      doc.setTextColor(148, 163, 184);
-      const timestamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + 
-                       ' at ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      doc.text(`Generated: ${timestamp} | Professional Batch Tracking System`, 105, footerY + 5, { align: 'center' });
+      doc.roundedRect(12, yPos, 186, 18, 2, 2, 'S');
+      
+      // Info icon using simple shape
+      doc.setFillColor(...skyBlue);
+      doc.circle(17, yPos + 9, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.text("i", 17, yPos + 10.5, { align: 'center' });
+      
+      doc.setFontSize(6.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...slate);
+      doc.text("Par levels include 20% safety buffer and are dynamically adjusted based on production trends.", 22, yPos + 5);
+      doc.text("Growing trends increase par recommendations; declining trends reduce them for optimal inventory.", 22, yPos + 9);
+      doc.text("Submission frequency shows average batch production count per period to inform production planning.", 22, yPos + 13);
+      doc.text("All forecasts are based on last 7 days daily average multiplied by period length.", 22, yPos + 17);
+      
+      yPos += 21;
+      
+      // Footer with page number
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        const footerY = 287;
+        doc.setDrawColor(...skyBlue);
+        doc.setLineWidth(0.4);
+        doc.line(12, footerY, 198, footerY);
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(148, 163, 184);
+        const timestamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + 
+                         ' at ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        doc.text(`Generated: ${timestamp}`, 15, footerY + 5);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Page ${i} of ${pageCount}`, 195, footerY + 5, { align: 'right' });
+      }
       
       doc.save(`All_Batches_Report_${new Date().toISOString().split('T')[0]}.pdf`);
       toast.success("Complete batches report downloaded!");
