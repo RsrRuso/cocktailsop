@@ -1342,7 +1342,7 @@ const BatchCalculator = () => {
                   />
                 </div>
 
-                <Button onClick={handleCreateGroup} className="w-full">
+                <Button onClick={handleCreateGroup} className="w-full py-6" size="lg">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Group
                 </Button>
