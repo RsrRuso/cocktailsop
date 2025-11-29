@@ -141,6 +141,133 @@ export type Database = {
           },
         ]
       }
+      batch_production_ingredients: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_name: string
+          original_amount: number
+          production_id: string
+          scaled_amount: number
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_name: string
+          original_amount: number
+          production_id: string
+          scaled_amount: number
+          unit: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_name?: string
+          original_amount?: number
+          production_id?: string
+          scaled_amount?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_production_ingredients_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "batch_productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      batch_productions: {
+        Row: {
+          batch_name: string
+          created_at: string
+          group_id: string | null
+          id: string
+          notes: string | null
+          produced_by_email: string | null
+          produced_by_name: string | null
+          production_date: string
+          qr_code_data: string | null
+          recipe_id: string
+          target_liters: number
+          target_serves: number
+          user_id: string
+        }
+        Insert: {
+          batch_name: string
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          notes?: string | null
+          produced_by_email?: string | null
+          produced_by_name?: string | null
+          production_date?: string
+          qr_code_data?: string | null
+          recipe_id: string
+          target_liters: number
+          target_serves: number
+          user_id: string
+        }
+        Update: {
+          batch_name?: string
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          notes?: string | null
+          produced_by_email?: string | null
+          produced_by_name?: string | null
+          production_date?: string
+          qr_code_data?: string | null
+          recipe_id?: string
+          target_liters?: number
+          target_serves?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_productions_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "batch_recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      batch_recipes: {
+        Row: {
+          created_at: string
+          current_serves: number
+          description: string | null
+          id: string
+          ingredients: Json
+          recipe_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_serves?: number
+          description?: string | null
+          id?: string
+          ingredients?: Json
+          recipe_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_serves?: number
+          description?: string | null
+          id?: string
+          ingredients?: Json
+          recipe_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       business_analytics: {
         Row: {
           created_at: string | null
@@ -2913,6 +3040,68 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mixologist_group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mixologist_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "mixologist_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mixologist_groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          qr_code_data: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          qr_code_data?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          qr_code_data?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       music_share_comments: {
         Row: {
