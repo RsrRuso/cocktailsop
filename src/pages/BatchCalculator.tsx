@@ -1010,9 +1010,10 @@ const BatchCalculator = () => {
           }
         });
         
-        // Sharp Bottles Table
+        // Sharp Bottles Table - Check page space before adding
         if (sharpBottles.length > 0) {
-          if (yPos > 260) {
+          const estimatedHeight = 25 + (sharpBottles.length * 5.5);
+          if (yPos + estimatedHeight > 270) {
             doc.addPage();
             yPos = 20;
           }
@@ -1061,9 +1062,10 @@ const BatchCalculator = () => {
           yPos += 6;
         }
         
-        // Leftover ML Table
+        // Leftover ML Table - Check page space before adding
         if (leftoverMlItems.length > 0) {
-          if (yPos > 260) {
+          const estimatedHeight = 25 + (leftoverMlItems.length * 5.5);
+          if (yPos + estimatedHeight > 270) {
             doc.addPage();
             yPos = 20;
           }
@@ -1115,6 +1117,12 @@ const BatchCalculator = () => {
       
       doc.setTextColor(...slate);
       
+      // Check space before Recipe Production Summary
+      if (yPos > 240) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
       // Recipe-Specific Production Summary - Eye-catching design
       doc.setFillColor(...emerald);
       doc.rect(12, yPos, 186, 8, 'F');
@@ -1154,10 +1162,16 @@ const BatchCalculator = () => {
       doc.setTextColor(...amber);
       doc.text(`${overallIngredientsMap.size} Types`, 160, yPos + 10);
       
-      yPos += 24;
+      yPos += 28;
       
-      // Ingredients breakdown table with bottles and leftover
+      // Ingredients breakdown table with bottles and leftover - Add page check
       if (overallIngredientsMap.size > 0) {
+        // Check if we need a new page for Overall sections
+        if (yPos > 230) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
         // Table rows
         const ingredientsArray = Array.from(overallIngredientsMap.entries());
         const overallSharpBottles: any[] = [];
@@ -1234,7 +1248,8 @@ const BatchCalculator = () => {
         
         // Overall Leftover ML Table
         if (overallLeftoverMlItems.length > 0) {
-          if (yPos > 260) {
+          const estimatedHeight = 25 + (overallLeftoverMlItems.length * 6);
+          if (yPos + estimatedHeight > 270) {
             doc.addPage();
             yPos = 20;
           }
