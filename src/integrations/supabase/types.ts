@@ -2787,6 +2787,39 @@ export type Database = {
           },
         ]
       }
+      master_spirits: {
+        Row: {
+          bottle_size_ml: number
+          brand: string | null
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bottle_size_ml?: number
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bottle_size_ml?: number
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       matrix_chat_history: {
         Row: {
           context_insights: string[] | null
