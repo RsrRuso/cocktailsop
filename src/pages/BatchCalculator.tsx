@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
 import { useBatchProductions } from "@/hooks/useBatchProductions";
@@ -26,6 +26,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface Ingredient {
   id: string;
@@ -61,6 +68,8 @@ const BatchCalculator = () => {
   const [managingGroup, setManagingGroup] = useState<any>(null);
   const [aiSuggestions, setAiSuggestions] = useState<any>(null);
   const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
 
   const aiAnalysisText =
     typeof aiSuggestions === "string"
@@ -1065,22 +1074,57 @@ const BatchCalculator = () => {
       toast.error("Please enter a group name");
       return;
     }
-
-    // Generate QR code for batch submissions
-    const groupData = {
-      name: newGroupName,
-      description: newGroupDesc,
-      action: 'submit_batch'
-    };
-    const submissionQRCode = await QRCode.toDataURL(JSON.stringify(groupData));
-
-    createGroup({
-      name: newGroupName,
-      description: newGroupDesc
-    });
-
+    createGroup({ name: newGroupName, description: newGroupDesc });
     setNewGroupName("");
     setNewGroupDesc("");
+  };
+
+  const handleGenerateQR = async () => {
+    if (!selectedRecipeId || selectedRecipeId === "all") {
+      toast.error("Please select a recipe");
+      return;
+    }
+
+    try {
+      const recipe = recipes?.find(r => r.id === selectedRecipeId);
+      if (!recipe) {
+        toast.error("Recipe not found");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("batch_qr_codes")
+        .insert({
+          user_id: user?.id,
+          recipe_id: selectedRecipeId,
+          recipe_data: {
+            recipe_name: recipe.recipe_name,
+            description: recipe.description,
+            current_serves: recipe.current_serves,
+            ingredients: recipe.ingredients,
+          },
+          group_id: selectedGroupId,
+          is_active: true,
+        } as any)
+        .select()
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) throw new Error("No QR code created");
+
+      const qrUrl = `${window.location.origin}/batch-qr/${data.id}`;
+      const qrDataUrl = await QRCode.toDataURL(qrUrl, {
+        width: 512,
+        margin: 2,
+      });
+
+      setQrCodeUrl(qrDataUrl);
+      setShowQRCode(true);
+      toast.success("QR code generated! Share it with your team.");
+    } catch (error) {
+      console.error("Error generating QR:", error);
+      toast.error("Failed to generate QR code");
+    }
   };
 
   const generateGroupQRCode = async (group: any) => {
@@ -1199,6 +1243,18 @@ const BatchCalculator = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {selectedRecipeId && selectedRecipeId !== "all" && (
+                  <Button
+                    variant="outline"
+                    onClick={handleGenerateQR}
+                    className="w-full py-6"
+                    size="lg"
+                  >
+                    <QrCode className="w-5 h-5 mr-2" />
+                    Generate QR for Batch Submission
+                  </Button>
+                )}
 
                 {selectedRecipeId === "all" && (
                   <Button 
@@ -1571,6 +1627,36 @@ const BatchCalculator = () => {
           groupName={managingGroup.name}
         />
       )}
+
+      <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Batch Submission QR Code</DialogTitle>
+            <DialogDescription>
+              Share this QR code with your team to submit batch productions
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {qrCodeUrl && (
+              <img src={qrCodeUrl} alt="QR Code" className="w-64 h-64" />
+            )}
+            <Button
+              variant="outline"
+              onClick={() => {
+                const link = document.createElement("a");
+                link.href = qrCodeUrl;
+                link.download = `batch-qr-${selectedRecipeId}.png`;
+                link.click();
+                toast.success("QR code downloaded!");
+              }}
+              className="w-full"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download QR Code
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>

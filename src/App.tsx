@@ -47,6 +47,7 @@ const InventoryManager = lazy(() => import("./pages/InventoryManager"));
 const TemperatureLog = lazy(() => import("./pages/TemperatureLog"));
 const BatchCalculator = lazy(() => import("./pages/BatchCalculator"));
 const BatchRecipes = lazy(() => import("./pages/BatchRecipes"));
+const BatchQRSubmit = lazy(() => import("./pages/BatchQRSubmit"));
 const ABVCalculator = lazy(() => import("./pages/ABVCalculator"));
 const ScalingTool = lazy(() => import("./pages/ScalingTool"));
 const CostCalculator = lazy(() => import("./pages/CostCalculator"));

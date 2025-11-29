@@ -245,6 +245,47 @@ export type Database = {
           },
         ]
       }
+      batch_qr_codes: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          group_id: string | null
+          id: string
+          is_active: boolean | null
+          recipe_data: Json
+          recipe_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          group_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          recipe_data: Json
+          recipe_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          group_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          recipe_data?: Json
+          recipe_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_batch_qr_group"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "mixologist_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batch_recipes: {
         Row: {
           created_at: string
