@@ -1519,7 +1519,7 @@ const BatchCalculator = () => {
 
                   {/* Forecast Analytics by Batch Type */}
                   <div className="glass p-4 rounded-lg">
-                    <h4 className="font-semibold mb-4">Forecast Analytics - Average Lt by Time Period</h4>
+                    <h4 className="font-semibold mb-4">Forecast Analytics - Suggested Par Levels</h4>
                     <div className="space-y-4">
                       {Object.entries(
                         productions.reduce((acc, prod) => {
@@ -1528,77 +1528,120 @@ const BatchCalculator = () => {
                           
                           if (!acc[key]) {
                             acc[key] = { 
-                              liters: 0, 
-                              count: 0,
+                              batches: [],
                               firstDate: prodDate,
                               lastDate: prodDate
                             };
                           }
-                          acc[key].liters += prod.target_liters;
-                          acc[key].count += 1;
+                          acc[key].batches.push({ liters: prod.target_liters, date: prodDate });
                           if (prodDate < acc[key].firstDate) acc[key].firstDate = prodDate;
                           if (prodDate > acc[key].lastDate) acc[key].lastDate = prodDate;
                           return acc;
-                        }, {} as Record<string, { liters: number; count: number; firstDate: Date; lastDate: Date }>)
+                        }, {} as Record<string, { batches: { liters: number; date: Date }[]; firstDate: Date; lastDate: Date }>)
                       )
-                      .sort(([, a], [, b]) => b.liters - a.liters)
+                      .sort(([, a], [, b]) => {
+                        const aTotal = a.batches.reduce((sum, b) => sum + b.liters, 0);
+                        const bTotal = b.batches.reduce((sum, b) => sum + b.liters, 0);
+                        return bTotal - aTotal;
+                      })
                       .map(([name, data]) => {
+                        // Sort batches by date
+                        const sortedBatches = [...data.batches].sort((a, b) => a.date.getTime() - b.date.getTime());
+                        const totalLiters = sortedBatches.reduce((sum, b) => sum + b.liters, 0);
                         const daysDiff = Math.max(1, Math.ceil((data.lastDate.getTime() - data.firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-                        const dailyAvg = data.liters / daysDiff;
-                        const weeklyAvg = dailyAvg * 7;
-                        const biWeeklyAvg = dailyAvg * 14;
-                        const monthlyAvg = dailyAvg * 30;
-                        const quarterlyAvg = dailyAvg * 90;
+                        
+                        // Calculate trend: compare recent half vs older half
+                        const midPoint = Math.floor(sortedBatches.length / 2);
+                        const olderBatches = sortedBatches.slice(0, midPoint);
+                        const recentBatches = sortedBatches.slice(midPoint);
+                        
+                        const olderAvg = olderBatches.length > 0 
+                          ? olderBatches.reduce((sum, b) => sum + b.liters, 0) / olderBatches.length 
+                          : 0;
+                        const recentAvg = recentBatches.length > 0 
+                          ? recentBatches.reduce((sum, b) => sum + b.liters, 0) / recentBatches.length 
+                          : 0;
+                        
+                        // Calculate trend factor (1.0 = no trend, >1.0 = growing, <1.0 = declining)
+                        const trendFactor = olderAvg > 0 ? recentAvg / olderAvg : 1;
+                        const trendPercent = ((trendFactor - 1) * 100).toFixed(1);
+                        
+                        // Base daily average
+                        const baseDailyAvg = totalLiters / daysDiff;
+                        
+                        // Adjusted daily average with trend
+                        const adjustedDailyAvg = baseDailyAvg * Math.max(0.5, Math.min(1.5, trendFactor));
+                        
+                        // Calculate suggested par levels with trend adjustment
+                        const suggestedDaily = adjustedDailyAvg * 1.2; // 20% buffer
+                        const suggestedWeekly = suggestedDaily * 7;
+                        const suggestedBiWeekly = suggestedDaily * 14;
+                        const suggestedMonthly = suggestedDaily * 30;
+                        const suggestedQuarterly = suggestedDaily * 90;
 
                         return (
                           <div key={name} className="p-4 bg-muted/20 rounded-lg border border-border/50">
-                            <div className="flex justify-between items-center mb-3">
-                              <span className="font-bold text-base">{name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {data.count} batch{data.count > 1 ? 'es' : ''} over {daysDiff} day{daysDiff > 1 ? 's' : ''}
-                              </span>
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <span className="font-bold text-base block">{name}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {data.batches.length} batch{data.batches.length > 1 ? 'es' : ''} over {daysDiff} day{daysDiff > 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <div className={`text-xs font-semibold ${trendFactor > 1.05 ? 'text-green-500' : trendFactor < 0.95 ? 'text-orange-500' : 'text-muted-foreground'}`}>
+                                  {trendFactor > 1.05 ? '↗' : trendFactor < 0.95 ? '↘' : '→'} Trend: {parseFloat(trendPercent) > 0 ? '+' : ''}{trendPercent}%
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Base: {baseDailyAvg.toFixed(2)} Lt/day
+                                </div>
+                              </div>
                             </div>
                             
                             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                              <div className="glass p-3 rounded-lg text-center">
-                                <p className="text-xs text-muted-foreground mb-1">Daily</p>
+                              <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
+                                <p className="text-xs text-muted-foreground mb-1">Daily Par</p>
                                 <p className="text-lg font-bold text-primary">
-                                  {dailyAvg.toFixed(2)}
+                                  {suggestedDaily.toFixed(2)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Lt</p>
                               </div>
                               
-                              <div className="glass p-3 rounded-lg text-center">
-                                <p className="text-xs text-muted-foreground mb-1">Weekly</p>
+                              <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
+                                <p className="text-xs text-muted-foreground mb-1">Weekly Par</p>
                                 <p className="text-lg font-bold text-primary">
-                                  {weeklyAvg.toFixed(2)}
+                                  {suggestedWeekly.toFixed(2)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Lt</p>
                               </div>
                               
-                              <div className="glass p-3 rounded-lg text-center">
-                                <p className="text-xs text-muted-foreground mb-1">2 Weeks</p>
+                              <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
+                                <p className="text-xs text-muted-foreground mb-1">2-Week Par</p>
                                 <p className="text-lg font-bold text-primary">
-                                  {biWeeklyAvg.toFixed(2)}
+                                  {suggestedBiWeekly.toFixed(2)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Lt</p>
                               </div>
                               
-                              <div className="glass p-3 rounded-lg text-center">
-                                <p className="text-xs text-muted-foreground mb-1">Monthly</p>
+                              <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
+                                <p className="text-xs text-muted-foreground mb-1">Monthly Par</p>
                                 <p className="text-lg font-bold text-primary">
-                                  {monthlyAvg.toFixed(2)}
+                                  {suggestedMonthly.toFixed(2)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Lt</p>
                               </div>
                               
-                              <div className="glass p-3 rounded-lg text-center">
-                                <p className="text-xs text-muted-foreground mb-1">Quarterly</p>
+                              <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
+                                <p className="text-xs text-muted-foreground mb-1">Quarterly Par</p>
                                 <p className="text-lg font-bold text-primary">
-                                  {quarterlyAvg.toFixed(2)}
+                                  {suggestedQuarterly.toFixed(2)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Lt</p>
                               </div>
+                            </div>
+                            
+                            <div className="mt-3 p-2 bg-primary/5 rounded text-xs text-muted-foreground">
+                              💡 Par levels include 20% buffer and are adjusted based on {trendFactor > 1.05 ? 'increasing' : trendFactor < 0.95 ? 'decreasing' : 'stable'} production trend
                             </div>
                           </div>
                         );
