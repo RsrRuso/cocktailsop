@@ -347,11 +347,46 @@ const BatchCalculator = () => {
       
       if (error) throw error;
 
+      // Fetch ALL productions to calculate overall totals
+      const { data: allProductions, error: allError } = await supabase
+        .from('batch_productions')
+        .select('*, batch_production_ingredients(*)')
+        .eq('user_id', user?.id);
+      
+      if (allError) console.error("Error fetching all productions:", allError);
+
       const doc = new jsPDF();
+      
+      // Calculate overall production totals
+      let totalBatchesProduced = allProductions?.length || 0;
+      let totalLitersProduced = 0;
+      let overallIngredientsMap = new Map<string, { amount: number; unit: string }>();
+      
+      if (allProductions) {
+        allProductions.forEach((prod: any) => {
+          totalLitersProduced += prod.target_liters || 0;
+          
+          if (prod.batch_production_ingredients) {
+            prod.batch_production_ingredients.forEach((ing: any) => {
+              const key = `${ing.ingredient_name}`;
+              const existing = overallIngredientsMap.get(key);
+              if (existing) {
+                existing.amount += parseFloat(ing.scaled_amount || 0);
+              } else {
+                overallIngredientsMap.set(key, {
+                  amount: parseFloat(ing.scaled_amount || 0),
+                  unit: ing.unit
+                });
+              }
+            });
+          }
+        });
+      }
       
       // Colors
       const primaryColor: [number, number, number] = [41, 128, 185];
       const accentColor: [number, number, number] = [52, 152, 219];
+      const successColor: [number, number, number] = [46, 204, 113];
       const textDark: [number, number, number] = [44, 62, 80];
       
       // Header with colored background
@@ -383,10 +418,10 @@ const BatchCalculator = () => {
       
       // Batch Summary Box
       doc.setFillColor(245, 245, 245);
-      doc.roundedRect(15, 55, 180, 35, 3, 3, 'F');
+      doc.roundedRect(15, 55, 180, 42, 3, 3, 'F');
       doc.setDrawColor(...accentColor);
       doc.setLineWidth(0.5);
-      doc.roundedRect(15, 55, 180, 35, 3, 3, 'S');
+      doc.roundedRect(15, 55, 180, 42, 3, 3, 'S');
       
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
@@ -406,20 +441,25 @@ const BatchCalculator = () => {
       doc.text(`${production.target_liters.toFixed(2)} Liters`, 55, 80);
       
       doc.setFont("helvetica", "bold");
+      doc.text("Servings Produced:", 20, 88);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${production.target_serves || 0} Serves`, 55, 88);
+      
+      doc.setFont("helvetica", "bold");
       doc.text("Made By:", 120, 72);
       doc.setFont("helvetica", "normal");
       doc.text(production.produced_by_name || 'N/A', 145, 72);
       
       // Ingredients Section
       doc.setFillColor(...accentColor);
-      doc.rect(15, 95, 180, 8, 'F');
+      doc.rect(15, 102, 180, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(13);
       doc.setFont("helvetica", "bold");
-      doc.text("INGREDIENTS USED PER BATCH", 20, 101);
+      doc.text("INGREDIENTS USED PER BATCH", 20, 108);
       
       // Ingredients table
-      let yPos = 110;
+      let yPos = 117;
       doc.setTextColor(...textDark);
       doc.setFontSize(10);
       
@@ -473,9 +513,83 @@ const BatchCalculator = () => {
         yPos += 15;
       }
       
+      // OVERALL PRODUCTION SUMMARY Section
+      doc.setFillColor(...successColor);
+      doc.rect(15, yPos, 180, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("OVERALL PRODUCTION SUMMARY", 20, yPos + 6);
+      yPos += 15;
+      
+      doc.setTextColor(...textDark);
+      doc.setFillColor(240, 255, 245);
+      doc.roundedRect(15, yPos, 180, 35, 3, 3, 'F');
+      doc.setDrawColor(...successColor);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(15, yPos, 180, 35, 3, 3, 'S');
+      
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("Total Batches Produced:", 20, yPos + 10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${totalBatchesProduced} Batches`, 75, yPos + 10);
+      
+      doc.setFont("helvetica", "bold");
+      doc.text("Total Liters Produced:", 20, yPos + 18);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${totalLitersProduced.toFixed(2)} Liters`, 75, yPos + 18);
+      
+      doc.setFont("helvetica", "bold");
+      doc.text("Total Ingredients Used:", 20, yPos + 26);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${overallIngredientsMap.size} Unique Ingredients`, 75, yPos + 26);
+      yPos += 42;
+      
+      // Overall Ingredients Breakdown
+      if (overallIngredientsMap.size > 0) {
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...textDark);
+        doc.text("Total Ingredients Consumed Across All Batches:", 20, yPos);
+        yPos += 8;
+        
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        
+        let col = 0;
+        let rowY = yPos;
+        Array.from(overallIngredientsMap.entries()).forEach(([name, data], index) => {
+          if (rowY > 240) {
+            doc.addPage();
+            rowY = 20;
+            col = 0;
+          }
+          
+          const xPos = 20 + (col * 90);
+          doc.text(`• ${name}: ${data.amount.toFixed(2)} ${data.unit}`, xPos, rowY);
+          
+          col++;
+          if (col >= 2) {
+            col = 0;
+            rowY += 6;
+          }
+        });
+        
+        if (col > 0) rowY += 6;
+        yPos = rowY + 8;
+      }
+      
+      
       // QR Code Section with box
       doc.setTextColor(...textDark);
       if (production.qr_code_data) {
+        // Check if we need a new page for QR code section
+        if (yPos > 180) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
         doc.setFillColor(245, 250, 255);
         doc.roundedRect(15, yPos, 180, 80, 3, 3, 'F');
         doc.setDrawColor(...accentColor);
