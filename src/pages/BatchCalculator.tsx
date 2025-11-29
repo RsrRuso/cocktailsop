@@ -2193,18 +2193,39 @@ const BatchCalculator = () => {
                             );
                           })}
                         </div>
-                        <div className="pt-2 border-t border-border">
+                        <div className="pt-2 border-t border-border space-y-2">
                           <div className="flex justify-between items-center">
-                            <span className="font-semibold">Total Bottles:</span>
+                            <span className="font-semibold">Total Sharp Bottles:</span>
                             <span className="text-lg text-primary font-bold">
                               {batchResults.scaledIngredients
                                 .filter(ing => ing.bottle_size_ml)
                                 .reduce((sum, ing) => {
-                                  const scaledLiters = parseFloat(ing.scaledAmount) / 1000;
-                                  return sum + calculateBottles(scaledLiters, ing.bottle_size_ml!);
-                                }, 0)} btls
+                                  const scaledMl = parseFloat(ing.scaledAmount);
+                                  const wholeBottles = Math.floor(scaledMl / ing.bottle_size_ml!);
+                                  return sum + wholeBottles;
+                                }, 0)} btl
                             </span>
                           </div>
+                          {batchResults.scaledIngredients.some(ing => {
+                            if (!ing.bottle_size_ml) return false;
+                            const scaledMl = parseFloat(ing.scaledAmount);
+                            return scaledMl % ing.bottle_size_ml !== 0;
+                          }) && (
+                            <div className="text-sm text-muted-foreground bg-muted/20 p-2 rounded">
+                              <div className="font-semibold mb-1">Leftover ML needed:</div>
+                              {batchResults.scaledIngredients
+                                .filter(ing => ing.bottle_size_ml && parseFloat(ing.scaledAmount) % ing.bottle_size_ml !== 0)
+                                .map(ing => {
+                                  const scaledMl = parseFloat(ing.scaledAmount);
+                                  return (
+                                    <div key={ing.id} className="flex justify-between">
+                                      <span>{ing.name}:</span>
+                                      <span className="text-amber-600 font-medium">{scaledMl.toFixed(0)} ml</span>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
