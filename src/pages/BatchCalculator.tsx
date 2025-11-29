@@ -922,10 +922,10 @@ const BatchCalculator = () => {
           doc.text(amountInMl.toFixed(0), 100, yPos + 3.5);
           
           doc.setTextColor(...deepBlue);
-          doc.text(bottles.toFixed(2), 135, yPos + 3.5);
+          doc.text(bottles.toFixed(2) + " btl", 135, yPos + 3.5);
           
           doc.setTextColor(...amber);
-          doc.text(leftoverMl.toFixed(0), 165, yPos + 3.5);
+          doc.text(leftoverMl.toFixed(0) + " ml", 165, yPos + 3.5);
           
           yPos += 5.5;
         });
@@ -1035,10 +1035,10 @@ const BatchCalculator = () => {
           doc.text(data.amountMl.toFixed(0), 100, yPos + 4);
           
           doc.setTextColor(...deepBlue);
-          doc.text(data.bottles.toFixed(2), 135, yPos + 4);
+          doc.text(data.bottles.toFixed(2) + " btl", 135, yPos + 4);
           
           doc.setTextColor(...amber);
-          doc.text(data.leftoverMl.toFixed(0), 165, yPos + 4);
+          doc.text(data.leftoverMl.toFixed(0) + " ml", 165, yPos + 4);
           
           yPos += 6;
         });
