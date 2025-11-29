@@ -410,12 +410,12 @@ const BatchCalculator = () => {
       
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text("📊 Professional Quality Control & Traceability", 105, 23, { align: 'center' });
+      doc.text("Professional Quality Control & Traceability", 105, 23, { align: 'center' });
       
       // Reset text color
       doc.setTextColor(...slate);
       
-      // Production Date with icon
+      // Production Date
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       const productionDate = new Date(production.production_date).toLocaleDateString('en-US', { 
@@ -423,7 +423,7 @@ const BatchCalculator = () => {
         month: 'short', 
         day: 'numeric' 
       });
-      doc.text(`📅 ${productionDate}`, 105, 38, { align: 'center' });
+      doc.text(productionDate, 105, 38, { align: 'center' });
       
       // Batch Summary Card - Modern Design
       let yPos = 45;
@@ -442,7 +442,7 @@ const BatchCalculator = () => {
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(255, 255, 255);
-      doc.text("🧪 BATCH DETAILS", 56, yPos + 4.5, { align: 'center' });
+      doc.text("BATCH DETAILS", 56, yPos + 4.5, { align: 'center' });
       
       doc.setTextColor(...slate);
       doc.setFontSize(9);
@@ -491,7 +491,7 @@ const BatchCalculator = () => {
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(255, 255, 255);
-        doc.text("🏷️ WATERPROOF STICKER", 154, yPos + 4.5, { align: 'center' });
+        doc.text("WATERPROOF STICKER", 154, yPos + 4.5, { align: 'center' });
         
         // High-res QR for sticker printing
         const qrCodeDataUrl = await QRCode.toDataURL(production.qr_code_data, {
@@ -519,7 +519,7 @@ const BatchCalculator = () => {
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("📦 INGREDIENTS", 15, yPos + 5.5);
+      doc.text("INGREDIENTS", 15, yPos + 5.5);
       yPos += 12;
       
       doc.setTextColor(...slate);
@@ -567,7 +567,7 @@ const BatchCalculator = () => {
         doc.rect(12, yPos - 2, 186, 7, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.text("✓ TOTAL:", 25, yPos + 2.5);
+        doc.text("TOTAL:", 25, yPos + 2.5);
         doc.text(`${ingredients.length} Items`, 145, yPos + 2.5);
         yPos += 10;
       }
@@ -580,7 +580,7 @@ const BatchCalculator = () => {
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("📊 OVERALL PRODUCTION SUMMARY", 15, yPos + 5.5);
+      doc.text("OVERALL PRODUCTION SUMMARY", 15, yPos + 5.5);
       yPos += 12;
       
       doc.setTextColor(...slate);
@@ -619,7 +619,7 @@ const BatchCalculator = () => {
         doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(...slate);
-        doc.text("🔍 Total Ingredients Consumed:", 16, yPos);
+        doc.text("Total Ingredients Consumed:", 16, yPos);
         yPos += 6;
         
         doc.setFontSize(7);
@@ -659,7 +659,7 @@ const BatchCalculator = () => {
         doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(...slate);
-        doc.text("📝 Notes:", 16, yPos + 6);
+        doc.text("Notes:", 16, yPos + 6);
         
         doc.setFontSize(7.5);
         doc.setFont("helvetica", "normal");
@@ -683,10 +683,10 @@ const BatchCalculator = () => {
       doc.setTextColor(148, 163, 184);
       const timestamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + 
                        ' at ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      doc.text(`⚡ Generated: ${timestamp} | © Professional Batch Tracking System`, 105, yPos + 5, { align: 'center' });
+      doc.text(`Generated: ${timestamp} | Professional Batch Tracking System`, 105, yPos + 5, { align: 'center' });
       
       doc.save(`Batch_${production.batch_name.replace(/[^a-z0-9]/gi, '_')}_${new Date(production.production_date).toISOString().split('T')[0]}.pdf`);
-      toast.success("🎉 Modern batch report downloaded!");
+      toast.success("Modern batch report downloaded!");
     } catch (error) {
       console.error("PDF generation error:", error);
       toast.error("Failed to generate PDF");
