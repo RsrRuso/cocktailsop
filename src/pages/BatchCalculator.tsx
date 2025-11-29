@@ -1269,9 +1269,23 @@ const BatchCalculator = () => {
 
           <TabsContent value="analytics" className="space-y-4 pb-4">
             <Card className="glass p-4 sm:p-6">
-              <div className="flex items-center gap-2 mb-4 sm:mb-6">
-                <BarChart3 className="w-5 h-5" />
-                <h3 className="text-base sm:text-lg font-semibold">Production Analytics & Forecasting</h3>
+              <div className="flex flex-col gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  <h3 className="text-base sm:text-lg font-semibold">Production Analytics & Forecasting</h3>
+                </div>
+                
+                {productions && productions.length > 0 && (
+                  <Button
+                    variant="default"
+                    onClick={downloadAllBatchesReport}
+                    className="w-full py-6"
+                    size="lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Export Analytics Report
+                  </Button>
+                )}
               </div>
               
               {!productions || productions.length === 0 ? (
@@ -1316,7 +1330,7 @@ const BatchCalculator = () => {
 
           <TabsContent value="groups" className="space-y-4 pb-4">
             <Card className="glass p-4 sm:p-6">
-              <div className="flex items-center gap-2 mb-4 sm:mb-6">
+              <div className="flex items-center gap-2 mb-6">
                 <Users className="w-5 h-5" />
                 <h3 className="text-base sm:text-lg font-semibold">Mixologist Groups</h3>
               </div>
@@ -1328,7 +1342,7 @@ const BatchCalculator = () => {
                     value={newGroupName}
                     onChange={(e) => setNewGroupName(e.target.value)}
                     placeholder="e.g., Main Bar Team"
-                    className="glass"
+                    className="glass h-12"
                   />
                 </div>
 
@@ -1338,12 +1352,12 @@ const BatchCalculator = () => {
                     value={newGroupDesc}
                     onChange={(e) => setNewGroupDesc(e.target.value)}
                     placeholder="Optional group description..."
-                    className="glass"
+                    className="glass min-h-[80px]"
                   />
                 </div>
 
                 <Button onClick={handleCreateGroup} className="w-full py-6" size="lg">
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-5 h-5 mr-2" />
                   Create Group
                 </Button>
               </div>
@@ -1356,33 +1370,31 @@ const BatchCalculator = () => {
                 <div className="space-y-3">
                   <h4 className="font-semibold">Your Groups</h4>
                   {groups.map((group) => (
-                   <Card key={group.id} className="p-3 sm:p-4 glass">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                   <Card key={group.id} className="p-4 glass">
+                      <div className="space-y-3">
                         <div className="flex-1 min-w-0">
                           <h5 className="font-bold truncate">{group.name}</h5>
                           <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{group.description}</p>
                         </div>
-                        <div className="flex gap-2 w-full sm:w-auto">
+                        <div className="flex flex-col gap-2">
                           <Button 
-                            size="sm" 
+                            size="lg" 
                             variant="outline"
                             onClick={() => {
                               setManagingGroup(group);
                               setShowMembersDialog(true);
                             }}
-                            className="glass-hover flex-1 sm:flex-initial"
+                            className="glass-hover w-full py-6"
                           >
-                            <Users className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">Members</span>
-                            <span className="sm:hidden">Team</span>
+                            <Users className="w-5 h-5 mr-2" />
+                            View Members
                           </Button>
                           <Button 
-                            size="sm" 
-                            variant="outline"
-                          onClick={() => setSelectedGroupId(group.id)}
-                            className={`flex-1 sm:flex-initial ${selectedGroupId === group.id ? "bg-primary text-primary-foreground" : "glass-hover"}`}
+                            size="lg" 
+                            onClick={() => setSelectedGroupId(group.id)}
+                            className={`w-full py-6 ${selectedGroupId === group.id ? "bg-primary text-primary-foreground" : "glass-hover"}`}
                           >
-                            {selectedGroupId === group.id ? "Selected" : "Select"}
+                            {selectedGroupId === group.id ? "✓ Selected" : "Select Group"}
                           </Button>
                         </div>
                       </div>
