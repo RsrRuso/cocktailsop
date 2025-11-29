@@ -30,3 +30,6 @@ verify_jwt = false
 [functions.ai-message-assistant]
 verify_jwt = false
 
+[functions.batch-ai-assistant]
+verify_jwt = false
+

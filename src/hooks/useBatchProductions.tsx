@@ -1,0 +1,114 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+export interface BatchProduction {
+  id: string;
+  recipe_id: string;
+  batch_name: string;
+  target_serves: number;
+  target_liters: number;
+  production_date: string;
+  produced_by_name?: string;
+  produced_by_email?: string;
+  qr_code_data?: string;
+  notes?: string;
+  group_id?: string;
+  created_at: string;
+}
+
+export interface BatchProductionIngredient {
+  id: string;
+  production_id: string;
+  ingredient_name: string;
+  original_amount: number;
+  scaled_amount: number;
+  unit: string;
+}
+
+export const useBatchProductions = (recipeId?: string) => {
+  const queryClient = useQueryClient();
+
+  const { data: productions, isLoading } = useQuery({
+    queryKey: ['batch-productions', recipeId],
+    queryFn: async () => {
+      let query = supabase
+        .from('batch_productions')
+        .select('*')
+        .order('production_date', { ascending: false });
+      
+      if (recipeId) {
+        query = query.eq('recipe_id', recipeId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as BatchProduction[];
+    },
+  });
+
+  const createProduction = useMutation({
+    mutationFn: async ({
+      production,
+      ingredients
+    }: {
+      production: Omit<BatchProduction, 'id' | 'created_at'>;
+      ingredients: Omit<BatchProductionIngredient, 'id' | 'production_id'>[];
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: { user: profile } } = await supabase.auth.getUser();
+      const producedByEmail = profile?.email || '';
+
+      const { data: productionData, error: productionError } = await supabase
+        .from('batch_productions')
+        .insert([{
+          ...production,
+          user_id: user.id,
+          produced_by_email: producedByEmail,
+        }])
+        .select()
+        .single();
+      
+      if (productionError) throw productionError;
+
+      const ingredientsWithProduction = ingredients.map(ing => ({
+        ...ing,
+        production_id: productionData.id,
+      }));
+
+      const { error: ingredientsError } = await supabase
+        .from('batch_production_ingredients')
+        .insert(ingredientsWithProduction);
+      
+      if (ingredientsError) throw ingredientsError;
+
+      return productionData;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
+      toast.success("Batch production recorded!");
+    },
+    onError: (error) => {
+      toast.error("Failed to record production: " + error.message);
+    },
+  });
+
+  const getProductionIngredients = async (productionId: string) => {
+    const { data, error } = await supabase
+      .from('batch_production_ingredients')
+      .select('*')
+      .eq('production_id', productionId);
+    
+    if (error) throw error;
+    return data as BatchProductionIngredient[];
+  };
+
+  return {
+    productions,
+    isLoading,
+    createProduction: createProduction.mutate,
+    getProductionIngredients,
+  };
+};
