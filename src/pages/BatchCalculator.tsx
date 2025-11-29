@@ -1125,11 +1125,11 @@ const BatchCalculator = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 sm:mb-0">
-            <TabsTrigger value="calculator">Calculator</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="groups">Groups</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 mb-4 sm:mb-0">
+            <TabsTrigger value="calculator" className="text-xs sm:text-sm">Calculator</TabsTrigger>
+            <TabsTrigger value="history" className="text-xs sm:text-sm">History</TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs sm:text-sm">Analytics</TabsTrigger>
+            <TabsTrigger value="groups" className="text-xs sm:text-sm">Groups</TabsTrigger>
           </TabsList>
 
           <TabsContent value="calculator" className="space-y-4 sm:space-y-6 pb-4">
