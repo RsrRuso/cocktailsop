@@ -510,67 +510,35 @@ const BatchCalculator = () => {
 
     const selectedUser = registeredUsers.find(u => u.id === producedByUserId);
 
+    const ingredientPayload = calculation.scaledIngredients.map(ing => ({
+      ingredient_name: ing.name,
+      original_amount: parseFloat(ing.amount),
+      scaled_amount: parseFloat(ing.scaledAmount),
+      unit: ing.unit,
+    }));
+
     if (editingProductionId) {
-      // Update existing production
-      try {
-        // Update production
-        const { error: productionError } = await supabase
-          .from('batch_productions')
-          .update({
-            batch_name: recipeName,
-            target_serves: Math.round(actualServings),
-            target_liters: totalLiters,
-            produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
-            produced_by_user_id: producedByUserId,
-            qr_code_data: qrData,
-            notes: notes,
-            group_id: selectedGroupId
-          })
-          .eq('id', editingProductionId);
-
-        if (productionError) throw productionError;
-
-        // Delete old ingredients
-        const { error: deleteError } = await supabase
-          .from('batch_production_ingredients')
-          .delete()
-          .eq('production_id', editingProductionId);
-
-        if (deleteError) {
-          console.error('Failed to delete old ingredients:', deleteError);
-          throw deleteError;
-        }
-
-        // Insert new ingredients
-        const { error: ingredientsError } = await supabase
-          .from('batch_production_ingredients')
-          .insert(
-            calculation.scaledIngredients.map(ing => ({
-              production_id: editingProductionId,
-              ingredient_name: ing.name,
-              original_amount: parseFloat(ing.amount),
-              scaled_amount: parseFloat(ing.scaledAmount),
-              unit: ing.unit
-            }))
-          );
-
-        if (ingredientsError) {
-          console.error('Failed to insert new ingredients:', ingredientsError);
-          throw ingredientsError;
-        }
-
-        await queryClient.invalidateQueries({ queryKey: ["batch-productions"] });
-        toast.success("Batch production updated!");
-      } catch (error) {
-        console.error("Update error:", error);
-        toast.error("Failed to update production");
-        return;
-      }
+      // Update existing production via shared hook
+      updateProduction({
+        productionId: editingProductionId,
+        production: {
+          recipe_id: recipeId!,
+          batch_name: recipeName,
+          target_serves: Math.round(actualServings),
+          target_liters: totalLiters,
+          produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
+          produced_by_user_id: producedByUserId,
+          qr_code_data: qrData,
+          notes,
+          group_id: selectedGroupId || undefined,
+        },
+        ingredients: ingredientPayload,
+      });
     } else {
       // Create new production
       createProduction({
         production: {
-          recipe_id: recipeId,
+          recipe_id: recipeId!,
           batch_name: recipeName,
           target_serves: Math.round(actualServings),
           target_liters: totalLiters,
@@ -579,15 +547,10 @@ const BatchCalculator = () => {
           produced_by_email: selectedUser ? null : null,
           produced_by_user_id: producedByUserId,
           qr_code_data: qrData,
-          notes: notes,
-          group_id: selectedGroupId
+          notes,
+          group_id: selectedGroupId || undefined,
         },
-        ingredients: calculation.scaledIngredients.map(ing => ({
-          ingredient_name: ing.name,
-          original_amount: parseFloat(ing.amount),
-          scaled_amount: parseFloat(ing.scaledAmount),
-          unit: ing.unit
-        }))
+        ingredients: ingredientPayload,
       });
     }
 
@@ -599,7 +562,6 @@ const BatchCalculator = () => {
     setTargetLiters("");
     setEditingProductionId(null);
   };
-
   const handleEditProduction = async (production: any) => {
     // Fetch production ingredients
     const { data: prodIngredients } = await supabase
