@@ -59,6 +59,8 @@ const BatchCalculator = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [managingGroup, setManagingGroup] = useState<any>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<any>(null);
+  const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
 
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes();
   const { productions, createProduction } = useBatchProductions(
@@ -340,6 +342,38 @@ const BatchCalculator = () => {
       console.error(error);
     } finally {
       setIsAILoading(false);
+    }
+  };
+
+  const fetchAiSuggestions = async () => {
+    if (!productions || productions.length === 0) return;
+    
+    setLoadingAiSuggestions(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('batch-ai-assistant', {
+        body: {
+          action: 'forecast_par',
+          data: {
+            history: productions.map(p => ({
+              batch_name: p.batch_name,
+              production_date: p.production_date,
+              target_liters: p.target_liters,
+              target_serves: p.target_serves
+            }))
+          }
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data?.result) {
+        setAiSuggestions(data.result);
+      }
+    } catch (error) {
+      console.error('Error fetching AI suggestions:', error);
+      toast.error('Failed to generate AI suggestions');
+    } finally {
+      setLoadingAiSuggestions(false);
     }
   };
 
@@ -808,6 +842,33 @@ const BatchCalculator = () => {
       doc.text(reportDate, 165, yPos + 21);
       
       yPos += 38;
+      
+      // AI Par Level Suggestions Section
+      if (aiSuggestions) {
+        doc.setFillColor(...deepBlue);
+        doc.rect(12, yPos, 186, 8, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text("AI-POWERED PAR LEVEL SUGGESTIONS", 15, yPos + 5.5);
+        yPos += 12;
+        
+        doc.setFontSize(8);
+        doc.setTextColor(...slate);
+        doc.setFont("helvetica", "normal");
+        
+        const suggestionLines = doc.splitTextToSize(aiSuggestions, 180);
+        suggestionLines.forEach((line: string) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.text(line, 15, yPos);
+          yPos += 4;
+        });
+        
+        yPos += 10;
+      }
       
       // Master List - All Individual Batches
       doc.setFillColor(...deepBlue);
@@ -1278,15 +1339,36 @@ const BatchCalculator = () => {
                 </div>
                 
                 {productions && productions.length > 0 && (
-                  <Button
-                    variant="default"
-                    onClick={downloadAllBatchesReport}
-                    className="w-full py-6"
-                    size="lg"
-                  >
-                    <Download className="w-5 h-5 mr-2" />
-                    Export Analytics Report
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={fetchAiSuggestions}
+                      disabled={loadingAiSuggestions}
+                      className="flex-1 py-6"
+                      size="lg"
+                    >
+                      {loadingAiSuggestions ? (
+                        <>
+                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-5 h-5 mr-2" />
+                          AI Suggestions
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="default"
+                      onClick={downloadAllBatchesReport}
+                      className="flex-1 py-6"
+                      size="lg"
+                    >
+                      <Download className="w-5 h-5 mr-2" />
+                      Export Report
+                    </Button>
+                  </div>
                 )}
               </div>
               
@@ -1325,6 +1407,25 @@ const BatchCalculator = () => {
                       ))}
                     </div>
                   </div>
+
+                  {aiSuggestions && (
+                    <div className="glass p-4 rounded-lg border-2 border-primary/20">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles className="w-5 h-5 text-primary" />
+                        <h4 className="font-semibold">AI Par Level Suggestions</h4>
+                      </div>
+                      <div className="space-y-3 text-sm">
+                        <div className="p-3 bg-muted/50 rounded">
+                          <p className="font-medium text-primary mb-1">Weekly Analysis</p>
+                          <p className="text-muted-foreground whitespace-pre-wrap">{aiSuggestions}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground italic">
+                          These suggestions are based on your production history and consumption patterns. 
+                          Adjust par levels according to seasonal demand and upcoming events.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </Card>

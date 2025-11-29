@@ -28,8 +28,27 @@ serve(async (req) => {
       systemPrompt = "You are an expert in beverage cost optimization and recipe efficiency.";
       userPrompt = `Optimize this recipe for batch production: ${JSON.stringify(data.ingredients)}. Suggest improvements for scaling and efficiency.`;
     } else if (action === "forecast_par") {
-      systemPrompt = "You are a data analyst specializing in inventory forecasting and par level calculations.";
-      userPrompt = `Based on this production history: ${JSON.stringify(data.history)}. Calculate recommended par levels and forecast next month's needs.`;
+      systemPrompt = "You are a data analyst specializing in inventory forecasting and par level calculations for beverage operations.";
+      userPrompt = `Based on this production history: ${JSON.stringify(data.history)}.
+      
+Analyze the data and provide comprehensive par level suggestions with:
+
+**WEEKLY ANALYSIS:**
+- Average weekly production volume
+- Recommended weekly par levels for each recipe
+- Peak production days identified
+
+**MONTHLY ANALYSIS:**
+- Monthly consumption trends
+- Seasonal patterns observed
+- Recommended monthly stock levels
+
+**QUARTERLY ANALYSIS:**
+- Quarter-over-quarter growth trends
+- Long-term inventory planning recommendations
+- Predicted demand for next quarter
+
+Format the response clearly with these three sections. Be specific with numbers and actionable recommendations.`;
     } else if (action === "analyze_trends") {
       systemPrompt = "You are a business intelligence analyst for beverage operations.";
       userPrompt = `Analyze these batch production trends: ${JSON.stringify(data.productions)}. Provide insights on popular recipes, seasonal patterns, and optimization opportunities.`;
