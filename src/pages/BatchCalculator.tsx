@@ -266,15 +266,40 @@ const BatchCalculator = () => {
     return parsedIngredients;
   };
 
-  const handleParseMasterList = () => {
+  const handleParseMasterList = async () => {
     if (!masterList.trim()) {
       toast.error("Please enter ingredients to parse");
       return;
     }
     
     const parsed = parseMasterList(masterList);
+    
+    // Save to master spirits database
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      for (const ingredient of parsed) {
+        if (ingredient.name && ingredient.bottle_size_ml) {
+          // Check if spirit already exists
+          const { data: existing } = await supabase
+            .from('master_spirits')
+            .select('id')
+            .eq('name', ingredient.name)
+            .eq('user_id', user.id)
+            .single();
+          
+          if (!existing) {
+            await supabase.from('master_spirits').insert({
+              name: ingredient.name,
+              bottle_size_ml: ingredient.bottle_size_ml,
+              user_id: user.id,
+            });
+          }
+        }
+      }
+    }
+    
     setIngredients(parsed);
-    toast.success(`Added ${parsed.length} ingredients!`);
+    toast.success(`Added ${parsed.length} ingredients and saved to master list!`);
     setShowMasterList(false);
     setMasterList("");
   };
