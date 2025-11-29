@@ -387,202 +387,240 @@ const BatchCalculator = () => {
         });
       }
       
-      // Colors
-      const primaryColor: [number, number, number] = [41, 128, 185];
-      const accentColor: [number, number, number] = [52, 152, 219];
-      const successColor: [number, number, number] = [46, 204, 113];
-      const textDark: [number, number, number] = [44, 62, 80];
+      // Modern Color Palette
+      const deepBlue: [number, number, number] = [30, 58, 138];
+      const skyBlue: [number, number, number] = [56, 189, 248];
+      const emerald: [number, number, number] = [16, 185, 129];
+      const amber: [number, number, number] = [245, 158, 11];
+      const slate: [number, number, number] = [51, 65, 85];
+      const lightGray: [number, number, number] = [248, 250, 252];
       
-      // Compact Header
-      doc.setFillColor(...primaryColor);
-      doc.rect(0, 0, 210, 22, 'F');
+      // Elegant Header with gradient effect
+      doc.setFillColor(...deepBlue);
+      doc.rect(0, 0, 210, 25, 'F');
+      
+      // Accent stripe
+      doc.setFillColor(...skyBlue);
+      doc.rect(0, 25, 210, 2, 'F');
       
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
+      doc.setFontSize(20);
       doc.setFont("helvetica", "bold");
-      doc.text("BATCH PRODUCTION REPORT", 105, 12, { align: 'center' });
+      doc.text("BATCH PRODUCTION REPORT", 105, 13, { align: 'center' });
       
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.text("Professional Batch Tracking", 105, 18, { align: 'center' });
+      doc.text("📊 Professional Quality Control & Traceability", 105, 20, { align: 'center' });
       
       // Reset text color
-      doc.setTextColor(...textDark);
+      doc.setTextColor(...slate);
       
-      // Production Date - compact
-      doc.setFontSize(11);
+      // Production Date with icon
+      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       const productionDate = new Date(production.production_date).toLocaleDateString('en-US', { 
         year: 'numeric', 
         month: 'short', 
         day: 'numeric' 
       });
-      doc.text(`Date: ${productionDate}`, 105, 30, { align: 'center' });
+      doc.text(`📅 ${productionDate}`, 105, 34, { align: 'center' });
       
-      // Batch Summary - compact
-      let yPos = 36;
-      doc.setFillColor(245, 245, 245);
-      doc.roundedRect(15, yPos, 85, 28, 2, 2, 'F');
-      doc.setDrawColor(...accentColor);
-      doc.setLineWidth(0.3);
-      doc.roundedRect(15, yPos, 85, 28, 2, 2, 'S');
+      // Batch Summary Card - Modern Design
+      let yPos = 40;
       
-      doc.setFontSize(10);
+      // Left card - Batch Info
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(12, yPos, 88, 32, 3, 3, 'F');
+      doc.setDrawColor(...skyBlue);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(12, yPos, 88, 32, 3, 3, 'S');
+      
+      // Accent corner
+      doc.setFillColor(...deepBlue);
+      doc.roundedRect(12, yPos, 88, 6, 3, 3, 'F');
+      
+      doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(...primaryColor);
-      doc.text("BATCH SUMMARY", 57.5, yPos + 5, { align: 'center' });
+      doc.setTextColor(255, 255, 255);
+      doc.text("🧪 BATCH DETAILS", 56, yPos + 4, { align: 'center' });
       
-      doc.setTextColor(...textDark);
+      doc.setTextColor(...slate);
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.text("Batch:", 18, yPos + 11);
+      doc.text("Batch:", 16, yPos + 11);
       doc.setFont("helvetica", "normal");
-      doc.text(production.batch_name, 35, yPos + 11);
+      const batchName = production.batch_name.length > 28 ? production.batch_name.substring(0, 28) + '...' : production.batch_name;
+      doc.text(batchName, 16, yPos + 16);
       
       doc.setFont("helvetica", "bold");
-      doc.text("Volume:", 18, yPos + 16);
+      doc.text("Volume:", 16, yPos + 21);
       doc.setFont("helvetica", "normal");
-      doc.text(`${production.target_liters.toFixed(2)}L`, 35, yPos + 16);
+      doc.setTextColor(...emerald);
+      doc.setFontSize(9);
+      doc.text(`${production.target_liters.toFixed(2)} L`, 35, yPos + 21);
       
+      doc.setTextColor(...slate);
+      doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.text("Serves:", 18, yPos + 21);
+      doc.text("Servings:", 16, yPos + 26);
       doc.setFont("helvetica", "normal");
-      doc.text(`${production.target_serves || 0}`, 35, yPos + 21);
+      doc.setTextColor(...amber);
+      doc.setFontSize(9);
+      doc.text(`${production.target_serves || 0}`, 38, yPos + 26);
       
+      doc.setTextColor(...slate);
+      doc.setFontSize(7);
       doc.setFont("helvetica", "bold");
-      doc.text("By:", 18, yPos + 26);
+      doc.text("Producer:", 16, yPos + 31);
       doc.setFont("helvetica", "normal");
       const producerName = production.produced_by_name || 'N/A';
-      doc.text(producerName.length > 20 ? producerName.substring(0, 20) + '...' : producerName, 35, yPos + 26);
+      doc.text(producerName.length > 25 ? producerName.substring(0, 25) + '...' : producerName, 36, yPos + 31);
       
-      // QR Code - optimized for waterproof sticker printing
+      // Right card - QR Code Sticker
       if (production.qr_code_data) {
         doc.setFillColor(255, 255, 255);
-        doc.roundedRect(110, yPos, 85, 28, 2, 2, 'F');
-        doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(110, yPos, 85, 28, 2, 2, 'S');
+        doc.roundedRect(110, yPos, 88, 32, 3, 3, 'F');
+        doc.setDrawColor(...skyBlue);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(110, yPos, 88, 32, 3, 3, 'S');
         
-        doc.setFontSize(7);
+        // Accent corner
+        doc.setFillColor(...deepBlue);
+        doc.roundedRect(110, yPos, 88, 6, 3, 3, 'F');
+        
+        doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(0, 0, 0);
-        doc.text("BATCH QR STICKER", 152.5, yPos + 3.5, { align: 'center' });
+        doc.setTextColor(255, 255, 255);
+        doc.text("🏷️ WATERPROOF STICKER", 154, yPos + 4, { align: 'center' });
         
-        // High-resolution QR code for sticker printing
+        // High-res QR for sticker printing
         const qrCodeDataUrl = await QRCode.toDataURL(production.qr_code_data, {
-          width: 800,
-          margin: 2,
+          width: 1000,
+          margin: 1,
           color: {
             dark: '#000000',
             light: '#FFFFFF'
           },
           errorCorrectionLevel: 'H'
         });
-        doc.addImage(qrCodeDataUrl, 'PNG', 139, yPos + 5, 18, 18);
+        doc.addImage(qrCodeDataUrl, 'PNG', 144, yPos + 8, 20, 20);
         
-        doc.setFontSize(5.5);
-        doc.setFont("helvetica", "normal");
-        doc.text(production.batch_name.substring(0, 25), 152.5, yPos + 24, { align: 'center' });
-        doc.setFontSize(5);
-        doc.text(`${productionDate} | ${production.target_liters.toFixed(1)}L`, 152.5, yPos + 27, { align: 'center' });
+        doc.setFontSize(6.5);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...slate);
+        doc.text(production.batch_name.substring(0, 30), 154, yPos + 29.5, { align: 'center' });
       }
       
-      yPos += 32;
+      yPos += 36;
       
-      // Ingredients Section - compact
-      doc.setFillColor(...accentColor);
-      doc.rect(15, yPos, 180, 6, 'F');
+      // Ingredients Section with modern styling
+      doc.setFillColor(...deepBlue);
+      doc.rect(12, yPos, 186, 7, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("INGREDIENTS", 18, yPos + 4);
-      yPos += 9;
+      doc.text("📦 INGREDIENTS", 15, yPos + 4.5);
+      yPos += 10;
       
-      doc.setTextColor(...textDark);
-      doc.setFontSize(7);
+      doc.setTextColor(...slate);
+      doc.setFontSize(7.5);
       
-      // Compact ingredients table
+      // Modern ingredients table
       if (ingredients && ingredients.length > 0) {
-        // Table header
+        // Table header with gradient effect
         doc.setFont("helvetica", "bold");
-        doc.setFillColor(230, 230, 230);
-        doc.rect(15, yPos - 2, 180, 5, 'F');
-        doc.text("No", 18, yPos + 1.5);
-        doc.text("Ingredient", 28, yPos + 1.5);
-        doc.text("Quantity", 130, yPos + 1.5);
-        doc.text("Unit", 165, yPos + 1.5);
-        yPos += 6;
+        doc.setFillColor(...deepBlue);
+        doc.rect(12, yPos - 2, 186, 6, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text("#", 15, yPos + 2);
+        doc.text("Ingredient Name", 25, yPos + 2);
+        doc.text("Quantity", 145, yPos + 2);
+        doc.text("Unit", 175, yPos + 2);
+        yPos += 7;
         
-        // Table rows - compact
+        // Table rows with alternating colors
         doc.setFont("helvetica", "normal");
         let totalIngredientsQty = 0;
         
         ingredients.forEach((ing: any, index: number) => {
           if (index % 2 === 0) {
-            doc.setFillColor(250, 250, 250);
-            doc.rect(15, yPos - 2, 180, 4.5, 'F');
+            doc.setFillColor(...lightGray);
+            doc.rect(12, yPos - 2, 186, 5, 'F');
           }
           
-          doc.text(`${index + 1}`, 18, yPos + 1);
-          const ingName = ing.ingredient_name.length > 45 ? ing.ingredient_name.substring(0, 45) + '...' : ing.ingredient_name;
-          doc.text(ingName, 28, yPos + 1);
-          doc.text(ing.scaled_amount.toString(), 130, yPos + 1);
-          doc.text(ing.unit, 165, yPos + 1);
+          doc.setTextColor(...slate);
+          doc.text(`${index + 1}`, 15, yPos + 1.5);
+          const ingName = ing.ingredient_name.length > 55 ? ing.ingredient_name.substring(0, 55) + '...' : ing.ingredient_name;
+          doc.text(ingName, 25, yPos + 1.5);
+          doc.setTextColor(...emerald);
+          doc.setFont("helvetica", "bold");
+          doc.text(ing.scaled_amount.toString(), 145, yPos + 1.5);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(...slate);
+          doc.text(ing.unit, 175, yPos + 1.5);
           totalIngredientsQty += parseFloat(ing.scaled_amount);
-          yPos += 4.5;
+          yPos += 5;
         });
         
-        // Total row - compact
-        doc.setFillColor(...primaryColor);
-        doc.rect(15, yPos - 2, 180, 5, 'F');
+        // Total row with emphasis
+        doc.setFillColor(...emerald);
+        doc.rect(12, yPos - 2, 186, 6, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.text("TOTAL:", 28, yPos + 1);
-        doc.text(`${ingredients.length} items`, 130, yPos + 1);
-        yPos += 7;
+        doc.text("✓ TOTAL:", 25, yPos + 2);
+        doc.text(`${ingredients.length} Items`, 145, yPos + 2);
+        yPos += 8;
       }
       
-      doc.setTextColor(...textDark);
+      doc.setTextColor(...slate);
       
-      // OVERALL PRODUCTION SUMMARY - compact
-      doc.setFillColor(...successColor);
-      doc.rect(15, yPos, 180, 6, 'F');
+      // Overall Production Summary - Eye-catching design
+      doc.setFillColor(...emerald);
+      doc.rect(12, yPos, 186, 7, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("OVERALL SUMMARY", 18, yPos + 4);
-      yPos += 9;
+      doc.text("📊 OVERALL PRODUCTION SUMMARY", 15, yPos + 4.5);
+      yPos += 10;
       
-      doc.setTextColor(...textDark);
-      doc.setFillColor(240, 255, 245);
-      doc.roundedRect(15, yPos, 180, 18, 2, 2, 'F');
-      doc.setDrawColor(...successColor);
-      doc.setLineWidth(0.3);
-      doc.roundedRect(15, yPos, 180, 18, 2, 2, 'S');
+      doc.setTextColor(...slate);
+      doc.setFillColor(240, 253, 244);
+      doc.roundedRect(12, yPos, 186, 20, 3, 3, 'F');
+      doc.setDrawColor(...emerald);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(12, yPos, 186, 20, 3, 3, 'S');
       
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.text("Total Batches:", 18, yPos + 5);
+      doc.text("Total Batches:", 16, yPos + 6);
       doc.setFont("helvetica", "normal");
-      doc.text(`${totalBatchesProduced}`, 50, yPos + 5);
+      doc.setTextColor(...deepBlue);
+      doc.text(`${totalBatchesProduced} Batches`, 50, yPos + 6);
       
+      doc.setTextColor(...slate);
       doc.setFont("helvetica", "bold");
-      doc.text("Total Liters:", 18, yPos + 10);
+      doc.text("Total Volume:", 16, yPos + 11);
       doc.setFont("helvetica", "normal");
-      doc.text(`${totalLitersProduced.toFixed(2)}L`, 50, yPos + 10);
+      doc.setTextColor(...emerald);
+      doc.setFontSize(9);
+      doc.text(`${totalLitersProduced.toFixed(2)} L`, 50, yPos + 11);
       
+      doc.setTextColor(...slate);
+      doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.text("Unique Ingredients:", 18, yPos + 15);
+      doc.text("Unique Ingredients:", 16, yPos + 16);
       doc.setFont("helvetica", "normal");
-      doc.text(`${overallIngredientsMap.size}`, 50, yPos + 15);
-      yPos += 21;
+      doc.setTextColor(...amber);
+      doc.text(`${overallIngredientsMap.size} Types`, 52, yPos + 16);
+      yPos += 23;
       
-      // Overall Ingredients - compact multi-column
+      // Ingredients consumed breakdown - compact multi-column
       if (overallIngredientsMap.size > 0) {
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
-        doc.text("Total Ingredients Consumed:", 18, yPos);
-        yPos += 4;
+        doc.setTextColor(...slate);
+        doc.text("🔍 Total Ingredients Consumed:", 16, yPos);
+        yPos += 5;
         
         doc.setFontSize(6.5);
         doc.setFont("helvetica", "normal");
@@ -590,48 +628,59 @@ const BatchCalculator = () => {
         let col = 0;
         let rowY = yPos;
         Array.from(overallIngredientsMap.entries()).forEach(([name, data]) => {
-          const xPos = 18 + (col * 60);
+          const xPos = 16 + (col * 62);
           const displayName = name.length > 18 ? name.substring(0, 18) + '...' : name;
-          doc.text(`• ${displayName}: ${data.amount.toFixed(1)} ${data.unit}`, xPos, rowY);
+          doc.setTextColor(...slate);
+          doc.text(`• ${displayName}:`, xPos, rowY);
+          doc.setTextColor(...emerald);
+          doc.setFont("helvetica", "bold");
+          doc.text(`${data.amount.toFixed(1)} ${data.unit}`, xPos + 30, rowY);
+          doc.setFont("helvetica", "normal");
           
           col++;
           if (col >= 3) {
             col = 0;
-            rowY += 3.5;
+            rowY += 4;
           }
         });
         
-        if (col > 0) rowY += 3.5;
-        yPos = rowY + 3;
+        if (col > 0) rowY += 4;
+        yPos = rowY + 4;
       }
 
-      // Notes Section - compact
+      // Notes Section - if exists
       if (production.notes) {
-        doc.setFillColor(255, 250, 240);
-        doc.roundedRect(15, yPos, 180, 12, 2, 2, 'F');
+        doc.setFillColor(255, 251, 235);
+        doc.roundedRect(12, yPos, 186, 14, 3, 3, 'F');
+        doc.setDrawColor(...amber);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(12, yPos, 186, 14, 3, 3, 'S');
         
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...textDark);
-        doc.text("Notes:", 18, yPos + 4);
+        doc.setTextColor(...slate);
+        doc.text("📝 Notes:", 16, yPos + 5);
         
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
-        const splitNotes = doc.splitTextToSize(production.notes, 170);
-        doc.text(splitNotes.slice(0, 2), 18, yPos + 8);
-        yPos += 14;
+        const splitNotes = doc.splitTextToSize(production.notes, 175);
+        doc.text(splitNotes.slice(0, 2), 16, yPos + 9);
+        yPos += 16;
       }
       
-      // Footer - compact
-      doc.setDrawColor(200, 200, 200);
-      doc.line(15, 287, 195, 287);
+      // Modern Footer
+      doc.setDrawColor(...skyBlue);
+      doc.setLineWidth(0.3);
+      doc.line(12, 287, 198, 287);
       doc.setFontSize(7);
       doc.setFont("helvetica", "italic");
-      doc.setTextColor(120, 120, 120);
-      doc.text(`Generated: ${new Date().toLocaleDateString('en-US')} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`, 105, 291, { align: 'center' });
+      doc.setTextColor(148, 163, 184);
+      const timestamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + 
+                       ' at ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      doc.text(`⚡ Generated: ${timestamp} | © Professional Batch Tracking System`, 105, 291, { align: 'center' });
       
-      doc.save(`Batch_Report_${production.batch_name}_${new Date(production.production_date).toLocaleDateString('en-US').replace(/\//g, '-')}.pdf`);
-      toast.success("Batch report downloaded!");
+      doc.save(`Batch_${production.batch_name.replace(/[^a-z0-9]/gi, '_')}_${new Date(production.production_date).toISOString().split('T')[0]}.pdf`);
+      toast.success("🎉 Modern batch report downloaded!");
     } catch (error) {
       console.error("PDF generation error:", error);
       toast.error("Failed to generate PDF");
