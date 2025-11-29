@@ -1378,7 +1378,7 @@ const BatchCalculator = () => {
                           <h5 className="font-bold truncate">{group.name}</h5>
                           <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{group.description}</p>
                         </div>
-                        <div className="flex flex-col gap-2">
+                        <div className="flex gap-2">
                           <Button 
                             size="lg" 
                             variant="outline"
@@ -1386,17 +1386,17 @@ const BatchCalculator = () => {
                               setManagingGroup(group);
                               setShowMembersDialog(true);
                             }}
-                            className="glass-hover w-full py-6"
+                            className="glass-hover flex-1 py-6"
                           >
                             <Users className="w-5 h-5 mr-2" />
-                            View Members
+                            Members
                           </Button>
                           <Button 
                             size="lg" 
                             onClick={() => setSelectedGroupId(group.id)}
-                            className={`w-full py-6 ${selectedGroupId === group.id ? "bg-primary text-primary-foreground" : "glass-hover"}`}
+                            className={`flex-1 py-6 ${selectedGroupId === group.id ? "bg-primary text-primary-foreground" : "glass-hover"}`}
                           >
-                            {selectedGroupId === group.id ? "✓ Selected" : "Select Group"}
+                            {selectedGroupId === group.id ? "✓ Selected" : "Select"}
                           </Button>
                         </div>
                       </div>
