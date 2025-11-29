@@ -233,6 +233,13 @@ export type Database = {
             referencedRelation: "batch_recipes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_batch_productions_group_id"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "mixologist_groups"
+            referencedColumns: ["id"]
+          },
         ]
       }
       batch_recipes: {
@@ -3081,6 +3088,7 @@ export type Database = {
           id: string
           name: string
           qr_code_data: string | null
+          submission_qr_code: string | null
           updated_at: string
         }
         Insert: {
@@ -3090,6 +3098,7 @@ export type Database = {
           id?: string
           name: string
           qr_code_data?: string | null
+          submission_qr_code?: string | null
           updated_at?: string
         }
         Update: {
@@ -3099,6 +3108,7 @@ export type Database = {
           id?: string
           name?: string
           qr_code_data?: string | null
+          submission_qr_code?: string | null
           updated_at?: string
         }
         Relationships: []
