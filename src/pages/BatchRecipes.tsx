@@ -120,41 +120,69 @@ const BatchRecipes = () => {
   };
 
   const handleParseMasterList = async () => {
-    if (!masterList.trim()) {
-      toast.error("Please enter ingredients to parse");
-      return;
-    }
-    
-    const parsed = parseMasterList(masterList);
-    
-    // Save to master spirits database
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      for (const ingredient of parsed) {
-        if (ingredient.name && ingredient.bottle_size_ml) {
-          // Check if spirit already exists
-          const { data: existing } = await supabase
-            .from('master_spirits')
-            .select('id')
-            .eq('name', ingredient.name)
-            .eq('user_id', user.id)
-            .single();
-          
-          if (!existing) {
-            await supabase.from('master_spirits').insert({
-              name: ingredient.name,
-              bottle_size_ml: ingredient.bottle_size_ml,
-              user_id: user.id,
-            });
+    try {
+      console.log("Parse button clicked");
+      
+      if (!masterList.trim()) {
+        toast.error("Please enter ingredients to parse");
+        return;
+      }
+      
+      console.log("Parsing master list...");
+      const parsed = parseMasterList(masterList);
+      console.log("Parsed ingredients:", parsed);
+      
+      // Save to master spirits database
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log("Current user:", user?.id);
+      
+      if (user) {
+        for (const ingredient of parsed) {
+          if (ingredient.name && ingredient.bottle_size_ml) {
+            console.log("Processing ingredient:", ingredient.name);
+            
+            // Check if spirit already exists
+            const { data: existing, error: checkError } = await supabase
+              .from('master_spirits')
+              .select('id')
+              .eq('name', ingredient.name)
+              .eq('user_id', user.id)
+              .maybeSingle();
+            
+            if (checkError) {
+              console.error("Error checking existing spirit:", checkError);
+              continue;
+            }
+            
+            if (!existing) {
+              console.log("Inserting new spirit:", ingredient.name);
+              const { error: insertError } = await supabase.from('master_spirits').insert({
+                name: ingredient.name,
+                bottle_size_ml: ingredient.bottle_size_ml,
+                user_id: user.id,
+              });
+              
+              if (insertError) {
+                console.error("Error inserting spirit:", insertError);
+              } else {
+                console.log("Successfully inserted:", ingredient.name);
+              }
+            } else {
+              console.log("Spirit already exists:", ingredient.name);
+            }
           }
         }
       }
+      
+      setIngredients(parsed);
+      toast.success(`Added ${parsed.length} ingredients and saved to master list!`);
+      setShowMasterList(false);
+      setMasterList("");
+      console.log("Parse completed successfully");
+    } catch (error) {
+      console.error("Error in handleParseMasterList:", error);
+      toast.error("Failed to parse ingredients: " + (error as Error).message);
     }
-    
-    setIngredients(parsed);
-    toast.success(`Added ${parsed.length} ingredients and saved to master list!`);
-    setShowMasterList(false);
-    setMasterList("");
   };
 
   const addIngredient = () => {
