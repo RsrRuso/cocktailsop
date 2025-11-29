@@ -1006,10 +1006,10 @@ const BatchCalculator = () => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-16">
+    <div className="min-h-screen bg-background pb-32 sm:pb-24 pt-16">
       <TopNav />
 
-      <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
+      <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto mb-8 sm:mb-4">
         <div className="flex items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
@@ -1026,14 +1026,14 @@ const BatchCalculator = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 sm:mb-0">
             <TabsTrigger value="calculator">Calculator</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="groups">Groups</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="calculator" className="space-y-4 sm:space-y-6">
+          <TabsContent value="calculator" className="space-y-4 sm:space-y-6 pb-4">
             <Card className="glass p-4 sm:p-6 space-y-4 sm:space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h3 className="text-base sm:text-lg font-semibold">Quick Production</h3>
@@ -1157,7 +1157,7 @@ const BatchCalculator = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-4">
+          <TabsContent value="history" className="space-y-4 pb-4">
             <Card className="glass p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -1245,7 +1245,7 @@ const BatchCalculator = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-4">
+          <TabsContent value="analytics" className="space-y-4 pb-4">
             <Card className="glass p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-4 sm:mb-6">
                 <BarChart3 className="w-5 h-5" />
@@ -1292,7 +1292,7 @@ const BatchCalculator = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="groups" className="space-y-4">
+          <TabsContent value="groups" className="space-y-4 pb-4">
             <Card className="glass p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-4 sm:mb-6">
                 <Users className="w-5 h-5" />
