@@ -1339,34 +1339,27 @@ const BatchCalculator = () => {
                 </div>
                 
                 {productions && productions.length > 0 && (
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       variant="outline"
                       onClick={fetchAiSuggestions}
                       disabled={loadingAiSuggestions}
-                      className="flex-1 py-6"
+                      className="py-6"
                       size="lg"
                     >
                       {loadingAiSuggestions ? (
-                        <>
-                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                          Analyzing...
-                        </>
+                        <Loader2 className="w-5 h-5 animate-spin" />
                       ) : (
-                        <>
-                          <Sparkles className="w-5 h-5 mr-2" />
-                          AI Suggestions
-                        </>
+                        <Sparkles className="w-5 h-5" />
                       )}
                     </Button>
                     <Button
                       variant="default"
                       onClick={downloadAllBatchesReport}
-                      className="flex-1 py-6"
+                      className="py-6"
                       size="lg"
                     >
-                      <Download className="w-5 h-5 mr-2" />
-                      Export Report
+                      <Download className="w-5 h-5" />
                     </Button>
                   </div>
                 )}
