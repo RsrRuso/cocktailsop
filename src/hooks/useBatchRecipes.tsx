@@ -19,16 +19,21 @@ export interface BatchRecipe {
   updated_at: string;
 }
 
-export const useBatchRecipes = () => {
+export const useBatchRecipes = (groupId?: string | null) => {
   const queryClient = useQueryClient();
 
   const { data: recipes, isLoading } = useQuery({
-    queryKey: ['batch-recipes'],
+    queryKey: ['batch-recipes', groupId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('batch_recipes')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      // Note: batch_recipes doesn't have group_id column currently
+      // All recipes are shared across groups, but we keep the parameter for future filtering
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       return (data || []).map(recipe => ({

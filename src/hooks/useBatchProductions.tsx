@@ -27,11 +27,11 @@ export interface BatchProductionIngredient {
   unit: string;
 }
 
-export const useBatchProductions = (recipeId?: string) => {
+export const useBatchProductions = (recipeId?: string, groupId?: string | null) => {
   const queryClient = useQueryClient();
 
   const { data: productions, isLoading } = useQuery({
-    queryKey: ['batch-productions', recipeId],
+    queryKey: ['batch-productions', recipeId, groupId],
     queryFn: async () => {
       let query = supabase
         .from('batch_productions')
@@ -40,6 +40,11 @@ export const useBatchProductions = (recipeId?: string) => {
       
       if (recipeId) {
         query = query.eq('recipe_id', recipeId);
+      }
+
+      // Filter by group_id when a group is selected
+      if (groupId) {
+        query = query.eq('group_id', groupId);
       }
 
       const { data, error } = await query;
