@@ -77,6 +77,7 @@ const BatchCalculator = () => {
   const [masterList, setMasterList] = useState("");
   const [showMasterList, setShowMasterList] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingProductionId, setEditingProductionId] = useState<string | null>(null);
 
   const aiAnalysisText =
     typeof aiSuggestions === "string"
@@ -492,27 +493,78 @@ const BatchCalculator = () => {
 
     const selectedUser = registeredUsers.find(u => u.id === producedByUserId);
 
-    createProduction({
-      production: {
-        recipe_id: recipeId,
-        batch_name: recipeName,
-        target_serves: Math.round(actualServings),
-        target_liters: totalLiters,
-        production_date: new Date().toISOString(),
-        produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
-        produced_by_email: selectedUser ? null : null,
-        produced_by_user_id: producedByUserId,
-        qr_code_data: qrData,
-        notes: notes,
-        group_id: selectedGroupId
-      },
-      ingredients: calculation.scaledIngredients.map(ing => ({
-        ingredient_name: ing.name,
-        original_amount: parseFloat(ing.amount),
-        scaled_amount: parseFloat(ing.scaledAmount),
-        unit: ing.unit
-      }))
-    });
+    if (editingProductionId) {
+      // Update existing production
+      try {
+        // Update production
+        const { error: productionError } = await supabase
+          .from('batch_productions')
+          .update({
+            batch_name: recipeName,
+            target_serves: Math.round(actualServings),
+            target_liters: totalLiters,
+            produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
+            produced_by_user_id: producedByUserId,
+            qr_code_data: qrData,
+            notes: notes,
+            group_id: selectedGroupId
+          })
+          .eq('id', editingProductionId);
+
+        if (productionError) throw productionError;
+
+        // Delete old ingredients
+        await supabase
+          .from('batch_production_ingredients')
+          .delete()
+          .eq('production_id', editingProductionId);
+
+        // Insert new ingredients
+        const { error: ingredientsError } = await supabase
+          .from('batch_production_ingredients')
+          .insert(
+            calculation.scaledIngredients.map(ing => ({
+              production_id: editingProductionId,
+              ingredient_name: ing.name,
+              original_amount: parseFloat(ing.amount),
+              scaled_amount: parseFloat(ing.scaledAmount),
+              unit: ing.unit
+            }))
+          );
+
+        if (ingredientsError) throw ingredientsError;
+
+        await queryClient.invalidateQueries({ queryKey: ["batch-productions"] });
+        toast.success("Batch production updated!");
+      } catch (error) {
+        console.error("Update error:", error);
+        toast.error("Failed to update production");
+        return;
+      }
+    } else {
+      // Create new production
+      createProduction({
+        production: {
+          recipe_id: recipeId,
+          batch_name: recipeName,
+          target_serves: Math.round(actualServings),
+          target_liters: totalLiters,
+          production_date: new Date().toISOString(),
+          produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
+          produced_by_email: selectedUser ? null : null,
+          produced_by_user_id: producedByUserId,
+          qr_code_data: qrData,
+          notes: notes,
+          group_id: selectedGroupId
+        },
+        ingredients: calculation.scaledIngredients.map(ing => ({
+          ingredient_name: ing.name,
+          original_amount: parseFloat(ing.amount),
+          scaled_amount: parseFloat(ing.scaledAmount),
+          unit: ing.unit
+        }))
+      });
+    }
 
     // Reset form after submission
     setProducedByName("");
@@ -520,6 +572,66 @@ const BatchCalculator = () => {
     setNotes("");
     setTargetBatchSize("");
     setTargetLiters("");
+    setEditingProductionId(null);
+  };
+
+  const handleEditProduction = async (production: any) => {
+    // Fetch production ingredients
+    const { data: prodIngredients } = await supabase
+      .from('batch_production_ingredients')
+      .select('*')
+      .eq('production_id', production.id);
+
+    setEditingProductionId(production.id);
+    setRecipeName(production.batch_name);
+    setTargetLiters(String(production.target_liters));
+    setProducedByName(production.produced_by_name || "");
+    setProducedByUserId(production.produced_by_user_id || "");
+    setNotes(production.notes || "");
+    setSelectedRecipeId(production.recipe_id);
+    setSelectedGroupId(production.group_id);
+    
+    if (prodIngredients && prodIngredients.length > 0) {
+      setIngredients(prodIngredients.map((ing: any) => ({
+        id: ing.id || Date.now().toString(),
+        name: ing.ingredient_name,
+        amount: String(ing.original_amount),
+        unit: ing.unit
+      })));
+    }
+
+    setActiveTab("calculator");
+    toast.success("Production loaded for editing");
+  };
+
+  const handleDeleteProduction = async (productionId: string) => {
+    if (!confirm("Are you sure you want to delete this batch production?")) {
+      return;
+    }
+
+    try {
+      // Delete production ingredients first
+      const { error: ingredientsError } = await supabase
+        .from('batch_production_ingredients')
+        .delete()
+        .eq('production_id', productionId);
+
+      if (ingredientsError) throw ingredientsError;
+
+      // Delete production
+      const { error: productionError } = await supabase
+        .from('batch_productions')
+        .delete()
+        .eq('id', productionId);
+
+      if (productionError) throw productionError;
+
+      await queryClient.invalidateQueries({ queryKey: ["batch-productions"] });
+      toast.success("Batch production deleted");
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete production");
+    }
   };
 
   const handleAISuggestions = async () => {
@@ -2114,8 +2226,26 @@ const BatchCalculator = () => {
                       disabled={!targetLiters}
                     >
                       <QrCode className="w-5 h-5 mr-2" />
-                      Submit & Generate QR Code
+                      {editingProductionId ? "Update Production" : "Submit & Generate QR Code"}
                     </Button>
+                    {editingProductionId && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditingProductionId(null);
+                          setRecipeName("");
+                          setBatchDescription("");
+                          setIngredients([{ id: "1", name: "", amount: "", unit: "ml" }]);
+                          setTargetLiters("");
+                          setNotes("");
+                          toast.info("Edit cancelled");
+                        }}
+                        className="w-full"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel Edit
+                      </Button>
+                    )}
                   </>
                 )}
               </div>
@@ -2157,15 +2287,33 @@ const BatchCalculator = () => {
                             {new Date(production.production_date).toLocaleDateString()}
                           </p>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => downloadBatchPDF(production)}
-                          className="w-full sm:w-auto"
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          PDF
-                        </Button>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => downloadBatchPDF(production)}
+                            className="flex-1 sm:flex-none"
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            PDF
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEditProduction(production)}
+                            className="glass-hover"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteProduction(production.id)}
+                            className="glass-hover text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
