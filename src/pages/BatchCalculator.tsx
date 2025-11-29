@@ -1527,7 +1527,7 @@ const BatchCalculator = () => {
                 </Button>
               </div>
 
-              <div className="space-y-4">
+                <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Select Saved Recipe *</Label>
                   <Select 
@@ -1578,6 +1578,47 @@ const BatchCalculator = () => {
                       )}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowMasterList(!showMasterList)}
+                    className="glass-hover w-full"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Paste Master List
+                  </Button>
+                  
+                  {showMasterList && (
+                    <Card className="glass p-4 space-y-3">
+                      <Label>Paste Master List of Spirits</Label>
+                      <Textarea
+                        value={masterList}
+                        onChange={(e) => setMasterList(e.target.value)}
+                        placeholder="Paste your master list here...&#10;Examples:&#10;Vodka - 750ml&#10;Gin 1L&#10;Rum (700ml) x2&#10;Tequila 750ml"
+                        className="glass min-h-[120px]"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleParseMasterList}
+                          className="flex-1"
+                        >
+                          Parse & Add
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowMasterList(false);
+                            setMasterList("");
+                          }}
+                          className="flex-1"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </Card>
+                  )}
                 </div>
 
                 {selectedRecipeId && selectedRecipeId !== "all" && (
