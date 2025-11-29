@@ -674,8 +674,10 @@ const BatchCalculator = () => {
       overallIngredientsMap.forEach((data, name) => {
         const spirit = spiritsMap.get(name);
         if (spirit && spirit.bottle_size_ml) {
-          data.bottles = Math.ceil(data.amountMl / spirit.bottle_size_ml);
-          data.leftoverMl = (data.bottles * spirit.bottle_size_ml) - data.amountMl;
+          const exactBottles = data.amountMl / spirit.bottle_size_ml;
+          const roundedUpBottles = Math.ceil(exactBottles);
+          data.bottles = exactBottles;
+          data.leftoverMl = (roundedUpBottles * spirit.bottle_size_ml) - data.amountMl;
         }
       });
       
@@ -903,8 +905,9 @@ const BatchCalculator = () => {
           let leftoverMl = 0;
           
           if (spirit && spirit.bottle_size_ml) {
-            bottles = Math.ceil(amountInMl / spirit.bottle_size_ml);
-            leftoverMl = (bottles * spirit.bottle_size_ml) - amountInMl;
+            bottles = amountInMl / spirit.bottle_size_ml;
+            const roundedUpBottles = Math.ceil(bottles);
+            leftoverMl = (roundedUpBottles * spirit.bottle_size_ml) - amountInMl;
           }
           
           doc.setFontSize(7);
@@ -919,7 +922,7 @@ const BatchCalculator = () => {
           doc.text(amountInMl.toFixed(0), 100, yPos + 3.5);
           
           doc.setTextColor(...deepBlue);
-          doc.text(bottles.toString(), 135, yPos + 3.5);
+          doc.text(bottles.toFixed(2), 135, yPos + 3.5);
           
           doc.setTextColor(...amber);
           doc.text(leftoverMl.toFixed(0), 165, yPos + 3.5);
@@ -1032,7 +1035,7 @@ const BatchCalculator = () => {
           doc.text(data.amountMl.toFixed(0), 100, yPos + 4);
           
           doc.setTextColor(...deepBlue);
-          doc.text(data.bottles.toString(), 135, yPos + 4);
+          doc.text(data.bottles.toFixed(2), 135, yPos + 4);
           
           doc.setTextColor(...amber);
           doc.text(data.leftoverMl.toFixed(0), 165, yPos + 4);
