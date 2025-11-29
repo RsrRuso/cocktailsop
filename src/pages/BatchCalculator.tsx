@@ -116,6 +116,22 @@ const BatchCalculator = () => {
   const { spirits, calculateBottles } = useMasterSpirits();
   const queryClient = useQueryClient();
 
+  const normalizeName = (name: string) =>
+    name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+  const findSpirit = (ingredientName: string) => {
+    if (!spirits) return undefined;
+    const normalizedIngredient = normalizeName(ingredientName);
+    return spirits.find((s) => {
+      const normalizedSpirit = normalizeName(s.name);
+      return (
+        normalizedSpirit === normalizedIngredient ||
+        normalizedSpirit.includes(normalizedIngredient) ||
+        normalizedIngredient.includes(normalizedSpirit)
+      );
+    });
+  };
+
   // Set default producer to current user
   useEffect(() => {
     const setDefaultProducer = async () => {
