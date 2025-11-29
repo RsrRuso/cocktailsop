@@ -1517,6 +1517,95 @@ const BatchCalculator = () => {
                     </div>
                   </div>
 
+                  {/* Forecast Analytics by Batch Type */}
+                  <div className="glass p-4 rounded-lg">
+                    <h4 className="font-semibold mb-4">Forecast Analytics - Average Lt by Time Period</h4>
+                    <div className="space-y-4">
+                      {Object.entries(
+                        productions.reduce((acc, prod) => {
+                          const key = prod.batch_name;
+                          const prodDate = new Date(prod.production_date);
+                          
+                          if (!acc[key]) {
+                            acc[key] = { 
+                              liters: 0, 
+                              count: 0,
+                              firstDate: prodDate,
+                              lastDate: prodDate
+                            };
+                          }
+                          acc[key].liters += prod.target_liters;
+                          acc[key].count += 1;
+                          if (prodDate < acc[key].firstDate) acc[key].firstDate = prodDate;
+                          if (prodDate > acc[key].lastDate) acc[key].lastDate = prodDate;
+                          return acc;
+                        }, {} as Record<string, { liters: number; count: number; firstDate: Date; lastDate: Date }>)
+                      )
+                      .sort(([, a], [, b]) => b.liters - a.liters)
+                      .map(([name, data]) => {
+                        const daysDiff = Math.max(1, Math.ceil((data.lastDate.getTime() - data.firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+                        const dailyAvg = data.liters / daysDiff;
+                        const weeklyAvg = dailyAvg * 7;
+                        const biWeeklyAvg = dailyAvg * 14;
+                        const monthlyAvg = dailyAvg * 30;
+                        const quarterlyAvg = dailyAvg * 90;
+
+                        return (
+                          <div key={name} className="p-4 bg-muted/20 rounded-lg border border-border/50">
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="font-bold text-base">{name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {data.count} batch{data.count > 1 ? 'es' : ''} over {daysDiff} day{daysDiff > 1 ? 's' : ''}
+                              </span>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                              <div className="glass p-3 rounded-lg text-center">
+                                <p className="text-xs text-muted-foreground mb-1">Daily</p>
+                                <p className="text-lg font-bold text-primary">
+                                  {dailyAvg.toFixed(2)}
+                                </p>
+                                <p className="text-xs text-muted-foreground">Lt</p>
+                              </div>
+                              
+                              <div className="glass p-3 rounded-lg text-center">
+                                <p className="text-xs text-muted-foreground mb-1">Weekly</p>
+                                <p className="text-lg font-bold text-primary">
+                                  {weeklyAvg.toFixed(2)}
+                                </p>
+                                <p className="text-xs text-muted-foreground">Lt</p>
+                              </div>
+                              
+                              <div className="glass p-3 rounded-lg text-center">
+                                <p className="text-xs text-muted-foreground mb-1">2 Weeks</p>
+                                <p className="text-lg font-bold text-primary">
+                                  {biWeeklyAvg.toFixed(2)}
+                                </p>
+                                <p className="text-xs text-muted-foreground">Lt</p>
+                              </div>
+                              
+                              <div className="glass p-3 rounded-lg text-center">
+                                <p className="text-xs text-muted-foreground mb-1">Monthly</p>
+                                <p className="text-lg font-bold text-primary">
+                                  {monthlyAvg.toFixed(2)}
+                                </p>
+                                <p className="text-xs text-muted-foreground">Lt</p>
+                              </div>
+                              
+                              <div className="glass p-3 rounded-lg text-center">
+                                <p className="text-xs text-muted-foreground mb-1">Quarterly</p>
+                                <p className="text-lg font-bold text-primary">
+                                  {quarterlyAvg.toFixed(2)}
+                                </p>
+                                <p className="text-xs text-muted-foreground">Lt</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {/* Date Range */}
                   <div className="glass p-4 rounded-lg">
                     <h4 className="font-semibold mb-3">Production Period</h4>
