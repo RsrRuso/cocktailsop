@@ -1321,9 +1321,9 @@ const BatchCalculator = () => {
                        ' at ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       doc.text(`Generated: ${timestamp} | Professional Batch Tracking System`, 105, yPos + 5, { align: 'center' });
       
-      // Open PDF in new tab instead of silent download
-      window.open(doc.output('bloburl'), '_blank');
-      toast.success("Batch report opened in new tab!");
+      const fileName = `Batch_Report_${batchName}.pdf`;
+      doc.save(fileName);
+      toast.success("Batch report download started!");
     } catch (error) {
       console.error("PDF generation error:", error);
       toast.error("Failed to generate PDF");
@@ -1962,9 +1962,9 @@ const BatchCalculator = () => {
         doc.text(`Page ${i} of ${pageCount}`, 195, footerY + 5, { align: 'right' });
       }
       
-      // Open PDF in new tab instead of silent download
-      window.open(doc.output('bloburl'), '_blank');
-      toast.success("All batches report opened in new tab!");
+      const fileName = "All_Batches_Report.pdf";
+      doc.save(fileName);
+      toast.success("All batches report download started!");
     } catch (error) {
       console.error("PDF generation error:", error);
       toast.error("Failed to generate comprehensive report");
