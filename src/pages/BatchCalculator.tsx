@@ -983,6 +983,9 @@ const BatchCalculator = () => {
         // Separate ingredients into sharp bottles and required ml
         const sharpBottles: any[] = [];
         const requiredMlItems: any[] = [];
+        let summaryTotalMl = 0;
+        let summaryTotalBottles = 0;
+        let summaryTotalLeftoverMl = 0;
         
         ingredients.forEach((ing: any) => {
           const amountInMl = ing.unit === 'ml'
@@ -990,9 +993,14 @@ const BatchCalculator = () => {
             : parseFloat(ing.scaled_amount) * 1000;
           const spirit = spiritsMap.get(ing.ingredient_name);
           
+          summaryTotalMl += amountInMl;
+          
           if (spirit && spirit.bottle_size_ml) {
             const fullBottles = Math.floor(amountInMl / spirit.bottle_size_ml);
             const leftoverMl = amountInMl % spirit.bottle_size_ml;
+            
+            summaryTotalBottles += fullBottles;
+            summaryTotalLeftoverMl += leftoverMl;
 
             if (fullBottles > 0) {
               sharpBottles.push({
@@ -1068,10 +1076,10 @@ const BatchCalculator = () => {
         } else {
           doc.setFillColor(249, 250, 251);
           doc.rect(12, yPos, 186, 8, 'F');
-          doc.setFontSize(7);
-          doc.setFont('helvetica', 'italic');
-          doc.setTextColor(100, 116, 139);
-          doc.text("No full bottles required for this batch", 105, yPos + 5, { align: 'center' });
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...deepBlue);
+          doc.text(`Total Bottles: ${summaryTotalBottles}`, 105, yPos + 5, { align: 'center' });
           yPos += 8;
         }
         
@@ -1129,10 +1137,10 @@ const BatchCalculator = () => {
         } else {
           doc.setFillColor(249, 250, 251);
           doc.rect(12, yPos, 186, 8, 'F');
-          doc.setFontSize(7);
-          doc.setFont('helvetica', 'italic');
-          doc.setTextColor(100, 116, 139);
-          doc.text("No additional ML required for this batch", 105, yPos + 5, { align: 'center' });
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...amber);
+          doc.text(`Total ML: ${summaryTotalMl.toFixed(0)} ml | Extra ML: ${summaryTotalLeftoverMl.toFixed(0)} ml`, 105, yPos + 5, { align: 'center' });
           yPos += 8;
         }
         
@@ -1200,9 +1208,16 @@ const BatchCalculator = () => {
         const ingredientsArray = Array.from(overallIngredientsMap.entries());
         const overallSharpBottles: any[] = [];
         const overallRequiredMlItems: any[] = [];
+        let overallSummaryTotalMl = 0;
+        let overallSummaryTotalBottles = 0;
+        let overallSummaryTotalLeftoverMl = 0;
         
         // Split into sharp bottles and required ML
         ingredientsArray.forEach(([name, data]) => {
+          overallSummaryTotalMl += data.amountMl;
+          overallSummaryTotalBottles += data.bottles;
+          overallSummaryTotalLeftoverMl += data.leftoverMl;
+          
           if (data.bottleSize) {
             // Has bottle size defined - can calculate bottles
             if (data.bottles > 0) {
@@ -1276,13 +1291,13 @@ const BatchCalculator = () => {
             yPos += 6;
           });
         } else {
-          // Show message if no sharp bottles
+          // Show summary total bottles
           doc.setFillColor(249, 250, 251);
           doc.rect(12, yPos, 186, 10, 'F');
           doc.setFontSize(8);
-          doc.setFont('helvetica', 'italic');
-          doc.setTextColor(100, 116, 139);
-          doc.text("No full bottles calculated for this recipe production", 105, yPos + 6, { align: 'center' });
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...deepBlue);
+          doc.text(`Total Bottles: ${overallSummaryTotalBottles}`, 105, yPos + 6, { align: 'center' });
           yPos += 10;
         }
         
@@ -1338,13 +1353,13 @@ const BatchCalculator = () => {
             yPos += 6;
           });
         } else {
-          // Show message if no required ML
+          // Show summary total ML and extra ML
           doc.setFillColor(249, 250, 251);
           doc.rect(12, yPos, 186, 10, 'F');
           doc.setFontSize(8);
-          doc.setFont('helvetica', 'italic');
-          doc.setTextColor(100, 116, 139);
-          doc.text("No additional ML required for this recipe production", 105, yPos + 6, { align: 'center' });
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...amber);
+          doc.text(`Total ML: ${overallSummaryTotalMl.toFixed(0)} ml | Extra ML: ${overallSummaryTotalLeftoverMl.toFixed(0)} ml`, 105, yPos + 6, { align: 'center' });
           yPos += 10;
         }
         
