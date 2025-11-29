@@ -1512,63 +1512,151 @@ const BatchCalculator = () => {
       
       yPos += 3;
       
-      // Compact Spirits Consumed
-      if (yPos > 200) {
-        doc.addPage();
-        yPos = 15;
+      // Calculate bottle data for all ingredients
+      const bottleData = new Map<string, { name: string; totalMl: number; bottleSize: number | null }>();
+      
+      if (allIngredients) {
+        allIngredients.forEach((ing: any) => {
+          const existing = bottleData.get(ing.ingredient_name);
+          const scaledMl = parseFloat(ing.scaled_amount || 0);
+          
+          if (existing) {
+            existing.totalMl += scaledMl;
+          } else {
+            // Try to find bottle size from master spirits
+            const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
+            bottleData.set(ing.ingredient_name, {
+              name: ing.ingredient_name,
+              totalMl: scaledMl,
+              bottleSize: matchingSpirit?.bottle_size_ml || null
+            });
+          }
+        });
       }
       
-      doc.setFillColor(...emerald);
-      doc.rect(12, yPos, 186, 5, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "bold");
-      doc.text("SPIRITS CONSUMED", 15, yPos + 3.5);
-      yPos += 7;
+      // Separate into sharp bottles and leftover ML
+      const sharpBottlesItems: { name: string; bottles: number }[] = [];
+      const leftoverMlItems: { name: string; mlNeeded: number }[] = [];
       
-      doc.setTextColor(...slate);
-      doc.setFontSize(6);
+      bottleData.forEach(({ name, totalMl, bottleSize }) => {
+        if (bottleSize) {
+          const wholeBottles = Math.floor(totalMl / bottleSize);
+          const leftoverMl = totalMl % bottleSize;
+          
+          if (wholeBottles > 0) {
+            sharpBottlesItems.push({ name, bottles: wholeBottles });
+          }
+          if (leftoverMl > 0) {
+            leftoverMlItems.push({ name, mlNeeded: leftoverMl });
+          }
+        }
+      });
       
-      // Compact spirits header
-      doc.setFont("helvetica", "bold");
-      doc.setFillColor(...emerald);
-      doc.rect(12, yPos - 1.5, 186, 4, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.text("#", 14, yPos + 1.5);
-      doc.text("Ingredient", 22, yPos + 1.5);
-      doc.text("Quantity", 140, yPos + 1.5);
-      doc.text("Unit", 175, yPos + 1.5);
-      yPos += 5;
-      
-      // Compact spirits rows
-      doc.setFont("helvetica", "normal");
-      let spiritIndex = 0;
-      Array.from(ingredientsMap.entries()).forEach(([name, data]) => {
-        if (yPos > 280) {
+      // Sharp Bottles Section
+      if (sharpBottlesItems.length > 0) {
+        if (yPos > 200) {
           doc.addPage();
           yPos = 15;
         }
         
-        if (spiritIndex % 2 === 0) {
-          doc.setFillColor(...lightGray);
-          doc.rect(12, yPos - 1.5, 186, 3.5, 'F');
-        }
+        doc.setFillColor(...emerald);
+        doc.rect(12, yPos, 186, 5, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.text("SHARP BOTTLES CONSUMED", 15, yPos + 3.5);
+        yPos += 7;
         
         doc.setTextColor(...slate);
-        doc.text(`${spiritIndex + 1}`, 14, yPos + 1.5);
-        const spiritName = name.length > 60 ? name.substring(0, 60) + '...' : name;
-        doc.text(spiritName, 22, yPos + 1.5);
-        doc.setTextColor(...emerald);
+        doc.setFontSize(6);
+        
         doc.setFont("helvetica", "bold");
-        doc.text(`${data.amount.toFixed(1)}`, 140, yPos + 1.5);
+        doc.setFillColor(...emerald);
+        doc.rect(12, yPos - 1.5, 186, 4, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text("#", 14, yPos + 1.5);
+        doc.text("Ingredient", 22, yPos + 1.5);
+        doc.text("Bottles", 160, yPos + 1.5);
+        yPos += 5;
+        
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...slate);
-        doc.text(data.unit, 175, yPos + 1.5);
-        yPos += 3.5;
-        spiritIndex++;
-      });
+        sharpBottlesItems.forEach((item, index) => {
+          if (yPos > 280) {
+            doc.addPage();
+            yPos = 15;
+          }
+          
+          if (index % 2 === 0) {
+            doc.setFillColor(...lightGray);
+            doc.rect(12, yPos - 1.5, 186, 3.5, 'F');
+          }
+          
+          doc.setTextColor(...slate);
+          doc.text(`${index + 1}`, 14, yPos + 1.5);
+          const displayName = item.name.length > 60 ? item.name.substring(0, 60) + '...' : item.name;
+          doc.text(displayName, 22, yPos + 1.5);
+          doc.setTextColor(...emerald);
+          doc.setFont("helvetica", "bold");
+          doc.text(`${item.bottles} btl`, 160, yPos + 1.5);
+          doc.setFont("helvetica", "normal");
+          yPos += 3.5;
+        });
+        
+        yPos += 5;
+      }
       
-      yPos += 5;
+      // Leftover ML Section
+      if (leftoverMlItems.length > 0) {
+        if (yPos > 200) {
+          doc.addPage();
+          yPos = 15;
+        }
+        
+        doc.setFillColor(...amber);
+        doc.rect(12, yPos, 186, 5, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.text("LEFTOVER ML REQUIRED", 15, yPos + 3.5);
+        yPos += 7;
+        
+        doc.setTextColor(...slate);
+        doc.setFontSize(6);
+        
+        doc.setFont("helvetica", "bold");
+        doc.setFillColor(...amber);
+        doc.rect(12, yPos - 1.5, 186, 4, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text("#", 14, yPos + 1.5);
+        doc.text("Ingredient", 22, yPos + 1.5);
+        doc.text("ML Needed", 160, yPos + 1.5);
+        yPos += 5;
+        
+        doc.setFont("helvetica", "normal");
+        leftoverMlItems.forEach((item, index) => {
+          if (yPos > 280) {
+            doc.addPage();
+            yPos = 15;
+          }
+          
+          if (index % 2 === 0) {
+            doc.setFillColor(...lightGray);
+            doc.rect(12, yPos - 1.5, 186, 3.5, 'F');
+          }
+          
+          doc.setTextColor(...slate);
+          doc.text(`${index + 1}`, 14, yPos + 1.5);
+          const displayName = item.name.length > 60 ? item.name.substring(0, 60) + '...' : item.name;
+          doc.text(displayName, 22, yPos + 1.5);
+          doc.setTextColor(...amber);
+          doc.setFont("helvetica", "bold");
+          doc.text(`${item.mlNeeded.toFixed(0)} ml`, 160, yPos + 1.5);
+          doc.setFont("helvetica", "normal");
+          yPos += 3.5;
+        });
+        
+        yPos += 5;
+      }
       
       // Production Trends Visualization
       if (yPos > 140) {
