@@ -188,6 +188,7 @@ export type Database = {
           notes: string | null
           produced_by_email: string | null
           produced_by_name: string | null
+          produced_by_user_id: string | null
           production_date: string
           qr_code_data: string | null
           recipe_id: string
@@ -203,6 +204,7 @@ export type Database = {
           notes?: string | null
           produced_by_email?: string | null
           produced_by_name?: string | null
+          produced_by_user_id?: string | null
           production_date?: string
           qr_code_data?: string | null
           recipe_id: string
@@ -218,6 +220,7 @@ export type Database = {
           notes?: string | null
           produced_by_email?: string | null
           produced_by_name?: string | null
+          produced_by_user_id?: string | null
           production_date?: string
           qr_code_data?: string | null
           recipe_id?: string

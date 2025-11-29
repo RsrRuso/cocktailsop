@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -16,6 +16,14 @@ import { useMixologistGroups } from "@/hooks/useMixologistGroups";
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Ingredient {
   id: string;
@@ -35,16 +43,66 @@ const BatchCalculator = () => {
   const [targetLiters, setTargetLiters] = useState("");
   const [currentServes, setCurrentServes] = useState("1");
   const [producedByName, setProducedByName] = useState("");
+  const [producedByUserId, setProducedByUserId] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("calculator");
   const [isAILoading, setIsAILoading] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDesc, setNewGroupDesc] = useState("");
+  const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
+  const [producerProfiles, setProducerProfiles] = useState<Map<string, any>>(new Map());
 
   const { recipes, createRecipe } = useBatchRecipes();
   const { productions, createProduction } = useBatchProductions(selectedRecipeId || undefined);
   const { groups, createGroup } = useMixologistGroups();
+
+  // Fetch registered users (followers/followings for selection)
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .order('username');
+
+      if (data && !error) {
+        setRegisteredUsers(data);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  // Fetch producer profiles for display
+  useEffect(() => {
+    if (!productions || productions.length === 0) return;
+
+    const fetchProducerProfiles = async () => {
+      const userIds = productions
+        .map(p => p.produced_by_user_id)
+        .filter(Boolean);
+
+      if (userIds.length === 0) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', userIds);
+
+      if (data && !error) {
+        const profileMap = new Map();
+        data.forEach(profile => {
+          profileMap.set(profile.id, profile);
+        });
+        setProducerProfiles(profileMap);
+      }
+    };
+
+    fetchProducerProfiles();
+  }, [productions]);
 
   const addIngredient = () => {
     setIngredients([
@@ -108,8 +166,8 @@ const BatchCalculator = () => {
       return;
     }
 
-    if (!producedByName) {
-      toast.error("Please enter your name");
+    if (!producedByUserId) {
+      toast.error("Please select who produced this batch");
       return;
     }
 
@@ -128,6 +186,8 @@ const BatchCalculator = () => {
 
     const recipeId = selectedRecipeId || `temp-${Date.now()}`;
 
+    const selectedUser = registeredUsers.find(u => u.id === producedByUserId);
+
     createProduction({
       production: {
         recipe_id: recipeId,
@@ -135,7 +195,9 @@ const BatchCalculator = () => {
         target_serves: parseFloat(targetBatchSize || "0"),
         target_liters: totalLiters,
         production_date: new Date().toISOString(),
-        produced_by_name: producedByName,
+        produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
+        produced_by_email: selectedUser ? null : null,
+        produced_by_user_id: producedByUserId,
         qr_code_data: qrData,
         notes: notes
       },
@@ -149,6 +211,7 @@ const BatchCalculator = () => {
 
     // Reset form after submission
     setProducedByName("");
+    setProducedByUserId("");
     setNotes("");
     setTargetBatchSize("");
     setTargetLiters("");
@@ -479,13 +542,27 @@ const BatchCalculator = () => {
 
                 <div className="space-y-4 mt-6 pt-6 border-t border-border">
                   <div className="space-y-2">
-                    <Label>Produced By (Your Name) *</Label>
-                    <Input
-                      value={producedByName}
-                      onChange={(e) => setProducedByName(e.target.value)}
-                      placeholder="Enter your name"
-                      className="glass"
-                    />
+                    <Label>Produced By (Select User) *</Label>
+                    <Select value={producedByUserId} onValueChange={setProducedByUserId}>
+                      <SelectTrigger className="glass">
+                        <SelectValue placeholder="Select who produced this batch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {registeredUsers.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={user.avatar_url || ''} />
+                                <AvatarFallback>
+                                  {(user.full_name || user.username || '?')[0].toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span>{user.full_name || user.username}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
@@ -552,7 +629,23 @@ const BatchCalculator = () => {
                         </div>
                         <div>
                           <p className="text-muted-foreground">Produced By</p>
-                          <p className="font-semibold">{production.produced_by_name || 'Unknown'}</p>
+                          {production.produced_by_user_id && producerProfiles.has(production.produced_by_user_id) ? (
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-5 w-5">
+                                <AvatarImage src={producerProfiles.get(production.produced_by_user_id).avatar_url || ''} />
+                                <AvatarFallback>
+                                  {(producerProfiles.get(production.produced_by_user_id).full_name || 
+                                    producerProfiles.get(production.produced_by_user_id).username || '?')[0].toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-semibold">
+                                {producerProfiles.get(production.produced_by_user_id).full_name || 
+                                 producerProfiles.get(production.produced_by_user_id).username}
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="font-semibold">{production.produced_by_name || 'Unknown'}</p>
+                          )}
                         </div>
                       </div>
 
