@@ -1008,43 +1008,53 @@ const BatchCalculator = () => {
         doc.text("SHARP BOTTLES", 15, yPos + 2.5);
         yPos += 5;
         
-        if (sharpBottles.length > 0) {
-          doc.setFillColor(...slate);
-          doc.rect(12, yPos, 186, 3.5, 'F');
-          doc.setFontSize(5);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(255, 255, 255);
-          doc.text("Ingredient", 14, yPos + 2);
-          doc.text("Bottles", 140, yPos + 2);
-          yPos += 4;
+        // Show all ingredients with bottle calculations
+        const allIngredientsWithBottles: any[] = [];
+        ingredients.forEach((ing: any) => {
+          const amountInMl = ing.unit === 'ml' ? parseFloat(ing.scaled_amount) : parseFloat(ing.scaled_amount) * 1000;
+          const spirit = spiritsMap.get(ing.ingredient_name);
           
-          doc.setFont('helvetica', 'normal');
-          sharpBottles.forEach((item, idx) => {
-            if (idx % 2 === 0) {
-              doc.setFillColor(249, 250, 251);
-              doc.rect(12, yPos, 186, 3, 'F');
-            }
-            
-            doc.setFontSize(5);
-            doc.setTextColor(...slate);
-            const displayName = item.name.length > 40 ? item.name.substring(0, 40) + '...' : item.name;
-            doc.text(displayName, 14, yPos + 1.8);
-            
-            doc.setTextColor(...deepBlue);
-            doc.setFont('helvetica', 'bold');
-            doc.text(item.bottles + " btl", 140, yPos + 1.8);
-            
-            yPos += 3;
-          });
-        } else {
-          doc.setFillColor(249, 250, 251);
-          doc.rect(12, yPos, 186, 4, 'F');
+          if (spirit && spirit.bottle_size_ml) {
+            const fullBottles = Math.floor(amountInMl / spirit.bottle_size_ml);
+            allIngredientsWithBottles.push({
+              name: ing.ingredient_name,
+              bottles: fullBottles,
+            });
+          } else {
+            allIngredientsWithBottles.push({
+              name: ing.ingredient_name,
+              bottles: 0,
+            });
+          }
+        });
+        
+        doc.setFillColor(...slate);
+        doc.rect(12, yPos, 186, 3.5, 'F');
+        doc.setFontSize(5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+        doc.text("Ingredient", 14, yPos + 2);
+        doc.text("Bottles", 140, yPos + 2);
+        yPos += 4;
+        
+        doc.setFont('helvetica', 'normal');
+        allIngredientsWithBottles.forEach((item, idx) => {
+          if (idx % 2 === 0) {
+            doc.setFillColor(249, 250, 251);
+            doc.rect(12, yPos, 186, 3, 'F');
+          }
+          
           doc.setFontSize(5);
-          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...slate);
+          const displayName = item.name.length > 40 ? item.name.substring(0, 40) + '...' : item.name;
+          doc.text(displayName, 14, yPos + 1.8);
+          
           doc.setTextColor(...deepBlue);
-          doc.text(`Total Bottles: ${summaryTotalBottles}`, 105, yPos + 2.5, { align: 'center' });
-          yPos += 4;
-        }
+          doc.setFont('helvetica', 'bold');
+          doc.text(item.bottles + " btl", 140, yPos + 1.8);
+          
+          yPos += 3;
+        });
         
         yPos += 2;
         
@@ -1186,43 +1196,39 @@ const BatchCalculator = () => {
         doc.text("OVERALL SHARP BOTTLES", 15, yPos + 2.5);
         yPos += 5;
         
-        if (overallSharpBottles.length > 0) {
-          doc.setFillColor(...slate);
-          doc.rect(12, yPos, 186, 3.5, 'F');
-          doc.setFontSize(5);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(255, 255, 255);
-          doc.text("Ingredient", 14, yPos + 2);
-          doc.text("Bottles", 140, yPos + 2);
-          yPos += 4;
+        // Show all ingredients with bottle calculations
+        const allOverallIngredientsWithBottles = ingredientsArray.map(([name, data]) => ({
+          name,
+          bottles: data.bottles,
+        }));
+        
+        doc.setFillColor(...slate);
+        doc.rect(12, yPos, 186, 3.5, 'F');
+        doc.setFontSize(5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+        doc.text("Ingredient", 14, yPos + 2);
+        doc.text("Bottles", 140, yPos + 2);
+        yPos += 4;
+        
+        doc.setFont('helvetica', 'normal');
+        allOverallIngredientsWithBottles.forEach((item, idx) => {
+          if (idx % 2 === 0) {
+            doc.setFillColor(249, 250, 251);
+            doc.rect(12, yPos, 186, 3, 'F');
+          }
           
-          doc.setFont('helvetica', 'normal');
-          overallSharpBottles.forEach((item, idx) => {
-            if (idx % 2 === 0) {
-              doc.setFillColor(249, 250, 251);
-              doc.rect(12, yPos, 186, 3, 'F');
-            }
-            
-            doc.setFontSize(5);
-            doc.setTextColor(...slate);
-            const displayName = item.name.length > 40 ? item.name.substring(0, 40) + '...' : item.name;
-            doc.text(displayName, 14, yPos + 1.8);
-            
-            doc.setTextColor(...deepBlue);
-            doc.setFont('helvetica', 'bold');
-            doc.text(item.bottles + " btl", 140, yPos + 1.8);
-            
-            yPos += 3;
-          });
-        } else {
-          doc.setFillColor(249, 250, 251);
-          doc.rect(12, yPos, 186, 4, 'F');
           doc.setFontSize(5);
-          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...slate);
+          const displayName = item.name.length > 40 ? item.name.substring(0, 40) + '...' : item.name;
+          doc.text(displayName, 14, yPos + 1.8);
+          
           doc.setTextColor(...deepBlue);
-          doc.text(`Total Bottles: ${overallSummaryTotalBottles}`, 105, yPos + 2.5, { align: 'center' });
-          yPos += 4;
-        }
+          doc.setFont('helvetica', 'bold');
+          doc.text(item.bottles + " btl", 140, yPos + 1.8);
+          
+          yPos += 3;
+        });
         
         yPos += 2;
         
