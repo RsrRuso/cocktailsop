@@ -96,13 +96,35 @@ export const useMixologistGroups = () => {
   });
 
   const getGroupMembers = async (groupId: string) => {
-    const { data, error } = await supabase
+    // Fetch members first
+    const { data: memberRows, error: membersError } = await supabase
       .from('mixologist_group_members')
-      .select('*, profiles(username, full_name, avatar_url)')
+      .select('*')
       .eq('group_id', groupId);
-    
-    if (error) throw error;
-    return data;
+
+    if (membersError) throw membersError;
+    if (!memberRows || memberRows.length === 0) return [];
+
+    // Fetch their profiles separately (no implicit FK required)
+    const userIds = memberRows.map((m) => m.user_id).filter(Boolean);
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url')
+      .in('id', userIds);
+
+    if (profilesError) throw profilesError;
+
+    const profileMap = new Map<string, any>();
+    (profiles || []).forEach((p: any) => {
+      profileMap.set(p.id, p);
+    });
+
+    const enriched = memberRows.map((m: any) => ({
+      ...m,
+      profiles: profileMap.get(m.user_id) || null,
+    }));
+
+    return enriched;
   };
 
   return {
