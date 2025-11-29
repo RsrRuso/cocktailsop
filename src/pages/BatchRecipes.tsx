@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Sparkles, Save, Edit2, X } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, Save, Edit2, X, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,8 +36,67 @@ const BatchRecipes = () => {
   const [currentServes, setCurrentServes] = useState("1");
   const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
   const [isAILoading, setIsAILoading] = useState(false);
+  const [masterList, setMasterList] = useState("");
+  const [showMasterList, setShowMasterList] = useState(false);
 
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes();
+
+  const parseMasterList = (text: string) => {
+    const lines = text.split('\n').filter(line => line.trim());
+    const parsedIngredients: Ingredient[] = [];
+    
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      
+      const patterns = [
+        /^(.+?)\s*[-–—]\s*(\d+\.?\d*)\s*(ml|l|btl|bottle|bottles?)\s*(?:x\s*(\d+))?$/i,
+        /^(.+?)\s*\((\d+\.?\d*)\s*(ml|l|btl|bottle|bottles?)\)\s*(?:x\s*(\d+))?$/i,
+        /^(.+?)\s+(\d+\.?\d*)\s*(ml|l|btl|bottle|bottles?)\s*(?:x\s*(\d+))?$/i,
+      ];
+      
+      let match = null;
+      for (const pattern of patterns) {
+        match = trimmed.match(pattern);
+        if (match) break;
+      }
+      
+      if (match) {
+        const [, name, amount, unit, multiplier] = match;
+        const qty = parseFloat(amount) * (multiplier ? parseInt(multiplier) : 1);
+        const normalizedUnit = unit.toLowerCase().includes('l') && !unit.toLowerCase().includes('ml') ? 'L' : 'ml';
+        
+        parsedIngredients.push({
+          id: `parsed-${Date.now()}-${index}`,
+          name: name.trim(),
+          amount: qty.toString(),
+          unit: normalizedUnit
+        });
+      } else {
+        parsedIngredients.push({
+          id: `parsed-${Date.now()}-${index}`,
+          name: trimmed,
+          amount: "",
+          unit: "ml"
+        });
+      }
+    });
+    
+    return parsedIngredients;
+  };
+
+  const handleParseMasterList = () => {
+    if (!masterList.trim()) {
+      toast.error("Please enter ingredients to parse");
+      return;
+    }
+    
+    const parsed = parseMasterList(masterList);
+    setIngredients(parsed);
+    toast.success(`Added ${parsed.length} ingredients!`);
+    setShowMasterList(false);
+    setMasterList("");
+  };
 
   const addIngredient = () => {
     setIngredients([
@@ -256,20 +315,70 @@ const BatchRecipes = () => {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <Label>Ingredients *</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAISuggestions}
-                  disabled={isAILoading || !recipeName}
-                  className="glass-hover"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  {isAILoading ? "Getting AI..." : "AI Suggest"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowMasterList(!showMasterList)}
+                    className="glass-hover"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Paste List
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAISuggestions}
+                    disabled={isAILoading || !recipeName}
+                    className="glass-hover"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    {isAILoading ? "Getting AI..." : "AI Suggest"}
+                  </Button>
+                </div>
               </div>
+
+              {showMasterList && (
+                <Card className="p-4 glass border-primary/50">
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Paste Master List</Label>
+                      <p className="text-xs text-muted-foreground mt-1 mb-2">
+                        Paste spirits list. Format: "Name - 750ml" or "Name 1L x2"
+                      </p>
+                      <Textarea
+                        value={masterList}
+                        onChange={(e) => setMasterList(e.target.value)}
+                        placeholder="Vodka - 750ml&#10;Gin 1L&#10;Rum (700ml) x2&#10;Tequila 1.5L"
+                        className="glass min-h-[120px] font-mono text-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleParseMasterList}
+                        size="sm"
+                        className="flex-1"
+                      >
+                        Parse & Add
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowMasterList(false);
+                          setMasterList("");
+                        }}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              )}
 
               {ingredients.map((ingredient) => (
                 <div
