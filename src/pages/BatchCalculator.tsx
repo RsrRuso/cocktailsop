@@ -483,28 +483,29 @@ const BatchCalculator = () => {
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Batch Multiplier *</Label>
+                        <Label>Target Liters *</Label>
                         <Input
                           type="number"
-                          value={targetBatchSize}
+                          step="0.1"
+                          value={targetLiters}
                           onChange={(e) => {
-                            setTargetBatchSize(e.target.value);
-                            setTargetLiters("");
+                            setTargetLiters(e.target.value);
+                            setTargetBatchSize("");
                           }}
-                          placeholder="e.g., 5"
+                          placeholder="e.g., 1.5"
                           className="glass"
                         />
                         <p className="text-xs text-muted-foreground">
-                          Multiply ingredients by this amount
+                          Enter desired liters to produce
                         </p>
                       </div>
                       <div className="space-y-2">
                         <Label>Produced By *</Label>
                         <Select value={producedByUserId} onValueChange={setProducedByUserId}>
-                          <SelectTrigger className="glass">
+                          <SelectTrigger className="glass bg-background/80 backdrop-blur-sm z-50">
                             <SelectValue placeholder="Select producer" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-background/95 backdrop-blur-sm z-[100]">
                             {registeredUsers.map((user) => (
                               <SelectItem key={user.id} value={user.id}>
                                 <div className="flex items-center gap-2">
@@ -521,7 +522,7 @@ const BatchCalculator = () => {
                       </div>
                     </div>
 
-                    {batchResults && targetBatchSize && (
+                    {batchResults && targetLiters && (
                       <div className="glass p-4 rounded-lg space-y-3">
                         <div className="flex items-center justify-between">
                           <h4 className="font-semibold">Multiplied Ingredients</h4>
@@ -556,7 +557,7 @@ const BatchCalculator = () => {
                       onClick={handleSubmitBatch} 
                       className="w-full"
                       size="lg"
-                      disabled={!targetBatchSize || !producedByUserId}
+                      disabled={!targetLiters || !producedByUserId}
                     >
                       <QrCode className="w-5 h-5 mr-2" />
                       Submit & Generate QR Code
