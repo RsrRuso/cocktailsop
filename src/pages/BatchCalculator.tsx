@@ -228,11 +228,19 @@ const BatchCalculator = () => {
     toast.success("PDF downloaded!");
   };
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (!newGroupName) {
       toast.error("Please enter a group name");
       return;
     }
+
+    // Generate QR code for batch submissions
+    const groupData = {
+      name: newGroupName,
+      description: newGroupDesc,
+      action: 'submit_batch'
+    };
+    const submissionQRCode = await QRCode.toDataURL(JSON.stringify(groupData));
 
     createGroup({
       name: newGroupName,
@@ -241,6 +249,22 @@ const BatchCalculator = () => {
 
     setNewGroupName("");
     setNewGroupDesc("");
+  };
+
+  const generateGroupQRCode = async (group: any) => {
+    const qrData = JSON.stringify({
+      groupId: group.id,
+      groupName: group.name,
+      action: 'submit_batch'
+    });
+    const qrCodeDataUrl = await QRCode.toDataURL(qrData);
+    
+    // Download QR code
+    const link = document.createElement('a');
+    link.href = qrCodeDataUrl;
+    link.download = `${group.name}-submission-qr.png`;
+    link.click();
+    toast.success("QR code downloaded!");
   };
 
   const batchResults = calculateBatch();
@@ -622,15 +646,19 @@ const BatchCalculator = () => {
                   <h4 className="font-semibold">Your Groups</h4>
                   {groups.map((group) => (
                     <Card key={group.id} className="p-4 glass">
-                      <h5 className="font-bold">{group.name}</h5>
-                      <p className="text-sm text-muted-foreground">{group.description}</p>
-                      <div className="flex gap-2 mt-3">
-                        <Button size="sm" variant="outline" className="flex-1">
-                          <Users className="w-4 h-4 mr-2" />
-                          Manage Members
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <QrCode className="w-4 h-4" />
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h5 className="font-bold">{group.name}</h5>
+                          <p className="text-sm text-muted-foreground">{group.description}</p>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => generateGroupQRCode(group)}
+                          className="glass-hover"
+                        >
+                          <QrCode className="w-4 h-4 mr-2" />
+                          Get QR
                         </Button>
                       </div>
                     </Card>
