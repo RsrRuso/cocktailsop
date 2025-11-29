@@ -108,7 +108,7 @@ const BatchCalculator = () => {
       : "";
 
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes(selectedGroupId);
-  const { productions, createProduction, getProductionIngredients } = useBatchProductions(
+  const { productions, createProduction, updateProduction, deleteProduction, getProductionIngredients } = useBatchProductions(
     selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined,
     selectedGroupId
   );
@@ -501,69 +501,28 @@ const BatchCalculator = () => {
     const selectedUser = registeredUsers.find(u => u.id === producedByUserId);
 
     if (editingProductionId) {
-      // Update existing production
-      try {
-        // Delete old ingredients FIRST
-        const { error: deleteError } = await supabase
-          .from('batch_production_ingredients')
-          .delete()
-          .eq('production_id', editingProductionId);
-          
-        if (deleteError) {
-          console.error("Error deleting old ingredients:", deleteError);
-          throw deleteError;
-        }
-
-        // Insert new ingredients using CURRENT state
-        const newIngredients = calculation.scaledIngredients.map((ing, idx) => ({
-          production_id: editingProductionId,
+      // Update existing production via hook
+      updateProduction({
+        productionId: editingProductionId,
+        productionUpdates: {
+          batch_name: recipeName,
+          target_serves: Math.round(actualServings),
+          target_liters: totalLiters,
+          produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
+          produced_by_user_id: producedByUserId,
+          qr_code_data: qrData,
+          notes,
+          group_id: selectedGroupId,
+        },
+        ingredients: calculation.scaledIngredients.map((ing) => ({
           ingredient_name: ing.name,
           original_amount: parseFloat(ing.amount),
           scaled_amount: parseFloat(ing.scaledAmount),
-          unit: ing.unit
-        }));
-
-        const { error: ingredientsError } = await supabase
-          .from('batch_production_ingredients')
-          .insert(newIngredients);
-
-        if (ingredientsError) {
-          console.error("Error inserting new ingredients:", ingredientsError);
-          throw ingredientsError;
-        }
-
-        // Update production metadata
-        const { error: productionError } = await supabase
-          .from('batch_productions')
-          .update({
-            batch_name: recipeName,
-            target_serves: Math.round(actualServings),
-            target_liters: totalLiters,
-            produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
-            produced_by_user_id: producedByUserId,
-            qr_code_data: qrData,
-            notes: notes,
-            group_id: selectedGroupId
-          })
-          .eq('id', editingProductionId);
-
-        if (productionError) {
-          console.error("Error updating production:", productionError);
-          throw productionError;
-        }
-
-        // Force refetch immediately
-        await queryClient.invalidateQueries({ queryKey: ["batch-productions"] });
-        await queryClient.refetchQueries({ queryKey: ["batch-productions"] });
-        
-        toast.success("Batch production updated!");
-      } catch (error: any) {
-        console.error("Update error:", error);
-        toast.error("Failed to update production: " + (error.message || "Unknown error"));
-        return;
-      }
+          unit: ing.unit,
+        })),
+      });
     } else {
-      // Create new production
+      // Create new production via hook
       createProduction({
         production: {
           recipe_id: recipeId,
@@ -576,14 +535,14 @@ const BatchCalculator = () => {
           produced_by_user_id: producedByUserId,
           qr_code_data: qrData,
           notes: notes,
-          group_id: selectedGroupId
+          group_id: selectedGroupId,
         },
-        ingredients: calculation.scaledIngredients.map(ing => ({
+        ingredients: calculation.scaledIngredients.map((ing) => ({
           ingredient_name: ing.name,
           original_amount: parseFloat(ing.amount),
           scaled_amount: parseFloat(ing.scaledAmount),
-          unit: ing.unit
-        }))
+          unit: ing.unit,
+        })),
       });
     }
 
@@ -601,17 +560,7 @@ const BatchCalculator = () => {
 
   const handleEditProduction = async (production: any) => {
     try {
-      // Fetch production ingredients
-      const { data: prodIngredients, error } = await supabase
-        .from('batch_production_ingredients')
-        .select('*')
-        .eq('production_id', production.id);
-
-      if (error) {
-        console.error("Error fetching ingredients:", error);
-        toast.error("Failed to load production ingredients");
-        return;
-      }
+      const prodIngredients = await getProductionIngredients(production.id);
       
       // Set all production fields first
       setEditingProductionId(production.id);
@@ -623,13 +572,13 @@ const BatchCalculator = () => {
       setSelectedRecipeId(production.recipe_id);
       setSelectedGroupId(production.group_id);
       
-      // Set ingredients AFTER all other fields
+      // Map ingredients into editable format
       if (prodIngredients && prodIngredients.length > 0) {
         const loadedIngredients = prodIngredients.map((ing: any, idx: number) => ({
           id: `edit-${production.id}-${idx}`,
           name: ing.ingredient_name,
           amount: String(ing.original_amount),
-          unit: ing.unit
+          unit: ing.unit,
         }));
         setIngredients(loadedIngredients);
       } else {
@@ -638,7 +587,7 @@ const BatchCalculator = () => {
 
       setActiveTab("calculator");
       toast.success("Production loaded for editing");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in handleEditProduction:", error);
       toast.error("Failed to load production");
     }
@@ -649,38 +598,7 @@ const BatchCalculator = () => {
       return;
     }
 
-    try {
-      // Delete ingredients first
-      const { error: ingredientsError } = await supabase
-        .from('batch_production_ingredients')
-        .delete()
-        .eq('production_id', productionId);
-
-      if (ingredientsError) {
-        console.error("Error deleting ingredients:", ingredientsError);
-        throw ingredientsError;
-      }
-
-      // Delete production
-      const { error: productionError } = await supabase
-        .from('batch_productions')
-        .delete()
-        .eq('id', productionId);
-
-      if (productionError) {
-        console.error("Error deleting production:", productionError);
-        throw productionError;
-      }
-
-      // Force refetch immediately
-      await queryClient.invalidateQueries({ queryKey: ["batch-productions"] });
-      await queryClient.refetchQueries({ queryKey: ["batch-productions"] });
-      
-      toast.success("Batch production deleted");
-    } catch (error: any) {
-      console.error("Delete error:", error);
-      toast.error("Failed to delete production: " + (error.message || "Unknown error"));
-    }
+    deleteProduction(productionId);
   };
   const handleAISuggestions = async () => {
     if (!recipeName) {
