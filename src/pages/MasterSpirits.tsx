@@ -100,7 +100,7 @@ const MasterSpirits = () => {
           <div className="min-w-0 flex-1">
             <h1 className="text-xl sm:text-2xl font-bold truncate">Master Spirits List</h1>
             <p className="text-xs sm:text-sm text-muted-foreground truncate">
-              Manage your spirit inventory with bottle sizes
+              Edit and delete items below - Click the icons to manage
             </p>
           </div>
           <Button
