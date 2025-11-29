@@ -809,7 +809,7 @@ const BatchCalculator = () => {
       
       // Calculate bottles and leftover per ingredient
       overallIngredientsMap.forEach((data, name) => {
-        const spirit = spiritsMap.get(name);
+        const spirit = spiritsMap.get(normalizeName(name));
         if (spirit && spirit.bottle_size_ml) {
           const fullBottles = Math.floor(data.amountMl / spirit.bottle_size_ml);
           const leftoverMl = data.amountMl % spirit.bottle_size_ml;
