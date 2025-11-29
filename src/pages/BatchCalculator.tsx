@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, Save, History, Users, QrCode, BarChart3, Download, Loader2, Edit2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
 import { useBatchProductions } from "@/hooks/useBatchProductions";
@@ -52,8 +52,9 @@ const BatchCalculator = () => {
   const [newGroupDesc, setNewGroupDesc] = useState("");
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [producerProfiles, setProducerProfiles] = useState<Map<string, any>>(new Map());
+  const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
 
-  const { recipes, createRecipe } = useBatchRecipes();
+  const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes();
   const { productions, createProduction } = useBatchProductions(selectedRecipeId || undefined);
   const { groups, createGroup } = useMixologistGroups();
 
@@ -146,17 +147,71 @@ const BatchCalculator = () => {
       return;
     }
 
-    createRecipe({
-      recipe_name: recipeName,
-      description: batchDescription,
-      current_serves: parseFloat(currentServes),
-      ingredients: ingredients.map(ing => ({
-        id: ing.id,
-        name: ing.name,
-        amount: ing.amount,
-        unit: ing.unit
-      }))
-    });
+    if (editingRecipeId) {
+      // Update existing recipe
+      updateRecipe({
+        id: editingRecipeId,
+        updates: {
+          recipe_name: recipeName,
+          description: batchDescription,
+          current_serves: parseFloat(currentServes),
+          ingredients: ingredients.map(ing => ({
+            id: ing.id,
+            name: ing.name,
+            amount: ing.amount,
+            unit: ing.unit
+          }))
+        }
+      });
+      setEditingRecipeId(null);
+    } else {
+      // Create new recipe
+      createRecipe({
+        recipe_name: recipeName,
+        description: batchDescription,
+        current_serves: parseFloat(currentServes),
+        ingredients: ingredients.map(ing => ({
+          id: ing.id,
+          name: ing.name,
+          amount: ing.amount,
+          unit: ing.unit
+        }))
+      });
+    }
+  };
+
+  const handleEditRecipe = (recipe: any) => {
+    setEditingRecipeId(recipe.id);
+    setRecipeName(recipe.recipe_name);
+    setBatchDescription(recipe.description || "");
+    setCurrentServes(String(recipe.current_serves));
+    setIngredients(Array.isArray(recipe.ingredients) 
+      ? recipe.ingredients.map((ing: any) => ({
+          id: ing.id || `${Date.now()}-${Math.random()}`,
+          name: ing.name || "",
+          amount: String(ing.amount || ""),
+          unit: ing.unit || "ml"
+        }))
+      : [{ id: "1", name: "", amount: "", unit: "ml" }]
+    );
+    setActiveTab("calculator");
+  };
+
+  const handleDeleteRecipe = (recipeId: string) => {
+    if (confirm("Are you sure you want to delete this recipe?")) {
+      deleteRecipe(recipeId);
+      if (selectedRecipeId === recipeId) {
+        setSelectedRecipeId(null);
+      }
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRecipeId(null);
+    setRecipeName("");
+    setBatchDescription("");
+    setCurrentServes("1");
+    setIngredients([{ id: "1", name: "", amount: "", unit: "ml" }]);
   };
 
   const handleSubmitBatch = async () => {
@@ -506,9 +561,58 @@ const BatchCalculator = () => {
               </div>
             </Card>
 
+            {recipes && recipes.length > 0 && (
+              <Card className="glass p-6 space-y-4">
+                <h3 className="text-lg font-semibold">Saved Recipes</h3>
+                <div className="space-y-2">
+                  {recipes.map((recipe) => (
+                    <div key={recipe.id} className="flex items-center justify-between p-3 glass rounded-lg hover:bg-accent/50 transition-colors">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{recipe.recipe_name}</h4>
+                        {recipe.description && (
+                          <p className="text-sm text-muted-foreground">{recipe.description}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditRecipe(recipe)}
+                          className="glass-hover"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteRecipe(recipe.id)}
+                          className="glass-hover text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
             <Card className="glass p-6 space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Create New Recipe</h3>
+                <h3 className="text-lg font-semibold">
+                  {editingRecipeId ? "Edit Recipe" : "Create New Recipe"}
+                </h3>
+                {editingRecipeId && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCancelEdit}
+                    className="glass-hover"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel Edit
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -640,7 +744,7 @@ const BatchCalculator = () => {
               <div className="flex gap-2">
                 <Button onClick={handleSaveRecipe} variant="outline" className="flex-1">
                   <Save className="w-4 h-4 mr-2" />
-                  Save Recipe
+                  {editingRecipeId ? "Update Recipe" : "Save Recipe"}
                 </Button>
               </div>
             </Card>
