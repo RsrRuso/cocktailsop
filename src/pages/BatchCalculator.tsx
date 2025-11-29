@@ -1371,43 +1371,30 @@ const BatchCalculator = () => {
               <div className="flex flex-col gap-4 mb-6">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="w-5 h-5" />
-                  <h3 className="text-base sm:text-lg font-semibold">Production Analytics & Forecasting</h3>
+                  <h3 className="text-base sm:text-lg font-semibold">Production Analytics</h3>
                 </div>
                 
                 {productions && productions.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={fetchAiSuggestions}
-                      disabled={loadingAiSuggestions}
-                      className="py-6"
-                      size="lg"
-                    >
-                      {loadingAiSuggestions ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <Sparkles className="w-5 h-5" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="default"
-                      onClick={downloadAllBatchesReport}
-                      className="py-6"
-                      size="lg"
-                    >
-                      <Download className="w-5 h-5" />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="default"
+                    onClick={downloadAllBatchesReport}
+                    className="w-full py-6"
+                    size="lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Download Report
+                  </Button>
                 )}
               </div>
               
               {!productions || productions.length === 0 ? (
                 <p className="text-muted-foreground text-center py-6 sm:py-8 text-sm">
-                  Record some batch productions to see analytics and forecasts!
+                  Record some batch productions to see analytics!
                 </p>
               ) : (
                 <div className="space-y-4 sm:space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {/* Key Metrics */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                     <div className="glass p-4 rounded-lg">
                       <p className="text-sm text-muted-foreground">Total Batches</p>
                       <p className="text-3xl font-bold text-primary">{productions.length}</p>
@@ -1418,87 +1405,80 @@ const BatchCalculator = () => {
                         {productions.reduce((sum, p) => sum + p.target_liters, 0).toFixed(1)} L
                       </p>
                     </div>
+                    <div className="glass p-4 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Total Servings</p>
+                      <p className="text-3xl font-bold text-primary">
+                        {productions.reduce((sum, p) => sum + (p.target_serves || 0), 0)}
+                      </p>
+                    </div>
                   </div>
 
+                  {/* Average Metrics */}
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div className="glass p-4 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Avg Batch Size</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {(productions.reduce((sum, p) => sum + p.target_liters, 0) / productions.length).toFixed(2)} L
+                      </p>
+                    </div>
+                    <div className="glass p-4 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Avg Servings</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {Math.round(productions.reduce((sum, p) => sum + (p.target_serves || 0), 0) / productions.length)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Production Breakdown */}
                   <div className="glass p-4 rounded-lg">
-                    <h4 className="font-semibold mb-3">Popular Recipes</h4>
-                    <div className="space-y-2">
+                    <h4 className="font-semibold mb-3">Production by Recipe</h4>
+                    <div className="space-y-3">
                       {Object.entries(
                         productions.reduce((acc, prod) => {
-                          acc[prod.batch_name] = (acc[prod.batch_name] || 0) + 1;
+                          const key = prod.batch_name;
+                          if (!acc[key]) {
+                            acc[key] = { count: 0, liters: 0, serves: 0 };
+                          }
+                          acc[key].count += 1;
+                          acc[key].liters += prod.target_liters;
+                          acc[key].serves += prod.target_serves || 0;
                           return acc;
-                        }, {} as Record<string, number>)
-                      ).map(([name, count]) => (
-                        <div key={name} className="flex justify-between items-center">
-                          <span className="font-medium">{name}</span>
-                          <span className="text-primary">{count} batches</span>
+                        }, {} as Record<string, { count: number; liters: number; serves: number }>)
+                      )
+                      .sort(([, a], [, b]) => b.count - a.count)
+                      .map(([name, data]) => (
+                        <div key={name} className="p-3 bg-muted/20 rounded-lg">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-medium">{name}</span>
+                            <span className="text-primary font-bold">{data.count}×</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                            <div>Total: {data.liters.toFixed(1)} L</div>
+                            <div>Servings: {data.serves}</div>
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {loadingAiSuggestions && (
-                    <div className="glass p-6 rounded-lg border-2 border-primary/20 text-center">
-                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
-                      <p className="text-sm text-muted-foreground">Analyzing production data and generating par level suggestions...</p>
-                    </div>
-                  )}
-
-                  {aiSuggestions && !loadingAiSuggestions && (
-                    <div className="glass p-4 rounded-lg border-2 border-primary/20">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-5 h-5 text-primary" />
-                          <h4 className="font-semibold">AI Par Level Analysis</h4>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={fetchAiSuggestions}
-                          className="text-xs"
-                        >
-                          <Sparkles className="w-3 h-3 mr-1" />
-                          Refresh
-                        </Button>
+                  {/* Date Range */}
+                  <div className="glass p-4 rounded-lg">
+                    <h4 className="font-semibold mb-3">Production Period</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">First Batch</p>
+                        <p className="font-medium">
+                          {new Date(Math.min(...productions.map(p => new Date(p.production_date).getTime()))).toLocaleDateString()}
+                        </p>
                       </div>
-                      <div className="space-y-4 text-sm">
-                        <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                          <p className="font-bold text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-2">
-                            <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs">WEEKLY</span>
-                            Week-by-Week Analysis
-                          </p>
-                          <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                            {weeklyAnalysis || "No weekly data available"}
-                          </p>
-                        </div>
-
-                        <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                          <p className="font-bold text-purple-600 dark:text-purple-400 mb-2 flex items-center gap-2">
-                            <span className="bg-purple-500 text-white px-2 py-0.5 rounded text-xs">MONTHLY</span>
-                            Monthly Trends
-                          </p>
-                          <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                            {monthlyAnalysis || "No monthly data available"}
-                          </p>
-                        </div>
-
-                        <div className="p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                          <p className="font-bold text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-2">
-                            <span className="bg-emerald-500 text-white px-2 py-0.5 rounded text-xs">QUARTERLY</span>
-                            Long-term Forecast
-                          </p>
-                          <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                            {quarterlyAnalysis || "No quarterly data available"}
-                          </p>
-                        </div>
-
-                        <p className="text-xs text-muted-foreground italic pt-2 border-t">
-                          💡 These AI-generated suggestions are based on your production history and consumption patterns. 
-                          Adjust par levels according to seasonal demand and upcoming events.
+                      <div>
+                        <p className="text-muted-foreground">Latest Batch</p>
+                        <p className="font-medium">
+                          {new Date(Math.max(...productions.map(p => new Date(p.production_date).getTime()))).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
             </Card>
