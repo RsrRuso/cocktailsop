@@ -61,7 +61,9 @@ const BatchCalculator = () => {
   const [managingGroup, setManagingGroup] = useState<any>(null);
 
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes();
-  const { productions, createProduction } = useBatchProductions(selectedRecipeId || undefined);
+  const { productions, createProduction } = useBatchProductions(
+    selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined
+  );
   const { groups, createGroup } = useMixologistGroups();
 
   // Set default producer to current user
