@@ -243,11 +243,15 @@ const BatchCalculator = () => {
       ? parseFloat(targetLiters)
       : calculation.scaledIngredients.reduce((sum, ing) => sum + parseFloat(ing.scaledAmount), 0) / 1000;
 
+    // Calculate actual servings produced based on multiplier
+    const actualServings = parseFloat(currentServes) * calculation.multiplier;
+
     // Generate QR code data
     const qrData = JSON.stringify({
       batchName: recipeName,
       date: new Date().toISOString(),
       liters: totalLiters.toFixed(2),
+      servings: Math.round(actualServings),
       producedBy: producedByName,
       ingredients: calculation.scaledIngredients
     });
@@ -260,7 +264,7 @@ const BatchCalculator = () => {
       production: {
         recipe_id: recipeId,
         batch_name: recipeName,
-        target_serves: parseFloat(targetBatchSize || "0"),
+        target_serves: Math.round(actualServings),
         target_liters: totalLiters,
         production_date: new Date().toISOString(),
         produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
