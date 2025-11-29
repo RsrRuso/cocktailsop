@@ -1037,6 +1037,161 @@ const BatchCalculator = () => {
         spiritIndex++;
       });
       
+      yPos += 10;
+      
+      // Forecast Analytics Section - Suggested Par Levels
+      if (yPos > 150) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFillColor(...deepBlue);
+      doc.rect(12, yPos, 186, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("FORECAST ANALYTICS - SUGGESTED PAR LEVELS", 15, yPos + 5.5);
+      yPos += 12;
+      
+      // Calculate forecast data by batch type
+      const forecastData = Object.entries(
+        productions.reduce((acc, prod) => {
+          const key = prod.batch_name;
+          const prodDate = new Date(prod.production_date);
+          
+          if (!acc[key]) {
+            acc[key] = { 
+              batches: [],
+              firstDate: prodDate,
+              lastDate: prodDate
+            };
+          }
+          acc[key].batches.push({ liters: prod.target_liters, date: prodDate });
+          if (prodDate < acc[key].firstDate) acc[key].firstDate = prodDate;
+          if (prodDate > acc[key].lastDate) acc[key].lastDate = prodDate;
+          return acc;
+        }, {} as Record<string, { batches: { liters: number; date: Date }[]; firstDate: Date; lastDate: Date }>)
+      )
+      .sort(([, a], [, b]) => {
+        const aTotal = a.batches.reduce((sum, b) => sum + b.liters, 0);
+        const bTotal = b.batches.reduce((sum, b) => sum + b.liters, 0);
+        return bTotal - aTotal;
+      });
+      
+      forecastData.forEach(([name, data], index) => {
+        if (yPos > 230) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        // Sort batches by date
+        const sortedBatches = [...data.batches].sort((a, b) => a.date.getTime() - b.date.getTime());
+        const totalLiters = sortedBatches.reduce((sum, b) => sum + b.liters, 0);
+        const daysDiff = Math.max(1, Math.ceil((data.lastDate.getTime() - data.firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+        
+        // Calculate trend
+        const midPoint = Math.floor(sortedBatches.length / 2);
+        const olderBatches = sortedBatches.slice(0, midPoint);
+        const recentBatches = sortedBatches.slice(midPoint);
+        
+        const olderAvg = olderBatches.length > 0 
+          ? olderBatches.reduce((sum, b) => sum + b.liters, 0) / olderBatches.length 
+          : 0;
+        const recentAvg = recentBatches.length > 0 
+          ? recentBatches.reduce((sum, b) => sum + b.liters, 0) / recentBatches.length 
+          : 0;
+        
+        const trendFactor = olderAvg > 0 ? recentAvg / olderAvg : 1;
+        const trendPercent = ((trendFactor - 1) * 100).toFixed(1);
+        
+        // Base and adjusted averages
+        const baseDailyAvg = totalLiters / daysDiff;
+        const adjustedDailyAvg = baseDailyAvg * Math.max(0.5, Math.min(1.5, trendFactor));
+        
+        // Calculate suggested par levels
+        const suggestedDaily = adjustedDailyAvg * 1.2;
+        const suggestedWeekly = suggestedDaily * 7;
+        const suggestedBiWeekly = suggestedDaily * 14;
+        const suggestedMonthly = suggestedDaily * 30;
+        const suggestedQuarterly = suggestedDaily * 90;
+        
+        // Batch name header
+        const bgColor = index % 2 === 0 ? lightGray : [255, 255, 255] as [number, number, number];
+        doc.setFillColor(...bgColor);
+        doc.rect(12, yPos, 186, 28, 'F');
+        doc.setDrawColor(...skyBlue);
+        doc.setLineWidth(0.3);
+        doc.rect(12, yPos, 186, 28, 'S');
+        
+        doc.setTextColor(...slate);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        const displayName = name.length > 45 ? name.substring(0, 45) + '...' : name;
+        doc.text(displayName, 15, yPos + 5);
+        
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${data.batches.length} batches over ${daysDiff} days`, 15, yPos + 9);
+        
+        // Trend indicator
+        const trendColor: [number, number, number] = trendFactor > 1.05 ? [16, 185, 129] : trendFactor < 0.95 ? [249, 115, 22] : slate;
+        const trendArrow = trendFactor > 1.05 ? '↗' : trendFactor < 0.95 ? '↘' : '→';
+        doc.setTextColor(...trendColor);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${trendArrow} Trend: ${parseFloat(trendPercent) > 0 ? '+' : ''}${trendPercent}%`, 15, yPos + 13);
+        
+        // Par levels in a row
+        doc.setTextColor(...slate);
+        doc.setFontSize(6.5);
+        doc.setFont("helvetica", "bold");
+        
+        doc.text("Daily:", 15, yPos + 18);
+        doc.setTextColor(...deepBlue);
+        doc.text(`${suggestedDaily.toFixed(1)} L`, 15, yPos + 22);
+        
+        doc.setTextColor(...slate);
+        doc.text("Weekly:", 50, yPos + 18);
+        doc.setTextColor(...deepBlue);
+        doc.text(`${suggestedWeekly.toFixed(1)} L`, 50, yPos + 22);
+        
+        doc.setTextColor(...slate);
+        doc.text("2-Week:", 85, yPos + 18);
+        doc.setTextColor(...deepBlue);
+        doc.text(`${suggestedBiWeekly.toFixed(1)} L`, 85, yPos + 22);
+        
+        doc.setTextColor(...slate);
+        doc.text("Monthly:", 120, yPos + 18);
+        doc.setTextColor(...deepBlue);
+        doc.text(`${suggestedMonthly.toFixed(1)} L`, 120, yPos + 22);
+        
+        doc.setTextColor(...slate);
+        doc.text("Quarterly:", 160, yPos + 18);
+        doc.setTextColor(...deepBlue);
+        doc.text(`${suggestedQuarterly.toFixed(1)} L`, 160, yPos + 22);
+        
+        yPos += 32;
+      });
+      
+      // Add note about par levels
+      if (yPos > 265) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFillColor(240, 249, 255);
+      doc.rect(12, yPos, 186, 12, 'F');
+      doc.setDrawColor(...skyBlue);
+      doc.setLineWidth(0.3);
+      doc.rect(12, yPos, 186, 12, 'S');
+      
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(...slate);
+      doc.text("💡 Par levels include 20% safety buffer and are dynamically adjusted based on production trends.", 15, yPos + 5);
+      doc.text("Growing trends increase par recommendations; declining trends reduce them for optimal inventory management.", 15, yPos + 9);
+      
+      yPos += 15;
+      
       // Footer
       const footerY = 287;
       doc.setDrawColor(...skyBlue);
