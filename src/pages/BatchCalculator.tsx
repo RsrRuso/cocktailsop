@@ -606,35 +606,45 @@ const BatchCalculator = () => {
   };
 
   const handleDeleteProduction = async (productionId: string) => {
+    console.log("[BatchCalculator] handleDeleteProduction clicked", productionId);
+
     if (!confirm("Are you sure you want to delete this batch production?")) {
+      console.log("[BatchCalculator] Delete cancelled by user");
       return;
     }
 
     try {
+      console.log("[BatchCalculator] Deleting production ingredients for", productionId);
       // Delete production ingredients first
       const { error: ingredientsError } = await supabase
         .from('batch_production_ingredients')
         .delete()
         .eq('production_id', productionId);
 
-      if (ingredientsError) throw ingredientsError;
+      if (ingredientsError) {
+        console.error("[BatchCalculator] Error deleting ingredients", ingredientsError);
+        throw ingredientsError;
+      }
 
+      console.log("[BatchCalculator] Deleting production", productionId);
       // Delete production
       const { error: productionError } = await supabase
         .from('batch_productions')
         .delete()
         .eq('id', productionId);
 
-      if (productionError) throw productionError;
+      if (productionError) {
+        console.error("[BatchCalculator] Error deleting production", productionError);
+        throw productionError;
+      }
 
       await queryClient.invalidateQueries({ queryKey: ["batch-productions"] });
       toast.success("Batch production deleted");
     } catch (error) {
-      console.error("Delete error:", error);
+      console.error("[BatchCalculator] Delete error:", error);
       toast.error("Failed to delete production");
     }
   };
-
   const handleAISuggestions = async () => {
     if (!recipeName) {
       toast.error("Please enter a recipe name first");
