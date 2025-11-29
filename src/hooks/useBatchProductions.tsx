@@ -101,6 +101,42 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
     },
   });
 
+  const deleteProduction = useMutation({
+    mutationFn: async (productionId: string) => {
+      // First delete all related ingredients
+      const { error: ingredientsError } = await supabase
+        .from('batch_production_ingredients')
+        .delete()
+        .eq('production_id', productionId);
+      
+      if (ingredientsError) {
+        console.error('Failed to delete ingredients:', ingredientsError);
+        throw new Error(`Failed to delete ingredients: ${ingredientsError.message}`);
+      }
+
+      // Then delete the production
+      const { error: productionError } = await supabase
+        .from('batch_productions')
+        .delete()
+        .eq('id', productionId);
+      
+      if (productionError) {
+        console.error('Failed to delete production:', productionError);
+        throw new Error(`Failed to delete production: ${productionError.message}`);
+      }
+
+      return productionId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
+      toast.success("Batch production deleted successfully!");
+    },
+    onError: (error: Error) => {
+      console.error('Delete production error:', error);
+      toast.error(`Failed to delete: ${error.message}`);
+    },
+  });
+
   const getProductionIngredients = async (productionId: string) => {
     const { data, error } = await supabase
       .from('batch_production_ingredients')
@@ -115,6 +151,7 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
     productions,
     isLoading,
     createProduction: createProduction.mutate,
+    deleteProduction: deleteProduction.mutate,
     getProductionIngredients,
   };
 };
