@@ -1012,39 +1012,39 @@ const BatchCalculator = () => {
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
 
-      <div className="px-4 py-6 space-y-6 max-w-6xl mx-auto">
-        <div className="flex items-center gap-3">
+      <div className="px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate("/ops-tools")}
-            className="glass-hover"
+            className="glass-hover shrink-0"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Batch Calculator Pro</h1>
-            <p className="text-sm text-muted-foreground">AI-powered batch management & forecasting</p>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold truncate">Batch Calculator Pro</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">AI-powered batch management & forecasting</p>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="calculator">Calculator</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="groups">Groups</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="calculator" className="space-y-6">
-            <Card className="glass p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Quick Production</h3>
+          <TabsContent value="calculator" className="space-y-4 sm:space-y-6">
+            <Card className="glass p-4 sm:p-6 space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h3 className="text-base sm:text-lg font-semibold">Quick Production</h3>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => navigate("/batch-recipes")}
-                  className="glass-hover"
+                  className="glass-hover w-full sm:w-auto"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Recipe
@@ -1161,8 +1161,8 @@ const BatchCalculator = () => {
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4">
-            <Card className="glass p-6">
-              <div className="flex items-center justify-between mb-6">
+            <Card className="glass p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <History className="w-5 h-5" />
                   Production History
@@ -1171,10 +1171,10 @@ const BatchCalculator = () => {
                   <Button
                     variant="default"
                     onClick={downloadAllBatchesReport}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 w-full sm:w-auto"
                   >
                     <Download className="w-4 h-4" />
-                    Download All Batches Report
+                    <span className="truncate">Download All Batches Report</span>
                   </Button>
                 )}
               </div>
@@ -1184,13 +1184,13 @@ const BatchCalculator = () => {
                   No batch productions recorded yet. Start batching!
                 </p>
               ) : (
-                <div className="space-y-4">
+                 <div className="space-y-4">
                   {productions.map((production) => (
-                    <Card key={production.id} className="p-4 glass hover:bg-accent/10 transition-colors">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-bold text-lg">{production.batch_name}</h4>
-                          <p className="text-sm text-muted-foreground">
+                    <Card key={production.id} className="p-3 sm:p-4 glass hover:bg-accent/10 transition-colors">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-bold text-base sm:text-lg">{production.batch_name}</h4>
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             {new Date(production.production_date).toLocaleDateString()}
                           </p>
                         </div>
@@ -1198,13 +1198,14 @@ const BatchCalculator = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => downloadBatchPDF(production)}
+                          className="w-full sm:w-auto"
                         >
                           <Download className="w-4 h-4 mr-2" />
                           PDF
                         </Button>
                       </div>
                       
-                      <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
                         <div>
                           <p className="text-muted-foreground">Liters</p>
                           <p className="font-semibold">{production.target_liters} L</p>
@@ -1248,19 +1249,19 @@ const BatchCalculator = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-4">
-            <Card className="glass p-6">
-              <div className="flex items-center gap-2 mb-6">
+            <Card className="glass p-4 sm:p-6">
+              <div className="flex items-center gap-2 mb-4 sm:mb-6">
                 <BarChart3 className="w-5 h-5" />
-                <h3 className="text-lg font-semibold">Production Analytics & Forecasting</h3>
+                <h3 className="text-base sm:text-lg font-semibold">Production Analytics & Forecasting</h3>
               </div>
               
               {!productions || productions.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
+                <p className="text-muted-foreground text-center py-6 sm:py-8 text-sm">
                   Record some batch productions to see analytics and forecasts!
                 </p>
               ) : (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="glass p-4 rounded-lg">
                       <p className="text-sm text-muted-foreground">Total Batches</p>
                       <p className="text-3xl font-bold text-primary">{productions.length}</p>
@@ -1295,10 +1296,10 @@ const BatchCalculator = () => {
           </TabsContent>
 
           <TabsContent value="groups" className="space-y-4">
-            <Card className="glass p-6">
-              <div className="flex items-center gap-2 mb-6">
+            <Card className="glass p-4 sm:p-6">
+              <div className="flex items-center gap-2 mb-4 sm:mb-6">
                 <Users className="w-5 h-5" />
-                <h3 className="text-lg font-semibold">Mixologist Groups</h3>
+                <h3 className="text-base sm:text-lg font-semibold">Mixologist Groups</h3>
               </div>
 
               <div className="space-y-4 mb-6">
@@ -1336,13 +1337,13 @@ const BatchCalculator = () => {
                 <div className="space-y-3">
                   <h4 className="font-semibold">Your Groups</h4>
                   {groups.map((group) => (
-                  <Card key={group.id} className="p-4 glass">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h5 className="font-bold">{group.name}</h5>
-                          <p className="text-sm text-muted-foreground">{group.description}</p>
+                   <Card key={group.id} className="p-3 sm:p-4 glass">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h5 className="font-bold truncate">{group.name}</h5>
+                          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{group.description}</p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 w-full sm:w-auto">
                           <Button 
                             size="sm" 
                             variant="outline"
@@ -1350,16 +1351,17 @@ const BatchCalculator = () => {
                               setManagingGroup(group);
                               setShowMembersDialog(true);
                             }}
-                            className="glass-hover"
+                            className="glass-hover flex-1 sm:flex-initial"
                           >
                             <Users className="w-4 h-4 mr-2" />
-                            Members
+                            <span className="hidden sm:inline">Members</span>
+                            <span className="sm:hidden">Team</span>
                           </Button>
                           <Button 
                             size="sm" 
                             variant="outline"
                           onClick={() => setSelectedGroupId(group.id)}
-                            className={selectedGroupId === group.id ? "bg-primary text-primary-foreground" : "glass-hover"}
+                            className={`flex-1 sm:flex-initial ${selectedGroupId === group.id ? "bg-primary text-primary-foreground" : "glass-hover"}`}
                           >
                             {selectedGroupId === group.id ? "Selected" : "Select"}
                           </Button>
