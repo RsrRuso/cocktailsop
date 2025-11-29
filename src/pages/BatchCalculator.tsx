@@ -711,12 +711,28 @@ const BatchCalculator = () => {
 
       const doc = new jsPDF();
       
-      // Calculate totals
+      // Aggregate by batch name
+      const batchSummary = new Map<string, { count: number; totalLiters: number; totalServes: number }>();
       let totalLitersProduced = 0;
       let totalServesProduced = 0;
       const ingredientsMap = new Map<string, { amount: number; unit: string }>();
       
       productions.forEach((prod: any) => {
+        const batchName = prod.batch_name;
+        const existing = batchSummary.get(batchName);
+        
+        if (existing) {
+          existing.count += 1;
+          existing.totalLiters += prod.target_liters || 0;
+          existing.totalServes += prod.target_serves || 0;
+        } else {
+          batchSummary.set(batchName, {
+            count: 1,
+            totalLiters: prod.target_liters || 0,
+            totalServes: prod.target_serves || 0
+          });
+        }
+        
         totalLitersProduced += prod.target_liters || 0;
         totalServesProduced += prod.target_serves || 0;
       });
@@ -778,92 +794,96 @@ const BatchCalculator = () => {
       doc.setTextColor(...slate);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("Total Batches:", 18, yPos + 15);
+      doc.text("Total Productions:", 18, yPos + 15);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...deepBlue);
-      doc.text(`${productions.length}`, 55, yPos + 15);
+      doc.text(`${productions.length}`, 60, yPos + 15);
       
       doc.setTextColor(...slate);
       doc.setFont("helvetica", "bold");
-      doc.text("Total Volume:", 18, yPos + 21);
+      doc.text("Batch Types:", 18, yPos + 21);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...amber);
+      doc.text(`${batchSummary.size}`, 60, yPos + 21);
+      
+      doc.setTextColor(...slate);
+      doc.setFont("helvetica", "bold");
+      doc.text("Total Volume:", 18, yPos + 27);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...emerald);
       doc.setFontSize(11);
-      doc.text(`${totalLitersProduced.toFixed(2)} L`, 55, yPos + 21);
+      doc.text(`${totalLitersProduced.toFixed(2)} L`, 60, yPos + 27);
       
       doc.setTextColor(...slate);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("Total Servings:", 18, yPos + 27);
+      doc.text("Total Servings:", 120, yPos + 15);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...amber);
-      doc.text(`${totalServesProduced}`, 55, yPos + 27);
-      
-      doc.setTextColor(...slate);
-      doc.setFont("helvetica", "bold");
-      doc.text("Unique Spirits:", 120, yPos + 15);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...deepBlue);
-      doc.text(`${ingredientsMap.size}`, 160, yPos + 15);
+      doc.text(`${totalServesProduced}`, 165, yPos + 15);
       
       doc.setFont("helvetica", "bold");
       doc.text("Report Date:", 120, yPos + 21);
       doc.setFont("helvetica", "normal");
       const reportDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      doc.text(reportDate, 160, yPos + 21);
+      doc.text(reportDate, 165, yPos + 21);
       
       yPos += 38;
       
-      // Batches List Section
+      // Batch Types Summary Section
       doc.setFillColor(...deepBlue);
       doc.rect(12, yPos, 186, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("ALL BATCHES PRODUCED", 15, yPos + 5.5);
+      doc.text("BATCH TYPES OVERVIEW", 15, yPos + 5.5);
       yPos += 12;
       
       doc.setTextColor(...slate);
-      doc.setFontSize(7.5);
+      doc.setFontSize(8);
       
-      // Batches table header
+      // Batch types table header
       doc.setFont("helvetica", "bold");
       doc.setFillColor(...deepBlue);
       doc.rect(12, yPos - 2, 186, 6, 'F');
       doc.setTextColor(255, 255, 255);
       doc.text("#", 15, yPos + 2);
       doc.text("Batch Name", 25, yPos + 2);
-      doc.text("Date", 105, yPos + 2);
-      doc.text("Volume (L)", 140, yPos + 2);
-      doc.text("Serves", 170, yPos + 2);
+      doc.text("Productions", 110, yPos + 2);
+      doc.text("Total Volume (L)", 145, yPos + 2);
+      doc.text("Total Serves", 175, yPos + 2);
       yPos += 7;
       
-      // Batches table rows
+      // Batch types table rows
       doc.setFont("helvetica", "normal");
-      productions.forEach((prod: any, index: number) => {
+      let batchIndex = 0;
+      Array.from(batchSummary.entries()).forEach(([batchName, data]) => {
         if (yPos > 260) {
           doc.addPage();
           yPos = 20;
         }
         
-        if (index % 2 === 0) {
+        if (batchIndex % 2 === 0) {
           doc.setFillColor(...lightGray);
-          doc.rect(12, yPos - 2, 186, 5, 'F');
+          doc.rect(12, yPos - 2, 186, 5.5, 'F');
         }
         
         doc.setTextColor(...slate);
-        doc.text(`${index + 1}`, 15, yPos + 1.5);
-        const batchName = prod.batch_name.length > 35 ? prod.batch_name.substring(0, 35) + '...' : prod.batch_name;
-        doc.text(batchName, 25, yPos + 1.5);
-        const prodDate = new Date(prod.production_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        doc.text(prodDate, 105, yPos + 1.5);
+        doc.text(`${batchIndex + 1}`, 15, yPos + 2);
+        const displayName = batchName.length > 40 ? batchName.substring(0, 40) + '...' : batchName;
+        doc.text(displayName, 25, yPos + 2);
+        doc.setTextColor(...deepBlue);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${data.count}`, 110, yPos + 2);
+        doc.setFont("helvetica", "normal");
         doc.setTextColor(...emerald);
         doc.setFont("helvetica", "bold");
-        doc.text(`${prod.target_liters.toFixed(1)}`, 140, yPos + 1.5);
+        doc.text(`${data.totalLiters.toFixed(1)}`, 145, yPos + 2);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(...amber);
-        doc.text(`${prod.target_serves || 0}`, 170, yPos + 1.5);
-        yPos += 5;
+        doc.text(`${data.totalServes}`, 175, yPos + 2);
+        yPos += 5.5;
+        batchIndex++;
       });
       
       yPos += 5;
