@@ -349,95 +349,205 @@ const BatchCalculator = () => {
 
       const doc = new jsPDF();
       
-      // Header
-      doc.setFontSize(22);
-      doc.setFont("helvetica", "bold");
-      doc.text("Batch Production Report", 105, 20, { align: 'center' });
+      // Colors
+      const primaryColor: [number, number, number] = [41, 128, 185];
+      const accentColor: [number, number, number] = [52, 152, 219];
+      const textDark: [number, number, number] = [44, 62, 80];
       
-      // Production Info Section
-      doc.setFontSize(14);
+      // Header with colored background
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, 0, 210, 35, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
       doc.setFont("helvetica", "bold");
-      doc.text("Batch Information", 20, 35);
+      doc.text("BATCH PRODUCTION REPORT", 105, 15, { align: 'center' });
       
       doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
-      doc.text(`Batch Name: ${production.batch_name}`, 20, 45);
-      doc.text(`Production Date: ${new Date(production.production_date).toLocaleDateString('en-US', { 
+      doc.text("Professional Batch Tracking & Quality Assurance", 105, 25, { align: 'center' });
+      
+      // Reset text color
+      doc.setTextColor(...textDark);
+      
+      // Production Date - BOLD and prominent
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      const productionDate = new Date(production.production_date).toLocaleDateString('en-US', { 
+        weekday: 'long',
         year: 'numeric', 
         month: 'long', 
         day: 'numeric' 
-      })}`, 20, 53);
-      doc.text(`Total Batch Made: ${production.target_liters.toFixed(2)} Liters`, 20, 61);
-      doc.text(`Produced By: ${production.produced_by_name || 'N/A'}`, 20, 69);
+      });
+      doc.text(`PRODUCTION DATE: ${productionDate}`, 105, 48, { align: 'center' });
       
-      // Ingredients Section
+      // Batch Summary Box
+      doc.setFillColor(245, 245, 245);
+      doc.roundedRect(15, 55, 180, 35, 3, 3, 'F');
+      doc.setDrawColor(...accentColor);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(15, 55, 180, 35, 3, 3, 'S');
+      
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
-      doc.text("Ingredients Used", 20, 85);
+      doc.setTextColor(...primaryColor);
+      doc.text("BATCH SUMMARY", 105, 63, { align: 'center' });
       
-      doc.setFontSize(10);
+      doc.setTextColor(...textDark);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("Batch Name:", 20, 72);
       doc.setFont("helvetica", "normal");
+      doc.text(production.batch_name, 55, 72);
       
-      let yPos = 95;
-      let totalIngredientsCount = 0;
+      doc.setFont("helvetica", "bold");
+      doc.text("Batch Quantity:", 20, 80);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${production.target_liters.toFixed(2)} Liters`, 55, 80);
+      
+      doc.setFont("helvetica", "bold");
+      doc.text("Made By:", 120, 72);
+      doc.setFont("helvetica", "normal");
+      doc.text(production.produced_by_name || 'N/A', 145, 72);
+      
+      // Ingredients Section
+      doc.setFillColor(...accentColor);
+      doc.rect(15, 95, 180, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("INGREDIENTS USED PER BATCH", 20, 101);
+      
+      // Ingredients table
+      let yPos = 110;
+      doc.setTextColor(...textDark);
+      doc.setFontSize(10);
+      
+      // Table header
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(230, 230, 230);
+      doc.rect(15, yPos - 5, 180, 8, 'F');
+      doc.text("No.", 20, yPos);
+      doc.text("Ingredient Name", 35, yPos);
+      doc.text("Quantity", 130, yPos);
+      doc.text("Unit", 165, yPos);
+      yPos += 10;
+      
+      // Table rows
+      doc.setFont("helvetica", "normal");
+      let totalIngredientsQty = 0;
       
       if (ingredients && ingredients.length > 0) {
         ingredients.forEach((ing: any, index: number) => {
-          const ingredientText = `${index + 1}. ${ing.ingredient_name}: ${ing.scaled_amount} ${ing.unit}`;
-          doc.text(ingredientText, 25, yPos);
+          if (yPos > 240) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          // Alternating row colors
+          if (index % 2 === 0) {
+            doc.setFillColor(250, 250, 250);
+            doc.rect(15, yPos - 5, 180, 7, 'F');
+          }
+          
+          doc.text(`${index + 1}`, 20, yPos);
+          doc.text(ing.ingredient_name, 35, yPos);
+          doc.text(ing.scaled_amount.toString(), 130, yPos);
+          doc.text(ing.unit, 165, yPos);
+          totalIngredientsQty += parseFloat(ing.scaled_amount);
           yPos += 7;
-          totalIngredientsCount++;
         });
         
-        // Total ingredients summary
-        yPos += 5;
+        // Total row
+        yPos += 3;
+        doc.setFillColor(...primaryColor);
+        doc.rect(15, yPos - 5, 180, 8, 'F');
+        doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.text(`Total Ingredients Used: ${totalIngredientsCount}`, 20, yPos);
-        yPos += 10;
+        doc.text("TOTAL INGREDIENTS:", 35, yPos);
+        doc.text(`${ingredients.length} items`, 130, yPos);
+        doc.text(`${totalIngredientsQty.toFixed(2)} total`, 165, yPos);
+        yPos += 15;
       } else {
-        doc.text("No ingredient details available", 25, yPos);
+        doc.text("No ingredient details available", 35, yPos);
         yPos += 15;
       }
       
-      // QR Code Section
+      // QR Code Section with box
+      doc.setTextColor(...textDark);
       if (production.qr_code_data) {
-        doc.setFontSize(14);
+        doc.setFillColor(245, 250, 255);
+        doc.roundedRect(15, yPos, 180, 80, 3, 3, 'F');
+        doc.setDrawColor(...accentColor);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(15, yPos, 180, 80, 3, 3, 'S');
+        
+        doc.setFontSize(13);
         doc.setFont("helvetica", "bold");
-        doc.text("Unique Batch QR Code", 20, yPos);
-        yPos += 10;
+        doc.setTextColor(...primaryColor);
+        doc.text("UNIQUE BATCH QR CODE", 105, yPos + 8, { align: 'center' });
+        
+        // QR code data content
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...textDark);
+        doc.text("QR CODE CONTAINS:", 25, yPos + 18);
+        doc.setFont("helvetica", "normal");
+        doc.text(`• Batch: ${production.batch_name}`, 25, yPos + 24);
+        doc.text(`• Date: ${productionDate}`, 25, yPos + 30);
+        doc.text(`• Volume: ${production.target_liters.toFixed(2)}L`, 25, yPos + 36);
+        doc.text(`• Producer: ${production.produced_by_name || 'N/A'}`, 25, yPos + 42);
+        doc.text(`• All Ingredients & Quantities`, 25, yPos + 48);
         
         const qrCodeDataUrl = await QRCode.toDataURL(production.qr_code_data, {
-          width: 400,
-          margin: 1
+          width: 500,
+          margin: 2,
+          color: {
+            dark: '#2980b9',
+            light: '#ffffff'
+          }
         });
-        doc.addImage(qrCodeDataUrl, 'PNG', 20, yPos, 60, 60);
+        doc.addImage(qrCodeDataUrl, 'PNG', 135, yPos + 12, 55, 55);
         
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.text("Scan for complete batch details", 20, yPos + 65);
-        yPos += 75;
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(100, 100, 100);
+        doc.text("Scan to access complete batch details and traceability", 105, yPos + 73, { align: 'center' });
+        yPos += 85;
       }
 
       // Notes Section
       if (production.notes && yPos < 250) {
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("Production Notes:", 20, yPos);
-        yPos += 8;
+        doc.setFillColor(255, 250, 240);
+        doc.roundedRect(15, yPos, 180, 25, 3, 3, 'F');
         
-        doc.setFontSize(10);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...textDark);
+        doc.text("Production Notes:", 20, yPos + 7);
+        
+        doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         const splitNotes = doc.splitTextToSize(production.notes, 170);
-        doc.text(splitNotes, 20, yPos);
+        doc.text(splitNotes, 20, yPos + 14);
       }
       
       // Footer
+      doc.setDrawColor(200, 200, 200);
+      doc.line(15, 280, 195, 280);
       doc.setFontSize(8);
       doc.setFont("helvetica", "italic");
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 285, { align: 'center' });
+      doc.setTextColor(120, 120, 120);
+      doc.text(`Report Generated: ${new Date().toLocaleString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`, 105, 287, { align: 'center' });
       
-      doc.save(`Batch_${production.batch_name}_${new Date(production.production_date).toLocaleDateString('en-US').replace(/\//g, '-')}.pdf`);
-      toast.success("PDF downloaded with all batch details!");
+      doc.save(`Batch_Report_${production.batch_name}_${new Date(production.production_date).toLocaleDateString('en-US').replace(/\//g, '-')}.pdf`);
+      toast.success("Professional batch report downloaded!");
     } catch (error) {
       console.error("PDF generation error:", error);
       toast.error("Failed to generate PDF");
