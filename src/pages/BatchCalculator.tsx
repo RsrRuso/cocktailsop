@@ -1449,108 +1449,147 @@ const BatchCalculator = () => {
       
       yPos += 24;
       
-      // Compact Master List
+      // Batch List with Ingredient Details
       doc.setFillColor(...deepBlue);
       doc.rect(12, yPos, 186, 5, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.text("BATCH LIST", 15, yPos + 3.5);
+      doc.text("BATCH LIST WITH INGREDIENT CONSUMPTION", 15, yPos + 3.5);
       yPos += 7;
       
       doc.setTextColor(...slate);
       doc.setFontSize(6);
       
-      // Compact table header
-      doc.setFont("helvetica", "bold");
-      doc.setFillColor(...deepBlue);
-      doc.rect(12, yPos - 1.5, 186, 4, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.text("#", 14, yPos + 1.5);
-      doc.text("Batch", 22, yPos + 1.5);
-      doc.text("Date", 75, yPos + 1.5);
-      doc.text("Vol(L)", 105, yPos + 1.5);
-      doc.text("Srv", 125, yPos + 1.5);
-      doc.text("Btl", 140, yPos + 1.5);
-      doc.text("Producer", 155, yPos + 1.5);
-      yPos += 5;
-      
-      // Compact batch rows
-      doc.setFont("helvetica", "normal");
-      
-      // Pre-calculate bottles for each batch
-      const batchBottles = new Map<string, number>();
+      // Pre-calculate ingredient data for each batch
+      const batchIngredientsData = new Map();
       
       productions.forEach((prod: any) => {
         const batchIngredients = allIngredients?.filter((ing: any) => ing.production_id === prod.id) || [];
-        let totalBottles = 0;
+        const ingredientDetails: any[] = [];
+        let batchTotalMl = 0;
+        let batchTotalBottles = 0;
+        let batchTotalLeftoverMl = 0;
         
         batchIngredients.forEach((ing: any) => {
           const scaledMl = parseFloat(ing.scaled_amount || 0);
+          batchTotalMl += scaledMl;
+          
           const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
+          let bottles = 0;
+          let leftoverMl = 0;
+          
           if (matchingSpirit && matchingSpirit.bottle_size_ml) {
-            totalBottles += Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
+            bottles = Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
+            leftoverMl = scaledMl % matchingSpirit.bottle_size_ml;
+            batchTotalBottles += bottles;
+            batchTotalLeftoverMl += leftoverMl;
           }
+          
+          ingredientDetails.push({
+            name: ing.ingredient_name,
+            ml: scaledMl,
+            bottles,
+            leftoverMl
+          });
         });
         
-        batchBottles.set(prod.id, totalBottles);
+        batchIngredientsData.set(prod.id, {
+          ingredients: ingredientDetails,
+          totalMl: batchTotalMl,
+          totalBottles: batchTotalBottles,
+          totalLeftoverMl: batchTotalLeftoverMl
+        });
       });
       
+      // Display each batch with ingredient details
       productions.forEach((prod: any, index: number) => {
-        if (yPos > 280) {
+        if (yPos > 250) {
           doc.addPage();
           yPos = 15;
-          
-          // Repeat header
-          doc.setFont("helvetica", "bold");
-          doc.setFillColor(...deepBlue);
-          doc.rect(12, yPos - 1.5, 186, 4, 'F');
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(6);
-          doc.text("#", 14, yPos + 1.5);
-          doc.text("Batch", 22, yPos + 1.5);
-          doc.text("Date", 75, yPos + 1.5);
-          doc.text("Vol(L)", 105, yPos + 1.5);
-          doc.text("Srv", 125, yPos + 1.5);
-          doc.text("Btl", 140, yPos + 1.5);
-          doc.text("Producer", 155, yPos + 1.5);
-          yPos += 5;
-          doc.setFont("helvetica", "normal");
         }
         
-        if (index % 2 === 0) {
-          doc.setFillColor(...lightGray);
-          doc.rect(12, yPos - 1.5, 186, 3.5, 'F');
-        }
-        
-        doc.setTextColor(...slate);
-        doc.text(`${index + 1}`, 14, yPos + 1.5);
-        const displayName = prod.batch_name.length > 30 ? prod.batch_name.substring(0, 30) + '...' : prod.batch_name;
-        doc.text(displayName, 22, yPos + 1.5);
-        
-        const prodDate = new Date(prod.production_date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
-        doc.text(prodDate, 75, yPos + 1.5);
-        
-        doc.setTextColor(...emerald);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${prod.target_liters.toFixed(1)}`, 105, yPos + 1.5);
-        doc.setFont("helvetica", "normal");
-        
-        doc.setTextColor(...amber);
-        doc.text(`${prod.target_serves}`, 125, yPos + 1.5);
+        // Batch header card
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(12, yPos, 186, 8, 2, 2, 'F');
+        doc.setDrawColor(148, 163, 184);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(12, yPos, 186, 8, 2, 2, 'S');
         
         doc.setTextColor(...deepBlue);
+        doc.setFontSize(7.5);
         doc.setFont("helvetica", "bold");
-        const bottles = batchBottles.get(prod.id) || 0;
-        doc.text(`${bottles}`, 140, yPos + 1.5);
+        doc.text(`${index + 1}. ${prod.batch_name.substring(0, 40)}`, 15, yPos + 3);
+        
+        doc.setFontSize(6);
         doc.setFont("helvetica", "normal");
-        
         doc.setTextColor(...slate);
-        const producerName = prod.produced_by_name || 'N/A';
-        const displayProducer = producerName.length > 15 ? producerName.substring(0, 15) + '...' : producerName;
-        doc.text(displayProducer, 155, yPos + 1.5);
+        const batchDate = new Date(prod.production_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        doc.text(`${batchDate} | ${prod.target_liters}L | ${prod.target_serves} srv | ${prod.produced_by_name || 'N/A'}`, 15, yPos + 6.5);
         
-        yPos += 3.5;
+        yPos += 10;
+        
+        const batchData = batchIngredientsData.get(prod.id);
+        
+        if (batchData && batchData.ingredients.length > 0) {
+          // Ingredients table header
+          doc.setFont("helvetica", "bold");
+          doc.setFillColor(226, 232, 240);
+          doc.rect(14, yPos - 1, 182, 3.5, 'F');
+          doc.setTextColor(...slate);
+          doc.setFontSize(5.5);
+          doc.text("Ingredient", 16, yPos + 1.5);
+          doc.text("ML", 105, yPos + 1.5);
+          doc.text("Bottles", 130, yPos + 1.5);
+          doc.text("Extra ML", 160, yPos + 1.5);
+          yPos += 4;
+          
+          doc.setFont("helvetica", "normal");
+          
+          batchData.ingredients.forEach((ing: any, ingIndex: number) => {
+            if (yPos > 280) {
+              doc.addPage();
+              yPos = 15;
+            }
+            
+            if (ingIndex % 2 === 0) {
+              doc.setFillColor(250, 250, 250);
+              doc.rect(14, yPos - 1, 182, 3, 'F');
+            }
+            
+            doc.setTextColor(...slate);
+            doc.setFontSize(5.5);
+            const ingDisplayName = ing.name.length > 35 ? ing.name.substring(0, 35) + '...' : ing.name;
+            doc.text(ingDisplayName, 16, yPos + 1.5);
+            
+            doc.setTextColor(...deepBlue);
+            doc.text(`${ing.ml.toFixed(0)}`, 105, yPos + 1.5);
+            
+            doc.setTextColor(...emerald);
+            doc.setFont("helvetica", "bold");
+            doc.text(ing.bottles > 0 ? `${ing.bottles}` : '-', 130, yPos + 1.5);
+            doc.setFont("helvetica", "normal");
+            
+            doc.setTextColor(...amber);
+            doc.text(ing.leftoverMl > 0 ? `${ing.leftoverMl.toFixed(0)}` : '-', 160, yPos + 1.5);
+            
+            yPos += 3;
+          });
+          
+          // Batch total row
+          doc.setFillColor(...deepBlue);
+          doc.rect(14, yPos, 182, 4, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(6);
+          doc.setFont("helvetica", "bold");
+          doc.text("BATCH TOTAL:", 16, yPos + 2.5);
+          doc.text(`${batchData.totalMl.toFixed(0)} ml`, 105, yPos + 2.5);
+          doc.text(`${batchData.totalBottles} btl`, 130, yPos + 2.5);
+          doc.text(`${batchData.totalLeftoverMl.toFixed(0)} ml`, 160, yPos + 2.5);
+          yPos += 6;
+        }
+        
+        yPos += 3;
       });
       
       yPos += 5;
