@@ -1225,19 +1225,15 @@ const BatchCalculator = () => {
         doc.setFontSize(6.5);
         doc.text(`Daily Avg: ${baseDailyAvg.toFixed(2)} L`, 15, yPos + 21);
         
-        // Visual bar indicators for par levels
-        const barStartY = yPos + 26;
-        const barHeight = 4;
-        const barSpacing = 5;
+        // Numerical data only - no graphics
+        const dataStartY = yPos + 26;
+        const dataSpacing = 5;
         const labels = ['Daily', 'Weekly', '2-Week', 'Monthly', 'Quarterly'];
         const values = [suggestedDaily, suggestedWeekly, suggestedBiWeekly, suggestedMonthly, suggestedQuarterly];
         const submissions = [submissionsPerDay, submissionsPerWeek, submissionsPerBiWeek, submissionsPerMonth, submissionsPerQuarter];
-        const maxValue = Math.max(...values);
         
         labels.forEach((label, i) => {
-          const currentY = barStartY + (i * barSpacing);
-          const barMaxWidth = 120;
-          const barWidth = (values[i] / maxValue) * barMaxWidth;
+          const currentY = dataStartY + (i * dataSpacing);
           
           // Label
           doc.setTextColor(...slate);
@@ -1245,20 +1241,16 @@ const BatchCalculator = () => {
           doc.setFont("helvetica", "bold");
           doc.text(label + ':', 15, currentY + 3);
           
-          // Bar
-          doc.setFillColor(...deepBlue);
-          doc.roundedRect(35, currentY, barWidth, barHeight, 1, 1, 'F');
-          
           // Value
           doc.setTextColor(...deepBlue);
           doc.setFontSize(6.5);
           doc.setFont("helvetica", "bold");
-          doc.text(`${values[i].toFixed(1)} L`, 157, currentY + 3);
+          doc.text(`${values[i].toFixed(1)} L`, 40, currentY + 3);
           
           // Submission count
           doc.setTextColor(...emerald);
           doc.setFontSize(5.5);
-          doc.text(`(${submissions[i].toFixed(2)} batches)`, 178, currentY + 3);
+          doc.text(`(${submissions[i].toFixed(2)} batches)`, 65, currentY + 3);
         });
         
         yPos += 60;
