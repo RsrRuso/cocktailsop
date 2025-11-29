@@ -1089,6 +1089,14 @@ const BatchCalculator = () => {
         const totalLiters = sortedBatches.reduce((sum, b) => sum + b.liters, 0);
         const daysDiff = Math.max(1, Math.ceil((data.lastDate.getTime() - data.firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
         
+        // Submission frequency metrics
+        const totalSubmissions = sortedBatches.length;
+        const submissionsPerDay = totalSubmissions / daysDiff;
+        const submissionsPerWeek = submissionsPerDay * 7;
+        const submissionsPerBiWeek = submissionsPerDay * 14;
+        const submissionsPerMonth = submissionsPerDay * 30;
+        const submissionsPerQuarter = submissionsPerDay * 90;
+        
         // Calculate trend
         const midPoint = Math.floor(sortedBatches.length / 2);
         const olderBatches = sortedBatches.slice(0, midPoint);
@@ -1118,10 +1126,10 @@ const BatchCalculator = () => {
         // Batch name header
         const bgColor = index % 2 === 0 ? lightGray : [255, 255, 255] as [number, number, number];
         doc.setFillColor(...bgColor);
-        doc.rect(12, yPos, 186, 28, 'F');
+        doc.rect(12, yPos, 186, 36, 'F');
         doc.setDrawColor(...skyBlue);
         doc.setLineWidth(0.3);
-        doc.rect(12, yPos, 186, 28, 'S');
+        doc.rect(12, yPos, 186, 36, 'S');
         
         doc.setTextColor(...slate);
         doc.setFontSize(9);
@@ -1132,44 +1140,64 @@ const BatchCalculator = () => {
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
         doc.text(`${data.batches.length} batches over ${daysDiff} days`, 15, yPos + 9);
+        doc.text(`Total Submissions: ${totalSubmissions}`, 15, yPos + 13);
         
         // Trend indicator
         const trendColor: [number, number, number] = trendFactor > 1.05 ? [16, 185, 129] : trendFactor < 0.95 ? [249, 115, 22] : slate;
         const trendArrow = trendFactor > 1.05 ? '↗' : trendFactor < 0.95 ? '↘' : '→';
         doc.setTextColor(...trendColor);
         doc.setFont("helvetica", "bold");
-        doc.text(`${trendArrow} Trend: ${parseFloat(trendPercent) > 0 ? '+' : ''}${trendPercent}%`, 15, yPos + 13);
+        doc.text(`${trendArrow} Trend: ${parseFloat(trendPercent) > 0 ? '+' : ''}${trendPercent}%`, 15, yPos + 17);
         
-        // Par levels in a row
+        // Par levels with submission frequency
         doc.setTextColor(...slate);
         doc.setFontSize(6.5);
         doc.setFont("helvetica", "bold");
         
-        doc.text("Daily:", 15, yPos + 18);
+        doc.text("Daily:", 15, yPos + 22);
         doc.setTextColor(...deepBlue);
-        doc.text(`${suggestedDaily.toFixed(1)} L`, 15, yPos + 22);
+        doc.text(`${suggestedDaily.toFixed(1)} L`, 15, yPos + 26);
+        doc.setTextColor(...emerald);
+        doc.setFontSize(5.5);
+        doc.text(`(${submissionsPerDay.toFixed(2)} batches)`, 15, yPos + 30);
         
         doc.setTextColor(...slate);
-        doc.text("Weekly:", 50, yPos + 18);
+        doc.setFontSize(6.5);
+        doc.text("Weekly:", 50, yPos + 22);
         doc.setTextColor(...deepBlue);
-        doc.text(`${suggestedWeekly.toFixed(1)} L`, 50, yPos + 22);
+        doc.text(`${suggestedWeekly.toFixed(1)} L`, 50, yPos + 26);
+        doc.setTextColor(...emerald);
+        doc.setFontSize(5.5);
+        doc.text(`(${submissionsPerWeek.toFixed(2)} batches)`, 50, yPos + 30);
         
         doc.setTextColor(...slate);
-        doc.text("2-Week:", 85, yPos + 18);
+        doc.setFontSize(6.5);
+        doc.text("2-Week:", 85, yPos + 22);
         doc.setTextColor(...deepBlue);
-        doc.text(`${suggestedBiWeekly.toFixed(1)} L`, 85, yPos + 22);
+        doc.text(`${suggestedBiWeekly.toFixed(1)} L`, 85, yPos + 26);
+        doc.setTextColor(...emerald);
+        doc.setFontSize(5.5);
+        doc.text(`(${submissionsPerBiWeek.toFixed(2)} batches)`, 85, yPos + 30);
         
         doc.setTextColor(...slate);
-        doc.text("Monthly:", 120, yPos + 18);
+        doc.setFontSize(6.5);
+        doc.text("Monthly:", 120, yPos + 22);
         doc.setTextColor(...deepBlue);
-        doc.text(`${suggestedMonthly.toFixed(1)} L`, 120, yPos + 22);
+        doc.text(`${suggestedMonthly.toFixed(1)} L`, 120, yPos + 26);
+        doc.setTextColor(...emerald);
+        doc.setFontSize(5.5);
+        doc.text(`(${submissionsPerMonth.toFixed(2)} batches)`, 120, yPos + 30);
         
         doc.setTextColor(...slate);
-        doc.text("Quarterly:", 160, yPos + 18);
+        doc.setFontSize(6.5);
+        doc.text("Quarterly:", 160, yPos + 22);
         doc.setTextColor(...deepBlue);
-        doc.text(`${suggestedQuarterly.toFixed(1)} L`, 160, yPos + 22);
+        doc.text(`${suggestedQuarterly.toFixed(1)} L`, 160, yPos + 26);
+        doc.setTextColor(...emerald);
+        doc.setFontSize(5.5);
+        doc.text(`(${submissionsPerQuarter.toFixed(2)} batches)`, 160, yPos + 30);
         
-        yPos += 32;
+        yPos += 40;
       });
       
       // Add note about par levels
@@ -1179,18 +1207,19 @@ const BatchCalculator = () => {
       }
       
       doc.setFillColor(240, 249, 255);
-      doc.rect(12, yPos, 186, 12, 'F');
+      doc.rect(12, yPos, 186, 15, 'F');
       doc.setDrawColor(...skyBlue);
       doc.setLineWidth(0.3);
-      doc.rect(12, yPos, 186, 12, 'S');
+      doc.rect(12, yPos, 186, 15, 'S');
       
       doc.setFontSize(7);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(...slate);
       doc.text("💡 Par levels include 20% safety buffer and are dynamically adjusted based on production trends.", 15, yPos + 5);
       doc.text("Growing trends increase par recommendations; declining trends reduce them for optimal inventory management.", 15, yPos + 9);
+      doc.text("Submission frequency shows average batch production count per period to inform production planning.", 15, yPos + 13);
       
-      yPos += 15;
+      yPos += 18;
       
       // Footer
       const footerY = 287;
@@ -1705,6 +1734,14 @@ const BatchCalculator = () => {
                         const totalLiters = sortedBatches.reduce((sum, b) => sum + b.liters, 0);
                         const daysDiff = Math.max(1, Math.ceil((data.lastDate.getTime() - data.firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
                         
+                        // Submission frequency metrics
+                        const totalSubmissions = sortedBatches.length;
+                        const submissionsPerDay = totalSubmissions / daysDiff;
+                        const submissionsPerWeek = submissionsPerDay * 7;
+                        const submissionsPerBiWeek = submissionsPerDay * 14;
+                        const submissionsPerMonth = submissionsPerDay * 30;
+                        const submissionsPerQuarter = submissionsPerDay * 90;
+                        
                         // Calculate trend: compare recent half vs older half
                         const midPoint = Math.floor(sortedBatches.length / 2);
                         const olderBatches = sortedBatches.slice(0, midPoint);
@@ -1750,6 +1787,9 @@ const BatchCalculator = () => {
                                 <div className="text-xs text-muted-foreground mt-1">
                                   Base: {baseDailyAvg.toFixed(2)} Lt/day
                                 </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Submissions: {totalSubmissions}
+                                </div>
                               </div>
                             </div>
                             
@@ -1760,6 +1800,7 @@ const BatchCalculator = () => {
                                   {suggestedDaily.toFixed(2)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Lt</p>
+                                <p className="text-xs text-emerald-600 mt-1">{submissionsPerDay.toFixed(2)} batches</p>
                               </div>
                               
                               <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
@@ -1768,6 +1809,7 @@ const BatchCalculator = () => {
                                   {suggestedWeekly.toFixed(2)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Lt</p>
+                                <p className="text-xs text-emerald-600 mt-1">{submissionsPerWeek.toFixed(2)} batches</p>
                               </div>
                               
                               <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
@@ -1776,6 +1818,7 @@ const BatchCalculator = () => {
                                   {suggestedBiWeekly.toFixed(2)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Lt</p>
+                                <p className="text-xs text-emerald-600 mt-1">{submissionsPerBiWeek.toFixed(2)} batches</p>
                               </div>
                               
                               <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
@@ -1784,6 +1827,7 @@ const BatchCalculator = () => {
                                   {suggestedMonthly.toFixed(2)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Lt</p>
+                                <p className="text-xs text-emerald-600 mt-1">{submissionsPerMonth.toFixed(2)} batches</p>
                               </div>
                               
                               <div className="glass p-3 rounded-lg text-center border-2 border-primary/30">
@@ -1792,6 +1836,7 @@ const BatchCalculator = () => {
                                   {suggestedQuarterly.toFixed(2)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Lt</p>
+                                <p className="text-xs text-emerald-600 mt-1">{submissionsPerQuarter.toFixed(2)} batches</p>
                               </div>
                             </div>
                             
