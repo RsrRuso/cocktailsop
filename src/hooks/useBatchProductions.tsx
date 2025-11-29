@@ -101,6 +101,33 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
     },
   });
 
+  const deleteProduction = useMutation({
+    mutationFn: async (productionId: string) => {
+      // Delete production ingredients first
+      const { error: ingredientsError } = await supabase
+        .from('batch_production_ingredients')
+        .delete()
+        .eq('production_id', productionId);
+
+      if (ingredientsError) throw ingredientsError;
+
+      // Delete production
+      const { error: productionError } = await supabase
+        .from('batch_productions')
+        .delete()
+        .eq('id', productionId);
+
+      if (productionError) throw productionError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
+      toast.success("Batch production deleted successfully!");
+    },
+    onError: (error) => {
+      toast.error("Failed to delete production: " + error.message);
+    },
+  });
+
   const getProductionIngredients = async (productionId: string) => {
     const { data, error } = await supabase
       .from('batch_production_ingredients')
@@ -115,6 +142,7 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
     productions,
     isLoading,
     createProduction: createProduction.mutate,
+    deleteProduction: deleteProduction.mutate,
     getProductionIngredients,
   };
 };
