@@ -368,6 +368,7 @@ const BatchCalculator = () => {
       
       if (data?.result) {
         setAiSuggestions(data.result);
+        toast.success('AI analysis complete!');
       }
     } catch (error) {
       console.error('Error fetching AI suggestions:', error);
@@ -376,6 +377,13 @@ const BatchCalculator = () => {
       setLoadingAiSuggestions(false);
     }
   };
+
+  // Auto-fetch AI suggestions when analytics tab is opened and productions exist
+  useEffect(() => {
+    if (productions && productions.length > 0 && !aiSuggestions && !loadingAiSuggestions) {
+      fetchAiSuggestions();
+    }
+  }, [productions]);
 
   const downloadBatchPDF = async (production: any) => {
     try {
@@ -1401,19 +1409,63 @@ const BatchCalculator = () => {
                     </div>
                   </div>
 
-                  {aiSuggestions && (
+                  {loadingAiSuggestions && (
+                    <div className="glass p-6 rounded-lg border-2 border-primary/20 text-center">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
+                      <p className="text-sm text-muted-foreground">Analyzing production data and generating par level suggestions...</p>
+                    </div>
+                  )}
+
+                  {aiSuggestions && !loadingAiSuggestions && (
                     <div className="glass p-4 rounded-lg border-2 border-primary/20">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Sparkles className="w-5 h-5 text-primary" />
-                        <h4 className="font-semibold">AI Par Level Suggestions</h4>
-                      </div>
-                      <div className="space-y-3 text-sm">
-                        <div className="p-3 bg-muted/50 rounded">
-                          <p className="font-medium text-primary mb-1">Weekly Analysis</p>
-                          <p className="text-muted-foreground whitespace-pre-wrap">{aiSuggestions}</p>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-5 h-5 text-primary" />
+                          <h4 className="font-semibold">AI Par Level Analysis</h4>
                         </div>
-                        <p className="text-xs text-muted-foreground italic">
-                          These suggestions are based on your production history and consumption patterns. 
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={fetchAiSuggestions}
+                          className="text-xs"
+                        >
+                          <Sparkles className="w-3 h-3 mr-1" />
+                          Refresh
+                        </Button>
+                      </div>
+                      <div className="space-y-4 text-sm">
+                        <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                          <p className="font-bold text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-2">
+                            <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs">WEEKLY</span>
+                            Week-by-Week Analysis
+                          </p>
+                          <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                            {aiSuggestions.split('**MONTHLY ANALYSIS:**')[0].replace('**WEEKLY ANALYSIS:**', '').trim()}
+                          </p>
+                        </div>
+
+                        <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                          <p className="font-bold text-purple-600 dark:text-purple-400 mb-2 flex items-center gap-2">
+                            <span className="bg-purple-500 text-white px-2 py-0.5 rounded text-xs">MONTHLY</span>
+                            Monthly Trends
+                          </p>
+                          <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                            {aiSuggestions.split('**MONTHLY ANALYSIS:**')[1]?.split('**QUARTERLY ANALYSIS:**')[0]?.trim() || 'No monthly data available'}
+                          </p>
+                        </div>
+
+                        <div className="p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                          <p className="font-bold text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-2">
+                            <span className="bg-emerald-500 text-white px-2 py-0.5 rounded text-xs">QUARTERLY</span>
+                            Long-term Forecast
+                          </p>
+                          <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                            {aiSuggestions.split('**QUARTERLY ANALYSIS:**')[1]?.trim() || 'No quarterly data available'}
+                          </p>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground italic pt-2 border-t">
+                          💡 These AI-generated suggestions are based on your production history and consumption patterns. 
                           Adjust par levels according to seasonal demand and upcoming events.
                         </p>
                       </div>
