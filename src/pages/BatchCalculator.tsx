@@ -277,10 +277,19 @@ const BatchCalculator = () => {
 
       const parsed = parseMasterList(masterList);
       
+      // Remove duplicates from parsed list based on name
+      const uniqueParsed = parsed.reduce((acc, current) => {
+        const exists = acc.find(item => item.name.toLowerCase() === current.name.toLowerCase());
+        if (!exists) {
+          acc.push(current);
+        }
+        return acc;
+      }, [] as typeof parsed);
+      
       // Save to master spirits database
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        for (const ingredient of parsed) {
+        for (const ingredient of uniqueParsed) {
           if (ingredient.name && ingredient.bottle_size_ml) {
             // Check if spirit already exists
             const { data: existing } = await supabase
@@ -301,8 +310,8 @@ const BatchCalculator = () => {
         }
       }
       
-      setIngredients(parsed);
-      toast.success(`Added ${parsed.length} ingredients to master list!`);
+      setIngredients(uniqueParsed);
+      toast.success(`Added ${uniqueParsed.length} unique ingredients to master list!`);
       setShowMasterList(false);
       setMasterList("");
       queryClient.invalidateQueries({ queryKey: ["master-spirits"] });
