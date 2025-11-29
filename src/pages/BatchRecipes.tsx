@@ -20,6 +20,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Ingredient {
   id: string;
@@ -42,6 +57,7 @@ const BatchRecipes = () => {
   const [isAILoading, setIsAILoading] = useState(false);
   const [masterList, setMasterList] = useState("");
   const [showMasterList, setShowMasterList] = useState(false);
+  const [openSpiritPopover, setOpenSpiritPopover] = useState<Record<string, boolean>>({});
 
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes();
   const { spirits, calculateBottles } = useMasterSpirits();
@@ -451,35 +467,66 @@ const BatchRecipes = () => {
                   key={ingredient.id}
                   className="flex flex-wrap gap-2"
                 >
-                  <Select
-                    value={ingredient.name}
-                    onValueChange={(value) =>
-                      updateIngredient(ingredient.id, "name", value)
+                  <Popover 
+                    open={openSpiritPopover[ingredient.id]} 
+                    onOpenChange={(open) => 
+                      setOpenSpiritPopover(prev => ({ ...prev, [ingredient.id]: open }))
                     }
                   >
-                    <SelectTrigger className="glass flex-1 min-w-[160px] bg-background/80 backdrop-blur-sm">
-                      <SelectValue placeholder="Select spirit" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background/95 backdrop-blur-sm z-[100] max-h-[300px]">
-                      {spirits && spirits.length > 0 ? (
-                        spirits.map((spirit) => (
-                          <SelectItem key={spirit.id} value={spirit.name}>
-                            <div className="flex flex-col">
-                              <span>{spirit.name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {spirit.brand && `${spirit.brand} • `}
-                                {spirit.bottle_size_ml}ml btl
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <div className="p-3 text-center text-sm text-muted-foreground">
-                          No master spirits yet
-                        </div>
-                      )}
-                    </SelectContent>
-                  </Select>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openSpiritPopover[ingredient.id]}
+                        className="glass flex-1 min-w-[160px] justify-between bg-background/80 backdrop-blur-sm"
+                      >
+                        <span className="truncate text-left flex-1">
+                          {ingredient.name || "Select spirit"}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[280px] sm:w-[320px] p-0 bg-background/95 backdrop-blur-sm z-[100]" align="start">
+                      <Command className="bg-transparent">
+                        <CommandInput placeholder="Search spirits..." className="h-9" />
+                        <CommandList className="max-h-[300px]">
+                          <CommandEmpty>No spirit found.</CommandEmpty>
+                          <CommandGroup>
+                            {spirits && spirits.length > 0 ? (
+                              spirits.map((spirit) => (
+                                <CommandItem
+                                  key={spirit.id}
+                                  value={spirit.name}
+                                  onSelect={(currentValue) => {
+                                    updateIngredient(ingredient.id, "name", currentValue);
+                                    setOpenSpiritPopover(prev => ({ ...prev, [ingredient.id]: false }));
+                                  }}
+                                >
+                                  <div className="flex flex-col flex-1">
+                                    <span>{spirit.name}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {spirit.brand && `${spirit.brand} • `}
+                                      {spirit.bottle_size_ml}ml btl
+                                    </span>
+                                  </div>
+                                  <Check
+                                    className={cn(
+                                      "ml-2 h-4 w-4 shrink-0",
+                                      ingredient.name === spirit.name ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                </CommandItem>
+                              ))
+                            ) : (
+                              <div className="p-3 text-center text-sm text-muted-foreground">
+                                No master spirits yet
+                              </div>
+                            )}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <Input
                     type="number"
                     placeholder="Amount"
