@@ -455,33 +455,36 @@ const BatchCalculator = () => {
       const producerName = production.produced_by_name || 'N/A';
       doc.text(producerName.length > 20 ? producerName.substring(0, 20) + '...' : producerName, 35, yPos + 26);
       
-      // QR Code - right side
+      // QR Code - optimized for waterproof sticker printing
       if (production.qr_code_data) {
-        doc.setFillColor(245, 250, 255);
+        doc.setFillColor(255, 255, 255);
         doc.roundedRect(110, yPos, 85, 28, 2, 2, 'F');
-        doc.setDrawColor(...accentColor);
-        doc.setLineWidth(0.3);
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
         doc.roundedRect(110, yPos, 85, 28, 2, 2, 'S');
         
-        doc.setFontSize(9);
+        doc.setFontSize(7);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...primaryColor);
-        doc.text("QR CODE", 152.5, yPos + 5, { align: 'center' });
+        doc.setTextColor(0, 0, 0);
+        doc.text("BATCH QR STICKER", 152.5, yPos + 3.5, { align: 'center' });
         
+        // High-resolution QR code for sticker printing
         const qrCodeDataUrl = await QRCode.toDataURL(production.qr_code_data, {
-          width: 300,
-          margin: 1,
+          width: 800,
+          margin: 2,
           color: {
-            dark: '#2980b9',
-            light: '#ffffff'
-          }
+            dark: '#000000',
+            light: '#FFFFFF'
+          },
+          errorCorrectionLevel: 'H'
         });
-        doc.addImage(qrCodeDataUrl, 'PNG', 138, yPos + 6, 20, 20);
+        doc.addImage(qrCodeDataUrl, 'PNG', 139, yPos + 5, 18, 18);
         
-        doc.setFontSize(6);
-        doc.setFont("helvetica", "italic");
-        doc.setTextColor(80, 80, 80);
-        doc.text("Scan for details", 152.5, yPos + 27, { align: 'center' });
+        doc.setFontSize(5.5);
+        doc.setFont("helvetica", "normal");
+        doc.text(production.batch_name.substring(0, 25), 152.5, yPos + 24, { align: 'center' });
+        doc.setFontSize(5);
+        doc.text(`${productionDate} | ${production.target_liters.toFixed(1)}L`, 152.5, yPos + 27, { align: 'center' });
       }
       
       yPos += 32;
