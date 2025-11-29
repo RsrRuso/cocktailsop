@@ -786,10 +786,11 @@ const BatchCalculator = () => {
       overallIngredientsMap.forEach((data, name) => {
         const spirit = spiritsMap.get(name);
         if (spirit && spirit.bottle_size_ml) {
-          const exactBottles = data.amountMl / spirit.bottle_size_ml;
-          const roundedUpBottles = Math.ceil(exactBottles);
-          data.bottles = exactBottles;
-          data.leftoverMl = (roundedUpBottles * spirit.bottle_size_ml) - data.amountMl;
+          const fullBottles = Math.floor(data.amountMl / spirit.bottle_size_ml);
+          const leftoverMl = data.amountMl % spirit.bottle_size_ml;
+
+          data.bottles = fullBottles;
+          data.leftoverMl = leftoverMl;
           data.bottleSize = spirit.bottle_size_ml;
         }
       });
@@ -983,21 +984,26 @@ const BatchCalculator = () => {
         const leftoverMlItems: any[] = [];
         
         ingredients.forEach((ing: any) => {
-          const amountInMl = ing.unit === 'ml' ? parseFloat(ing.scaled_amount) : parseFloat(ing.scaled_amount) * 1000;
+          const amountInMl = ing.unit === 'ml'
+            ? parseFloat(ing.scaled_amount)
+            : parseFloat(ing.scaled_amount) * 1000;
           const spirit = spiritsMap.get(ing.ingredient_name);
           
           if (spirit && spirit.bottle_size_ml) {
-            if (amountInMl % spirit.bottle_size_ml === 0) {
-              // Sharp bottles - exact division
+            const fullBottles = Math.floor(amountInMl / spirit.bottle_size_ml);
+            const leftoverMl = amountInMl % spirit.bottle_size_ml;
+
+            if (fullBottles > 0) {
               sharpBottles.push({
                 name: ing.ingredient_name,
-                bottles: Math.floor(amountInMl / spirit.bottle_size_ml)
+                bottles: fullBottles,
               });
-            } else {
-              // Leftover ml - partial bottle needed
+            }
+
+            if (leftoverMl > 0) {
               leftoverMlItems.push({
                 name: ing.ingredient_name,
-                mlNeeded: amountInMl
+                mlNeeded: leftoverMl,
               });
             }
           }
@@ -1156,18 +1162,21 @@ const BatchCalculator = () => {
         const overallSharpBottles: any[] = [];
         const overallLeftoverMlItems: any[] = [];
         
-        ingredientsArray.forEach(([name, data], idx) => {
-          // Check if sharp bottles or leftover ml
-          if (data.bottleSize && data.amountMl % data.bottleSize === 0) {
-            overallSharpBottles.push({
-              name,
-              bottles: Math.floor(data.bottles)
-            });
-          } else if (data.bottleSize) {
-            overallLeftoverMlItems.push({
-              name,
-              mlNeeded: data.amountMl
-            });
+        ingredientsArray.forEach(([name, data]) => {
+          if (data.bottleSize) {
+            if (data.bottles > 0) {
+              overallSharpBottles.push({
+                name,
+                bottles: data.bottles,
+              });
+            }
+
+            if (data.leftoverMl > 0) {
+              overallLeftoverMlItems.push({
+                name,
+                mlNeeded: data.leftoverMl,
+              });
+            }
           }
         });
         
