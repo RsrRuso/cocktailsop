@@ -980,9 +980,9 @@ const BatchCalculator = () => {
         doc.text(`${ingredients.length} Items`, 145, yPos + 2.5);
         yPos += 10;
         
-        // Separate ingredients into sharp bottles and leftover ml
+        // Separate ingredients into sharp bottles and required ml
         const sharpBottles: any[] = [];
-        const leftoverMlItems: any[] = [];
+        const requiredMlItems: any[] = [];
         
         ingredients.forEach((ing: any) => {
           const amountInMl = ing.unit === 'ml'
@@ -1002,30 +1002,36 @@ const BatchCalculator = () => {
             }
 
             if (leftoverMl > 0) {
-              leftoverMlItems.push({
+              requiredMlItems.push({
                 name: ing.ingredient_name,
                 mlNeeded: leftoverMl,
               });
             }
+          } else {
+            // No bottle size defined - show total ML as required
+            requiredMlItems.push({
+              name: ing.ingredient_name,
+              mlNeeded: amountInMl,
+            });
           }
         });
         
-        // Sharp Bottles Table - Check page space before adding
+        // ALWAYS show Sharp Bottles section
+        const sharpEstimatedHeight = 20 + (sharpBottles.length * 5.5);
+        if (yPos + sharpEstimatedHeight > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFillColor(...emerald);
+        doc.rect(12, yPos, 186, 7, 'F');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+        doc.text("SHARP BOTTLES", 15, yPos + 4.5);
+        yPos += 8;
+        
         if (sharpBottles.length > 0) {
-          const estimatedHeight = 25 + (sharpBottles.length * 5.5);
-          if (yPos + estimatedHeight > 270) {
-            doc.addPage();
-            yPos = 20;
-          }
-          
-          doc.setFillColor(...emerald);
-          doc.rect(12, yPos, 186, 7, 'F');
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(255, 255, 255);
-          doc.text("SHARP BOTTLES", 15, yPos + 4.5);
-          yPos += 8;
-          
           doc.setFillColor(...slate);
           doc.rect(12, yPos, 186, 6, 'F');
           doc.setFontSize(8);
@@ -1049,35 +1055,44 @@ const BatchCalculator = () => {
             
             doc.setFontSize(7);
             doc.setTextColor(...slate);
-            const maxNameLength = 38;
+            const maxNameLength = 42;
             const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
             doc.text(displayName, 14, yPos + 3.5);
             
             doc.setTextColor(...deepBlue);
+            doc.setFont('helvetica', 'bold');
             doc.text(item.bottles.toString() + " btl", 135, yPos + 3.5);
             
             yPos += 5.5;
           });
-          
-          yPos += 6;
+        } else {
+          doc.setFillColor(249, 250, 251);
+          doc.rect(12, yPos, 186, 8, 'F');
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(100, 116, 139);
+          doc.text("No full bottles required for this batch", 105, yPos + 5, { align: 'center' });
+          yPos += 8;
         }
         
-        // Leftover ML Table - Check page space before adding
-        if (leftoverMlItems.length > 0) {
-          const estimatedHeight = 25 + (leftoverMlItems.length * 5.5);
-          if (yPos + estimatedHeight > 270) {
-            doc.addPage();
-            yPos = 20;
-          }
-          
-          doc.setFillColor(...amber);
-          doc.rect(12, yPos, 186, 7, 'F');
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(255, 255, 255);
-          doc.text("REQUIRED ML", 15, yPos + 4.5);
-          yPos += 8;
-          
+        yPos += 6;
+        
+        // ALWAYS show Required ML section
+        const reqEstimatedHeight = 20 + (requiredMlItems.length * 5.5);
+        if (yPos + reqEstimatedHeight > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFillColor(...amber);
+        doc.rect(12, yPos, 186, 7, 'F');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+        doc.text("REQUIRED ML", 15, yPos + 4.5);
+        yPos += 8;
+        
+        if (requiredMlItems.length > 0) {
           doc.setFillColor(...slate);
           doc.rect(12, yPos, 186, 6, 'F');
           doc.setFontSize(8);
@@ -1088,7 +1103,7 @@ const BatchCalculator = () => {
           yPos += 7;
           
           doc.setFont('helvetica', 'normal');
-          leftoverMlItems.forEach((item, idx) => {
+          requiredMlItems.forEach((item, idx) => {
             if (yPos > 270) {
               doc.addPage();
               yPos = 20;
@@ -1101,18 +1116,27 @@ const BatchCalculator = () => {
             
             doc.setFontSize(7);
             doc.setTextColor(...slate);
-            const maxNameLength = 38;
+            const maxNameLength = 42;
             const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
             doc.text(displayName, 14, yPos + 3.5);
             
             doc.setTextColor(...amber);
+            doc.setFont('helvetica', 'bold');
             doc.text(item.mlNeeded.toFixed(0) + " ml", 135, yPos + 3.5);
             
             yPos += 5.5;
           });
-          
-          yPos += 6;
+        } else {
+          doc.setFillColor(249, 250, 251);
+          doc.rect(12, yPos, 186, 8, 'F');
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(100, 116, 139);
+          doc.text("No additional ML required for this batch", 105, yPos + 5, { align: 'center' });
+          yPos += 8;
         }
+        
+        yPos += 6;
       }
       
       doc.setTextColor(...slate);
@@ -1167,7 +1191,7 @@ const BatchCalculator = () => {
       // Ingredients breakdown table with bottles and leftover - Add page check
       if (overallIngredientsMap.size > 0) {
         // Check if we need a new page for Overall sections
-        if (yPos > 230) {
+        if (yPos > 200) {
           doc.addPage();
           yPos = 20;
         }
@@ -1175,10 +1199,12 @@ const BatchCalculator = () => {
         // Table rows
         const ingredientsArray = Array.from(overallIngredientsMap.entries());
         const overallSharpBottles: any[] = [];
-        const overallLeftoverMlItems: any[] = [];
+        const overallRequiredMlItems: any[] = [];
         
+        // Split into sharp bottles and required ML
         ingredientsArray.forEach(([name, data]) => {
           if (data.bottleSize) {
+            // Has bottle size defined - can calculate bottles
             if (data.bottles > 0) {
               overallSharpBottles.push({
                 name,
@@ -1187,29 +1213,35 @@ const BatchCalculator = () => {
             }
 
             if (data.leftoverMl > 0) {
-              overallLeftoverMlItems.push({
+              overallRequiredMlItems.push({
                 name,
                 mlNeeded: data.leftoverMl,
               });
             }
+          } else {
+            // No bottle size - show total ML as required
+            overallRequiredMlItems.push({
+              name,
+              mlNeeded: data.amountMl,
+            });
           }
         });
         
-        // Overall Sharp Bottles Table
+        // ALWAYS show Overall Sharp Bottles section (even if empty, show message)
+        if (yPos > 230) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFillColor(...emerald);
+        doc.rect(12, yPos, 186, 7, 'F');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+        doc.text("OVERALL SHARP BOTTLES", 15, yPos + 4.5);
+        yPos += 8;
+        
         if (overallSharpBottles.length > 0) {
-          if (yPos > 260) {
-            doc.addPage();
-            yPos = 20;
-          }
-          
-          doc.setFillColor(...emerald);
-          doc.rect(12, yPos, 186, 7, 'F');
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(255, 255, 255);
-          doc.text("OVERALL SHARP BOTTLES", 15, yPos + 4.5);
-          yPos += 8;
-          
           doc.setFillColor(...slate);
           doc.rect(12, yPos, 186, 6, 'F');
           doc.setFontSize(8);
@@ -1233,35 +1265,45 @@ const BatchCalculator = () => {
             
             doc.setFontSize(7);
             doc.setTextColor(...slate);
-            const maxNameLength = 40;
+            const maxNameLength = 45;
             const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
             doc.text(displayName, 14, yPos + 4);
             
             doc.setTextColor(...deepBlue);
+            doc.setFont('helvetica', 'bold');
             doc.text(item.bottles.toString() + " btl", 135, yPos + 4);
             
             yPos += 6;
           });
-          
-          yPos += 4;
+        } else {
+          // Show message if no sharp bottles
+          doc.setFillColor(249, 250, 251);
+          doc.rect(12, yPos, 186, 10, 'F');
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(100, 116, 139);
+          doc.text("No full bottles calculated for this recipe production", 105, yPos + 6, { align: 'center' });
+          yPos += 10;
         }
         
-        // Overall Leftover ML Table
-        if (overallLeftoverMlItems.length > 0) {
-          const estimatedHeight = 25 + (overallLeftoverMlItems.length * 6);
-          if (yPos + estimatedHeight > 270) {
-            doc.addPage();
-            yPos = 20;
-          }
-          
-          doc.setFillColor(...amber);
-          doc.rect(12, yPos, 186, 7, 'F');
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(255, 255, 255);
-          doc.text("OVERALL REQUIRED ML", 15, yPos + 4.5);
-          yPos += 8;
-          
+        yPos += 6;
+        
+        // ALWAYS show Overall Required ML section
+        const estimatedHeight = 20 + (overallRequiredMlItems.length * 6);
+        if (yPos + estimatedHeight > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFillColor(...amber);
+        doc.rect(12, yPos, 186, 7, 'F');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+        doc.text("OVERALL REQUIRED ML", 15, yPos + 4.5);
+        yPos += 8;
+        
+        if (overallRequiredMlItems.length > 0) {
           doc.setFillColor(...slate);
           doc.rect(12, yPos, 186, 6, 'F');
           doc.setFontSize(8);
@@ -1272,7 +1314,7 @@ const BatchCalculator = () => {
           yPos += 7;
           
           doc.setFont('helvetica', 'normal');
-          overallLeftoverMlItems.forEach((item, idx) => {
+          overallRequiredMlItems.forEach((item, idx) => {
             if (yPos > 270) {
               doc.addPage();
               yPos = 20;
@@ -1285,18 +1327,28 @@ const BatchCalculator = () => {
             
             doc.setFontSize(7);
             doc.setTextColor(...slate);
-            const maxNameLength = 40;
+            const maxNameLength = 45;
             const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
             doc.text(displayName, 14, yPos + 4);
             
             doc.setTextColor(...amber);
+            doc.setFont('helvetica', 'bold');
             doc.text(item.mlNeeded.toFixed(0) + " ml", 135, yPos + 4);
             
             yPos += 6;
           });
-          
-          yPos += 4;
+        } else {
+          // Show message if no required ML
+          doc.setFillColor(249, 250, 251);
+          doc.rect(12, yPos, 186, 10, 'F');
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(100, 116, 139);
+          doc.text("No additional ML required for this recipe production", 105, yPos + 6, { align: 'center' });
+          yPos += 10;
         }
+        
+        yPos += 6;
       }
 
       // Notes Section - if exists (expanded)
