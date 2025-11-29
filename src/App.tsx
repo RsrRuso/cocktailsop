@@ -48,6 +48,7 @@ const TemperatureLog = lazy(() => import("./pages/TemperatureLog"));
 const BatchCalculator = lazy(() => import("./pages/BatchCalculator"));
 const BatchRecipes = lazy(() => import("./pages/BatchRecipes"));
 const BatchQRSubmit = lazy(() => import("./pages/BatchQRSubmit"));
+const MasterSpirits = lazy(() => import("./pages/MasterSpirits"));
 const ABVCalculator = lazy(() => import("./pages/ABVCalculator"));
 const ScalingTool = lazy(() => import("./pages/ScalingTool"));
 const CostCalculator = lazy(() => import("./pages/CostCalculator"));
@@ -206,6 +207,7 @@ const AppContent = () => {
           <Route path="/batch-calculator" element={<BatchCalculator />} />
           <Route path="/batch-recipes" element={<BatchRecipes />} />
           <Route path="/batch-qr/:qrId" element={<BatchQRSubmit />} />
+          <Route path="/master-spirits" element={<MasterSpirits />} />
           <Route path="/abv-calculator" element={<ABVCalculator />} />
           <Route path="/scaling-tool" element={<ScalingTool />} />
           <Route path="/cost-calculator" element={<CostCalculator />} />

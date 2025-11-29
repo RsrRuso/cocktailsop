@@ -112,6 +112,7 @@ const BatchCalculator = () => {
   );
   const { groups, createGroup } = useMixologistGroups();
   const { spirits, calculateBottles } = useMasterSpirits();
+  const queryClient = useQueryClient();
 
   // Set default producer to current user
   useEffect(() => {
@@ -267,17 +268,48 @@ const BatchCalculator = () => {
     return parsedIngredients;
   };
 
-  const handleParseMasterList = () => {
-    if (!masterList.trim()) {
-      toast.error("Please enter ingredients to parse");
-      return;
-    }
+  const handleParseMasterList = async () => {
+    try {
+      if (!masterList.trim()) {
+        toast.error("Please enter ingredients to parse");
+        return;
+      }
 
-    const parsed = parseMasterList(masterList);
-    setIngredients(parsed);
-    toast.success(`Added ${parsed.length} ingredients!`);
-    setShowMasterList(false);
-    setMasterList("");
+      const parsed = parseMasterList(masterList);
+      
+      // Save to master spirits database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        for (const ingredient of parsed) {
+          if (ingredient.name && ingredient.bottle_size_ml) {
+            // Check if spirit already exists
+            const { data: existing } = await supabase
+              .from('master_spirits')
+              .select('id')
+              .eq('name', ingredient.name)
+              .eq('user_id', user.id)
+              .maybeSingle();
+            
+            if (!existing) {
+              await supabase.from('master_spirits').insert({
+                name: ingredient.name,
+                bottle_size_ml: ingredient.bottle_size_ml,
+                user_id: user.id,
+              });
+            }
+          }
+        }
+      }
+      
+      setIngredients(parsed);
+      toast.success(`Added ${parsed.length} ingredients to master list!`);
+      setShowMasterList(false);
+      setMasterList("");
+      queryClient.invalidateQueries({ queryKey: ["master-spirits"] });
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Failed to parse ingredients");
+    }
   };
 
   const addFromMasterList = (spirit: Ingredient) => {
@@ -1651,14 +1683,24 @@ const BatchCalculator = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowMasterList(!showMasterList)}
-                    className="glass-hover w-full"
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Paste Master List
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowMasterList(!showMasterList)}
+                      className="glass-hover"
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Paste List
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/master-spirits")}
+                      className="glass-hover"
+                    >
+                      <Edit2 className="w-4 h-4 mr-2" />
+                      Manage Spirits
+                    </Button>
+                  </div>
                   
                   {showMasterList && (
                     <Card className="glass p-4 space-y-3">
