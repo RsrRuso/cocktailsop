@@ -204,6 +204,7 @@ const AppContent = () => {
                 <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
           <Route path="/batch-recipes" element={<BatchRecipes />} />
+          <Route path="/batch-qr/:qrId" element={<BatchQRSubmit />} />
           <Route path="/abv-calculator" element={<ABVCalculator />} />
           <Route path="/scaling-tool" element={<ScalingTool />} />
           <Route path="/cost-calculator" element={<CostCalculator />} />
