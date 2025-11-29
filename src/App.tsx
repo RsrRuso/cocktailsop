@@ -46,6 +46,7 @@ const TeamInvitation = lazy(() => import("./pages/TeamInvitation"));
 const InventoryManager = lazy(() => import("./pages/InventoryManager"));
 const TemperatureLog = lazy(() => import("./pages/TemperatureLog"));
 const BatchCalculator = lazy(() => import("./pages/BatchCalculator"));
+const BatchRecipes = lazy(() => import("./pages/BatchRecipes"));
 const ABVCalculator = lazy(() => import("./pages/ABVCalculator"));
 const ScalingTool = lazy(() => import("./pages/ScalingTool"));
 const CostCalculator = lazy(() => import("./pages/CostCalculator"));
@@ -200,8 +201,9 @@ const AppContent = () => {
                 <Route path="/fifo-access-approval" element={<FifoAccessApproval />} />
                 <Route path="/fifo-request-access" element={<FifoRequestAccess />} />
                 <Route path="/fifo-access-approval-page" element={<FifoAccessApprovalPage />} />
-               <Route path="/temperature-log" element={<TemperatureLog />} />
+                <Route path="/temperature-log" element={<TemperatureLog />} />
           <Route path="/batch-calculator" element={<BatchCalculator />} />
+          <Route path="/batch-recipes" element={<BatchRecipes />} />
           <Route path="/abv-calculator" element={<ABVCalculator />} />
           <Route path="/scaling-tool" element={<ScalingTool />} />
           <Route path="/cost-calculator" element={<CostCalculator />} />
