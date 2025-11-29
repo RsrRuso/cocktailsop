@@ -176,7 +176,14 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
 
       return productionId;
     },
-    onSuccess: () => {
+    onSuccess: (deletedId: string) => {
+      // Optimistically remove from the current list so UI updates immediately
+      queryClient.setQueryData<BatchProduction[] | undefined>(
+        ['batch-productions', recipeId, groupId],
+        (old) => (old ? old.filter((p) => p.id !== deletedId) : old)
+      );
+
+      // Also invalidate any other batch-production queries to stay in sync
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
       toast.success("Batch production deleted successfully!");
     },
