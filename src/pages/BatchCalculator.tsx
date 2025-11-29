@@ -105,31 +105,26 @@ const BatchCalculator = () => {
   );
   const { groups, createGroup } = useMixologistGroups();
 
-  // Auto-select first recipe by default
-  useEffect(() => {
-    if (recipes && recipes.length > 0 && !selectedRecipeId) {
-      const firstRecipe = recipes[0];
-      setSelectedRecipeId(firstRecipe.id);
-      setRecipeName(firstRecipe.recipe_name);
-      setBatchDescription(firstRecipe.description || "");
-      setCurrentServes(String(firstRecipe.current_serves));
-      setIngredients(Array.isArray(firstRecipe.ingredients) 
-        ? firstRecipe.ingredients.map((ing: any) => ({
-            id: ing.id || `${Date.now()}-${Math.random()}`,
-            name: ing.name || "",
-            amount: String(ing.amount || ""),
-            unit: ing.unit || "ml"
-          }))
-        : [{ id: "1", name: "", amount: "", unit: "ml" }]
-      );
-    }
-  }, [recipes]);
-
   // Set default producer to current user
   useEffect(() => {
-    if (user?.id && !producedByUserId) {
-      setProducedByUserId(user.id);
-    }
+    const setDefaultProducer = async () => {
+      if (user?.id && !producedByUserId) {
+        setProducedByUserId(user.id);
+        
+        // Fetch and set producer name
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile) {
+          setProducedByName(profile.full_name || profile.username || '');
+        }
+      }
+    };
+    
+    setDefaultProducer();
   }, [user]);
 
   // Fetch registered users (followers/followings for selection)
