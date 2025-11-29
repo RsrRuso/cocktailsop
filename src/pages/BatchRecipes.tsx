@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -30,6 +31,7 @@ interface Ingredient {
 
 const BatchRecipes = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [recipeName, setRecipeName] = useState("");
   const [batchDescription, setBatchDescription] = useState("");
   const [ingredients, setIngredients] = useState<Ingredient[]>([
@@ -178,6 +180,7 @@ const BatchRecipes = () => {
       toast.success(`Added ${parsed.length} ingredients and saved to master list!`);
       setShowMasterList(false);
       setMasterList("");
+      await queryClient.invalidateQueries({ queryKey: ["master-spirits"] });
       console.log("Parse completed successfully");
     } catch (error) {
       console.error("Error in handleParseMasterList:", error);
