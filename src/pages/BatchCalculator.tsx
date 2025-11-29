@@ -1344,6 +1344,11 @@ const BatchCalculator = () => {
       
       if (error) throw error;
 
+      // Fetch master spirits for bottle size calculations
+      const { data: spirits } = await supabase
+        .from('master_spirits')
+        .select('*');
+
       const doc = new jsPDF();
       
       let totalLitersProduced = 0;
