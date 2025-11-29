@@ -644,7 +644,7 @@ const BatchCalculator = () => {
       // Calculate recipe-specific production totals
       let totalBatchesProduced = allProductions?.length || 0;
       let totalLitersProduced = 0;
-      let overallIngredientsMap = new Map<string, { amountMl: number; bottles: number; leftoverMl: number }>();
+      let overallIngredientsMap = new Map<string, { amountMl: number; bottles: number; leftoverMl: number; bottleSize?: number }>();
       
       if (allProductions) {
         allProductions.forEach((prod: any) => {
@@ -678,6 +678,7 @@ const BatchCalculator = () => {
           const roundedUpBottles = Math.ceil(exactBottles);
           data.bottles = exactBottles;
           data.leftoverMl = (roundedUpBottles * spirit.bottle_size_ml) - data.amountMl;
+          data.bottleSize = spirit.bottle_size_ml;
         }
       });
       
@@ -865,72 +866,132 @@ const BatchCalculator = () => {
         doc.text(`${ingredients.length} Items`, 145, yPos + 2.5);
         yPos += 10;
         
-        // Bottles and Leftover breakdown for this batch
-        doc.setFillColor(...deepBlue);
-        doc.rect(12, yPos, 186, 8, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.text("BOTTLES & LEFTOVER (THIS BATCH)", 15, yPos + 5.5);
-        yPos += 12;
+        // Separate ingredients into sharp bottles and leftover ml
+        const sharpBottles: any[] = [];
+        const leftoverMlItems: any[] = [];
         
-        // Table header
-        doc.setFillColor(30, 58, 138);
-        doc.rect(12, yPos, 186, 7, 'F');
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(255, 255, 255);
-        doc.text("Ingredient", 14, yPos + 4.5);
-        doc.text("Qty (ml)", 100, yPos + 4.5);
-        doc.text("Bottles", 135, yPos + 4.5);
-        doc.text("Leftover (ml)", 165, yPos + 4.5);
-        yPos += 7;
+        ingredients.forEach((ing: any) => {
+          const amountInMl = ing.unit === 'ml' ? parseFloat(ing.scaled_amount) : parseFloat(ing.scaled_amount) * 1000;
+          const spirit = spiritsMap.get(ing.ingredient_name);
+          
+          if (spirit && spirit.bottle_size_ml) {
+            if (amountInMl % spirit.bottle_size_ml === 0) {
+              // Sharp bottles - exact division
+              sharpBottles.push({
+                name: ing.ingredient_name,
+                bottles: Math.floor(amountInMl / spirit.bottle_size_ml)
+              });
+            } else {
+              // Leftover ml - partial bottle needed
+              leftoverMlItems.push({
+                name: ing.ingredient_name,
+                mlNeeded: amountInMl
+              });
+            }
+          }
+        });
         
-        // Table rows for each ingredient
-        ingredients.forEach((ing: any, idx: number) => {
-          if (yPos > 270) {
+        // Sharp Bottles Table
+        if (sharpBottles.length > 0) {
+          if (yPos > 260) {
             doc.addPage();
             yPos = 20;
           }
           
-          // Alternate row colors
-          if (idx % 2 === 0) {
-            doc.setFillColor(249, 250, 251);
-            doc.rect(12, yPos, 186, 5.5, 'F');
-          }
+          doc.setFillColor(...emerald);
+          doc.rect(12, yPos, 186, 7, 'F');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("SHARP BOTTLES", 15, yPos + 4.5);
+          yPos += 8;
           
-          const amountInMl = ing.unit === 'ml' ? parseFloat(ing.scaled_amount) : parseFloat(ing.scaled_amount) * 1000;
-          const spirit = spiritsMap.get(ing.ingredient_name);
-          let bottles = 0;
-          let leftoverMl = 0;
+          doc.setFillColor(...slate);
+          doc.rect(12, yPos, 186, 6, 'F');
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("Ingredient", 14, yPos + 4);
+          doc.text("Bottles", 135, yPos + 4);
+          yPos += 7;
           
-          if (spirit && spirit.bottle_size_ml) {
-            bottles = amountInMl / spirit.bottle_size_ml;
-            const roundedUpBottles = Math.ceil(bottles);
-            leftoverMl = (roundedUpBottles * spirit.bottle_size_ml) - amountInMl;
-          }
+          doc.setFont('helvetica', 'normal');
+          sharpBottles.forEach((item, idx) => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+            
+            if (idx % 2 === 0) {
+              doc.setFillColor(249, 250, 251);
+              doc.rect(12, yPos, 186, 5.5, 'F');
+            }
+            
+            doc.setFontSize(7);
+            doc.setTextColor(...slate);
+            const maxNameLength = 38;
+            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
+            doc.text(displayName, 14, yPos + 3.5);
+            
+            doc.setTextColor(...deepBlue);
+            doc.text(item.bottles.toString() + " btl", 135, yPos + 3.5);
+            
+            yPos += 5.5;
+          });
           
-          doc.setFontSize(7);
-          doc.setFont("helvetica", "normal");
-          doc.setTextColor(...slate);
-          
-          const maxNameLength = 38;
-          const displayName = ing.ingredient_name.length > maxNameLength ? ing.ingredient_name.substring(0, maxNameLength) + '...' : ing.ingredient_name;
-          doc.text(displayName, 14, yPos + 3.5);
-          
-          doc.setTextColor(...emerald);
-          doc.text(amountInMl.toFixed(0), 100, yPos + 3.5);
-          
-          doc.setTextColor(...deepBlue);
-          doc.text(bottles.toFixed(2) + " btl", 135, yPos + 3.5);
-          
-          doc.setTextColor(...amber);
-          doc.text(leftoverMl.toFixed(0) + " ml", 165, yPos + 3.5);
-          
-          yPos += 5.5;
-        });
+          yPos += 6;
+        }
         
-        yPos += 6;
+        // Leftover ML Table
+        if (leftoverMlItems.length > 0) {
+          if (yPos > 260) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          doc.setFillColor(...amber);
+          doc.rect(12, yPos, 186, 7, 'F');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("REQUIRED ML", 15, yPos + 4.5);
+          yPos += 8;
+          
+          doc.setFillColor(...slate);
+          doc.rect(12, yPos, 186, 6, 'F');
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("Ingredient", 14, yPos + 4);
+          doc.text("ML Needed", 135, yPos + 4);
+          yPos += 7;
+          
+          doc.setFont('helvetica', 'normal');
+          leftoverMlItems.forEach((item, idx) => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+            
+            if (idx % 2 === 0) {
+              doc.setFillColor(249, 250, 251);
+              doc.rect(12, yPos, 186, 5.5, 'F');
+            }
+            
+            doc.setFontSize(7);
+            doc.setTextColor(...slate);
+            const maxNameLength = 38;
+            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
+            doc.text(displayName, 14, yPos + 3.5);
+            
+            doc.setTextColor(...amber);
+            doc.text(item.mlNeeded.toFixed(0) + " ml", 135, yPos + 3.5);
+            
+            yPos += 5.5;
+          });
+          
+          yPos += 6;
+        }
       }
       
       doc.setTextColor(...slate);
@@ -978,72 +1039,127 @@ const BatchCalculator = () => {
       
       // Ingredients breakdown table with bottles and leftover
       if (overallIngredientsMap.size > 0) {
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(...deepBlue);
-        doc.text("INGREDIENTS BREAKDOWN", 105, yPos, { align: "center" });
-        yPos += 7;
-        
-        // Table header
-        doc.setFillColor(30, 58, 138);
-        doc.rect(12, yPos, 186, 7, 'F');
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(255, 255, 255);
-        doc.text("Ingredient Name", 14, yPos + 5);
-        doc.text("Qty (ml)", 100, yPos + 5);
-        doc.text("Bottles", 135, yPos + 5);
-        doc.text("Leftover (ml)", 165, yPos + 5);
-        yPos += 7;
-        
         // Table rows
         const ingredientsArray = Array.from(overallIngredientsMap.entries());
+        const overallSharpBottles: any[] = [];
+        const overallLeftoverMlItems: any[] = [];
+        
         ingredientsArray.forEach(([name, data], idx) => {
-          if (yPos > 270) {
-            doc.addPage();
-            yPos = 20;
-            
-            // Repeat header on new page
-            doc.setFillColor(30, 58, 138);
-            doc.rect(12, yPos, 186, 7, 'F');
-            doc.setFontSize(8);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(255, 255, 255);
-            doc.text("Ingredient Name", 14, yPos + 5);
-            doc.text("Qty (ml)", 100, yPos + 5);
-            doc.text("Bottles", 135, yPos + 5);
-            doc.text("Leftover (ml)", 165, yPos + 5);
-            yPos += 7;
+          // Check if sharp bottles or leftover ml
+          if (data.bottleSize && data.amountMl % data.bottleSize === 0) {
+            overallSharpBottles.push({
+              name,
+              bottles: Math.floor(data.bottles)
+            });
+          } else if (data.bottleSize) {
+            overallLeftoverMlItems.push({
+              name,
+              mlNeeded: data.amountMl
+            });
           }
-          
-          // Alternate row colors
-          if (idx % 2 === 0) {
-            doc.setFillColor(249, 250, 251);
-            doc.rect(12, yPos, 186, 6, 'F');
-          }
-          
-          doc.setFontSize(7);
-          doc.setFont("helvetica", "normal");
-          doc.setTextColor(...slate);
-          
-          // Truncate long names
-          const maxNameLength = 40;
-          const displayName = name.length > maxNameLength ? name.substring(0, maxNameLength) + '...' : name;
-          doc.text(displayName, 14, yPos + 4);
-          
-          doc.setTextColor(...emerald);
-          doc.text(data.amountMl.toFixed(0), 100, yPos + 4);
-          
-          doc.setTextColor(...deepBlue);
-          doc.text(data.bottles.toFixed(2) + " btl", 135, yPos + 4);
-          
-          doc.setTextColor(...amber);
-          doc.text(data.leftoverMl.toFixed(0) + " ml", 165, yPos + 4);
-          
-          yPos += 6;
         });
         
-        yPos += 4;
+        // Overall Sharp Bottles Table
+        if (overallSharpBottles.length > 0) {
+          if (yPos > 260) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          doc.setFillColor(...emerald);
+          doc.rect(12, yPos, 186, 7, 'F');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("OVERALL SHARP BOTTLES", 15, yPos + 4.5);
+          yPos += 8;
+          
+          doc.setFillColor(...slate);
+          doc.rect(12, yPos, 186, 6, 'F');
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("Ingredient", 14, yPos + 4);
+          doc.text("Bottles", 135, yPos + 4);
+          yPos += 7;
+          
+          doc.setFont('helvetica', 'normal');
+          overallSharpBottles.forEach((item, idx) => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+            
+            if (idx % 2 === 0) {
+              doc.setFillColor(249, 250, 251);
+              doc.rect(12, yPos, 186, 6, 'F');
+            }
+            
+            doc.setFontSize(7);
+            doc.setTextColor(...slate);
+            const maxNameLength = 40;
+            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
+            doc.text(displayName, 14, yPos + 4);
+            
+            doc.setTextColor(...deepBlue);
+            doc.text(item.bottles.toString() + " btl", 135, yPos + 4);
+            
+            yPos += 6;
+          });
+          
+          yPos += 4;
+        }
+        
+        // Overall Leftover ML Table
+        if (overallLeftoverMlItems.length > 0) {
+          if (yPos > 260) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          doc.setFillColor(...amber);
+          doc.rect(12, yPos, 186, 7, 'F');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("OVERALL REQUIRED ML", 15, yPos + 4.5);
+          yPos += 8;
+          
+          doc.setFillColor(...slate);
+          doc.rect(12, yPos, 186, 6, 'F');
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("Ingredient", 14, yPos + 4);
+          doc.text("ML Needed", 135, yPos + 4);
+          yPos += 7;
+          
+          doc.setFont('helvetica', 'normal');
+          overallLeftoverMlItems.forEach((item, idx) => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+            
+            if (idx % 2 === 0) {
+              doc.setFillColor(249, 250, 251);
+              doc.rect(12, yPos, 186, 6, 'F');
+            }
+            
+            doc.setFontSize(7);
+            doc.setTextColor(...slate);
+            const maxNameLength = 40;
+            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
+            doc.text(displayName, 14, yPos + 4);
+            
+            doc.setTextColor(...amber);
+            doc.text(item.mlNeeded.toFixed(0) + " ml", 135, yPos + 4);
+            
+            yPos += 6;
+          });
+          
+          yPos += 4;
+        }
       }
 
       // Notes Section - if exists (expanded)
