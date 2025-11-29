@@ -1097,17 +1097,26 @@ const BatchCalculator = () => {
         const submissionsPerMonth = submissionsPerDay * 30;
         const submissionsPerQuarter = submissionsPerDay * 90;
         
-        // Calculate trend
+        // Calculate trend by time-based daily rate
         const midPoint = Math.floor(sortedBatches.length / 2);
         const olderBatches = sortedBatches.slice(0, midPoint);
         const recentBatches = sortedBatches.slice(midPoint);
         
-        const olderAvg = olderBatches.length > 0 
-          ? olderBatches.reduce((sum, b) => sum + b.liters, 0) / olderBatches.length 
-          : 0;
-        const recentAvg = recentBatches.length > 0 
-          ? recentBatches.reduce((sum, b) => sum + b.liters, 0) / recentBatches.length 
-          : 0;
+        const olderDates = olderBatches.map(b => b.date).sort((a, b) => a.getTime() - b.getTime());
+        const recentDates = recentBatches.map(b => b.date).sort((a, b) => a.getTime() - b.getTime());
+        
+        const olderDays = olderDates.length > 1 
+          ? Math.max(1, Math.ceil((olderDates[olderDates.length - 1].getTime() - olderDates[0].getTime()) / (1000 * 60 * 60 * 24)) + 1)
+          : 1;
+        const recentDays = recentDates.length > 1
+          ? Math.max(1, Math.ceil((recentDates[recentDates.length - 1].getTime() - recentDates[0].getTime()) / (1000 * 60 * 60 * 24)) + 1)
+          : 1;
+        
+        const olderTotal = olderBatches.reduce((sum, b) => sum + b.liters, 0);
+        const recentTotal = recentBatches.reduce((sum, b) => sum + b.liters, 0);
+        
+        const olderAvg = olderTotal / olderDays;
+        const recentAvg = recentTotal / recentDays;
         
         const trendFactor = olderAvg > 0 ? recentAvg / olderAvg : 1;
         const trendPercent = ((trendFactor - 1) * 100).toFixed(1);
@@ -1116,12 +1125,13 @@ const BatchCalculator = () => {
         const baseDailyAvg = totalLiters / daysDiff;
         const adjustedDailyAvg = baseDailyAvg * Math.max(0.5, Math.min(1.5, trendFactor));
         
-        // Calculate suggested par levels
-        const suggestedDaily = adjustedDailyAvg * 1.2;
-        const suggestedWeekly = suggestedDaily * 7;
-        const suggestedBiWeekly = suggestedDaily * 14;
-        const suggestedMonthly = suggestedDaily * 30;
-        const suggestedQuarterly = suggestedDaily * 90;
+        // Calculate suggested par levels: adjusted daily × period length × buffer
+        const buffer = 1.2; // 20% safety buffer
+        const suggestedDaily = adjustedDailyAvg * buffer;
+        const suggestedWeekly = adjustedDailyAvg * buffer * 7;
+        const suggestedBiWeekly = adjustedDailyAvg * buffer * 14;
+        const suggestedMonthly = adjustedDailyAvg * buffer * 30;
+        const suggestedQuarterly = adjustedDailyAvg * buffer * 90;
         
         // Batch name header
         const bgColor = index % 2 === 0 ? lightGray : [255, 255, 255] as [number, number, number];
@@ -1742,17 +1752,26 @@ const BatchCalculator = () => {
                         const submissionsPerMonth = submissionsPerDay * 30;
                         const submissionsPerQuarter = submissionsPerDay * 90;
                         
-                        // Calculate trend: compare recent half vs older half
+                        // Calculate trend: compare recent half vs older half by time-based daily rate
                         const midPoint = Math.floor(sortedBatches.length / 2);
                         const olderBatches = sortedBatches.slice(0, midPoint);
                         const recentBatches = sortedBatches.slice(midPoint);
                         
-                        const olderAvg = olderBatches.length > 0 
-                          ? olderBatches.reduce((sum, b) => sum + b.liters, 0) / olderBatches.length 
-                          : 0;
-                        const recentAvg = recentBatches.length > 0 
-                          ? recentBatches.reduce((sum, b) => sum + b.liters, 0) / recentBatches.length 
-                          : 0;
+                        const olderDates = olderBatches.map(b => b.date).sort((a, b) => a.getTime() - b.getTime());
+                        const recentDates = recentBatches.map(b => b.date).sort((a, b) => a.getTime() - b.getTime());
+                        
+                        const olderDays = olderDates.length > 1 
+                          ? Math.max(1, Math.ceil((olderDates[olderDates.length - 1].getTime() - olderDates[0].getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                          : 1;
+                        const recentDays = recentDates.length > 1
+                          ? Math.max(1, Math.ceil((recentDates[recentDates.length - 1].getTime() - recentDates[0].getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                          : 1;
+                        
+                        const olderTotal = olderBatches.reduce((sum, b) => sum + b.liters, 0);
+                        const recentTotal = recentBatches.reduce((sum, b) => sum + b.liters, 0);
+                        
+                        const olderAvg = olderTotal / olderDays;
+                        const recentAvg = recentTotal / recentDays;
                         
                         // Calculate trend factor (1.0 = no trend, >1.0 = growing, <1.0 = declining)
                         const trendFactor = olderAvg > 0 ? recentAvg / olderAvg : 1;
@@ -1764,12 +1783,13 @@ const BatchCalculator = () => {
                         // Adjusted daily average with trend
                         const adjustedDailyAvg = baseDailyAvg * Math.max(0.5, Math.min(1.5, trendFactor));
                         
-                        // Calculate suggested par levels with trend adjustment
-                        const suggestedDaily = adjustedDailyAvg * 1.2; // 20% buffer
-                        const suggestedWeekly = suggestedDaily * 7;
-                        const suggestedBiWeekly = suggestedDaily * 14;
-                        const suggestedMonthly = suggestedDaily * 30;
-                        const suggestedQuarterly = suggestedDaily * 90;
+                        // Calculate suggested par levels: adjusted daily × period length × buffer
+                        const buffer = 1.2; // 20% safety buffer
+                        const suggestedDaily = adjustedDailyAvg * buffer;
+                        const suggestedWeekly = adjustedDailyAvg * buffer * 7;
+                        const suggestedBiWeekly = adjustedDailyAvg * buffer * 14;
+                        const suggestedMonthly = adjustedDailyAvg * buffer * 30;
+                        const suggestedQuarterly = adjustedDailyAvg * buffer * 90;
 
                         return (
                           <div key={name} className="p-4 bg-muted/20 rounded-lg border border-border/50">
