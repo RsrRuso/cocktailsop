@@ -497,6 +497,9 @@ const BatchCalculator = () => {
     if (editingProductionId) {
       // Update existing production
       try {
+        console.log("[BatchCalculator] Updating production:", editingProductionId);
+        console.log("[BatchCalculator] Scaled ingredients count:", calculation.scaledIngredients.length);
+        
         // Update production
         const { error: productionError } = await supabase
           .from('batch_productions')
@@ -515,12 +518,19 @@ const BatchCalculator = () => {
         if (productionError) throw productionError;
 
         // Delete old ingredients
-        await supabase
+        console.log("[BatchCalculator] Deleting old ingredients for:", editingProductionId);
+        const { error: deleteError } = await supabase
           .from('batch_production_ingredients')
           .delete()
           .eq('production_id', editingProductionId);
+          
+        if (deleteError) {
+          console.error("[BatchCalculator] Delete error:", deleteError);
+          throw deleteError;
+        }
 
         // Insert new ingredients
+        console.log("[BatchCalculator] Inserting new ingredients:", calculation.scaledIngredients.length);
         const { error: ingredientsError } = await supabase
           .from('batch_production_ingredients')
           .insert(
@@ -533,7 +543,10 @@ const BatchCalculator = () => {
             }))
           );
 
-        if (ingredientsError) throw ingredientsError;
+        if (ingredientsError) {
+          console.error("[BatchCalculator] Insert error:", ingredientsError);
+          throw ingredientsError;
+        }
 
         await queryClient.invalidateQueries({ queryKey: ["batch-productions"] });
         toast.success("Batch production updated!");
@@ -574,15 +587,21 @@ const BatchCalculator = () => {
     setTargetBatchSize("");
     setTargetLiters("");
     setEditingProductionId(null);
+    
+    // Clear ingredients after submission to prevent duplication on next edit
+    setIngredients([{ id: "1", name: "", amount: "", unit: "ml" }]);
   };
 
   const handleEditProduction = async (production: any) => {
+    console.log("[BatchCalculator] Loading production for edit:", production.id);
     // Fetch production ingredients
     const { data: prodIngredients } = await supabase
       .from('batch_production_ingredients')
       .select('*')
       .eq('production_id', production.id);
 
+    console.log("[BatchCalculator] Fetched ingredients for edit:", prodIngredients?.length);
+    
     setEditingProductionId(production.id);
     setRecipeName(production.batch_name);
     setTargetLiters(String(production.target_liters));
@@ -593,12 +612,14 @@ const BatchCalculator = () => {
     setSelectedGroupId(production.group_id);
     
     if (prodIngredients && prodIngredients.length > 0) {
-      setIngredients(prodIngredients.map((ing: any, idx: number) => ({
+      const loadedIngredients = prodIngredients.map((ing: any, idx: number) => ({
         id: `${Date.now()}-${idx}`,
         name: ing.ingredient_name,
         amount: String(ing.original_amount),
         unit: ing.unit
-      })));
+      }));
+      console.log("[BatchCalculator] Setting ingredients:", loadedIngredients.length);
+      setIngredients(loadedIngredients);
     }
 
     setActiveTab("calculator");
