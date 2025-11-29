@@ -90,6 +90,15 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
       
       if (ingredientsError) throw ingredientsError;
 
+      // Update QR code data with production ID
+      const appUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const qrUrl = `${appUrl}/batch-view/${productionData.id}`;
+      
+      await supabase
+        .from('batch_productions')
+        .update({ qr_code_data: qrUrl })
+        .eq('id', productionData.id);
+
       return productionData;
     },
     onSuccess: () => {

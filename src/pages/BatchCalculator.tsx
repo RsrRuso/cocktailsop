@@ -452,21 +452,7 @@ const BatchCalculator = () => {
     // Calculate actual servings produced based on multiplier
     const actualServings = parseFloat(currentServes) * calculation.multiplier;
 
-    // Generate QR code data using ONLY the CURRENT ingredients state, not duplicates
-    const qrData = JSON.stringify({
-      batchName: recipeName,
-      date: new Date().toISOString(),
-      liters: totalLiters.toFixed(2),
-      servings: Math.round(actualServings),
-      producedBy: producedByName,
-      ingredients: ingredients.map((ing, idx) => ({
-        id: `qr-${Date.now()}-${idx}`,
-        name: ing.name,
-        amount: ing.amount,
-        unit: ing.unit,
-        scaledAmount: calculation.scaledIngredients.find(s => s.name === ing.name)?.scaledAmount || "0"
-      }))
-    });
+    // QR code will be generated after production creation with production ID
 
     let recipeId = selectedRecipeId;
 
@@ -502,6 +488,9 @@ const BatchCalculator = () => {
 
     if (editingProductionId) {
       // Update existing production via hook
+      const appUrl = window.location.origin;
+      const qrUrl = `${appUrl}/batch-view/${editingProductionId}`;
+      
       updateProduction({
         productionId: editingProductionId,
         productionUpdates: {
@@ -510,7 +499,7 @@ const BatchCalculator = () => {
           target_liters: totalLiters,
           produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
           produced_by_user_id: producedByUserId,
-          qr_code_data: qrData,
+          qr_code_data: qrUrl,
           notes,
           group_id: selectedGroupId,
         },
@@ -522,28 +511,30 @@ const BatchCalculator = () => {
         })),
       });
     } else {
-      // Create new production via hook
-      createProduction({
-        production: {
-          recipe_id: recipeId,
-          batch_name: recipeName,
-          target_serves: Math.round(actualServings),
-          target_liters: totalLiters,
-          production_date: new Date().toISOString(),
-          produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
-          produced_by_email: selectedUser ? null : null,
-          produced_by_user_id: producedByUserId,
-          qr_code_data: qrData,
-          notes: notes,
-          group_id: selectedGroupId,
-        },
-        ingredients: calculation.scaledIngredients.map((ing) => ({
-          ingredient_name: ing.name,
-          original_amount: parseFloat(ing.amount),
-          scaled_amount: parseFloat(ing.scaledAmount),
-          unit: ing.unit,
-        })),
-      });
+      // Create new production via hook, then update QR code after
+      createProduction(
+        {
+          production: {
+            recipe_id: recipeId,
+            batch_name: recipeName,
+            target_serves: Math.round(actualServings),
+            target_liters: totalLiters,
+            production_date: new Date().toISOString(),
+            produced_by_name: selectedUser ? selectedUser.full_name || selectedUser.username : producedByName,
+            produced_by_email: selectedUser ? null : null,
+            produced_by_user_id: producedByUserId,
+            qr_code_data: "pending", // Placeholder
+            notes: notes,
+            group_id: selectedGroupId,
+          },
+          ingredients: calculation.scaledIngredients.map((ing) => ({
+            ingredient_name: ing.name,
+            original_amount: parseFloat(ing.amount),
+            scaled_amount: parseFloat(ing.scaledAmount),
+            unit: ing.unit,
+          })),
+        }
+      );
     }
 
     // Reset form after submission
