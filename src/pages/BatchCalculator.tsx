@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ interface Ingredient {
 
 const BatchCalculator = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [recipeName, setRecipeName] = useState("");
   const [batchDescription, setBatchDescription] = useState("");
   const [ingredients, setIngredients] = useState<Ingredient[]>([
@@ -44,7 +46,7 @@ const BatchCalculator = () => {
   const [targetLiters, setTargetLiters] = useState("");
   const [currentServes, setCurrentServes] = useState("1");
   const [producedByName, setProducedByName] = useState("");
-  const [producedByUserId, setProducedByUserId] = useState<string>("");
+  const [producedByUserId, setProducedByUserId] = useState<string>(user?.id || "");
   const [notes, setNotes] = useState("");
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("calculator");
@@ -61,6 +63,13 @@ const BatchCalculator = () => {
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes();
   const { productions, createProduction } = useBatchProductions(selectedRecipeId || undefined);
   const { groups, createGroup } = useMixologistGroups();
+
+  // Set default producer to current user
+  useEffect(() => {
+    if (user?.id && !producedByUserId) {
+      setProducedByUserId(user.id);
+    }
+  }, [user]);
 
   // Fetch registered users (followers/followings for selection)
   useEffect(() => {
