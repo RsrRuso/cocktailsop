@@ -1788,6 +1788,114 @@ const BatchCalculator = () => {
       
       yPos += 26;
       
+      // Detailed Ingredient Breakdown Table
+      doc.setFillColor(226, 232, 240);
+      doc.rect(12, yPos, 186, 5, 'F');
+      doc.setTextColor(...deepBlue);
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "bold");
+      doc.text("INGREDIENT CONSUMPTION BREAKDOWN", 15, yPos + 3.5);
+      yPos += 7;
+      
+      // Calculate detailed ingredient consumption
+      const ingredientConsumption = new Map<string, { totalMl: number; bottleSize: number | null }>();
+      
+      if (allIngredients && spirits) {
+        allIngredients.forEach((ing: any) => {
+          const scaledMl = parseFloat(ing.scaled_amount || 0);
+          const matchingSpirit = spirits.find(s => s.name === ing.ingredient_name);
+          
+          const existing = ingredientConsumption.get(ing.ingredient_name);
+          if (existing) {
+            existing.totalMl += scaledMl;
+          } else {
+            ingredientConsumption.set(ing.ingredient_name, {
+              totalMl: scaledMl,
+              bottleSize: matchingSpirit?.bottle_size_ml || null
+            });
+          }
+        });
+      }
+      
+      if (ingredientConsumption.size > 0) {
+        // Table header
+        doc.setFont("helvetica", "bold");
+        doc.setFillColor(...deepBlue);
+        doc.rect(12, yPos - 1.5, 186, 4, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(6);
+        doc.text("Ingredient", 14, yPos + 1.5);
+        doc.text("Total ML", 110, yPos + 1.5);
+        doc.text("Bottles", 140, yPos + 1.5);
+        doc.text("Extra ML", 165, yPos + 1.5);
+        yPos += 5;
+        
+        doc.setFont("helvetica", "normal");
+        let ingredientIndex = 0;
+        
+        ingredientConsumption.forEach(({ totalMl, bottleSize }, ingredientName) => {
+          if (yPos > 280) {
+            doc.addPage();
+            yPos = 15;
+            
+            // Repeat header
+            doc.setFont("helvetica", "bold");
+            doc.setFillColor(...deepBlue);
+            doc.rect(12, yPos - 1.5, 186, 4, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(6);
+            doc.text("Ingredient", 14, yPos + 1.5);
+            doc.text("Total ML", 110, yPos + 1.5);
+            doc.text("Bottles", 140, yPos + 1.5);
+            doc.text("Extra ML", 165, yPos + 1.5);
+            yPos += 5;
+            doc.setFont("helvetica", "normal");
+          }
+          
+          if (ingredientIndex % 2 === 0) {
+            doc.setFillColor(...lightGray);
+            doc.rect(12, yPos - 1.5, 186, 3.5, 'F');
+          }
+          
+          const bottles = bottleSize ? Math.floor(totalMl / bottleSize) : 0;
+          const leftoverMl = bottleSize ? totalMl % bottleSize : 0;
+          
+          doc.setTextColor(...slate);
+          doc.setFontSize(6);
+          const displayName = ingredientName.length > 45 ? ingredientName.substring(0, 45) + '...' : ingredientName;
+          doc.text(displayName, 14, yPos + 1.5);
+          
+          doc.setTextColor(...deepBlue);
+          doc.setFont("helvetica", "bold");
+          doc.text(`${totalMl.toFixed(0)} ml`, 110, yPos + 1.5);
+          doc.setFont("helvetica", "normal");
+          
+          doc.setTextColor(...emerald);
+          doc.setFont("helvetica", "bold");
+          doc.text(bottles > 0 ? `${bottles}` : '-', 140, yPos + 1.5);
+          doc.setFont("helvetica", "normal");
+          
+          doc.setTextColor(...amber);
+          doc.text(leftoverMl > 0 ? `${leftoverMl.toFixed(0)} ml` : '-', 165, yPos + 1.5);
+          
+          yPos += 3.5;
+          ingredientIndex++;
+        });
+        
+        // Grand total row
+        doc.setFillColor(...deepBlue);
+        doc.rect(12, yPos, 186, 5, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        doc.text("GRAND TOTAL:", 14, yPos + 3.5);
+        doc.text(`${grandTotalMl.toFixed(0)} ml`, 110, yPos + 3.5);
+        doc.text(`${grandTotalBottles} btl`, 140, yPos + 3.5);
+        yPos += 8;
+      }
+      
+      yPos += 2;
+      
       // Calculate bottle data for all ingredients
       const bottleData = new Map<string, { name: string; totalMl: number; bottleSize: number | null }>();
       
