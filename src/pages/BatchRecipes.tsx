@@ -47,67 +47,41 @@ const BatchRecipes = () => {
   const { spirits, calculateBottles } = useMasterSpirits();
 
   const parseMasterList = (text: string) => {
-    // Parse 3-column format: Item Name | Category | Package(measure)
-    const lines = text.split('\n').filter(line => line.trim());
+    const lines = text.split('\n').filter((line) => line.trim());
     const parsedIngredients: Ingredient[] = [];
-    
+
     lines.forEach((line, index) => {
       const trimmed = line.trim();
       if (!trimmed) return;
-      
-      // Split by tab or multiple spaces (common in table copy-paste)
-      const parts = trimmed.split(/\t+|\s{2,}/).map(p => p.trim()).filter(p => p);
-      
-      if (parts.length >= 2) {
-        // Looking for bottle size in the last column
-        const name = parts[0];
-        const lastPart = parts[parts.length - 1];
-        
-        // Extract bottle size from the last column
-        const sizeMatch = lastPart.match(/(\d+\.?\d*)\s*(ml|l|ltr|litre|liter|cl)/i);
-        
-        if (sizeMatch) {
-          const amount = parseFloat(sizeMatch[1]);
-          const unit = sizeMatch[2].toLowerCase();
-          let amountInMl: number;
-          
-          if (unit === 'cl') {
-            amountInMl = amount * 10;
-          } else if (unit.startsWith('l')) {
-            amountInMl = amount * 1000;
-          } else {
-            amountInMl = amount;
-          }
-          
-          parsedIngredients.push({
-            id: `parsed-${Date.now()}-${index}`,
-            name: name,
-            amount: "",
-            unit: "ml",
-            bottle_size_ml: amountInMl
-          });
+
+      // Look for a bottle size anywhere in the line
+      const sizeMatch = trimmed.match(/(\d+\.?\d*)\s*(ml|cl|l|ltr|litre|liter)/i);
+      let bottleSizeMl: number | undefined;
+
+      if (sizeMatch) {
+        const amount = parseFloat(sizeMatch[1]);
+        const unit = sizeMatch[2].toLowerCase();
+
+        if (unit === "cl") {
+          bottleSizeMl = amount * 10;
+        } else if (unit.startsWith("l")) {
+          bottleSizeMl = amount * 1000;
         } else {
-          // No bottle size found
-          parsedIngredients.push({
-            id: `parsed-${Date.now()}-${index}`,
-            name: name,
-            amount: "",
-            unit: "ml"
-          });
+          bottleSizeMl = amount;
         }
-      } else {
-        parsedIngredients.push({
-          id: `parsed-${Date.now()}-${index}`,
-          name: parts[0] || trimmed,
-          amount: "",
-          unit: "ml"
-        });
       }
+
+      parsedIngredients.push({
+        id: `parsed-${Date.now()}-${index}`,
+        name: trimmed,
+        amount: "",
+        unit: "ml",
+        ...(bottleSizeMl ? { bottle_size_ml: bottleSizeMl } : {}),
+      });
     });
-    
+
     return parsedIngredients;
   };
-
   const handleParseMasterList = async () => {
     try {
       console.log("Parse button clicked");
