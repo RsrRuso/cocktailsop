@@ -711,28 +711,12 @@ const BatchCalculator = () => {
 
       const doc = new jsPDF();
       
-      // Aggregate by batch name
-      const batchSummary = new Map<string, { count: number; totalLiters: number; totalServes: number }>();
       let totalLitersProduced = 0;
       let totalServesProduced = 0;
       const ingredientsMap = new Map<string, { amount: number; unit: string }>();
       
+      // Calculate totals
       productions.forEach((prod: any) => {
-        const batchName = prod.batch_name;
-        const existing = batchSummary.get(batchName);
-        
-        if (existing) {
-          existing.count += 1;
-          existing.totalLiters += prod.target_liters || 0;
-          existing.totalServes += prod.target_serves || 0;
-        } else {
-          batchSummary.set(batchName, {
-            count: 1,
-            totalLiters: prod.target_liters || 0,
-            totalServes: prod.target_serves || 0
-          });
-        }
-        
         totalLitersProduced += prod.target_liters || 0;
         totalServesProduced += prod.target_serves || 0;
       });
@@ -801,18 +785,11 @@ const BatchCalculator = () => {
       
       doc.setTextColor(...slate);
       doc.setFont("helvetica", "bold");
-      doc.text("Batch Types:", 18, yPos + 21);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...amber);
-      doc.text(`${batchSummary.size}`, 60, yPos + 21);
-      
-      doc.setTextColor(...slate);
-      doc.setFont("helvetica", "bold");
-      doc.text("Total Volume:", 18, yPos + 27);
+      doc.text("Total Volume:", 18, yPos + 21);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...emerald);
       doc.setFontSize(11);
-      doc.text(`${totalLitersProduced.toFixed(2)} L`, 60, yPos + 27);
+      doc.text(`${totalLitersProduced.toFixed(2)} L`, 60, yPos + 21);
       
       doc.setTextColor(...slate);
       doc.setFontSize(10);
@@ -830,60 +807,80 @@ const BatchCalculator = () => {
       
       yPos += 38;
       
-      // Batch Types Summary Section
+      // Master List - All Individual Batches
       doc.setFillColor(...deepBlue);
       doc.rect(12, yPos, 186, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("BATCH TYPES OVERVIEW", 15, yPos + 5.5);
+      doc.text("MASTER BATCH LIST - ALL PRODUCTIONS", 15, yPos + 5.5);
       yPos += 12;
       
       doc.setTextColor(...slate);
-      doc.setFontSize(8);
+      doc.setFontSize(7);
       
-      // Batch types table header
+      // Master list table header
       doc.setFont("helvetica", "bold");
       doc.setFillColor(...deepBlue);
       doc.rect(12, yPos - 2, 186, 6, 'F');
       doc.setTextColor(255, 255, 255);
       doc.text("#", 15, yPos + 2);
       doc.text("Batch Name", 25, yPos + 2);
-      doc.text("Productions", 110, yPos + 2);
-      doc.text("Total Volume (L)", 145, yPos + 2);
-      doc.text("Total Serves", 175, yPos + 2);
+      doc.text("Date", 90, yPos + 2);
+      doc.text("Volume (L)", 125, yPos + 2);
+      doc.text("Serves", 155, yPos + 2);
+      doc.text("Producer", 175, yPos + 2);
       yPos += 7;
       
-      // Batch types table rows
+      // Master list table rows - EVERY batch
       doc.setFont("helvetica", "normal");
-      let batchIndex = 0;
-      Array.from(batchSummary.entries()).forEach(([batchName, data]) => {
-        if (yPos > 260) {
+      productions.forEach((prod: any, index: number) => {
+        if (yPos > 270) {
           doc.addPage();
           yPos = 20;
+          
+          // Repeat header on new page
+          doc.setFont("helvetica", "bold");
+          doc.setFillColor(...deepBlue);
+          doc.rect(12, yPos - 2, 186, 6, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.text("#", 15, yPos + 2);
+          doc.text("Batch Name", 25, yPos + 2);
+          doc.text("Date", 90, yPos + 2);
+          doc.text("Volume (L)", 125, yPos + 2);
+          doc.text("Serves", 155, yPos + 2);
+          doc.text("Producer", 175, yPos + 2);
+          yPos += 7;
+          doc.setFont("helvetica", "normal");
         }
         
-        if (batchIndex % 2 === 0) {
+        if (index % 2 === 0) {
           doc.setFillColor(...lightGray);
-          doc.rect(12, yPos - 2, 186, 5.5, 'F');
+          doc.rect(12, yPos - 2, 186, 5, 'F');
         }
         
         doc.setTextColor(...slate);
-        doc.text(`${batchIndex + 1}`, 15, yPos + 2);
-        const displayName = batchName.length > 40 ? batchName.substring(0, 40) + '...' : batchName;
+        doc.text(`${index + 1}`, 15, yPos + 2);
+        const displayName = prod.batch_name.length > 30 ? prod.batch_name.substring(0, 30) + '...' : prod.batch_name;
         doc.text(displayName, 25, yPos + 2);
-        doc.setTextColor(...deepBlue);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${data.count}`, 110, yPos + 2);
-        doc.setFont("helvetica", "normal");
+        
+        const prodDate = new Date(prod.production_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+        doc.text(prodDate, 90, yPos + 2);
+        
         doc.setTextColor(...emerald);
         doc.setFont("helvetica", "bold");
-        doc.text(`${data.totalLiters.toFixed(1)}`, 145, yPos + 2);
+        doc.text(`${prod.target_liters.toFixed(1)}`, 125, yPos + 2);
         doc.setFont("helvetica", "normal");
+        
         doc.setTextColor(...amber);
-        doc.text(`${data.totalServes}`, 175, yPos + 2);
-        yPos += 5.5;
-        batchIndex++;
+        doc.text(`${prod.target_serves}`, 155, yPos + 2);
+        
+        doc.setTextColor(...slate);
+        const producerName = prod.produced_by_name || 'N/A';
+        const displayProducer = producerName.length > 15 ? producerName.substring(0, 15) + '...' : producerName;
+        doc.text(displayProducer, 175, yPos + 2);
+        
+        yPos += 5;
       });
       
       yPos += 5;
