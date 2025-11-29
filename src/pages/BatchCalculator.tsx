@@ -1468,14 +1468,34 @@ const BatchCalculator = () => {
       doc.setTextColor(255, 255, 255);
       doc.text("#", 14, yPos + 1.5);
       doc.text("Batch", 22, yPos + 1.5);
-      doc.text("Date", 85, yPos + 1.5);
-      doc.text("Vol(L)", 115, yPos + 1.5);
-      doc.text("Srv", 140, yPos + 1.5);
-      doc.text("Producer", 160, yPos + 1.5);
+      doc.text("Date", 75, yPos + 1.5);
+      doc.text("Vol(L)", 105, yPos + 1.5);
+      doc.text("Srv", 125, yPos + 1.5);
+      doc.text("Btl", 140, yPos + 1.5);
+      doc.text("Producer", 155, yPos + 1.5);
       yPos += 5;
       
       // Compact batch rows
       doc.setFont("helvetica", "normal");
+      
+      // Pre-calculate bottles for each batch
+      const batchBottles = new Map<string, number>();
+      
+      productions.forEach((prod: any) => {
+        const batchIngredients = allIngredients?.filter((ing: any) => ing.production_id === prod.id) || [];
+        let totalBottles = 0;
+        
+        batchIngredients.forEach((ing: any) => {
+          const scaledMl = parseFloat(ing.scaled_amount || 0);
+          const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
+          if (matchingSpirit && matchingSpirit.bottle_size_ml) {
+            totalBottles += Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
+          }
+        });
+        
+        batchBottles.set(prod.id, totalBottles);
+      });
+      
       productions.forEach((prod: any, index: number) => {
         if (yPos > 280) {
           doc.addPage();
@@ -1489,10 +1509,11 @@ const BatchCalculator = () => {
           doc.setFontSize(6);
           doc.text("#", 14, yPos + 1.5);
           doc.text("Batch", 22, yPos + 1.5);
-          doc.text("Date", 85, yPos + 1.5);
-          doc.text("Vol(L)", 115, yPos + 1.5);
-          doc.text("Srv", 140, yPos + 1.5);
-          doc.text("Producer", 160, yPos + 1.5);
+          doc.text("Date", 75, yPos + 1.5);
+          doc.text("Vol(L)", 105, yPos + 1.5);
+          doc.text("Srv", 125, yPos + 1.5);
+          doc.text("Btl", 140, yPos + 1.5);
+          doc.text("Producer", 155, yPos + 1.5);
           yPos += 5;
           doc.setFont("helvetica", "normal");
         }
@@ -1504,24 +1525,30 @@ const BatchCalculator = () => {
         
         doc.setTextColor(...slate);
         doc.text(`${index + 1}`, 14, yPos + 1.5);
-        const displayName = prod.batch_name.length > 35 ? prod.batch_name.substring(0, 35) + '...' : prod.batch_name;
+        const displayName = prod.batch_name.length > 30 ? prod.batch_name.substring(0, 30) + '...' : prod.batch_name;
         doc.text(displayName, 22, yPos + 1.5);
         
         const prodDate = new Date(prod.production_date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
-        doc.text(prodDate, 85, yPos + 1.5);
+        doc.text(prodDate, 75, yPos + 1.5);
         
         doc.setTextColor(...emerald);
         doc.setFont("helvetica", "bold");
-        doc.text(`${prod.target_liters.toFixed(1)}`, 115, yPos + 1.5);
+        doc.text(`${prod.target_liters.toFixed(1)}`, 105, yPos + 1.5);
         doc.setFont("helvetica", "normal");
         
         doc.setTextColor(...amber);
-        doc.text(`${prod.target_serves}`, 140, yPos + 1.5);
+        doc.text(`${prod.target_serves}`, 125, yPos + 1.5);
+        
+        doc.setTextColor(...deepBlue);
+        doc.setFont("helvetica", "bold");
+        const bottles = batchBottles.get(prod.id) || 0;
+        doc.text(`${bottles}`, 140, yPos + 1.5);
+        doc.setFont("helvetica", "normal");
         
         doc.setTextColor(...slate);
         const producerName = prod.produced_by_name || 'N/A';
-        const displayProducer = producerName.length > 18 ? producerName.substring(0, 18) + '...' : producerName;
-        doc.text(displayProducer, 160, yPos + 1.5);
+        const displayProducer = producerName.length > 15 ? producerName.substring(0, 15) + '...' : producerName;
+        doc.text(displayProducer, 155, yPos + 1.5);
         
         yPos += 3.5;
       });
