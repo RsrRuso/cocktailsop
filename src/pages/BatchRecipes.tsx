@@ -399,29 +399,17 @@ const BatchRecipes = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <Label>Ingredients *</Label>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowMasterList(!showMasterList)}
-                    className="glass-hover"
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Paste List
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAISuggestions}
-                    disabled={isAILoading || !recipeName}
-                    className="glass-hover"
-                  >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    {isAILoading ? "Getting AI..." : "AI Suggest"}
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAISuggestions}
+                  disabled={isAILoading || !recipeName}
+                  className="glass-hover"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  {isAILoading ? "Getting AI..." : "AI Suggest"}
+                </Button>
               </div>
 
               {showMasterList && (
