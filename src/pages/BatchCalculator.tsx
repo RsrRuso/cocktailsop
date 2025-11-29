@@ -903,33 +903,6 @@ const BatchCalculator = () => {
       
       yPos += 38;
       
-      // AI Par Level Suggestions Section
-      if (aiSuggestions) {
-        doc.setFillColor(...deepBlue);
-        doc.rect(12, yPos, 186, 8, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.text("AI-POWERED PAR LEVEL SUGGESTIONS", 15, yPos + 5.5);
-        yPos += 12;
-        
-        doc.setFontSize(8);
-        doc.setTextColor(...slate);
-        doc.setFont("helvetica", "normal");
-        
-        const suggestionLines = doc.splitTextToSize(aiSuggestions, 180);
-        suggestionLines.forEach((line: string) => {
-          if (yPos > 270) {
-            doc.addPage();
-            yPos = 20;
-          }
-          doc.text(line, 15, yPos);
-          yPos += 4;
-        });
-        
-        yPos += 10;
-      }
-      
       // Master List - All Individual Batches
       doc.setFillColor(...deepBlue);
       doc.rect(12, yPos, 186, 8, 'F');
