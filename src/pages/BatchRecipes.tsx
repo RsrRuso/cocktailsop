@@ -45,6 +45,7 @@ const BatchRecipes = () => {
   const { spirits, calculateBottles } = useMasterSpirits();
 
   const parseMasterList = (text: string) => {
+    // Parse 3-column format: Item Name | Category | Package(measure)
     const lines = text.split('\n').filter(line => line.trim());
     const parsedIngredients: Ingredient[] = [];
     
@@ -52,33 +53,63 @@ const BatchRecipes = () => {
       const trimmed = line.trim();
       if (!trimmed) return;
       
-      const patterns = [
-        /^(.+?)\s*[-–—]\s*(\d+\.?\d*)\s*(ml|l|btl|bottle|bottles?)\s*(?:x\s*(\d+))?$/i,
-        /^(.+?)\s*\((\d+\.?\d*)\s*(ml|l|btl|bottle|bottles?)\)\s*(?:x\s*(\d+))?$/i,
-        /^(.+?)\s+(\d+\.?\d*)\s*(ml|l|btl|bottle|bottles?)\s*(?:x\s*(\d+))?$/i,
-      ];
+      // Split by tab or multiple spaces (common in table copy-paste)
+      const parts = trimmed.split(/\t+|\s{2,}/).map(p => p.trim()).filter(p => p);
       
-      let match = null;
-      for (const pattern of patterns) {
-        match = trimmed.match(pattern);
-        if (match) break;
-      }
-      
-      if (match) {
-        const [, name, amount, unit, multiplier] = match;
-        const qty = parseFloat(amount) * (multiplier ? parseInt(multiplier) : 1);
-        const normalizedUnit = unit.toLowerCase().includes('l') && !unit.toLowerCase().includes('ml') ? 'L' : 'ml';
+      if (parts.length >= 3) {
+        // 3-column format: Name | Category | Package
+        const name = parts[0];
+        const category = parts[1];
+        const packageStr = parts[2];
         
-        parsedIngredients.push({
-          id: `parsed-${Date.now()}-${index}`,
-          name: name.trim(),
-          amount: qty.toString(),
-          unit: normalizedUnit
-        });
+        // Extract bottle size from package string
+        const sizeMatch = packageStr.match(/(\d+\.?\d*)\s*(ml|l|ltr|litre|liter)/i);
+        
+        if (sizeMatch) {
+          const amount = parseFloat(sizeMatch[1]);
+          const unit = sizeMatch[2].toLowerCase();
+          const normalizedUnit = unit.startsWith('l') ? 'L' : 'ml';
+          const amountInMl = normalizedUnit === 'L' ? amount * 1000 : amount;
+          
+          parsedIngredients.push({
+            id: `parsed-${Date.now()}-${index}`,
+            name: name,
+            amount: "",
+            unit: "ml",
+            bottle_size_ml: amountInMl
+          });
+        } else {
+          parsedIngredients.push({
+            id: `parsed-${Date.now()}-${index}`,
+            name: name,
+            amount: "",
+            unit: "ml"
+          });
+        }
+      } else if (parts.length === 2) {
+        // 2-column fallback
+        const name = parts[0];
+        const packageStr = parts[1];
+        
+        const sizeMatch = packageStr.match(/(\d+\.?\d*)\s*(ml|l|ltr|litre|liter)/i);
+        if (sizeMatch) {
+          const amount = parseFloat(sizeMatch[1]);
+          const unit = sizeMatch[2].toLowerCase();
+          const normalizedUnit = unit.startsWith('l') ? 'L' : 'ml';
+          const amountInMl = normalizedUnit === 'L' ? amount * 1000 : amount;
+          
+          parsedIngredients.push({
+            id: `parsed-${Date.now()}-${index}`,
+            name: name,
+            amount: "",
+            unit: "ml",
+            bottle_size_ml: amountInMl
+          });
+        }
       } else {
         parsedIngredients.push({
           id: `parsed-${Date.now()}-${index}`,
-          name: trimmed,
+          name: parts[0] || trimmed,
           amount: "",
           unit: "ml"
         });
@@ -364,14 +395,14 @@ const BatchRecipes = () => {
                 <Card className="p-4 glass border-primary/50">
                   <div className="space-y-3">
                     <div>
-                      <Label>Paste Master List</Label>
+                      <Label>Paste 3-Column Table Data</Label>
                       <p className="text-xs text-muted-foreground mt-1 mb-2">
-                        Paste spirits list. Format: "Name - 750ml" or "Name 1L x2"
+                        Copy-paste from spreadsheet: Item Name | Category | Package
                       </p>
                       <Textarea
                         value={masterList}
                         onChange={(e) => setMasterList(e.target.value)}
-                        placeholder="Vodka - 750ml&#10;Gin 1L&#10;Rum (700ml) x2&#10;Tequila 1.5L"
+                        placeholder="Vodka		Premium		750ml&#10;Gin		London Dry		1L&#10;Rum		Dark		700ml&#10;Tequila		Blanco		750ml"
                         className="glass min-h-[120px] font-mono text-sm"
                       />
                     </div>
