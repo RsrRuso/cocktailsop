@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Plus, Trash2, Sparkles, Save, Edit2, X, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
+import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Select,
@@ -24,6 +25,7 @@ interface Ingredient {
   name: string;
   amount: string;
   unit: string;
+  bottle_size_ml?: number;
 }
 
 const BatchRecipes = () => {
@@ -40,6 +42,7 @@ const BatchRecipes = () => {
   const [showMasterList, setShowMasterList] = useState(false);
 
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes();
+  const { spirits, calculateBottles } = useMasterSpirits();
 
   const parseMasterList = (text: string) => {
     const lines = text.split('\n').filter(line => line.trim());
@@ -113,7 +116,22 @@ const BatchRecipes = () => {
 
   const updateIngredient = (id: string, field: keyof Ingredient, value: string) => {
     setIngredients(
-      ingredients.map((ing) => (ing.id === id ? { ...ing, [field]: value } : ing)),
+      ingredients.map((ing) => {
+        if (ing.id === id) {
+          const updated = { ...ing, [field]: value };
+          
+          // If name changed and it's a spirit from master list, auto-fill bottle size
+          if (field === 'name' && spirits) {
+            const selectedSpirit = spirits.find(s => s.name === value);
+            if (selectedSpirit) {
+              updated.bottle_size_ml = selectedSpirit.bottle_size_ml;
+            }
+          }
+          
+          return updated;
+        }
+        return ing;
+      }),
     );
   };
 
@@ -385,14 +403,35 @@ const BatchRecipes = () => {
                   key={ingredient.id}
                   className="flex flex-wrap gap-2"
                 >
-                  <Input
-                    placeholder="Ingredient name"
+                  <Select
                     value={ingredient.name}
-                    onChange={(e) =>
-                      updateIngredient(ingredient.id, "name", e.target.value)
+                    onValueChange={(value) =>
+                      updateIngredient(ingredient.id, "name", value)
                     }
-                    className="glass flex-1 min-w-[160px]"
-                  />
+                  >
+                    <SelectTrigger className="glass flex-1 min-w-[160px] bg-background/80 backdrop-blur-sm">
+                      <SelectValue placeholder="Select spirit" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background/95 backdrop-blur-sm z-[100] max-h-[300px]">
+                      {spirits && spirits.length > 0 ? (
+                        spirits.map((spirit) => (
+                          <SelectItem key={spirit.id} value={spirit.name}>
+                            <div className="flex flex-col">
+                              <span>{spirit.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {spirit.brand && `${spirit.brand} • `}
+                                {spirit.bottle_size_ml}ml btl
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="p-3 text-center text-sm text-muted-foreground">
+                          No master spirits yet
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
                   <Input
                     type="number"
                     placeholder="Amount"
@@ -413,12 +452,18 @@ const BatchRecipes = () => {
                     </SelectTrigger>
                     <SelectContent className="bg-background/95 backdrop-blur-sm z-[100]">
                       <SelectItem value="ml">ml</SelectItem>
+                      <SelectItem value="L">L</SelectItem>
                       <SelectItem value="oz">oz</SelectItem>
                       <SelectItem value="g">g</SelectItem>
                       <SelectItem value="dash">dash</SelectItem>
                       <SelectItem value="piece">piece</SelectItem>
                     </SelectContent>
                   </Select>
+                  {ingredient.bottle_size_ml && ingredient.amount && (
+                    <div className="flex items-center px-3 py-2 glass rounded-md text-sm font-medium text-primary">
+                      ≈ {calculateBottles(parseFloat(ingredient.amount) / 1000, ingredient.bottle_size_ml)} btl
+                    </div>
+                  )}
                   <Button
                     type="button"
                     variant="ghost"

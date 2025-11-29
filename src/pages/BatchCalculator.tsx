@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
 import { useBatchProductions } from "@/hooks/useBatchProductions";
 import { useMixologistGroups } from "@/hooks/useMixologistGroups";
+import { useMasterSpirits } from "@/hooks/useMasterSpirits";
 import { MixologistGroupMembersDialog } from "@/components/MixologistGroupMembersDialog";
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
@@ -39,6 +40,8 @@ interface Ingredient {
   name: string;
   amount: string;
   unit: string;
+  bottle_size_ml?: number;
+  bottles_needed?: number;
 }
 
 const BatchCalculator = () => {
@@ -107,6 +110,7 @@ const BatchCalculator = () => {
     selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined
   );
   const { groups, createGroup } = useMixologistGroups();
+  const { spirits, calculateBottles } = useMasterSpirits();
 
   // Set default producer to current user
   useEffect(() => {
@@ -257,9 +261,28 @@ const BatchCalculator = () => {
   };
 
   const updateIngredient = (id: string, field: keyof Ingredient, value: string) => {
-    setIngredients(ingredients.map(ing => 
-      ing.id === id ? { ...ing, [field]: value } : ing
-    ));
+    setIngredients(ingredients.map(ing => {
+      if (ing.id === id) {
+        const updated = { ...ing, [field]: value };
+        
+        // If name changed and it's a spirit from master list, auto-fill bottle size
+        if (field === 'name' && spirits) {
+          const selectedSpirit = spirits.find(s => s.name === value);
+          if (selectedSpirit) {
+            updated.bottle_size_ml = selectedSpirit.bottle_size_ml;
+          }
+        }
+        
+        // Calculate bottles if amount and bottle_size_ml are available
+        if (updated.amount && updated.bottle_size_ml) {
+          const liters = parseFloat(updated.amount) / 1000; // Convert ml to liters
+          updated.bottles_needed = calculateBottles(liters, updated.bottle_size_ml);
+        }
+        
+        return updated;
+      }
+      return ing;
+    }));
   };
 
   const calculateBatch = () => {
@@ -1547,15 +1570,31 @@ const BatchCalculator = () => {
                           setRecipeName(recipe.recipe_name);
                           setBatchDescription(recipe.description || "");
                           setCurrentServes(String(recipe.current_serves));
-                          setIngredients(Array.isArray(recipe.ingredients) 
-                            ? recipe.ingredients.map((ing: any) => ({
-                                id: ing.id || `${Date.now()}-${Math.random()}`,
-                                name: ing.name || "",
-                                amount: String(ing.amount || ""),
-                                unit: ing.unit || "ml"
-                              }))
-                            : [{ id: "1", name: "", amount: "", unit: "ml" }]
-                          );
+                          const loadedIngredients = Array.isArray(recipe.ingredients) 
+                            ? recipe.ingredients.map((ing: any) => {
+                                const ingredient: Ingredient = {
+                                  id: ing.id || `${Date.now()}-${Math.random()}`,
+                                  name: ing.name || "",
+                                  amount: String(ing.amount || ""),
+                                  unit: ing.unit || "ml"
+                                };
+                                
+                                // Match with master spirits to get bottle size
+                                if (spirits) {
+                                  const matchedSpirit = spirits.find(s => s.name === ingredient.name);
+                                  if (matchedSpirit) {
+                                    ingredient.bottle_size_ml = matchedSpirit.bottle_size_ml;
+                                    if (ingredient.amount) {
+                                      const liters = parseFloat(ingredient.amount) / 1000;
+                                      ingredient.bottles_needed = calculateBottles(liters, matchedSpirit.bottle_size_ml);
+                                    }
+                                  }
+                                }
+                                
+                                return ingredient;
+                              })
+                            : [{ id: "1", name: "", amount: "", unit: "ml" }];
+                          setIngredients(loadedIngredients);
                         }
                       }
                     }}
@@ -1673,14 +1712,48 @@ const BatchCalculator = () => {
                           </span>
                         </div>
                         <div className="space-y-2">
-                          {batchResults.scaledIngredients.map((ing) => (
-                            <div key={ing.id} className="flex justify-between items-center py-2 border-b border-border/50">
-                              <span className="font-medium">{ing.name}</span>
-                              <span className="text-primary font-bold">
-                                {ing.scaledAmount} {ing.unit}
-                              </span>
-                            </div>
-                          ))}
+                          {batchResults.scaledIngredients.map((ing) => {
+                            const scaledLiters = parseFloat(ing.scaledAmount) / 1000;
+                            const bottlesNeeded = ing.bottle_size_ml 
+                              ? calculateBottles(scaledLiters, ing.bottle_size_ml)
+                              : null;
+                            
+                            return (
+                              <div key={ing.id} className="flex justify-between items-center py-2 border-b border-border/50">
+                                <div className="flex-1">
+                                  <span className="font-medium">{ing.name}</span>
+                                  {ing.bottle_size_ml && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      ({ing.bottle_size_ml}ml btl)
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-primary font-bold">
+                                    {ing.scaledAmount} {ing.unit}
+                                  </div>
+                                  {bottlesNeeded !== null && (
+                                    <div className="text-xs text-muted-foreground">
+                                      ≈ {bottlesNeeded} bottles
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="pt-2 border-t border-border">
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold">Total Bottles:</span>
+                            <span className="text-lg text-primary font-bold">
+                              {batchResults.scaledIngredients
+                                .filter(ing => ing.bottle_size_ml)
+                                .reduce((sum, ing) => {
+                                  const scaledLiters = parseFloat(ing.scaledAmount) / 1000;
+                                  return sum + calculateBottles(scaledLiters, ing.bottle_size_ml!);
+                                }, 0)} btls
+                            </span>
+                          </div>
                         </div>
                       </div>
                     )}
