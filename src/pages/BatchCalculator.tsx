@@ -1469,8 +1469,8 @@ const BatchCalculator = () => {
                     </div>
                   </div>
 
-                  {/* Average Metrics */}
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  {/* Average & Forecast Metrics */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                     <div className="glass p-4 rounded-lg">
                       <p className="text-sm text-muted-foreground">Avg Batch Size</p>
                       <p className="text-2xl font-bold text-primary">
@@ -1481,6 +1481,18 @@ const BatchCalculator = () => {
                       <p className="text-sm text-muted-foreground">Avg Servings</p>
                       <p className="text-2xl font-bold text-primary">
                         {Math.round(productions.reduce((sum, p) => sum + (p.target_serves || 0), 0) / productions.length)}
+                      </p>
+                    </div>
+                    <div className="glass p-4 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Daily Average</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {(productions.reduce((sum, p) => sum + p.target_liters, 0) / 7).toFixed(2)} L
+                      </p>
+                    </div>
+                    <div className="glass p-4 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Forecast Par</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {Math.round(productions.reduce((sum, p) => sum + p.target_liters, 0) / 7)} L
                       </p>
                     </div>
                   </div>
