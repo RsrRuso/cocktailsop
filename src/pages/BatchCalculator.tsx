@@ -862,6 +862,72 @@ const BatchCalculator = () => {
         doc.text("TOTAL:", 25, yPos + 2.5);
         doc.text(`${ingredients.length} Items`, 145, yPos + 2.5);
         yPos += 10;
+        
+        // Bottles and Leftover breakdown for this batch
+        doc.setFillColor(...deepBlue);
+        doc.rect(12, yPos, 186, 8, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text("BOTTLES & LEFTOVER (THIS BATCH)", 15, yPos + 5.5);
+        yPos += 12;
+        
+        // Table header
+        doc.setFillColor(30, 58, 138);
+        doc.rect(12, yPos, 186, 7, 'F');
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(255, 255, 255);
+        doc.text("Ingredient", 14, yPos + 4.5);
+        doc.text("Qty (ml)", 100, yPos + 4.5);
+        doc.text("Bottles", 135, yPos + 4.5);
+        doc.text("Leftover (ml)", 165, yPos + 4.5);
+        yPos += 7;
+        
+        // Table rows for each ingredient
+        ingredients.forEach((ing: any, idx: number) => {
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          // Alternate row colors
+          if (idx % 2 === 0) {
+            doc.setFillColor(249, 250, 251);
+            doc.rect(12, yPos, 186, 5.5, 'F');
+          }
+          
+          const amountInMl = ing.unit === 'ml' ? parseFloat(ing.scaled_amount) : parseFloat(ing.scaled_amount) * 1000;
+          const spirit = spiritsMap.get(ing.ingredient_name);
+          let bottles = 0;
+          let leftoverMl = 0;
+          
+          if (spirit && spirit.bottle_size_ml) {
+            bottles = Math.ceil(amountInMl / spirit.bottle_size_ml);
+            leftoverMl = (bottles * spirit.bottle_size_ml) - amountInMl;
+          }
+          
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(...slate);
+          
+          const maxNameLength = 38;
+          const displayName = ing.ingredient_name.length > maxNameLength ? ing.ingredient_name.substring(0, maxNameLength) + '...' : ing.ingredient_name;
+          doc.text(displayName, 14, yPos + 3.5);
+          
+          doc.setTextColor(...emerald);
+          doc.text(amountInMl.toFixed(0), 100, yPos + 3.5);
+          
+          doc.setTextColor(...deepBlue);
+          doc.text(bottles.toString(), 135, yPos + 3.5);
+          
+          doc.setTextColor(...amber);
+          doc.text(leftoverMl.toFixed(0), 165, yPos + 3.5);
+          
+          yPos += 5.5;
+        });
+        
+        yPos += 6;
       }
       
       doc.setTextColor(...slate);
