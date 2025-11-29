@@ -29,11 +29,11 @@ const BatchQRSubmit = () => {
         .from("batch_qr_codes")
         .select("*")
         .eq("id", qrId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
-      if (!data || !data.is_active) {
+      if (!data || !(data as any).is_active) {
         toast.error("Invalid or inactive QR code");
         return;
       }
