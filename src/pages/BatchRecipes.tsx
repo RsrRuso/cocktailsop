@@ -58,20 +58,26 @@ const BatchRecipes = () => {
       // Split by tab or multiple spaces (common in table copy-paste)
       const parts = trimmed.split(/\t+|\s{2,}/).map(p => p.trim()).filter(p => p);
       
-      if (parts.length >= 3) {
-        // 3-column format: Name | Category | Package
+      if (parts.length >= 2) {
+        // Looking for bottle size in the last column
         const name = parts[0];
-        const category = parts[1];
-        const packageStr = parts[2];
+        const lastPart = parts[parts.length - 1];
         
-        // Extract bottle size from package string
-        const sizeMatch = packageStr.match(/(\d+\.?\d*)\s*(ml|l|ltr|litre|liter)/i);
+        // Extract bottle size from the last column
+        const sizeMatch = lastPart.match(/(\d+\.?\d*)\s*(ml|l|ltr|litre|liter|cl)/i);
         
         if (sizeMatch) {
           const amount = parseFloat(sizeMatch[1]);
           const unit = sizeMatch[2].toLowerCase();
-          const normalizedUnit = unit.startsWith('l') ? 'L' : 'ml';
-          const amountInMl = normalizedUnit === 'L' ? amount * 1000 : amount;
+          let amountInMl: number;
+          
+          if (unit === 'cl') {
+            amountInMl = amount * 10;
+          } else if (unit.startsWith('l')) {
+            amountInMl = amount * 1000;
+          } else {
+            amountInMl = amount;
+          }
           
           parsedIngredients.push({
             id: `parsed-${Date.now()}-${index}`,
@@ -81,31 +87,12 @@ const BatchRecipes = () => {
             bottle_size_ml: amountInMl
           });
         } else {
+          // No bottle size found
           parsedIngredients.push({
             id: `parsed-${Date.now()}-${index}`,
             name: name,
             amount: "",
             unit: "ml"
-          });
-        }
-      } else if (parts.length === 2) {
-        // 2-column fallback
-        const name = parts[0];
-        const packageStr = parts[1];
-        
-        const sizeMatch = packageStr.match(/(\d+\.?\d*)\s*(ml|l|ltr|litre|liter)/i);
-        if (sizeMatch) {
-          const amount = parseFloat(sizeMatch[1]);
-          const unit = sizeMatch[2].toLowerCase();
-          const normalizedUnit = unit.startsWith('l') ? 'L' : 'ml';
-          const amountInMl = normalizedUnit === 'L' ? amount * 1000 : amount;
-          
-          parsedIngredients.push({
-            id: `parsed-${Date.now()}-${index}`,
-            name: name,
-            amount: "",
-            unit: "ml",
-            bottle_size_ml: amountInMl
           });
         }
       } else {
