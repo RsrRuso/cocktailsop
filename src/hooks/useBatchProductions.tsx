@@ -11,6 +11,7 @@ export interface BatchProduction {
   production_date: string;
   produced_by_name?: string;
   produced_by_email?: string;
+  produced_by_user_id?: string;
   qr_code_data?: string;
   notes?: string;
   group_id?: string;
