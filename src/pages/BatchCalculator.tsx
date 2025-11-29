@@ -108,7 +108,7 @@ const BatchCalculator = () => {
       : "";
 
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes(selectedGroupId);
-  const { productions, createProduction, deleteProduction, getProductionIngredients } = useBatchProductions(
+  const { productions, createProduction, getProductionIngredients } = useBatchProductions(
     selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined,
     selectedGroupId
   );
@@ -605,9 +605,33 @@ const BatchCalculator = () => {
     toast.success("Production loaded for editing");
   };
 
-  const handleDeleteProduction = (productionId: string) => {
-    if (confirm("Are you sure you want to delete this batch production? This cannot be undone.")) {
-      deleteProduction(productionId);
+  const handleDeleteProduction = async (productionId: string) => {
+    if (!confirm("Are you sure you want to delete this batch production?")) {
+      return;
+    }
+
+    try {
+      // Delete production ingredients first
+      const { error: ingredientsError } = await supabase
+        .from('batch_production_ingredients')
+        .delete()
+        .eq('production_id', productionId);
+
+      if (ingredientsError) throw ingredientsError;
+
+      // Delete production
+      const { error: productionError } = await supabase
+        .from('batch_productions')
+        .delete()
+        .eq('id', productionId);
+
+      if (productionError) throw productionError;
+
+      await queryClient.invalidateQueries({ queryKey: ["batch-productions"] });
+      toast.success("Batch production deleted");
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete production");
     }
   };
 
