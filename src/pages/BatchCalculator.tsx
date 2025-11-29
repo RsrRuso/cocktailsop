@@ -1607,6 +1607,8 @@ const BatchCalculator = () => {
             
             doc.setFont("helvetica", "normal");
             let ingredientIndex = 0;
+            let batchTotalBottles = 0;
+            let batchTotalMl = 0;
             
             batchBottleData.forEach(({ totalMl, bottleSize }, ingredientName) => {
               if (yPos > 280) {
@@ -1621,6 +1623,9 @@ const BatchCalculator = () => {
               
               const bottles = bottleSize ? Math.floor(totalMl / bottleSize) : 0;
               const leftoverMl = bottleSize ? totalMl % bottleSize : 0;
+              
+              batchTotalBottles += bottles;
+              batchTotalMl += totalMl;
               
               doc.setTextColor(...slate);
               doc.setFontSize(5.5);
@@ -1642,7 +1647,16 @@ const BatchCalculator = () => {
               ingredientIndex++;
             });
             
-            yPos += 2;
+            // Batch total summary row
+            doc.setFillColor(...deepBlue);
+            doc.rect(14, yPos, 182, 4, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(6);
+            doc.setFont("helvetica", "bold");
+            doc.text("BATCH TOTAL:", 16, yPos + 2.5);
+            doc.text(`${batchTotalMl.toFixed(0)} ml`, 100, yPos + 2.5);
+            doc.text(`${batchTotalBottles} btl`, 130, yPos + 2.5);
+            yPos += 6;
           }
         } catch (error) {
           console.error(`Error fetching ingredients for batch ${prod.id}:`, error);
@@ -1675,6 +1689,23 @@ const BatchCalculator = () => {
         });
       }
       
+      // Calculate grand totals for bottles and ML
+      let grandTotalBottles = 0;
+      let grandTotalMl = 0;
+      
+      if (allIngredients && spirits) {
+        allIngredients.forEach((ing: any) => {
+          const scaledMl = parseFloat(ing.scaled_amount || 0);
+          grandTotalMl += scaledMl;
+          
+          const matchingSpirit = spirits.find(s => s.name === ing.ingredient_name);
+          if (matchingSpirit && matchingSpirit.bottle_size_ml) {
+            const bottles = Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
+            grandTotalBottles += bottles;
+          }
+        });
+      }
+      
       doc.setFontSize(6.5);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...slate);
@@ -1683,7 +1714,13 @@ const BatchCalculator = () => {
       doc.text(`Total Volume: ${totalLitersProduced.toFixed(2)} L`, 15, yPos + 10);
       doc.text(`Total Servings: ${totalServesProduced}`, 15, yPos + 14);
       
-      yPos += 18;
+      doc.setTextColor(...emerald);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Total Bottles Consumed: ${grandTotalBottles} bottles`, 15, yPos + 18);
+      doc.setTextColor(...deepBlue);
+      doc.text(`Total ML Consumed: ${grandTotalMl.toFixed(0)} ml`, 15, yPos + 22);
+      
+      yPos += 26;
       
       // Calculate bottle data for all ingredients
       const bottleData = new Map<string, { name: string; totalMl: number; bottleSize: number | null }>();
