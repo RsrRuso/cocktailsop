@@ -504,45 +504,22 @@ const BatchCalculator = () => {
 
                 {selectedRecipeId && (
                   <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Target Liters *</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={targetLiters}
-                          onChange={(e) => {
-                            setTargetLiters(e.target.value);
-                            setTargetBatchSize("");
-                          }}
-                          placeholder="e.g., 1.5"
-                          className="glass"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Enter desired liters to produce
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Produced By *</Label>
-                        <Select value={producedByUserId} onValueChange={setProducedByUserId}>
-                          <SelectTrigger className="glass bg-background/80 backdrop-blur-sm z-50">
-                            <SelectValue placeholder="Select producer" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background/95 backdrop-blur-sm z-[100]">
-                            {registeredUsers.map((user) => (
-                              <SelectItem key={user.id} value={user.id}>
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="w-5 h-5">
-                                    <AvatarImage src={user.avatar_url} />
-                                    <AvatarFallback>{user.username?.[0]?.toUpperCase()}</AvatarFallback>
-                                  </Avatar>
-                                  {user.full_name || user.username}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="space-y-2">
+                      <Label>Target Liters *</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={targetLiters}
+                        onChange={(e) => {
+                          setTargetLiters(e.target.value);
+                          setTargetBatchSize("");
+                        }}
+                        placeholder="e.g., 1.5"
+                        className="glass"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter desired liters to produce
+                      </p>
                     </div>
 
                     {batchResults && targetLiters && (
@@ -580,7 +557,7 @@ const BatchCalculator = () => {
                       onClick={handleSubmitBatch} 
                       className="w-full"
                       size="lg"
-                      disabled={!targetLiters || !producedByUserId}
+                      disabled={!targetLiters}
                     >
                       <QrCode className="w-5 h-5 mr-2" />
                       Submit & Generate QR Code
