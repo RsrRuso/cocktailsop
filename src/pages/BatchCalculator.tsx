@@ -107,9 +107,10 @@ const BatchCalculator = () => {
       ? aiAnalysisText.split("**QUARTERLY ANALYSIS:**")[1]?.trim() || ""
       : "";
 
-  const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes();
+  const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes(selectedGroupId);
   const { productions, createProduction } = useBatchProductions(
-    selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined
+    selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined,
+    selectedGroupId
   );
   const { groups, createGroup } = useMixologistGroups();
   const { spirits, calculateBottles } = useMasterSpirits();
@@ -2378,6 +2379,16 @@ const BatchCalculator = () => {
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4 pb-4">
+            {selectedGroupId && (
+              <Card className="glass p-4 border-primary/50 mb-4">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  <p className="text-sm">
+                    Viewing group data: <span className="font-semibold">{groups?.find(g => g.id === selectedGroupId)?.name}</span>
+                  </p>
+                </div>
+              </Card>
+            )}
             <Card className="glass p-4 sm:p-6">
               <div className="flex flex-col gap-4 mb-6">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -2485,6 +2496,16 @@ const BatchCalculator = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-4 pb-4">
+            {selectedGroupId && (
+              <Card className="glass p-4 border-primary/50 mb-4">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  <p className="text-sm">
+                    Viewing group data: <span className="font-semibold">{groups?.find(g => g.id === selectedGroupId)?.name}</span>
+                  </p>
+                </div>
+              </Card>
+            )}
             <Card className="glass p-4 sm:p-6">
               <div className="flex flex-col gap-4 mb-6">
                 <div className="flex items-center gap-2">
@@ -2771,6 +2792,33 @@ const BatchCalculator = () => {
           </TabsContent>
 
           <TabsContent value="groups" className="space-y-4 pb-4">
+            {selectedGroupId && (
+              <Card className="glass p-4 sm:p-6 border-primary/50">
+                <div className="flex items-center gap-2 mb-4">
+                  <Users className="w-5 h-5 text-primary" />
+                  <h3 className="text-base sm:text-lg font-semibold">Active Group Collaborators</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Currently viewing data for: <span className="font-semibold text-foreground">{groups?.find(g => g.id === selectedGroupId)?.name}</span>
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={async () => {
+                    const group = groups?.find(g => g.id === selectedGroupId);
+                    if (group) {
+                      setManagingGroup(group);
+                      setShowMembersDialog(true);
+                    }
+                  }}
+                  className="glass-hover"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  View All Members
+                </Button>
+              </Card>
+            )}
+            
             <Card className="glass p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-6">
                 <Users className="w-5 h-5" />
