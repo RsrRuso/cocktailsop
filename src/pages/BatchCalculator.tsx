@@ -593,8 +593,8 @@ const BatchCalculator = () => {
     setSelectedGroupId(production.group_id);
     
     if (prodIngredients && prodIngredients.length > 0) {
-      setIngredients(prodIngredients.map((ing: any) => ({
-        id: ing.id || Date.now().toString(),
+      setIngredients(prodIngredients.map((ing: any, idx: number) => ({
+        id: `${Date.now()}-${idx}`,
         name: ing.ingredient_name,
         amount: String(ing.original_amount),
         unit: ing.unit
