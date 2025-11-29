@@ -623,17 +623,18 @@ const BatchCalculator = () => {
       
       if (error) throw error;
 
-      // Fetch ALL productions to calculate overall totals
+      // Fetch productions for THIS recipe only to calculate recipe-specific totals
       const { data: allProductions, error: allError } = await supabase
         .from('batch_productions')
         .select('*, batch_production_ingredients(*)')
-        .eq('user_id', user?.id);
+        .eq('user_id', user?.id)
+        .eq('recipe_id', production.recipe_id);
       
-      if (allError) console.error("Error fetching all productions:", allError);
+      if (allError) console.error("Error fetching recipe productions:", allError);
 
       const doc = new jsPDF();
       
-      // Calculate overall production totals
+      // Calculate recipe-specific production totals
       let totalBatchesProduced = allProductions?.length || 0;
       let totalLitersProduced = 0;
       let overallIngredientsMap = new Map<string, { amount: number; unit: string }>();
@@ -846,13 +847,13 @@ const BatchCalculator = () => {
       
       doc.setTextColor(...slate);
       
-      // Overall Production Summary - Eye-catching design
+      // Recipe-Specific Production Summary - Eye-catching design
       doc.setFillColor(...emerald);
       doc.rect(12, yPos, 186, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("OVERALL PRODUCTION SUMMARY", 15, yPos + 5.5);
+      doc.text("RECIPE PRODUCTION SUMMARY", 15, yPos + 5.5);
       yPos += 12;
       
       doc.setTextColor(...slate);
@@ -864,18 +865,18 @@ const BatchCalculator = () => {
       
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Total Batches:", 16, yPos + 7);
+      doc.text("Total Batches (This Recipe):", 16, yPos + 7);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...deepBlue);
-      doc.text(`${totalBatchesProduced} Batches`, 52, yPos + 7);
+      doc.text(`${totalBatchesProduced} Batches`, 72, yPos + 7);
       
       doc.setTextColor(...slate);
       doc.setFont("helvetica", "bold");
-      doc.text("Total Volume:", 16, yPos + 13);
+      doc.text("Total Volume (This Recipe):", 16, yPos + 13);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...emerald);
       doc.setFontSize(10);
-      doc.text(`${totalLitersProduced.toFixed(2)} L`, 52, yPos + 13);
+      doc.text(`${totalLitersProduced.toFixed(2)} L`, 72, yPos + 13);
       
       doc.setTextColor(...slate);
       doc.setFontSize(9);
