@@ -1039,19 +1039,84 @@ const BatchCalculator = () => {
       
       yPos += 10;
       
-      // Forecast Analytics Section - Suggested Par Levels
-      if (yPos > 150) {
+      // Production Trends Visualization
+      if (yPos > 140) {
         doc.addPage();
         yPos = 20;
       }
       
-      doc.setFillColor(...deepBlue);
-      doc.rect(12, yPos, 186, 8, 'F');
-      doc.setTextColor(255, 255, 255);
+      doc.setFillColor(249, 250, 251);
+      doc.roundedRect(12, yPos, 186, 75, 3, 3, 'F');
+      doc.setDrawColor(...skyBlue);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(12, yPos, 186, 75, 3, 3, 'S');
+      
+      doc.setTextColor(...deepBlue);
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("FORECAST ANALYTICS - SUGGESTED PAR LEVELS", 15, yPos + 5.5);
-      yPos += 12;
+      doc.text("📈 PRODUCTION VOLUME BY RECIPE TYPE", 15, yPos + 8);
+      
+      // Top 8 recipes by volume
+      const topRecipes = Object.entries(
+        productions.reduce((acc, prod) => {
+          const key = prod.batch_name;
+          if (!acc[key]) acc[key] = { count: 0, liters: 0 };
+          acc[key].count += 1;
+          acc[key].liters += prod.target_liters;
+          return acc;
+        }, {} as Record<string, { count: number; liters: number }>)
+      )
+      .sort(([, a], [, b]) => b.liters - a.liters)
+      .slice(0, 8);
+      
+      if (topRecipes.length > 0) {
+        const chartY = yPos + 15;
+        const chartHeight = 48;
+        const chartX = 15;
+        const chartWidth = 180;
+        const barWidth = Math.min(20, chartWidth / topRecipes.length - 2);
+        const maxLiters = Math.max(...topRecipes.map(([, d]) => d.liters));
+        
+        topRecipes.forEach(([name, data], index) => {
+          const barHeight = (data.liters / maxLiters) * chartHeight;
+          const barX = chartX + (index * (barWidth + 2));
+          const barY = chartY + chartHeight - barHeight;
+          
+          // Draw bar
+          doc.setFillColor(...emerald);
+          doc.roundedRect(barX, barY, barWidth, barHeight, 1, 1, 'F');
+          
+          // Value on top
+          doc.setTextColor(...emerald);
+          doc.setFontSize(6.5);
+          doc.setFont("helvetica", "bold");
+          doc.text(data.liters.toFixed(1) + "L", barX + barWidth/2, barY - 2, { align: 'center' });
+          
+          // Recipe name below (rotated for space)
+          doc.setTextColor(...slate);
+          doc.setFontSize(5.5);
+          doc.setFont("helvetica", "normal");
+          const displayName = name.length > 12 ? name.substring(0, 12) + '...' : name;
+          doc.text(displayName, barX + barWidth/2, chartY + chartHeight + 4, { align: 'center' });
+        });
+      }
+      
+      yPos += 82;
+      
+      // Forecast Analytics Section - Suggested Par Levels with Graphics
+      if (yPos > 140) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      // Section Header with Modern Design
+      doc.setFillColor(...deepBlue);
+      doc.roundedRect(12, yPos, 186, 10, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("📊 FORECAST ANALYTICS - SUGGESTED PAR LEVELS", 15, yPos + 6.5);
+      yPos += 15;
       
       // Calculate forecast data by batch type
       const forecastData = Object.entries(
@@ -1079,7 +1144,7 @@ const BatchCalculator = () => {
       });
       
       forecastData.forEach(([name, data], index) => {
-        if (yPos > 230) {
+        if (yPos > 220) {
           doc.addPage();
           yPos = 20;
         }
@@ -1099,16 +1164,14 @@ const BatchCalculator = () => {
         
         // Calculate daily averages for different time windows
         const now = new Date();
-        const buffer = 1.2; // 20% safety buffer
+        const buffer = 1.2;
         
-        // Helper to calculate daily avg for a specific window
         const calculateDailyAvgForWindow = (days: number) => {
           const cutoffDate = new Date(now);
           cutoffDate.setDate(cutoffDate.getDate() - days);
           
           const batchesInWindow = sortedBatches.filter(b => b.date >= cutoffDate);
           if (batchesInWindow.length === 0) {
-            // Fallback to overall average if no data in window
             return totalLiters / daysDiff;
           }
           
@@ -1116,101 +1179,91 @@ const BatchCalculator = () => {
           return totalInWindow / days;
         };
         
-        // Calculate daily average for each period window
         const dailyAvg7Days = calculateDailyAvgForWindow(7);
         const dailyAvg14Days = calculateDailyAvgForWindow(14);
         const dailyAvg30Days = calculateDailyAvgForWindow(30);
         const dailyAvg90Days = calculateDailyAvgForWindow(90);
         
-        // Calculate trend based on 7-day vs 30-day comparison
         const trendFactor = dailyAvg30Days > 0 ? dailyAvg7Days / dailyAvg30Days : 1;
         const trendPercent = ((trendFactor - 1) * 100).toFixed(1);
         
-        // Overall base daily average
         const baseDailyAvg = totalLiters / daysDiff;
         
-        // Calculate suggested par levels using period-specific daily averages × buffer
         const suggestedDaily = dailyAvg7Days * buffer;
         const suggestedWeekly = dailyAvg7Days * buffer * 7;
         const suggestedBiWeekly = dailyAvg14Days * buffer * 14;
         const suggestedMonthly = dailyAvg30Days * buffer * 30;
         const suggestedQuarterly = dailyAvg90Days * buffer * 90;
         
-        // Batch name header
-        const bgColor = index % 2 === 0 ? lightGray : [255, 255, 255] as [number, number, number];
+        // Batch card with enhanced visuals
+        const bgColor = index % 2 === 0 ? [248, 250, 252] as [number, number, number] : [255, 255, 255] as [number, number, number];
         doc.setFillColor(...bgColor);
-        doc.rect(12, yPos, 186, 36, 'F');
+        doc.roundedRect(12, yPos, 186, 55, 2, 2, 'F');
         doc.setDrawColor(...skyBlue);
-        doc.setLineWidth(0.3);
-        doc.rect(12, yPos, 186, 36, 'S');
+        doc.setLineWidth(0.4);
+        doc.roundedRect(12, yPos, 186, 55, 2, 2, 'S');
         
+        // Header section
         doc.setTextColor(...slate);
         doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
-        const displayName = name.length > 45 ? name.substring(0, 45) + '...' : name;
-        doc.text(displayName, 15, yPos + 5);
+        const displayName = name.length > 50 ? name.substring(0, 50) + '...' : name;
+        doc.text(displayName, 15, yPos + 6);
         
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
-        doc.text(`${data.batches.length} batches over ${daysDiff} days`, 15, yPos + 9);
-        doc.text(`Total Submissions: ${totalSubmissions}`, 15, yPos + 13);
+        doc.text(`${data.batches.length} batches | ${daysDiff} days | ${totalSubmissions} submissions`, 15, yPos + 11);
         
-        // Trend indicator
-        const trendColor: [number, number, number] = trendFactor > 1.05 ? [16, 185, 129] : trendFactor < 0.95 ? [249, 115, 22] : slate;
+        // Trend indicator with visual
+        const trendColor: [number, number, number] = trendFactor > 1.05 ? emerald : trendFactor < 0.95 ? [249, 115, 22] : slate;
         const trendArrow = trendFactor > 1.05 ? '↗' : trendFactor < 0.95 ? '↘' : '→';
         doc.setTextColor(...trendColor);
         doc.setFont("helvetica", "bold");
-        doc.text(`${trendArrow} Trend: ${parseFloat(trendPercent) > 0 ? '+' : ''}${trendPercent}%`, 15, yPos + 17);
-        
-        // Par levels with submission frequency
-        doc.setTextColor(...slate);
-        doc.setFontSize(6.5);
-        doc.setFont("helvetica", "bold");
-        
-        doc.text("Daily:", 15, yPos + 22);
-        doc.setTextColor(...deepBlue);
-        doc.text(`${suggestedDaily.toFixed(1)} L`, 15, yPos + 26);
-        doc.setTextColor(...emerald);
-        doc.setFontSize(5.5);
-        doc.text(`(${submissionsPerDay.toFixed(2)} batches)`, 15, yPos + 30);
+        doc.setFontSize(7.5);
+        doc.text(`${trendArrow} Trend: ${parseFloat(trendPercent) > 0 ? '+' : ''}${trendPercent}%`, 15, yPos + 16);
         
         doc.setTextColor(...slate);
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(6.5);
-        doc.text("Weekly:", 50, yPos + 22);
-        doc.setTextColor(...deepBlue);
-        doc.text(`${suggestedWeekly.toFixed(1)} L`, 50, yPos + 26);
-        doc.setTextColor(...emerald);
-        doc.setFontSize(5.5);
-        doc.text(`(${submissionsPerWeek.toFixed(2)} batches)`, 50, yPos + 30);
+        doc.text(`Daily Avg: ${baseDailyAvg.toFixed(2)} L`, 15, yPos + 21);
         
-        doc.setTextColor(...slate);
-        doc.setFontSize(6.5);
-        doc.text("2-Week:", 85, yPos + 22);
-        doc.setTextColor(...deepBlue);
-        doc.text(`${suggestedBiWeekly.toFixed(1)} L`, 85, yPos + 26);
-        doc.setTextColor(...emerald);
-        doc.setFontSize(5.5);
-        doc.text(`(${submissionsPerBiWeek.toFixed(2)} batches)`, 85, yPos + 30);
+        // Visual bar indicators for par levels
+        const barStartY = yPos + 26;
+        const barHeight = 4;
+        const barSpacing = 5;
+        const labels = ['Daily', 'Weekly', '2-Week', 'Monthly', 'Quarterly'];
+        const values = [suggestedDaily, suggestedWeekly, suggestedBiWeekly, suggestedMonthly, suggestedQuarterly];
+        const submissions = [submissionsPerDay, submissionsPerWeek, submissionsPerBiWeek, submissionsPerMonth, submissionsPerQuarter];
+        const maxValue = Math.max(...values);
         
-        doc.setTextColor(...slate);
-        doc.setFontSize(6.5);
-        doc.text("Monthly:", 120, yPos + 22);
-        doc.setTextColor(...deepBlue);
-        doc.text(`${suggestedMonthly.toFixed(1)} L`, 120, yPos + 26);
-        doc.setTextColor(...emerald);
-        doc.setFontSize(5.5);
-        doc.text(`(${submissionsPerMonth.toFixed(2)} batches)`, 120, yPos + 30);
+        labels.forEach((label, i) => {
+          const currentY = barStartY + (i * barSpacing);
+          const barMaxWidth = 120;
+          const barWidth = (values[i] / maxValue) * barMaxWidth;
+          
+          // Label
+          doc.setTextColor(...slate);
+          doc.setFontSize(6.5);
+          doc.setFont("helvetica", "bold");
+          doc.text(label + ':', 15, currentY + 3);
+          
+          // Bar
+          doc.setFillColor(...deepBlue);
+          doc.roundedRect(35, currentY, barWidth, barHeight, 1, 1, 'F');
+          
+          // Value
+          doc.setTextColor(...deepBlue);
+          doc.setFontSize(6.5);
+          doc.setFont("helvetica", "bold");
+          doc.text(`${values[i].toFixed(1)} L`, 157, currentY + 3);
+          
+          // Submission count
+          doc.setTextColor(...emerald);
+          doc.setFontSize(5.5);
+          doc.text(`(${submissions[i].toFixed(2)} batches)`, 178, currentY + 3);
+        });
         
-        doc.setTextColor(...slate);
-        doc.setFontSize(6.5);
-        doc.text("Quarterly:", 160, yPos + 22);
-        doc.setTextColor(...deepBlue);
-        doc.text(`${suggestedQuarterly.toFixed(1)} L`, 160, yPos + 26);
-        doc.setTextColor(...emerald);
-        doc.setFontSize(5.5);
-        doc.text(`(${submissionsPerQuarter.toFixed(2)} batches)`, 160, yPos + 30);
-        
-        yPos += 40;
+        yPos += 60;
       });
       
       // Add note about par levels
