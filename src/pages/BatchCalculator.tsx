@@ -448,7 +448,15 @@ const BatchCalculator = () => {
             <Card className="glass p-6 space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Quick Production</h3>
-                <QrCode className="w-5 h-5 text-primary" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/batch-recipes")}
+                  className="glass-hover"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Recipe
+                </Button>
               </div>
 
               <div className="space-y-4">
@@ -475,15 +483,21 @@ const BatchCalculator = () => {
                       }
                     }}
                   >
-                    <SelectTrigger className="glass">
+                    <SelectTrigger className="glass bg-background/80 backdrop-blur-sm">
                       <SelectValue placeholder="Choose a saved recipe" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {recipes?.map((recipe) => (
-                        <SelectItem key={recipe.id} value={recipe.id}>
-                          {recipe.recipe_name}
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="bg-background/95 backdrop-blur-sm z-[100]">
+                      {recipes && recipes.length > 0 ? (
+                        recipes.map((recipe) => (
+                          <SelectItem key={recipe.id} value={recipe.id}>
+                            {recipe.recipe_name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="p-3 text-center text-sm text-muted-foreground">
+                          No recipes yet. Create one first!
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -558,7 +572,7 @@ const BatchCalculator = () => {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder="Add production notes..."
-                        className="glass"
+                         className="glass"
                       />
                     </div>
 
@@ -575,262 +589,6 @@ const BatchCalculator = () => {
                 )}
               </div>
             </Card>
-
-            {recipes && recipes.length > 0 && (
-              <Card className="glass p-6 space-y-4">
-                <h3 className="text-lg font-semibold">Saved Recipes</h3>
-                <div className="space-y-2">
-                  {recipes.map((recipe) => (
-                    <div key={recipe.id} className="flex items-center justify-between p-3 glass rounded-lg hover:bg-accent/50 transition-colors">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{recipe.recipe_name}</h4>
-                        {recipe.description && (
-                          <p className="text-sm text-muted-foreground">{recipe.description}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditRecipe(recipe)}
-                          className="glass-hover"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteRecipe(recipe.id)}
-                          className="glass-hover text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            <Card className="glass p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">
-                  {editingRecipeId ? "Edit Recipe" : "Create New Recipe"}
-                </h3>
-                {editingRecipeId && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCancelEdit}
-                    className="glass-hover"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel Edit
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAISuggestions}
-                  disabled={isAILoading}
-                  className="glass-hover"
-                >
-                  {isAILoading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4 mr-2" />
-                  )}
-                  AI Suggest
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Recipe Name *</Label>
-                <Input
-                  value={recipeName}
-                  onChange={(e) => setRecipeName(e.target.value)}
-                  placeholder="e.g., Negroni, Margarita"
-                  className="glass"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  value={batchDescription}
-                  onChange={(e) => setBatchDescription(e.target.value)}
-                  placeholder="Optional batch description..."
-                  className="glass"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Current Serves *</Label>
-                  <Input
-                    type="number"
-                    value={currentServes}
-                    onChange={(e) => setCurrentServes(e.target.value)}
-                    placeholder="1"
-                    className="glass"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Target Serves</Label>
-                  <Input
-                    type="number"
-                    value={targetBatchSize}
-                    onChange={(e) => setTargetBatchSize(e.target.value)}
-                    placeholder="10"
-                    className="glass"
-                    disabled={!!targetLiters}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>OR Target Liters</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={targetLiters}
-                    onChange={(e) => setTargetLiters(e.target.value)}
-                    placeholder="1.5"
-                    className="glass"
-                    disabled={!!targetBatchSize}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Ingredients *</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={addIngredient}
-                    className="glass-hover"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add
-                  </Button>
-                </div>
-
-                {ingredients.map((ingredient) => (
-                  <div key={ingredient.id} className="flex gap-2">
-                    <Input
-                      value={ingredient.name}
-                      onChange={(e) => updateIngredient(ingredient.id, "name", e.target.value)}
-                      placeholder="Ingredient name"
-                      className="glass flex-1"
-                    />
-                    <Input
-                      type="number"
-                      value={ingredient.amount}
-                      onChange={(e) => updateIngredient(ingredient.id, "amount", e.target.value)}
-                      placeholder="Amount"
-                      className="glass w-24"
-                    />
-                    <select
-                      value={ingredient.unit}
-                      onChange={(e) => updateIngredient(ingredient.id, "unit", e.target.value)}
-                      className="glass rounded-md border border-input bg-background px-3 py-2 text-sm w-24"
-                    >
-                      <option value="ml">ml</option>
-                      <option value="oz">oz</option>
-                      <option value="cl">cl</option>
-                      <option value="dash">dash</option>
-                      <option value="barspoon">tsp</option>
-                      <option value="L">L</option>
-                    </select>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeIngredient(ingredient.id)}
-                      disabled={ingredients.length === 1}
-                      className="glass-hover"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex gap-2">
-                <Button onClick={handleSaveRecipe} variant="outline" className="flex-1">
-                  <Save className="w-4 h-4 mr-2" />
-                  {editingRecipeId ? "Update Recipe" : "Save Recipe"}
-                </Button>
-              </div>
-            </Card>
-
-            {batchResults && (
-              <Card className="glass p-6 space-y-4">
-                <h3 className="font-bold text-lg">Batch Results</h3>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="glass p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground">Total Volume</p>
-                    <p className="text-2xl font-bold text-primary">{totalLiters.toFixed(2)} L</p>
-                  </div>
-                  <div className="glass p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground">Servings</p>
-                    <p className="text-2xl font-bold text-primary">{targetBatchSize || Math.round(totalLiters * 10)}</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  {batchResults.scaledIngredients.map((ing) => (
-                    <div key={ing.id} className="flex justify-between items-center py-2 border-b border-border/50">
-                      <span className="font-medium">{ing.name || "Unnamed"}</span>
-                      <span className="text-primary font-bold">
-                        {ing.scaledAmount} {ing.unit}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="space-y-4 mt-6 pt-6 border-t border-border">
-                  <div className="space-y-2">
-                    <Label>Produced By (Select User) *</Label>
-                    <Select value={producedByUserId} onValueChange={setProducedByUserId}>
-                      <SelectTrigger className="glass">
-                        <SelectValue placeholder="Select who produced this batch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {registeredUsers.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                <AvatarImage src={user.avatar_url || ''} />
-                                <AvatarFallback>
-                                  {(user.full_name || user.username || '?')[0].toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span>{user.full_name || user.username}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Production Notes</Label>
-                    <Textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Any special notes about this batch..."
-                      className="glass"
-                    />
-                  </div>
-
-                  <Button onClick={handleSubmitBatch} className="w-full" size="lg">
-                    <QrCode className="w-5 h-5 mr-2" />
-                    Submit Batch Production
-                  </Button>
-                </div>
-              </Card>
-            )}
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4">
