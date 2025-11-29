@@ -2794,7 +2794,10 @@ const BatchCalculator = () => {
                             const ingredientDetails: any[] = [];
                             
                             ingredients.forEach((ing: any) => {
-                              const scaledMl = parseFloat(ing.scaled_amount || 0);
+                              // Convert to ML if unit is in liters
+                              const scaledMl = ing.unit.toLowerCase() === 'l' 
+                                ? parseFloat(ing.scaled_amount || 0) * 1000 
+                                : parseFloat(ing.scaled_amount || 0);
                               totalMl += scaledMl;
                               
                               const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
@@ -2805,6 +2808,10 @@ const BatchCalculator = () => {
                                 bottles = Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
                                 leftoverMl = scaledMl % matchingSpirit.bottle_size_ml;
                                 totalBottles += bottles;
+                                totalLeftoverMl += leftoverMl;
+                              } else {
+                                // If no bottle size, all is leftover ML
+                                leftoverMl = scaledMl;
                                 totalLeftoverMl += leftoverMl;
                               }
                               
