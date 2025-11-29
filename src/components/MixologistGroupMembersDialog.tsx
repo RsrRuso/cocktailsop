@@ -38,22 +38,53 @@ export function MixologistGroupMembersDialog({
 
   const fetchMembers = async () => {
     try {
-      const { data, error } = await supabase
+      // First fetch raw members
+      const { data: memberRows, error: membersError } = await supabase
         .from('mixologist_group_members')
-        .select('*, profiles(id, username, full_name, avatar_url)')
+        .select('*')
         .eq('group_id', groupId);
-      
-      if (error) {
-        console.error('Error fetching members:', error);
-        toast.error('Failed to fetch members: ' + error.message);
+
+      if (membersError) {
+        console.error('Error fetching members:', membersError);
+        toast.error('Failed to fetch members: ' + membersError.message);
         return;
       }
-      
-      console.log('Fetched members:', data);
-      setMembers(data || []);
+
+      if (!memberRows || memberRows.length === 0) {
+        setMembers([]);
+        return;
+      }
+
+      // Then fetch their profiles in a separate query to avoid implicit FK relationship
+      const userIds = memberRows.map((m) => m.user_id).filter(Boolean);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching member profiles:', profilesError);
+        toast.error('Failed to fetch member profiles: ' + profilesError.message);
+        // Still show bare members without profile data
+        setMembers(memberRows);
+        return;
+      }
+
+      const profileMap = new Map<string, any>();
+      (profiles || []).forEach((p: any) => {
+        profileMap.set(p.id, p);
+      });
+
+      const enriched = memberRows.map((m: any) => ({
+        ...m,
+        profiles: profileMap.get(m.user_id) || null,
+      }));
+
+      console.log('Fetched members (enriched):', enriched);
+      setMembers(enriched);
     } catch (err: any) {
       console.error('Exception fetching members:', err);
-      toast.error('Error: ' + err.message);
+      toast.error('Failed to fetch members: ' + err.message);
     }
   };
 
