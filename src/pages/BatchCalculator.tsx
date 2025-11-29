@@ -593,6 +593,17 @@ const BatchCalculator = () => {
 
   const handleDeleteProduction = (productionId: string) => {
     if (confirm("Are you sure you want to delete this batch production?")) {
+      // Optimistically update the current history list so the card disappears immediately
+      queryClient.setQueryData(
+        [
+          "batch-productions",
+          selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined,
+          selectedGroupId,
+        ],
+        (old: any) => (old ? old.filter((p: any) => p.id !== productionId) : old)
+      );
+
+      // Also trigger the backend deletion mutation
       deleteProduction(productionId);
     }
   };
