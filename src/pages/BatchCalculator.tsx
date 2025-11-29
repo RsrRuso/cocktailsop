@@ -108,7 +108,7 @@ const BatchCalculator = () => {
       : "";
 
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes(selectedGroupId);
-  const { productions, createProduction, deleteProduction, getProductionIngredients } = useBatchProductions(
+  const { productions, createProduction, updateProduction, deleteProduction, getProductionIngredients } = useBatchProductions(
     selectedRecipeId && selectedRecipeId !== "all" ? selectedRecipeId : undefined,
     selectedGroupId
   );
@@ -531,10 +531,15 @@ const BatchCalculator = () => {
         if (productionError) throw productionError;
 
         // Delete old ingredients
-        await supabase
+        const { error: deleteError } = await supabase
           .from('batch_production_ingredients')
           .delete()
           .eq('production_id', editingProductionId);
+
+        if (deleteError) {
+          console.error('Failed to delete old ingredients:', deleteError);
+          throw deleteError;
+        }
 
         // Insert new ingredients
         const { error: ingredientsError } = await supabase
@@ -549,7 +554,10 @@ const BatchCalculator = () => {
             }))
           );
 
-        if (ingredientsError) throw ingredientsError;
+        if (ingredientsError) {
+          console.error('Failed to insert new ingredients:', ingredientsError);
+          throw ingredientsError;
+        }
 
         await queryClient.invalidateQueries({ queryKey: ["batch-productions"] });
         toast.success("Batch production updated!");
