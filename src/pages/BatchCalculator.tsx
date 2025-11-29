@@ -70,6 +70,9 @@ const BatchCalculator = () => {
   const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [masterList, setMasterList] = useState("");
+  const [showMasterList, setShowMasterList] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const aiAnalysisText =
     typeof aiSuggestions === "string"
@@ -179,6 +182,72 @@ const BatchCalculator = () => {
       ...ingredients,
       { id: Date.now().toString(), name: "", amount: "", unit: "ml" }
     ]);
+  };
+
+  const parseMasterList = (text: string) => {
+    // Parse lines like "Vodka - 750ml", "Gin 1L", "Rum (700ml) x2"
+    const lines = text.split('\n').filter(line => line.trim());
+    const parsedIngredients: Ingredient[] = [];
+    
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      
+      // Try to extract name, quantity, and unit
+      // Pattern: "Name - 750ml" or "Name 1.5L" or "Name (750ml)" or "Name 750ml x2"
+      const patterns = [
+        /^(.+?)\s*[-–—]\s*(\d+\.?\d*)\s*(ml|l|btl|bottle|bottles?)\s*(?:x\s*(\d+))?$/i,
+        /^(.+?)\s*\((\d+\.?\d*)\s*(ml|l|btl|bottle|bottles?)\)\s*(?:x\s*(\d+))?$/i,
+        /^(.+?)\s+(\d+\.?\d*)\s*(ml|l|btl|bottle|bottles?)\s*(?:x\s*(\d+))?$/i,
+      ];
+      
+      let match = null;
+      for (const pattern of patterns) {
+        match = trimmed.match(pattern);
+        if (match) break;
+      }
+      
+      if (match) {
+        const [, name, amount, unit, multiplier] = match;
+        const qty = parseFloat(amount) * (multiplier ? parseInt(multiplier) : 1);
+        const normalizedUnit = unit.toLowerCase().includes('l') && !unit.toLowerCase().includes('ml') ? 'L' : 'ml';
+        
+        parsedIngredients.push({
+          id: `parsed-${Date.now()}-${index}`,
+          name: name.trim(),
+          amount: qty.toString(),
+          unit: normalizedUnit
+        });
+      } else {
+        // Just add the name without quantities
+        parsedIngredients.push({
+          id: `parsed-${Date.now()}-${index}`,
+          name: trimmed,
+          amount: "",
+          unit: "ml"
+        });
+      }
+    });
+    
+    return parsedIngredients;
+  };
+
+  const handleParseMasterList = () => {
+    if (!masterList.trim()) {
+      toast.error("Please enter ingredients to parse");
+      return;
+    }
+    
+    const parsed = parseMasterList(masterList);
+    setIngredients(parsed);
+    toast.success(`Added ${parsed.length} ingredients!`);
+    setShowMasterList(false);
+    setMasterList("");
+  };
+
+  const addFromMasterList = (spirit: Ingredient) => {
+    setIngredients([...ingredients, { ...spirit, id: Date.now().toString() }]);
+    toast.success(`Added ${spirit.name}`);
   };
 
   const removeIngredient = (id: string) => {
@@ -840,204 +909,205 @@ const BatchCalculator = () => {
       const slate: [number, number, number] = [51, 65, 85];
       const lightGray: [number, number, number] = [248, 250, 252];
       
-      // Header
+      // Compact Header
       doc.setFillColor(...deepBlue);
-      doc.rect(0, 0, 210, 28, 'F');
+      doc.rect(0, 0, 210, 18, 'F');
       doc.setFillColor(...skyBlue);
-      doc.rect(0, 28, 210, 2.5, 'F');
+      doc.rect(0, 18, 210, 1.5, 'F');
       
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(22);
+      doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.text("ALL BATCHES PRODUCTION REPORT", 105, 15, { align: 'center' });
+      doc.text("ALL BATCHES REPORT", 105, 10, { align: 'center' });
       
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text("Complete Production Summary & Spirits Consumption", 105, 23, { align: 'center' });
-      
-      let yPos = 38;
-      
-      // Overall Summary Card
-      doc.setFillColor(255, 255, 255);
-      doc.roundedRect(12, yPos, 186, 32, 3, 3, 'F');
-      doc.setDrawColor(...emerald);
-      doc.setLineWidth(0.5);
-      doc.roundedRect(12, yPos, 186, 32, 3, 3, 'S');
-      
-      doc.setFillColor(...emerald);
-      doc.roundedRect(12, yPos, 186, 8, 3, 3, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("PRODUCTION OVERVIEW", 105, yPos + 5.5, { align: 'center' });
-      
-      doc.setTextColor(...slate);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.text("Total Productions:", 18, yPos + 15);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...deepBlue);
-      doc.text(`${productions.length}`, 60, yPos + 15);
-      
-      doc.setTextColor(...slate);
-      doc.setFont("helvetica", "bold");
-      doc.text("Total Volume:", 18, yPos + 21);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...emerald);
-      doc.setFontSize(11);
-      doc.text(`${totalLitersProduced.toFixed(2)} L`, 60, yPos + 21);
-      
-      doc.setTextColor(...slate);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.text("Total Servings:", 120, yPos + 15);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...amber);
-      doc.text(`${totalServesProduced}`, 165, yPos + 15);
-      
-      doc.setFont("helvetica", "bold");
-      doc.text("Report Date:", 120, yPos + 21);
+      doc.setFontSize(7);
       doc.setFont("helvetica", "normal");
       const reportDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      doc.text(reportDate, 165, yPos + 21);
+      doc.text(`Generated: ${reportDate}`, 105, 15, { align: 'center' });
       
-      yPos += 38;
+      let yPos = 24;
       
-      // Master List - All Individual Batches
-      doc.setFillColor(...deepBlue);
-      doc.rect(12, yPos, 186, 8, 'F');
+      // Compact Summary Card
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(12, yPos, 186, 20, 2, 2, 'F');
+      doc.setDrawColor(...emerald);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(12, yPos, 186, 20, 2, 2, 'S');
+      
+      doc.setFillColor(...emerald);
+      doc.roundedRect(12, yPos, 186, 5, 2, 2, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(11);
+      doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.text("MASTER BATCH LIST - ALL PRODUCTIONS", 15, yPos + 5.5);
-      yPos += 12;
+      doc.text("PRODUCTION OVERVIEW", 105, yPos + 3.5, { align: 'center' });
       
       doc.setTextColor(...slate);
       doc.setFontSize(7);
-      
-      // Master list table header
       doc.setFont("helvetica", "bold");
+      doc.text("Productions:", 16, yPos + 10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...deepBlue);
+      doc.text(`${productions.length}`, 45, yPos + 10);
+      
+      doc.setTextColor(...slate);
+      doc.setFont("helvetica", "bold");
+      doc.text("Volume:", 16, yPos + 15);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...emerald);
+      doc.setFontSize(8);
+      doc.text(`${totalLitersProduced.toFixed(2)} L`, 35, yPos + 15);
+      
+      doc.setTextColor(...slate);
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.text("Servings:", 90, yPos + 10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...amber);
+      doc.text(`${totalServesProduced}`, 112, yPos + 10);
+      
+      doc.setFont("helvetica", "bold");
+      doc.text("Report:", 90, yPos + 15);
+      doc.setFont("helvetica", "normal");
+      doc.text(reportDate, 107, yPos + 15);
+      
+      yPos += 24;
+      
+      // Compact Master List
       doc.setFillColor(...deepBlue);
-      doc.rect(12, yPos - 2, 186, 6, 'F');
+      doc.rect(12, yPos, 186, 5, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.text("#", 15, yPos + 2);
-      doc.text("Batch Name", 25, yPos + 2);
-      doc.text("Date", 90, yPos + 2);
-      doc.text("Volume (L)", 125, yPos + 2);
-      doc.text("Serves", 155, yPos + 2);
-      doc.text("Producer", 175, yPos + 2);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.text("BATCH LIST", 15, yPos + 3.5);
       yPos += 7;
       
-      // Master list table rows - EVERY batch
+      doc.setTextColor(...slate);
+      doc.setFontSize(6);
+      
+      // Compact table header
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(...deepBlue);
+      doc.rect(12, yPos - 1.5, 186, 4, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.text("#", 14, yPos + 1.5);
+      doc.text("Batch", 22, yPos + 1.5);
+      doc.text("Date", 85, yPos + 1.5);
+      doc.text("Vol(L)", 115, yPos + 1.5);
+      doc.text("Srv", 140, yPos + 1.5);
+      doc.text("Producer", 160, yPos + 1.5);
+      yPos += 5;
+      
+      // Compact batch rows
       doc.setFont("helvetica", "normal");
       productions.forEach((prod: any, index: number) => {
-        if (yPos > 270) {
+        if (yPos > 280) {
           doc.addPage();
-          yPos = 20;
+          yPos = 15;
           
-          // Repeat header on new page
+          // Repeat header
           doc.setFont("helvetica", "bold");
           doc.setFillColor(...deepBlue);
-          doc.rect(12, yPos - 2, 186, 6, 'F');
+          doc.rect(12, yPos - 1.5, 186, 4, 'F');
           doc.setTextColor(255, 255, 255);
-          doc.text("#", 15, yPos + 2);
-          doc.text("Batch Name", 25, yPos + 2);
-          doc.text("Date", 90, yPos + 2);
-          doc.text("Volume (L)", 125, yPos + 2);
-          doc.text("Serves", 155, yPos + 2);
-          doc.text("Producer", 175, yPos + 2);
-          yPos += 7;
+          doc.setFontSize(6);
+          doc.text("#", 14, yPos + 1.5);
+          doc.text("Batch", 22, yPos + 1.5);
+          doc.text("Date", 85, yPos + 1.5);
+          doc.text("Vol(L)", 115, yPos + 1.5);
+          doc.text("Srv", 140, yPos + 1.5);
+          doc.text("Producer", 160, yPos + 1.5);
+          yPos += 5;
           doc.setFont("helvetica", "normal");
         }
         
         if (index % 2 === 0) {
           doc.setFillColor(...lightGray);
-          doc.rect(12, yPos - 2, 186, 5, 'F');
+          doc.rect(12, yPos - 1.5, 186, 3.5, 'F');
         }
         
         doc.setTextColor(...slate);
-        doc.text(`${index + 1}`, 15, yPos + 2);
-        const displayName = prod.batch_name.length > 30 ? prod.batch_name.substring(0, 30) + '...' : prod.batch_name;
-        doc.text(displayName, 25, yPos + 2);
+        doc.text(`${index + 1}`, 14, yPos + 1.5);
+        const displayName = prod.batch_name.length > 35 ? prod.batch_name.substring(0, 35) + '...' : prod.batch_name;
+        doc.text(displayName, 22, yPos + 1.5);
         
-        const prodDate = new Date(prod.production_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
-        doc.text(prodDate, 90, yPos + 2);
+        const prodDate = new Date(prod.production_date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
+        doc.text(prodDate, 85, yPos + 1.5);
         
         doc.setTextColor(...emerald);
         doc.setFont("helvetica", "bold");
-        doc.text(`${prod.target_liters.toFixed(1)}`, 125, yPos + 2);
+        doc.text(`${prod.target_liters.toFixed(1)}`, 115, yPos + 1.5);
         doc.setFont("helvetica", "normal");
         
         doc.setTextColor(...amber);
-        doc.text(`${prod.target_serves}`, 155, yPos + 2);
+        doc.text(`${prod.target_serves}`, 140, yPos + 1.5);
         
         doc.setTextColor(...slate);
         const producerName = prod.produced_by_name || 'N/A';
-        const displayProducer = producerName.length > 15 ? producerName.substring(0, 15) + '...' : producerName;
-        doc.text(displayProducer, 175, yPos + 2);
+        const displayProducer = producerName.length > 18 ? producerName.substring(0, 18) + '...' : producerName;
+        doc.text(displayProducer, 160, yPos + 1.5);
         
-        yPos += 5;
+        yPos += 3.5;
       });
       
-      yPos += 5;
+      yPos += 3;
       
-      // Total Spirits Consumed Section
-      if (yPos > 180) {
+      // Compact Spirits Consumed
+      if (yPos > 200) {
         doc.addPage();
-        yPos = 20;
+        yPos = 15;
       }
       
       doc.setFillColor(...emerald);
-      doc.rect(12, yPos, 186, 8, 'F');
+      doc.rect(12, yPos, 186, 5, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.text("TOTAL SPIRITS & INGREDIENTS CONSUMED", 15, yPos + 5.5);
-      yPos += 12;
-      
-      doc.setTextColor(...slate);
       doc.setFontSize(8);
-      
-      // Spirits table header
       doc.setFont("helvetica", "bold");
-      doc.setFillColor(...emerald);
-      doc.rect(12, yPos - 2, 186, 6, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.text("#", 15, yPos + 2);
-      doc.text("Spirit / Ingredient Name", 25, yPos + 2);
-      doc.text("Total Quantity", 140, yPos + 2);
-      doc.text("Unit", 175, yPos + 2);
+      doc.text("SPIRITS CONSUMED", 15, yPos + 3.5);
       yPos += 7;
       
-      // Spirits table rows
+      doc.setTextColor(...slate);
+      doc.setFontSize(6);
+      
+      // Compact spirits header
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(...emerald);
+      doc.rect(12, yPos - 1.5, 186, 4, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.text("#", 14, yPos + 1.5);
+      doc.text("Ingredient", 22, yPos + 1.5);
+      doc.text("Quantity", 140, yPos + 1.5);
+      doc.text("Unit", 175, yPos + 1.5);
+      yPos += 5;
+      
+      // Compact spirits rows
       doc.setFont("helvetica", "normal");
       let spiritIndex = 0;
       Array.from(ingredientsMap.entries()).forEach(([name, data]) => {
-        if (yPos > 270) {
+        if (yPos > 280) {
           doc.addPage();
-          yPos = 20;
+          yPos = 15;
         }
         
         if (spiritIndex % 2 === 0) {
           doc.setFillColor(...lightGray);
-          doc.rect(12, yPos - 2, 186, 5.5, 'F');
+          doc.rect(12, yPos - 1.5, 186, 3.5, 'F');
         }
         
         doc.setTextColor(...slate);
-        doc.text(`${spiritIndex + 1}`, 15, yPos + 2);
-        const spiritName = name.length > 50 ? name.substring(0, 50) + '...' : name;
-        doc.text(spiritName, 25, yPos + 2);
+        doc.text(`${spiritIndex + 1}`, 14, yPos + 1.5);
+        const spiritName = name.length > 60 ? name.substring(0, 60) + '...' : name;
+        doc.text(spiritName, 22, yPos + 1.5);
         doc.setTextColor(...emerald);
         doc.setFont("helvetica", "bold");
-        doc.text(`${data.amount.toFixed(1)}`, 140, yPos + 2);
+        doc.text(`${data.amount.toFixed(1)}`, 140, yPos + 1.5);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(...slate);
-        doc.text(data.unit, 175, yPos + 2);
-        yPos += 5.5;
+        doc.text(data.unit, 175, yPos + 1.5);
+        yPos += 3.5;
         spiritIndex++;
       });
       
-      yPos += 10;
+      yPos += 5;
       
       // Production Trends Visualization
       if (yPos > 140) {
