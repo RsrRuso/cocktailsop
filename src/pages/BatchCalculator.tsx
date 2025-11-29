@@ -693,6 +693,257 @@ const BatchCalculator = () => {
     }
   };
 
+  const downloadAllBatchesReport = async () => {
+    try {
+      if (!productions || productions.length === 0) {
+        toast.error("No batches to report");
+        return;
+      }
+
+      // Fetch all production ingredients
+      const allProductionIds = productions.map(p => p.id);
+      const { data: allIngredients, error } = await supabase
+        .from('batch_production_ingredients')
+        .select('*')
+        .in('production_id', allProductionIds);
+      
+      if (error) throw error;
+
+      const doc = new jsPDF();
+      
+      // Calculate totals
+      let totalLitersProduced = 0;
+      let totalServesProduced = 0;
+      const ingredientsMap = new Map<string, { amount: number; unit: string }>();
+      
+      productions.forEach((prod: any) => {
+        totalLitersProduced += prod.target_liters || 0;
+        totalServesProduced += prod.target_serves || 0;
+      });
+
+      if (allIngredients) {
+        allIngredients.forEach((ing: any) => {
+          const key = ing.ingredient_name;
+          const existing = ingredientsMap.get(key);
+          if (existing) {
+            existing.amount += parseFloat(ing.scaled_amount || 0);
+          } else {
+            ingredientsMap.set(key, {
+              amount: parseFloat(ing.scaled_amount || 0),
+              unit: ing.unit
+            });
+          }
+        });
+      }
+      
+      // Modern Color Palette
+      const deepBlue: [number, number, number] = [30, 58, 138];
+      const skyBlue: [number, number, number] = [56, 189, 248];
+      const emerald: [number, number, number] = [16, 185, 129];
+      const amber: [number, number, number] = [245, 158, 11];
+      const slate: [number, number, number] = [51, 65, 85];
+      const lightGray: [number, number, number] = [248, 250, 252];
+      
+      // Header
+      doc.setFillColor(...deepBlue);
+      doc.rect(0, 0, 210, 28, 'F');
+      doc.setFillColor(...skyBlue);
+      doc.rect(0, 28, 210, 2.5, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.text("ALL BATCHES PRODUCTION REPORT", 105, 15, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Complete Production Summary & Spirits Consumption", 105, 23, { align: 'center' });
+      
+      let yPos = 38;
+      
+      // Overall Summary Card
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(12, yPos, 186, 32, 3, 3, 'F');
+      doc.setDrawColor(...emerald);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(12, yPos, 186, 32, 3, 3, 'S');
+      
+      doc.setFillColor(...emerald);
+      doc.roundedRect(12, yPos, 186, 8, 3, 3, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("PRODUCTION OVERVIEW", 105, yPos + 5.5, { align: 'center' });
+      
+      doc.setTextColor(...slate);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("Total Batches:", 18, yPos + 15);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...deepBlue);
+      doc.text(`${productions.length}`, 55, yPos + 15);
+      
+      doc.setTextColor(...slate);
+      doc.setFont("helvetica", "bold");
+      doc.text("Total Volume:", 18, yPos + 21);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...emerald);
+      doc.setFontSize(11);
+      doc.text(`${totalLitersProduced.toFixed(2)} L`, 55, yPos + 21);
+      
+      doc.setTextColor(...slate);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("Total Servings:", 18, yPos + 27);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...amber);
+      doc.text(`${totalServesProduced}`, 55, yPos + 27);
+      
+      doc.setTextColor(...slate);
+      doc.setFont("helvetica", "bold");
+      doc.text("Unique Spirits:", 120, yPos + 15);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...deepBlue);
+      doc.text(`${ingredientsMap.size}`, 160, yPos + 15);
+      
+      doc.setFont("helvetica", "bold");
+      doc.text("Report Date:", 120, yPos + 21);
+      doc.setFont("helvetica", "normal");
+      const reportDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      doc.text(reportDate, 160, yPos + 21);
+      
+      yPos += 38;
+      
+      // Batches List Section
+      doc.setFillColor(...deepBlue);
+      doc.rect(12, yPos, 186, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("ALL BATCHES PRODUCED", 15, yPos + 5.5);
+      yPos += 12;
+      
+      doc.setTextColor(...slate);
+      doc.setFontSize(7.5);
+      
+      // Batches table header
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(...deepBlue);
+      doc.rect(12, yPos - 2, 186, 6, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.text("#", 15, yPos + 2);
+      doc.text("Batch Name", 25, yPos + 2);
+      doc.text("Date", 105, yPos + 2);
+      doc.text("Volume (L)", 140, yPos + 2);
+      doc.text("Serves", 170, yPos + 2);
+      yPos += 7;
+      
+      // Batches table rows
+      doc.setFont("helvetica", "normal");
+      productions.forEach((prod: any, index: number) => {
+        if (yPos > 260) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        if (index % 2 === 0) {
+          doc.setFillColor(...lightGray);
+          doc.rect(12, yPos - 2, 186, 5, 'F');
+        }
+        
+        doc.setTextColor(...slate);
+        doc.text(`${index + 1}`, 15, yPos + 1.5);
+        const batchName = prod.batch_name.length > 35 ? prod.batch_name.substring(0, 35) + '...' : prod.batch_name;
+        doc.text(batchName, 25, yPos + 1.5);
+        const prodDate = new Date(prod.production_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        doc.text(prodDate, 105, yPos + 1.5);
+        doc.setTextColor(...emerald);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${prod.target_liters.toFixed(1)}`, 140, yPos + 1.5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...amber);
+        doc.text(`${prod.target_serves || 0}`, 170, yPos + 1.5);
+        yPos += 5;
+      });
+      
+      yPos += 5;
+      
+      // Total Spirits Consumed Section
+      if (yPos > 180) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFillColor(...emerald);
+      doc.rect(12, yPos, 186, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("TOTAL SPIRITS & INGREDIENTS CONSUMED", 15, yPos + 5.5);
+      yPos += 12;
+      
+      doc.setTextColor(...slate);
+      doc.setFontSize(8);
+      
+      // Spirits table header
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(...emerald);
+      doc.rect(12, yPos - 2, 186, 6, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.text("#", 15, yPos + 2);
+      doc.text("Spirit / Ingredient Name", 25, yPos + 2);
+      doc.text("Total Quantity", 140, yPos + 2);
+      doc.text("Unit", 175, yPos + 2);
+      yPos += 7;
+      
+      // Spirits table rows
+      doc.setFont("helvetica", "normal");
+      let spiritIndex = 0;
+      Array.from(ingredientsMap.entries()).forEach(([name, data]) => {
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        if (spiritIndex % 2 === 0) {
+          doc.setFillColor(...lightGray);
+          doc.rect(12, yPos - 2, 186, 5.5, 'F');
+        }
+        
+        doc.setTextColor(...slate);
+        doc.text(`${spiritIndex + 1}`, 15, yPos + 2);
+        const spiritName = name.length > 50 ? name.substring(0, 50) + '...' : name;
+        doc.text(spiritName, 25, yPos + 2);
+        doc.setTextColor(...emerald);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${data.amount.toFixed(1)}`, 140, yPos + 2);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...slate);
+        doc.text(data.unit, 175, yPos + 2);
+        yPos += 5.5;
+        spiritIndex++;
+      });
+      
+      // Footer
+      const footerY = 287;
+      doc.setDrawColor(...skyBlue);
+      doc.setLineWidth(0.4);
+      doc.line(12, footerY, 198, footerY);
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(148, 163, 184);
+      const timestamp = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + 
+                       ' at ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      doc.text(`Generated: ${timestamp} | Professional Batch Tracking System`, 105, footerY + 5, { align: 'center' });
+      
+      doc.save(`All_Batches_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success("Complete batches report downloaded!");
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      toast.error("Failed to generate comprehensive report");
+    }
+  };
+
   const handleCreateGroup = async () => {
     if (!newGroupName) {
       toast.error("Please enter a group name");
@@ -896,6 +1147,16 @@ const BatchCalculator = () => {
                   <History className="w-5 h-5" />
                   Production History
                 </h3>
+                {productions && productions.length > 0 && (
+                  <Button
+                    variant="default"
+                    onClick={downloadAllBatchesReport}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download All Batches Report
+                  </Button>
+                )}
               </div>
               
               {!productions || productions.length === 0 ? (
