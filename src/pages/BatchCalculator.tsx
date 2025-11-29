@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
 import { useBatchProductions } from "@/hooks/useBatchProductions";
 import { useMixologistGroups } from "@/hooks/useMixologistGroups";
+import { MixologistGroupMembersDialog } from "@/components/MixologistGroupMembersDialog";
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +54,9 @@ const BatchCalculator = () => {
   const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [producerProfiles, setProducerProfiles] = useState<Map<string, any>>(new Map());
   const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [showMembersDialog, setShowMembersDialog] = useState(false);
+  const [managingGroup, setManagingGroup] = useState<any>(null);
 
   const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes();
   const { productions, createProduction } = useBatchProductions(selectedRecipeId || undefined);
@@ -254,7 +258,8 @@ const BatchCalculator = () => {
         produced_by_email: selectedUser ? null : null,
         produced_by_user_id: producedByUserId,
         qr_code_data: qrData,
-        notes: notes
+        notes: notes,
+        group_id: selectedGroupId
       },
       ingredients: calculation.scaledIngredients.map(ing => ({
         ingredient_name: ing.name,
@@ -984,21 +989,34 @@ const BatchCalculator = () => {
                 <div className="space-y-3">
                   <h4 className="font-semibold">Your Groups</h4>
                   {groups.map((group) => (
-                    <Card key={group.id} className="p-4 glass">
+                  <Card key={group.id} className="p-4 glass">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h5 className="font-bold">{group.name}</h5>
                           <p className="text-sm text-muted-foreground">{group.description}</p>
                         </div>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => generateGroupQRCode(group)}
-                          className="glass-hover"
-                        >
-                          <QrCode className="w-4 h-4 mr-2" />
-                          Get QR
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setManagingGroup(group);
+                              setShowMembersDialog(true);
+                            }}
+                            className="glass-hover"
+                          >
+                            <Users className="w-4 h-4 mr-2" />
+                            Members
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                          onClick={() => setSelectedGroupId(group.id)}
+                            className={selectedGroupId === group.id ? "bg-primary text-primary-foreground" : "glass-hover"}
+                          >
+                            {selectedGroupId === group.id ? "Selected" : "Select"}
+                          </Button>
+                        </div>
                       </div>
                     </Card>
                   ))}
@@ -1008,6 +1026,15 @@ const BatchCalculator = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {managingGroup && (
+        <MixologistGroupMembersDialog
+          open={showMembersDialog}
+          onOpenChange={setShowMembersDialog}
+          groupId={managingGroup.id}
+          groupName={managingGroup.name}
+        />
+      )}
 
       <BottomNav />
     </div>
