@@ -378,7 +378,137 @@ const BatchCalculator = () => {
           <TabsContent value="calculator" className="space-y-6">
             <Card className="glass p-6 space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Recipe Details</h3>
+                <h3 className="text-lg font-semibold">Quick Production</h3>
+                <QrCode className="w-5 h-5 text-primary" />
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Select Saved Recipe *</Label>
+                  <Select 
+                    value={selectedRecipeId || ""} 
+                    onValueChange={(value) => {
+                      setSelectedRecipeId(value);
+                      const recipe = recipes?.find(r => r.id === value);
+                      if (recipe) {
+                        setRecipeName(recipe.recipe_name);
+                        setBatchDescription(recipe.description || "");
+                        setCurrentServes(String(recipe.current_serves));
+                        setIngredients(Array.isArray(recipe.ingredients) 
+                          ? recipe.ingredients.map((ing: any) => ({
+                              id: ing.id || `${Date.now()}-${Math.random()}`,
+                              name: ing.name || "",
+                              amount: String(ing.amount || ""),
+                              unit: ing.unit || "ml"
+                            }))
+                          : [{ id: "1", name: "", amount: "", unit: "ml" }]
+                        );
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="glass">
+                      <SelectValue placeholder="Choose a saved recipe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {recipes?.map((recipe) => (
+                        <SelectItem key={recipe.id} value={recipe.id}>
+                          {recipe.recipe_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {selectedRecipeId && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Batch Multiplier *</Label>
+                        <Input
+                          type="number"
+                          value={targetBatchSize}
+                          onChange={(e) => {
+                            setTargetBatchSize(e.target.value);
+                            setTargetLiters("");
+                          }}
+                          placeholder="e.g., 5"
+                          className="glass"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Multiply ingredients by this amount
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Produced By *</Label>
+                        <Select value={producedByUserId} onValueChange={setProducedByUserId}>
+                          <SelectTrigger className="glass">
+                            <SelectValue placeholder="Select producer" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {registeredUsers.map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="w-5 h-5">
+                                    <AvatarImage src={user.avatar_url} />
+                                    <AvatarFallback>{user.username?.[0]?.toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                  {user.full_name || user.username}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {batchResults && targetBatchSize && (
+                      <div className="glass p-4 rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-semibold">Multiplied Ingredients</h4>
+                          <span className="text-sm text-primary font-bold">
+                            {totalLiters.toFixed(2)} L total
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {batchResults.scaledIngredients.map((ing) => (
+                            <div key={ing.id} className="flex justify-between items-center py-2 border-b border-border/50">
+                              <span className="font-medium">{ing.name}</span>
+                              <span className="text-primary font-bold">
+                                {ing.scaledAmount} {ing.unit}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label>Notes (Optional)</Label>
+                      <Textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Add production notes..."
+                        className="glass"
+                      />
+                    </div>
+
+                    <Button 
+                      onClick={handleSubmitBatch} 
+                      className="w-full"
+                      size="lg"
+                      disabled={!targetBatchSize || !producedByUserId}
+                    >
+                      <QrCode className="w-5 h-5 mr-2" />
+                      Submit & Generate QR Code
+                    </Button>
+                  </>
+                )}
+              </div>
+            </Card>
+
+            <Card className="glass p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Create New Recipe</h3>
                 <Button
                   variant="outline"
                   size="sm"
