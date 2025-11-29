@@ -8,6 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const BatchQRSubmit = () => {
   const { qrId } = useParams();
@@ -15,6 +22,8 @@ const BatchQRSubmit = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [qrData, setQrData] = useState<any>(null);
+  const [recipes, setRecipes] = useState<any[]>([]);
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string>("");
   const [producedByName, setProducedByName] = useState("");
   const [targetLiters, setTargetLiters] = useState("");
   const [notes, setNotes] = useState("");
@@ -25,20 +34,44 @@ const BatchQRSubmit = () => {
 
   const loadQRData = async () => {
     try {
-      const { data, error } = await supabase
+      // Verify QR code is valid
+      const { data: qrCodeData, error: qrError } = await supabase
         .from("batch_qr_codes")
         .select("*")
         .eq("id", qrId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (qrError) throw qrError;
 
-      if (!data || !(data as any).is_active) {
+      if (!qrCodeData || !(qrCodeData as any).is_active) {
         toast.error("Invalid or inactive QR code");
         return;
       }
 
-      setQrData(data);
+      setQrData(qrCodeData);
+
+      // Load all available recipes for this user/group
+      const { data: recipesData, error: recipesError } = await supabase
+        .from("batch_recipes")
+        .select("*")
+        .eq("user_id", qrCodeData.user_id);
+
+      if (recipesError) throw recipesError;
+      setRecipes(recipesData || []);
+
+      // Auto-fill producer name from current user profile
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, username")
+          .eq("id", user.id)
+          .single();
+
+        if (profile) {
+          setProducedByName(profile.full_name || profile.username || "");
+        }
+      }
     } catch (error) {
       console.error("Error loading QR data:", error);
       toast.error("Failed to load batch information");
@@ -48,14 +81,19 @@ const BatchQRSubmit = () => {
   };
 
   const handleSubmit = async () => {
-    if (!producedByName || !targetLiters) {
+    if (!producedByName || !targetLiters || !selectedRecipeId) {
       toast.error("Please fill in all required fields");
       return;
     }
 
     setSubmitting(true);
     try {
-      const recipe = qrData.recipe_data;
+      const recipe = recipes.find(r => r.id === selectedRecipeId);
+      if (!recipe) {
+        toast.error("Recipe not found");
+        return;
+      }
+
       const liters = parseFloat(targetLiters);
       const multiplier = (liters * 1000) / recipe.ingredients.reduce(
         (sum: number, ing: any) => sum + parseFloat(ing.amount || 0),
@@ -83,7 +121,7 @@ const BatchQRSubmit = () => {
       const { data: production, error: prodError } = await supabase
         .from("batch_productions")
         .insert({
-          recipe_id: qrData.recipe_id,
+          recipe_id: selectedRecipeId,
           batch_name: recipe.recipe_name,
           target_serves: Math.round(actualServings),
           target_liters: liters,
@@ -113,7 +151,7 @@ const BatchQRSubmit = () => {
       if (ingError) throw ingError;
 
       toast.success("Batch production submitted successfully!");
-      setProducedByName("");
+      setSelectedRecipeId("");
       setTargetLiters("");
       setNotes("");
     } catch (error) {
@@ -149,7 +187,7 @@ const BatchQRSubmit = () => {
     );
   }
 
-  const recipe = qrData.recipe_data;
+  const selectedRecipe = recipes.find(r => r.id === selectedRecipeId);
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -166,38 +204,57 @@ const BatchQRSubmit = () => {
           <div>
             <h1 className="text-2xl font-bold">Submit Batch Production</h1>
             <p className="text-sm text-muted-foreground">
-              {recipe.recipe_name}
+              Select recipe and enter production details
             </p>
           </div>
         </div>
 
         <Card className="glass p-6 space-y-6">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Recipe Details</h3>
-            {recipe.description && (
-              <p className="text-sm text-muted-foreground">{recipe.description}</p>
-            )}
-            <div className="glass p-4 rounded-lg space-y-2">
-              <p className="text-sm font-medium">Ingredients:</p>
-              {recipe.ingredients.map((ing: any, idx: number) => (
-                <div key={idx} className="text-sm text-muted-foreground flex justify-between">
-                  <span>{ing.name}</span>
-                  <span className="font-medium">
-                    {ing.amount} {ing.unit}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Recipe *</Label>
+              <Select value={selectedRecipeId} onValueChange={setSelectedRecipeId}>
+                <SelectTrigger className="glass">
+                  <SelectValue placeholder="Choose a recipe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {recipes.map((recipe) => (
+                    <SelectItem key={recipe.id} value={recipe.id}>
+                      {recipe.recipe_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedRecipe && (
+              <div className="glass p-4 rounded-lg space-y-2">
+                <p className="text-sm font-medium">Recipe Details:</p>
+                {selectedRecipe.description && (
+                  <p className="text-sm text-muted-foreground">{selectedRecipe.description}</p>
+                )}
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Ingredients:</p>
+                  {selectedRecipe.ingredients.map((ing: any, idx: number) => (
+                    <div key={idx} className="text-sm text-muted-foreground flex justify-between">
+                      <span>{ing.name}</span>
+                      <span className="font-medium">
+                        {ing.amount} {ing.unit}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Your Name *</Label>
               <Input
                 value={producedByName}
                 onChange={(e) => setProducedByName(e.target.value)}
-                placeholder="Who is producing this batch?"
+                placeholder="Producer name (auto-filled)"
                 className="glass"
+                disabled
               />
             </div>
 
@@ -216,14 +273,14 @@ const BatchQRSubmit = () => {
               </p>
             </div>
 
-            {targetLiters && (
+            {targetLiters && selectedRecipe && (
               <div className="glass p-4 rounded-lg">
                 <p className="text-sm font-medium mb-2">Scaled Ingredients:</p>
                 <div className="space-y-1">
-                  {recipe.ingredients.map((ing: any, idx: number) => {
+                  {selectedRecipe.ingredients.map((ing: any, idx: number) => {
                     const multiplier =
                       (parseFloat(targetLiters) * 1000) /
-                      recipe.ingredients.reduce(
+                      selectedRecipe.ingredients.reduce(
                         (sum: number, i: any) => sum + parseFloat(i.amount || 0),
                         0
                       );
@@ -258,7 +315,7 @@ const BatchQRSubmit = () => {
               onClick={handleSubmit}
               className="w-full py-6"
               size="lg"
-              disabled={submitting || !producedByName || !targetLiters}
+              disabled={submitting || !producedByName || !targetLiters || !selectedRecipeId}
             >
               {submitting ? (
                 <>
