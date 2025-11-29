@@ -83,6 +83,24 @@ const MasterSpirits = () => {
     }
   };
 
+  const handleDeleteAll = async () => {
+    if (!spirits || spirits.length === 0) {
+      toast.error("No spirits to delete");
+      return;
+    }
+
+    if (confirm(`Delete ALL ${spirits.length} spirits from master list? This cannot be undone.`)) {
+      try {
+        for (const spirit of spirits) {
+          deleteSpirit(spirit.id);
+        }
+        toast.success("All spirits deleted successfully");
+      } catch (error) {
+        toast.error("Failed to delete all spirits");
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-32 sm:pb-24 pt-16">
       <TopNav />
@@ -103,13 +121,24 @@ const MasterSpirits = () => {
               Edit and delete items below - Click the icons to manage
             </p>
           </div>
-          <Button
-            onClick={() => handleOpenDialog()}
-            className="shrink-0"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Spirit
-          </Button>
+          <div className="flex gap-2 shrink-0">
+            <Button
+              onClick={() => handleOpenDialog()}
+              className="glass-hover"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAll}
+              disabled={!spirits || spirits.length === 0}
+              className="glass-hover"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete All
+            </Button>
+          </div>
         </div>
 
         <Card className="glass p-4 sm:p-6">
