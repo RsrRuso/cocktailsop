@@ -31,7 +31,7 @@ const BatchRecipes = () => {
   const [recipeName, setRecipeName] = useState("");
   const [batchDescription, setBatchDescription] = useState("");
   const [ingredients, setIngredients] = useState<Ingredient[]>([
-    { id: "1", name: "", amount: "", unit: "ml" }
+    { id: "1", name: "", amount: "", unit: "ml" },
   ]);
   const [currentServes, setCurrentServes] = useState("1");
   const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
@@ -42,20 +42,20 @@ const BatchRecipes = () => {
   const addIngredient = () => {
     setIngredients([
       ...ingredients,
-      { id: Date.now().toString(), name: "", amount: "", unit: "ml" }
+      { id: Date.now().toString(), name: "", amount: "", unit: "ml" },
     ]);
   };
 
   const removeIngredient = (id: string) => {
     if (ingredients.length > 1) {
-      setIngredients(ingredients.filter(ing => ing.id !== id));
+      setIngredients(ingredients.filter((ing) => ing.id !== id));
     }
   };
 
   const updateIngredient = (id: string, field: keyof Ingredient, value: string) => {
-    setIngredients(ingredients.map(ing => 
-      ing.id === id ? { ...ing, [field]: value } : ing
-    ));
+    setIngredients(
+      ingredients.map((ing) => (ing.id === id ? { ...ing, [field]: value } : ing)),
+    );
   };
 
   const handleSaveRecipe = async () => {
@@ -71,13 +71,13 @@ const BatchRecipes = () => {
           recipe_name: recipeName,
           description: batchDescription,
           current_serves: parseFloat(currentServes),
-          ingredients: ingredients.map(ing => ({
+          ingredients: ingredients.map((ing) => ({
             id: ing.id,
             name: ing.name,
             amount: ing.amount,
-            unit: ing.unit
-          }))
-        }
+            unit: ing.unit,
+          })),
+        },
       });
       setEditingRecipeId(null);
     } else {
@@ -85,12 +85,12 @@ const BatchRecipes = () => {
         recipe_name: recipeName,
         description: batchDescription,
         current_serves: parseFloat(currentServes),
-        ingredients: ingredients.map(ing => ({
+        ingredients: ingredients.map((ing) => ({
           id: ing.id,
           name: ing.name,
           amount: ing.amount,
-          unit: ing.unit
-        }))
+          unit: ing.unit,
+        })),
       });
     }
 
@@ -106,14 +106,15 @@ const BatchRecipes = () => {
     setRecipeName(recipe.recipe_name);
     setBatchDescription(recipe.description || "");
     setCurrentServes(String(recipe.current_serves));
-    setIngredients(Array.isArray(recipe.ingredients) 
-      ? recipe.ingredients.map((ing: any) => ({
-          id: ing.id || `${Date.now()}-${Math.random()}`,
-          name: ing.name || "",
-          amount: String(ing.amount || ""),
-          unit: ing.unit || "ml"
-        }))
-      : [{ id: "1", name: "", amount: "", unit: "ml" }]
+    setIngredients(
+      Array.isArray(recipe.ingredients)
+        ? recipe.ingredients.map((ing: any) => ({
+            id: ing.id || `${Date.now()}-${Math.random()}`,
+            name: ing.name || "",
+            amount: String(ing.amount || ""),
+            unit: ing.unit || "ml",
+          }))
+        : [{ id: "1", name: "", amount: "", unit: "ml" }],
     );
   };
 
@@ -139,11 +140,11 @@ const BatchRecipes = () => {
 
     setIsAILoading(true);
     try {
-      const response = await supabase.functions.invoke('batch-ai-assistant', {
+      const response = await supabase.functions.invoke("batch-ai-assistant", {
         body: {
-          action: 'suggest_ingredients',
-          data: { recipeName }
-        }
+          action: "suggest_ingredients",
+          data: { recipeName },
+        },
       });
 
       if (response.data?.result) {
@@ -153,15 +154,17 @@ const BatchRecipes = () => {
           if (jsonMatch) {
             jsonText = jsonMatch[0];
           }
-          
+
           const suggested = JSON.parse(jsonText);
           if (Array.isArray(suggested) && suggested.length > 0) {
-            setIngredients(suggested.map((ing: any, idx: number) => ({
-              id: `${Date.now()}-${idx}`,
-              name: ing.name || "",
-              amount: String(ing.amount || ""),
-              unit: ing.unit || "ml"
-            })));
+            setIngredients(
+              suggested.map((ing: any, idx: number) => ({
+                id: `${Date.now()}-${idx}`,
+                name: ing.name || "",
+                amount: String(ing.amount || ""),
+                unit: ing.unit || "ml",
+              })),
+            );
             toast.success("AI suggestions loaded!");
           } else {
             toast.error("No ingredients suggested");
@@ -197,12 +200,14 @@ const BatchRecipes = () => {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Batch Recipes</h1>
-            <p className="text-sm text-muted-foreground">Create and manage your recipes</p>
+            <p className="text-sm text-muted-foreground">
+              Create and manage your recipes
+            </p>
           </div>
         </div>
 
         {/* Recipe Creation Form */}
-        <Card className="glass p-6 space-y-6">
+        <Card className="glass p-4 sm:p-6 space-y-4 sm:space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">
               {editingRecipeId ? "Edit Recipe" : "Create New Recipe"}
@@ -266,26 +271,35 @@ const BatchRecipes = () => {
                 </Button>
               </div>
 
-              {ingredients.map((ingredient, index) => (
-                <div key={ingredient.id} className="flex gap-2">
+              {ingredients.map((ingredient) => (
+                <div
+                  key={ingredient.id}
+                  className="flex flex-wrap gap-2"
+                >
                   <Input
                     placeholder="Ingredient name"
                     value={ingredient.name}
-                    onChange={(e) => updateIngredient(ingredient.id, "name", e.target.value)}
-                    className="glass flex-1"
+                    onChange={(e) =>
+                      updateIngredient(ingredient.id, "name", e.target.value)
+                    }
+                    className="glass flex-1 min-w-[160px]"
                   />
                   <Input
                     type="number"
                     placeholder="Amount"
                     value={ingredient.amount}
-                    onChange={(e) => updateIngredient(ingredient.id, "amount", e.target.value)}
-                    className="glass w-24"
+                    onChange={(e) =>
+                      updateIngredient(ingredient.id, "amount", e.target.value)
+                    }
+                    className="glass w-24 sm:w-24 flex-none"
                   />
                   <Select
                     value={ingredient.unit}
-                    onValueChange={(value) => updateIngredient(ingredient.id, "unit", value)}
+                    onValueChange={(value) =>
+                      updateIngredient(ingredient.id, "unit", value)
+                    }
                   >
-                    <SelectTrigger className="glass w-24 bg-background/80 backdrop-blur-sm z-50">
+                    <SelectTrigger className="glass w-24 flex-none bg-background/80 backdrop-blur-sm z-50">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-background/95 backdrop-blur-sm z-[100]">
@@ -302,7 +316,7 @@ const BatchRecipes = () => {
                     size="icon"
                     onClick={() => removeIngredient(ingredient.id)}
                     disabled={ingredients.length === 1}
-                    className="glass-hover"
+                    className="glass-hover flex-none shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -334,17 +348,23 @@ const BatchRecipes = () => {
             <div className="grid gap-4">
               {recipes.map((recipe) => (
                 <Card key={recipe.id} className="glass p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-semibold">{recipe.recipe_name}</h4>
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold truncate">{recipe.recipe_name}</h4>
                       {recipe.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{recipe.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {recipe.description}
+                        </p>
                       )}
                       <p className="text-xs text-muted-foreground mt-2">
-                        Base: {recipe.current_serves} serving(s) • {Array.isArray(recipe.ingredients) ? recipe.ingredients.length : 0} ingredients
+                        Base: {recipe.current_serves} serving(s) •{" "}
+                        {Array.isArray(recipe.ingredients)
+                          ? recipe.ingredients.length
+                          : 0}{" "}
+                        ingredients
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 mt-2 sm:mt-0 sm:ml-4 self-stretch sm:self-auto">
                       <Button
                         variant="ghost"
                         size="icon"
