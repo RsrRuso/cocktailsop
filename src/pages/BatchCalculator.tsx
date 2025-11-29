@@ -766,7 +766,15 @@ const BatchCalculator = () => {
         .from('master_spirits')
         .select('*');
       
-      const spiritsMap = new Map(masterSpirits?.map(s => [s.name, s]) || []);
+      const spiritsMap = new Map<string, any>();
+      if (masterSpirits) {
+        masterSpirits.forEach((s: any) => {
+          const key = normalizeName(s.name);
+          if (!spiritsMap.has(key)) {
+            spiritsMap.set(key, s);
+          }
+        });
+      }
 
       const doc = new jsPDF();
       
@@ -978,42 +986,42 @@ const BatchCalculator = () => {
         let summaryTotalBottles = 0;
         let summaryTotalLeftoverMl = 0;
         
-        ingredients.forEach((ing: any) => {
-          const amountInMl = ing.unit === 'ml'
-            ? parseFloat(ing.scaled_amount)
-            : parseFloat(ing.scaled_amount) * 1000;
-          const spirit = spiritsMap.get(ing.ingredient_name);
-          
-          summaryTotalMl += amountInMl;
-          
-          if (spirit && spirit.bottle_size_ml) {
-            const fullBottles = Math.floor(amountInMl / spirit.bottle_size_ml);
-            const leftoverMl = amountInMl % spirit.bottle_size_ml;
+          ingredients.forEach((ing: any) => {
+            const amountInMl = ing.unit === 'ml'
+              ? parseFloat(ing.scaled_amount)
+              : parseFloat(ing.scaled_amount) * 1000;
+            const spirit = spiritsMap.get(normalizeName(ing.ingredient_name));
             
-            summaryTotalBottles += fullBottles;
-            summaryTotalLeftoverMl += leftoverMl;
+            summaryTotalMl += amountInMl;
+            
+            if (spirit && spirit.bottle_size_ml) {
+              const fullBottles = Math.floor(amountInMl / spirit.bottle_size_ml);
+              const leftoverMl = amountInMl % spirit.bottle_size_ml;
+              
+              summaryTotalBottles += fullBottles;
+              summaryTotalLeftoverMl += leftoverMl;
 
-            if (fullBottles > 0) {
-              sharpBottles.push({
-                name: ing.ingredient_name,
-                bottles: fullBottles,
-              });
-            }
+              if (fullBottles > 0) {
+                sharpBottles.push({
+                  name: ing.ingredient_name,
+                  bottles: fullBottles,
+                });
+              }
 
-            if (leftoverMl > 0) {
+              if (leftoverMl > 0) {
+                requiredMlItems.push({
+                  name: ing.ingredient_name,
+                  mlNeeded: leftoverMl,
+                });
+              }
+            } else {
+              // No bottle size defined - show total ML as required
               requiredMlItems.push({
                 name: ing.ingredient_name,
-                mlNeeded: leftoverMl,
+                mlNeeded: amountInMl,
               });
             }
-          } else {
-            // No bottle size defined - show total ML as required
-            requiredMlItems.push({
-              name: ing.ingredient_name,
-              mlNeeded: amountInMl,
-            });
-          }
-        });
+          });
         
         // Compact Sharp Bottles section (no page break)
         doc.setFillColor(...emerald);
@@ -1028,7 +1036,7 @@ const BatchCalculator = () => {
         const allIngredientsWithBottles: any[] = [];
         ingredients.forEach((ing: any) => {
           const amountInMl = ing.unit === 'ml' ? parseFloat(ing.scaled_amount) : parseFloat(ing.scaled_amount) * 1000;
-          const spirit = spiritsMap.get(ing.ingredient_name);
+          const spirit = spiritsMap.get(normalizeName(ing.ingredient_name));
           
           if (spirit && spirit.bottle_size_ml) {
             const fullBottles = Math.floor(amountInMl / spirit.bottle_size_ml);
@@ -1475,10 +1483,12 @@ const BatchCalculator = () => {
         let batchTotalLeftoverMl = 0;
         
         batchIngredients.forEach((ing: any) => {
-          const scaledMl = parseFloat(ing.scaled_amount || 0);
+          const scaledMl = ing.unit && ing.unit.toLowerCase() === 'l'
+            ? parseFloat(ing.scaled_amount || 0) * 1000
+            : parseFloat(ing.scaled_amount || 0);
           batchTotalMl += scaledMl;
           
-          const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
+          const matchingSpirit = findSpirit(ing.ingredient_name);
           let bottles = 0;
           let leftoverMl = 0;
           
@@ -1648,8 +1658,10 @@ const BatchCalculator = () => {
             const batchBottleData = new Map<string, { totalMl: number; bottleSize: number | null }>();
             
             batchIngredients.forEach((ing: any) => {
-              const scaledMl = parseFloat(ing.scaled_amount || 0);
-              const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
+              const scaledMl = ing.unit && ing.unit.toLowerCase() === 'l'
+                ? parseFloat(ing.scaled_amount || 0) * 1000
+                : parseFloat(ing.scaled_amount || 0);
+              const matchingSpirit = findSpirit(ing.ingredient_name);
               
               const existing = batchBottleData.get(ing.ingredient_name);
               if (existing) {
@@ -1764,10 +1776,12 @@ const BatchCalculator = () => {
       
       if (allIngredients && spirits) {
         allIngredients.forEach((ing: any) => {
-          const scaledMl = parseFloat(ing.scaled_amount || 0);
+          const scaledMl = ing.unit && ing.unit.toLowerCase() === 'l'
+            ? parseFloat(ing.scaled_amount || 0) * 1000
+            : parseFloat(ing.scaled_amount || 0);
           grandTotalMl += scaledMl;
           
-          const matchingSpirit = spirits.find(s => s.name === ing.ingredient_name);
+          const matchingSpirit = findSpirit(ing.ingredient_name);
           if (matchingSpirit && matchingSpirit.bottle_size_ml) {
             const bottles = Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
             grandTotalBottles += bottles;
@@ -1805,8 +1819,10 @@ const BatchCalculator = () => {
       
       if (allIngredients && spirits) {
         allIngredients.forEach((ing: any) => {
-          const scaledMl = parseFloat(ing.scaled_amount || 0);
-          const matchingSpirit = spirits.find(s => s.name === ing.ingredient_name);
+          const scaledMl = ing.unit && ing.unit.toLowerCase() === 'l'
+            ? parseFloat(ing.scaled_amount || 0) * 1000
+            : parseFloat(ing.scaled_amount || 0);
+          const matchingSpirit = findSpirit(ing.ingredient_name);
           
           const existing = ingredientConsumption.get(ing.ingredient_name);
           if (existing) {
@@ -1905,13 +1921,15 @@ const BatchCalculator = () => {
       if (allIngredients) {
         allIngredients.forEach((ing: any) => {
           const existing = bottleData.get(ing.ingredient_name);
-          const scaledMl = parseFloat(ing.scaled_amount || 0);
+          const scaledMl = ing.unit && ing.unit.toLowerCase() === 'l'
+            ? parseFloat(ing.scaled_amount || 0) * 1000
+            : parseFloat(ing.scaled_amount || 0);
           
           if (existing) {
             existing.totalMl += scaledMl;
           } else {
             // Try to find bottle size from master spirits
-            const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
+            const matchingSpirit = findSpirit(ing.ingredient_name);
             bottleData.set(ing.ingredient_name, {
               name: ing.ingredient_name,
               totalMl: scaledMl,
@@ -2811,12 +2829,12 @@ const BatchCalculator = () => {
                             
                             ingredients.forEach((ing: any) => {
                               // Convert to ML if unit is in liters
-                              const scaledMl = ing.unit.toLowerCase() === 'l' 
-                                ? parseFloat(ing.scaled_amount || 0) * 1000 
+                              const scaledMl = ing.unit && ing.unit.toLowerCase() === 'l'
+                                ? parseFloat(ing.scaled_amount || 0) * 1000
                                 : parseFloat(ing.scaled_amount || 0);
                               totalMl += scaledMl;
                               
-                              const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
+                              const matchingSpirit = findSpirit(ing.ingredient_name);
                               let bottles = 0;
                               let leftoverMl = 0;
                               
