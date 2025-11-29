@@ -1035,13 +1035,13 @@ const BatchCalculator = () => {
 
           <TabsContent value="calculator" className="space-y-4 sm:space-y-6 pb-4">
             <Card className="glass p-4 sm:p-6 space-y-4 sm:space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex flex-col gap-3">
                 <h3 className="text-base sm:text-lg font-semibold">Quick Production</h3>
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={() => navigate("/batch-recipes")}
-                  className="glass-hover w-full sm:w-auto"
+                  className="glass-hover w-full py-6"
+                  size="lg"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Recipe
@@ -1055,27 +1055,37 @@ const BatchCalculator = () => {
                     value={selectedRecipeId || ""} 
                     onValueChange={(value) => {
                       setSelectedRecipeId(value);
-                      const recipe = recipes?.find(r => r.id === value);
-                      if (recipe) {
-                        setRecipeName(recipe.recipe_name);
-                        setBatchDescription(recipe.description || "");
-                        setCurrentServes(String(recipe.current_serves));
-                        setIngredients(Array.isArray(recipe.ingredients) 
-                          ? recipe.ingredients.map((ing: any) => ({
-                              id: ing.id || `${Date.now()}-${Math.random()}`,
-                              name: ing.name || "",
-                              amount: String(ing.amount || ""),
-                              unit: ing.unit || "ml"
-                            }))
-                          : [{ id: "1", name: "", amount: "", unit: "ml" }]
-                        );
+                      if (value === "all") {
+                        // Clear form fields for "All" option
+                        setRecipeName("");
+                        setBatchDescription("");
+                        setCurrentServes("");
+                        setIngredients([{ id: "1", name: "", amount: "", unit: "ml" }]);
+                        setTargetLiters("");
+                      } else {
+                        const recipe = recipes?.find(r => r.id === value);
+                        if (recipe) {
+                          setRecipeName(recipe.recipe_name);
+                          setBatchDescription(recipe.description || "");
+                          setCurrentServes(String(recipe.current_serves));
+                          setIngredients(Array.isArray(recipe.ingredients) 
+                            ? recipe.ingredients.map((ing: any) => ({
+                                id: ing.id || `${Date.now()}-${Math.random()}`,
+                                name: ing.name || "",
+                                amount: String(ing.amount || ""),
+                                unit: ing.unit || "ml"
+                              }))
+                            : [{ id: "1", name: "", amount: "", unit: "ml" }]
+                          );
+                        }
                       }
                     }}
                   >
-                    <SelectTrigger className="glass bg-background/80 backdrop-blur-sm">
+                    <SelectTrigger className="glass bg-background/80 backdrop-blur-sm h-12">
                       <SelectValue placeholder="Choose a saved recipe" />
                     </SelectTrigger>
                     <SelectContent className="bg-background/95 backdrop-blur-sm z-[100]">
+                      <SelectItem value="all">All Batches</SelectItem>
                       {recipes && recipes.length > 0 ? (
                         recipes.map((recipe) => (
                           <SelectItem key={recipe.id} value={recipe.id}>
@@ -1091,7 +1101,18 @@ const BatchCalculator = () => {
                   </Select>
                 </div>
 
-                {selectedRecipeId && (
+                {selectedRecipeId === "all" && (
+                  <Button 
+                    onClick={downloadAllBatchesReport} 
+                    className="w-full py-6"
+                    size="lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Download All Batches Report
+                  </Button>
+                )}
+
+                {selectedRecipeId && selectedRecipeId !== "all" && (
                   <>
                     <div className="space-y-2">
                       <Label>Target Liters *</Label>
@@ -1144,7 +1165,7 @@ const BatchCalculator = () => {
 
                     <Button 
                       onClick={handleSubmitBatch} 
-                      className="w-full"
+                      className="w-full py-6"
                       size="lg"
                       disabled={!targetLiters}
                     >
@@ -1159,7 +1180,7 @@ const BatchCalculator = () => {
 
           <TabsContent value="history" className="space-y-4 pb-4">
             <Card className="glass p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div className="flex flex-col gap-4 mb-6">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <History className="w-5 h-5" />
                   Production History
@@ -1168,10 +1189,11 @@ const BatchCalculator = () => {
                   <Button
                     variant="default"
                     onClick={downloadAllBatchesReport}
-                    className="flex items-center gap-2 w-full sm:w-auto"
+                    className="w-full py-6"
+                    size="lg"
                   >
-                    <Download className="w-4 h-4" />
-                    <span className="truncate">Download All Batches Report</span>
+                    <Download className="w-5 h-5 mr-2" />
+                    Download All Batches Report
                   </Button>
                 )}
               </div>
