@@ -86,9 +86,47 @@ export const useMixologistGroups = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['group-members'] });
       toast.success("Member added!");
+
+      // Notify all existing group members about new member
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: inviterProfile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', user?.id)
+        .single();
+
+      const { data: newMemberProfile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', data.user_id)
+        .single();
+
+      const { data: groupInfo } = await supabase
+        .from('mixologist_groups')
+        .select('name')
+        .eq('id', data.group_id)
+        .single();
+
+      const { data: members } = await supabase
+        .from('mixologist_group_members')
+        .select('user_id')
+        .eq('group_id', data.group_id)
+        .neq('user_id', user?.id || '')
+        .neq('user_id', data.user_id);
+
+      if (members && inviterProfile && newMemberProfile && groupInfo) {
+        for (const member of members) {
+          await supabase.from('notifications').insert({
+            user_id: member.user_id,
+            type: 'member_added',
+            content: `${inviterProfile.username} added ${newMemberProfile.username} to ${groupInfo.name}`,
+            read: false
+          });
+        }
+      }
     },
     onError: (error) => {
       toast.error("Failed to add member: " + error.message);

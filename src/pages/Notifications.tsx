@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, Calendar, CalendarCheck, Settings, Package } from "lucide-react";
+import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, Calendar, CalendarCheck, Settings, Package, FlaskConical, ClipboardList, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
@@ -239,6 +239,16 @@ const Notifications = () => {
         return <Settings className="w-5 h-5 text-orange-500" />;
       case 'stock_alert':
         return <Package className="w-5 h-5 text-red-500" />;
+      case 'batch_submission':
+        return <FlaskConical className="w-5 h-5 text-blue-500" />;
+      case 'batch_edit':
+        return <ClipboardList className="w-5 h-5 text-yellow-500" />;
+      case 'batch_delete':
+        return <Trash2 className="w-5 h-5 text-red-500" />;
+      case 'recipe_created':
+        return <ClipboardList className="w-5 h-5 text-green-500" />;
+      case 'member_added':
+        return <Users className="w-5 h-5 text-cyan-500" />;
       default:
         return <Bell className="w-5 h-5 text-primary" />;
     }
@@ -269,6 +279,12 @@ const Notifications = () => {
     } else if (notification.type === 'internal_email') {
       // Internal email notification → open email page
       navigate('/email');
+    } else if (notification.type === 'batch_submission' || notification.type === 'batch_edit' || notification.type === 'batch_delete' || notification.type === 'recipe_created') {
+      // Batch-related notifications → open batch calculator
+      navigate('/batch-calculator');
+    } else if (notification.type === 'member_added') {
+      // Member added → open batch calculator groups tab
+      navigate('/batch-calculator');
     } else if (notification.type === 'follow' || notification.type === 'unfollow') {
       // For follow/unfollow notifications, navigate to the user's profile
       if (notification.reference_user_id) {
