@@ -1504,7 +1504,7 @@ const BatchCalculator = () => {
           const scaledMl = parseFloat(ing.scaled_amount || 0);
           batchTotalMl += scaledMl;
           
-          const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
+          const matchingSpirit = spirits ? findMatchingSpirit(ing.ingredient_name, spirits) : null;
           let bottles = 0;
           let leftoverMl = 0;
           
@@ -1675,7 +1675,7 @@ const BatchCalculator = () => {
             
             batchIngredients.forEach((ing: any) => {
               const scaledMl = parseFloat(ing.scaled_amount || 0);
-              const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
+              const matchingSpirit = spirits ? findMatchingSpirit(ing.ingredient_name, spirits) : null;
               
               const existing = batchBottleData.get(ing.ingredient_name);
               if (existing) {
@@ -1793,7 +1793,7 @@ const BatchCalculator = () => {
           const scaledMl = parseFloat(ing.scaled_amount || 0);
           grandTotalMl += scaledMl;
           
-          const matchingSpirit = spirits.find(s => s.name === ing.ingredient_name);
+          const matchingSpirit = findMatchingSpirit(ing.ingredient_name, spirits);
           if (matchingSpirit && matchingSpirit.bottle_size_ml) {
             const bottles = Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
             grandTotalBottles += bottles;
@@ -2368,6 +2368,16 @@ const BatchCalculator = () => {
     }
   };
 
+  // Normalize name for fuzzy matching
+  const normalizeName = (name: string) => {
+    return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  };
+
+  const findMatchingSpirit = (ingredientName: string, spiritsList: any[]) => {
+    const normalized = normalizeName(ingredientName);
+    return spiritsList.find(s => normalizeName(s.name).includes(normalized) || normalized.includes(normalizeName(s.name)));
+  };
+
   const handleCreateGroup = async () => {
     if (!newGroupName) {
       toast.error("Please enter a group name");
@@ -2839,7 +2849,7 @@ const BatchCalculator = () => {
                               const scaledMl = parseFloat(ing.scaled_amount || 0);
                               totalMl += scaledMl;
                               
-                              const matchingSpirit = spirits?.find(s => s.name === ing.ingredient_name);
+                              const matchingSpirit = spirits ? findMatchingSpirit(ing.ingredient_name, spirits) : null;
                               let bottles = 0;
                               let leftoverMl = 0;
                               
