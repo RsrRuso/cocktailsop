@@ -1053,40 +1053,27 @@ const BatchCalculator = () => {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
-        doc.text("REQUIRED ML", 15, yPos + 4.5);
+        doc.text("Required ML (from partial bottles):", 15, yPos + 4.5);
         yPos += 8;
         
         if (requiredMlItems.length > 0) {
-          doc.setFillColor(...slate);
-          doc.rect(12, yPos, 186, 6, 'F');
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(255, 255, 255);
-          doc.text("Ingredient", 14, yPos + 4);
-          doc.text("ML Needed", 135, yPos + 4);
-          yPos += 7;
-          
           doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          
           requiredMlItems.forEach((item, idx) => {
             if (yPos > 270) {
               doc.addPage();
               yPos = 20;
             }
             
-            if (idx % 2 === 0) {
-              doc.setFillColor(249, 250, 251);
-              doc.rect(12, yPos, 186, 5.5, 'F');
-            }
-            
-            doc.setFontSize(7);
-            doc.setTextColor(...slate);
-            const maxNameLength = 42;
-            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
-            doc.text(displayName, 14, yPos + 3.5);
-            
             doc.setTextColor(...amber);
+            const maxNameLength = 80;
+            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
+            doc.text(`${displayName}:`, 14, yPos + 3.5);
+            
             doc.setFont('helvetica', 'bold');
-            doc.text(item.mlNeeded.toFixed(0) + " ml", 135, yPos + 3.5);
+            doc.text(`${item.mlNeeded.toFixed(0)} ml`, 195, yPos + 3.5, { align: 'right' });
+            doc.setFont('helvetica', 'normal');
             
             yPos += 5.5;
           });
@@ -1264,40 +1251,27 @@ const BatchCalculator = () => {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
-        doc.text("OVERALL REQUIRED ML", 15, yPos + 4.5);
+        doc.text("Overall Required ML (from partial bottles):", 15, yPos + 4.5);
         yPos += 8;
         
         if (overallRequiredMlItems.length > 0) {
-          doc.setFillColor(...slate);
-          doc.rect(12, yPos, 186, 6, 'F');
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(255, 255, 255);
-          doc.text("Ingredient", 14, yPos + 4);
-          doc.text("ML Needed", 135, yPos + 4);
-          yPos += 7;
-          
           doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          
           overallRequiredMlItems.forEach((item, idx) => {
             if (yPos > 270) {
               doc.addPage();
               yPos = 20;
             }
             
-            if (idx % 2 === 0) {
-              doc.setFillColor(249, 250, 251);
-              doc.rect(12, yPos, 186, 6, 'F');
-            }
-            
-            doc.setFontSize(7);
-            doc.setTextColor(...slate);
-            const maxNameLength = 45;
-            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
-            doc.text(displayName, 14, yPos + 4);
-            
             doc.setTextColor(...amber);
+            const maxNameLength = 75;
+            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
+            doc.text(`${displayName}:`, 14, yPos + 4);
+            
             doc.setFont('helvetica', 'bold');
-            doc.text(item.mlNeeded.toFixed(0) + " ml", 135, yPos + 4);
+            doc.text(`${item.mlNeeded.toFixed(0)} ml`, 195, yPos + 4, { align: 'right' });
+            doc.setFont('helvetica', 'normal');
             
             yPos += 6;
           });
@@ -2152,42 +2126,27 @@ const BatchCalculator = () => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
-        doc.text("REQUIRED ML (FROM PARTIAL BOTTLES)", 15, yPos + 3.5);
+        doc.text("Required ML (from partial bottles):", 15, yPos + 3.5);
         yPos += 7;
         
-        doc.setTextColor(...slate);
-        doc.setFontSize(6);
-        
-        doc.setFont("helvetica", "bold");
-        doc.setFillColor(...amber);
-        doc.rect(12, yPos - 1.5, 186, 4, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.text("#", 14, yPos + 1.5);
-        doc.text("Ingredient", 22, yPos + 1.5);
-        doc.text("ML Needed", 160, yPos + 1.5);
-        yPos += 5;
-        
+        doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
+        
         requiredMlItems.forEach((item, index) => {
           if (yPos > 280) {
             doc.addPage();
             yPos = 15;
           }
           
-          if (index % 2 === 0) {
-            doc.setFillColor(...lightGray);
-            doc.rect(12, yPos - 1.5, 186, 3.5, 'F');
-          }
-          
-          doc.setTextColor(...slate);
-          doc.text(`${index + 1}`, 14, yPos + 1.5);
-          const displayName = item.name.length > 60 ? item.name.substring(0, 60) + '...' : item.name;
-          doc.text(displayName, 22, yPos + 1.5);
           doc.setTextColor(...amber);
+          const displayName = item.name.length > 80 ? item.name.substring(0, 80) + '...' : item.name;
+          doc.text(`${displayName}:`, 15, yPos + 1.5);
+          
           doc.setFont("helvetica", "bold");
-          doc.text(`${item.mlNeeded.toFixed(0)} ml`, 160, yPos + 1.5);
+          doc.text(`${item.mlNeeded.toFixed(0)} ml`, 190, yPos + 1.5, { align: 'right' });
           doc.setFont("helvetica", "normal");
-          yPos += 3.5;
+          
+          yPos += 4;
         });
         
         yPos += 5;
@@ -2206,42 +2165,27 @@ const BatchCalculator = () => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
-        doc.text("LEFTOVER IN BOTTLES", 15, yPos + 3.5);
+        doc.text("Leftover in Bottles:", 15, yPos + 3.5);
         yPos += 7;
         
-        doc.setTextColor(...slate);
-        doc.setFontSize(6);
-        
-        doc.setFont("helvetica", "bold");
-        doc.setFillColor(...skyBlue);
-        doc.rect(12, yPos - 1.5, 186, 4, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.text("#", 14, yPos + 1.5);
-        doc.text("Ingredient", 22, yPos + 1.5);
-        doc.text("ML Remaining", 155, yPos + 1.5);
-        yPos += 5;
-        
+        doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
+        
         leftoverInBottlesItems.forEach((item, index) => {
           if (yPos > 280) {
             doc.addPage();
             yPos = 15;
           }
           
-          if (index % 2 === 0) {
-            doc.setFillColor(...lightGray);
-            doc.rect(12, yPos - 1.5, 186, 3.5, 'F');
-          }
-          
-          doc.setTextColor(...slate);
-          doc.text(`${index + 1}`, 14, yPos + 1.5);
-          const displayName = item.name.length > 60 ? item.name.substring(0, 60) + '...' : item.name;
-          doc.text(displayName, 22, yPos + 1.5);
           doc.setTextColor(...skyBlue);
+          const displayName = item.name.length > 70 ? item.name.substring(0, 70) + '...' : item.name;
+          doc.text(`${displayName}:`, 15, yPos + 1.5);
+          
           doc.setFont("helvetica", "bold");
-          doc.text(`${item.mlLeftover.toFixed(0)} ml`, 155, yPos + 1.5);
+          doc.text(`${item.mlLeftover.toFixed(0)} ml remaining`, 190, yPos + 1.5, { align: 'right' });
           doc.setFont("helvetica", "normal");
-          yPos += 3.5;
+          
+          yPos += 4;
         });
         
         yPos += 5;
