@@ -3048,20 +3048,20 @@ const BatchCalculator = () => {
 
           <TabsContent value="analytics" className="space-y-4 pb-4">
             {selectedGroupId && (
-              <Card className="glass p-4 border-primary/50 mb-4">
+              <Card className="bg-gradient-to-br from-primary/20 via-accent/10 to-primary/10 backdrop-blur-xl p-4 border-primary/50 mb-4 shadow-2xl">
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-primary" />
-                  <p className="text-sm">
-                    Viewing group data: <span className="font-semibold">{groups?.find(g => g.id === selectedGroupId)?.name}</span>
+                  <p className="text-sm text-foreground/90">
+                    Viewing group data: <span className="font-semibold text-foreground">{groups?.find(g => g.id === selectedGroupId)?.name}</span>
                   </p>
                 </div>
               </Card>
             )}
-            <Card className="glass p-4 sm:p-6">
+            <Card className="bg-gradient-to-br from-[hsl(0,0%,15%)] via-[hsl(0,0%,18%)] to-[hsl(0,0%,20%)] backdrop-blur-xl p-4 sm:p-6 border-border/30 shadow-2xl">
               <div className="flex flex-col gap-4 mb-6">
                 <div className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" />
-                  <h3 className="text-base sm:text-lg font-semibold">Production Analytics</h3>
+                  <BarChart3 className="w-6 h-6 text-primary" />
+                  <h3 className="text-lg sm:text-xl font-bold text-foreground">Production Analytics</h3>
                 </div>
                 
                 {productions && productions.length > 0 && (
@@ -3085,19 +3085,19 @@ const BatchCalculator = () => {
                 <div className="space-y-4 sm:space-y-6">
                   {/* Key Metrics */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                    <div className="glass p-4 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Total Batches</p>
-                      <p className="text-3xl font-bold text-primary">{productions.length}</p>
+                    <div className="bg-gradient-to-br from-primary/20 to-primary/5 backdrop-blur-sm p-5 rounded-xl border border-primary/30 shadow-lg hover:shadow-primary/20 transition-all">
+                      <p className="text-xs sm:text-sm text-foreground/70 font-medium mb-2">Total Batches</p>
+                      <p className="text-3xl sm:text-4xl font-black text-primary drop-shadow-lg">{productions.length}</p>
                     </div>
-                    <div className="glass p-4 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Total Liters</p>
-                      <p className="text-3xl font-bold text-primary">
+                    <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 backdrop-blur-sm p-5 rounded-xl border border-emerald-500/30 shadow-lg hover:shadow-emerald-500/20 transition-all">
+                      <p className="text-xs sm:text-sm text-foreground/70 font-medium mb-2">Total Liters</p>
+                      <p className="text-3xl sm:text-4xl font-black text-emerald-400 drop-shadow-lg">
                         {productions.reduce((sum, p) => sum + p.target_liters, 0).toFixed(1)} L
                       </p>
                     </div>
-                    <div className="glass p-4 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Total Servings</p>
-                      <p className="text-3xl font-bold text-primary">
+                    <div className="bg-gradient-to-br from-amber-500/20 to-amber-500/5 backdrop-blur-sm p-5 rounded-xl border border-amber-500/30 shadow-lg hover:shadow-amber-500/20 transition-all">
+                      <p className="text-xs sm:text-sm text-foreground/70 font-medium mb-2">Total Servings</p>
+                      <p className="text-3xl sm:text-4xl font-black text-amber-400 drop-shadow-lg">
                         {productions.reduce((sum, p) => sum + (p.target_serves || 0), 0)}
                       </p>
                     </div>
@@ -3105,35 +3105,35 @@ const BatchCalculator = () => {
 
                   {/* Average & Forecast Metrics */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                    <div className="glass p-4 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Avg Batch Size</p>
-                      <p className="text-2xl font-bold text-primary">
+                    <div className="bg-[hsl(0,0%,25%)] backdrop-blur-sm p-4 rounded-xl border border-border/40 shadow-md hover:bg-[hsl(0,0%,28%)] transition-all">
+                      <p className="text-xs sm:text-sm text-foreground/60 font-medium mb-2">Avg Batch Size</p>
+                      <p className="text-xl sm:text-2xl font-bold text-primary">
                         {(productions.reduce((sum, p) => sum + p.target_liters, 0) / productions.length).toFixed(2)} L
                       </p>
                     </div>
-                    <div className="glass p-4 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Avg Servings</p>
-                      <p className="text-2xl font-bold text-primary">
+                    <div className="bg-[hsl(0,0%,25%)] backdrop-blur-sm p-4 rounded-xl border border-border/40 shadow-md hover:bg-[hsl(0,0%,28%)] transition-all">
+                      <p className="text-xs sm:text-sm text-foreground/60 font-medium mb-2">Avg Servings</p>
+                      <p className="text-xl sm:text-2xl font-bold text-primary">
                         {Math.round(productions.reduce((sum, p) => sum + (p.target_serves || 0), 0) / productions.length)}
                       </p>
                     </div>
-                    <div className="glass p-4 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Daily Average</p>
-                      <p className="text-2xl font-bold text-primary">
+                    <div className="bg-[hsl(0,0%,25%)] backdrop-blur-sm p-4 rounded-xl border border-border/40 shadow-md hover:bg-[hsl(0,0%,28%)] transition-all">
+                      <p className="text-xs sm:text-sm text-foreground/60 font-medium mb-2">Daily Average</p>
+                      <p className="text-xl sm:text-2xl font-bold text-primary">
                         {(productions.reduce((sum, p) => sum + p.target_liters, 0) / 7).toFixed(2)} L
                       </p>
                     </div>
-                    <div className="glass p-4 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Forecast Par</p>
-                      <p className="text-2xl font-bold text-primary">
+                    <div className="bg-[hsl(0,0%,25%)] backdrop-blur-sm p-4 rounded-xl border border-border/40 shadow-md hover:bg-[hsl(0,0%,28%)] transition-all">
+                      <p className="text-xs sm:text-sm text-foreground/60 font-medium mb-2">Forecast Par</p>
+                      <p className="text-xl sm:text-2xl font-bold text-primary">
                         {Math.round(productions.reduce((sum, p) => sum + p.target_liters, 0) / 7)} L
                       </p>
                     </div>
                   </div>
 
                   {/* Production Breakdown */}
-                  <div className="glass p-4 rounded-lg">
-                    <h4 className="font-semibold mb-3">Production by Recipe</h4>
+                  <div className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
+                    <h4 className="font-bold text-base sm:text-lg mb-4 text-foreground">Production by Recipe</h4>
                     <div className="space-y-3">
                       {Object.entries(
                         productions.reduce((acc, prod) => {
@@ -3164,8 +3164,8 @@ const BatchCalculator = () => {
                   </div>
 
                   {/* Forecast Analytics by Batch Type */}
-                  <div className="glass p-4 rounded-lg">
-                    <h4 className="font-semibold mb-4">Forecast Analytics - Suggested Par Levels</h4>
+                  <div className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
+                    <h4 className="font-bold text-base sm:text-lg mb-4 text-foreground">Forecast Analytics - Suggested Par Levels</h4>
                     <div className="space-y-4">
                       {Object.entries(
                         productions.reduce((acc, prod) => {
@@ -3320,8 +3320,8 @@ const BatchCalculator = () => {
                   </div>
 
                   {/* Date Range */}
-                  <div className="glass p-4 rounded-lg">
-                    <h4 className="font-semibold mb-3">Production Period</h4>
+                  <div className="bg-[hsl(0,0%,22%)] backdrop-blur-sm p-5 rounded-xl border border-border/40 shadow-xl">
+                    <h4 className="font-bold text-base sm:text-lg mb-4 text-foreground">Production Period</h4>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground">First Batch</p>
