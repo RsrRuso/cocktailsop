@@ -2500,6 +2500,48 @@ const BatchCalculator = () => {
                 </Button>
               </div>
 
+              {/* Saved Recipes Section */}
+              {recipes && recipes.length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-border">
+                  <h3 className="text-base sm:text-lg font-semibold">Saved Recipes</h3>
+                  <div className="space-y-2">
+                    {recipes.map((recipe) => (
+                      <Card key={recipe.id} className="p-3 glass hover:bg-accent/10 transition-colors">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold truncate">{recipe.recipe_name}</h4>
+                            {recipe.description && (
+                              <p className="text-sm text-muted-foreground truncate">{recipe.description}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {recipe.current_serves} serves • {recipe.ingredients?.length || 0} ingredients
+                            </p>
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditRecipe(recipe)}
+                              className="glass-hover"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteRecipe(recipe.id)}
+                              className="glass-hover text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
                 <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Select Saved Recipe *</Label>
