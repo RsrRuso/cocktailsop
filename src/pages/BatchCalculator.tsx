@@ -2964,6 +2964,114 @@ const BatchCalculator = () => {
                 </p>
               ) : (
                  <div className="space-y-4">
+                  {/* Aggregated Consumption Card */}
+                  {(() => {
+                    const AggregatedConsumption = () => {
+                      const [aggregatedData, setAggregatedData] = useState<Map<string, {
+                        totalMl: number;
+                        totalBottles: number;
+                        totalLeftoverMl: number;
+                        totalUsedMl: number;
+                      }> | null>(null);
+
+                      useEffect(() => {
+                        const loadAggregatedData = async () => {
+                          const ingredientMap = new Map<string, {
+                            totalMl: number;
+                            totalBottles: number;
+                            totalLeftoverMl: number;
+                            totalUsedMl: number;
+                          }>();
+
+                          for (const production of productions) {
+                            try {
+                              const ingredients = await getProductionIngredients(production.id);
+                              if (!ingredients) continue;
+
+                              ingredients.forEach((ing: any) => {
+                                const scaledMl = parseFloat(ing.scaled_amount || 0);
+                                const matchingSpirit = spirits ? findMatchingSpirit(ing.ingredient_name, spirits) : null;
+                                
+                                let bottles = 0;
+                                let partialMl = 0;
+                                let leftoverMl = 0;
+
+                                if (matchingSpirit && matchingSpirit.bottle_size_ml) {
+                                  bottles = Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
+                                  partialMl = scaledMl % matchingSpirit.bottle_size_ml;
+                                  leftoverMl = partialMl > 0 ? matchingSpirit.bottle_size_ml - partialMl : 0;
+                                }
+
+                                const existing = ingredientMap.get(ing.ingredient_name) || {
+                                  totalMl: 0,
+                                  totalBottles: 0,
+                                  totalLeftoverMl: 0,
+                                  totalUsedMl: 0
+                                };
+
+                                ingredientMap.set(ing.ingredient_name, {
+                                  totalMl: existing.totalMl + scaledMl,
+                                  totalBottles: existing.totalBottles + bottles,
+                                  totalLeftoverMl: existing.totalLeftoverMl + leftoverMl,
+                                  totalUsedMl: existing.totalUsedMl + partialMl
+                                });
+                              });
+                            } catch (error) {
+                              console.error('Error loading ingredients for aggregation:', error);
+                            }
+                          }
+
+                          setAggregatedData(ingredientMap);
+                        };
+
+                        loadAggregatedData();
+                      }, [productions]);
+
+                      if (!aggregatedData || aggregatedData.size === 0) return null;
+
+                      const sortedEntries = Array.from(aggregatedData.entries()).sort((a, b) => 
+                        a[0].localeCompare(b[0])
+                      );
+
+                      return (
+                        <Card className="p-4 glass border-primary/30 mb-6">
+                          <div className="flex items-center gap-2 mb-4">
+                            <BarChart3 className="w-5 h-5 text-primary" />
+                            <h4 className="font-bold text-lg">Overall Consumption by Ingredient</h4>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            {sortedEntries.map(([name, data]) => (
+                              <div key={name} className="bg-muted/30 p-3 rounded-lg">
+                                <div className="font-semibold mb-2 text-foreground">{name}</div>
+                                <div className="grid grid-cols-4 gap-3 text-sm">
+                                  <div className="text-center p-2 bg-primary/10 rounded">
+                                    <p className="text-xs text-muted-foreground mb-1">Total ML</p>
+                                    <p className="font-bold text-primary">{data.totalMl.toFixed(0)}</p>
+                                  </div>
+                                  <div className="text-center p-2 bg-emerald-500/10 rounded">
+                                    <p className="text-xs text-muted-foreground mb-1">Used Bottles</p>
+                                    <p className="font-bold text-emerald-600">{data.totalBottles} btl</p>
+                                  </div>
+                                  <div className="text-center p-2 bg-amber-500/10 rounded">
+                                    <p className="text-xs text-muted-foreground mb-1">Used ML</p>
+                                    <p className="font-bold text-amber-600">{data.totalUsedMl.toFixed(0)} ml</p>
+                                  </div>
+                                  <div className="text-center p-2 bg-blue-500/10 rounded">
+                                    <p className="text-xs text-muted-foreground mb-1">Leftover ML</p>
+                                    <p className="font-bold text-blue-600">{data.totalLeftoverMl.toFixed(0)} ml</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </Card>
+                      );
+                    };
+
+                    return <AggregatedConsumption />;
+                  })()}
+
                   {productions.map((production) => {
                     // Component for each production with ingredient data
                     const ProductionCard = () => {
