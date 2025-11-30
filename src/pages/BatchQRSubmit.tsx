@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Check } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -26,6 +27,8 @@ const BatchQRSubmit = () => {
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>("");
   const [producedByName, setProducedByName] = useState("");
   const [targetLiters, setTargetLiters] = useState("");
+  const [targetServings, setTargetServings] = useState("");
+  const [submissionMode, setSubmissionMode] = useState<"liters" | "servings">("liters");
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -81,7 +84,8 @@ const BatchQRSubmit = () => {
   };
 
   const handleSubmit = async () => {
-    if (!producedByName || !targetLiters || !selectedRecipeId) {
+    const hasRequiredInput = submissionMode === "liters" ? targetLiters : targetServings;
+    if (!producedByName || !hasRequiredInput || !selectedRecipeId) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -94,11 +98,26 @@ const BatchQRSubmit = () => {
         return;
       }
 
-      const liters = parseFloat(targetLiters);
-      const multiplier = (liters * 1000) / recipe.ingredients.reduce(
-        (sum: number, ing: any) => sum + parseFloat(ing.amount || 0),
-        0
-      );
+      let liters: number;
+      let servings: number;
+      let multiplier: number;
+
+      if (submissionMode === "liters") {
+        liters = parseFloat(targetLiters);
+        multiplier = (liters * 1000) / recipe.ingredients.reduce(
+          (sum: number, ing: any) => sum + parseFloat(ing.amount || 0),
+          0
+        );
+        servings = parseFloat(recipe.current_serves) * multiplier;
+      } else {
+        servings = parseFloat(targetServings);
+        multiplier = servings / parseFloat(recipe.current_serves);
+        const totalMl = recipe.ingredients.reduce(
+          (sum: number, ing: any) => sum + parseFloat(ing.amount || 0),
+          0
+        ) * multiplier;
+        liters = totalMl / 1000;
+      }
 
       const scaledIngredients = recipe.ingredients.map((ing: any) => ({
         ingredient_name: ing.name,
@@ -107,13 +126,13 @@ const BatchQRSubmit = () => {
         unit: ing.unit,
       }));
 
-      const actualServings = parseFloat(recipe.current_serves) * multiplier;
+      const actualServings = Math.round(servings);
 
       const qrCodeData = JSON.stringify({
         batchName: recipe.recipe_name,
         date: new Date().toISOString(),
         liters: liters.toFixed(2),
-        servings: Math.round(actualServings),
+        servings: actualServings,
         producedBy: producedByName,
         ingredients: scaledIngredients,
       });
@@ -123,7 +142,7 @@ const BatchQRSubmit = () => {
         .insert({
           recipe_id: selectedRecipeId,
           batch_name: recipe.recipe_name,
-          target_serves: Math.round(actualServings),
+          target_serves: actualServings,
           target_liters: liters,
           production_date: new Date().toISOString(),
           produced_by_name: producedByName,
@@ -153,6 +172,7 @@ const BatchQRSubmit = () => {
       toast.success("Batch production submitted successfully!");
       setSelectedRecipeId("");
       setTargetLiters("");
+      setTargetServings("");
       setNotes("");
     } catch (error) {
       console.error("Error submitting batch:", error);
@@ -259,31 +279,62 @@ const BatchQRSubmit = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Target Liters *</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={targetLiters}
-                onChange={(e) => setTargetLiters(e.target.value)}
-                placeholder="e.g., 1.5"
-                className="glass"
-              />
-              <p className="text-xs text-muted-foreground">
-                How many liters are you producing?
-              </p>
+              <Label>Production Mode</Label>
+              <Tabs value={submissionMode} onValueChange={(v) => setSubmissionMode(v as "liters" | "servings")}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="liters">By Liters</TabsTrigger>
+                  <TabsTrigger value="servings">By Servings</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
-            {targetLiters && selectedRecipe && (
+            {submissionMode === "liters" ? (
+              <div className="space-y-2">
+                <Label>Target Liters *</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={targetLiters}
+                  onChange={(e) => setTargetLiters(e.target.value)}
+                  placeholder="e.g., 1.5"
+                  className="glass"
+                />
+                <p className="text-xs text-muted-foreground">
+                  How many liters are you producing?
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Target Servings *</Label>
+                <Input
+                  type="number"
+                  step="1"
+                  value={targetServings}
+                  onChange={(e) => setTargetServings(e.target.value)}
+                  placeholder="e.g., 50"
+                  className="glass"
+                />
+                <p className="text-xs text-muted-foreground">
+                  How many servings are you producing?
+                </p>
+              </div>
+            )}
+
+            {((submissionMode === "liters" && targetLiters) || (submissionMode === "servings" && targetServings)) && selectedRecipe && (
               <div className="glass p-4 rounded-lg">
                 <p className="text-sm font-medium mb-2">Scaled Ingredients:</p>
                 <div className="space-y-1">
                   {selectedRecipe.ingredients.map((ing: any, idx: number) => {
-                    const multiplier =
-                      (parseFloat(targetLiters) * 1000) /
-                      selectedRecipe.ingredients.reduce(
-                        (sum: number, i: any) => sum + parseFloat(i.amount || 0),
-                        0
-                      );
+                    let multiplier: number;
+                    if (submissionMode === "liters") {
+                      multiplier = (parseFloat(targetLiters) * 1000) /
+                        selectedRecipe.ingredients.reduce(
+                          (sum: number, i: any) => sum + parseFloat(i.amount || 0),
+                          0
+                        );
+                    } else {
+                      multiplier = parseFloat(targetServings) / parseFloat(selectedRecipe.current_serves);
+                    }
                     const scaled = (parseFloat(ing.amount) * multiplier).toFixed(2);
                     return (
                       <div
@@ -298,6 +349,14 @@ const BatchQRSubmit = () => {
                     );
                   })}
                 </div>
+                {submissionMode === "servings" && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    ≈ {((parseFloat(targetServings) / parseFloat(selectedRecipe.current_serves)) * 
+                      selectedRecipe.ingredients.reduce(
+                        (sum: number, i: any) => sum + parseFloat(i.amount || 0), 0
+                      ) / 1000).toFixed(2)} liters
+                  </p>
+                )}
               </div>
             )}
 
@@ -315,7 +374,7 @@ const BatchQRSubmit = () => {
               onClick={handleSubmit}
               className="w-full py-6"
               size="lg"
-              disabled={submitting || !producedByName || !targetLiters || !selectedRecipeId}
+              disabled={submitting || !producedByName || (!targetLiters && !targetServings) || !selectedRecipeId}
             >
               {submitting ? (
                 <>
