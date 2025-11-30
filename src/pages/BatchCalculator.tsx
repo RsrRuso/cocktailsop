@@ -842,7 +842,13 @@ const BatchCalculator = () => {
       doc.text(producerName.length > 25 ? producerName.substring(0, 25) + '...' : producerName, 38, yPos + 36);
       
       // Right card - QR Code Sticker
-      if (production.qr_code_data) {
+      if (production) {
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+        const qrContent =
+          production.qr_code_data && production.qr_code_data.startsWith('http')
+            ? production.qr_code_data
+            : `${baseUrl}/batch-view/${production.id}`;
+
         doc.setFillColor(255, 255, 255);
         doc.roundedRect(110, yPos, 88, 38, 3, 3, 'F');
         doc.setDrawColor(...skyBlue);
@@ -859,7 +865,7 @@ const BatchCalculator = () => {
         doc.text("WATERPROOF STICKER", 154, yPos + 4.5, { align: 'center' });
         
         // High-res QR for sticker printing
-        const qrCodeDataUrl = await QRCode.toDataURL(production.qr_code_data, {
+        const qrCodeDataUrl = await QRCode.toDataURL(qrContent, {
           width: 1000,
           margin: 1,
           color: {
