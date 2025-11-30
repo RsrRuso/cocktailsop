@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Check } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -28,7 +27,6 @@ const BatchQRSubmit = () => {
   const [producedByName, setProducedByName] = useState("");
   const [targetLiters, setTargetLiters] = useState("");
   const [targetServings, setTargetServings] = useState("");
-  const [submissionMode, setSubmissionMode] = useState<"liters" | "servings">("liters");
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -84,8 +82,7 @@ const BatchQRSubmit = () => {
   };
 
   const handleSubmit = async () => {
-    const hasRequiredInput = submissionMode === "liters" ? targetLiters : targetServings;
-    if (!producedByName || !hasRequiredInput || !selectedRecipeId) {
+    if (!producedByName || (!targetLiters && !targetServings) || !selectedRecipeId) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -98,11 +95,12 @@ const BatchQRSubmit = () => {
         return;
       }
 
+      // Use whichever value is provided (liters or servings)
       let liters: number;
       let servings: number;
       let multiplier: number;
 
-      if (submissionMode === "liters") {
+      if (targetLiters) {
         liters = parseFloat(targetLiters);
         multiplier = (liters * 1000) / recipe.ingredients.reduce(
           (sum: number, ing: any) => sum + parseFloat(ing.amount || 0),
@@ -278,63 +276,79 @@ const BatchQRSubmit = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Production Mode</Label>
-              <Tabs value={submissionMode} onValueChange={(v) => setSubmissionMode(v as "liters" | "servings")}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="liters">By Liters</TabsTrigger>
-                  <TabsTrigger value="servings">By Servings</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            {submissionMode === "liters" ? (
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Target Liters *</Label>
+                <Label>Target Liters</Label>
                 <Input
                   type="number"
                   step="0.1"
                   value={targetLiters}
-                  onChange={(e) => setTargetLiters(e.target.value)}
+                  onChange={(e) => {
+                    const litersValue = e.target.value;
+                    setTargetLiters(litersValue);
+                    
+                    // Auto-calculate servings
+                    if (litersValue && selectedRecipe) {
+                      const totalRecipeMl = selectedRecipe.ingredients.reduce(
+                        (sum: number, ing: any) => sum + parseFloat(ing.amount || 0), 0
+                      );
+                      const multiplier = (parseFloat(litersValue) * 1000) / totalRecipeMl;
+                      const calculatedServings = parseFloat(selectedRecipe.current_serves) * multiplier;
+                      setTargetServings(calculatedServings.toFixed(0));
+                    } else {
+                      setTargetServings("");
+                    }
+                  }}
                   placeholder="e.g., 1.5"
                   className="glass"
                 />
                 <p className="text-xs text-muted-foreground">
-                  How many liters are you producing?
+                  Liters to produce
                 </p>
               </div>
-            ) : (
+
               <div className="space-y-2">
-                <Label>Target Servings *</Label>
+                <Label>Target Servings</Label>
                 <Input
                   type="number"
                   step="1"
                   value={targetServings}
-                  onChange={(e) => setTargetServings(e.target.value)}
+                  onChange={(e) => {
+                    const servingsValue = e.target.value;
+                    setTargetServings(servingsValue);
+                    
+                    // Auto-calculate liters
+                    if (servingsValue && selectedRecipe) {
+                      const multiplier = parseFloat(servingsValue) / parseFloat(selectedRecipe.current_serves);
+                      const totalRecipeMl = selectedRecipe.ingredients.reduce(
+                        (sum: number, ing: any) => sum + parseFloat(ing.amount || 0), 0
+                      );
+                      const calculatedLiters = (totalRecipeMl * multiplier) / 1000;
+                      setTargetLiters(calculatedLiters.toFixed(2));
+                    } else {
+                      setTargetLiters("");
+                    }
+                  }}
                   placeholder="e.g., 50"
                   className="glass"
                 />
                 <p className="text-xs text-muted-foreground">
-                  How many servings are you producing?
+                  Servings to produce
                 </p>
               </div>
-            )}
+            </div>
 
-            {((submissionMode === "liters" && targetLiters) || (submissionMode === "servings" && targetServings)) && selectedRecipe && (
+            {(targetLiters || targetServings) && selectedRecipe && (
               <div className="glass p-4 rounded-lg">
                 <p className="text-sm font-medium mb-2">Scaled Ingredients:</p>
                 <div className="space-y-1">
                   {selectedRecipe.ingredients.map((ing: any, idx: number) => {
-                    let multiplier: number;
-                    if (submissionMode === "liters") {
-                      multiplier = (parseFloat(targetLiters) * 1000) /
-                        selectedRecipe.ingredients.reduce(
-                          (sum: number, i: any) => sum + parseFloat(i.amount || 0),
-                          0
-                        );
-                    } else {
-                      multiplier = parseFloat(targetServings) / parseFloat(selectedRecipe.current_serves);
-                    }
+                    const multiplier = targetLiters 
+                      ? (parseFloat(targetLiters) * 1000) / selectedRecipe.ingredients.reduce(
+                          (sum: number, i: any) => sum + parseFloat(i.amount || 0), 0
+                        )
+                      : parseFloat(targetServings) / parseFloat(selectedRecipe.current_serves);
+                    
                     const scaled = (parseFloat(ing.amount) * multiplier).toFixed(2);
                     return (
                       <div
@@ -349,14 +363,6 @@ const BatchQRSubmit = () => {
                     );
                   })}
                 </div>
-                {submissionMode === "servings" && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    ≈ {((parseFloat(targetServings) / parseFloat(selectedRecipe.current_serves)) * 
-                      selectedRecipe.ingredients.reduce(
-                        (sum: number, i: any) => sum + parseFloat(i.amount || 0), 0
-                      ) / 1000).toFixed(2)} liters
-                  </p>
-                )}
               </div>
             )}
 
