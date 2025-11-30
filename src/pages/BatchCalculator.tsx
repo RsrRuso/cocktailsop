@@ -55,6 +55,7 @@ const BatchCalculator = () => {
   ]);
   const [targetBatchSize, setTargetBatchSize] = useState("");
   const [targetLiters, setTargetLiters] = useState("");
+  const [targetServings, setTargetServings] = useState("");
   const [currentServes, setCurrentServes] = useState("1");
   const [producedByName, setProducedByName] = useState("");
   const [producedByUserId, setProducedByUserId] = useState<string>(user?.id || "");
@@ -543,6 +544,7 @@ const BatchCalculator = () => {
     setNotes("");
     setTargetBatchSize("");
     setTargetLiters("");
+    setTargetServings("");
     setEditingProductionId(null);
     
     // Clear ingredients after submission to prevent duplication on next edit
@@ -2649,22 +2651,74 @@ const BatchCalculator = () => {
 
                 {selectedRecipeId && selectedRecipeId !== "all" && (
                   <>
-                    <div className="space-y-2">
-                      <Label>Target Liters *</Label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={targetLiters}
-                        onChange={(e) => {
-                          setTargetLiters(e.target.value);
-                          setTargetBatchSize("");
-                        }}
-                        placeholder="e.g., 1.5"
-                        className="glass"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Enter desired liters to produce
-                      </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Target Liters</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={targetLiters}
+                          onChange={(e) => {
+                            const litersValue = e.target.value;
+                            setTargetLiters(litersValue);
+                            setTargetBatchSize("");
+                            
+                            // Auto-calculate servings when liters is entered
+                            if (litersValue && currentServes) {
+                              const recipe = recipes?.find(r => r.id === selectedRecipeId);
+                              if (recipe) {
+                                const totalRecipeMl = recipe.ingredients.reduce(
+                                  (sum: number, ing: any) => sum + parseFloat(ing.amount || 0), 0
+                                );
+                                const multiplier = (parseFloat(litersValue) * 1000) / totalRecipeMl;
+                                const calculatedServings = parseFloat(currentServes) * multiplier;
+                                setTargetServings(calculatedServings.toFixed(0));
+                              }
+                            } else {
+                              setTargetServings("");
+                            }
+                          }}
+                          placeholder="e.g., 1.5"
+                          className="glass"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Liters to produce
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Target Servings</Label>
+                        <Input
+                          type="number"
+                          step="1"
+                          value={targetServings}
+                          onChange={(e) => {
+                            const servingsValue = e.target.value;
+                            setTargetServings(servingsValue);
+                            setTargetBatchSize("");
+                            
+                            // Auto-calculate liters when servings is entered
+                            if (servingsValue && currentServes) {
+                              const recipe = recipes?.find(r => r.id === selectedRecipeId);
+                              if (recipe) {
+                                const multiplier = parseFloat(servingsValue) / parseFloat(currentServes);
+                                const totalRecipeMl = recipe.ingredients.reduce(
+                                  (sum: number, ing: any) => sum + parseFloat(ing.amount || 0), 0
+                                );
+                                const calculatedLiters = (totalRecipeMl * multiplier) / 1000;
+                                setTargetLiters(calculatedLiters.toFixed(2));
+                              }
+                            } else {
+                              setTargetLiters("");
+                            }
+                          }}
+                          placeholder="e.g., 50"
+                          className="glass"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Servings to produce
+                        </p>
+                      </div>
                     </div>
 
                     {batchResults && targetLiters && (
