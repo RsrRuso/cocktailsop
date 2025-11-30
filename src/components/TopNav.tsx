@@ -1,4 +1,4 @@
-import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck, Music, Star, Medal, Diamond } from "lucide-react";
+import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck, Music, Star, Medal, Diamond, RefreshCw } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getProfessionalBadge } from "@/lib/profileUtils";
 import { useHaptic } from "@/hooks/useHaptic";
+import { clearAppCache } from "@/lib/clearCache";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -592,6 +593,19 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                   </DropdownMenuItem>
                 </CollapsibleContent>
               </Collapsible>
+              
+              <div className="my-1 h-px bg-border/50" />
+              
+              <DropdownMenuItem 
+                onClick={() => { 
+                  lightTap(); 
+                  clearAppCache();
+                }}
+                className="cursor-pointer text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Clear Cache & Reload
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           </div>
