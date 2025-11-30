@@ -41,7 +41,7 @@ export const useMasterSpirits = () => {
           user_id: user.id 
         }])
         .select()
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       return data;
@@ -62,7 +62,7 @@ export const useMasterSpirits = () => {
         .update(updates)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       return data;
