@@ -101,9 +101,36 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
 
       return productionData;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
       toast.success("Batch production recorded!");
+
+      // Notify group members if part of a group
+      if (data.group_id) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user?.id)
+          .single();
+
+        const { data: members } = await supabase
+          .from('mixologist_group_members')
+          .select('user_id')
+          .eq('group_id', data.group_id)
+          .neq('user_id', user?.id || '');
+
+        if (members && profile) {
+          for (const member of members) {
+            await supabase.from('notifications').insert({
+              user_id: member.user_id,
+              type: 'batch_submission',
+              content: `${profile.username} submitted a new batch: ${data.batch_name}`,
+              read: false
+            });
+          }
+        }
+      }
     },
     onError: (error) => {
       toast.error("Failed to record production: " + error.message);
@@ -151,9 +178,36 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
       if (updateError) throw updateError;
       return data as BatchProduction | null;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
       toast.success('Batch production updated!');
+
+      // Notify group members if part of a group
+      if (data?.group_id) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user?.id)
+          .single();
+
+        const { data: members } = await supabase
+          .from('mixologist_group_members')
+          .select('user_id')
+          .eq('group_id', data.group_id)
+          .neq('user_id', user?.id || '');
+
+        if (members && profile) {
+          for (const member of members) {
+            await supabase.from('notifications').insert({
+              user_id: member.user_id,
+              type: 'batch_edit',
+              content: `${profile.username} edited batch: ${data.batch_name}`,
+              read: false
+            });
+          }
+        }
+      }
     },
     onError: (error: any) => {
       toast.error('Failed to update production: ' + (error.message || 'Unknown error'));
@@ -162,6 +216,13 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
 
   const deleteProduction = useMutation({
     mutationFn: async (productionId: string) => {
+      // Get production data before deletion for notifications
+      const { data: production } = await supabase
+        .from('batch_productions')
+        .select('batch_name, group_id')
+        .eq('id', productionId)
+        .single();
+
       // Delete ingredients first
       const { error: ingredientsError } = await supabase
         .from('batch_production_ingredients')
@@ -177,10 +238,39 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
         .eq('id', productionId);
 
       if (productionError) throw productionError;
+
+      return production;
     },
-    onSuccess: () => {
+    onSuccess: async (production) => {
       queryClient.invalidateQueries({ queryKey: ['batch-productions'] });
       toast.success('Batch production deleted');
+
+      // Notify group members if part of a group
+      if (production?.group_id) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user?.id)
+          .single();
+
+        const { data: members } = await supabase
+          .from('mixologist_group_members')
+          .select('user_id')
+          .eq('group_id', production.group_id)
+          .neq('user_id', user?.id || '');
+
+        if (members && profile) {
+          for (const member of members) {
+            await supabase.from('notifications').insert({
+              user_id: member.user_id,
+              type: 'batch_delete',
+              content: `${profile.username} deleted batch: ${production.batch_name}`,
+              read: false
+            });
+          }
+        }
+      }
     },
     onError: (error: any) => {
       toast.error('Failed to delete production: ' + (error.message || 'Unknown error'));

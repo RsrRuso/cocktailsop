@@ -63,9 +63,43 @@ export const useBatchRecipes = (groupId?: string | null) => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['batch-recipes'] });
       toast.success("Recipe template saved!");
+
+      // Notify all mixologist group members
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', user?.id)
+        .single();
+
+      const { data: userGroups } = await supabase
+        .from('mixologist_group_members')
+        .select('group_id')
+        .eq('user_id', user?.id || '');
+
+      if (userGroups && profile) {
+        for (const userGroup of userGroups) {
+          const { data: members } = await supabase
+            .from('mixologist_group_members')
+            .select('user_id')
+            .eq('group_id', userGroup.group_id)
+            .neq('user_id', user?.id || '');
+
+          if (members) {
+            for (const member of members) {
+              await supabase.from('notifications').insert({
+                user_id: member.user_id,
+                type: 'recipe_created',
+                content: `${profile.username} created a new recipe: ${data.recipe_name}`,
+                read: false
+              });
+            }
+          }
+        }
+      }
     },
     onError: (error) => {
       toast.error("Failed to save recipe: " + error.message);
