@@ -42,13 +42,28 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
         query = query.eq('recipe_id', recipeId);
       }
 
-      // Filter by group_id when a group is selected
-      if (groupId) {
-        query = query.eq('group_id', groupId);
-      }
-
+      // When a group is selected, fetch all productions
+      // RLS policies will automatically filter to show only:
+      // 1. User's own productions
+      // 2. Productions with this group_id
+      // 3. ALL productions from any member of this group
       const { data, error } = await query;
       if (error) throw error;
+
+      // If a group is selected, client-side filter to show only productions from group members
+      if (groupId && data) {
+        // Fetch group members
+        const { data: members } = await supabase
+          .from('mixologist_group_members')
+          .select('user_id')
+          .eq('group_id', groupId);
+        
+        if (members) {
+          const memberIds = members.map(m => m.user_id);
+          return data.filter(p => memberIds.includes(p.user_id)) as BatchProduction[];
+        }
+      }
+
       return data as BatchProduction[];
     },
   });
