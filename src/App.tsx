@@ -13,6 +13,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { usePageTransition } from "@/hooks/usePageTransition";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 // Eager load ONLY index/landing/auth (no user data)
@@ -155,6 +156,7 @@ const AppContent = () => {
       <Toaster />
       <Sonner />
       <InstallPrompt />
+      <PWAUpdatePrompt />
       <Suspense fallback={<PageLoader />}>
               <Routes>
           <Route path="/" element={<Index />} />
