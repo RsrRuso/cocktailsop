@@ -1088,6 +1088,57 @@ const BatchCalculator = () => {
         }
         
         yPos += 6;
+        
+        // Calculate and show leftover in bottles for individual batch
+        const leftoverInBottlesItems: { name: string; mlLeftover: number }[] = [];
+        requiredMlItems.forEach((item) => {
+          const spirit = spiritsMap.get(item.name);
+          if (spirit && spirit.bottle_size_ml) {
+            const leftoverMl = spirit.bottle_size_ml - item.mlNeeded;
+            if (leftoverMl > 0) {
+              leftoverInBottlesItems.push({ name: item.name, mlLeftover: leftoverMl });
+            }
+          }
+        });
+        
+        if (leftoverInBottlesItems.length > 0) {
+          if (yPos > 230) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          const skyBlue: [number, number, number] = [14, 165, 233];
+          doc.setFillColor(...skyBlue);
+          doc.rect(12, yPos, 186, 7, 'F');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("Leftover in Bottles:", 15, yPos + 4.5);
+          yPos += 8;
+          
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          
+          leftoverInBottlesItems.forEach((item) => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+            
+            doc.setTextColor(...skyBlue);
+            const maxNameLength = 75;
+            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
+            doc.text(`${displayName}:`, 14, yPos + 4);
+            
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${item.mlLeftover.toFixed(0)} ml remaining`, 195, yPos + 4, { align: 'right' });
+            doc.setFont('helvetica', 'normal');
+            
+            yPos += 6;
+          });
+          
+          yPos += 6;
+        }
       }
       
       doc.setTextColor(...slate);
@@ -1287,6 +1338,57 @@ const BatchCalculator = () => {
         }
         
         yPos += 6;
+        
+        // Calculate and show overall leftover in bottles
+        const overallLeftoverInBottlesItems: { name: string; mlLeftover: number }[] = [];
+        overallRequiredMlItems.forEach((item) => {
+          const spirit = spiritsMap.get(item.name);
+          if (spirit && spirit.bottle_size_ml) {
+            const leftoverMl = spirit.bottle_size_ml - item.mlNeeded;
+            if (leftoverMl > 0) {
+              overallLeftoverInBottlesItems.push({ name: item.name, mlLeftover: leftoverMl });
+            }
+          }
+        });
+        
+        if (overallLeftoverInBottlesItems.length > 0) {
+          if (yPos > 230) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          const skyBlue: [number, number, number] = [14, 165, 233];
+          doc.setFillColor(...skyBlue);
+          doc.rect(12, yPos, 186, 7, 'F');
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          doc.text("Overall Leftover in Bottles:", 15, yPos + 4.5);
+          yPos += 8;
+          
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          
+          overallLeftoverInBottlesItems.forEach((item) => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+            
+            doc.setTextColor(...skyBlue);
+            const maxNameLength = 75;
+            const displayName = item.name.length > maxNameLength ? item.name.substring(0, maxNameLength) + '...' : item.name;
+            doc.text(`${displayName}:`, 14, yPos + 4);
+            
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${item.mlLeftover.toFixed(0)} ml remaining`, 195, yPos + 4, { align: 'right' });
+            doc.setFont('helvetica', 'normal');
+            
+            yPos += 6;
+          });
+          
+          yPos += 6;
+        }
       }
 
       // Notes Section - if exists (expanded)
