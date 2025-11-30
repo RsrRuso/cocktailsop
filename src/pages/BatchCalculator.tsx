@@ -1927,6 +1927,121 @@ const BatchCalculator = () => {
       
       yPos += 2;
       
+      // Calculate aggregated consumption data for all ingredients (unified table)
+      const overallIngredientConsumption = new Map<string, {
+        totalMl: number;
+        totalBottles: number;
+        totalUsedMl: number;
+        totalLeftoverMl: number;
+      }>();
+      
+      if (allIngredients) {
+        allIngredients.forEach((ing: any) => {
+          const scaledMl = parseFloat(ing.scaled_amount || 0);
+          const matchingSpirit = spirits?.find(s => 
+            s.name.toLowerCase().replace(/[^a-z0-9]/g, '') === 
+            ing.ingredient_name.toLowerCase().replace(/[^a-z0-9]/g, '')
+          );
+          
+          let bottles = 0;
+          let partialMl = 0;
+          let leftoverMl = 0;
+          
+          if (matchingSpirit && matchingSpirit.bottle_size_ml) {
+            bottles = Math.floor(scaledMl / matchingSpirit.bottle_size_ml);
+            partialMl = scaledMl % matchingSpirit.bottle_size_ml;
+            leftoverMl = partialMl > 0 ? matchingSpirit.bottle_size_ml - partialMl : 0;
+          }
+          
+          const existing = overallIngredientConsumption.get(ing.ingredient_name) || {
+            totalMl: 0,
+            totalBottles: 0,
+            totalUsedMl: 0,
+            totalLeftoverMl: 0
+          };
+          
+          overallIngredientConsumption.set(ing.ingredient_name, {
+            totalMl: existing.totalMl + scaledMl,
+            totalBottles: existing.totalBottles + bottles,
+            totalUsedMl: existing.totalUsedMl + partialMl,
+            totalLeftoverMl: existing.totalLeftoverMl + leftoverMl
+          });
+        });
+      }
+      
+      // Add Overall Consumption by Ingredient section
+      if (overallIngredientConsumption.size > 0) {
+        if (yPos > 200) {
+          doc.addPage();
+          yPos = 15;
+        }
+        
+        const purple: [number, number, number] = [139, 92, 246];
+        doc.setFillColor(...purple);
+        doc.rect(12, yPos, 186, 5, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text("OVERALL CONSUMPTION BY INGREDIENT", 15, yPos + 3.5);
+        yPos += 7;
+        
+        // Header row
+        doc.setFontSize(6);
+        doc.setFillColor(...purple);
+        doc.rect(12, yPos - 1.5, 186, 4, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.text("#", 14, yPos + 1.5);
+        doc.text("Ingredient", 22, yPos + 1.5);
+        doc.text("Total ML", 110, yPos + 1.5);
+        doc.text("Btl", 140, yPos + 1.5);
+        doc.text("Used ML", 155, yPos + 1.5);
+        doc.text("Leftover", 175, yPos + 1.5);
+        yPos += 5;
+        
+        doc.setFont("helvetica", "normal");
+        const sortedIngredients = Array.from(overallIngredientConsumption.entries()).sort((a, b) => 
+          a[0].localeCompare(b[0])
+        );
+        
+        sortedIngredients.forEach(([name, data], index) => {
+          if (yPos > 280) {
+            doc.addPage();
+            yPos = 15;
+          }
+          
+          if (index % 2 === 0) {
+            doc.setFillColor(...lightGray);
+            doc.rect(12, yPos - 1.5, 186, 3.5, 'F');
+          }
+          
+          doc.setTextColor(...slate);
+          doc.text(`${index + 1}`, 14, yPos + 1.5);
+          const displayName = name.length > 40 ? name.substring(0, 40) + '...' : name;
+          doc.text(displayName, 22, yPos + 1.5);
+          
+          doc.setTextColor(...deepBlue);
+          doc.setFont("helvetica", "bold");
+          doc.text(`${data.totalMl.toFixed(0)}`, 110, yPos + 1.5);
+          doc.setFont("helvetica", "normal");
+          
+          doc.setTextColor(...emerald);
+          doc.setFont("helvetica", "bold");
+          doc.text(`${data.totalBottles}`, 140, yPos + 1.5);
+          doc.setFont("helvetica", "normal");
+          
+          doc.setTextColor(...amber);
+          doc.text(`${data.totalUsedMl.toFixed(0)}`, 155, yPos + 1.5);
+          
+          const skyBlue: [number, number, number] = [14, 165, 233];
+          doc.setTextColor(...skyBlue);
+          doc.text(`${data.totalLeftoverMl.toFixed(0)}`, 175, yPos + 1.5);
+          
+          yPos += 3.5;
+        });
+        
+        yPos += 5;
+      }
+      
       // Calculate bottle data for all ingredients
       const bottleData = new Map<string, { name: string; totalMl: number; bottleSize: number | null }>();
       
@@ -3025,7 +3140,7 @@ const BatchCalculator = () => {
                         };
 
                         loadAggregatedData();
-                      }, [productions]);
+                      }, [productions, spirits]);
 
                       if (!aggregatedData || aggregatedData.size === 0) return null;
 
