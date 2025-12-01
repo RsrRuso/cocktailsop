@@ -275,8 +275,14 @@ const Reels = () => {
         </div>
       ) : (
         <div 
-          className="h-full snap-y snap-mandatory overflow-y-scroll scrollbar-hide pt-16 scroll-smooth"
-          style={{ scrollBehavior: 'smooth' }}
+          className="h-full snap-y snap-mandatory overflow-y-scroll scrollbar-hide pt-16"
+          style={{ 
+            scrollBehavior: 'smooth',
+            scrollSnapType: 'y mandatory',
+            scrollSnapStop: 'always',
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain'
+          }}
           onScroll={(e) => {
             const scrollTop = e.currentTarget.scrollTop;
             const windowHeight = window.innerHeight;
@@ -288,7 +294,13 @@ const Reels = () => {
             <div 
               key={reel.id}
               onClick={() => handleReelClick(index)}
-              className="cursor-pointer"
+              className="h-screen snap-start snap-always cursor-pointer"
+              style={{ 
+                scrollSnapAlign: 'start',
+                scrollSnapStop: 'always',
+                WebkitTransform: 'translateZ(0)',
+                transform: 'translateZ(0)'
+              }}
             >
               <ReelItemWrapper
                 reel={reel}
