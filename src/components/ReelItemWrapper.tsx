@@ -220,7 +220,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
             userId={reel.user_id}
             className="w-10 h-10 border-2 border-white"
           />
-          <span className="text-white font-medium text-sm drop-shadow-lg">@{reel.profiles?.username}</span>
+          <span className="text-white font-normal text-sm drop-shadow-lg">@{reel.profiles?.username}</span>
         </div>
         <p className="text-white text-sm leading-relaxed drop-shadow-lg">
           {renderCaption(reel.caption || '')}

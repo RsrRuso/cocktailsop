@@ -79,7 +79,7 @@ export const FeedItem = memo(({
               onClick={() => navigate(`/user/${item.user_id}`)}
             >
               <div className="flex items-center gap-2">
-                <p className="font-medium text-lg bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                <p className="font-normal text-lg bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
                   {item.profiles?.full_name || item.profiles?.username || 'Unknown User'}
                 </p>
                 {item.profiles?.badge_level && (
