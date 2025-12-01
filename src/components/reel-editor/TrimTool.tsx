@@ -15,16 +15,40 @@ export function TrimTool({ videoState, onUpdate }: TrimToolProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const togglePlayPause = () => {
+    onUpdate({ isPlaying: !videoState.isPlaying });
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="font-semibold mb-4">Trim Video</h3>
+        <h3 className="font-semibold mb-4">Trim & Playback</h3>
         
         <div className="space-y-4">
+          {/* Play/Pause Control */}
+          <Button
+            variant="outline"
+            className="w-full gap-2"
+            onClick={togglePlayPause}
+          >
+            {videoState.isPlaying ? (
+              <><Pause className="w-4 h-4" /> Pause</>
+            ) : (
+              <><Play className="w-4 h-4" /> Play</>
+            )}
+          </Button>
+
+          <div>
+            <label className="text-sm mb-2 block font-medium">Current Time</label>
+            <div className="text-center py-2 px-4 bg-muted rounded-lg font-mono">
+              {formatTime(videoState.currentTime)} / {formatTime(videoState.duration)}
+            </div>
+          </div>
+
           <div>
             <div className="flex justify-between text-sm mb-2">
-              <span>Start: {formatTime(videoState.trimStart)}</span>
-              <span>End: {formatTime(videoState.trimEnd)}</span>
+              <span>Trim Start: {formatTime(videoState.trimStart)}</span>
+              <span>Trim End: {formatTime(videoState.trimEnd)}</span>
             </div>
             <Slider
               value={[videoState.trimStart, videoState.trimEnd]}
@@ -34,35 +58,22 @@ export function TrimTool({ videoState, onUpdate }: TrimToolProps) {
               onValueChange={([start, end]) => {
                 onUpdate({ trimStart: start, trimEnd: end });
               }}
-              className="mb-2"
             />
+            <p className="text-xs text-muted-foreground mt-2">
+              Drag to set start and end points for your video
+            </p>
           </div>
 
           <div>
-            <label className="text-sm mb-2 block">Playback Position</label>
+            <label className="text-sm mb-2 block">Seek Position</label>
             <Slider
               value={[videoState.currentTime]}
-              min={videoState.trimStart}
-              max={videoState.trimEnd}
+              min={0}
+              max={videoState.duration || 100}
               step={0.1}
               onValueChange={([time]) => onUpdate({ currentTime: time })}
             />
-            <div className="text-xs text-muted-foreground mt-1">
-              {formatTime(videoState.currentTime)} / {formatTime(videoState.duration)}
-            </div>
           </div>
-
-          <Button
-            variant="outline"
-            className="w-full gap-2"
-            onClick={() => onUpdate({ isPlaying: !videoState.isPlaying })}
-          >
-            {videoState.isPlaying ? (
-              <><Pause className="w-4 h-4" /> Pause</>
-            ) : (
-              <><Play className="w-4 h-4" /> Play</>
-            )}
-          </Button>
         </div>
       </div>
     </div>

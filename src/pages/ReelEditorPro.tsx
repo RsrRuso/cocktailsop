@@ -169,6 +169,7 @@ export default function ReelEditorPro() {
         {/* Video Canvas */}
         <div className="flex-1 flex items-center justify-center bg-black rounded-lg overflow-hidden">
           <VideoCanvas
+            videoUrl={videoUrl}
             videoRef={videoRef}
             canvasRef={canvasRef}
             videoState={videoState}
