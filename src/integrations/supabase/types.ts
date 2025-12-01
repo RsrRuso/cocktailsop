@@ -3600,6 +3600,63 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_bugs: {
+        Row: {
+          ai_analysis: string | null
+          bug_type: string
+          created_at: string
+          description: string
+          detected_at: string
+          error_details: Json | null
+          id: string
+          location: string | null
+          reproduction_steps: string[] | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_analysis?: string | null
+          bug_type: string
+          created_at?: string
+          description: string
+          detected_at?: string
+          error_details?: Json | null
+          id?: string
+          location?: string | null
+          reproduction_steps?: string[] | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_analysis?: string | null
+          bug_type?: string
+          created_at?: string
+          description?: string
+          detected_at?: string
+          error_details?: Json | null
+          id?: string
+          location?: string | null
+          reproduction_steps?: string[] | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       popular_music: {
         Row: {
           artist: string
