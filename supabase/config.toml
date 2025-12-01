@@ -33,3 +33,6 @@ verify_jwt = false
 [functions.batch-ai-assistant]
 verify_jwt = false
 
+[functions.career-ai-mentor]
+verify_jwt = true
+
