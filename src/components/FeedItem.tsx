@@ -56,6 +56,180 @@ export const FeedItem = memo(({
   // Track post views
   useViewTracking('post', item.id, currentUserId, true);
 
+  // Reels get special full-screen treatment with right-side buttons
+  if (item.type === 'reel') {
+    return (
+      <div className="relative bg-black w-full">
+        {/* Reel Content - No Frame */}
+        <div className="relative w-full h-screen max-h-[80vh]" onClick={onFullscreen}>
+          {item.media_urls && item.media_urls.length > 0 && (
+            <LazyVideo
+              src={item.media_urls[0]}
+              muted={!mutedVideos.has(item.id + item.media_urls[0])}
+              className="w-full h-full object-cover"
+            />
+          )}
+
+          {/* Mute Button - Top Right */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleMute(item.id + item.media_urls[0]);
+            }}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-all z-20"
+          >
+            {mutedVideos.has(item.id + item.media_urls[0]) ? (
+              <Volume2 className="w-5 h-5 text-white" />
+            ) : (
+              <VolumeX className="w-5 h-5 text-white" />
+            )}
+          </button>
+
+          {/* User Info - Top Left */}
+          <div 
+            className="absolute top-4 left-4 flex items-center gap-2 cursor-pointer z-20"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/user/${item.user_id}`);
+            }}
+          >
+            <OptimizedAvatar
+              src={item.profiles?.avatar_url}
+              alt={item.profiles?.username || 'User'}
+              fallback={item.profiles?.username?.[0] || '?'}
+              userId={item.user_id}
+              className={`w-10 h-10 ring-2 ring-white/40 bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-gray-400 to-gray-200'}`}
+            />
+            <div>
+              <p className="font-bold text-white drop-shadow-lg">{item.profiles?.username || 'Unknown'}</p>
+            </div>
+          </div>
+
+          {/* Caption - Bottom Left */}
+          {item.content && (
+            <div className="absolute bottom-20 left-4 right-20 z-20">
+              <p className="text-white text-sm drop-shadow-lg line-clamp-3">{item.content}</p>
+            </div>
+          )}
+
+          {/* Engagement Buttons - Right Side Vertical Stack */}
+          <div className="absolute right-3 bottom-20 flex flex-col gap-4 z-20">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onLike();
+              }}
+              className="flex flex-col items-center gap-1"
+            >
+              <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-all">
+                <Heart className={`w-6 h-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+              </div>
+              <span className="text-white text-xs font-bold drop-shadow-lg">{item.like_count || 0}</span>
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowComments(true);
+              }}
+              className="flex flex-col items-center gap-1"
+            >
+              <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-all">
+                <MessageCircle className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-white text-xs font-bold drop-shadow-lg">{item.comment_count || 0}</span>
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShare();
+              }}
+              className="flex flex-col items-center gap-1"
+            >
+              <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-all">
+                <Send className="w-6 h-6 text-white" />
+              </div>
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowInsights(true);
+              }}
+              className="flex flex-col items-center gap-1"
+            >
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center hover:scale-110 transition-all">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowLikes(true);
+              }}
+              className="flex flex-col items-center gap-1"
+            >
+              <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-all">
+                <Eye className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-white text-xs font-bold drop-shadow-lg">{item.view_count || 0}</span>
+            </button>
+
+            {currentUserId && item.user_id === currentUserId && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-all">
+                    <MoreVertical className="w-6 h-6 text-white" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md border border-border/50">
+                  <DropdownMenuItem onClick={onDelete} className="text-destructive">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </div>
+
+        {/* Enhanced Dialogs */}
+        <EnhancedLikesDialog
+          open={showLikes}
+          onOpenChange={setShowLikes}
+          contentType={item.type}
+          contentId={item.id}
+        />
+
+        <EnhancedCommentsDialog
+          open={showComments}
+          onOpenChange={setShowComments}
+          contentType={item.type}
+          contentId={item.id}
+          onCommentChange={onComment}
+        />
+
+        <EngagementInsightsDialog
+          open={showInsights}
+          onOpenChange={setShowInsights}
+          contentId={item.id}
+          contentType={item.type}
+          content={item.content || item.caption || ''}
+          engagement={{
+            likes: item.like_count || 0,
+            comments: item.comment_count || 0,
+            shares: 0,
+            views: item.view_count || 0,
+          }}
+          createdAt={item.created_at}
+        />
+      </div>
+    );
+  }
+
+  // Regular posts keep the framed layout
   return (
     <div className="relative bg-black w-full">
       {/* Top Header Section */}

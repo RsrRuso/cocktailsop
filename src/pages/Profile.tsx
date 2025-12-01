@@ -445,7 +445,7 @@ const Profile = () => {
                     ) : (
                       <div 
                         key={`reel-${item.id}`} 
-                        className="glass rounded-xl overflow-hidden cursor-pointer border border-border/50"
+                        className="relative overflow-hidden cursor-pointer bg-black"
                         onClick={() => navigate('/reels', { 
                           state: { 
                             scrollToReelId: item.id,
@@ -461,39 +461,25 @@ const Profile = () => {
                           loop
                           autoPlay
                         />
-                        <div className="p-4 space-y-2">
-                          {item.caption && <p className="text-sm">{item.caption}</p>}
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Play className="w-4 h-4" /> {item.view_count || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Heart className="w-4 h-4" /> {item.like_count || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MessageCircle className="w-4 h-4" /> {item.comment_count || 0}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMutedVideos(prev => {
-                                  const newSet = new Set(prev);
-                                  if (newSet.has(item.id)) {
-                                    newSet.delete(item.id);
-                                  } else {
-                                    newSet.add(item.id);
-                                  }
-                                  return newSet;
-                                });
-                              }}
-                              className="ml-auto"
-                            >
-                              {mutedVideos.has(item.id) ? (
-                                <Volume2 className="w-4 h-4" />
-                              ) : (
-                                <VolumeX className="w-4 h-4" />
-                              )}
-                            </button>
+                        {/* Caption overlay - bottom left */}
+                        {item.caption && (
+                          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                            <p className="text-sm text-white drop-shadow-lg line-clamp-2">{item.caption}</p>
+                          </div>
+                        )}
+                        {/* Stats overlay - right side */}
+                        <div className="absolute right-3 bottom-20 flex flex-col gap-3">
+                          <div className="flex flex-col items-center">
+                            <Heart className="w-5 h-5 text-white drop-shadow-lg" />
+                            <span className="text-xs text-white font-bold drop-shadow-lg">{item.like_count || 0}</span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <MessageCircle className="w-5 h-5 text-white drop-shadow-lg" />
+                            <span className="text-xs text-white font-bold drop-shadow-lg">{item.comment_count || 0}</span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <Play className="w-5 h-5 text-white drop-shadow-lg" />
+                            <span className="text-xs text-white font-bold drop-shadow-lg">{item.view_count || 0}</span>
                           </div>
                         </div>
                       </div>
