@@ -12,10 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Plus, Trash2, Edit, MapPin, Box, List, Save, Download, Move, Square, Circle, Type } from "lucide-react";
+import { Plus, Trash2, MapPin, Box, List, Download, Move, Square, Circle, Type, Triangle, Hexagon, Minus, Image as ImageIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import { ZoomableImage } from "@/components/ZoomableImage";
 
 const EQUIPMENT_TYPES = [
   { value: "fridge", label: "Fridge" },
@@ -23,6 +24,8 @@ const EQUIPMENT_TYPES = [
   { value: "walk_in_fridge", label: "Walk-in Fridge" },
   { value: "walk_in_freezer", label: "Walk-in Freezer" },
   { value: "cabinet", label: "Cabinet" },
+  { value: "drawer", label: "Drawer" },
+  { value: "cage", label: "Cage/Storage Cage" },
   { value: "trolley", label: "Trolley/Cart" },
   { value: "alcohol_storage", label: "Alcohol Storage" },
   { value: "non_alcohol_storage", label: "Non-Alcohol Storage" },
@@ -50,6 +53,24 @@ const ITEM_CATEGORIES = [
   "Other",
 ];
 
+type DrawingMode = "select" | "rect" | "circle" | "text" | "triangle" | "hexagon" | "line";
+
+interface CanvasElement {
+  type: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  radius?: number;
+  x2?: number;
+  y2?: number;
+  points?: { x: number; y: number }[];
+  text?: string;
+  label?: string;
+  color?: string;
+  number?: string;
+}
+
 export default function MapPlanner() {
   const { user } = useAuth();
   const { currentWorkspace } = useWorkspace();
@@ -58,9 +79,11 @@ export default function MapPlanner() {
   const [selectedMap, setSelectedMap] = useState<string | null>(null);
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
-  const [drawingMode, setDrawingMode] = useState<"select" | "rect" | "circle" | "text">("select");
-  const [canvasElements, setCanvasElements] = useState<any[]>([]);
+  const [drawingMode, setDrawingMode] = useState<DrawingMode>("select");
+  const [canvasElements, setCanvasElements] = useState<CanvasElement[]>([]);
   const [draggingElement, setDraggingElement] = useState<number | null>(null);
+  const [selectedElement, setSelectedElement] = useState<number | null>(null);
+  const [equipmentPhotos, setEquipmentPhotos] = useState<string[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
@@ -129,6 +152,16 @@ export default function MapPlanner() {
     enabled: !!selectedEquipment,
   });
 
+  // Load photos when equipment is selected
+  useEffect(() => {
+    if (selectedEquipment && equipment) {
+      const eq = equipment.find(e => e.id === selectedEquipment);
+      setEquipmentPhotos(eq?.photos || []);
+    } else {
+      setEquipmentPhotos([]);
+    }
+  }, [selectedEquipment, equipment]);
+
   // Create map mutation
   const createMapMutation = useMutation({
     mutationFn: async (formData: { name: string; description?: string }) => {
@@ -179,6 +212,7 @@ export default function MapPlanner() {
       equipment_type: string;
       capacity?: string;
       notes?: string;
+      photos?: string[];
     }) => {
       const { data, error } = await supabase
         .from("area_equipment")
@@ -195,6 +229,22 @@ export default function MapPlanner() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["area_equipment"] });
       toast.success("Equipment added successfully");
+    },
+  });
+
+  // Update equipment photos
+  const updateEquipmentPhotosMutation = useMutation({
+    mutationFn: async ({ id, photos }: { id: string; photos: string[] }) => {
+      const { error } = await supabase
+        .from("area_equipment")
+        .update({ photos })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["area_equipment"] });
+      toast.success("Photos updated");
     },
   });
 
@@ -272,6 +322,55 @@ export default function MapPlanner() {
     },
   });
 
+  // Photo upload handler
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !selectedEquipment) return;
+
+    if (equipmentPhotos.length + files.length > 3) {
+      toast.error("Maximum 3 photos allowed");
+      return;
+    }
+
+    const uploadedUrls: string[] = [];
+
+    for (const file of Array.from(files)) {
+      const fileName = `${selectedEquipment}_${Date.now()}_${file.name}`;
+      const { data, error } = await supabase.storage
+        .from("equipment-photos")
+        .upload(fileName, file);
+
+      if (error) {
+        toast.error("Photo upload failed");
+        continue;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("equipment-photos")
+        .getPublicUrl(data.path);
+
+      uploadedUrls.push(publicUrl);
+    }
+
+    const updatedPhotos = [...equipmentPhotos, ...uploadedUrls].slice(0, 3);
+    setEquipmentPhotos(updatedPhotos);
+    updateEquipmentPhotosMutation.mutate({
+      id: selectedEquipment,
+      photos: updatedPhotos,
+    });
+  };
+
+  const removePhoto = (index: number) => {
+    const updatedPhotos = equipmentPhotos.filter((_, i) => i !== index);
+    setEquipmentPhotos(updatedPhotos);
+    if (selectedEquipment) {
+      updateEquipmentPhotosMutation.mutate({
+        id: selectedEquipment,
+        photos: updatedPhotos,
+      });
+    }
+  };
+
   // Canvas drawing functions
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -281,11 +380,11 @@ export default function MapPlanner() {
     if (!ctx) return;
 
     // Clear canvas
-    ctx.fillStyle = "#1a1a1a";
+    ctx.fillStyle = "hsl(var(--background))";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw grid
-    ctx.strokeStyle = "#333";
+    ctx.strokeStyle = "hsl(var(--border))";
     ctx.lineWidth = 1;
     for (let x = 0; x < canvas.width; x += 50) {
       ctx.beginPath();
@@ -302,32 +401,60 @@ export default function MapPlanner() {
 
     // Draw elements
     canvasElements.forEach((element, index) => {
-      ctx.fillStyle = element.color || "#3b82f6";
-      ctx.strokeStyle = draggingElement === index ? "#f59e0b" : "#60a5fa";
-      ctx.lineWidth = 2;
+      ctx.fillStyle = element.color || "hsl(var(--primary))";
+      ctx.strokeStyle = draggingElement === index || selectedElement === index 
+        ? "hsl(var(--ring))" 
+        : "hsl(var(--primary))";
+      ctx.lineWidth = selectedElement === index ? 3 : 2;
 
       if (element.type === "rect") {
-        ctx.fillRect(element.x, element.y, element.width, element.height);
-        ctx.strokeRect(element.x, element.y, element.width, element.height);
+        ctx.fillRect(element.x, element.y, element.width!, element.height!);
+        ctx.strokeRect(element.x, element.y, element.width!, element.height!);
       } else if (element.type === "circle") {
         ctx.beginPath();
-        ctx.arc(element.x, element.y, element.radius, 0, 2 * Math.PI);
+        ctx.arc(element.x, element.y, element.radius!, 0, 2 * Math.PI);
         ctx.fill();
         ctx.stroke();
+      } else if (element.type === "triangle") {
+        ctx.beginPath();
+        ctx.moveTo(element.x, element.y - 40);
+        ctx.lineTo(element.x - 35, element.y + 20);
+        ctx.lineTo(element.x + 35, element.y + 20);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (element.type === "hexagon") {
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI / 3) * i;
+          const x = element.x + 30 * Math.cos(angle);
+          const y = element.y + 30 * Math.sin(angle);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (element.type === "line") {
+        ctx.beginPath();
+        ctx.moveTo(element.x, element.y);
+        ctx.lineTo(element.x2!, element.y2!);
+        ctx.stroke();
       } else if (element.type === "text") {
-        ctx.fillStyle = "#fff";
+        ctx.fillStyle = "hsl(var(--foreground))";
         ctx.font = "16px sans-serif";
-        ctx.fillText(element.text, element.x, element.y);
+        ctx.fillText(element.text!, element.x, element.y);
       }
 
-      // Draw label
-      if (element.label) {
-        ctx.fillStyle = "#fff";
-        ctx.font = "12px sans-serif";
-        ctx.fillText(element.label, element.x, element.y - 5);
+      // Draw label and number
+      if (element.label || element.number) {
+        ctx.fillStyle = "hsl(var(--foreground))";
+        ctx.font = "bold 12px sans-serif";
+        const text = [element.number, element.label].filter(Boolean).join(" - ");
+        ctx.fillText(text, element.x, element.y - 8);
       }
     });
-  }, [canvasElements, draggingElement]);
+  }, [canvasElements, draggingElement, selectedElement]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -337,31 +464,69 @@ export default function MapPlanner() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (drawingMode === "rect") {
-      const newElement = {
+    if (drawingMode === "select") {
+      // Select element
+      const elementIndex = canvasElements.findIndex((el) => {
+        if (el.type === "rect") {
+          return x >= el.x && x <= el.x + el.width! && y >= el.y && y <= el.y + el.height!;
+        } else if (el.type === "circle") {
+          const dist = Math.sqrt((x - el.x) ** 2 + (y - el.y) ** 2);
+          return dist <= el.radius!;
+        }
+        return false;
+      });
+      setSelectedElement(elementIndex !== -1 ? elementIndex : null);
+    } else if (drawingMode === "rect") {
+      const newElement: CanvasElement = {
         type: "rect",
         x: x - 50,
         y: y - 25,
         width: 100,
         height: 50,
-        color: "#3b82f6",
+        color: "hsl(var(--primary))",
         label: "Equipment",
       };
       setCanvasElements([...canvasElements, newElement]);
     } else if (drawingMode === "circle") {
-      const newElement = {
+      const newElement: CanvasElement = {
         type: "circle",
         x,
         y,
         radius: 30,
-        color: "#8b5cf6",
+        color: "hsl(var(--secondary))",
         label: "Station",
+      };
+      setCanvasElements([...canvasElements, newElement]);
+    } else if (drawingMode === "triangle") {
+      const newElement: CanvasElement = {
+        type: "triangle",
+        x,
+        y,
+        color: "hsl(var(--accent))",
+      };
+      setCanvasElements([...canvasElements, newElement]);
+    } else if (drawingMode === "hexagon") {
+      const newElement: CanvasElement = {
+        type: "hexagon",
+        x,
+        y,
+        color: "hsl(var(--muted))",
+      };
+      setCanvasElements([...canvasElements, newElement]);
+    } else if (drawingMode === "line") {
+      const newElement: CanvasElement = {
+        type: "line",
+        x,
+        y,
+        x2: x + 100,
+        y2: y,
+        color: "hsl(var(--foreground))",
       };
       setCanvasElements([...canvasElements, newElement]);
     } else if (drawingMode === "text") {
       const text = prompt("Enter text:");
       if (text) {
-        const newElement = {
+        const newElement: CanvasElement = {
           type: "text",
           x,
           y,
@@ -385,16 +550,17 @@ export default function MapPlanner() {
     // Check if clicking on an element
     const elementIndex = canvasElements.findIndex((el) => {
       if (el.type === "rect") {
-        return x >= el.x && x <= el.x + el.width && y >= el.y && y <= el.y + el.height;
+        return x >= el.x && x <= el.x + el.width! && y >= el.y && y <= el.y + el.height!;
       } else if (el.type === "circle") {
         const dist = Math.sqrt((x - el.x) ** 2 + (y - el.y) ** 2);
-        return dist <= el.radius;
+        return dist <= el.radius!;
       }
       return false;
     });
 
     if (elementIndex !== -1) {
       setDraggingElement(elementIndex);
+      setSelectedElement(elementIndex);
       setMousePos({ x, y });
     }
   };
@@ -418,6 +584,9 @@ export default function MapPlanner() {
     element.x += dx;
     element.y += dy;
 
+    if (element.x2 !== undefined) element.x2 += dx;
+    if (element.y2 !== undefined) element.y2 += dy;
+
     setCanvasElements(updatedElements);
     setMousePos({ x, y });
   };
@@ -429,6 +598,7 @@ export default function MapPlanner() {
   const clearCanvas = () => {
     if (confirm("Clear the canvas?")) {
       setCanvasElements([]);
+      setSelectedElement(null);
     }
   };
 
@@ -437,10 +607,30 @@ export default function MapPlanner() {
     if (!canvas) return;
 
     const link = document.createElement("a");
-    link.download = "map-layout.png";
+    link.download = "floor-plan.png";
     link.href = canvas.toDataURL();
     link.click();
-    toast.success("Map exported as image");
+    toast.success("Floor plan exported");
+  };
+
+  const addNumberToElement = () => {
+    if (selectedElement === null) {
+      toast.error("Select an element first");
+      return;
+    }
+    const number = prompt("Enter number:");
+    if (number) {
+      const updated = [...canvasElements];
+      updated[selectedElement].number = number;
+      setCanvasElements(updated);
+    }
+  };
+
+  const deleteSelectedElement = () => {
+    if (selectedElement !== null) {
+      setCanvasElements(canvasElements.filter((_, i) => i !== selectedElement));
+      setSelectedElement(null);
+    }
   };
 
   return (
@@ -450,9 +640,9 @@ export default function MapPlanner() {
       <div className="container mx-auto px-4 pt-20 pb-4">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Map Planner</h1>
+            <h1 className="text-3xl font-bold">Floor Plan Designer</h1>
             <p className="text-muted-foreground">
-              Design your venue layout and assign equipment with items
+              Design venue layouts with drag-and-drop shapes and equipment
             </p>
           </div>
 
@@ -499,19 +689,19 @@ export default function MapPlanner() {
           </Dialog>
         </div>
 
-        <Tabs defaultValue="list" className="w-full mb-6">
-          <TabsList>
-            <TabsTrigger value="list">
-              <List className="mr-2 h-4 w-4" />
-              List View
-            </TabsTrigger>
+        <Tabs defaultValue="designer" className="w-full mb-6">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="designer">
               <MapPin className="mr-2 h-4 w-4" />
               Visual Designer
             </TabsTrigger>
+            <TabsTrigger value="list">
+              <List className="mr-2 h-4 w-4" />
+              List Management
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="designer" className="mt-6">
+          <TabsContent value="designer" className="mt-6 space-y-4">
             {!selectedMap ? (
               <Card>
                 <CardContent className="flex items-center justify-center py-20">
@@ -519,16 +709,18 @@ export default function MapPlanner() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <>
+                {/* Drawing Tools */}
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>Canvas Designer</CardTitle>
-                      <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <CardTitle>Drawing Tools</CardTitle>
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           variant={drawingMode === "select" ? "default" : "outline"}
                           size="sm"
                           onClick={() => setDrawingMode("select")}
+                          title="Select & Move"
                         >
                           <Move className="h-4 w-4" />
                         </Button>
@@ -536,6 +728,7 @@ export default function MapPlanner() {
                           variant={drawingMode === "rect" ? "default" : "outline"}
                           size="sm"
                           onClick={() => setDrawingMode("rect")}
+                          title="Rectangle"
                         >
                           <Square className="h-4 w-4" />
                         </Button>
@@ -543,28 +736,64 @@ export default function MapPlanner() {
                           variant={drawingMode === "circle" ? "default" : "outline"}
                           size="sm"
                           onClick={() => setDrawingMode("circle")}
+                          title="Circle"
                         >
                           <Circle className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant={drawingMode === "triangle" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDrawingMode("triangle")}
+                          title="Triangle"
+                        >
+                          <Triangle className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant={drawingMode === "hexagon" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDrawingMode("hexagon")}
+                          title="Hexagon"
+                        >
+                          <Hexagon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant={drawingMode === "line" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setDrawingMode("line")}
+                          title="Line"
+                        >
+                          <Minus className="h-4 w-4" />
                         </Button>
                         <Button
                           variant={drawingMode === "text" ? "default" : "outline"}
                           size="sm"
                           onClick={() => setDrawingMode("text")}
+                          title="Add Text/Number"
                         >
                           <Type className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={clearCanvas}>
+                        <Button variant="outline" size="sm" onClick={addNumberToElement} title="Add Number to Selected">
+                          #
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={deleteSelectedElement} disabled={selectedElement === null}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={exportCanvasImage}>
-                          <Download className="h-4 w-4" />
+                        <Button variant="outline" size="sm" onClick={clearCanvas}>
+                          Clear All
+                        </Button>
+                        <Button variant="default" size="sm" onClick={exportCanvasImage}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Export
                         </Button>
                       </div>
                     </div>
                     <CardDescription>
-                      {drawingMode === "select" && "Click and drag to move elements"}
+                      {drawingMode === "select" && "Click and drag to move elements. Click an element to select it."}
                       {drawingMode === "rect" && "Click to place rectangular equipment"}
                       {drawingMode === "circle" && "Click to place circular stations"}
+                      {drawingMode === "triangle" && "Click to place triangular shapes"}
+                      {drawingMode === "hexagon" && "Click to place hexagonal shapes"}
+                      {drawingMode === "line" && "Click to draw lines"}
                       {drawingMode === "text" && "Click to add text labels"}
                     </CardDescription>
                   </CardHeader>
@@ -573,7 +802,7 @@ export default function MapPlanner() {
                       ref={canvasRef}
                       width={1200}
                       height={800}
-                      className="border border-border rounded-lg cursor-crosshair w-full"
+                      className="border border-border rounded-lg cursor-crosshair w-full bg-background"
                       onClick={handleCanvasClick}
                       onMouseDown={handleCanvasMouseDown}
                       onMouseMove={handleCanvasMouseMove}
@@ -584,469 +813,460 @@ export default function MapPlanner() {
                 </Card>
 
                 {/* Equipment Palette */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Equipment Palette</CardTitle>
-                    <CardDescription>Your configured equipment for this map</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                      {areas?.map((area) =>
-                        equipment
-                          ?.filter((eq) => eq.area_id === area.id)
-                          .map((eq) => (
-                            <Button
-                              key={eq.id}
-                              variant="outline"
-                              size="sm"
-                              className="justify-start"
-                              onClick={() => {
-                                setDrawingMode("rect");
-                                const newElement = {
-                                  type: "rect",
-                                  x: 100,
-                                  y: 100,
-                                  width: 120,
-                                  height: 60,
-                                  color: "#3b82f6",
-                                  label: eq.name,
-                                };
-                                setCanvasElements([...canvasElements, newElement]);
-                              }}
-                            >
-                              <Box className="mr-2 h-4 w-4" />
-                              {eq.name}
-                            </Button>
-                          ))
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                {areas && areas.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Equipment Palette</CardTitle>
+                      <CardDescription>Click equipment to add to canvas</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                        {areas?.map((area) =>
+                          equipment
+                            ?.filter((eq) => eq.area_id === area.id)
+                            .map((eq) => (
+                              <Button
+                                key={eq.id}
+                                variant="outline"
+                                size="sm"
+                                className="justify-start"
+                                onClick={() => {
+                                  const newElement: CanvasElement = {
+                                    type: "rect",
+                                    x: 100,
+                                    y: 100,
+                                    width: 120,
+                                    height: 60,
+                                    color: "hsl(var(--primary))",
+                                    label: eq.name,
+                                  };
+                                  setCanvasElements([...canvasElements, newElement]);
+                                  toast.success(`Added ${eq.name}`);
+                                }}
+                              >
+                                <Box className="mr-2 h-4 w-4" />
+                                {eq.name}
+                              </Button>
+                            ))
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
           </TabsContent>
 
           <TabsContent value="list" className="mt-6">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Maps List */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle>Maps</CardTitle>
-              <CardDescription>Select a venue map</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {maps?.map((map) => (
-                <div
-                  key={map.id}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedMap === map.id
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "hover:bg-accent"
-                  }`}
-                  onClick={() => {
-                    setSelectedMap(map.id);
-                    setSelectedArea(null);
-                    setSelectedEquipment(null);
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span className="font-medium">{map.name}</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (confirm("Delete this map?")) {
-                          deleteMapMutation.mutate(map.id);
-                        }
+              {/* Maps List */}
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <CardTitle>Maps</CardTitle>
+                  <CardDescription>Your venue maps</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {maps?.map((map) => (
+                    <div
+                      key={map.id}
+                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedMap === map.id
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "hover:bg-accent"
+                      }`}
+                      onClick={() => {
+                        setSelectedMap(map.id);
+                        setSelectedArea(null);
+                        setSelectedEquipment(null);
                       }}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  {map.description && (
-                    <p className="text-sm text-muted-foreground mt-1">{map.description}</p>
-                  )}
-                </div>
-              ))}
-              {maps?.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No maps yet. Create one!</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Areas/Stations */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Areas</CardTitle>
-                  <CardDescription>Stations & zones</CardDescription>
-                </div>
-                {selectedMap && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add Area</DialogTitle>
-                      </DialogHeader>
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const formData = new FormData(e.currentTarget);
-                          createAreaMutation.mutate({
-                            name: formData.get("name") as string,
-                            area_type: formData.get("area_type") as string,
-                            notes: formData.get("notes") as string,
-                          });
-                          (e.target as HTMLFormElement).reset();
-                        }}
-                        className="space-y-4"
-                      >
-                        <div>
-                          <Label htmlFor="area_name">Area Name</Label>
-                          <Input
-                            id="area_name"
-                            name="name"
-                            placeholder="e.g., Station 1"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="area_type">Type</Label>
-                          <Select name="area_type" required>
-                            <SelectTrigger id="area_type">
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {AREA_TYPES.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="area_notes">Notes</Label>
-                          <Textarea id="area_notes" name="notes" />
-                        </div>
-                        <Button type="submit" className="w-full">
-                          Add Area
-                        </Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {!selectedMap && (
-                <p className="text-center text-muted-foreground py-8">Select a map first</p>
-              )}
-              {selectedMap &&
-                areas?.map((area) => (
-                  <div
-                    key={area.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedArea === area.id
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "hover:bg-accent"
-                    }`}
-                    onClick={() => {
-                      setSelectedArea(area.id);
-                      setSelectedEquipment(null);
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="font-medium">{area.name}</span>
-                        <p className="text-xs opacity-75">{area.area_type}</p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm("Delete this area?")) {
-                            deleteAreaMutation.mutate(area.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              {selectedMap && areas?.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No areas yet</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Equipment */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Equipment</CardTitle>
-                  <CardDescription>Storage & tools</CardDescription>
-                </div>
-                {selectedArea && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add Equipment</DialogTitle>
-                      </DialogHeader>
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const formData = new FormData(e.currentTarget);
-                          createEquipmentMutation.mutate({
-                            name: formData.get("name") as string,
-                            equipment_type: formData.get("equipment_type") as string,
-                            capacity: formData.get("capacity") as string,
-                            notes: formData.get("notes") as string,
-                          });
-                          (e.target as HTMLFormElement).reset();
-                        }}
-                        className="space-y-4"
-                      >
-                        <div>
-                          <Label htmlFor="equip_name">Equipment Name</Label>
-                          <Input
-                            id="equip_name"
-                            name="name"
-                            placeholder="e.g., Main Fridge"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="equip_type">Type</Label>
-                          <Select name="equipment_type" required>
-                            <SelectTrigger id="equip_type">
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {EQUIPMENT_TYPES.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="capacity">Capacity</Label>
-                          <Input id="capacity" name="capacity" placeholder="e.g., 12 bottles" />
-                        </div>
-                        <div>
-                          <Label htmlFor="equip_notes">Notes</Label>
-                          <Textarea id="equip_notes" name="notes" />
-                        </div>
-                        <Button type="submit" className="w-full">
-                          Add Equipment
-                        </Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {!selectedArea && (
-                <p className="text-center text-muted-foreground py-8">Select an area first</p>
-              )}
-              {selectedArea &&
-                equipment?.map((equip) => (
-                  <div
-                    key={equip.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedEquipment === equip.id
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "hover:bg-accent"
-                    }`}
-                    onClick={() => setSelectedEquipment(equip.id)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Box className="h-4 w-4" />
-                          <span className="font-medium">{equip.name}</span>
+                          <MapPin className="h-4 w-4" />
+                          <span className="font-medium">{map.name}</span>
                         </div>
-                        <p className="text-xs opacity-75">
-                          {EQUIPMENT_TYPES.find((t) => t.value === equip.equipment_type)?.label}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm("Delete this equipment?")) {
-                            deleteEquipmentMutation.mutate(equip.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              {selectedArea && equipment?.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No equipment yet</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Items List */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Items</CardTitle>
-                  <CardDescription>Ingredients & tools</CardDescription>
-                </div>
-                {selectedEquipment && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add Item</DialogTitle>
-                      </DialogHeader>
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const formData = new FormData(e.currentTarget);
-                          createItemMutation.mutate({
-                            item_name: formData.get("item_name") as string,
-                            category: formData.get("category") as string,
-                            quantity: formData.get("quantity") as string,
-                            notes: formData.get("notes") as string,
-                          });
-                          (e.target as HTMLFormElement).reset();
-                        }}
-                        className="space-y-4"
-                      >
-                        <div>
-                          <Label htmlFor="item_name">Item Name</Label>
-                          <Input
-                            id="item_name"
-                            name="item_name"
-                            placeholder="e.g., Raspberry Puree"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="category">Category</Label>
-                          <Select name="category">
-                            <SelectTrigger id="category">
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {ITEM_CATEGORIES.map((cat) => (
-                                <SelectItem key={cat} value={cat}>
-                                  {cat}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="quantity">Quantity</Label>
-                          <Input
-                            id="quantity"
-                            name="quantity"
-                            placeholder="e.g., 2 bottles"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="item_notes">Notes</Label>
-                          <Textarea id="item_notes" name="notes" />
-                        </div>
-                        <Button type="submit" className="w-full">
-                          Add Item
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm("Delete this map?")) {
+                              deleteMapMutation.mutate(map.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {!selectedEquipment && (
-                <p className="text-center text-muted-foreground py-8">
-                  Select equipment first
-                </p>
-              )}
-              {selectedEquipment && (
-                <Accordion type="single" collapsible className="w-full">
-                  {ITEM_CATEGORIES.map((category) => {
-                    const categoryItems = items?.filter((item) => item.category === category);
-                    if (!categoryItems || categoryItems.length === 0) return null;
+                      </div>
+                      {map.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{map.description}</p>
+                      )}
+                    </div>
+                  ))}
+                  {maps?.length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">No maps yet</p>
+                  )}
+                </CardContent>
+              </Card>
 
-                    return (
-                      <AccordionItem key={category} value={category}>
-                        <AccordionTrigger className="text-sm">
-                          {category} ({categoryItems.length})
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-2">
-                            {categoryItems.map((item) => (
-                              <div
-                                key={item.id}
-                                className="flex items-center justify-between p-2 rounded border"
-                              >
-                                <div>
-                                  <p className="font-medium text-sm">{item.item_name}</p>
-                                  {item.quantity && (
-                                    <p className="text-xs text-muted-foreground">
-                                      {item.quantity}
-                                    </p>
-                                  )}
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    if (confirm("Delete this item?")) {
-                                      deleteItemMutation.mutate(item.id);
-                                    }
-                                  }}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ))}
+              {/* Areas */}
+              <Card className="lg:col-span-1">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Areas</CardTitle>
+                      <CardDescription>Zones & stations</CardDescription>
+                    </div>
+                    {selectedMap && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline">
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Add Area</DialogTitle>
+                          </DialogHeader>
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              const formData = new FormData(e.currentTarget);
+                              createAreaMutation.mutate({
+                                name: formData.get("name") as string,
+                                area_type: formData.get("area_type") as string,
+                                notes: formData.get("notes") as string,
+                              });
+                              (e.target as HTMLFormElement).reset();
+                            }}
+                            className="space-y-4"
+                          >
+                            <div>
+                              <Label htmlFor="area_name">Area Name</Label>
+                              <Input id="area_name" name="name" placeholder="e.g., Station 1" required />
+                            </div>
+                            <div>
+                              <Label htmlFor="area_type">Type</Label>
+                              <Select name="area_type" required>
+                                <SelectTrigger id="area_type">
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {AREA_TYPES.map((type) => (
+                                    <SelectItem key={type.value} value={type.value}>
+                                      {type.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label htmlFor="area_notes">Notes</Label>
+                              <Textarea id="area_notes" name="notes" />
+                            </div>
+                            <Button type="submit" className="w-full">
+                              Add Area
+                            </Button>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {!selectedMap && <p className="text-center text-muted-foreground py-8">Select a map first</p>}
+                  {selectedMap &&
+                    areas?.map((area) => (
+                      <div
+                        key={area.id}
+                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                          selectedArea === area.id
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "hover:bg-accent"
+                        }`}
+                        onClick={() => {
+                          setSelectedArea(area.id);
+                          setSelectedEquipment(null);
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-medium">{area.name}</span>
+                            <p className="text-xs opacity-75">{area.area_type}</p>
                           </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  })}
-                </Accordion>
-              )}
-              {selectedEquipment && items?.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No items yet</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm("Delete this area?")) {
+                                deleteAreaMutation.mutate(area.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  {selectedMap && areas?.length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">No areas yet</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Equipment */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Equipment</CardTitle>
+                      <CardDescription>Storage & tools</CardDescription>
+                    </div>
+                    {selectedArea && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline">
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Add Equipment</DialogTitle>
+                          </DialogHeader>
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              const formData = new FormData(e.currentTarget);
+                              createEquipmentMutation.mutate({
+                                name: formData.get("name") as string,
+                                equipment_type: formData.get("equipment_type") as string,
+                                capacity: formData.get("capacity") as string,
+                                notes: formData.get("notes") as string,
+                              });
+                              (e.target as HTMLFormElement).reset();
+                            }}
+                            className="space-y-4"
+                          >
+                            <div>
+                              <Label htmlFor="equip_name">Equipment Name</Label>
+                              <Input id="equip_name" name="name" placeholder="e.g., Main Fridge" required />
+                            </div>
+                            <div>
+                              <Label htmlFor="equip_type">Type</Label>
+                              <Select name="equipment_type" required>
+                                <SelectTrigger id="equip_type">
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {EQUIPMENT_TYPES.map((type) => (
+                                    <SelectItem key={type.value} value={type.value}>
+                                      {type.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label htmlFor="capacity">Capacity</Label>
+                              <Input id="capacity" name="capacity" placeholder="e.g., 12 bottles" />
+                            </div>
+                            <div>
+                              <Label htmlFor="equip_notes">Notes</Label>
+                              <Textarea id="equip_notes" name="notes" />
+                            </div>
+                            <Button type="submit" className="w-full">
+                              Add Equipment
+                            </Button>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {!selectedArea && <p className="text-center text-muted-foreground py-8">Select an area first</p>}
+                  
+                  {selectedArea && equipment && equipment.length > 0 && (
+                    <Accordion type="single" collapsible className="space-y-2">
+                      {equipment.map((equip) => (
+                        <AccordionItem key={equip.id} value={equip.id} className="border rounded-lg px-4">
+                          <AccordionTrigger
+                            className="hover:no-underline"
+                            onClick={() => setSelectedEquipment(equip.id)}
+                          >
+                            <div className="flex items-center justify-between w-full pr-4">
+                              <div className="flex items-center gap-2">
+                                <Box className="h-4 w-4" />
+                                <span className="font-medium">{equip.name}</span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm("Delete this equipment?")) {
+                                    deleteEquipmentMutation.mutate(equip.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-4">
+                            {/* Equipment Photos */}
+                            <div className="space-y-2">
+                              <Label>Equipment Photos (Max 3)</Label>
+                              <div className="grid grid-cols-3 gap-2">
+                                {equipmentPhotos.map((photo, idx) => (
+                                  <div key={idx} className="relative group">
+                                    <ZoomableImage
+                                      src={photo}
+                                      alt={`Equipment ${idx + 1}`}
+                                      className="w-full h-24 object-cover rounded"
+                                      containerClassName="w-full"
+                                    />
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                                      onClick={() => removePhoto(idx)}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                                {equipmentPhotos.length < 3 && (
+                                  <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed rounded cursor-pointer hover:bg-accent">
+                                    <ImageIcon className="h-6 w-6 mb-1" />
+                                    <span className="text-xs">Add Photo</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={handlePhotoUpload}
+                                      multiple
+                                    />
+                                  </label>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Items in Equipment */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Label>Items in {equip.name}</Label>
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button size="sm" variant="outline">
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Add Item
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>Add Item to {equip.name}</DialogTitle>
+                                    </DialogHeader>
+                                    <form
+                                      onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const formData = new FormData(e.currentTarget);
+                                        createItemMutation.mutate({
+                                          item_name: formData.get("item_name") as string,
+                                          category: formData.get("category") as string,
+                                          quantity: formData.get("quantity") as string,
+                                          notes: formData.get("notes") as string,
+                                        });
+                                        (e.target as HTMLFormElement).reset();
+                                      }}
+                                      className="space-y-4"
+                                    >
+                                      <div>
+                                        <Label htmlFor="item_name">Item Name</Label>
+                                        <Input id="item_name" name="item_name" required />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="category">Category</Label>
+                                        <Select name="category">
+                                          <SelectTrigger id="category">
+                                            <SelectValue placeholder="Select category" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {ITEM_CATEGORIES.map((cat) => (
+                                              <SelectItem key={cat} value={cat}>
+                                                {cat}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="quantity">Quantity</Label>
+                                        <Input id="quantity" name="quantity" placeholder="e.g., 10 bottles" />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="item_notes">Notes</Label>
+                                        <Textarea id="item_notes" name="notes" />
+                                      </div>
+                                      <Button type="submit" className="w-full">
+                                        Add Item
+                                      </Button>
+                                    </form>
+                                  </DialogContent>
+                                </Dialog>
+                              </div>
+                              
+                              {items && items.length > 0 ? (
+                                <div className="space-y-1">
+                                  {items.map((item) => (
+                                    <div
+                                      key={item.id}
+                                      className="flex items-center justify-between p-2 rounded border text-sm"
+                                    >
+                                      <div>
+                                        <span className="font-medium">{item.item_name}</span>
+                                        {item.category && (
+                                          <span className="text-xs text-muted-foreground ml-2">
+                                            ({item.category})
+                                          </span>
+                                        )}
+                                        {item.quantity && (
+                                          <span className="text-xs ml-2">{item.quantity}</span>
+                                        )}
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          if (confirm("Delete this item?")) {
+                                            deleteItemMutation.mutate(item.id);
+                                          }
+                                        }}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-muted-foreground text-center py-4">
+                                  No items yet
+                                </p>
+                              )}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  )}
+
+                  {selectedArea && equipment?.length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">No equipment yet</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

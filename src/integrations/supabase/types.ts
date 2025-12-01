@@ -70,6 +70,7 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          photos: string[] | null
         }
         Insert: {
           area_id: string
@@ -79,6 +80,7 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          photos?: string[] | null
         }
         Update: {
           area_id?: string
@@ -88,6 +90,7 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          photos?: string[] | null
         }
         Relationships: [
           {
