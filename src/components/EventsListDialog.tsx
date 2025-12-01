@@ -61,7 +61,7 @@ const EventLikesDialog = ({ eventId, open, onOpenChange }: EventLikesDialogProps
                 showStatus={false}
               />
               <div>
-                <p className="font-medium">{like.profiles?.full_name}</p>
+                <p className="font-normal">{like.profiles?.full_name}</p>
                 <p className="text-sm text-muted-foreground">@{like.profiles?.username}</p>
               </div>
             </div>
@@ -146,7 +146,7 @@ const AttendeesDialog = ({ eventId, open, onOpenChange }: AttendeesDialogProps) 
                 showStatus={false}
               />
               <div>
-                <p className="font-medium">{attendee.profiles?.full_name}</p>
+                <p className="font-normal">{attendee.profiles?.full_name}</p>
                 <p className="text-sm text-muted-foreground">@{attendee.profiles?.username}</p>
               </div>
             </div>

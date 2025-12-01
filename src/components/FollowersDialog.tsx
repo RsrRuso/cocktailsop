@@ -107,7 +107,7 @@ const FollowersDialog = ({ open, onOpenChange, userId }: FollowersDialogProps) =
                       <AvatarFallback>{follower.username?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{follower.full_name}</p>
+                      <p className="font-normal">{follower.full_name}</p>
                       <p className="text-sm text-muted-foreground">@{follower.username}</p>
                       {follower.professional_title && (
                         <p className="text-xs text-primary capitalize">

@@ -504,7 +504,7 @@ const StoryViewer = () => {
               />
             ) : null}
           </BirthdayFireworks>
-          <span className="text-white font-medium">{currentStory.profiles?.username || 'Unknown'}</span>
+          <span className="text-white font-normal">{currentStory.profiles?.username || 'Unknown'}</span>
         </div>
         <div className="flex items-center gap-2">
           {isOwnStory && (
