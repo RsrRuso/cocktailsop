@@ -216,7 +216,7 @@ export const ReelsFullscreenViewer = ({
           onClick={handleDoubleTap}
           initial={{ 
             y: direction === 1 ? "100%" : "-100%", 
-            scale: 0.9,
+            scale: 1,
             opacity: 0 
           }}
           animate={{ 
@@ -226,7 +226,7 @@ export const ReelsFullscreenViewer = ({
           }}
           exit={{ 
             y: direction === 1 ? "-100%" : "100%", 
-            scale: 0.9,
+            scale: 1,
             opacity: 0 
           }}
           transition={{
