@@ -402,7 +402,7 @@ const StatusReactionsDialog = ({
                           className="w-8 h-8"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm">{reply.profiles.full_name}</p>
+                          <p className="font-medium text-sm">{reply.profiles.full_name}</p>
                           <p className="text-sm break-words">{reply.content}</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {new Date(reply.created_at).toLocaleString()}

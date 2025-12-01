@@ -257,7 +257,7 @@ const UnifiedAdvancedCommentsDialog = ({
               <div className="relative flex items-center justify-between mb-0.5 gap-1.5">
                 <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
                   <p
-                    className="font-semibold text-[11px] sm:text-xs cursor-pointer hover:underline truncate"
+                    className="font-medium text-[11px] sm:text-xs cursor-pointer hover:underline truncate"
                     onClick={() => {
                       navigate(`/user/${comment.user_id}`);
                       onOpenChange(false);

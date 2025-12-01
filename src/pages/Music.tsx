@@ -223,7 +223,7 @@ const Music = () => {
                     <AvatarFallback>{share.profiles.username[0]}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="font-semibold">{share.profiles.username}</p>
+                    <p className="font-medium">{share.profiles.username}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(share.created_at).toLocaleDateString()}
                     </p>
