@@ -90,42 +90,25 @@ const PaymentOptions = () => {
       const cityInput = document.getElementById("city") as HTMLInputElement;
       const zipInput = document.getElementById("zip") as HTMLInputElement;
 
-      const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
+      // Create shipping address JSON object
+      const shippingAddress = {
+        street: addressInput?.value || "",
+        city: cityInput?.value || "",
+        postalCode: zipInput?.value || "",
+        country: "United States"
+      };
 
-      // ============================================================
-      // TODO: STRIPE PAYMENT INTEGRATION
-      // ============================================================
-      // When Stripe is configured, add payment processing here:
-      // 
-      // 1. Create Stripe Payment Intent:
-      //    const { data: paymentIntent } = await supabase.functions.invoke('create-payment-intent', {
-      //      body: { amount: total * 100, currency: 'usd' }
-      //    });
-      //
-      // 2. Confirm payment with Stripe:
-      //    const { error: stripeError } = await stripe.confirmCardPayment(
-      //      paymentIntent.client_secret,
-      //      { payment_method: { card: cardElement } }
-      //    );
-      //
-      // 3. Handle payment success/failure before creating order
-      // ============================================================
-
-      // Create order in database
+      // Create order in database (types will be regenerated after migration)
       const { data: order, error: orderError } = await supabase
         .from("orders")
-        .insert({
+        .insert([{
           user_id: user.id,
-          order_number: orderNumber,
           total_amount: total,
-          status: "pending", // Will be updated to "paid" after Stripe confirmation
+          status: "pending",
           payment_method: selectedMethod,
-          shipping_address: addressInput?.value || "N/A",
-          shipping_city: cityInput?.value || "N/A",
-          shipping_postal_code: zipInput?.value || "",
-          shipping_country: "N/A",
+          shipping_address: shippingAddress,
           seller_id: cartItems[0]?.seller_id || null,
-        })
+        } as any])
         .select()
         .single();
 
@@ -160,7 +143,7 @@ const PaymentOptions = () => {
           cartItems, 
           total,
           paymentMethod: selectedMethod,
-          orderNumber 
+          orderNumber: order.order_number
         } 
       });
     } catch (error: any) {

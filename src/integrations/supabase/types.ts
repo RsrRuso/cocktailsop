@@ -6442,6 +6442,7 @@ export type Database = {
         Returns: undefined
       }
       expire_team_invitations: { Args: never; Returns: undefined }
+      generate_order_number: { Args: never; Returns: string }
       get_member_workload: {
         Args: { member_team_id: string; member_user_id: string }
         Returns: number
