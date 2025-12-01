@@ -1,7 +1,8 @@
-import { Brain, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useHaptic } from "@/hooks/useHaptic";
+import neuralIcon from "@/assets/neural-network-icon.png";
 
 export const MatrixAIButton = () => {
   const navigate = useNavigate();
@@ -38,15 +39,14 @@ export const MatrixAIButton = () => {
           <div className="absolute top-5 right-3 w-1 h-1 rounded-full bg-accent shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
         </div>
         
-        {/* Brain icon with 3D depth effect */}
+        {/* Neural network icon */}
         <div className="relative">
-          {/* 3D depth layers */}
-          <Brain className="w-5 h-5 text-primary/20 absolute top-[3px] left-[3px] z-0" />
-          <Brain className="w-5 h-5 text-primary/40 absolute top-[2px] left-[2px] z-[1]" />
-          <Brain className="w-5 h-5 text-primary/60 absolute top-[1px] left-[1px] z-[2]" />
-          
-          {/* Main brain icon with highlights and shadows */}
-          <Brain className="w-5 h-5 text-primary relative z-10 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] [filter:drop-shadow(0_-1px_2px_rgba(255,255,255,0.3))] stroke-[2.5]" />
+          {/* Main neural icon with glow effect */}
+          <img 
+            src={neuralIcon} 
+            alt="Neural Network"
+            className="w-6 h-6 relative z-10 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse"
+          />
           
           {/* Sparkle effect */}
           <motion.div
