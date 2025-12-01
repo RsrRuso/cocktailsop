@@ -18,13 +18,38 @@ export const MatrixAIButton = () => {
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
-      {/* Neural network icon - no frame */}
+      {/* Neural network icon - 3D bright breathing */}
       <div className="relative">
-        {/* Main neural icon with glow effect */}
+        {/* 3D depth layers */}
         <img 
           src={neuralIcon} 
           alt="Neural Network"
-          className="w-12 h-12 relative z-10 rounded-full drop-shadow-[0_0_16px_rgba(59,130,246,1)] shadow-[0_6px_24px_rgba(0,0,0,0.8)] animate-pulse"
+          className="w-12 h-12 absolute top-[4px] left-[4px] rounded-full opacity-30 blur-[2px] z-0"
+        />
+        <img 
+          src={neuralIcon} 
+          alt="Neural Network"
+          className="w-12 h-12 absolute top-[2px] left-[2px] rounded-full opacity-50 blur-[1px] z-[1]"
+        />
+        
+        {/* Main neural icon with intense glow and breathing */}
+        <motion.img 
+          src={neuralIcon} 
+          alt="Neural Network"
+          className="w-12 h-12 relative z-10 rounded-full drop-shadow-[0_0_24px_rgba(59,130,246,1)] shadow-[0_8px_32px_rgba(59,130,246,0.9),0_0_48px_rgba(147,51,234,0.7)]"
+          animate={{
+            scale: [1, 1.15, 1],
+            filter: [
+              "brightness(1.2) drop-shadow(0 0 24px rgba(59,130,246,1))",
+              "brightness(1.5) drop-shadow(0 0 36px rgba(147,51,234,1))",
+              "brightness(1.2) drop-shadow(0 0 24px rgba(59,130,246,1))"
+            ]
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
         />
         
         {/* Sparkle effect */}
