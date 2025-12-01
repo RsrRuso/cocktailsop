@@ -1,5 +1,5 @@
 import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Trash2, X, Volume2, VolumeX } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import {
   DropdownMenu,
@@ -57,6 +57,20 @@ export const ReelsFullscreenViewer = ({
   const [direction, setDirection] = useState<1 | -1>(1);
   const y = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
+
+  // Preload adjacent videos
+  const preloadVideos = useCallback(() => {
+    // Preload current, next, and previous videos
+    [currentIndex - 1, currentIndex, currentIndex + 1].forEach(idx => {
+      if (idx >= 0 && idx < reels.length) {
+        const videoEl = videoRefs.current.get(idx);
+        if (videoEl) {
+          videoEl.load();
+        }
+      }
+    });
+  }, [currentIndex, reels.length]);
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
@@ -69,6 +83,7 @@ export const ReelsFullscreenViewer = ({
       body.style.overflow = "hidden";
       html.style.scrollbarWidth = "none";
       body.style.scrollbarWidth = "none";
+      preloadVideos();
     } else {
       html.style.overflow = "";
       body.style.overflow = "";
@@ -82,7 +97,14 @@ export const ReelsFullscreenViewer = ({
       html.style.scrollbarWidth = "";
       body.style.scrollbarWidth = "";
     };
-  }, [initialIndex, isOpen]);
+  }, [initialIndex, isOpen, preloadVideos]);
+
+  // Preload adjacent videos when index changes
+  useEffect(() => {
+    if (isOpen) {
+      preloadVideos();
+    }
+  }, [currentIndex, isOpen, preloadVideos]);
 
   if (!isOpen || reels.length === 0) return null;
 
@@ -222,6 +244,9 @@ export const ReelsFullscreenViewer = ({
         >
           <video
             key={currentReel.id}
+            ref={(el) => {
+              if (el) videoRefs.current.set(currentIndex, el);
+            }}
             src={currentReel.video_url}
             className="w-full h-full object-cover"
             style={{ aspectRatio: '9/16', maxHeight: '100vh' }}
@@ -229,9 +254,34 @@ export const ReelsFullscreenViewer = ({
             playsInline
             autoPlay
             muted={isMuted}
+            preload="auto"
           />
         </motion.div>
       </AnimatePresence>
+
+      {/* Hidden preload videos for adjacent reels */}
+      {currentIndex > 0 && (
+        <video
+          ref={(el) => {
+            if (el) videoRefs.current.set(currentIndex - 1, el);
+          }}
+          src={reels[currentIndex - 1].video_url}
+          className="hidden"
+          preload="auto"
+          muted
+        />
+      )}
+      {currentIndex < reels.length - 1 && (
+        <video
+          ref={(el) => {
+            if (el) videoRefs.current.set(currentIndex + 1, el);
+          }}
+          src={reels[currentIndex + 1].video_url}
+          className="hidden"
+          preload="auto"
+          muted
+        />
+      )}
 
       {/* Mute/Unmute Button with Smooth Bounce */}
       <motion.button
