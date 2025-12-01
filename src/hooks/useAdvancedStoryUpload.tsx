@@ -70,12 +70,8 @@ export function useAdvancedStoryUpload() {
           });
 
           try {
-            const compressed = await compressImage(file, {
-              maxSizeMB: 2,
-              maxWidthOrHeight: 1920,
-              useWebWorker: true,
-            });
-            fileToUpload = compressed;
+            const compressed = await compressImage(file, 2);
+            fileToUpload = new File([compressed], file.name, { type: file.type });
           } catch (error) {
             console.warn('Compression failed, using original:', error);
           }
