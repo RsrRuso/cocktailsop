@@ -333,7 +333,7 @@ export const CreateGroupDialog = ({
                       className="w-12 h-12"
                     />
                     <div className="flex-1 text-left min-w-0">
-                      <p className="font-semibold truncate">{contact.full_name}</p>
+                      <p className="font-medium truncate">{contact.full_name}</p>
                       <p className="text-sm text-muted-foreground truncate">
                         @{contact.username}
                       </p>

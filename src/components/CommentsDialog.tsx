@@ -189,7 +189,7 @@ const CommentsDialog = ({ open, onOpenChange, postId, isReel = false, onCommentC
           <div className="bg-card/30 hover:bg-card/50 rounded-2xl px-2.5 py-2 border border-border/30 hover:border-primary/30 active:bg-card/60 transition-all relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="relative flex items-center gap-1.5 mb-0.5 flex-wrap">
-              <p className="font-semibold text-[11px] sm:text-xs">{comment.profiles.username}</p>
+              <p className="font-medium text-[11px] sm:text-xs">{comment.profiles.username}</p>
               <p className="text-[9px] sm:text-[10px] text-muted-foreground">
                 {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
               </p>
