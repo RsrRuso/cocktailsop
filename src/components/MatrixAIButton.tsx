@@ -45,7 +45,7 @@ export const MatrixAIButton = () => {
           <img 
             src={neuralIcon} 
             alt="Neural Network"
-            className="w-6 h-6 relative z-10 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse"
+            className="w-9 h-9 relative z-10 rounded-full drop-shadow-[0_0_12px_rgba(59,130,246,0.9)] shadow-[0_4px_16px_rgba(0,0,0,0.6)] animate-pulse"
           />
           
           {/* Sparkle effect */}
