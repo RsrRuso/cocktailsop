@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Lightbulb, TrendingUp, Settings, ArrowLeft, Brain } from "lucide-react";
+import { MessageSquare, Lightbulb, TrendingUp, Settings, ArrowLeft, Brain, Target } from "lucide-react";
 import { MatrixInsightsTab } from "@/components/matrix/MatrixInsightsTab";
 import { MatrixChatTab } from "@/components/matrix/MatrixChatTab";
+import { MatrixCareerTab } from "@/components/matrix/MatrixCareerTab";
 import { MatrixRoadmapTab } from "@/components/matrix/MatrixRoadmapTab";
 import { MatrixPatternsTab } from "@/components/matrix/MatrixPatternsTab";
 import { MatrixAdminTab } from "@/components/matrix/MatrixAdminTab";
@@ -56,6 +57,13 @@ export default function MatrixAI() {
                 <span className="hidden sm:inline">Chat</span>
               </TabsTrigger>
               <TabsTrigger
+                value="career"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
+              >
+                <Target className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Career</span>
+              </TabsTrigger>
+              <TabsTrigger
                 value="insights"
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
               >
@@ -90,6 +98,10 @@ export default function MatrixAI() {
             <div className="p-4 flex-1 overflow-hidden">
               <TabsContent value="chat" className="mt-0 h-full">
                 <MatrixChatTab />
+              </TabsContent>
+
+              <TabsContent value="career" className="mt-0 h-full overflow-y-auto">
+                <MatrixCareerTab />
               </TabsContent>
 
               <TabsContent value="insights" className="mt-0 h-full overflow-y-auto">
