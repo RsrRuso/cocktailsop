@@ -130,16 +130,21 @@ export const MatrixCareerTab = () => {
   const generateRecommendations = async () => {
     try {
       setLoading(true);
+      console.log("Generating recommendations with profile:", careerProfile);
+      
       const { data, error } = await supabase.functions.invoke("career-ai-mentor", {
         body: { action: "generate_recommendations" }
       });
 
+      console.log("Generate recommendations response:", { data, error });
+
       if (error) throw error;
+      
       toast.success("New recommendations generated!");
-      loadCareerData();
+      await loadCareerData();
     } catch (error) {
       console.error("Error generating recommendations:", error);
-      toast.error("Failed to generate recommendations");
+      toast.error(error instanceof Error ? error.message : "Failed to generate recommendations");
     } finally {
       setLoading(false);
     }

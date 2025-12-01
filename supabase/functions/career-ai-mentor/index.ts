@@ -12,6 +12,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Career AI Mentor function called");
+    
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
@@ -22,16 +24,22 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
+      console.error("Auth error:", authError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    
+    console.log("User authenticated:", user.id);
 
     const { action, data } = await req.json();
+    console.log("Action requested:", action);
+    
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY not configured");
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
@@ -130,6 +138,7 @@ Return as JSON array.`;
     }
 
     // Call Lovable AI
+    console.log("Calling Lovable AI with model: google/gemini-2.5-flash");
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -156,11 +165,15 @@ Return as JSON array.`;
 
     const aiData = await aiResponse.json();
     const aiResult = aiData.choices[0].message.content;
+    console.log("AI response received, length:", aiResult.length);
 
     // If generating recommendations, store them
     if (action === "generate_recommendations") {
       try {
+        console.log("Parsing AI recommendations...");
         const recs = JSON.parse(aiResult);
+        console.log("Parsed recommendations:", recs.length);
+        
         const insertData = recs.map((rec: any) => ({
           user_id: user.id,
           recommendation_type: rec.type,
@@ -172,7 +185,12 @@ Return as JSON array.`;
           expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
         }));
 
-        await supabase.from("career_recommendations").insert(insertData);
+        const { error: insertError } = await supabase.from("career_recommendations").insert(insertData);
+        if (insertError) {
+          console.error("Insert error:", insertError);
+          throw insertError;
+        }
+        console.log("Recommendations stored successfully");
       } catch (e) {
         console.error("Failed to parse/store recommendations:", e);
       }
