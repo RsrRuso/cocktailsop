@@ -445,7 +445,7 @@ const Profile = () => {
                     ) : (
                       <div 
                         key={`reel-${item.id}`} 
-                        className="glass rounded-xl overflow-hidden cursor-pointer border border-border/50"
+                        className="overflow-hidden cursor-pointer"
                         onClick={() => navigate('/reels', { 
                           state: { 
                             scrollToReelId: item.id,
@@ -465,13 +465,13 @@ const Profile = () => {
                           {item.caption && <p className="text-sm">{item.caption}</p>}
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1">
-                              <Play className="w-4 h-4" /> {item.view_count || 0}
+                              <Play className="w-4 h-4" strokeWidth={1.5} /> {item.view_count || 0}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Heart className="w-4 h-4" /> {item.like_count || 0}
+                              <Heart className="w-4 h-4" strokeWidth={1.5} /> {item.like_count || 0}
                             </span>
                             <span className="flex items-center gap-1">
-                              <MessageCircle className="w-4 h-4" /> {item.comment_count || 0}
+                              <MessageCircle className="w-4 h-4" strokeWidth={1.5} /> {item.comment_count || 0}
                             </span>
                             <button
                               onClick={(e) => {
