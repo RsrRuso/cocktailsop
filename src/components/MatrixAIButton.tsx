@@ -14,7 +14,7 @@ export const MatrixAIButton = () => {
         lightTap();
         navigate("/matrix-ai");
       }}
-      className="relative group"
+      className="relative group bg-transparent"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
