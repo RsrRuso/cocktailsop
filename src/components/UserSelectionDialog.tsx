@@ -181,7 +181,7 @@ const UserSelectionDialog = ({ open, onOpenChange, postContent, postId, postType
                       <AvatarFallback>{user.username?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-normal">{user.full_name}</p>
+                      <p className="font-normal text-sm">{user.full_name}</p>
                       <p className="text-sm text-muted-foreground">@{user.username}</p>
                     </div>
                   </div>

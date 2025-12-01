@@ -176,7 +176,7 @@ const Explore = () => {
                   {profile.username?.[0]?.toUpperCase()}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-normal">{profile.full_name}</h3>
+                  <h3 className="font-normal text-sm">{profile.full_name}</h3>
                   <p className="text-sm text-muted-foreground">@{profile.username}</p>
                   <p className="text-xs text-primary capitalize mt-1">
                     {profile.professional_title?.replace(/_/g, " ")}
