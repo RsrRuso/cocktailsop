@@ -19,7 +19,7 @@ export const MatrixAIButton = () => {
       whileTap={{ scale: 0.95 }}
     >
       {/* Brain icon - 3D bright breathing with round light and rotation */}
-      <div className="relative">
+      <div className="relative" style={{ perspective: "1000px" }}>
         {/* Breathing light glow backdrop */}
         <motion.div
           className="absolute inset-0 rounded-full bg-gradient-radial from-primary/40 via-accent/30 to-transparent blur-xl"
