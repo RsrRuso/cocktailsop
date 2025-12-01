@@ -76,12 +76,12 @@ export const FeedItem = memo(({
               e.stopPropagation();
               onToggleMute(item.id + item.media_urls[0]);
             }}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-all z-20"
+            className="absolute top-3 sm:top-4 right-3 sm:right-4 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center active:bg-black/70 transition-all z-20 active:scale-95"
           >
             {mutedVideos.has(item.id + item.media_urls[0]) ? (
-              <Volume2 className="w-5 h-5 text-white" />
+              <Volume2 className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             ) : (
-              <VolumeX className="w-5 h-5 text-white" />
+              <VolumeX className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             )}
           </button>
 
@@ -113,18 +113,18 @@ export const FeedItem = memo(({
           )}
 
           {/* Engagement Buttons - Right Side Vertical Stack */}
-          <div className="absolute right-3 bottom-20 flex flex-col gap-4 z-20">
+          <div className="absolute right-2 sm:right-3 bottom-16 sm:bottom-20 flex flex-col gap-5 sm:gap-6 z-20">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onLike();
               }}
-              className="flex flex-col items-center gap-1"
+              className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-all">
-                <Heart className={`w-6 h-6 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center active:bg-black/70 transition-all">
+                <Heart className={`w-7 h-7 sm:w-8 sm:h-8 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
               </div>
-              <span className="text-white text-xs font-bold drop-shadow-lg">{item.like_count || 0}</span>
+              <span className="text-white text-sm sm:text-base font-bold drop-shadow-lg">{item.like_count || 0}</span>
             </button>
 
             <button
@@ -132,12 +132,12 @@ export const FeedItem = memo(({
                 e.stopPropagation();
                 setShowComments(true);
               }}
-              className="flex flex-col items-center gap-1"
+              className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-all">
-                <MessageCircle className="w-6 h-6 text-white" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center active:bg-black/70 transition-all">
+                <MessageCircle className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
               </div>
-              <span className="text-white text-xs font-bold drop-shadow-lg">{item.comment_count || 0}</span>
+              <span className="text-white text-sm sm:text-base font-bold drop-shadow-lg">{item.comment_count || 0}</span>
             </button>
 
             <button
@@ -145,10 +145,10 @@ export const FeedItem = memo(({
                 e.stopPropagation();
                 onShare();
               }}
-              className="flex flex-col items-center gap-1"
+              className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-all">
-                <Send className="w-6 h-6 text-white" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center active:bg-black/70 transition-all">
+                <Send className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
               </div>
             </button>
 
@@ -157,10 +157,10 @@ export const FeedItem = memo(({
                 e.stopPropagation();
                 setShowInsights(true);
               }}
-              className="flex flex-col items-center gap-1"
+              className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center hover:scale-110 transition-all">
-                <Sparkles className="w-6 h-6 text-white" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center active:scale-110 transition-all shadow-lg shadow-purple-500/50">
+                <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
               </div>
             </button>
 
@@ -169,19 +169,19 @@ export const FeedItem = memo(({
                 e.stopPropagation();
                 setShowLikes(true);
               }}
-              className="flex flex-col items-center gap-1"
+              className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
-              <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-all">
-                <Eye className="w-6 h-6 text-white" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center active:bg-black/70 transition-all">
+                <Eye className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
               </div>
-              <span className="text-white text-xs font-bold drop-shadow-lg">{item.view_count || 0}</span>
+              <span className="text-white text-sm sm:text-base font-bold drop-shadow-lg">{item.view_count || 0}</span>
             </button>
 
             {currentUserId && item.user_id === currentUserId && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-all">
-                    <MoreVertical className="w-6 h-6 text-white" />
+                  <button className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center active:bg-black/70 transition-all active:scale-95">
+                    <MoreVertical className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md border border-border/50">

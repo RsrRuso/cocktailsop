@@ -71,18 +71,18 @@ export const ReelFullscreen = ({
       {/* Mute/Unmute Button */}
       <button
         onClick={() => setIsMuted(!isMuted)}
-        className="absolute top-4 right-4 z-50 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+        className="absolute top-3 sm:top-4 right-3 sm:right-4 z-50 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-all"
       >
         {isMuted ? (
-          <VolumeX className="w-7 h-7 text-white drop-shadow-lg" />
+          <VolumeX className="w-6 h-6 sm:w-7 sm:h-7 text-white drop-shadow-lg" />
         ) : (
-          <Volume2 className="w-7 h-7 text-white drop-shadow-lg" />
+          <Volume2 className="w-6 h-6 sm:w-7 sm:h-7 text-white drop-shadow-lg" />
         )}
       </button>
 
       {/* Caption - Bottom positioned */}
-      <div className="absolute bottom-20 left-4 right-20 z-30 space-y-2 animate-slide-in-right">
-        <p className="text-white text-sm leading-relaxed drop-shadow-lg">
+      <div className="absolute bottom-20 sm:bottom-24 left-4 right-20 z-30 space-y-2 animate-slide-in-right">
+        <p className="text-white text-sm sm:text-base leading-relaxed drop-shadow-lg">
           {content.split(/(\s+)/).map((part, i) => {
             if (part.startsWith('#')) {
               return <span key={i} className="text-blue-400 font-semibold">{part}</span>;
@@ -96,49 +96,49 @@ export const ReelFullscreen = ({
       </div>
 
       {/* Action Buttons - Right Side Vertical */}
-      <div className="absolute right-3 bottom-20 flex flex-col gap-6 z-40">
+      <div className="absolute right-2 sm:right-3 bottom-20 sm:bottom-24 flex flex-col gap-5 sm:gap-6 z-40">
         {/* Like Button */}
         <button
           onClick={onLike}
-          className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
+          className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
         >
-          <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 backdrop-blur-md border-2 border-white/30 flex items-center justify-center active:border-white/50 active:bg-white/10 transition-all">
             <Heart
-              className={`w-7 h-7 transition-colors ${
+              className={`w-7 h-7 sm:w-8 sm:h-8 transition-colors ${
                 isLiked ? "fill-red-500 text-red-500" : "text-white"
               }`}
             />
           </div>
-          <span className="text-white text-xs font-bold drop-shadow-lg">{likeCount || 0}</span>
+          <span className="text-white text-sm sm:text-base font-bold drop-shadow-lg">{likeCount || 0}</span>
         </button>
 
         {/* Comment Button */}
         <button
           onClick={onComment}
-          className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
+          className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
         >
-          <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-            <MessageCircle className="w-7 h-7 text-white" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 backdrop-blur-md border-2 border-white/30 flex items-center justify-center active:border-white/50 active:bg-white/10 transition-all">
+            <MessageCircle className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
           </div>
-          <span className="text-white text-xs font-bold drop-shadow-lg">{commentCount || 0}</span>
+          <span className="text-white text-sm sm:text-base font-bold drop-shadow-lg">{commentCount || 0}</span>
         </button>
 
         {/* Share/Send Button */}
         <button
           onClick={onShare}
-          className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
+          className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
         >
-          <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-            <Send className="w-7 h-7 text-white" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 backdrop-blur-md border-2 border-white/30 flex items-center justify-center active:border-white/50 active:bg-white/10 transition-all">
+            <Send className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
           </div>
         </button>
 
         {/* Bookmark Button */}
         <button
-          className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95"
+          className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
         >
-          <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-            <Bookmark className="w-7 h-7 text-white" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 backdrop-blur-md border-2 border-white/30 flex items-center justify-center active:border-white/50 active:bg-white/10 transition-all">
+            <Bookmark className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
           </div>
         </button>
 
@@ -146,9 +146,9 @@ export const ReelFullscreen = ({
         {isOwnPost && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex flex-col items-center gap-1 transition-all hover:scale-110 active:scale-95">
-                <div className="w-12 h-12 rounded-full bg-transparent backdrop-blur-md border-2 border-white/30 flex items-center justify-center hover:border-white/50 hover:bg-white/10">
-                  <MoreVertical className="w-7 h-7 text-white" />
+              <button className="flex flex-col items-center gap-1 active:scale-95 transition-transform">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 backdrop-blur-md border-2 border-white/30 flex items-center justify-center active:border-white/50 active:bg-white/10 transition-all">
+                  <MoreVertical className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
                 </div>
               </button>
             </DropdownMenuTrigger>
