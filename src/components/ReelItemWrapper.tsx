@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect, useRef } from 'react';
 import { Heart, MessageCircle, Send, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX, Bookmark } from 'lucide-react';
 import OptimizedAvatar from '@/components/OptimizedAvatar';
 import {
@@ -50,8 +50,29 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
   navigate,
   handleDeleteReel,
 }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   // Track view when this reel is visible
   useViewTracking('reel', reel.id, user?.id, index === currentIndex);
+
+  // Preload adjacent videos aggressively
+  useEffect(() => {
+    if (videoRef.current && Math.abs(index - currentIndex) <= 2) {
+      // Preload videos within 2 positions
+      videoRef.current.load();
+    }
+  }, [index, currentIndex]);
+
+  // Play/pause based on visibility
+  useEffect(() => {
+    if (videoRef.current) {
+      if (index === currentIndex) {
+        videoRef.current.play().catch(() => {});
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [index, currentIndex]);
 
   // Parse caption for hashtags and mentions
   const renderCaption = (text: string) => {
@@ -71,13 +92,13 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
     <div className="h-screen snap-start relative bg-black">
       {/* Full Screen Video - No frames, Instagram style */}
       <video
+        ref={videoRef}
         src={reel.video_url}
         className="absolute inset-0 w-full h-full object-cover"
         loop
         playsInline
         muted={mutedVideos.has(reel.id)}
-        autoPlay={index === currentIndex}
-        preload={Math.abs(index - currentIndex) <= 1 ? "auto" : "none"}
+        preload={Math.abs(index - currentIndex) <= 2 ? "auto" : "metadata"}
       />
 
       {/* Mute/Unmute Button - Top Right */}
