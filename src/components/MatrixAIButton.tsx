@@ -53,7 +53,7 @@ export const MatrixAIButton = () => {
           className="w-12 h-12 relative z-10 rounded-full drop-shadow-[0_0_24px_rgba(59,130,246,1)] shadow-[0_8px_32px_rgba(59,130,246,0.9),0_0_48px_rgba(147,51,234,0.7)]"
           animate={{
             scale: [1, 1.15, 1],
-            rotateY: [0, 15, 0, -15, 0],
+            rotate: [0, 360],
             filter: [
               "brightness(1.2) drop-shadow(0 0 24px rgba(59,130,246,1))",
               "brightness(1.5) drop-shadow(0 0 36px rgba(147,51,234,1))",
@@ -63,7 +63,7 @@ export const MatrixAIButton = () => {
           transition={{
             duration: 3,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: "linear",
           }}
           style={{ transformStyle: "preserve-3d" }}
         />
