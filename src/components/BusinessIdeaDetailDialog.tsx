@@ -103,7 +103,7 @@ export const BusinessIdeaDetailDialog = ({ open, onOpenChange, idea, onUpdate }:
               <AvatarFallback>{idea.profiles?.username?.[0]?.toUpperCase()}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-normal">{idea.profiles?.full_name || idea.profiles?.username}</p>
+              <p className="font-normal text-sm">{idea.profiles?.full_name || idea.profiles?.username}</p>
               <p className="text-sm text-muted-foreground capitalize">{idea.profiles?.user_type || 'Entrepreneur'}</p>
             </div>
             {user?.id !== idea.user_id && (

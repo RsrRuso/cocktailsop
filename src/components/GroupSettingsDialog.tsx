@@ -436,7 +436,7 @@ export const GroupSettingsDialog = ({
                         className="w-12 h-12"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="font-normal truncate">{member.full_name}</p>
+                        <p className="font-normal text-sm truncate">{member.full_name}</p>
                         <p className="text-sm text-muted-foreground truncate">
                           @{member.username}
                           {member.role === 'admin' && ' • Admin'}

@@ -311,7 +311,7 @@ export const EnhancedCommentsDialog = ({
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                <span className="font-normal text-xs sm:text-sm">{comment.profiles.full_name}</span>
+                <span className="font-normal text-[10px] sm:text-xs">{comment.profiles.full_name}</span>
                 <span className="text-[10px] sm:text-xs text-muted-foreground">
                   @{comment.profiles.username}
                 </span>

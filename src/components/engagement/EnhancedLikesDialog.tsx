@@ -178,7 +178,7 @@ export const EnhancedLikesDialog = ({
                   <Target className="w-5 h-5 text-yellow-500" />
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Top Influencer</p>
-                    <p className="font-normal text-sm">@{aiInsights.topInfluencer.profiles.username}</p>
+                    <p className="font-normal text-xs">@{aiInsights.topInfluencer.profiles.username}</p>
                   </div>
                 </div>
               </Card>
