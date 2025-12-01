@@ -203,6 +203,55 @@ ${careerProfile?.target_positions?.join(", ") || "Management level"}
 
 Generate personalized, prioritized learning roadmap with actionable steps and realistic timelines.`;
 
+    } else if (action === "detect_bugs") {
+      systemPrompt = `You are an elite AI platform tester and quality assurance expert. Analyze the application logs, errors, and system behavior to detect bugs, issues, and potential problems.
+
+**Detection Categories:**
+1. **Critical Errors**: Application crashes, data loss, security vulnerabilities
+2. **Functional Bugs**: Features not working as expected, broken functionality
+3. **Performance Issues**: Slow loading, memory leaks, inefficient queries
+4. **UI/UX Problems**: Layout issues, accessibility problems, confusing interfaces
+5. **Logic Errors**: Incorrect calculations, faulty business logic, edge case failures
+
+**For each bug found, provide:**
+{
+  "bug_type": "error|warning|performance|ui|logic",
+  "severity": "critical|high|medium|low",
+  "title": "Clear, specific bug title",
+  "description": "Detailed description of the issue and its impact",
+  "location": "Page/component where bug exists",
+  "reproduction_steps": ["Step 1", "Step 2", "Step 3"],
+  "error_details": { "error_message": "...", "stack_trace": "...", "context": "..." },
+  "ai_analysis": "Root cause analysis and recommended fix with code examples if applicable"
+}
+
+**Analysis Criteria:**
+- Check for console errors and warnings
+- Identify broken functionality
+- Detect performance bottlenecks
+- Find UI rendering issues
+- Spot logic errors and edge cases
+- Identify missing error handling
+- Check for accessibility issues
+
+Return ONLY valid JSON array: [{ bug_type, severity, title, description, location, reproduction_steps, error_details, ai_analysis }]`;
+
+      userMessage = `Perform comprehensive platform testing and bug detection:
+
+**Recent Application Logs:**
+${data?.logs || "No logs provided"}
+
+**Error Patterns:**
+${data?.errors || "No errors provided"}
+
+**Performance Metrics:**
+${data?.metrics || "No metrics provided"}
+
+**User Reports:**
+${data?.user_reports || "No user reports"}
+
+Detect all bugs, issues, and potential problems. Be thorough and detailed in your analysis.`;
+
     } else {
       return new Response(JSON.stringify({ error: "Invalid action" }), {
         status: 400,
@@ -237,8 +286,14 @@ Generate personalized, prioritized learning roadmap with actionable steps and re
     }
 
     const aiData = await aiResponse.json();
-    const aiResult = aiData.choices[0].message.content;
+    let aiResult = aiData.choices[0].message.content;
     console.log("AI response received, length:", aiResult.length);
+
+    // Strip markdown code blocks if present
+    if (aiResult.includes("```")) {
+      aiResult = aiResult.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      console.log("Stripped markdown code blocks from response");
+    }
 
     // If generating recommendations, store them
     if (action === "generate_recommendations") {
@@ -266,6 +321,36 @@ Generate personalized, prioritized learning roadmap with actionable steps and re
         console.log("Recommendations stored successfully");
       } catch (e) {
         console.error("Failed to parse/store recommendations:", e);
+      }
+    }
+
+    // If detecting bugs, store them
+    if (action === "detect_bugs") {
+      try {
+        console.log("Parsing AI bug detection results...");
+        const bugs = JSON.parse(aiResult);
+        console.log("Parsed bugs:", bugs.length);
+        
+        const insertData = bugs.map((bug: any) => ({
+          bug_type: bug.bug_type,
+          severity: bug.severity,
+          title: bug.title,
+          description: bug.description,
+          location: bug.location,
+          reproduction_steps: bug.reproduction_steps,
+          error_details: bug.error_details,
+          ai_analysis: bug.ai_analysis,
+          status: "reported",
+        }));
+
+        const { error: insertError } = await supabase.from("platform_bugs").insert(insertData);
+        if (insertError) {
+          console.error("Insert error:", insertError);
+          throw insertError;
+        }
+        console.log("Bugs stored successfully");
+      } catch (e) {
+        console.error("Failed to parse/store bugs:", e);
       }
     }
 

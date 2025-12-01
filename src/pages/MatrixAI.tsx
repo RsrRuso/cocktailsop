@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Lightbulb, TrendingUp, Settings, ArrowLeft, Brain, Target } from "lucide-react";
+import { MessageSquare, Lightbulb, TrendingUp, Settings, ArrowLeft, Brain, Target, Bug } from "lucide-react";
 import { MatrixInsightsTab } from "@/components/matrix/MatrixInsightsTab";
 import { MatrixChatTab } from "@/components/matrix/MatrixChatTab";
 import { MatrixCareerTab } from "@/components/matrix/MatrixCareerTab";
+import { MatrixBugTestingTab } from "@/components/matrix/MatrixBugTestingTab";
 import { MatrixRoadmapTab } from "@/components/matrix/MatrixRoadmapTab";
 import { MatrixPatternsTab } from "@/components/matrix/MatrixPatternsTab";
 import { MatrixAdminTab } from "@/components/matrix/MatrixAdminTab";
@@ -80,6 +81,13 @@ export default function MatrixAI() {
                 <span className="hidden sm:inline">Career</span>
               </TabsTrigger>
               <TabsTrigger
+                value="bugs"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
+              >
+                <Bug className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Bug Testing</span>
+              </TabsTrigger>
+              <TabsTrigger
                 value="insights"
                 className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
               >
@@ -130,6 +138,10 @@ export default function MatrixAI() {
 
               <TabsContent value="roadmap" className="mt-0 h-full overflow-y-auto">
                 <MatrixRoadmapTab />
+              </TabsContent>
+
+              <TabsContent value="bugs" className="mt-0 h-full overflow-y-auto">
+                <MatrixBugTestingTab />
               </TabsContent>
 
               {profile?.user_type === "founder" && (
