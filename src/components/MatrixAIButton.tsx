@@ -18,8 +18,22 @@ export const MatrixAIButton = () => {
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
-      {/* Neural network icon - 3D bright breathing */}
+      {/* Neural network icon - 3D bright breathing with round light */}
       <div className="relative">
+        {/* Breathing light glow backdrop */}
+        <motion.div
+          className="absolute inset-0 rounded-full bg-gradient-radial from-primary/40 via-accent/30 to-transparent blur-xl"
+          animate={{
+            scale: [1.2, 1.8, 1.2],
+            opacity: [0.6, 0.9, 0.6],
+          }}
+          transition={{
+            duration: 2.5,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        
         {/* 3D depth layers */}
         <img 
           src={neuralIcon} 
@@ -68,30 +82,56 @@ export const MatrixAIButton = () => {
           <Sparkles className="w-3 h-3 text-accent" />
         </motion.div>
 
-        {/* Pulsing glow rings */}
+        {/* Breathing round light rings - Multiple layers */}
         <motion.div
-          className="absolute inset-0 rounded-full border border-primary/30"
+          className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 blur-md"
           animate={{
-            scale: [1, 1.5, 1],
-            opacity: [0.5, 0, 0.5],
+            scale: [1, 1.4, 1],
+            opacity: [0.7, 0.3, 0.7],
           }}
           transition={{
-            duration: 2,
+            duration: 2.5,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute inset-0 rounded-full border-2 border-primary/40"
+          animate={{
+            scale: [1, 1.6, 1],
+            opacity: [0.6, 0, 0.6],
+          }}
+          transition={{
+            duration: 2.5,
             repeat: Infinity,
             ease: "easeOut",
           }}
         />
         <motion.div
-          className="absolute inset-0 rounded-full border border-accent/30"
+          className="absolute inset-0 rounded-full border-2 border-accent/40"
           animate={{
-            scale: [1, 1.8, 1],
-            opacity: [0.3, 0, 0.3],
+            scale: [1, 2, 1],
+            opacity: [0.4, 0, 0.4],
           }}
           transition={{
-            duration: 2,
+            duration: 2.5,
             repeat: Infinity,
             ease: "easeOut",
-            delay: 0.5,
+            delay: 0.6,
+          }}
+        />
+        
+        {/* Outer breathing glow circle */}
+        <motion.div
+          className="absolute inset-0 rounded-full shadow-[0_0_40px_8px_rgba(59,130,246,0.5)]"
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.8, 0.4, 0.8],
+          }}
+          transition={{
+            duration: 2.5,
+            repeat: Infinity,
+            ease: "easeInOut",
           }}
         />
       </div>
