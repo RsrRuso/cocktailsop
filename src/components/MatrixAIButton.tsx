@@ -2,7 +2,7 @@ import { Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useHaptic } from "@/hooks/useHaptic";
-import brainIcon from "@/assets/brain-icon.png";
+import { Brain3D } from "./Brain3D";
 
 export const MatrixAIButton = () => {
   const navigate = useNavigate();
@@ -34,39 +34,10 @@ export const MatrixAIButton = () => {
           }}
         />
         
-        {/* 3D depth layers */}
-        <img 
-          src={brainIcon} 
-          alt="MATRIX AI Brain"
-          className="w-12 h-12 absolute top-[4px] left-[4px] rounded-full opacity-30 blur-[2px] z-0"
-        />
-        <img 
-          src={brainIcon} 
-          alt="MATRIX AI Brain"
-          className="w-12 h-12 absolute top-[2px] left-[2px] rounded-full opacity-50 blur-[1px] z-[1]"
-        />
-        
-        {/* Main brain icon with intense glow, breathing, and rotation */}
-        <motion.img 
-          src={brainIcon} 
-          alt="MATRIX AI Brain"
-          className="w-12 h-12 relative z-10 rounded-full drop-shadow-[0_0_24px_rgba(59,130,246,1)] shadow-[0_8px_32px_rgba(59,130,246,0.9),0_0_48px_rgba(147,51,234,0.7)]"
-          animate={{
-            scale: [1, 1.15, 1],
-            rotateY: [0, 360],
-            filter: [
-              "brightness(1.2) drop-shadow(0 0 24px rgba(59,130,246,1))",
-              "brightness(1.5) drop-shadow(0 0 36px rgba(147,51,234,1))",
-              "brightness(1.2) drop-shadow(0 0 24px rgba(59,130,246,1))"
-            ]
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          style={{ transformStyle: "preserve-3d" }}
-        />
+        {/* 3D Brain */}
+        <div className="relative z-10">
+          <Brain3D />
+        </div>
         
         {/* Sparkle effect */}
         <motion.div
