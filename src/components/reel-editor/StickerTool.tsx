@@ -12,12 +12,13 @@ const emojiList = ['😀', '😂', '❤️', '🔥', '👍', '🎉', '💯', '�
 
 export function StickerTool({ stickers, onAdd, onRemove }: StickerToolProps) {
   const handleAddEmoji = (emoji: string) => {
+    // Center the emoji in typical video canvas
     onAdd({
       id: Date.now().toString(),
       type: 'emoji',
       content: emoji,
-      x: 150,
-      y: 150,
+      x: 320,
+      y: 180,
       size: 64,
     });
   };

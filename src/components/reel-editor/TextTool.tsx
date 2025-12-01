@@ -26,11 +26,12 @@ export function TextTool({ textOverlays, onAdd, onUpdate, onRemove }: TextToolPr
   const handleAdd = () => {
     if (!newText.trim()) return;
     
+    // Center the text in a typical video canvas (640x360)
     onAdd({
       id: Date.now().toString(),
       text: newText,
-      x: 100,
-      y: 100,
+      x: 320, // Center horizontally
+      y: 180, // Center vertically
       fontSize,
       color,
       fontFamily,

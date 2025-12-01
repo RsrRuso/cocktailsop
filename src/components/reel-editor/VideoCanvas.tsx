@@ -2,6 +2,7 @@ import { useEffect, RefObject } from 'react';
 import { VideoState, Filters, Adjustments, TextOverlay, Sticker, Drawing, LayoutMode } from '@/hooks/useVideoEditor';
 
 interface VideoCanvasProps {
+  videoUrl: string | null;
   videoRef: RefObject<HTMLVideoElement>;
   canvasRef: RefObject<HTMLCanvasElement>;
   videoState: VideoState;
@@ -14,6 +15,7 @@ interface VideoCanvasProps {
 }
 
 export function VideoCanvas({
+  videoUrl,
   videoRef,
   canvasRef,
   videoState,
@@ -22,34 +24,36 @@ export function VideoCanvas({
   textOverlays,
   stickers,
   drawings,
-  layoutMode,
 }: VideoCanvasProps) {
   
-  // Apply filters and render overlays
+  // Initialize video and canvas rendering
   useEffect(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    if (!video || !canvas || !videoUrl) return;
+
+    video.src = videoUrl;
+    video.load();
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const render = () => {
-      if (video.readyState >= video.HAVE_CURRENT_DATA) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+    let animationId: number;
 
-        // Apply filters
+    const render = () => {
+      if (video.readyState >= video.HAVE_CURRENT_DATA && !video.paused) {
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 360;
+
+        // Apply filters via CSS filter
         ctx.filter = `
           brightness(${filters.brightness}%)
           contrast(${filters.contrast}%)
           saturate(${filters.saturation}%)
           hue-rotate(${filters.hue}deg)
-          brightness(${100 + adjustments.brightness}%)
-          contrast(${100 + adjustments.contrast}%)
-          saturate(${100 + adjustments.saturation}%)
-        `;
+        `.trim().replace(/\s+/g, ' ');
 
+        // Draw video frame
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         // Reset filter for overlays
@@ -57,21 +61,34 @@ export function VideoCanvas({
 
         // Draw text overlays
         textOverlays.forEach(text => {
+          ctx.save();
           ctx.font = `${text.fontSize}px ${text.fontFamily}`;
           ctx.fillStyle = text.color;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          // Add text stroke for better visibility
+          ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+          ctx.lineWidth = 2;
+          ctx.strokeText(text.text, text.x, text.y);
           ctx.fillText(text.text, text.x, text.y);
+          ctx.restore();
         });
 
-        // Draw stickers
+        // Draw stickers (emojis)
         stickers.forEach(sticker => {
+          ctx.save();
           ctx.font = `${sticker.size}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
           ctx.fillText(sticker.content, sticker.x, sticker.y);
+          ctx.restore();
         });
 
         // Draw drawings
         drawings.forEach(drawing => {
           drawing.paths.forEach(path => {
             if (path.length < 2) return;
+            ctx.save();
             ctx.strokeStyle = drawing.color;
             ctx.lineWidth = drawing.width;
             ctx.lineCap = 'round';
@@ -82,26 +99,46 @@ export function VideoCanvas({
               ctx.lineTo(path[i].x, path[i].y);
             }
             ctx.stroke();
+            ctx.restore();
           });
         });
       }
-      requestAnimationFrame(render);
+      
+      animationId = requestAnimationFrame(render);
     };
 
     render();
-  }, [videoRef, canvasRef, filters, adjustments, textOverlays, stickers, drawings]);
+
+    return () => {
+      cancelAnimationFrame(animationId);
+    };
+  }, [videoUrl, videoRef, canvasRef, filters, adjustments, textOverlays, stickers, drawings]);
+
+  // Handle play/pause
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (videoState.isPlaying) {
+      video.play().catch(console.error);
+    } else {
+      video.pause();
+    }
+  }, [videoState.isPlaying, videoRef]);
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div className="relative w-full h-full flex items-center justify-center bg-black">
       <video
         ref={videoRef}
-        src={videoState.duration > 0 ? videoRef.current?.src : undefined}
         className="hidden"
         controls={false}
+        loop
+        playsInline
       />
       <canvas
         ref={canvasRef}
         className="max-w-full max-h-full object-contain"
+        style={{ maxHeight: '70vh' }}
       />
     </div>
   );
