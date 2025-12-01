@@ -20,11 +20,27 @@ export const MatrixAIButton = () => {
       {/* Animated gradient background */}
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] animate-[shimmer_3s_ease-in-out_infinite] opacity-50 blur-md group-hover:opacity-75 transition-opacity" />
       
-      {/* Glass effect container */}
-      <div className="relative glass-hover p-2.5 rounded-2xl border border-primary/30 backdrop-blur-xl bg-background/40">
-        {/* Brain icon with glow */}
+      {/* Glass effect container with 3D braille effect */}
+      <div className="relative glass-hover p-2.5 rounded-2xl border border-primary/30 backdrop-blur-xl bg-background/40 shadow-[0_8px_16px_rgba(0,0,0,0.3),inset_0_2px_4px_rgba(255,255,255,0.1),inset_0_-2px_4px_rgba(0,0,0,0.2)]">
+        {/* Braille dots pattern - 3D raised effect */}
+        <div className="absolute inset-0 rounded-2xl overflow-hidden opacity-20">
+          <div className="absolute top-1 left-1 w-1 h-1 rounded-full bg-primary shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
+          <div className="absolute top-1 left-3 w-1 h-1 rounded-full bg-primary shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
+          <div className="absolute top-3 left-1 w-1 h-1 rounded-full bg-primary shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
+          <div className="absolute top-3 left-3 w-1 h-1 rounded-full bg-primary shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
+          <div className="absolute top-5 left-1 w-1 h-1 rounded-full bg-primary shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
+          <div className="absolute top-5 left-3 w-1 h-1 rounded-full bg-primary shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
+          <div className="absolute top-1 right-1 w-1 h-1 rounded-full bg-accent shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
+          <div className="absolute top-1 right-3 w-1 h-1 rounded-full bg-accent shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
+          <div className="absolute top-3 right-1 w-1 h-1 rounded-full bg-accent shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
+          <div className="absolute top-3 right-3 w-1 h-1 rounded-full bg-accent shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
+          <div className="absolute top-5 right-1 w-1 h-1 rounded-full bg-accent shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
+          <div className="absolute top-5 right-3 w-1 h-1 rounded-full bg-accent shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_-1px_1px_rgba(255,255,255,0.3)]" />
+        </div>
+        
+        {/* Brain icon with glow and 3D effect */}
         <div className="relative">
-          <Brain className="w-5 h-5 text-primary relative z-10" />
+          <Brain className="w-5 h-5 text-primary relative z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]" />
           
           {/* Sparkle effect */}
           <motion.div
