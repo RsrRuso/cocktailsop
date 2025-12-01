@@ -94,7 +94,7 @@ export const MessageBubble = memo(({
         }
       }
     }, 500);
-  }, [message.media_url, message.media_type]);
+  }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSwiping) return;
