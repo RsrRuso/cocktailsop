@@ -477,6 +477,126 @@ export type Database = {
           },
         ]
       }
+      career_activities: {
+        Row: {
+          achievement_date: string | null
+          activity_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          achievement_date?: string | null
+          activity_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          achievement_date?: string | null
+          activity_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      career_profiles: {
+        Row: {
+          career_goals: string[] | null
+          certifications: string[] | null
+          created_at: string | null
+          experience_years: number | null
+          id: string
+          interests: string[] | null
+          preferred_locations: string[] | null
+          role_title: string | null
+          skills: string[] | null
+          target_positions: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          career_goals?: string[] | null
+          certifications?: string[] | null
+          created_at?: string | null
+          experience_years?: number | null
+          id?: string
+          interests?: string[] | null
+          preferred_locations?: string[] | null
+          role_title?: string | null
+          skills?: string[] | null
+          target_positions?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          career_goals?: string[] | null
+          certifications?: string[] | null
+          created_at?: string | null
+          experience_years?: number | null
+          id?: string
+          interests?: string[] | null
+          preferred_locations?: string[] | null
+          role_title?: string | null
+          skills?: string[] | null
+          target_positions?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      career_recommendations: {
+        Row: {
+          ai_reasoning: string | null
+          created_at: string | null
+          description: string | null
+          expires_at: string | null
+          id: string
+          metadata: Json | null
+          priority: number | null
+          recommendation_type: string
+          status: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          created_at?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: number | null
+          recommendation_type: string
+          status?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          ai_reasoning?: string | null
+          created_at?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: number | null
+          recommendation_type?: string
+          status?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       certifications: {
         Row: {
           created_at: string
@@ -4277,6 +4397,45 @@ export type Database = {
           created_at?: string | null
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      skill_progress: {
+        Row: {
+          created_at: string | null
+          current_level: number | null
+          id: string
+          last_practiced_at: string | null
+          milestones: Json | null
+          progress_percentage: number | null
+          skill_name: string
+          target_level: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_level?: number | null
+          id?: string
+          last_practiced_at?: string | null
+          milestones?: Json | null
+          progress_percentage?: number | null
+          skill_name: string
+          target_level?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_level?: number | null
+          id?: string
+          last_practiced_at?: string | null
+          milestones?: Json | null
+          progress_percentage?: number | null
+          skill_name?: string
+          target_level?: number | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
