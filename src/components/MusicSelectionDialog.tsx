@@ -31,7 +31,7 @@ const MusicSelectionDialog = ({ open, onOpenChange, onSelect }: MusicSelectionDi
   const [selectedTrack, setSelectedTrack] = useState<MusicTrack | null>(null);
   const [previewVideoId, setPreviewVideoId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPlatformMusic, setShowPlatformMusic] = useState(true);
+  const [showPlatformMusic, setShowPlatformMusic] = useState(true); // Default to platform library
 
   useEffect(() => {
     if (open) {
@@ -221,22 +221,22 @@ const MusicSelectionDialog = ({ open, onOpenChange, onSelect }: MusicSelectionDi
         </DialogHeader>
         
         <div className="space-y-1.5">
-          <div className="flex gap-1">
+          <div className="flex gap-1 mb-2">
             <Button
               variant={showPlatformMusic ? "default" : "outline"}
               size="sm"
               onClick={() => setShowPlatformMusic(true)}
-              className="flex-1 h-6 text-[10px]"
+              className="flex-1 h-7 text-[11px] font-semibold"
             >
-              ✨ Platform Library
+              ✨ AI Curated Library
             </Button>
             <Button
               variant={!showPlatformMusic ? "default" : "outline"}
               size="sm"
               onClick={() => setShowPlatformMusic(false)}
-              className="flex-1 h-6 text-[10px]"
+              className="flex-1 h-7 text-[11px]"
             >
-              🎵 Spotify
+              🎵 Search Spotify
             </Button>
           </div>
 
