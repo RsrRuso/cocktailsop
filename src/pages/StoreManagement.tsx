@@ -350,10 +350,10 @@ const StoreManagement = () => {
       let membersData: any[] = [];
       if (currentWorkspace) {
         const { data: workspaceMembersData, error: membersError } = await supabase
-          .from("workspace_members_with_owner")
-          .select("id, user_id, role, permissions")
+          .from("workspace_members")
+          .select("id, user_id, permissions")
           .eq("workspace_id", currentWorkspace.id)
-          .order("role", { ascending: false });
+          .order("created_at", { ascending: true });
 
         if (membersError) {
           console.error("Error fetching workspace members:", membersError);
