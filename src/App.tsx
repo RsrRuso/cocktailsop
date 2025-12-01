@@ -43,6 +43,7 @@ const TeamManagement = lazy(() => import("./pages/TeamManagement"));
 const TeamDashboard = lazy(() => import("./pages/TeamDashboard"));
 const AdvancedEditor = lazy(() => import("./pages/AdvancedEditor"));
 const ReelEditor = lazy(() => import("./pages/ReelEditor"));
+const ReelEditorPro = lazy(() => import("./pages/ReelEditorPro"));
 const TeamInvitation = lazy(() => import("./pages/TeamInvitation"));
 const InventoryManager = lazy(() => import("./pages/InventoryManager"));
 const TemperatureLog = lazy(() => import("./pages/TemperatureLog"));
@@ -184,6 +185,7 @@ const AppContent = () => {
           <Route path="/team-dashboard" element={<TeamDashboard />} />
           <Route path="/advanced-editor" element={<AdvancedEditor />} />
           <Route path="/reel-editor" element={<ReelEditor />} />
+          <Route path="/reel-editor-pro" element={<ReelEditorPro />} />
           <Route path="/team-invitation" element={<TeamInvitation />} />
                <Route path="/inventory-manager" element={<InventoryManager />} />
                <Route path="/qr-access-code" element={<QRAccessCode />} />
