@@ -62,7 +62,7 @@ export const MessageBubble = memo(({
     setIsSwiping(true);
     hasMoved.current = false;
     
-    // Long press for emoji picker (Instagram-style)
+    // Long press for emoji picker
     longPressTimer.current = setTimeout(() => {
       if (!hasMoved.current) {
         const rect = bubbleRef.current?.getBoundingClientRect();
@@ -136,7 +136,7 @@ export const MessageBubble = memo(({
     const now = Date.now();
     const touchDuration = now - touchStartTime.current;
     
-    // Double tap detection for quick heart reaction (Instagram style)
+    // Double tap detection for quick heart reaction
     if (!hasMoved.current && touchDuration < 300 && Math.abs(swipeOffset) < 10) {
       const timeSinceLastTap = now - lastTapTime.current;
       

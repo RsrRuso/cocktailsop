@@ -90,7 +90,7 @@ export default function ReelEditorPro() {
               Reel Editor Pro
             </h1>
             <p className="text-muted-foreground text-lg">
-              Professional video editing with Instagram-level features
+              Professional video editing with advanced features
             </p>
             
             <div className="mt-12">

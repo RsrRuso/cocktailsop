@@ -598,7 +598,7 @@ const StoryViewer = () => {
         </button>
       )}
 
-      {/* Bottom actions - Instagram style */}
+      {/* Bottom actions */}
       {!isOwnStory && (
         <div className="absolute bottom-6 left-0 right-0 px-4 z-20">
           <div className="flex items-center gap-2">
