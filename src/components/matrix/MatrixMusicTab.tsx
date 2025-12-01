@@ -17,8 +17,8 @@ import {
 export function MatrixMusicTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [musicLibrary, setMusicLibrary] = useState<any[]>([]);
-  const [genre, setGenre] = useState("");
-  const [mood, setMood] = useState("");
+  const [genre, setGenre] = useState("all");
+  const [mood, setMood] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleCurateMusic = async () => {
@@ -28,8 +28,8 @@ export function MatrixMusicTab() {
         body: { 
           action: 'curate_music',
           data: {
-            genre: genre || undefined,
-            mood: mood || undefined,
+            genre: genre !== 'all' ? genre : undefined,
+            mood: mood !== 'all' ? mood : undefined,
             count: 20
           }
         }
@@ -54,8 +54,8 @@ export function MatrixMusicTab() {
         body: { 
           action: 'get_library',
           data: {
-            genre: genre || undefined,
-            mood: mood || undefined,
+            genre: genre !== 'all' ? genre : undefined,
+            mood: mood !== 'all' ? mood : undefined,
             search: searchQuery || undefined,
             limit: 100
           }
@@ -93,7 +93,7 @@ export function MatrixMusicTab() {
                 <SelectValue placeholder="All Genres" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Genres</SelectItem>
+                <SelectItem value="all">All Genres</SelectItem>
                 <SelectItem value="Pop">Pop</SelectItem>
                 <SelectItem value="Hip-Hop">Hip-Hop</SelectItem>
                 <SelectItem value="Electronic">Electronic</SelectItem>
@@ -112,7 +112,7 @@ export function MatrixMusicTab() {
                 <SelectValue placeholder="All Moods" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Moods</SelectItem>
+                <SelectItem value="all">All Moods</SelectItem>
                 <SelectItem value="Energetic">Energetic</SelectItem>
                 <SelectItem value="Chill">Chill</SelectItem>
                 <SelectItem value="Happy">Happy</SelectItem>
