@@ -456,7 +456,7 @@ const UserProfile = () => {
                     ) : (
                       <div 
                         key={`reel-${item.id}`} 
-                        className="relative overflow-hidden cursor-pointer bg-black"
+                        className="glass rounded-xl overflow-hidden cursor-pointer border border-border/50"
                         onClick={() => navigate('/reels', { 
                           state: { 
                             scrollToReelId: item.id,
@@ -472,31 +472,39 @@ const UserProfile = () => {
                           loop
                           autoPlay
                         />
-                        {/* Caption overlay - bottom left */}
-                        {item.caption && (
-                          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                            <p className="text-sm text-white drop-shadow-lg line-clamp-2">{item.caption}</p>
-                          </div>
-                        )}
-                        {/* Stats overlay - right side */}
-                        <div className="absolute right-2 sm:right-3 bottom-16 sm:bottom-20 flex flex-col gap-4 sm:gap-5">
-                          <div className="flex flex-col items-center active:scale-95 transition-transform">
-                            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                              <Heart className="w-6 h-6 sm:w-6 sm:h-6 text-white drop-shadow-lg" />
-                            </div>
-                            <span className="text-sm sm:text-base text-white font-bold drop-shadow-lg mt-1">{item.like_count || 0}</span>
-                          </div>
-                          <div className="flex flex-col items-center active:scale-95 transition-transform">
-                            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                              <MessageCircle className="w-6 h-6 sm:w-6 sm:h-6 text-white drop-shadow-lg" />
-                            </div>
-                            <span className="text-sm sm:text-base text-white font-bold drop-shadow-lg mt-1">{item.comment_count || 0}</span>
-                          </div>
-                          <div className="flex flex-col items-center active:scale-95 transition-transform">
-                            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                              <Play className="w-6 h-6 sm:w-6 sm:h-6 text-white drop-shadow-lg" />
-                            </div>
-                            <span className="text-sm sm:text-base text-white font-bold drop-shadow-lg mt-1">{item.view_count || 0}</span>
+                        <div className="p-4 space-y-2">
+                          {item.caption && <p className="text-sm">{item.caption}</p>}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Play className="w-4 h-4" /> {item.view_count || 0}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Heart className="w-4 h-4" /> {item.like_count || 0}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MessageCircle className="w-4 h-4" /> {item.comment_count || 0}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMutedVideos(prev => {
+                                  const newSet = new Set(prev);
+                                  if (newSet.has(item.id)) {
+                                    newSet.delete(item.id);
+                                  } else {
+                                    newSet.add(item.id);
+                                  }
+                                  return newSet;
+                                });
+                              }}
+                              className="ml-auto"
+                            >
+                              {mutedVideos.has(item.id) ? (
+                                <Volume2 className="w-4 h-4" />
+                              ) : (
+                                <VolumeX className="w-4 h-4" />
+                              )}
+                            </button>
                           </div>
                         </div>
                       </div>
