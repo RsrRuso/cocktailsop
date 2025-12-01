@@ -171,16 +171,16 @@ const InventoryManager = () => {
     console.log('=== FETCHING FIFO DATA ===', { workspaceId, workspaceName: currentWorkspace?.name });
 
     try {
-      // Build queries based on workspace or personal
-      const storesQuery = supabase.from("fifo_stores").select("*").eq("user_id", user.id);
-      const itemsQuery = supabase.from("fifo_items").select("*").eq("user_id", user.id);
-      const employeesQuery = supabase.from("fifo_employees").select("*").eq("user_id", user.id);
-      const inventoryQuery = supabase.from("fifo_inventory").select(`
+      // Build queries - RLS handles security, no need for user_id filter when in workspace
+      let storesQuery = supabase.from("fifo_stores").select("*");
+      let itemsQuery = supabase.from("fifo_items").select("*");
+      let employeesQuery = supabase.from("fifo_employees").select("*");
+      let inventoryQuery = supabase.from("fifo_inventory").select(`
         *,
         stores:fifo_stores!fifo_inventory_store_id_fkey(name, location, store_type),
         items:fifo_items!fifo_inventory_item_id_fkey(name, brand, color_code, category)
-      `).eq("user_id", user.id);
-      const transfersQuery = supabase.from("fifo_transfers").select(`
+      `);
+      let transfersQuery = supabase.from("fifo_transfers").select(`
         *,
         from_store:fifo_stores!fifo_transfers_from_store_id_fkey(name),
         to_store:fifo_stores!fifo_transfers_to_store_id_fkey(name),
@@ -188,29 +188,30 @@ const InventoryManager = () => {
         inventory:fifo_inventory!fifo_transfers_inventory_id_fkey(
           items:fifo_items!fifo_inventory_item_id_fkey(name, brand, category)
         )
-      `).eq("user_id", user.id);
-      const activityQuery = supabase.from("fifo_activity_log").select(`
+      `);
+      let activityQuery = supabase.from("fifo_activity_log").select(`
         *,
         stores:fifo_stores!fifo_activity_log_store_id_fkey(name),
         employees:fifo_employees!fifo_activity_log_employee_id_fkey(name)
-      `).eq("user_id", user.id);
+      `);
 
       // Add workspace filter if workspace is selected
       if (workspaceId) {
-        storesQuery.eq("workspace_id", workspaceId);
-        itemsQuery.eq("workspace_id", workspaceId);
-        employeesQuery.eq("workspace_id", workspaceId);
-        inventoryQuery.eq("workspace_id", workspaceId);
-        transfersQuery.eq("workspace_id", workspaceId);
-        activityQuery.eq("workspace_id", workspaceId);
+        // In workspace mode: show ALL workspace member data (RLS ensures access)
+        storesQuery = storesQuery.eq("workspace_id", workspaceId);
+        itemsQuery = itemsQuery.eq("workspace_id", workspaceId);
+        employeesQuery = employeesQuery.eq("workspace_id", workspaceId);
+        inventoryQuery = inventoryQuery.eq("workspace_id", workspaceId);
+        transfersQuery = transfersQuery.eq("workspace_id", workspaceId);
+        activityQuery = activityQuery.eq("workspace_id", workspaceId);
       } else {
-        // Personal inventory only (no workspace)
-        storesQuery.is("workspace_id", null);
-        itemsQuery.is("workspace_id", null);
-        employeesQuery.is("workspace_id", null);
-        inventoryQuery.is("workspace_id", null);
-        transfersQuery.is("workspace_id", null);
-        activityQuery.is("workspace_id", null);
+        // Personal inventory mode: show only user's personal data
+        storesQuery = storesQuery.eq("user_id", user.id).is("workspace_id", null);
+        itemsQuery = itemsQuery.eq("user_id", user.id).is("workspace_id", null);
+        employeesQuery = employeesQuery.eq("user_id", user.id).is("workspace_id", null);
+        inventoryQuery = inventoryQuery.eq("user_id", user.id).is("workspace_id", null);
+        transfersQuery = transfersQuery.eq("user_id", user.id).is("workspace_id", null);
+        activityQuery = activityQuery.eq("user_id", user.id).is("workspace_id", null);
       }
 
       const [storesRes, itemsRes, employeesRes, inventoryRes, transfersRes, activityRes] = await Promise.all([
