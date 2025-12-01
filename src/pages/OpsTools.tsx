@@ -389,7 +389,7 @@ const OpsTools = () => {
       {
         name: "Advanced Editor",
         description: "Professional editing suite with bulk operations",
-        details: "Instagram Edits-style advanced editor. Multi-select, bulk editing, version history, filters, keyboard shortcuts, and collaboration tools.",
+        details: "Professional editing suite with advanced features. Multi-select, bulk editing, version history, filters, keyboard shortcuts, and collaboration tools.",
         icon: Edit3,
         gradient: "from-violet-600 to-fuchsia-500",
         premium: false,

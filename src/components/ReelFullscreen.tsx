@@ -80,7 +80,7 @@ export const ReelFullscreen = ({
         )}
       </button>
 
-      {/* Caption - Bottom positioned exactly like Instagram */}
+      {/* Caption - Bottom positioned */}
       <div className="absolute bottom-20 left-4 right-20 z-30 space-y-2 animate-slide-in-right">
         <p className="text-white text-sm leading-relaxed drop-shadow-lg">
           {content.split(/(\s+)/).map((part, i) => {
@@ -95,7 +95,7 @@ export const ReelFullscreen = ({
         </p>
       </div>
 
-      {/* Action Buttons - Right Side Vertical (Instagram Style) */}
+      {/* Action Buttons - Right Side Vertical */}
       <div className="absolute right-3 bottom-20 flex flex-col gap-6 z-40">
         {/* Like Button */}
         <button

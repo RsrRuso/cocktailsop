@@ -198,7 +198,7 @@ export const ReelsFullscreenViewer = ({
         <X className="w-6 h-6 text-white drop-shadow-lg" />
       </motion.button>
 
-      {/* Video Container with Instagram-Perfect Smooth Transitions */}
+      {/* Video Container with Smooth Transitions */}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={currentIndex}

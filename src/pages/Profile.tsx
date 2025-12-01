@@ -270,7 +270,7 @@ const Profile = () => {
               <div>
                 <div className="flex items-center gap-1.5">
                   <h2 className="text-2xl font-bold">{profile.full_name}</h2>
-                  {/* Instagram-style verification badge */}
+                  {/* Verification badge */}
                   {(userRoles.isFounder || userRoles.isVerified) && (
                     <div 
                       className="cursor-pointer flex-shrink-0"

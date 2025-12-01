@@ -90,7 +90,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
 
   return (
     <div className="h-screen snap-start relative bg-black">
-      {/* Full Screen Video - No frames, Instagram style */}
+      {/* Full Screen Video */}
       <video
         ref={videoRef}
         src={reel.video_url}
@@ -124,7 +124,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
         )}
       </button>
 
-      {/* Right Side Action Buttons - Instagram Style */}
+      {/* Right Side Action Buttons */}
       <div className="absolute right-2 bottom-20 flex flex-col gap-5 z-20">
         {/* Like Button */}
         <button 

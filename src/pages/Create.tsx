@@ -67,7 +67,7 @@ const Create = () => {
                 <h3 className="font-bold text-lg">Reel Editor Pro</h3>
                 <span className="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold">NEW</span>
               </div>
-              <p className="text-sm text-muted-foreground">Instagram-style editing: trim, speed, filters, text, stickers, audio & more</p>
+              <p className="text-sm text-muted-foreground">Professional editing: trim, speed, filters, text, stickers, audio & more</p>
             </div>
           </button>
         </div>
