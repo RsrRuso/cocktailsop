@@ -33,9 +33,25 @@ export default function MatrixAI() {
           </Button>
 
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Brain className="w-6 h-6 text-primary" />
-            </div>
+            <motion.div 
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-primary via-primary/80 to-primary/60 flex items-center justify-center relative shadow-[0_8px_16px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)] hover:shadow-[0_12px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.2)] transition-all duration-300"
+              style={{
+                transform: 'perspective(100px) rotateX(5deg)',
+                transformStyle: 'preserve-3d'
+              }}
+              whileHover={{ 
+                scale: 1.05,
+                rotateY: 5,
+                transition: { duration: 0.3 }
+              }}
+              animate={{
+                rotateY: [0, 5, 0, -5, 0],
+                transition: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+              }}
+            >
+              <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/20 to-transparent" style={{ transform: 'translateZ(-1px)' }} />
+              <Brain className="w-6 h-6 text-white relative z-10" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+            </motion.div>
             <div>
               <h1 className="text-2xl font-bold">MATRIX AI</h1>
               <p className="text-sm text-muted-foreground">
