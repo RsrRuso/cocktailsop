@@ -12,11 +12,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Plus, Trash2, MapPin, Box, List, Download, Move, Square, Circle, Type, Triangle, Hexagon, Minus, Image as ImageIcon, X } from "lucide-react";
+import { Plus, Trash2, MapPin, Box, List, Download, Move, Square, Circle, Type, Triangle, Hexagon, Minus, Image as ImageIcon, X, MousePointer } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { ZoomableImage } from "@/components/ZoomableImage";
+import { Canvas as FabricCanvas, Rect, Circle as FabricCircle, Triangle as FabricTriangle, Polygon, Line, Text as FabricText, FabricObject } from 'fabric';
 
 const EQUIPMENT_TYPES = [
   { value: "fridge", label: "Fridge" },
@@ -53,23 +54,7 @@ const ITEM_CATEGORIES = [
   "Other",
 ];
 
-type DrawingMode = "select" | "rect" | "circle" | "text" | "triangle" | "hexagon" | "line";
-
-interface CanvasElement {
-  type: string;
-  x: number;
-  y: number;
-  width?: number;
-  height?: number;
-  radius?: number;
-  x2?: number;
-  y2?: number;
-  points?: { x: number; y: number }[];
-  text?: string;
-  label?: string;
-  color?: string;
-  number?: string;
-}
+type DrawingMode = "select" | "rectangle" | "circle" | "text" | "triangle" | "hexagon" | "line" | "number";
 
 export default function MapPlanner() {
   const { user } = useAuth();
@@ -80,12 +65,10 @@ export default function MapPlanner() {
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
   const [drawingMode, setDrawingMode] = useState<DrawingMode>("select");
-  const [canvasElements, setCanvasElements] = useState<CanvasElement[]>([]);
-  const [draggingElement, setDraggingElement] = useState<number | null>(null);
-  const [selectedElement, setSelectedElement] = useState<number | null>(null);
+  const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
+  const [drawingColor, setDrawingColor] = useState('#3b82f6');
   const [equipmentPhotos, setEquipmentPhotos] = useState<string[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   // Fetch location maps
   const { data: maps } = useQuery({
@@ -152,6 +135,42 @@ export default function MapPlanner() {
     enabled: !!selectedEquipment,
   });
 
+  // Initialize Fabric.js Canvas
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = new FabricCanvas(canvasRef.current, {
+      width: 1200,
+      height: 800,
+      backgroundColor: '#f8fafc',
+    });
+
+    // Add grid lines
+    const gridSize = 20;
+    for (let i = 0; i < (1200 / gridSize); i++) {
+      canvas.add(new Line([i * gridSize, 0, i * gridSize, 800], {
+        stroke: '#e2e8f0',
+        strokeWidth: 1,
+        selectable: false,
+        evented: false,
+      }));
+    }
+    for (let i = 0; i < (800 / gridSize); i++) {
+      canvas.add(new Line([0, i * gridSize, 1200, i * gridSize], {
+        stroke: '#e2e8f0',
+        strokeWidth: 1,
+        selectable: false,
+        evented: false,
+      }));
+    }
+
+    setFabricCanvas(canvas);
+
+    return () => {
+      canvas.dispose();
+    };
+  }, []);
+
   // Load photos when equipment is selected
   useEffect(() => {
     if (selectedEquipment && equipment) {
@@ -161,6 +180,114 @@ export default function MapPlanner() {
       setEquipmentPhotos([]);
     }
   }, [selectedEquipment, equipment]);
+
+  // Handle drawing mode changes
+  useEffect(() => {
+    if (!fabricCanvas) return;
+
+    fabricCanvas.isDrawingMode = false;
+    fabricCanvas.selection = drawingMode === 'select';
+
+    const handleCanvasClick = (e: any) => {
+      if (drawingMode === 'select' || !e.pointer) return;
+
+      const pointer = e.pointer;
+      let shape: FabricObject | null = null;
+
+      switch (drawingMode) {
+        case 'rectangle':
+          shape = new Rect({
+            left: pointer.x - 50,
+            top: pointer.y - 50,
+            fill: drawingColor,
+            width: 100,
+            height: 100,
+            stroke: '#000',
+            strokeWidth: 2,
+          });
+          break;
+        case 'circle':
+          shape = new FabricCircle({
+            left: pointer.x - 50,
+            top: pointer.y - 50,
+            fill: drawingColor,
+            radius: 50,
+            stroke: '#000',
+            strokeWidth: 2,
+          });
+          break;
+        case 'triangle':
+          shape = new FabricTriangle({
+            left: pointer.x - 50,
+            top: pointer.y - 50,
+            fill: drawingColor,
+            width: 100,
+            height: 100,
+            stroke: '#000',
+            strokeWidth: 2,
+          });
+          break;
+        case 'hexagon':
+          shape = new Polygon([
+            { x: 50, y: 0 },
+            { x: 100, y: 25 },
+            { x: 100, y: 75 },
+            { x: 50, y: 100 },
+            { x: 0, y: 75 },
+            { x: 0, y: 25 }
+          ], {
+            left: pointer.x - 50,
+            top: pointer.y - 50,
+            fill: drawingColor,
+            stroke: '#000',
+            strokeWidth: 2,
+          });
+          break;
+        case 'line':
+          shape = new Line([pointer.x, pointer.y, pointer.x + 100, pointer.y], {
+            stroke: drawingColor,
+            strokeWidth: 4,
+          });
+          break;
+        case 'text':
+          const textInput = prompt('Enter text:');
+          if (textInput) {
+            shape = new FabricText(textInput, {
+              left: pointer.x,
+              top: pointer.y,
+              fontSize: 20,
+              fill: drawingColor,
+            });
+          }
+          break;
+        case 'number':
+          const count = fabricCanvas.getObjects().filter(obj => obj.type === 'text').length;
+          shape = new FabricText((count + 1).toString(), {
+            left: pointer.x,
+            top: pointer.y,
+            fontSize: 24,
+            fill: '#fff',
+            backgroundColor: drawingColor,
+            padding: 8,
+            fontWeight: 'bold',
+          });
+          break;
+      }
+
+      if (shape) {
+        fabricCanvas.add(shape);
+        fabricCanvas.setActiveObject(shape);
+        fabricCanvas.renderAll();
+        setDrawingMode('select');
+      }
+    };
+
+    fabricCanvas.on('mouse:down', handleCanvasClick);
+
+    return () => {
+      fabricCanvas.off('mouse:down', handleCanvasClick);
+    };
+  }, [drawingMode, fabricCanvas, drawingColor]);
 
   // Create map mutation
   const createMapMutation = useMutation({
@@ -371,265 +498,40 @@ export default function MapPlanner() {
     }
   };
 
-  // Canvas drawing functions
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.fillStyle = "hsl(var(--background))";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw grid
-    ctx.strokeStyle = "hsl(var(--border))";
-    ctx.lineWidth = 1;
-    for (let x = 0; x < canvas.width; x += 50) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
-      ctx.stroke();
-    }
-    for (let y = 0; y < canvas.height; y += 50) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
-      ctx.stroke();
-    }
-
-    // Draw elements
-    canvasElements.forEach((element, index) => {
-      ctx.fillStyle = element.color || "hsl(var(--primary))";
-      ctx.strokeStyle = draggingElement === index || selectedElement === index 
-        ? "hsl(var(--ring))" 
-        : "hsl(var(--primary))";
-      ctx.lineWidth = selectedElement === index ? 3 : 2;
-
-      if (element.type === "rect") {
-        ctx.fillRect(element.x, element.y, element.width!, element.height!);
-        ctx.strokeRect(element.x, element.y, element.width!, element.height!);
-      } else if (element.type === "circle") {
-        ctx.beginPath();
-        ctx.arc(element.x, element.y, element.radius!, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-      } else if (element.type === "triangle") {
-        ctx.beginPath();
-        ctx.moveTo(element.x, element.y - 40);
-        ctx.lineTo(element.x - 35, element.y + 20);
-        ctx.lineTo(element.x + 35, element.y + 20);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      } else if (element.type === "hexagon") {
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-          const angle = (Math.PI / 3) * i;
-          const x = element.x + 30 * Math.cos(angle);
-          const y = element.y + 30 * Math.sin(angle);
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      } else if (element.type === "line") {
-        ctx.beginPath();
-        ctx.moveTo(element.x, element.y);
-        ctx.lineTo(element.x2!, element.y2!);
-        ctx.stroke();
-      } else if (element.type === "text") {
-        ctx.fillStyle = "hsl(var(--foreground))";
-        ctx.font = "16px sans-serif";
-        ctx.fillText(element.text!, element.x, element.y);
-      }
-
-      // Draw label and number
-      if (element.label || element.number) {
-        ctx.fillStyle = "hsl(var(--foreground))";
-        ctx.font = "bold 12px sans-serif";
-        const text = [element.number, element.label].filter(Boolean).join(" - ");
-        ctx.fillText(text, element.x, element.y - 8);
-      }
-    });
-  }, [canvasElements, draggingElement, selectedElement]);
-
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    if (drawingMode === "select") {
-      // Select element
-      const elementIndex = canvasElements.findIndex((el) => {
-        if (el.type === "rect") {
-          return x >= el.x && x <= el.x + el.width! && y >= el.y && y <= el.y + el.height!;
-        } else if (el.type === "circle") {
-          const dist = Math.sqrt((x - el.x) ** 2 + (y - el.y) ** 2);
-          return dist <= el.radius!;
-        }
-        return false;
-      });
-      setSelectedElement(elementIndex !== -1 ? elementIndex : null);
-    } else if (drawingMode === "rect") {
-      const newElement: CanvasElement = {
-        type: "rect",
-        x: x - 50,
-        y: y - 25,
-        width: 100,
-        height: 50,
-        color: "hsl(var(--primary))",
-        label: "Equipment",
-      };
-      setCanvasElements([...canvasElements, newElement]);
-    } else if (drawingMode === "circle") {
-      const newElement: CanvasElement = {
-        type: "circle",
-        x,
-        y,
-        radius: 30,
-        color: "hsl(var(--secondary))",
-        label: "Station",
-      };
-      setCanvasElements([...canvasElements, newElement]);
-    } else if (drawingMode === "triangle") {
-      const newElement: CanvasElement = {
-        type: "triangle",
-        x,
-        y,
-        color: "hsl(var(--accent))",
-      };
-      setCanvasElements([...canvasElements, newElement]);
-    } else if (drawingMode === "hexagon") {
-      const newElement: CanvasElement = {
-        type: "hexagon",
-        x,
-        y,
-        color: "hsl(var(--muted))",
-      };
-      setCanvasElements([...canvasElements, newElement]);
-    } else if (drawingMode === "line") {
-      const newElement: CanvasElement = {
-        type: "line",
-        x,
-        y,
-        x2: x + 100,
-        y2: y,
-        color: "hsl(var(--foreground))",
-      };
-      setCanvasElements([...canvasElements, newElement]);
-    } else if (drawingMode === "text") {
-      const text = prompt("Enter text:");
-      if (text) {
-        const newElement: CanvasElement = {
-          type: "text",
-          x,
-          y,
-          text,
-        };
-        setCanvasElements([...canvasElements, newElement]);
-      }
-    }
-  };
-
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (drawingMode !== "select") return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    // Check if clicking on an element
-    const elementIndex = canvasElements.findIndex((el) => {
-      if (el.type === "rect") {
-        return x >= el.x && x <= el.x + el.width! && y >= el.y && y <= el.y + el.height!;
-      } else if (el.type === "circle") {
-        const dist = Math.sqrt((x - el.x) ** 2 + (y - el.y) ** 2);
-        return dist <= el.radius!;
-      }
-      return false;
-    });
-
-    if (elementIndex !== -1) {
-      setDraggingElement(elementIndex);
-      setSelectedElement(elementIndex);
-      setMousePos({ x, y });
-    }
-  };
-
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (draggingElement === null) return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    const dx = x - mousePos.x;
-    const dy = y - mousePos.y;
-
-    const updatedElements = [...canvasElements];
-    const element = updatedElements[draggingElement];
-
-    element.x += dx;
-    element.y += dy;
-
-    if (element.x2 !== undefined) element.x2 += dx;
-    if (element.y2 !== undefined) element.y2 += dy;
-
-    setCanvasElements(updatedElements);
-    setMousePos({ x, y });
-  };
-
-  const handleCanvasMouseUp = () => {
-    setDraggingElement(null);
-  };
-
+  // Canvas utility functions
   const clearCanvas = () => {
-    if (confirm("Clear the canvas?")) {
-      setCanvasElements([]);
-      setSelectedElement(null);
+    if (fabricCanvas && confirm("Clear the canvas?")) {
+      const objects = fabricCanvas.getObjects();
+      // Keep grid lines (first items added)
+      const gridLines = objects.filter(obj => !obj.selectable);
+      fabricCanvas.clear();
+      fabricCanvas.backgroundColor = '#f8fafc';
+      gridLines.forEach(line => fabricCanvas.add(line));
+      fabricCanvas.renderAll();
+      toast.success("Canvas cleared");
     }
   };
 
   const exportCanvasImage = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
+    if (!fabricCanvas) return;
+    
     const link = document.createElement("a");
     link.download = "floor-plan.png";
-    link.href = canvas.toDataURL();
+    link.href = fabricCanvas.toDataURL({ format: 'png', multiplier: 1 });
     link.click();
     toast.success("Floor plan exported");
   };
 
-  const addNumberToElement = () => {
-    if (selectedElement === null) {
-      toast.error("Select an element first");
-      return;
-    }
-    const number = prompt("Enter number:");
-    if (number) {
-      const updated = [...canvasElements];
-      updated[selectedElement].number = number;
-      setCanvasElements(updated);
-    }
-  };
-
   const deleteSelectedElement = () => {
-    if (selectedElement !== null) {
-      setCanvasElements(canvasElements.filter((_, i) => i !== selectedElement));
-      setSelectedElement(null);
+    if (!fabricCanvas) return;
+    
+    const activeObject = fabricCanvas.getActiveObject();
+    if (activeObject) {
+      fabricCanvas.remove(activeObject);
+      fabricCanvas.renderAll();
+      toast.success("Element deleted");
+    } else {
+      toast.error("Select an element first");
     }
   };
 
@@ -725,9 +627,9 @@ export default function MapPlanner() {
                           <Move className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant={drawingMode === "rect" ? "default" : "outline"}
+                          variant={drawingMode === "rectangle" ? "default" : "outline"}
                           size="sm"
-                          onClick={() => setDrawingMode("rect")}
+                          onClick={() => setDrawingMode("rectangle")}
                           title="Rectangle"
                         >
                           <Square className="h-4 w-4" />
@@ -765,17 +667,14 @@ export default function MapPlanner() {
                           <Minus className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant={drawingMode === "text" ? "default" : "outline"}
+                          variant={drawingMode === "number" ? "default" : "outline"}
                           size="sm"
-                          onClick={() => setDrawingMode("text")}
-                          title="Add Text/Number"
+                          onClick={() => setDrawingMode("number")}
+                          title="Add Number"
                         >
                           <Type className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={addNumberToElement} title="Add Number to Selected">
-                          #
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={deleteSelectedElement} disabled={selectedElement === null}>
+                        <Button variant="outline" size="sm" onClick={deleteSelectedElement}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                         <Button variant="outline" size="sm" onClick={clearCanvas}>
@@ -788,26 +687,30 @@ export default function MapPlanner() {
                       </div>
                     </div>
                     <CardDescription>
-                      {drawingMode === "select" && "Click and drag to move elements. Click an element to select it."}
-                      {drawingMode === "rect" && "Click to place rectangular equipment"}
-                      {drawingMode === "circle" && "Click to place circular stations"}
+                      {drawingMode === "select" && "Click and drag elements to move. Select elements for editing."}
+                      {drawingMode === "rectangle" && "Click to place rectangular shapes"}
+                      {drawingMode === "circle" && "Click to place circular shapes"}
                       {drawingMode === "triangle" && "Click to place triangular shapes"}
                       {drawingMode === "hexagon" && "Click to place hexagonal shapes"}
                       {drawingMode === "line" && "Click to draw lines"}
                       {drawingMode === "text" && "Click to add text labels"}
+                      {drawingMode === "number" && "Click to add numbered labels"}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
+                    <div className="mb-4 flex items-center gap-4">
+                      <Label htmlFor="color-picker">Drawing Color:</Label>
+                      <Input
+                        id="color-picker"
+                        type="color"
+                        value={drawingColor}
+                        onChange={(e) => setDrawingColor(e.target.value)}
+                        className="w-20 h-10"
+                      />
+                    </div>
                     <canvas
                       ref={canvasRef}
-                      width={1200}
-                      height={800}
-                      className="border border-border rounded-lg cursor-crosshair w-full bg-background"
-                      onClick={handleCanvasClick}
-                      onMouseDown={handleCanvasMouseDown}
-                      onMouseMove={handleCanvasMouseMove}
-                      onMouseUp={handleCanvasMouseUp}
-                      onMouseLeave={handleCanvasMouseUp}
+                      className="border border-border rounded-lg w-full bg-background"
                     />
                   </CardContent>
                 </Card>
@@ -831,16 +734,25 @@ export default function MapPlanner() {
                                 size="sm"
                                 className="justify-start"
                                 onClick={() => {
-                                  const newElement: CanvasElement = {
-                                    type: "rect",
-                                    x: 100,
-                                    y: 100,
+                                  if (!fabricCanvas) return;
+                                  const shape = new Rect({
+                                    left: 100,
+                                    top: 100,
+                                    fill: '#3b82f6',
                                     width: 120,
                                     height: 60,
-                                    color: "hsl(var(--primary))",
-                                    label: eq.name,
-                                  };
-                                  setCanvasElements([...canvasElements, newElement]);
+                                    stroke: '#000',
+                                    strokeWidth: 2,
+                                  });
+                                  const label = new FabricText(eq.name, {
+                                    left: 110,
+                                    top: 115,
+                                    fontSize: 12,
+                                    fill: '#fff',
+                                  });
+                                  fabricCanvas.add(shape);
+                                  fabricCanvas.add(label);
+                                  fabricCanvas.renderAll();
                                   toast.success(`Added ${eq.name}`);
                                 }}
                               >
