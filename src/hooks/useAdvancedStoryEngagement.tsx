@@ -111,12 +111,19 @@ export function useAdvancedStoryEngagement(storyId: string, initialState?: Parti
 
         if (insertError) throw insertError;
 
-        // Update count
-        const { error: updateError } = await supabase.rpc('increment_story_likes', {
-          story_id: storyId,
-        });
+        // Update count - fetch current, increment, and update
+        const { data: storyData } = await supabase
+          .from('stories')
+          .select('like_count')
+          .eq('id', storyId)
+          .single();
 
-        if (updateError) throw updateError;
+        if (storyData) {
+          await supabase
+            .from('stories')
+            .update({ like_count: (storyData.like_count || 0) + 1 })
+            .eq('id', storyId);
+        }
 
       } else {
         // Delete like
@@ -128,12 +135,19 @@ export function useAdvancedStoryEngagement(storyId: string, initialState?: Parti
 
         if (deleteError) throw deleteError;
 
-        // Update count
-        const { error: updateError } = await supabase.rpc('decrement_story_likes', {
-          story_id: storyId,
-        });
+        // Update count - fetch current, decrement, and update
+        const { data: storyData } = await supabase
+          .from('stories')
+          .select('like_count')
+          .eq('id', storyId)
+          .single();
 
-        if (updateError) throw updateError;
+        if (storyData) {
+          await supabase
+            .from('stories')
+            .update({ like_count: Math.max(0, (storyData.like_count || 0) - 1) })
+            .eq('id', storyId);
+        }
       }
 
       setState(prev => ({ ...prev, isProcessing: false }));
@@ -184,8 +198,19 @@ export function useAdvancedStoryEngagement(storyId: string, initialState?: Parti
 
       if (error) throw error;
 
-      // Update count
-      await supabase.rpc('increment_story_comments', { story_id: storyId });
+      // Update comment count - fetch current, increment, and update
+      const { data: storyData } = await supabase
+        .from('stories')
+        .select('comment_count')
+        .eq('id', storyId)
+        .single();
+
+      if (storyData) {
+        await supabase
+          .from('stories')
+          .update({ comment_count: (storyData.comment_count || 0) + 1 })
+          .eq('id', storyId);
+      }
 
       return data;
     } catch (error) {
@@ -223,8 +248,19 @@ export function useAdvancedStoryEngagement(storyId: string, initialState?: Parti
         .from('story_views')
         .insert({ story_id: storyId, user_id: user.id });
 
-      // Update count
-      await supabase.rpc('increment_story_views', { story_id: storyId });
+      // Update view count - fetch current, increment, and update
+      const { data: storyData } = await supabase
+        .from('stories')
+        .select('view_count')
+        .eq('id', storyId)
+        .single();
+
+      if (storyData) {
+        await supabase
+          .from('stories')
+          .update({ view_count: (storyData.view_count || 0) + 1 })
+          .eq('id', storyId);
+      }
 
       setState(prev => ({
         ...prev,
