@@ -104,12 +104,12 @@ export const ReelsFullscreenViewer = ({
   };
 
   const handleDragEnd = (event: any, info: PanInfo) => {
-    const offsetThreshold = 30;
-    const velocityThreshold = 200;
+    const offsetThreshold = 50;
+    const velocityThreshold = 300;
     const velocity = info.velocity.y;
     const offset = info.offset.y;
 
-    // Fast flicks based on velocity
+    // Fast flicks based on velocity with smoother threshold
     if (Math.abs(velocity) > velocityThreshold) {
       if (velocity < 0 && currentIndex < reels.length - 1) {
         // Swipe up -> next reel
@@ -123,7 +123,7 @@ export const ReelsFullscreenViewer = ({
       return;
     }
 
-    // Slower drags based on distance
+    // Slower drags based on distance with better sensitivity
     if (Math.abs(offset) > offsetThreshold) {
       if (offset < 0 && currentIndex < reels.length - 1) {
         // Drag up -> next reel
@@ -183,8 +183,13 @@ export const ReelsFullscreenViewer = ({
           className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden"
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.2}
-          dragMomentum={false}
+          dragElastic={0.15}
+          dragMomentum={true}
+          dragTransition={{ 
+            power: 0.4,
+            timeConstant: 250,
+            modifyTarget: (target) => Math.round(target / window.innerHeight) * window.innerHeight 
+          }}
           onDragEnd={handleDragEnd}
           onClick={handleDoubleTap}
           initial={{ 
@@ -204,9 +209,11 @@ export const ReelsFullscreenViewer = ({
           }}
           transition={{
             type: "spring",
-            stiffness: 300,
-            damping: 30,
-            mass: 0.8
+            stiffness: 250,
+            damping: 28,
+            mass: 0.7,
+            restDelta: 0.001,
+            restSpeed: 0.001
           }}
           style={{ 
             touchAction: 'pan-y',
