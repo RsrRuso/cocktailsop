@@ -89,7 +89,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
   };
 
   return (
-    <div className="h-screen snap-start relative bg-black">
+    <div className="h-screen snap-start relative">
       {/* Full Screen Video */}
       <video
         ref={videoRef}
@@ -134,9 +134,9 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
           }}
           className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
         >
-          <Heart className={`w-7 h-7 drop-shadow-lg ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+          <Heart className={`w-6 h-6 drop-shadow-lg ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} strokeWidth={1.5} />
           <span 
-            className="text-white text-xs font-semibold drop-shadow-lg cursor-pointer"
+            className="text-white text-xs font-light drop-shadow-lg cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               setSelectedReelForLikes(reel.id);
@@ -156,8 +156,8 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
           }}
           className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
         >
-          <MessageCircle className="w-7 h-7 text-white drop-shadow-lg" />
-          <span className="text-white text-xs font-semibold drop-shadow-lg">{reel.comment_count || 0}</span>
+          <MessageCircle className="w-6 h-6 text-white drop-shadow-lg" strokeWidth={1.5} />
+          <span className="text-white text-xs font-light drop-shadow-lg">{reel.comment_count || 0}</span>
         </button>
 
         {/* Share Button */}
@@ -171,7 +171,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
           }}
           className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
         >
-          <Send className="w-7 h-7 text-white drop-shadow-lg" />
+          <Send className="w-6 h-6 text-white drop-shadow-lg" strokeWidth={1.5} />
         </button>
 
         {/* Bookmark Button */}
@@ -179,7 +179,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
           onClick={(e) => e.stopPropagation()}
           className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
         >
-          <Bookmark className="w-7 h-7 text-white drop-shadow-lg" />
+          <Bookmark className="w-6 h-6 text-white drop-shadow-lg" strokeWidth={1.5} />
         </button>
 
         {/* Three Dots Menu - Only for own reels */}

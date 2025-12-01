@@ -57,7 +57,7 @@ export const FeedItem = memo(({
   useViewTracking('post', item.id, currentUserId, true);
 
   return (
-    <div className="relative bg-black w-full">
+    <div className="relative w-full">
       {/* Top Header Section */}
       <div className="relative px-3 py-4 bg-transparent backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center gap-3">
@@ -185,13 +185,13 @@ export const FeedItem = memo(({
             {/* Like Button */}
             <button
                 onClick={onLike}
-                className={`relative flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold transition-all duration-300 ${
+                className={`relative flex items-center gap-1 text-xs sm:text-sm font-light transition-all duration-300 ${
                   isLiked 
                     ? 'text-red-500 hover:scale-110' 
                     : 'text-muted-foreground hover:text-primary hover:scale-105'
                 }`}
               >
-                <Heart className={`w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300 ${isLiked ? 'fill-current scale-110' : ''}`} />
+                <Heart className={`w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300 ${isLiked ? 'fill-current scale-110' : ''}`} strokeWidth={1.5} />
                 <span 
                   className="min-w-[16px] cursor-pointer"
                   onClick={(e) => {
@@ -206,18 +206,18 @@ export const FeedItem = memo(({
             {/* Comment Button */}
             <button
                 onClick={() => setShowComments(true)}
-                className="relative flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-105"
+                className="relative flex items-center gap-1 text-xs sm:text-sm font-light text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-105"
               >
-                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
                 <span className="min-w-[16px]">{item.comment_count || 0}</span>
               </button>
 
             {/* Share Button */}
             <button
                 onClick={onShare}
-                className="relative flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold text-muted-foreground hover:text-green-500 transition-all duration-300 hover:scale-105"
+                className="relative flex items-center gap-1 text-xs sm:text-sm font-light text-muted-foreground hover:text-green-500 transition-all duration-300 hover:scale-105"
               >
-                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Send className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
               </button>
             
             {/* AI Insights Button */}
