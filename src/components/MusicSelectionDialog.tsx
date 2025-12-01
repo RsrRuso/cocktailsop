@@ -27,15 +27,19 @@ interface MusicTrack {
 const MusicSelectionDialog = ({ open, onOpenChange, onSelect }: MusicSelectionDialogProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [popularTracks, setPopularTracks] = useState<MusicTrack[]>([]);
+  const [platformTracks, setPlatformTracks] = useState<MusicTrack[]>([]);
   const [selectedTrack, setSelectedTrack] = useState<MusicTrack | null>(null);
   const [previewVideoId, setPreviewVideoId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPlatformMusic, setShowPlatformMusic] = useState(true);
 
   useEffect(() => {
-    if (open && searchQuery.trim() === '') {
+    if (open) {
       fetchPopularMusic();
-    } else {
-      setPreviewVideoId(null);
+      fetchPlatformMusic();
+      if (searchQuery.trim() === '') {
+        setPreviewVideoId(null);
+      }
     }
   }, [open]);
 
@@ -60,6 +64,35 @@ const MusicSelectionDialog = ({ open, onOpenChange, onSelect }: MusicSelectionDi
 
     if (!error && data) {
       setPopularTracks(data);
+    }
+  };
+
+  const fetchPlatformMusic = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('matrix-music-curator', {
+        body: { 
+          action: 'get_library',
+          data: { limit: 100 }
+        }
+      });
+
+      if (error) throw error;
+
+      // Convert platform library format to MusicTrack format
+      const tracks = (data.tracks || []).map((track: any) => ({
+        id: track.id,
+        track_id: track.track_id,
+        title: track.title,
+        artist: track.artist,
+        duration: track.duration_seconds?.toString() || '0',
+        preview_url: track.cover_image_url || track.preview_url,
+        spotify_url: track.spotify_url,
+        preview_audio: track.preview_url
+      }));
+
+      setPlatformTracks(tracks);
+    } catch (error) {
+      console.error("Error fetching platform music:", error);
     }
   };
 
@@ -183,11 +216,30 @@ const MusicSelectionDialog = ({ open, onOpenChange, onSelect }: MusicSelectionDi
             <svg className="w-3.5 h-3.5 text-green-500" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
             </svg>
-            Search Spotify
+            Select Music
           </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-1.5">
+          <div className="flex gap-1">
+            <Button
+              variant={showPlatformMusic ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowPlatformMusic(true)}
+              className="flex-1 h-6 text-[10px]"
+            >
+              ✨ Platform Library
+            </Button>
+            <Button
+              variant={!showPlatformMusic ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowPlatformMusic(false)}
+              className="flex-1 h-6 text-[10px]"
+            >
+              🎵 Spotify
+            </Button>
+          </div>
+
           <div className="relative">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground w-3 h-3" />
             <Input
@@ -224,7 +276,13 @@ const MusicSelectionDialog = ({ open, onOpenChange, onSelect }: MusicSelectionDi
 
           <ScrollArea className="h-[200px]">
             <div className="space-y-0.5 pr-1.5">
-              {filteredTracks.map((track) => (
+              {(showPlatformMusic ? platformTracks : filteredTracks)
+                .filter(track => 
+                  !searchQuery || 
+                  track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  track.artist.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((track) => (
                 <div
                   key={track.id}
                   className="flex items-center gap-1.5 p-1.5 rounded-md hover:bg-accent transition-colors"

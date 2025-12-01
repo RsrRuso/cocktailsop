@@ -36,3 +36,6 @@ verify_jwt = false
 [functions.career-ai-mentor]
 verify_jwt = true
 
+[functions.matrix-music-curator]
+verify_jwt = false
+

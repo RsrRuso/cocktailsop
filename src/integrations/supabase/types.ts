@@ -3657,6 +3657,81 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_music_library: {
+        Row: {
+          added_by: string | null
+          ai_description: string | null
+          ai_tags: string[] | null
+          album: string | null
+          artist: string
+          bpm: number | null
+          cover_image_url: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          energy_level: string | null
+          genre: string | null
+          id: string
+          is_active: boolean | null
+          is_featured: boolean | null
+          mood: string | null
+          popularity_score: number | null
+          preview_url: string | null
+          spotify_url: string | null
+          title: string
+          track_id: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          added_by?: string | null
+          ai_description?: string | null
+          ai_tags?: string[] | null
+          album?: string | null
+          artist: string
+          bpm?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          energy_level?: string | null
+          genre?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          mood?: string | null
+          popularity_score?: number | null
+          preview_url?: string | null
+          spotify_url?: string | null
+          title: string
+          track_id: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          added_by?: string | null
+          ai_description?: string | null
+          ai_tags?: string[] | null
+          album?: string | null
+          artist?: string
+          bpm?: number | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          energy_level?: string | null
+          genre?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          mood?: string | null
+          popularity_score?: number | null
+          preview_url?: string | null
+          spotify_url?: string | null
+          title?: string
+          track_id?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       popular_music: {
         Row: {
           artist: string
