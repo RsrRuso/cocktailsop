@@ -479,18 +479,24 @@ const UserProfile = () => {
                           </div>
                         )}
                         {/* Stats overlay - right side */}
-                        <div className="absolute right-3 bottom-20 flex flex-col gap-3">
-                          <div className="flex flex-col items-center">
-                            <Heart className="w-5 h-5 text-white drop-shadow-lg" />
-                            <span className="text-xs text-white font-bold drop-shadow-lg">{item.like_count || 0}</span>
+                        <div className="absolute right-2 sm:right-3 bottom-16 sm:bottom-20 flex flex-col gap-4 sm:gap-5">
+                          <div className="flex flex-col items-center active:scale-95 transition-transform">
+                            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                              <Heart className="w-6 h-6 sm:w-6 sm:h-6 text-white drop-shadow-lg" />
+                            </div>
+                            <span className="text-sm sm:text-base text-white font-bold drop-shadow-lg mt-1">{item.like_count || 0}</span>
                           </div>
-                          <div className="flex flex-col items-center">
-                            <MessageCircle className="w-5 h-5 text-white drop-shadow-lg" />
-                            <span className="text-xs text-white font-bold drop-shadow-lg">{item.comment_count || 0}</span>
+                          <div className="flex flex-col items-center active:scale-95 transition-transform">
+                            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                              <MessageCircle className="w-6 h-6 sm:w-6 sm:h-6 text-white drop-shadow-lg" />
+                            </div>
+                            <span className="text-sm sm:text-base text-white font-bold drop-shadow-lg mt-1">{item.comment_count || 0}</span>
                           </div>
-                          <div className="flex flex-col items-center">
-                            <Play className="w-5 h-5 text-white drop-shadow-lg" />
-                            <span className="text-xs text-white font-bold drop-shadow-lg">{item.view_count || 0}</span>
+                          <div className="flex flex-col items-center active:scale-95 transition-transform">
+                            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                              <Play className="w-6 h-6 sm:w-6 sm:h-6 text-white drop-shadow-lg" />
+                            </div>
+                            <span className="text-sm sm:text-base text-white font-bold drop-shadow-lg mt-1">{item.view_count || 0}</span>
                           </div>
                         </div>
                       </div>
