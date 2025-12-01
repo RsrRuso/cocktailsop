@@ -80,55 +80,128 @@ serve(async (req) => {
     let userMessage = "";
 
     if (action === "analyze_career") {
-      systemPrompt = `You are an expert career mentor in the hospitality and beverage industry. Analyze the user's profile and provide:
-1. Career Assessment (current strengths, gaps, opportunities)
-2. Skill Development Priorities (top 3 skills to focus on)
-3. Next Steps (actionable career moves)
-4. Industry Positioning (where they stand in the industry)
+      systemPrompt = `You are an elite AI career strategist specializing in hospitality and beverage industry. Use advanced pattern recognition to provide:
 
-Keep response focused, actionable, and under 300 words.`;
+1. **Deep Career Assessment**: Analyze current trajectory, hidden strengths, untapped potential, competitive advantages
+2. **Strategic Skill Gaps**: Identify critical missing skills blocking next-level progression with market demand data
+3. **Personalized Action Plan**: 5 specific, time-bound steps with success metrics and milestones
+4. **Industry Intelligence**: Real-time positioning analysis, emerging opportunities, market trends affecting their role
+5. **Smart Predictions**: AI-powered forecast of career trajectory and recommended pivots
 
-      userMessage = `Analyze my career profile:
-- Current Role: ${careerProfile?.role_title || "Not specified"}
-- Experience: ${careerProfile?.experience_years || 0} years
-- Skills: ${careerProfile?.skills?.join(", ") || "None listed"}
-- Goals: ${careerProfile?.career_goals?.join(", ") || "Not defined"}
-- Recent Activities: ${activities?.map(a => a.title).join(", ") || "None"}
-- Current Skill Levels: ${skills?.map(s => `${s.skill_name} (${s.current_level}/10)`).join(", ") || "None"}`;
+Use data-driven insights, industry benchmarks, and predictive analytics. Be specific, actionable, and transformative.`;
+
+      userMessage = `Perform comprehensive career intelligence analysis:
+
+**Profile Data:**
+- Role: ${careerProfile?.role_title || "Not specified"}
+- Experience: ${careerProfile?.experience_years || 0} years  
+- Current Skills: ${careerProfile?.skills?.join(", ") || "None listed"}
+- Career Aspirations: ${careerProfile?.career_goals?.join(", ") || "Not defined"}
+- Target Roles: ${careerProfile?.target_positions?.join(", ") || "None"}
+- Interests: ${careerProfile?.interests?.join(", ") || "General hospitality"}
+- Location Preferences: ${careerProfile?.preferred_locations?.join(", ") || "Flexible"}
+
+**Activity History:**
+${activities?.map(a => `- ${a.title} (${a.activity_type})`).join("\n") || "No activities recorded"}
+
+**Skill Development:**
+${skills?.map(s => `- ${s.skill_name}: Level ${s.current_level}/${s.target_level}`).join("\n") || "No skills tracked"}
+
+Provide strategic, AI-powered career intelligence with specific recommendations and predictions.`;
 
     } else if (action === "generate_recommendations") {
-      systemPrompt = `You are a career strategist for the hospitality industry. Generate 5 personalized recommendations for career growth. For each recommendation, provide:
-1. Type (competition, job, event, course, or skill)
-2. Title
-3. Description (2-3 sentences)
-4. Priority (1-10, where 10 is highest)
-5. AI Reasoning (why this matters for their career)
+      systemPrompt = `You are an AI-powered career intelligence system for hospitality professionals. Generate 8 highly personalized, data-driven recommendations using predictive analytics and market intelligence.
 
-Return as JSON array: [{ type, title, description, priority, ai_reasoning }]`;
+**Recommendation Types:**
+- **competition**: Industry competitions, awards, contests
+- **job**: Specific job opportunities matching their profile
+- **event**: Networking events, conferences, masterclasses
+- **course**: Certifications, training programs, skill development
+- **skill**: Specific skills to master for career advancement
 
-      userMessage = `Generate recommendations for:
-- Role: ${careerProfile?.role_title || "Bartender"}
+**For each recommendation provide:**
+{
+  "type": "competition|job|event|course|skill",
+  "title": "Specific, actionable title",
+  "description": "Compelling 2-3 sentence description with concrete details and benefits",
+  "priority": 1-10 (based on career impact and relevance),
+  "ai_reasoning": "Data-driven explanation: Why this is crucial NOW for their specific career path, expected outcomes, and strategic value"
+}
+
+**Selection Criteria:**
+- Match their experience level and career trajectory
+- Address identified skill gaps
+- Align with stated goals and interests
+- Consider location preferences
+- Prioritize high-impact opportunities
+- Include mix of short-term wins and long-term investments
+- Focus on opportunities available within next 3-6 months
+
+Return ONLY valid JSON array: [{ type, title, description, priority, ai_reasoning }]`;
+
+      userMessage = `Generate intelligent career recommendations:
+
+**Profile:**
+- Current Role: ${careerProfile?.role_title || "Bartender"}
 - Experience: ${careerProfile?.experience_years || 0} years
-- Skills: ${careerProfile?.skills?.join(", ") || "Basic bartending"}
-- Target Positions: ${careerProfile?.target_positions?.join(", ") || "Head Bartender"}
-- Interests: ${careerProfile?.interests?.join(", ") || "Mixology"}
-- Location Preferences: ${careerProfile?.preferred_locations?.join(", ") || "Any"}`;
+- Skill Set: ${careerProfile?.skills?.join(", ") || "Basic bartending"}
+- Career Goals: ${careerProfile?.career_goals?.join(", ") || "Career advancement"}
+- Target Roles: ${careerProfile?.target_positions?.join(", ") || "Senior positions"}
+- Interests: ${careerProfile?.interests?.join(", ") || "Mixology, service excellence"}
+- Locations: ${careerProfile?.preferred_locations?.join(", ") || "Any location"}
+- Certifications: ${careerProfile?.certifications?.join(", ") || "None"}
+
+**Recent Activities:**
+${activities?.slice(0, 5).map(a => `- ${a.title}`).join("\n") || "No recent activities"}
+
+**Existing Recommendations:**
+${recommendations?.map(r => `- ${r.title} (${r.recommendation_type})`).join("\n") || "None"}
+
+Generate 8 unique, strategic recommendations that accelerate career growth. Avoid duplicates. Focus on actionable opportunities.`;
 
     } else if (action === "skill_roadmap") {
-      systemPrompt = `You are a skills development coach for bartenders and hospitality professionals. Create a personalized skill development roadmap. For each skill gap, provide:
-1. Skill name
-2. Current level (1-10)
-3. Target level (1-10)
-4. Learning path (3-5 action steps)
-5. Estimated timeline
-6. Resources
+      systemPrompt = `You are an AI-powered skills development architect for hospitality professionals. Create a comprehensive, data-driven skill development roadmap using learning science principles.
 
-Return as JSON array.`;
+For each skill provide:
+{
+  "skill_name": "Specific skill name",
+  "current_level": 1-10,
+  "target_level": 1-10,
+  "priority": "critical|high|medium",
+  "learning_path": [
+    "Step 1: Specific action with timeframe",
+    "Step 2: Progressive milestone",
+    "Step 3: Mastery activity",
+    "Step 4: Real-world application",
+    "Step 5: Assessment/certification"
+  ],
+  "estimated_timeline": "X weeks/months",
+  "resources": [
+    "Resource 1: Specific course/book/platform",
+    "Resource 2: Practice opportunity",
+    "Resource 3: Mentorship/community"
+  ],
+  "success_metrics": ["Measurable outcome 1", "Measurable outcome 2"],
+  "career_impact": "How this skill unlocks specific opportunities"
+}
 
-      userMessage = `Create skill roadmap for:
-- Current Skills: ${skills?.map(s => `${s.skill_name} (${s.current_level}/10)`).join(", ") || "None"}
-- Target Skills: ${careerProfile?.skills?.join(", ") || "Advanced mixology"}
-- Career Goals: ${careerProfile?.career_goals?.join(", ") || "None"}`;
+Focus on skills with highest ROI for career goals. Include both technical and soft skills. Return valid JSON array.`;
+
+      userMessage = `Create intelligent skill development roadmap:
+
+**Current Skill Levels:**
+${skills?.map(s => `- ${s.skill_name}: ${s.current_level}/10 → Target: ${s.target_level}/10`).join("\n") || "No skills tracked"}
+
+**Desired Skills:**
+${careerProfile?.skills?.join(", ") || "Advanced mixology, leadership, operations"}
+
+**Career Objectives:**
+${careerProfile?.career_goals?.join(", ") || "Advance to senior role"}
+
+**Target Positions:**
+${careerProfile?.target_positions?.join(", ") || "Management level"}
+
+Generate personalized, prioritized learning roadmap with actionable steps and realistic timelines.`;
 
     } else {
       return new Response(JSON.stringify({ error: "Invalid action" }), {
@@ -146,7 +219,7 @@ Return as JSON array.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage }

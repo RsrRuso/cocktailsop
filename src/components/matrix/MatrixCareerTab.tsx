@@ -195,28 +195,51 @@ export const MatrixCareerTab = () => {
       className="space-y-6 p-6"
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Target className="w-6 h-6 text-primary" />
-            Career Growth Mentor
+            AI Career Intelligence
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            AI-powered career development and opportunity matching
+            Advanced AI-powered career strategy and predictive analytics
           </p>
         </div>
-        <Button onClick={analyzeCareer} disabled={loading || !careerProfile}>
-          <Sparkles className="w-4 h-4 mr-2" />
-          Analyze Career
+        <Button 
+          onClick={analyzeCareer} 
+          disabled={loading || !careerProfile}
+          className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+        >
+          <Sparkles className="w-4 h-4" />
+          AI Deep Analysis
         </Button>
       </div>
 
+      {/* Smart Features Badge */}
+      {careerProfile && (
+        <div className="flex gap-2 mb-4">
+          <Badge variant="secondary" className="gap-1">
+            <Sparkles className="w-3 h-3" />
+            Predictive Analytics
+          </Badge>
+          <Badge variant="secondary" className="gap-1">
+            <TrendingUp className="w-3 h-3" />
+            Market Intelligence
+          </Badge>
+          <Badge variant="secondary" className="gap-1">
+            <Target className="w-3 h-3" />
+            Smart Matching
+          </Badge>
+        </div>
+      )}
+
       {/* Career Profile Section */}
-      <Card className="p-6">
+      <Card className="p-6 bg-gradient-to-br from-card via-card to-primary/5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Briefcase className="w-5 h-5" />
+            <Briefcase className="w-5 h-5 text-primary" />
             Career Profile
+            {careerProfile && <Badge variant="secondary" className="ml-2">AI-Enhanced</Badge>}
           </h3>
           <Button
             variant="outline"
@@ -321,17 +344,22 @@ export const MatrixCareerTab = () => {
       {/* Recommendations */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            Personalized Recommendations
-          </h3>
+          <div>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              AI-Powered Career Opportunities
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Intelligent recommendations based on your profile and market trends
+            </p>
+          </div>
           <Button
-            variant="outline"
-            size="sm"
             onClick={generateRecommendations}
             disabled={loading || !careerProfile}
+            className="gap-2"
           >
-            Generate New
+            <Sparkles className="w-4 h-4" />
+            Generate Smart Recs
           </Button>
         </div>
 
