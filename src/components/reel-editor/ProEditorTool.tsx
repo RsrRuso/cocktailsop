@@ -4,8 +4,8 @@ import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import { 
-  Scissors, Gauge, Palette, Volume2, VolumeX, RotateCcw,
-  Download, Loader2, Sparkles, Play, Pause
+  Scissors, Gauge, Palette, Volume2, VolumeX, Wand2,
+  Download, Loader2, Sparkles, Play, Upload, ExternalLink, Check, ArrowRight
 } from 'lucide-react';
 
 interface ProEditorToolProps {
@@ -35,14 +35,11 @@ const SPEED_PRESETS = [
 
 export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'speed' | 'filter' | 'audio' | 'effects'>('speed');
+  const [activeTab, setActiveTab] = useState<'speed' | 'filter' | 'audio' | 'capcut'>('speed');
   const [selectedSpeed, setSelectedSpeed] = useState(1);
   const [selectedFilter, setSelectedFilter] = useState('none');
-  const [trimStart, setTrimStart] = useState(0);
-  const [trimEnd, setTrimEnd] = useState(100);
-  const [previewFilter, setPreviewFilter] = useState('none');
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [exportedForCapCut, setExportedForCapCut] = useState(false);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   // Apply speed to video preview
   const handleApplySpeed = useCallback(() => {
@@ -59,7 +56,6 @@ export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps
     const filter = FILTERS.find(f => f.id === selectedFilter)?.filter || 'none';
     if (video) {
       video.style.filter = filter;
-      setPreviewFilter(filter);
       toast.success(`Filter applied: ${FILTERS.find(f => f.id === selectedFilter)?.label}`);
     }
   }, [selectedFilter]);
@@ -82,108 +78,93 @@ export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps
     }
   }, []);
 
-  // Export with current settings using Canvas + MediaRecorder
-  const handleExportVideo = useCallback(async () => {
-    if (!videoUrl) return;
-    
+  // Export for CapCut
+  const handleExportToCapCut = useCallback(async () => {
+    if (!videoUrl) {
+      toast.error('No video to export');
+      return;
+    }
+
     setIsProcessing(true);
-    toast.info('Preparing export...', { duration: 2000 });
-
     try {
-      // Create offscreen video and canvas
-      const video = document.createElement('video');
-      video.src = videoUrl;
-      video.crossOrigin = 'anonymous';
-      video.muted = true;
+      const response = await fetch(videoUrl);
+      const blob = await response.blob();
+      const videoBlob = new Blob([blob], { type: 'video/mp4' });
       
-      await new Promise((resolve, reject) => {
-        video.onloadedmetadata = resolve;
-        video.onerror = reject;
-        setTimeout(reject, 10000);
-      });
-
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 1080;
-      canvas.height = video.videoHeight || 1920;
-      const ctx = canvas.getContext('2d')!;
-
-      // Calculate trim times
-      const duration = video.duration;
-      const startTime = (trimStart / 100) * duration;
-      const endTime = (trimEnd / 100) * duration;
-      const recordDuration = (endTime - startTime) * 1000;
-
-      video.currentTime = startTime;
-      video.playbackRate = selectedSpeed;
-
-      // Setup MediaRecorder
-      const stream = canvas.captureStream(30);
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 5000000,
-      });
-
-      const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-
-      const recordingPromise = new Promise<string>((resolve) => {
-        mediaRecorder.onstop = () => {
-          const blob = new Blob(chunks, { type: 'video/webm' });
-          resolve(URL.createObjectURL(blob));
-        };
-      });
-
-      // Start recording
-      await video.play();
-      mediaRecorder.start();
-
-      // Draw frames with filter
-      const filter = FILTERS.find(f => f.id === selectedFilter)?.filter || 'none';
+      const downloadUrl = URL.createObjectURL(videoBlob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `sv-video-${Date.now()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
       
-      const drawFrame = () => {
-        if (video.currentTime >= endTime || video.ended) {
-          mediaRecorder.stop();
-          video.pause();
-          return;
-        }
-        
-        ctx.filter = filter;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        requestAnimationFrame(drawFrame);
-      };
-
-      drawFrame();
-
-      // Stop after duration
       setTimeout(() => {
-        if (mediaRecorder.state === 'recording') {
-          mediaRecorder.stop();
-          video.pause();
-        }
-      }, recordDuration / selectedSpeed + 500);
-
-      const exportedUrl = await recordingPromise;
-      onVideoProcessed(exportedUrl);
-      toast.success('Video exported!');
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+      }, 100);
+      
+      setExportedForCapCut(true);
+      toast.success('Video downloaded! Open it in CapCut');
     } catch (error) {
       console.error('Export error:', error);
-      toast.error('Export failed. Try downloading instead.');
-      
-      // Fallback: download original
-      if (videoUrl) {
-        const a = document.createElement('a');
-        a.href = videoUrl;
-        a.download = `edited-video-${Date.now()}.mp4`;
-        a.click();
-      }
+      toast.error('Failed to export video');
     } finally {
       setIsProcessing(false);
     }
-  }, [videoUrl, selectedSpeed, selectedFilter, trimStart, trimEnd, onVideoProcessed]);
+  }, [videoUrl]);
 
-  // Quick download current video
+  // Open CapCut
+  const handleOpenCapCut = useCallback(() => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+      window.location.href = 'capcut://';
+      setTimeout(() => {
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isIOS) {
+          window.open('https://apps.apple.com/app/capcut-video-editor/id1500855883', '_blank');
+        } else {
+          window.open('https://play.google.com/store/apps/details?id=com.lemon.lvoverseas', '_blank');
+        }
+      }, 2000);
+    } else {
+      window.open('https://www.capcut.com/editor', '_blank');
+    }
+  }, []);
+
+  // Import from CapCut
+  const handleImportFromCapCut = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('video/')) {
+      toast.error('Please select a valid video file');
+      return;
+    }
+
+    const maxSize = 500 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('Video file is too large. Maximum 500MB.');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const url = URL.createObjectURL(file);
+      onVideoProcessed(url);
+      setExportedForCapCut(false);
+      toast.success('Video imported successfully!');
+    } catch (error) {
+      toast.error('Failed to import video');
+    } finally {
+      setIsProcessing(false);
+      if (importInputRef.current) {
+        importInputRef.current.value = '';
+      }
+    }
+  }, [onVideoProcessed]);
+
+  // Quick download
   const handleDownload = useCallback(async () => {
     if (!videoUrl) return;
     
@@ -201,6 +182,8 @@ export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps
       toast.error('Download failed');
     }
   }, [videoUrl]);
+
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   return (
     <div className="space-y-4">
@@ -221,7 +204,7 @@ export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps
           { id: 'speed', label: 'Speed', icon: Gauge },
           { id: 'filter', label: 'Filter', icon: Palette },
           { id: 'audio', label: 'Audio', icon: Volume2 },
-          { id: 'effects', label: 'Trim', icon: Scissors },
+          { id: 'capcut', label: 'CapCut', icon: Wand2 },
         ].map((tab) => (
           <Button
             key={tab.id}
@@ -324,58 +307,112 @@ export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps
         </Card>
       )}
 
-      {/* Trim/Effects Tab */}
-      {activeTab === 'effects' && (
-        <Card className="p-4 space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-3 block">Trim Range</label>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Start: {trimStart}%</span>
-                <span className="flex-1" />
-                <span>End: {trimEnd}%</span>
+      {/* CapCut Tab */}
+      {activeTab === 'capcut' && (
+        <div className="space-y-3">
+          {/* Step 1: Export */}
+          <Card className={`p-3 transition-all ${!exportedForCapCut ? 'border-primary bg-primary/5' : 'opacity-70'}`}>
+            <div className="flex items-start gap-3">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${!exportedForCapCut ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                {exportedForCapCut ? <Check className="w-3 h-3" /> : '1'}
               </div>
-              <Slider
-                value={[trimStart, trimEnd]}
-                onValueChange={([start, end]) => {
-                  setTrimStart(start);
-                  setTrimEnd(end);
-                }}
-                min={0}
-                max={100}
-                step={1}
-                disabled={isProcessing}
-              />
+              <div className="flex-1">
+                <h4 className="font-medium text-sm">Export Video</h4>
+                <p className="text-xs text-muted-foreground mb-2">Download to edit in CapCut</p>
+                <Button
+                  onClick={handleExportToCapCut}
+                  disabled={isProcessing || !videoUrl}
+                  variant={exportedForCapCut ? 'outline' : 'default'}
+                  size="sm"
+                  className="w-full gap-2"
+                >
+                  {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                  {exportedForCapCut ? 'Download Again' : 'Export for CapCut'}
+                </Button>
+              </div>
             </div>
+          </Card>
+
+          <div className="flex justify-center">
+            <ArrowRight className="w-4 h-4 text-muted-foreground rotate-90" />
           </div>
-          
-          <Button 
-            onClick={handleExportVideo} 
-            disabled={!videoUrl || isProcessing}
-            className="w-full gap-2"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" />
-                Export with Effects
-              </>
-            )}
-          </Button>
-        </Card>
+
+          {/* Step 2: Open CapCut */}
+          <Card className={`p-3 transition-all ${exportedForCapCut ? 'border-primary bg-primary/5' : 'opacity-70'}`}>
+            <div className="flex items-start gap-3">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${exportedForCapCut ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                2
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-sm">Edit in CapCut</h4>
+                <p className="text-xs text-muted-foreground mb-2">Open and import your video</p>
+                <Button
+                  onClick={handleOpenCapCut}
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2"
+                >
+                  {isMobile ? 'Open CapCut App' : 'Open CapCut Web'}
+                  <ExternalLink className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          <div className="flex justify-center">
+            <ArrowRight className="w-4 h-4 text-muted-foreground rotate-90" />
+          </div>
+
+          {/* Step 3: Import */}
+          <Card className="p-3 border-dashed border-2">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
+                3
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-sm">Import Edited Video</h4>
+                <p className="text-xs text-muted-foreground mb-2">Bring back your CapCut creation</p>
+                <Button
+                  onClick={() => importInputRef.current?.click()}
+                  disabled={isProcessing}
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2"
+                >
+                  {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                  Import from CapCut
+                </Button>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={handleImportFromCapCut}
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Tips */}
+          <div className="bg-muted/50 rounded-lg p-2 text-xs text-muted-foreground">
+            <p className="font-medium mb-1">💡 Tips</p>
+            <ul className="space-y-0.5">
+              <li>• Use CapCut's AI captions</li>
+              <li>• Add trending sounds</li>
+              <li>• Export in high quality</li>
+            </ul>
+          </div>
+        </div>
       )}
 
-      {/* Quick Tips */}
-      <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-        <p className="text-xs font-medium">⚡ Instant Preview</p>
-        <p className="text-xs text-muted-foreground">
-          Speed and filters apply instantly to preview. Export to save with all effects.
-        </p>
-      </div>
+      {activeTab !== 'capcut' && (
+        <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+          <p className="text-xs font-medium">⚡ Instant Preview</p>
+          <p className="text-xs text-muted-foreground">
+            Speed and filters apply instantly to preview
+          </p>
+        </div>
+      )}
     </div>
   );
 }
