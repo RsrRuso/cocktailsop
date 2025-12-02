@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { EditorTool } from '@/pages/ReelEditorPro';
-import { Scissors, Gauge, Palette, Sliders, Type, Smile, Pen, Music, Layout, Wand2 } from 'lucide-react';
+import { Scissors, Gauge, Palette, Sliders, Type, Smile, Pen, Music, Layout, Sparkles } from 'lucide-react';
 
 interface EditorToolbarProps {
   activeTool: EditorTool;
@@ -17,7 +17,7 @@ const tools: { id: EditorTool; label: string; icon: typeof Scissors; highlight?:
   { id: 'draw', label: 'Draw', icon: Pen },
   { id: 'audio', label: 'Audio', icon: Music },
   { id: 'layout', label: 'Layout', icon: Layout },
-  { id: 'capcut', label: 'CapCut', icon: Wand2, highlight: true },
+  { id: 'pro', label: 'Pro Edit', icon: Sparkles, highlight: true },
 ];
 
 export function EditorToolbar({ activeTool, onToolChange }: EditorToolbarProps) {

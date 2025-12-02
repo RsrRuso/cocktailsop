@@ -13,12 +13,12 @@ import { StickerTool } from '@/components/reel-editor/StickerTool';
 import { DrawingTool } from '@/components/reel-editor/DrawingTool';
 import { AudioTool } from '@/components/reel-editor/AudioTool';
 import { LayoutTool } from '@/components/reel-editor/LayoutTool';
-import { CapCutTool } from '@/components/reel-editor/CapCutTool';
+import { ProEditorTool } from '@/components/reel-editor/ProEditorTool';
 import { useVideoEditor } from '@/hooks/useVideoEditor';
 import { ArrowLeft, Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
-export type EditorTool = 'trim' | 'speed' | 'filter' | 'adjust' | 'text' | 'sticker' | 'draw' | 'audio' | 'layout' | 'capcut' | 'none';
+export type EditorTool = 'trim' | 'speed' | 'filter' | 'adjust' | 'text' | 'sticker' | 'draw' | 'audio' | 'layout' | 'pro' | 'none';
 
 export default function ReelEditorPro() {
   const navigate = useNavigate();
@@ -123,9 +123,9 @@ export default function ReelEditorPro() {
                 '✏️ Drawing',
                 '🎵 Music',
                 '📱 Layouts',
-                '✨ CapCut Collab',
+                '✨ Pro Editor',
               ].map((feature) => (
-                <div key={feature} className={`p-4 rounded-lg border ${feature.includes('CapCut') ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-purple-500/50' : 'bg-card'}`}>
+                <div key={feature} className={`p-4 rounded-lg border ${feature.includes('Pro Editor') ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-purple-500/50' : 'bg-card'}`}>
                   <span className="text-sm">{feature}</span>
                 </div>
               ))}
@@ -250,10 +250,10 @@ export default function ReelEditorPro() {
                 onUpdate={updateLayoutMode}
               />
             )}
-            {activeTool === 'capcut' && (
-              <CapCutTool
+            {activeTool === 'pro' && (
+              <ProEditorTool
                 videoUrl={videoUrl}
-                onImportVideo={(url) => {
+                onVideoProcessed={(url) => {
                   navigate(`/reel-editor-pro?video=${encodeURIComponent(url)}`);
                 }}
               />
