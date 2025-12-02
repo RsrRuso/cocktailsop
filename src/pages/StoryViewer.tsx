@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { X, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
-import UnifiedCommentsDialog from "@/components/unified/UnifiedCommentsDialog";
+import { LivestreamComments } from "@/components/story/LivestreamComments";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 
 interface Story {
@@ -528,14 +528,11 @@ export default function StoryViewer() {
       </div>
 
       {/* Comments */}
-      {showComments && (
-        <UnifiedCommentsDialog
-          contentId={currentStory.id}
-          contentType="story"
-          open={showComments}
-          onOpenChange={setShowComments}
-        />
-      )}
+      <LivestreamComments
+        contentId={currentStory.id}
+        isOpen={showComments}
+        onClose={() => setShowComments(false)}
+      />
 
       <style>{`
         @keyframes fly-up {
