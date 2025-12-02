@@ -123,8 +123,9 @@ export default function ReelEditorPro() {
                 '✏️ Drawing',
                 '🎵 Music',
                 '📱 Layouts',
+                '✨ CapCut Collab',
               ].map((feature) => (
-                <div key={feature} className="p-4 rounded-lg bg-card border">
+                <div key={feature} className={`p-4 rounded-lg border ${feature.includes('CapCut') ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-purple-500/50' : 'bg-card'}`}>
                   <span className="text-sm">{feature}</span>
                 </div>
               ))}
