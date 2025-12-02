@@ -4,18 +4,48 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, Download, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const sessionId = searchParams.get("session_id");
   const [showConfetti, setShowConfetti] = useState(true);
+  const [verifying, setVerifying] = useState(true);
 
   useEffect(() => {
-    // Hide confetti after animation
     const timer = setTimeout(() => setShowConfetti(false), 3000);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const verifyPayment = async () => {
+      if (!sessionId) {
+        setVerifying(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.functions.invoke("verify-payment", {
+          body: { session_id: sessionId },
+        });
+
+        if (error) throw error;
+
+        if (data?.success) {
+          toast.success("Payment verified! Your order is confirmed.");
+        }
+      } catch (error) {
+        console.error("Payment verification error:", error);
+        toast.error("Payment verification failed. Please contact support.");
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    verifyPayment();
+  }, [sessionId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
@@ -61,7 +91,7 @@ const PaymentSuccess = () => {
           <div className="space-y-2">
             <h1 className="text-3xl font-bold text-foreground">Payment Successful!</h1>
             <p className="text-muted-foreground">
-              Thank you for your purchase from SpecVerse
+              {verifying ? "Verifying payment..." : "Thank you for your purchase from SpecVerse"}
             </p>
           </div>
 

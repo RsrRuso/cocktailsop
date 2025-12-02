@@ -1,27 +1,75 @@
 project_id = "cbfqwaqwliehgxsdueem"
 
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[api.tls]
+enabled = false
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = true
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+enabled = true
+ip_version = "ipv4"
+port = 54323
+max_header_length = 4096
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+openai_api_key = "env(OPENAI_API_KEY)"
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[storage.image_transformation]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["https://127.0.0.1:3000"]
+jwt_expiry = 3600
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+max_frequency = "1s"
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
+max_frequency = "5s"
+
 [functions.create-checkout]
 verify_jwt = false
 
-[functions.fetch-spotify-tracks]
-verify_jwt = false
-
-[functions.search-spotify-music]
-verify_jwt = false
-
-[functions.spotify-oauth-callback]
-verify_jwt = false
-
-[functions.get-user-spotify-playlists]
-verify_jwt = false
-
-[functions.send-team-invitation]
-verify_jwt = false
-
-[functions.cocktail-ai-assistant]
-verify_jwt = false
-
-[functions.daily-fifo-alerts]
+[functions.verify-payment]
 verify_jwt = false
 
 [functions.transcribe-audio]

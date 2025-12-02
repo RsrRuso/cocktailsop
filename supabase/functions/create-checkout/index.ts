@@ -25,11 +25,11 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const { priceId, quantity = 1 } = await req.json();
+    const { priceId, quantity = 1, order_id } = await req.json();
     if (!priceId) {
       throw new Error("priceId is required");
     }
-    logStep("Received request", { priceId, quantity });
+    logStep("Received request", { priceId, quantity, order_id });
 
     // Get authenticated user (optional for one-time payments)
     const authHeader = req.headers.get("Authorization");
@@ -74,6 +74,7 @@ serve(async (req) => {
       cancel_url: `${origin}/shop`,
       allow_promotion_codes: true,
       billing_address_collection: "required",
+      metadata: order_id ? { order_id } : {}
     });
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
