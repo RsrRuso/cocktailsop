@@ -95,6 +95,7 @@ const Shop = lazy(() => import("./pages/Shop"));
 const Cart = lazy(() => import("./pages/Cart"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const PaymentOptions = lazy(() => import("./pages/PaymentOptions"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 const ShopAuth = lazy(() => import("./pages/ShopAuth"));
 const Orders = lazy(() => import("./pages/Orders"));
@@ -257,6 +258,7 @@ const AppContent = () => {
           <Route path="/cart" element={<Cart />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/payment-options" element={<PaymentOptions />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/order-confirmation" element={<OrderConfirmation />} />
           <Route path="/shop-auth" element={<ShopAuth />} />
           <Route path="/orders" element={<Orders />} />

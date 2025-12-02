@@ -1,15 +1,18 @@
-import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Minus, ShoppingBag, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import BottomNav from "@/components/BottomNav";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 
 const Cart = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { cartItems, removeFromCart, updateQuantity } = useCart();
+  const [loading, setLoading] = useState(false);
 
   const handleRemoveItem = (id: string) => {
     removeFromCart(id);
@@ -24,7 +27,7 @@ const Cart = () => {
   const tax = subtotal * 0.1;
   const total = subtotal + shipping + tax;
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cartItems.length === 0) {
       toast({
         title: "Cart is Empty",
@@ -33,7 +36,37 @@ const Cart = () => {
       });
       return;
     }
-    navigate("/payment-options", { state: { cartItems, total } });
+
+    // For demo: Use first Stripe product price (Premium Cocktail Recipe Pack)
+    // In production, products would have stripe_price_id in database
+    const stripePriceId = "price_1SZhIeDeFqd186tlFsAgAlfD";
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { priceId: stripePriceId, quantity: 1 },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        // Open Stripe Checkout in new tab
+        window.open(data.url, "_blank");
+        toast({
+          title: "Checkout Started",
+          description: "Complete your payment in the new tab",
+        });
+      }
+    } catch (error: any) {
+      console.error("Checkout error:", error);
+      toast({
+        title: "Checkout Error",
+        description: error.message || "Failed to start checkout",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -146,8 +179,14 @@ const Cart = () => {
       {/* Fixed Checkout Button */}
       {cartItems.length > 0 && (
         <div className="fixed bottom-20 left-0 right-0 p-4 glass border-t border-border/50">
-          <Button onClick={handleCheckout} className="w-full" size="lg">
-            Proceed to Checkout (${total.toFixed(2)})
+          <Button 
+            onClick={handleCheckout} 
+            className="w-full" 
+            size="lg"
+            disabled={loading}
+          >
+            <CreditCard className="w-4 h-4 mr-2" />
+            {loading ? "Starting Checkout..." : `Checkout with Stripe ($${total.toFixed(2)})`}
           </Button>
         </div>
       )}
