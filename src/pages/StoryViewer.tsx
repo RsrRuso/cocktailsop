@@ -199,11 +199,12 @@ const StoryViewer = () => {
   };
 
   const handleDoubleTap = () => {
-    if (isOwnStory) return;
-    
+    const currentStory = stories[currentStoryIndex];
+    if (!currentStory || currentStory.user_id === currentUserId) return;
+
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300;
-    
+
     if (now - lastTap < DOUBLE_TAP_DELAY) {
       if (!isLiked) {
         handleLike();
@@ -388,9 +389,7 @@ const StoryViewer = () => {
 
     // Swipe up - open comments
     if (diffY > threshold && Math.abs(diffX) < threshold) {
-      if (!isOwnStory) {
-        setShowCommentsDialog(true);
-      }
+      setShowCommentsDialog(true);
       return;
     }
 
@@ -411,6 +410,9 @@ const StoryViewer = () => {
       goToPreviousMedia();
       return;
     }
+
+    // No significant swipe: treat as tap for double-tap detection
+    handleDoubleTap();
   };
 
   const goToNextMedia = () => {
