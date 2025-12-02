@@ -167,16 +167,13 @@ export const LivestreamComments = ({
           onClick={() => setIsExpanded(!isExpanded)}
           size="sm"
           variant="ghost"
-          className="rounded-full h-8 px-3 bg-black/50 backdrop-blur-sm hover:bg-black/70 border border-white/20"
+          className="rounded-full h-8 w-8 p-0 bg-black/50 backdrop-blur-sm hover:bg-black/70 border border-white/20"
         >
           {isExpanded ? (
             <ChevronDown className="w-4 h-4 text-white" />
           ) : (
             <ChevronUp className="w-4 h-4 text-white" />
           )}
-          <span className="text-white text-xs ml-1">
-            {isExpanded ? "Hide" : "Show"} Comments
-          </span>
         </Button>
       </div>
 
