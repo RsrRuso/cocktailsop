@@ -10,6 +10,8 @@ import MusicSelectionDialog from "@/components/MusicSelectionDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { MusicShareCommentsDialog } from "@/components/MusicShareCommentsDialog";
+import TrendingMusicSection from "@/components/TrendingMusicSection";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface MusicShare {
   id: string;
@@ -200,79 +202,92 @@ const Music = () => {
 
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Music Shares</h1>
+          <h1 className="text-2xl font-bold">Music</h1>
           <Button onClick={() => setShowMusicDialog(true)}>
             Share Music
           </Button>
         </div>
 
-        {musicShares.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No music shared yet</p>
-            <Button onClick={() => setShowMusicDialog(true)}>
-              Share Your First Track
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {musicShares.map((share) => (
-              <div key={share.id} className="glass rounded-lg p-4">
-                <div className="flex items-start gap-3 mb-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={share.profiles.avatar_url || undefined} />
-                    <AvatarFallback>{share.profiles.username[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <p className="font-normal text-sm">{share.profiles.username}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(share.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  {share.user_id === user?.id && (
-                    <button
-                      onClick={() => handleDeleteShare(share.id)}
-                      className="text-destructive hover:opacity-70"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+        <Tabs defaultValue="shares" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="shares">Music Shares</TabsTrigger>
+            <TabsTrigger value="trending">Trending</TabsTrigger>
+          </TabsList>
 
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="flex-1">
-                    <p className="font-semibold">{share.track_title}</p>
-                    <p className="text-sm text-muted-foreground">{share.track_artist}</p>
-                  </div>
-                  <button
-                    onClick={() => handlePlayTrack(share.track_id)}
-                    className="p-2 rounded-full bg-primary text-primary-foreground hover:opacity-90"
-                  >
-                    <Play className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-4 text-sm">
-                  <button
-                    onClick={() => handleLike(share.id)}
-                    className="flex items-center gap-1 hover:text-primary"
-                  >
-                    <Heart
-                      className={`w-5 h-5 ${likedShares.has(share.id) ? 'fill-primary text-primary' : ''}`}
-                    />
-                    <span>{share.like_count}</span>
-                  </button>
-                  <button
-                    onClick={() => handleComment(share)}
-                    className="flex items-center gap-1 hover:text-primary"
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    <span>{share.comment_count}</span>
-                  </button>
-                </div>
+          <TabsContent value="shares">
+            {musicShares.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">No music shared yet</p>
+                <Button onClick={() => setShowMusicDialog(true)}>
+                  Share Your First Track
+                </Button>
               </div>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="space-y-4">
+                {musicShares.map((share) => (
+                  <div key={share.id} className="glass rounded-lg p-4">
+                    <div className="flex items-start gap-3 mb-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={share.profiles.avatar_url || undefined} />
+                        <AvatarFallback>{share.profiles.username[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="font-normal text-sm">{share.profiles.username}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(share.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {share.user_id === user?.id && (
+                        <button
+                          onClick={() => handleDeleteShare(share.id)}
+                          className="text-destructive hover:opacity-70"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex-1">
+                        <p className="font-semibold">{share.track_title}</p>
+                        <p className="text-sm text-muted-foreground">{share.track_artist}</p>
+                      </div>
+                      <button
+                        onClick={() => handlePlayTrack(share.track_id)}
+                        className="p-2 rounded-full bg-primary text-primary-foreground hover:opacity-90"
+                      >
+                        <Play className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-sm">
+                      <button
+                        onClick={() => handleLike(share.id)}
+                        className="flex items-center gap-1 hover:text-primary"
+                      >
+                        <Heart
+                          className={`w-5 h-5 ${likedShares.has(share.id) ? 'fill-primary text-primary' : ''}`}
+                        />
+                        <span>{share.like_count}</span>
+                      </button>
+                      <button
+                        onClick={() => handleComment(share)}
+                        className="flex items-center gap-1 hover:text-primary"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        <span>{share.comment_count}</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="trending">
+            <TrendingMusicSection />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <BottomNav />
