@@ -15,6 +15,7 @@ import { usePageTransition } from "@/hooks/usePageTransition";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAutomationProcessor } from "@/hooks/useAutomationProcessor";
 
 // Eager load ONLY index/landing/auth (no user data)
 import Index from "./pages/Index";
@@ -144,6 +145,7 @@ const PageLoader = () => (
 const AppContent = () => {
   usePageTransition(); // Now inside Router context
   const { requestPermission } = usePushNotifications();
+  useAutomationProcessor(); // Process automation webhooks in background
   
   useEffect(() => {
     // Request notification permission on app load

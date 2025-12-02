@@ -13,6 +13,7 @@ import { CreateTriggerDialog } from "@/components/automation/CreateTriggerDialog
 import { WebhooksList } from "@/components/automation/WebhooksList";
 import { TriggersList } from "@/components/automation/TriggersList";
 import { AutomationLogs } from "@/components/automation/AutomationLogs";
+import { AutomationGettingStarted } from "@/components/automation/AutomationGettingStarted";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Automations = () => {
@@ -100,8 +101,16 @@ const Automations = () => {
           </div>
         </div>
 
+        {/* Getting Started Guide - Show when no webhooks */}
+        {(!webhooks || webhooks.length === 0) && (
+          <div className="mb-6">
+            <AutomationGettingStarted onCreateWebhook={() => setCreateWebhookOpen(true)} />
+          </div>
+        )}
+
         {/* Integration Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {webhooks && webhooks.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card className="p-6 border-2 border-primary/20 hover:border-primary/40 transition-all cursor-pointer">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
@@ -147,8 +156,10 @@ const Automations = () => {
             </p>
           </Card>
         </div>
+        )}
 
         {/* Main Content */}
+        {webhooks && webhooks.length > 0 && (
         <Tabs defaultValue="webhooks" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="webhooks">
@@ -204,6 +215,7 @@ const Automations = () => {
             <AutomationLogs logs={logs || []} />
           </TabsContent>
         </Tabs>
+        )}
       </div>
 
       <CreateWebhookDialog 
