@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Type, Music2, Sparkles, Download, Pen, Smile, MoreHorizontal, ArrowRight } from "lucide-react";
+import { X, Type, Music2, Sparkles, Download, Pen, Smile, MoreHorizontal, ArrowRight, Upload, Disc3 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import MusicSelectionDialog from "./MusicSelectionDialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TextOverlay {
   id: string;
@@ -44,9 +45,12 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
   const [caption, setCaption] = useState("");
   const [showMusicDialog, setShowMusicDialog] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<string | null>(null);
+  const [selectedMusicFile, setSelectedMusicFile] = useState<File | null>(null);
+  const [uploadingMusic, setUploadingMusic] = useState(false);
   const [shareOption, setShareOption] = useState<"story" | "close-friends" | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const musicFileInputRef = useRef<HTMLInputElement>(null);
 
   const addTextOverlay = () => {
     if (!currentText.trim()) return;
@@ -68,6 +72,53 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
 
   const removeTextOverlay = (id: string) => {
     setTextOverlays(textOverlays.filter(t => t.id !== id));
+  };
+
+  const handleMusicFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('audio/')) {
+      toast.error("Please select a valid audio file");
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Audio file must be less than 10MB");
+      return;
+    }
+
+    setUploadingMusic(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Upload to Supabase storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('music')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('music')
+        .getPublicUrl(fileName);
+
+      setSelectedMusicFile(file);
+      setSelectedMusic(publicUrl);
+      toast.success(`Music uploaded: ${file.name}`);
+    } catch (error: any) {
+      console.error('Music upload error:', error);
+      toast.error(`Failed to upload: ${error.message}`);
+    } finally {
+      setUploadingMusic(false);
+    }
   };
 
   const handleShare = () => {
@@ -146,6 +197,16 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
               </div>
             </div>
           ))}
+          
+          {/* Music indicator */}
+          {selectedMusic && (
+            <div className="absolute top-20 right-4 bg-white/20 backdrop-blur-xl rounded-full px-4 py-2 flex items-center gap-2">
+              <Music2 className="w-4 h-4 text-white animate-pulse" />
+              <span className="text-white text-sm font-medium">
+                {selectedMusicFile ? selectedMusicFile.name : "Music added"}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Right Side Toolbar - Instagram Style */}
@@ -173,18 +234,41 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
             <span className="text-white text-xs font-medium">Stickers</span>
           </button>
 
-          <button
-            onClick={() => setShowMusicDialog(true)}
-            className="flex flex-col items-center gap-1"
-          >
-            <div className={cn(
-              "w-12 h-12 rounded-full flex items-center justify-center transition-all",
-              selectedMusic ? "bg-white text-black" : "bg-white/10 text-white"
-            )}>
-              <Music2 className="w-6 h-6" />
-            </div>
+          <div className="flex flex-col items-center gap-1">
+            <button
+              onClick={() => setShowMusicDialog(true)}
+              className="relative"
+            >
+              <div className={cn(
+                "w-12 h-12 rounded-full flex items-center justify-center transition-all",
+                selectedMusic ? "bg-white text-black" : "bg-white/10 text-white"
+              )}>
+                <Music2 className="w-6 h-6" />
+              </div>
+            </button>
+            
+            <button
+              onClick={() => musicFileInputRef.current?.click()}
+              disabled={uploadingMusic}
+              className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all mt-2"
+            >
+              {uploadingMusic ? (
+                <Disc3 className="w-6 h-6 animate-spin" />
+              ) : (
+                <Upload className="w-6 h-6" />
+              )}
+            </button>
+            
             <span className="text-white text-xs font-medium">Audio</span>
-          </button>
+            
+            <input
+              ref={musicFileInputRef}
+              type="file"
+              accept="audio/*"
+              onChange={handleMusicFileSelect}
+              className="hidden"
+            />
+          </div>
 
           <button
             onClick={() => toast.info("Effects coming soon!")}
