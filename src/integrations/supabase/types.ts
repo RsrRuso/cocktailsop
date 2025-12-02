@@ -5311,6 +5311,7 @@ export type Database = {
           created_at: string | null
           id: string
           reactions: Json | null
+          reply_to: string | null
           story_id: string
           user_id: string
         }
@@ -5319,6 +5320,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           reactions?: Json | null
+          reply_to?: string | null
           story_id: string
           user_id: string
         }
@@ -5327,10 +5329,18 @@ export type Database = {
           created_at?: string | null
           id?: string
           reactions?: Json | null
+          reply_to?: string | null
           story_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "story_comments_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "story_comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "story_comments_story_id_fkey"
             columns: ["story_id"]
