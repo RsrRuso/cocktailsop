@@ -133,20 +133,6 @@ export function AdvancedStoryComments({
 
       if (error) throw error;
 
-      // Update comment count - fetch current, increment, and update
-      const { data: storyData } = await supabase
-        .from('stories')
-        .select('comment_count')
-        .eq('id', storyId)
-        .single();
-
-      if (storyData) {
-        await supabase
-          .from('stories')
-          .update({ comment_count: (storyData.comment_count || 0) + 1 })
-          .eq('id', storyId);
-      }
-
       // Optimistically add to UI (real-time will handle it, but this is faster)
       setComments(prev => [...prev, data as Comment]);
       setNewComment('');
