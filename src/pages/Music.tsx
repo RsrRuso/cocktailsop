@@ -209,8 +209,9 @@ const Music = () => {
         </div>
 
         <Tabs defaultValue="shares" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="shares">Music Shares</TabsTrigger>
+            <TabsTrigger value="library">My Library</TabsTrigger>
             <TabsTrigger value="trending">Trending</TabsTrigger>
           </TabsList>
 
@@ -282,6 +283,71 @@ const Music = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="library">
+            <div className="text-center py-12">
+              <div className="mb-6">
+                <p className="text-lg font-semibold mb-2">Personal Music Library</p>
+                <p className="text-muted-foreground text-sm mb-4">Upload your own music files</p>
+              </div>
+              <input
+                type="file"
+                accept="audio/*"
+                multiple
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (files.length === 0) return;
+
+                  toast.info(`Uploading ${files.length} file(s)...`);
+                  
+                  for (const file of files) {
+                    try {
+                      const fileExt = file.name.split('.').pop();
+                      const fileName = `${user?.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                      
+                      const { error: uploadError } = await supabase.storage
+                        .from('music')
+                        .upload(fileName, file);
+
+                      if (uploadError) throw uploadError;
+
+                      const { data: { publicUrl } } = supabase.storage
+                        .from('music')
+                        .getPublicUrl(fileName);
+
+                      // Store music metadata in user_music_library table
+                      const { error: dbError } = await supabase
+                        .from('user_music_library')
+                        .insert({
+                          user_id: user?.id,
+                          file_url: publicUrl,
+                          file_name: file.name,
+                          file_size: file.size,
+                        });
+
+                      if (dbError) throw dbError;
+                    } catch (error) {
+                      console.error('Error uploading:', error);
+                      toast.error(`Failed to upload ${file.name}`);
+                    }
+                  }
+                  
+                  toast.success('Music uploaded successfully!');
+                  e.target.value = '';
+                }}
+                className="hidden"
+                id="music-upload"
+              />
+              <label htmlFor="music-upload">
+                <Button asChild>
+                  <span>Upload Music Files</span>
+                </Button>
+              </label>
+              <p className="text-xs text-muted-foreground mt-4">
+                Supported formats: MP3, WAV, OGG, M4A
+              </p>
+            </div>
           </TabsContent>
 
           <TabsContent value="trending">
