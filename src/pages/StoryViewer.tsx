@@ -561,23 +561,10 @@ export default function StoryViewer() {
             </span>
           )}
         </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowComments(true);
-          }}
-          className="text-white text-sm font-medium p-2 hover:bg-white/10 rounded-full transition-colors"
-        >
-          💬 {currentStory.comment_count || 0}
-        </button>
       </div>
 
-      {/* Comments */}
-      <LivestreamComments
-        contentId={currentStory.id}
-        isOpen={showComments}
-        onClose={() => setShowComments(false)}
-      />
+      {/* Always-visible livestream comments */}
+      <LivestreamComments contentId={currentStory.id} />
 
       {/* Story Insights */}
       <Sheet open={showInsights} onOpenChange={setShowInsights}>
