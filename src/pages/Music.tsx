@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Trash2, Play } from "lucide-react";
+import { Heart, MessageCircle, Trash2, Play, Upload, Music2 } from "lucide-react";
 import MusicSelectionDialog from "@/components/MusicSelectionDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -28,6 +28,15 @@ interface MusicShare {
   comment_count: number;
 }
 
+interface UserMusicFile {
+  id: string;
+  user_id: string;
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  created_at: string;
+}
+
 const Music = () => {
   const { user } = useAuth();
   const [musicShares, setMusicShares] = useState<MusicShare[]>([]);
@@ -37,11 +46,14 @@ const Music = () => {
   const [showCommentsDialog, setShowCommentsDialog] = useState(false);
   const [selectedShare, setSelectedShare] = useState<MusicShare | null>(null);
   const [isPlayModalOpen, setIsPlayModalOpen] = useState(false);
+  const [userMusicLibrary, setUserMusicLibrary] = useState<UserMusicFile[]>([]);
+  const [playingLibraryUrl, setPlayingLibraryUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.id) {
       fetchMusicShares();
       fetchLikedShares();
+      fetchUserMusicLibrary();
     }
 
     const musicSharesChannel = supabase
@@ -59,10 +71,16 @@ const Music = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'follows' }, fetchMusicShares)
       .subscribe();
 
+    const libraryChannel = supabase
+      .channel('user_music_library_list')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_music_library' }, fetchUserMusicLibrary)
+      .subscribe();
+
     return () => {
       supabase.removeChannel(musicSharesChannel);
       supabase.removeChannel(likesChannel);
       supabase.removeChannel(followsChannel);
+      supabase.removeChannel(libraryChannel);
     };
   }, [user?.id]);
 
@@ -196,6 +214,49 @@ const Music = () => {
     }
   };
 
+  const fetchUserMusicLibrary = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_music_library')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUserMusicLibrary(data || []);
+    } catch (error) {
+      console.error('Error fetching music library:', error);
+    }
+  };
+
+  const handleDeleteLibraryFile = async (fileId: string, fileUrl: string) => {
+    if (!user?.id) return;
+
+    try {
+      // Extract file path from URL
+      const filePath = fileUrl.split('/music/').pop();
+      
+      if (filePath) {
+        await supabase.storage.from('music').remove([filePath]);
+      }
+
+      const { error } = await supabase
+        .from('user_music_library')
+        .delete()
+        .eq('id', fileId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      toast.success("Music file deleted");
+      fetchUserMusicLibrary();
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast.error("Failed to delete file");
+    }
+  };
+
   return (
     <div className="min-h-screen pb-20 pt-16">
       <TopNav />
@@ -286,67 +347,116 @@ const Music = () => {
           </TabsContent>
 
           <TabsContent value="library">
-            <div className="text-center py-12">
-              <div className="mb-6">
-                <p className="text-lg font-semibold mb-2">Personal Music Library</p>
-                <p className="text-muted-foreground text-sm mb-4">Upload your own music files</p>
-              </div>
-              <input
-                type="file"
-                accept="audio/*"
-                multiple
-                onChange={async (e) => {
-                  const files = Array.from(e.target.files || []);
-                  if (files.length === 0) return;
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">My Library</h2>
+                  <p className="text-sm text-muted-foreground">Your uploaded music files</p>
+                </div>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  multiple
+                  onChange={async (e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length === 0) return;
 
-                  toast.info(`Uploading ${files.length} file(s)...`);
-                  
-                  for (const file of files) {
-                    try {
-                      const fileExt = file.name.split('.').pop();
-                      const fileName = `${user?.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                      
-                      const { error: uploadError } = await supabase.storage
-                        .from('music')
-                        .upload(fileName, file);
+                    toast.info(`Uploading ${files.length} file(s)...`);
+                    
+                    for (const file of files) {
+                      try {
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `${user?.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                        
+                        const { error: uploadError } = await supabase.storage
+                          .from('music')
+                          .upload(fileName, file);
 
-                      if (uploadError) throw uploadError;
+                        if (uploadError) throw uploadError;
 
-                      const { data: { publicUrl } } = supabase.storage
-                        .from('music')
-                        .getPublicUrl(fileName);
+                        const { data: { publicUrl } } = supabase.storage
+                          .from('music')
+                          .getPublicUrl(fileName);
 
-                      // Store music metadata in user_music_library table
-                      const { error: dbError } = await supabase
-                        .from('user_music_library')
-                        .insert({
-                          user_id: user?.id,
-                          file_url: publicUrl,
-                          file_name: file.name,
-                          file_size: file.size,
-                        });
+                        const { error: dbError } = await supabase
+                          .from('user_music_library')
+                          .insert({
+                            user_id: user?.id,
+                            file_url: publicUrl,
+                            file_name: file.name,
+                            file_size: file.size,
+                          });
 
-                      if (dbError) throw dbError;
-                    } catch (error) {
-                      console.error('Error uploading:', error);
-                      toast.error(`Failed to upload ${file.name}`);
+                        if (dbError) throw dbError;
+                      } catch (error) {
+                        console.error('Error uploading:', error);
+                        toast.error(`Failed to upload ${file.name}`);
+                      }
                     }
-                  }
-                  
-                  toast.success('Music uploaded successfully!');
-                  e.target.value = '';
-                }}
-                className="hidden"
-                id="music-upload"
-              />
-              <label htmlFor="music-upload">
-                <Button asChild>
-                  <span>Upload Music Files</span>
-                </Button>
-              </label>
-              <p className="text-xs text-muted-foreground mt-4">
-                Supported formats: MP3, WAV, OGG, M4A
-              </p>
+                    
+                    toast.success('Music uploaded successfully!');
+                    e.target.value = '';
+                    fetchUserMusicLibrary();
+                  }}
+                  className="hidden"
+                  id="music-upload"
+                />
+                <label htmlFor="music-upload">
+                  <Button asChild>
+                    <span><Upload className="w-4 h-4 mr-2" />Upload Music</span>
+                  </Button>
+                </label>
+              </div>
+
+              {userMusicLibrary.length === 0 ? (
+                <div className="text-center py-12">
+                  <Music2 className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground mb-4">Your music library is empty</p>
+                  <p className="text-xs text-muted-foreground mb-6">
+                    Upload MP3, WAV, OGG, or M4A files
+                  </p>
+                  <label htmlFor="music-upload">
+                    <Button asChild>
+                      <span><Upload className="w-4 h-4 mr-2" />Upload Your First Track</span>
+                    </Button>
+                  </label>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {userMusicLibrary.map((file) => (
+                    <div key={file.id} className="glass rounded-lg p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Music2 className="w-6 h-6 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{file.file_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(file.file_size / (1024 * 1024)).toFixed(2)} MB • {new Date(file.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setPlayingLibraryUrl(file.file_url);
+                              setIsPlayModalOpen(true);
+                            }}
+                            className="p-2 rounded-full bg-primary text-primary-foreground hover:opacity-90"
+                          >
+                            <Play className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteLibraryFile(file.id, file.file_url)}
+                            className="p-2 rounded-full hover:bg-destructive/10 text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -360,7 +470,12 @@ const Music = () => {
 
       <Dialog open={isPlayModalOpen} onOpenChange={setIsPlayModalOpen}>
         <DialogContent className="max-w-md">
-          {playingTrackId && (
+          {playingLibraryUrl ? (
+            <audio controls autoPlay className="w-full">
+              <source src={playingLibraryUrl} />
+              Your browser does not support audio playback.
+            </audio>
+          ) : playingTrackId ? (
             <iframe
               src={`https://open.spotify.com/embed/track/${playingTrackId}`}
               width="100%"
@@ -369,7 +484,7 @@ const Music = () => {
               allow="encrypted-media"
               title="Spotify Player"
             />
-          )}
+          ) : null}
         </DialogContent>
       </Dialog>
 
