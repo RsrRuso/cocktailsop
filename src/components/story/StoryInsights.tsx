@@ -2,11 +2,22 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Eye, Heart, MessageCircle, Share2, TrendingUp, Users, Clock, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Eye, Heart, MessageCircle, Share2, TrendingUp, Clock, Zap, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import OptimizedAvatar from "@/components/OptimizedAvatar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface StoryInsightsProps {
   storyId: string;
+}
+
+interface UserProfile {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  username: string | null;
 }
 
 export const StoryInsights = ({ storyId }: StoryInsightsProps) => {
@@ -25,8 +36,17 @@ export const StoryInsights = ({ storyId }: StoryInsightsProps) => {
     avg_watch_time: "85%",
   });
 
+  const [viewers, setViewers] = useState<UserProfile[]>([]);
+  const [likers, setLikers] = useState<UserProfile[]>([]);
+  const [commenters, setCommenters] = useState<UserProfile[]>([]);
+  const [sharers, setSharers] = useState<UserProfile[]>([]);
+
   useEffect(() => {
     fetchStoryMetrics();
+    fetchViewers();
+    fetchLikers();
+    fetchCommenters();
+    fetchSharers();
   }, [storyId]);
 
   const fetchStoryMetrics = async () => {
@@ -48,13 +68,136 @@ export const StoryInsights = ({ storyId }: StoryInsightsProps) => {
           comments: story.comment_count || 0,
           shares: 0,
           engagement_rate: Math.round(engagement),
-          completion_rate: 78, // Mock for now
+          completion_rate: 78,
         });
       }
     } catch (error) {
       console.error("Error fetching metrics:", error);
     }
   };
+
+  const fetchViewers = async () => {
+    try {
+      const { data } = await supabase
+        .from("story_views" as any)
+        .select(`
+          user_id,
+          profiles:user_id (
+            id,
+            full_name,
+            avatar_url,
+            username
+          )
+        `)
+        .eq("story_id", storyId)
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        setViewers(data.map((v: any) => v.profiles).filter(Boolean));
+      }
+    } catch (error) {
+      console.error("Error fetching viewers:", error);
+    }
+  };
+
+  const fetchLikers = async () => {
+    try {
+      const { data } = await supabase
+        .from("story_likes" as any)
+        .select(`
+          user_id,
+          profiles:user_id (
+            id,
+            full_name,
+            avatar_url,
+            username
+          )
+        `)
+        .eq("story_id", storyId)
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        setLikers(data.map((l: any) => l.profiles).filter(Boolean));
+      }
+    } catch (error) {
+      console.error("Error fetching likers:", error);
+    }
+  };
+
+  const fetchCommenters = async () => {
+    try {
+      const { data } = await supabase
+        .from("story_comments" as any)
+        .select(`
+          user_id,
+          profiles:user_id (
+            id,
+            full_name,
+            avatar_url,
+            username
+          )
+        `)
+        .eq("story_id", storyId)
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        // Get unique users who commented
+        const uniqueUsers = Array.from(
+          new Map(data.map((c: any) => [c.profiles?.id, c.profiles])).values()
+        ).filter(Boolean);
+        setCommenters(uniqueUsers as UserProfile[]);
+      }
+    } catch (error) {
+      console.error("Error fetching commenters:", error);
+    }
+  };
+
+  const fetchSharers = async () => {
+    try {
+      const { data } = await supabase
+        .from("story_reposts" as any)
+        .select(`
+          user_id,
+          profiles:user_id (
+            id,
+            full_name,
+            avatar_url,
+            username
+          )
+        `)
+        .eq("story_id", storyId)
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        setSharers(data.map((s: any) => s.profiles).filter(Boolean));
+      }
+    } catch (error) {
+      console.error("Error fetching sharers:", error);
+    }
+  };
+
+  const UserList = ({ users, emptyText }: { users: UserProfile[], emptyText: string }) => (
+    <ScrollArea className="h-48">
+      {users.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-8">{emptyText}</p>
+      ) : (
+        <div className="space-y-2 pr-4">
+          {users.map((user) => (
+            <div key={user.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+              <OptimizedAvatar
+                src={user.avatar_url}
+                alt={user.full_name || "User"}
+                className="w-8 h-8"
+              />
+              <span className="text-sm font-medium">
+                {user.full_name || user.username || "Anonymous"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </ScrollArea>
+  );
 
   return (
     <div className="space-y-4">
@@ -67,38 +210,86 @@ export const StoryInsights = ({ storyId }: StoryInsightsProps) => {
           <CardDescription>Real-time story analytics</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Eye className="w-4 h-4 text-blue-500" />
-                <span className="text-xs text-muted-foreground">Views</span>
-              </div>
-              <div className="text-2xl font-bold">{metrics.views}</div>
-            </div>
+          <div className="space-y-2">
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-3 h-auto hover:bg-blue-500/10">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-500/10">
+                      <Eye className="w-4 h-4 text-blue-500" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs text-muted-foreground">Views</div>
+                      <div className="text-xl font-bold">{metrics.views}</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-2 px-2">
+                <UserList users={viewers} emptyText="No views yet" />
+              </CollapsibleContent>
+            </Collapsible>
 
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Heart className="w-4 h-4 text-red-500" />
-                <span className="text-xs text-muted-foreground">Likes</span>
-              </div>
-              <div className="text-2xl font-bold">{metrics.likes}</div>
-            </div>
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-3 h-auto hover:bg-red-500/10">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-red-500/10">
+                      <Heart className="w-4 h-4 text-red-500" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs text-muted-foreground">Likes</div>
+                      <div className="text-xl font-bold">{metrics.likes}</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-2 px-2">
+                <UserList users={likers} emptyText="No likes yet" />
+              </CollapsibleContent>
+            </Collapsible>
 
-            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-              <div className="flex items-center gap-2 mb-2">
-                <MessageCircle className="w-4 h-4 text-green-500" />
-                <span className="text-xs text-muted-foreground">Comments</span>
-              </div>
-              <div className="text-2xl font-bold">{metrics.comments}</div>
-            </div>
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-3 h-auto hover:bg-green-500/10">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-green-500/10">
+                      <MessageCircle className="w-4 h-4 text-green-500" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs text-muted-foreground">Comments</div>
+                      <div className="text-xl font-bold">{metrics.comments}</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-2 px-2">
+                <UserList users={commenters} emptyText="No comments yet" />
+              </CollapsibleContent>
+            </Collapsible>
 
-            <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Share2 className="w-4 h-4 text-purple-500" />
-                <span className="text-xs text-muted-foreground">Shares</span>
-              </div>
-              <div className="text-2xl font-bold">{metrics.shares}</div>
-            </div>
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-3 h-auto hover:bg-purple-500/10">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-purple-500/10">
+                      <Share2 className="w-4 h-4 text-purple-500" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs text-muted-foreground">Shares</div>
+                      <div className="text-xl font-bold">{metrics.shares}</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-2 px-2">
+                <UserList users={sharers} emptyText="No shares yet" />
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           <div className="space-y-3 pt-2">
