@@ -564,7 +564,10 @@ export default function StoryViewer() {
       </div>
 
       {/* Always-visible livestream comments */}
-      <LivestreamComments contentId={currentStory.id} />
+      <LivestreamComments 
+        contentId={currentStory.id} 
+        onPauseChange={(paused) => setIsPaused(paused)}
+      />
 
       {/* Story Insights */}
       <Sheet open={showInsights} onOpenChange={setShowInsights}>

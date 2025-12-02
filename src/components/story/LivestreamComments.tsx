@@ -22,10 +22,12 @@ interface StoryComment {
 
 interface LivestreamCommentsProps {
   contentId: string;
+  onPauseChange?: (paused: boolean) => void;
 }
 
 export const LivestreamComments = ({
   contentId,
+  onPauseChange,
 }: LivestreamCommentsProps) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<StoryComment[]>([]);
@@ -157,78 +159,59 @@ export const LivestreamComments = ({
   };
 
   return (
-    <div className="fixed inset-0 z-40 pointer-events-none">
-      {/* Floating comments - auto-scrolling upward */}
-      <div className="absolute bottom-24 left-0 right-0 h-[50vh] overflow-hidden pointer-events-none px-4">
-        <div className="flex flex-col-reverse gap-3 pb-4">
-          <AnimatePresence mode="popLayout">
-            {comments.slice(-8).map((comment, index) => (
-              <motion.div
-                key={comment.id}
-                initial={{ opacity: 0, y: 30, x: -20 }}
-                animate={{ 
-                  opacity: 1,
-                  y: 0,
-                  x: 0,
-                }}
-                exit={{ opacity: 0, y: -30 }}
-                transition={{
-                  duration: 0.4,
-                  ease: "easeOut",
-                }}
-                className="flex items-start gap-2"
-              >
-                <OptimizedAvatar
-                  src={comment.profiles?.avatar_url || ""}
-                  alt={comment.profiles?.full_name || "User"}
-                  className="flex-shrink-0 w-8 h-8 ring-2 ring-white/30"
-                />
-                <div
-                  className="rounded-2xl px-4 py-2 max-w-[70%]"
-                  style={{
-                    background: "rgba(0, 0, 0, 0.8)",
-                    backdropFilter: "blur(10px)",
-                    border: "1px solid rgba(255, 255, 255, 0.3)",
-                  }}
-                >
-                  <p className="text-xs font-semibold text-white mb-0.5 drop-shadow-lg">
-                    {comment.profiles?.full_name || "Anonymous"}
-                  </p>
-                  <p className="text-sm text-white/95 leading-snug drop-shadow-lg">
-                    {comment.content}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+    <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col pointer-events-none">
+      {/* Scrollable comments area - pauses story when scrolling */}
+      <div 
+        className="max-h-40 overflow-y-auto px-4 pb-1 pointer-events-auto scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent"
+        onTouchStart={() => onPauseChange?.(true)}
+        onTouchEnd={() => onPauseChange?.(false)}
+        onMouseEnter={() => onPauseChange?.(true)}
+        onMouseLeave={() => onPauseChange?.(false)}
+      >
+        <div className="space-y-1">
+          {comments.map((comment) => (
+            <div
+              key={comment.id}
+              className="flex items-start gap-1.5"
+            >
+              <OptimizedAvatar
+                src={comment.profiles?.avatar_url || ""}
+                alt={comment.profiles?.full_name || "User"}
+                className="w-5 h-5 flex-shrink-0 ring-1 ring-white/20"
+              />
+              <div className="bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 max-w-[75%]">
+                <span className="text-white font-semibold text-[10px]">
+                  {comment.profiles?.full_name || "Anonymous"}
+                </span>
+                <span className="text-white/90 text-[10px] ml-1.5">
+                  {comment.content}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Bottom input area */}
-      <div className="absolute bottom-20 left-0 right-0 pointer-events-auto px-4">
-        {/* Input form */}
-        <form
-          onSubmit={handleSubmit}
-          className="flex items-center gap-2"
-        >
+      {/* Input area */}
+      <div className="bg-gradient-to-t from-black/70 via-black/50 to-transparent backdrop-blur-sm px-4 py-2 pointer-events-auto">
+        <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <Input
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Add a comment..."
-            className="flex-1 bg-black/60 border-white/30 text-white placeholder:text-white/60 backdrop-blur-md rounded-full h-11 px-4 text-sm focus:ring-2 focus:ring-white/40"
+            className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60 text-xs rounded-full h-8"
             disabled={isSubmitting}
-            autoComplete="off"
           />
           <Button
             type="submit"
-            size="icon"
+            size="sm"
             disabled={!newComment.trim() || isSubmitting}
-            className="rounded-full bg-white/90 hover:bg-white text-black flex-shrink-0 h-11 w-11 shadow-lg disabled:opacity-50"
+            className="rounded-full h-8 w-8 p-0"
           >
-            <Send className="h-4 w-4" />
+            <Send className="w-3 h-3" />
           </Button>
         </form>
       </div>
     </div>
   );
-  };
+};
