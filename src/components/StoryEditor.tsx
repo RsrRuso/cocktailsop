@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { X, Type, Music, Sparkles, Scissors, Check, Image as ImageIcon, Video } from "lucide-react";
+import { X, Type, Music2, Sparkles, Download, Pen, Smile, MoreHorizontal, ArrowRight } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import MusicSelectionDialog from "./MusicSelectionDialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TextOverlay {
   id: string;
@@ -26,45 +27,26 @@ interface StoryEditorProps {
     filter: string;
     trimStart?: number;
     trimEnd?: number;
+    caption?: string;
+    shareOption?: "story" | "close-friends";
   }) => void;
   onCancel: () => void;
 }
 
-const filters = [
-  { name: "Normal", class: "" },
-  { name: "Clarendon", class: "brightness-110 contrast-110 saturate-125" },
-  { name: "Gingham", class: "sepia-50 contrast-105" },
-  { name: "Moon", class: "grayscale brightness-110 contrast-110" },
-  { name: "Lark", class: "contrast-90 brightness-110" },
-  { name: "Reyes", class: "sepia-20 brightness-110 contrast-85 saturate-75" },
-  { name: "Juno", class: "contrast-110 saturate-125 brightness-110" },
-  { name: "Slumber", class: "saturate-150 brightness-105" },
-  { name: "Crema", class: "sepia-30 contrast-90" },
-];
-
 const textColors = ["#FFFFFF", "#000000", "#FF5733", "#33FF57", "#3357FF", "#F333FF", "#FFD700", "#FF1493"];
 
 export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: StoryEditorProps) => {
-  const [activeTab, setActiveTab] = useState<"filter" | "text" | "music" | "trim">("filter");
-  const [selectedFilter, setSelectedFilter] = useState("");
+  const { user } = useAuth();
+  const [activeTool, setActiveTool] = useState<"text" | "stickers" | "audio" | "effects" | "draw" | null>(null);
   const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
   const [currentText, setCurrentText] = useState("");
   const [currentColor, setCurrentColor] = useState("#FFFFFF");
+  const [caption, setCaption] = useState("");
   const [showMusicDialog, setShowMusicDialog] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<string | null>(null);
-  const [trimStart, setTrimStart] = useState(0);
-  const [trimEnd, setTrimEnd] = useState(100);
-  const [videoDuration, setVideoDuration] = useState(0);
+  const [shareOption, setShareOption] = useState<"story" | "close-friends" | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (isVideo && videoRef.current) {
-      videoRef.current.onloadedmetadata = () => {
-        setVideoDuration(videoRef.current?.duration || 0);
-      };
-    }
-  }, [isVideo]);
 
   const addTextOverlay = () => {
     if (!currentText.trim()) return;
@@ -75,60 +57,67 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
       x: 50,
       y: 50,
       color: currentColor,
-      size: 24,
+      size: 32,
     };
     
     setTextOverlays([...textOverlays, newOverlay]);
     setCurrentText("");
+    setActiveTool(null);
+    toast.success("Text added!");
   };
 
   const removeTextOverlay = (id: string) => {
     setTextOverlays(textOverlays.filter(t => t.id !== id));
   };
 
-  const handleSave = () => {
+  const handleShare = () => {
+    if (!shareOption) {
+      toast.error("Please select where to share");
+      return;
+    }
+    
     onSave({
       musicTrackId: selectedMusic || undefined,
       textOverlays,
-      filter: selectedFilter,
-      trimStart: isVideo ? (trimStart / 100) * videoDuration : undefined,
-      trimEnd: isVideo ? (trimEnd / 100) * videoDuration : undefined,
+      filter: "",
+      caption,
+      shareOption,
     });
   };
 
   return (
-    <div className="fixed inset-0 bg-background z-50 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border/50 bg-card/50 backdrop-blur-xl">
-        <Button variant="ghost" size="icon" onClick={onCancel}>
-          <X className="w-5 h-5" />
-        </Button>
-        <h2 className="font-semibold">Edit Story</h2>
-        <Button onClick={handleSave} size="sm" className="glow-primary">
-          <Check className="w-4 h-4 mr-2" />
-          Done
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      {/* Header - Instagram Style */}
+      <div className="absolute top-0 left-0 right-0 z-20 p-4 flex items-center justify-between">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={onCancel}
+          className="text-white hover:bg-white/10"
+        >
+          <X className="w-6 h-6" />
         </Button>
       </div>
 
-      {/* Preview Canvas */}
-      <div className="flex-1 relative bg-black overflow-hidden">
-        <div
-          ref={canvasRef}
-          className={cn("absolute inset-0 flex items-center justify-center", selectedFilter)}
-        >
+      {/* Main Content Area */}
+      <div className="flex-1 relative overflow-hidden">
+        {/* Story Canvas */}
+        <div ref={canvasRef} className="absolute inset-0 flex items-center justify-center">
           {isVideo ? (
             <video
               ref={videoRef}
               src={mediaUrl}
-              className="max-w-full max-h-full object-contain"
-              controls
+              className="w-full h-full object-cover"
+              loop
+              muted
+              autoPlay
               playsInline
             />
           ) : (
             <img
               src={mediaUrl}
-              alt="Story preview"
-              className="max-w-full max-h-full object-contain"
+              alt="Story"
+              className="w-full h-full object-cover"
             />
           )}
           
@@ -148,188 +137,180 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
                   style={{
                     color: overlay.color,
                     fontSize: `${overlay.size}px`,
-                    textShadow: "2px 2px 4px rgba(0,0,0,0.8)",
+                    textShadow: "2px 2px 8px rgba(0,0,0,0.8)",
                     fontWeight: "bold",
                   }}
                 >
                   {overlay.text}
                 </p>
-                <Button
-                  size="icon"
-                  variant="destructive"
-                  className="absolute -top-2 -right-2 w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => removeTextOverlay(overlay.id)}
-                >
-                  <X className="w-3 h-3" />
-                </Button>
               </div>
             </div>
           ))}
         </div>
+
+        {/* Right Side Toolbar - Instagram Style */}
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-6">
+          <button
+            onClick={() => setActiveTool(activeTool === "text" ? null : "text")}
+            className="flex flex-col items-center gap-1"
+          >
+            <div className={cn(
+              "w-12 h-12 rounded-full flex items-center justify-center transition-all",
+              activeTool === "text" ? "bg-white text-black" : "bg-white/10 text-white"
+            )}>
+              <Type className="w-6 h-6" />
+            </div>
+            <span className="text-white text-xs font-medium">Text</span>
+          </button>
+
+          <button
+            onClick={() => toast.info("Stickers coming soon!")}
+            className="flex flex-col items-center gap-1"
+          >
+            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">
+              <Smile className="w-6 h-6" />
+            </div>
+            <span className="text-white text-xs font-medium">Stickers</span>
+          </button>
+
+          <button
+            onClick={() => setShowMusicDialog(true)}
+            className="flex flex-col items-center gap-1"
+          >
+            <div className={cn(
+              "w-12 h-12 rounded-full flex items-center justify-center transition-all",
+              selectedMusic ? "bg-white text-black" : "bg-white/10 text-white"
+            )}>
+              <Music2 className="w-6 h-6" />
+            </div>
+            <span className="text-white text-xs font-medium">Audio</span>
+          </button>
+
+          <button
+            onClick={() => toast.info("Effects coming soon!")}
+            className="flex flex-col items-center gap-1"
+          >
+            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <span className="text-white text-xs font-medium">Effects</span>
+          </button>
+
+          <button
+            onClick={() => toast.info("Draw coming soon!")}
+            className="flex flex-col items-center gap-1"
+          >
+            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">
+              <Pen className="w-6 h-6" />
+            </div>
+            <span className="text-white text-xs font-medium">Draw</span>
+          </button>
+
+          <button
+            onClick={() => toast.info("Download coming soon!")}
+            className="flex flex-col items-center gap-1"
+          >
+            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">
+              <Download className="w-6 h-6" />
+            </div>
+            <span className="text-white text-xs font-medium">Download</span>
+          </button>
+
+          <button
+            onClick={() => toast.info("More options coming soon!")}
+            className="flex flex-col items-center gap-1"
+          >
+            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">
+              <MoreHorizontal className="w-6 h-6" />
+            </div>
+            <span className="text-white text-xs font-medium">More</span>
+          </button>
+        </div>
       </div>
 
-      {/* Tools */}
-      <div className="border-t border-border/50 bg-card/80 backdrop-blur-xl">
-        {/* Tab Bar */}
-        <div className="flex items-center justify-around p-2 border-b border-border/30">
-          <Button
-            variant={activeTab === "filter" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveTab("filter")}
-            className="flex-1"
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Filters
-          </Button>
-          <Button
-            variant={activeTab === "text" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveTab("text")}
-            className="flex-1"
-          >
-            <Type className="w-4 h-4 mr-2" />
-            Text
-          </Button>
-          <Button
-            variant={activeTab === "music" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setActiveTab("music")}
-            className="flex-1"
-          >
-            <Music className="w-4 h-4 mr-2" />
-            Music
-          </Button>
-          {isVideo && (
-            <Button
-              variant={activeTab === "trim" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveTab("trim")}
-              className="flex-1"
-            >
-              <Scissors className="w-4 h-4 mr-2" />
-              Trim
-            </Button>
-          )}
-        </div>
-
-        {/* Tab Content */}
-        <div className="p-4 max-h-[200px] overflow-y-auto">
-          {activeTab === "filter" && (
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {filters.map((filter) => (
+      {/* Text Input Panel */}
+      {activeTool === "text" && (
+        <div className="absolute inset-x-0 bottom-32 p-4 bg-black/80 backdrop-blur-xl">
+          <div className="space-y-3">
+            <Input
+              value={currentText}
+              onChange={(e) => setCurrentText(e.target.value)}
+              placeholder="Type something..."
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 text-lg"
+              onKeyPress={(e) => e.key === "Enter" && addTextOverlay()}
+              autoFocus
+            />
+            
+            <div className="flex gap-2 justify-center">
+              {textColors.map((color) => (
                 <button
-                  key={filter.name}
-                  onClick={() => setSelectedFilter(filter.class)}
+                  key={color}
+                  onClick={() => setCurrentColor(color)}
                   className={cn(
-                    "flex-shrink-0 relative rounded-xl overflow-hidden border-2 transition-all",
-                    selectedFilter === filter.class
-                      ? "border-primary shadow-lg shadow-primary/50 scale-105"
-                      : "border-transparent"
+                    "w-10 h-10 rounded-full border-2 transition-all",
+                    currentColor === color ? "border-white scale-110" : "border-transparent"
                   )}
-                >
-                  <div className={cn("w-16 h-20", filter.class)}>
-                    {isVideo ? (
-                      <Video className="w-full h-full p-4 bg-muted" />
-                    ) : (
-                      <ImageIcon className="w-full h-full p-4 bg-muted" />
-                    )}
-                  </div>
-                  <p className="text-xs text-center mt-1 font-medium">{filter.name}</p>
-                </button>
+                  style={{ backgroundColor: color }}
+                />
               ))}
             </div>
-          )}
 
-          {activeTab === "text" && (
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <Input
-                  value={currentText}
-                  onChange={(e) => setCurrentText(e.target.value)}
-                  placeholder="Type your text..."
-                  className="flex-1"
-                  onKeyPress={(e) => e.key === "Enter" && addTextOverlay()}
-                />
-                <Button onClick={addTextOverlay} disabled={!currentText.trim()}>
-                  <Check className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              <div className="flex gap-2">
-                {textColors.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setCurrentColor(color)}
-                    className={cn(
-                      "w-10 h-10 rounded-full border-2 transition-all",
-                      currentColor === color ? "border-primary scale-110" : "border-transparent"
-                    )}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
+            <Button 
+              onClick={addTextOverlay} 
+              disabled={!currentText.trim()}
+              className="w-full bg-white text-black hover:bg-white/90"
+            >
+              Add Text
+            </Button>
+          </div>
+        </div>
+      )}
 
-              {textOverlays.length > 0 && (
-                <div className="text-xs text-muted-foreground">
-                  {textOverlays.length} text overlay(s) added. Click on text in preview to remove.
-                </div>
-              )}
+      {/* Bottom Section - Caption & Share */}
+      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 pt-16">
+        <Input
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+          placeholder="Add a caption..."
+          className="bg-white/10 border-0 text-white placeholder:text-white/50 mb-4"
+        />
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setShareOption("story");
+              handleShare();
+            }}
+            className="flex-1 flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-full px-4 py-3 transition-all"
+          >
+            <Avatar className="w-10 h-10 ring-2 ring-white/50">
+              <AvatarImage src={user?.user_metadata?.avatar_url} />
+              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                {user?.user_metadata?.username?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-white font-medium">Your story</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setShareOption("close-friends");
+              handleShare();
+            }}
+            className="flex-1 flex items-center justify-center gap-2 bg-green-500/20 hover:bg-green-500/30 rounded-full px-4 py-3 transition-all"
+          >
+            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+              <Sparkles className="w-3 h-3 text-white" />
             </div>
-          )}
+            <span className="text-white font-medium">Close Friends</span>
+          </button>
 
-          {activeTab === "music" && (
-            <div className="space-y-3">
-              <Button
-                onClick={() => setShowMusicDialog(true)}
-                variant="outline"
-                className="w-full"
-              >
-                <Music className="w-4 h-4 mr-2" />
-                {selectedMusic ? "Change Music" : "Add Music"}
-              </Button>
-              {selectedMusic && (
-                <p className="text-sm text-muted-foreground text-center">
-                  Music added ✓
-                </p>
-              )}
-            </div>
-          )}
-
-          {activeTab === "trim" && isVideo && (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Trim Start</label>
-                <Slider
-                  value={[trimStart]}
-                  onValueChange={(v) => setTrimStart(v[0])}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {((trimStart / 100) * videoDuration).toFixed(1)}s
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Trim End</label>
-                <Slider
-                  value={[trimEnd]}
-                  onValueChange={(v) => setTrimEnd(v[0])}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {((trimEnd / 100) * videoDuration).toFixed(1)}s
-                </p>
-              </div>
-
-              <p className="text-sm text-center text-muted-foreground">
-                Duration: {(((trimEnd - trimStart) / 100) * videoDuration).toFixed(1)}s
-              </p>
-            </div>
-          )}
+          <button
+            onClick={handleShare}
+            className="w-12 h-12 rounded-full bg-white hover:bg-white/90 flex items-center justify-center transition-all"
+          >
+            <ArrowRight className="w-6 h-6 text-black" />
+          </button>
         </div>
       </div>
 
@@ -338,6 +319,7 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
         onOpenChange={setShowMusicDialog}
         onSelect={(track) => {
           setSelectedMusic(track.track_id);
+          setShowMusicDialog(false);
           toast.success(`Added: ${track.title}`);
         }}
       />
