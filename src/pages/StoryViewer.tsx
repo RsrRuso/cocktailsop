@@ -64,6 +64,7 @@ const StoryViewer = () => {
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const heartIdCounter = useRef(0);
+  const clickTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     fetchCurrentUser();
@@ -436,6 +437,49 @@ const StoryViewer = () => {
     }
   };
 
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only enable click navigation on non-touch devices (desktop preview)
+    if (typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
+      return;
+    }
+
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+    const clientX = e.clientX;
+
+    // Detect double-click to trigger like without navigation
+    if (now - lastTap < DOUBLE_TAP_DELAY) {
+      if (clickTimeoutRef.current !== null) {
+        clearTimeout(clickTimeoutRef.current);
+        clickTimeoutRef.current = null;
+      }
+      handleDoubleTap();
+      setLastTap(0);
+      return;
+    }
+
+    setLastTap(now);
+
+    if (clickTimeoutRef.current !== null) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+
+    clickTimeoutRef.current = window.setTimeout(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+      const clickX = clientX - rect.left;
+      const isLeftSide = clickX < rect.width / 2;
+
+      if (isLeftSide) {
+        goToPreviousMedia();
+      } else {
+        goToNextMedia();
+      }
+    }, DOUBLE_TAP_DELAY + 10);
+  };
+
   if (stories.length === 0) {
     return null;
   }
@@ -557,6 +601,7 @@ const StoryViewer = () => {
       {/* Media content */}
       <div 
         className="w-full h-full flex items-center justify-center relative"
+        onClick={handleClick}
       >
         {currentMediaType.startsWith("video") ? (
           <video
