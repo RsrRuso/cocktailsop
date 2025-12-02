@@ -705,12 +705,6 @@ const StoryViewer = () => {
         ))}
       </div>
 
-      {/* Tap zones for navigation - BEHIND everything */}
-      <div className="absolute inset-0 flex pointer-events-none z-0">
-        <div className="w-1/3 h-full pointer-events-auto" onClick={goToPreviousMedia} />
-        <div className="w-1/3 h-full" />
-        <div className="w-1/3 h-full pointer-events-auto" onClick={goToNextMedia} />
-      </div>
 
       {/* Dialogs - Always render but control with open state */}
       <StoryViewersDialog
