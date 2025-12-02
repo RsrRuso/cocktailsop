@@ -58,6 +58,7 @@ const StoryViewer = () => {
   }, [showViewersDialog, showLikesDialog, showCommentsDialog]);
   const [lastTap, setLastTap] = useState(0);
   const touchStartY = useRef(0);
+  const touchStartX = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -375,14 +376,40 @@ const StoryViewer = () => {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
+    touchStartX.current = e.touches[0].clientX;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     const touchEndY = e.changedTouches[0].clientY;
-    const diff = touchStartY.current - touchEndY;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diffY = touchStartY.current - touchEndY;
+    const diffX = touchStartX.current - touchEndX;
+    const threshold = 100;
 
-    if (diff < -100) {
+    // Swipe up - open comments
+    if (diffY > threshold && Math.abs(diffX) < threshold) {
+      if (!isOwnStory) {
+        setShowCommentsDialog(true);
+      }
+      return;
+    }
+
+    // Swipe down - close story
+    if (diffY < -threshold && Math.abs(diffX) < threshold) {
       navigate(-1);
+      return;
+    }
+
+    // Swipe left - next story/media
+    if (diffX > threshold && Math.abs(diffY) < threshold) {
+      goToNextMedia();
+      return;
+    }
+
+    // Swipe right - previous story/media
+    if (diffX < -threshold && Math.abs(diffY) < threshold) {
+      goToPreviousMedia();
+      return;
     }
   };
 
@@ -552,7 +579,7 @@ const StoryViewer = () => {
 
       {/* Media content */}
       <div 
-        className="w-full h-full flex items-center justify-center"
+        className="w-full h-full flex items-center justify-center relative"
         onClick={handleDoubleTap}
       >
         {currentMediaType.startsWith("video") ? (
@@ -577,6 +604,13 @@ const StoryViewer = () => {
             loading="eager"
           />
         )}
+        
+        {/* Swipe hint text */}
+        <div className="absolute bottom-32 left-0 right-0 text-center pointer-events-none">
+          <p className="text-white/40 text-xs animate-pulse">
+            Swipe up to comment • Swipe down to close
+          </p>
+        </div>
       </div>
 
       {/* Navigation buttons */}
