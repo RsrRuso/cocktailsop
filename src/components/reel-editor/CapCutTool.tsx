@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Download, Upload, ExternalLink, Smartphone, Monitor, ArrowRight, Check, Loader2, RefreshCw } from 'lucide-react';
+import { Upload, ExternalLink, Smartphone, Monitor, ArrowRight, Loader2, Wand2 } from 'lucide-react';
 
 interface CapCutToolProps {
   videoUrl: string | null;
@@ -10,100 +10,31 @@ interface CapCutToolProps {
 }
 
 export function CapCutTool({ videoUrl, onImportVideo }: CapCutToolProps) {
-  const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [exportedForCapCut, setExportedForCapCut] = useState(false);
+  const [hasOpenedCapCut, setHasOpenedCapCut] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExportToCapCut = useCallback(async () => {
-    if (!videoUrl) {
-      toast.error('No video to export');
-      return;
-    }
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    setIsExporting(true);
-    try {
-      // Handle both blob URLs and regular URLs
-      let blob: Blob;
-      
-      if (videoUrl.startsWith('blob:')) {
-        const response = await fetch(videoUrl);
-        if (!response.ok) throw new Error('Failed to fetch video');
-        blob = await response.blob();
-      } else {
-        const response = await fetch(videoUrl, { mode: 'cors' });
-        if (!response.ok) throw new Error('Failed to fetch video');
-        blob = await response.blob();
-      }
-      
-      // Ensure proper video MIME type
-      const videoBlob = new Blob([blob], { type: 'video/mp4' });
-      const fileName = `sv-video-${Date.now()}.mp4`;
-      const videoFile = new File([videoBlob], fileName, { type: 'video/mp4' });
-      
-      // Try Web Share API first (allows direct share to CapCut on mobile)
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [videoFile] })) {
-        try {
-          await navigator.share({
-            files: [videoFile],
-            title: 'Edit in CapCut',
-            text: 'Open this video in CapCut to edit'
-          });
-          setExportedForCapCut(true);
-          toast.success('Video shared! Select CapCut from the share menu');
-          return;
-        } catch (shareError) {
-          // User cancelled or share failed, fall back to download
-          if ((shareError as Error).name !== 'AbortError') {
-            console.log('Share failed, falling back to download');
-          }
-        }
-      }
-      
-      // Fallback: Download the video
-      const downloadUrl = URL.createObjectURL(videoBlob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = fileName;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      
-      // Cleanup
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(downloadUrl);
-      }, 100);
-      
-      setExportedForCapCut(true);
-      toast.success('Video downloaded! Open CapCut and import from Photos/Gallery');
-    } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export video. Try again.');
-    } finally {
-      setIsExporting(false);
-    }
-  }, [videoUrl]);
-
+  // Step 1: Open CapCut app or web
   const handleOpenCapCut = useCallback(() => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
     if (isMobile) {
-      // Go directly to app store - more reliable than deep links
       if (isIOS) {
         window.open('https://apps.apple.com/app/capcut-video-editor/id1500855883', '_blank');
-        toast.info('Opening App Store. Download CapCut, then import your video from Photos.');
+        toast.info('Opening App Store. Open CapCut and create your video!');
       } else {
         window.open('https://play.google.com/store/apps/details?id=com.lemon.lvoverseas', '_blank');
-        toast.info('Opening Play Store. Download CapCut, then import your video from Gallery.');
+        toast.info('Opening Play Store. Open CapCut and create your video!');
       }
     } else {
       window.open('https://www.capcut.com/editor', '_blank');
-      toast.info('CapCut web opened. Import your downloaded video there.');
+      toast.info('CapCut web opened. Create your video there!');
     }
-  }, []);
+    setHasOpenedCapCut(true);
+  }, [isMobile, isIOS]);
 
+  // Step 2: Import edited video back
   const handleImportFromCapCut = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -125,14 +56,13 @@ export function CapCutTool({ videoUrl, onImportVideo }: CapCutToolProps) {
     try {
       const url = URL.createObjectURL(file);
       onImportVideo(url);
-      setExportedForCapCut(false);
+      setHasOpenedCapCut(false);
       toast.success('Video imported successfully!');
     } catch (error) {
       console.error('Import error:', error);
       toast.error('Failed to import video');
     } finally {
       setIsImporting(false);
-      // Reset input for re-selection
       if (importInputRef.current) {
         importInputRef.current.value = '';
       }
@@ -143,138 +73,100 @@ export function CapCutTool({ videoUrl, onImportVideo }: CapCutToolProps) {
     importInputRef.current?.click();
   }, []);
 
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="font-semibold mb-2 flex items-center gap-2">
-          <img 
-            src="https://sf16-website-login.neutral.ttwstatic.com/obj/tiktok_web_login_static/capcut/website/favicon.ico" 
-            alt="CapCut" 
-            className="w-5 h-5"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-          CapCut Collaboration
-        </h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Export your video to CapCut for professional editing, then import the result back
-        </p>
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <Wand2 className="w-5 h-5 text-cyan-500" />
+        <h3 className="font-semibold">CapCut Editor</h3>
+      </div>
+      
+      <p className="text-sm text-muted-foreground">
+        Create professional videos in CapCut, then import them here to share.
+      </p>
+
+      {/* Step 1: Open CapCut */}
+      <Card className={`p-4 transition-all ${!hasOpenedCapCut ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-muted'}`}>
+        <div className="flex items-start gap-3">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+            !hasOpenedCapCut ? 'bg-cyan-500 text-white' : 'bg-muted text-muted-foreground'
+          }`}>
+            1
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium">Open CapCut</h4>
+            <p className="text-sm text-muted-foreground mb-3">
+              {isMobile 
+                ? 'Open CapCut app and create your video from scratch or your gallery' 
+                : 'Open CapCut web editor and create your video'}
+            </p>
+            <Button
+              onClick={handleOpenCapCut}
+              variant={hasOpenedCapCut ? 'outline' : 'default'}
+              className="w-full gap-2"
+            >
+              {isMobile ? (
+                <>
+                  <Smartphone className="w-4 h-4" />
+                  {isIOS ? 'Open CapCut (App Store)' : 'Open CapCut (Play Store)'}
+                </>
+              ) : (
+                <>
+                  <Monitor className="w-4 h-4" />
+                  Open CapCut Web Editor
+                </>
+              )}
+              <ExternalLink className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex justify-center">
+        <ArrowRight className="w-5 h-5 text-muted-foreground rotate-90" />
       </div>
 
-      {/* Workflow Steps */}
-      <div className="space-y-3">
-        <Card className={`p-4 transition-all ${!exportedForCapCut ? 'border-primary bg-primary/5' : 'opacity-60'}`}>
-          <div className="flex items-start gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${!exportedForCapCut ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-              {exportedForCapCut ? <Check className="w-4 h-4" /> : '1'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-medium">Export Video</h4>
-              <p className="text-sm text-muted-foreground mb-3">Download your video to edit in CapCut</p>
-              <Button
-                onClick={handleExportToCapCut}
-                disabled={isExporting || !videoUrl}
-                variant={exportedForCapCut ? 'outline' : 'default'}
-                className="w-full gap-2"
-              >
-                {isExporting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Exporting...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    {exportedForCapCut ? 'Download Again' : 'Export for CapCut'}
-                  </>
-                )}
-              </Button>
-            </div>
+      {/* Step 2: Import */}
+      <Card className={`p-4 transition-all ${hasOpenedCapCut ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-2 border-dashed border-muted-foreground/30'}`}>
+        <div className="flex items-start gap-3">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+            hasOpenedCapCut ? 'bg-cyan-500 text-white' : 'bg-muted text-muted-foreground'
+          }`}>
+            2
           </div>
-        </Card>
-
-        <div className="flex justify-center">
-          <ArrowRight className="w-5 h-5 text-muted-foreground rotate-90" />
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium">Import Your Video</h4>
+            <p className="text-sm text-muted-foreground mb-3">
+              After editing in CapCut, export and upload here
+            </p>
+            <Button
+              onClick={handleImportClick}
+              disabled={isImporting}
+              variant={hasOpenedCapCut ? 'default' : 'outline'}
+              className="w-full gap-2"
+            >
+              {isImporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  Import from CapCut
+                </>
+              )}
+            </Button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="video/mp4,video/mov,video/quicktime,video/webm,video/*"
+              className="hidden"
+              onChange={handleImportFromCapCut}
+            />
+          </div>
         </div>
-
-        <Card className={`p-4 transition-all ${exportedForCapCut ? 'border-primary bg-primary/5' : 'opacity-60'}`}>
-          <div className="flex items-start gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${exportedForCapCut ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-              2
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-medium">Edit in CapCut</h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                Open CapCut and import your downloaded video
-              </p>
-              <Button
-                onClick={handleOpenCapCut}
-                variant="outline"
-                className="w-full gap-2"
-              >
-                {isMobile ? (
-                  <>
-                    <Smartphone className="w-4 h-4" />
-                    Open CapCut App
-                  </>
-                ) : (
-                  <>
-                    <Monitor className="w-4 h-4" />
-                    Open CapCut Web
-                  </>
-                )}
-                <ExternalLink className="w-3 h-3" />
-              </Button>
-            </div>
-          </div>
-        </Card>
-
-        <div className="flex justify-center">
-          <ArrowRight className="w-5 h-5 text-muted-foreground rotate-90" />
-        </div>
-
-        <Card className="p-4 border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold shrink-0">
-              3
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-medium">Import Edited Video</h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                After editing in CapCut, export and import here
-              </p>
-              <Button
-                onClick={handleImportClick}
-                disabled={isImporting}
-                variant="outline"
-                className="w-full gap-2"
-              >
-                {isImporting ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Importing...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    Import from CapCut
-                  </>
-                )}
-              </Button>
-              <input
-                ref={importInputRef}
-                type="file"
-                accept="video/mp4,video/mov,video/quicktime,video/webm,video/*"
-                className="hidden"
-                onChange={handleImportFromCapCut}
-              />
-            </div>
-          </div>
-        </Card>
-      </div>
+      </Card>
 
       {/* Tips */}
       <div className="bg-muted/50 rounded-lg p-4 space-y-2">
