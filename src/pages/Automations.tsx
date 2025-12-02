@@ -14,6 +14,8 @@ import { WebhooksList } from "@/components/automation/WebhooksList";
 import { TriggersList } from "@/components/automation/TriggersList";
 import { AutomationLogs } from "@/components/automation/AutomationLogs";
 import { AutomationGettingStarted } from "@/components/automation/AutomationGettingStarted";
+import { WorkflowBuilder } from "@/components/automation/WorkflowBuilder";
+import { AutomationMarketplace } from "@/components/automation/AutomationMarketplace";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Automations = () => {
@@ -161,18 +163,34 @@ const Automations = () => {
         {/* Main Content */}
         {webhooks && webhooks.length > 0 && (
         <Tabs defaultValue="webhooks" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="webhooks">
               <Zap className="w-4 h-4 mr-2" />
-              Webhooks ({webhooks?.length || 0})
+              Webhooks
             </TabsTrigger>
             <TabsTrigger value="triggers">
               <Workflow className="w-4 h-4 mr-2" />
-              Triggers ({triggers?.length || 0})
+              Triggers
+            </TabsTrigger>
+            <TabsTrigger value="workflows">
+              <Settings className="w-4 h-4 mr-2" />
+              Workflows
+            </TabsTrigger>
+            <TabsTrigger value="schedules">
+              <Settings className="w-4 h-4 mr-2" />
+              Schedules
+            </TabsTrigger>
+            <TabsTrigger value="conditions">
+              <Settings className="w-4 h-4 mr-2" />
+              Conditions
+            </TabsTrigger>
+            <TabsTrigger value="marketplace">
+              <Settings className="w-4 h-4 mr-2" />
+              Marketplace
             </TabsTrigger>
             <TabsTrigger value="logs">
               <Activity className="w-4 h-4 mr-2" />
-              Logs ({logs?.length || 0})
+              Logs
             </TabsTrigger>
           </TabsList>
 
@@ -206,6 +224,44 @@ const Automations = () => {
               triggers={triggers || []} 
               onUpdate={refetchTriggers}
             />
+          </TabsContent>
+
+          <TabsContent value="workflows" className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Design visual automation workflows with drag-and-drop
+            </p>
+            <WorkflowBuilder onSave={(workflow) => {
+              toast({
+                title: "Success",
+                description: "Workflow saved successfully",
+              });
+            }} />
+          </TabsContent>
+
+          <TabsContent value="schedules" className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Schedule automations to run at specific times
+            </p>
+            <Card className="p-6 text-center">
+              <p className="text-muted-foreground">
+                Select a trigger to add a schedule
+              </p>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="conditions" className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Add conditional logic to your automations
+            </p>
+            <Card className="p-6 text-center">
+              <p className="text-muted-foreground">
+                Select a trigger to add conditions
+              </p>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="marketplace" className="space-y-4">
+            <AutomationMarketplace />
           </TabsContent>
 
           <TabsContent value="logs" className="space-y-4">
