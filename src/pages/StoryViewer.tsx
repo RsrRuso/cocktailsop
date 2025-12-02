@@ -209,6 +209,7 @@ const StoryViewer = () => {
       if (!isLiked) {
         handleLike();
       }
+      // Always spawn a flying heart for every double-tap
       addFloatingHeart();
     }
     setLastTap(now);
@@ -582,7 +583,7 @@ const StoryViewer = () => {
       {/* Media content */}
       <div 
         className="w-full h-full flex items-center justify-center relative"
-        onClick={handleDoubleTap}
+        onDoubleClick={handleDoubleTap}
       >
         {currentMediaType.startsWith("video") ? (
           <video
