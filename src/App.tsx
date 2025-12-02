@@ -127,6 +127,7 @@ const MapPlanner = lazy(() => import("@/pages/MapPlanner"));
 const Install = lazy(() => import("@/pages/Install"));
 const MatrixAI = lazy(() => import("@/pages/MatrixAI"));
 const LiveMap = lazy(() => import("@/pages/LiveMap"));
+const Automations = lazy(() => import("@/pages/Automations"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -245,6 +246,7 @@ const AppContent = () => {
           <Route path="/reels" element={<Reels />} />
           <Route path="/reposted" element={<Reposted />} />
           <Route path="/update-music-library" element={<UpdateMusicLibrary />} />
+          <Route path="/automations" element={<Automations />} />
           <Route path="/music" element={<Music />} />
           <Route path="/introduction" element={<Introduction />} />
           <Route path="/chat" element={<Chat />} />
