@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { X, MoreVertical, Heart } from "lucide-react";
+import { X, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
 import UnifiedCommentsDialog from "@/components/unified/UnifiedCommentsDialog";
@@ -39,29 +39,33 @@ interface FlyingHeart {
 export default function StoryViewer() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  
+  // State
   const [stories, setStories] = useState<Story[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [progress, setProgress] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
   
-  const progressInterval = useRef<NodeJS.Timeout | null>(null);
+  // Refs
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const heartCounter = useRef(0);
-  const lastTapTime = useRef(0);
-  const touchStartX = useRef(0);
-  const touchStartY = useRef(0);
+  const heartCounterRef = useRef(0);
+  const lastTapRef = useRef(0);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { likedItems, toggleLike } = useUnifiedEngagement("story", currentUserId);
 
   const currentStory = stories[currentIndex];
   const isLiked = currentStory ? likedItems.has(currentStory.id) : false;
-  
-  // Get first media item for current story
   const mediaUrl = currentStory?.media_urls?.[0] || "";
   const mediaType = currentStory?.media_types?.[0] || "";
+  const isVideo = mediaType.startsWith("video");
 
   // Fetch current user
   useEffect(() => {
@@ -78,7 +82,6 @@ export default function StoryViewer() {
 
     const fetchData = async () => {
       try {
-        // Fetch profile
         const { data: profileData } = await supabase
           .from("profiles")
           .select("id, full_name, avatar_url, username")
@@ -87,7 +90,6 @@ export default function StoryViewer() {
 
         if (profileData) setProfile(profileData);
 
-        // Fetch stories
         const { data: storiesData } = await supabase
           .from("stories")
           .select("*")
@@ -97,17 +99,13 @@ export default function StoryViewer() {
 
         if (storiesData && storiesData.length > 0) {
           setStories(storiesData);
-          
-          // Track view for first story
-          if (currentUserId && storiesData[0]) {
-            trackView(storiesData[0].id);
-          }
+          if (currentUserId) trackView(storiesData[0].id);
         } else {
-          toast.error("No active stories found");
+          toast.error("No active stories");
           navigate("/home");
         }
       } catch (error) {
-        console.error("Error fetching stories:", error);
+        console.error("Error loading stories:", error);
         toast.error("Failed to load stories");
         navigate("/home");
       }
@@ -116,12 +114,11 @@ export default function StoryViewer() {
     fetchData();
   }, [userId, currentUserId, navigate]);
 
-  // Track story view
+  // Track view
   const trackView = async (storyId: string) => {
     if (!currentUserId) return;
 
     try {
-      // Check if already viewed
       const { data: existingView } = await supabase
         .from("story_views")
         .select("id")
@@ -135,7 +132,6 @@ export default function StoryViewer() {
           user_id: currentUserId,
         });
 
-        // Update view count
         await supabase
           .from("stories")
           .update({ view_count: (currentStory?.view_count || 0) + 1 })
@@ -146,16 +142,15 @@ export default function StoryViewer() {
     }
   };
 
-  // Progress bar management
+  // Auto-progress timer
   useEffect(() => {
-    if (!currentStory) return;
+    if (!currentStory || isPaused) return;
 
-    setProgress(0);
-    const duration = mediaType.startsWith("video") ? 15000 : 5000;
+    const duration = isVideo ? 15000 : 5000;
     const interval = 50;
     const increment = (interval / duration) * 100;
 
-    progressInterval.current = setInterval(() => {
+    progressIntervalRef.current = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           goToNext();
@@ -166,33 +161,52 @@ export default function StoryViewer() {
     }, interval);
 
     return () => {
-      if (progressInterval.current) {
-        clearInterval(progressInterval.current);
-        progressInterval.current = null;
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
       }
     };
-  }, [currentIndex, stories]);
+  }, [currentIndex, isPaused, stories]);
 
-  // Video progress sync
+  // Video sync
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !mediaType.startsWith("video")) return;
+    if (!video || !isVideo) return;
 
-    const updateProgress = () => {
-      if (video.duration) {
+    const handleTimeUpdate = () => {
+      if (video.duration && !isPaused) {
         setProgress((video.currentTime / video.duration) * 100);
       }
     };
 
-    video.addEventListener("timeupdate", updateProgress);
-    return () => video.removeEventListener("timeupdate", updateProgress);
-  }, [currentStory]);
+    const handleEnded = () => goToNext();
 
-  // Navigation functions
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("ended", handleEnded);
+
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("ended", handleEnded);
+    };
+  }, [currentStory, isPaused]);
+
+  // Pause/resume video
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isVideo) return;
+
+    if (isPaused) {
+      video.pause();
+    } else {
+      video.play().catch(console.error);
+    }
+  }, [isPaused, isVideo]);
+
+  // Navigation
   const goToNext = () => {
     if (currentIndex < stories.length - 1) {
       setCurrentIndex(currentIndex + 1);
-      trackView(stories[currentIndex + 1].id);
+      setProgress(0);
+      if (currentUserId) trackView(stories[currentIndex + 1].id);
     } else {
       navigate("/home");
     }
@@ -201,89 +215,150 @@ export default function StoryViewer() {
   const goToPrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
+      setProgress(0);
     } else {
       navigate("/home");
     }
   };
 
-  // Like handler with heart animation
+  // Like with animation
   const handleLike = async (x: number, y: number) => {
     if (!currentStory || !currentUserId) return;
 
     const wasLiked = isLiked;
     await toggleLike(currentStory.id);
 
-    // Show heart animation only when liking (not unliking)
     if (!wasLiked) {
-      const heartId = heartCounter.current++;
-      setFlyingHearts((prev) => [...prev, { id: heartId, x, y }]);
+      const id = heartCounterRef.current++;
+      setFlyingHearts((prev) => [...prev, { id, x, y }]);
       setTimeout(() => {
-        setFlyingHearts((prev) => prev.filter((h) => h.id !== heartId));
+        setFlyingHearts((prev) => prev.filter((h) => h.id !== id));
       }, 1000);
     }
   };
 
-  // Touch event handlers
+  // Touch handlers - Instagram style
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
+    const touch = e.touches[0];
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now(),
+    };
+
+    // Start long press timer
+    longPressTimerRef.current = setTimeout(() => {
+      setIsPaused(true);
+    }, 200);
+  };
+
+  const handleTouchMove = () => {
+    // Cancel long press if user moves
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    const touchEndX = e.changedTouches[0].clientX;
-    const touchEndY = e.changedTouches[0].clientY;
-    const diffX = touchStartX.current - touchEndX;
-    const diffY = touchStartY.current - touchEndY;
+    // Clear long press timer
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
 
-    // Swipe detection (minimum 50px movement)
-    if (Math.abs(diffX) > 50 || Math.abs(diffY) > 50) {
-      if (Math.abs(diffX) > Math.abs(diffY)) {
+    // Resume if was paused
+    if (isPaused) {
+      setIsPaused(false);
+      return;
+    }
+
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    const deltaTime = Date.now() - touchStartRef.current.time;
+
+    // Detect swipe (fast movement)
+    if (deltaTime < 300 && (Math.abs(deltaX) > 50 || Math.abs(deltaY) > 50)) {
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
         // Horizontal swipe
-        if (diffX > 0) {
-          goToNext(); // Swipe left
+        if (deltaX > 0) {
+          goToPrevious();
         } else {
-          goToPrevious(); // Swipe right
+          goToNext();
         }
       } else {
         // Vertical swipe
-        if (diffY > 0) {
-          setShowComments(true); // Swipe up
+        if (deltaY < 0) {
+          setShowComments(true);
         } else {
-          navigate("/home"); // Swipe down
+          navigate("/home");
         }
       }
       return;
     }
 
-    // Double tap detection
-    const now = Date.now();
-    if (now - lastTapTime.current < 300) {
-      handleLike(touchEndX, touchEndY);
-      lastTapTime.current = 0;
-    } else {
-      lastTapTime.current = now;
+    // Detect tap
+    if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
+      const now = Date.now();
+      
+      // Double tap = like
+      if (now - lastTapRef.current < 300) {
+        handleLike(touch.clientX, touch.clientY);
+        lastTapRef.current = 0;
+      } else {
+        // Single tap = navigate
+        lastTapRef.current = now;
+        setTimeout(() => {
+          if (Date.now() - lastTapRef.current >= 300) {
+            const rect = containerRef.current?.getBoundingClientRect();
+            if (rect) {
+              const isLeftSide = touch.clientX - rect.left < rect.width / 2;
+              if (isLeftSide) {
+                goToPrevious();
+              } else {
+                goToNext();
+              }
+            }
+          }
+        }, 300);
+      }
     }
   };
 
-  // Click handler for desktop
-  const handleClick = (e: React.MouseEvent) => {
-    // Only on desktop (not touch devices)
-    if ('ontouchstart' in window) return;
+  // Mouse handlers for desktop
+  const handleMouseDown = () => {
+    longPressTimerRef.current = setTimeout(() => {
+      setIsPaused(true);
+    }, 200);
+  };
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const isLeftSide = clickX < rect.width / 2;
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    if (isPaused) {
+      setIsPaused(false);
+      return;
+    }
 
     const now = Date.now();
-    if (now - lastTapTime.current < 300) {
-      // Double click
+    const rect = containerRef.current?.getBoundingClientRect();
+    
+    if (!rect) return;
+
+    // Double click = like
+    if (now - lastTapRef.current < 300) {
       handleLike(e.clientX, e.clientY);
-      lastTapTime.current = 0;
+      lastTapRef.current = 0;
     } else {
-      // Single click navigation
-      lastTapTime.current = now;
+      // Single click = navigate
+      lastTapRef.current = now;
       setTimeout(() => {
-        if (Date.now() - lastTapTime.current >= 300) {
+        if (Date.now() - lastTapRef.current >= 300) {
+          const isLeftSide = e.clientX - rect.left < rect.width / 2;
           if (isLeftSide) {
             goToPrevious();
           } else {
@@ -296,22 +371,23 @@ export default function StoryViewer() {
 
   if (!currentStory || !profile) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white"></div>
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white" />
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black z-50">
       {/* Progress bars */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex gap-1 p-2">
+      <div className="absolute top-0 left-0 right-0 z-30 flex gap-1 p-2">
         {stories.map((_, idx) => (
           <div key={idx} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
             <div
               className="h-full bg-white transition-all duration-100"
               style={{
-                width: idx < currentIndex ? "100%" : idx === currentIndex ? `${progress}%` : "0%",
+                width:
+                  idx < currentIndex ? "100%" : idx === currentIndex ? `${progress}%` : "0%",
               }}
             />
           </div>
@@ -319,107 +395,140 @@ export default function StoryViewer() {
       </div>
 
       {/* Header */}
-      <div className="absolute top-4 left-0 right-0 z-20 flex items-center justify-between px-4 mt-4">
+      <div className="absolute top-4 left-0 right-0 z-30 flex items-center justify-between px-4 mt-3">
         <div className="flex items-center gap-2">
           <OptimizedAvatar
             src={profile.avatar_url}
             alt={profile.full_name || "User"}
-            className="w-8 h-8"
+            className="w-8 h-8 border-2 border-white"
           />
-          <span className="text-white font-medium text-sm">
-            {profile.full_name || profile.username || "User"}
-          </span>
-          <span className="text-white/70 text-xs">
-            {new Date(currentStory.created_at).toLocaleDateString()}
-          </span>
+          <div className="flex flex-col">
+            <span className="text-white font-semibold text-sm">
+              {profile.full_name || profile.username || "User"}
+            </span>
+            <span className="text-white/70 text-xs">
+              {(() => {
+                const diff = Date.now() - new Date(currentStory.created_at).getTime();
+                const hours = Math.floor(diff / 3600000);
+                const mins = Math.floor(diff / 60000);
+                return hours > 0 ? `${hours}h` : `${mins}m`;
+              })()}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setShowComments(true)}>
-            <MoreVertical className="w-5 h-5 text-white" />
-          </button>
-          <button onClick={() => navigate("/home")}>
-            <X className="w-5 h-5 text-white" />
-          </button>
-        </div>
+        <button
+          onClick={() => navigate("/home")}
+          className="p-2 hover:bg-white/10 rounded-full transition-colors"
+        >
+          <X className="w-6 h-6 text-white" />
+        </button>
       </div>
 
-      {/* Media content with click/touch handlers */}
+      {/* Story content */}
       <div
-        className="flex-1 flex items-center justify-center relative"
-        onClick={handleClick}
+        ref={containerRef}
+        className="w-full h-full flex items-center justify-center relative select-none"
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        style={{ touchAction: "none" }}
       >
-        {mediaType.startsWith("video") ? (
+        {isVideo ? (
           <video
             ref={videoRef}
             src={mediaUrl}
             className="w-full h-full object-contain"
             autoPlay
             playsInline
-            onEnded={goToNext}
+            muted={false}
           />
         ) : (
-          <img
-            src={mediaUrl}
-            alt="Story"
-            className="w-full h-full object-contain"
-          />
+          <img src={mediaUrl} alt="Story" className="w-full h-full object-contain" />
         )}
 
-        {/* Flying hearts animation */}
+        {/* Flying hearts */}
         {flyingHearts.map((heart) => (
-          <Heart
+          <div
             key={heart.id}
-            className="absolute text-red-500 fill-red-500 pointer-events-none animate-ping"
+            className="absolute pointer-events-none"
             style={{
-              left: heart.x,
-              top: heart.y,
-              fontSize: "48px",
-              animation: "ping 1s cubic-bezier(0, 0, 0.2, 1) forwards",
+              left: heart.x - 24,
+              top: heart.y - 24,
+              animation: "fly-up 1s ease-out forwards",
             }}
-          />
+          >
+            <Heart className="w-12 h-12 text-red-500 fill-red-500" />
+          </div>
         ))}
+
+        {/* Paused indicator */}
+        {isPaused && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="flex gap-2">
+              <div className="w-1 h-12 bg-white/80 rounded-full" />
+              <div className="w-1 h-12 bg-white/80 rounded-full" />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Text overlays */}
       {currentStory.text_overlays && Array.isArray(currentStory.text_overlays) && (
-        <div className="absolute bottom-20 left-0 right-0 px-4 z-10">
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20">
           {currentStory.text_overlays.map((text: any, idx: number) => (
-            <p key={idx} className="text-white text-sm mb-2">{text.text}</p>
+            <div
+              key={idx}
+              className="absolute text-white font-bold text-center px-4"
+              style={{
+                fontSize: text.fontSize || "24px",
+                color: text.color || "white",
+                left: text.x ? `${text.x}%` : "50%",
+                top: text.y ? `${text.y}%` : "50%",
+                transform: "translate(-50%, -50%)",
+                textShadow: "2px 2px 4px rgba(0,0,0,0.8)",
+              }}
+            >
+              {text.text}
+            </div>
           ))}
         </div>
       )}
 
-      {/* Bottom action bar */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 p-4 flex items-center justify-between">
+      {/* Bottom actions */}
+      <div className="absolute bottom-6 left-0 right-0 z-30 px-4 flex items-center justify-between">
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if (currentStory) handleLike(e.clientX, e.clientY);
+            handleLike(e.clientX, e.clientY);
           }}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 p-2 hover:bg-white/10 rounded-full transition-colors"
         >
           <Heart
-            className={`w-6 h-6 transition-colors ${
-              isLiked ? "fill-red-500 text-red-500" : "text-white"
+            className={`w-7 h-7 transition-all ${
+              isLiked ? "fill-red-500 text-red-500 scale-110" : "text-white"
             }`}
           />
-          <span className="text-white text-sm">{currentStory.like_count || 0}</span>
+          {currentStory.like_count > 0 && (
+            <span className="text-white font-semibold text-sm">
+              {currentStory.like_count}
+            </span>
+          )}
         </button>
         <button
           onClick={(e) => {
             e.stopPropagation();
             setShowComments(true);
           }}
-          className="text-white text-sm"
+          className="text-white text-sm font-medium p-2 hover:bg-white/10 rounded-full transition-colors"
         >
-          View Comments
+          💬 {currentStory.comment_count || 0}
         </button>
       </div>
 
-      {/* Comments dialog */}
-      {showComments && currentStory && (
+      {/* Comments */}
+      {showComments && (
         <UnifiedCommentsDialog
           contentId={currentStory.id}
           contentType="story"
@@ -427,6 +536,23 @@ export default function StoryViewer() {
           onOpenChange={setShowComments}
         />
       )}
+
+      <style>{`
+        @keyframes fly-up {
+          0% {
+            opacity: 1;
+            transform: translateY(0) scale(0.8);
+          }
+          50% {
+            opacity: 1;
+            transform: translateY(-50px) scale(1.2);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-100px) scale(0.5);
+          }
+        }
+      `}</style>
     </div>
   );
 }
