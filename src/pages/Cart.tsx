@@ -37,20 +37,61 @@ const Cart = () => {
       return;
     }
 
-    // For demo: Use first Stripe product price (Premium Cocktail Recipe Pack)
-    // In production, products would have stripe_price_id in database
-    const stripePriceId = "price_1SZhIeDeFqd186tlFsAgAlfD";
-    
     setLoading(true);
     try {
+      // Get authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Create order first
+      const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .insert([{
+          user_id: user.id,
+          order_number: `ORD-${Date.now()}`,
+          total_amount: total,
+          status: "pending",
+          payment_method: "stripe",
+          shipping_address: "TBD",
+          shipping_city: "TBD",
+          shipping_country: "TBD"
+        }])
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Create order items with product details
+      const orderItems = cartItems.map(item => ({
+        order_id: orderData.id,
+        product_id: item.id,
+        quantity: item.quantity,
+        price: item.price,
+        product_name: item.name,
+        product_image: item.image
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("order_items")
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      // Use first Stripe product price
+      const stripePriceId = "price_1SZhIeDeFqd186tlFsAgAlfD";
+
+      // Create Stripe checkout with order ID
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { priceId: stripePriceId, quantity: 1 },
+        body: { 
+          priceId: stripePriceId, 
+          quantity: 1,
+          order_id: orderData.id 
+        },
       });
 
       if (error) throw error;
 
       if (data?.url) {
-        // Open Stripe Checkout in new tab
         window.open(data.url, "_blank");
         toast({
           title: "Checkout Started",
