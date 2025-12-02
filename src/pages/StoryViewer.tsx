@@ -144,7 +144,7 @@ export default function StoryViewer() {
 
   // Auto-progress timer
   useEffect(() => {
-    if (!currentStory || isPaused) return;
+    if (!currentStory || isPaused || showComments) return;
 
     const duration = isVideo ? 15000 : 5000;
     const interval = 50;
@@ -165,7 +165,7 @@ export default function StoryViewer() {
         clearInterval(progressIntervalRef.current);
       }
     };
-  }, [currentIndex, isPaused, stories]);
+  }, [currentIndex, isPaused, showComments, stories]);
 
   // Video sync
   useEffect(() => {
@@ -173,7 +173,7 @@ export default function StoryViewer() {
     if (!video || !isVideo) return;
 
     const handleTimeUpdate = () => {
-      if (video.duration && !isPaused) {
+      if (video.duration && !isPaused && !showComments) {
         setProgress((video.currentTime / video.duration) * 100);
       }
     };
@@ -187,19 +187,19 @@ export default function StoryViewer() {
       video.removeEventListener("timeupdate", handleTimeUpdate);
       video.removeEventListener("ended", handleEnded);
     };
-  }, [currentStory, isPaused]);
+  }, [currentStory, isPaused, showComments]);
 
   // Pause/resume video
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !isVideo) return;
 
-    if (isPaused) {
+    if (isPaused || showComments) {
       video.pause();
     } else {
       video.play().catch(console.error);
     }
-  }, [isPaused, isVideo]);
+  }, [isPaused, showComments, isVideo]);
 
   // Navigation
   const goToNext = () => {
