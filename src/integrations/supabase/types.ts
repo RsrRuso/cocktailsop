@@ -102,6 +102,149 @@ export type Database = {
           },
         ]
       }
+      automation_logs: {
+        Row: {
+          error_message: string | null
+          executed_at: string | null
+          id: string
+          payload: Json | null
+          response: Json | null
+          status: string
+          trigger_id: string | null
+          user_id: string
+          webhook_id: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          payload?: Json | null
+          response?: Json | null
+          status: string
+          trigger_id?: string | null
+          user_id: string
+          webhook_id?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          payload?: Json | null
+          response?: Json | null
+          status?: string
+          trigger_id?: string | null
+          user_id?: string
+          webhook_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_logs_trigger_id_fkey"
+            columns: ["trigger_id"]
+            isOneToOne: false
+            referencedRelation: "automation_triggers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_logs_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "automation_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_triggers: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          trigger_type: string
+          updated_at: string | null
+          user_id: string
+          webhook_id: string | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          trigger_type: string
+          updated_at?: string | null
+          user_id: string
+          webhook_id?: string | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          trigger_type?: string
+          updated_at?: string | null
+          user_id?: string
+          webhook_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_triggers_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "automation_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_webhooks: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          name: string
+          trigger_count: number | null
+          updated_at: string | null
+          user_id: string
+          webhook_type: string
+          webhook_url: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name: string
+          trigger_count?: number | null
+          updated_at?: string | null
+          user_id: string
+          webhook_type: string
+          webhook_url: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name?: string
+          trigger_count?: number | null
+          updated_at?: string | null
+          user_id?: string
+          webhook_type?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
       batch_calculations: {
         Row: {
           batch_size: number

@@ -93,3 +93,5 @@ verify_jwt = true
 [functions.neuron-ai-assistant]
 verify_jwt = true
 
+[functions.trigger-automation]
+verify_jwt = true
