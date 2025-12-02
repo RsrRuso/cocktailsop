@@ -1,26 +1,23 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 
-// Track page transition performance
+// Track page transition performance (safe even without Router context)
 export const usePageTransition = () => {
-  const location = useLocation();
-
   useEffect(() => {
     const startTime = performance.now();
-    
-    // Mark when page becomes interactive
+
     const handleLoad = () => {
       const endTime = performance.now();
       const duration = endTime - startTime;
-      
+      const path = window.location?.pathname || '/';
+
       // Log all page transitions for monitoring
-      console.log(`⚡ Page transition: ${location.pathname} - ${(duration / 1000).toFixed(2)}s`);
-      
+      console.log(`⚡ Page transition: ${path} - ${(duration / 1000).toFixed(2)}s`);
+
       // Warn if slower than 1 second (optimal target)
       if (duration > 1000) {
-        console.warn(`⚠️ Slow page load: ${location.pathname} took ${(duration / 1000).toFixed(2)}s (target: <1s)`);
+        console.warn(`⚠️ Slow page load: ${path} took ${(duration / 1000).toFixed(2)}s (target: <1s)`);
       } else {
-        console.log(`✅ Fast load: ${location.pathname}`);
+        console.log(`✅ Fast load: ${path}`);
       }
     };
 
@@ -31,5 +28,5 @@ export const usePageTransition = () => {
       window.addEventListener('load', handleLoad);
       return () => window.removeEventListener('load', handleLoad);
     }
-  }, [location.pathname]);
+  }, []);
 };
