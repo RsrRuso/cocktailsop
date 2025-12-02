@@ -35,6 +35,7 @@ export const LivestreamComments = ({
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const commentsEndRef = useRef<HTMLDivElement>(null);
+  const submittedIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (isOpen) {
@@ -85,7 +86,21 @@ export const LivestreamComments = ({
           filter: `story_id=eq.${contentId}`,
         },
         (payload: any) => {
-          setComments((prev) => [...prev, payload.new as StoryComment]);
+          const newComment = payload.new as StoryComment;
+          
+          // Prevent duplicate if we just submitted this comment
+          if (submittedIdsRef.current.has(newComment.id)) {
+            submittedIdsRef.current.delete(newComment.id);
+            return;
+          }
+          
+          // Check if comment already exists
+          setComments((prev) => {
+            if (prev.some(c => c.id === newComment.id)) {
+              return prev;
+            }
+            return [...prev, newComment];
+          });
         }
       )
       .subscribe();
@@ -100,20 +115,44 @@ export const LivestreamComments = ({
     if (!newComment.trim() || !user || isSubmitting) return;
 
     setIsSubmitting(true);
+    const commentContent = newComment.trim();
+    setNewComment("");
+
     try {
-      const { error: insertError } = await supabase
+      const { data: insertedComment, error: insertError } = await supabase
         .from("story_comments" as any)
         .insert({
           story_id: contentId,
           user_id: user.id,
-          content: newComment.trim(),
-        });
+          content: commentContent,
+        })
+        .select(`
+          id,
+          content,
+          created_at,
+          user_id
+        `)
+        .single();
 
       if (insertError) throw insertError;
 
-      setNewComment("");
-      
-      // Update comment count
+      // Track this ID to prevent duplicate from realtime
+      if (insertedComment) {
+        const commentWithProfile: StoryComment = {
+          ...(insertedComment as any),
+          profiles: {
+            full_name: user.user_metadata?.full_name || null,
+            avatar_url: user.user_metadata?.avatar_url || null,
+          }
+        };
+        
+        submittedIdsRef.current.add((insertedComment as any).id);
+        
+        // Optimistically add to UI
+        setComments((prev) => [...prev, commentWithProfile]);
+      }
+
+      // Increment comment count
       const { data: currentStory } = await supabase
         .from("stories")
         .select("comment_count")
@@ -129,6 +168,7 @@ export const LivestreamComments = ({
     } catch (error) {
       console.error("Error posting comment:", error);
       toast.error("Failed to post comment");
+      setNewComment(commentContent); // Restore comment on error
     } finally {
       setIsSubmitting(false);
     }
@@ -146,60 +186,70 @@ export const LivestreamComments = ({
       animate={{ y: 0 }}
       exit={{ y: "100%" }}
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
-      className="fixed inset-x-0 bottom-0 z-50 h-[60vh] pointer-events-auto"
+      className="fixed inset-x-0 bottom-0 z-50 h-[70vh] pointer-events-auto"
       style={{
-        background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)",
-        backdropFilter: "blur(10px)",
+        background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.2) 80%, transparent 100%)",
+        backdropFilter: "blur(12px)",
       }}
     >
       {/* Close button */}
-      <div className="absolute top-2 right-2">
+      <div className="absolute top-3 right-3 z-10">
         <Button
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="text-white hover:bg-white/20 rounded-full"
+          className="text-white hover:bg-white/20 rounded-full backdrop-blur-sm bg-black/30"
         >
           <X className="h-5 w-5" />
         </Button>
       </div>
 
       {/* Comments container */}
-      <div className="h-full flex flex-col px-4 pt-12 pb-20">
-        <div className="flex-1 overflow-y-auto space-y-2 scrollbar-hide">
+      <div className="h-full flex flex-col px-4 pt-14 pb-6">
+        <div className="flex-1 overflow-y-auto space-y-3 scrollbar-hide pb-4">
           <AnimatePresence mode="popLayout">
             {comments.map((comment, index) => (
               <motion.div
                 key={comment.id}
-                initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
+                initial={{ opacity: 0, x: -50, scale: 0.8 }}
+                animate={{ 
+                  opacity: 1, 
+                  x: 0, 
+                  scale: 1,
+                  y: [10, 0, -2, 0]
+                }}
+                exit={{ opacity: 0, x: -30, scale: 0.9 }}
                 transition={{
                   type: "spring",
-                  damping: 20,
-                  stiffness: 300,
-                  delay: index * 0.05,
+                  damping: 15,
+                  stiffness: 200,
+                  delay: index * 0.03,
                 }}
-                className="flex items-start gap-2"
+                className="flex items-start gap-3 animate-in slide-in-from-left"
               >
                 <OptimizedAvatar
                   src={comment.profiles?.avatar_url || ""}
                   alt={comment.profiles?.full_name || "User"}
-                  className="flex-shrink-0 w-8 h-8"
+                  className="flex-shrink-0 w-9 h-9 ring-2 ring-white/20"
                 />
-                <div
-                  className="rounded-2xl px-4 py-2 max-w-[80%]"
+                <motion.div
+                  initial={{ scale: 0.95 }}
+                  animate={{ scale: 1 }}
+                  className="rounded-3xl px-5 py-3 max-w-[75%] shadow-lg"
                   style={{
-                    background: "rgba(255, 255, 255, 0.15)",
-                    backdropFilter: "blur(10px)",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    background: "rgba(255, 255, 255, 0.2)",
+                    backdropFilter: "blur(16px)",
+                    border: "1.5px solid rgba(255, 255, 255, 0.3)",
+                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                   }}
                 >
-                  <p className="text-xs font-semibold text-white mb-1">
+                  <p className="text-xs font-bold text-white mb-1.5 tracking-wide">
                     {comment.profiles?.full_name || "Anonymous"}
                   </p>
-                  <p className="text-sm text-white/90">{comment.content}</p>
-                </div>
+                  <p className="text-sm text-white/95 leading-relaxed">
+                    {comment.content}
+                  </p>
+                </motion.div>
               </motion.div>
             ))}
           </AnimatePresence>
@@ -207,26 +257,30 @@ export const LivestreamComments = ({
         </div>
 
         {/* Input form */}
-        <form
+        <motion.form
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
           onSubmit={handleSubmit}
-          className="mt-4 flex items-center gap-2"
+          className="flex items-center gap-3 pt-3"
         >
           <Input
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Add a comment..."
-            className="flex-1 bg-white/20 border-white/30 text-white placeholder:text-white/60 backdrop-blur-md rounded-full"
+            className="flex-1 bg-white/25 border-white/40 text-white placeholder:text-white/70 backdrop-blur-md rounded-full h-12 px-5 text-sm focus:ring-2 focus:ring-white/50"
             disabled={isSubmitting}
+            autoComplete="off"
           />
           <Button
             type="submit"
             size="icon"
             disabled={!newComment.trim() || isSubmitting}
-            className="rounded-full bg-primary hover:bg-primary/90 flex-shrink-0"
+            className="rounded-full bg-primary hover:bg-primary/90 flex-shrink-0 h-12 w-12 shadow-lg disabled:opacity-50"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-5 w-5" />
           </Button>
-        </form>
+        </motion.form>
       </div>
     </motion.div>
   );
