@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useMemo } from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -9,7 +9,8 @@ import { CartProvider } from "@/contexts/CartContext";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { FifoWorkspaceProvider } from "@/hooks/useFifoWorkspace";
 import { RoutePreloader } from "@/components/RoutePreloader";
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { usePageTransition } from "@/hooks/usePageTransition";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
@@ -280,27 +281,6 @@ const AppContent = () => {
 };
 
 const App: React.FC = () => {
-  // Create queryClient inside component to ensure React is initialized
-  const queryClient = useMemo(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5 * 60 * 1000,
-        gcTime: 30 * 60 * 1000,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: 'always',
-        refetchOnMount: false,
-        retry: 1,
-        retryDelay: 100,
-        networkMode: 'online',
-        placeholderData: (previousData: any) => previousData,
-      },
-      mutations: {
-        retry: 1,
-        networkMode: 'offlineFirst',
-      },
-    },
-  }), []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
