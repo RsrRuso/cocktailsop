@@ -1,13 +1,21 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Type, Music2, Sparkles, Download, Pen, Smile, MoreHorizontal, ArrowRight, Upload, Disc3 } from "lucide-react";
+import { X, Type, Music2, Sparkles, Download, Pen, Smile, MoreHorizontal, ArrowRight, Upload, Disc3, Brain } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import MusicSelectionDialog from "./MusicSelectionDialog";
+import { SmartStoryFeatures } from "./story/SmartStoryFeatures";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface TextOverlay {
   id: string;
@@ -44,6 +52,7 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
   const [currentColor, setCurrentColor] = useState("#FFFFFF");
   const [caption, setCaption] = useState("");
   const [showMusicDialog, setShowMusicDialog] = useState(false);
+  const [showSmartFeatures, setShowSmartFeatures] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<string | null>(null);
   const [selectedMusicFile, setSelectedMusicFile] = useState<File | null>(null);
   const [uploadingMusic, setUploadingMusic] = useState(false);
@@ -147,6 +156,16 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
           className="text-white hover:bg-white/10"
         >
           <X className="w-6 h-6" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowSmartFeatures(true)}
+          className="text-white hover:bg-white/10 gap-2 bg-white/5 backdrop-blur-sm"
+        >
+          <Brain className="w-4 h-4" />
+          AI Tools
         </Button>
       </div>
 
@@ -269,6 +288,16 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
               className="hidden"
             />
           </div>
+
+          <button
+            onClick={() => setShowSmartFeatures(true)}
+            className="flex flex-col items-center gap-1"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg">
+              <Brain className="w-6 h-6" />
+            </div>
+            <span className="text-white text-xs font-medium">AI Tools</span>
+          </button>
 
           <button
             onClick={() => toast.info("Effects coming soon!")}
@@ -407,6 +436,40 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
           toast.success(`Added: ${track.title}`);
         }}
       />
+
+      <Sheet open={showSmartFeatures} onOpenChange={setShowSmartFeatures}>
+        <SheetContent side="bottom" className="h-[85vh] p-0 overflow-hidden">
+          <SheetHeader className="px-6 pt-6 pb-4">
+            <SheetTitle className="flex items-center gap-2">
+              <Brain className="w-5 h-5 text-primary" />
+              AI Story Intelligence
+            </SheetTitle>
+            <SheetDescription>
+              Advanced tools to create viral content
+            </SheetDescription>
+          </SheetHeader>
+          <div className="overflow-y-auto h-[calc(85vh-120px)]">
+            <SmartStoryFeatures
+              mediaUrl={mediaUrl}
+              onApplySuggestion={(type, data) => {
+                if (type === "caption" && typeof data === "string") {
+                  setCaption(data);
+                  toast.success("Caption applied!");
+                }
+                if (type === "hashtags" && Array.isArray(data)) {
+                  setCaption(prev => prev + " " + data.map((tag: string) => `#${tag}`).join(" "));
+                  toast.success("Hashtags added!");
+                }
+                if (type === "music" && data) {
+                  setSelectedMusic(data.title);
+                  toast.success("Music suggestion applied!");
+                }
+                setShowSmartFeatures(false);
+              }}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

@@ -1,11 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { X, Heart } from "lucide-react";
+import { X, Heart, Brain, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
 import { LivestreamComments } from "@/components/story/LivestreamComments";
+import { StoryInsights } from "@/components/story/StoryInsights";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Story {
   id: string;
@@ -48,6 +56,7 @@ export default function StoryViewer() {
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
   const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
   
   // Refs
@@ -439,12 +448,25 @@ export default function StoryViewer() {
             </span>
           </div>
         </div>
-        <button
-          onClick={() => navigate("/home")}
-          className="p-2 hover:bg-white/10 rounded-full transition-colors"
-        >
-          <X className="w-6 h-6 text-white" />
-        </button>
+        <div className="flex items-center gap-2">
+          {currentUserId === userId && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowInsights(true);
+              }}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            >
+              <BarChart3 className="w-5 h-5 text-white" />
+            </button>
+          )}
+          <button
+            onClick={() => navigate("/home")}
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+        </div>
       </div>
 
       {/* Story content */}
@@ -556,6 +578,24 @@ export default function StoryViewer() {
         isOpen={showComments}
         onClose={() => setShowComments(false)}
       />
+
+      {/* Story Insights */}
+      <Sheet open={showInsights} onOpenChange={setShowInsights}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Brain className="w-5 h-5 text-primary" />
+              Story Intelligence
+            </SheetTitle>
+            <SheetDescription>
+              Advanced analytics and insights for your story
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
+            <StoryInsights storyId={currentStory.id} />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <style>{`
         @keyframes fly-up {
