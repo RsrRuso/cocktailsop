@@ -22,14 +22,10 @@ interface StoryComment {
 
 interface LivestreamCommentsProps {
   contentId: string;
-  isOpen: boolean;
-  onClose: () => void;
 }
 
 export const LivestreamComments = ({
   contentId,
-  isOpen,
-  onClose,
 }: LivestreamCommentsProps) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<StoryComment[]>([]);
@@ -39,12 +35,10 @@ export const LivestreamComments = ({
   const submittedIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (isOpen) {
-      fetchComments();
-      const unsubscribe = subscribeToComments();
-      return unsubscribe;
-    }
-  }, [isOpen, contentId]);
+    fetchComments();
+    const unsubscribe = subscribeToComments();
+    return unsubscribe;
+  }, [contentId]);
 
   const fetchComments = async () => {
     try {
@@ -162,100 +156,66 @@ export const LivestreamComments = ({
     }
   };
 
-  useEffect(() => {
-    commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [comments]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none">
-      {/* Close button */}
-      <div className="absolute top-3 right-3 z-10 pointer-events-auto">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          className="text-white hover:bg-white/20 rounded-full backdrop-blur-sm bg-black/30"
-        >
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
-
+    <div className="fixed inset-0 z-40 pointer-events-none">
       {/* Floating comments - auto-scrolling upward */}
-      <div className="absolute bottom-32 left-0 right-0 h-[60vh] overflow-hidden pointer-events-none px-4">
-        <motion.div
-          className="flex flex-col-reverse gap-3"
-          animate={{ y: [-10, 0] }}
-          transition={{ duration: 0.5, repeat: Infinity, repeatType: "loop" }}
-        >
+      <div className="absolute bottom-24 left-0 right-0 h-[50vh] overflow-hidden pointer-events-none px-4">
+        <div className="flex flex-col-reverse gap-3 pb-4">
           <AnimatePresence mode="popLayout">
-            {comments.slice(-10).reverse().map((comment, index) => (
+            {comments.slice(-8).map((comment, index) => (
               <motion.div
                 key={comment.id}
-                initial={{ opacity: 0, y: 50, scale: 0.8 }}
+                initial={{ opacity: 0, y: 30, x: -20 }}
                 animate={{ 
-                  opacity: [0, 1, 1, 0.5],
+                  opacity: 1,
                   y: 0,
-                  scale: 1,
+                  x: 0,
                 }}
-                exit={{ opacity: 0, y: -50 }}
+                exit={{ opacity: 0, y: -30 }}
                 transition={{
-                  duration: 8,
-                  ease: "linear",
+                  duration: 0.4,
+                  ease: "easeOut",
                 }}
-                className="flex items-start gap-3"
+                className="flex items-start gap-2"
               >
                 <OptimizedAvatar
                   src={comment.profiles?.avatar_url || ""}
                   alt={comment.profiles?.full_name || "User"}
-                  className="flex-shrink-0 w-9 h-9 ring-2 ring-white/20"
+                  className="flex-shrink-0 w-8 h-8 ring-2 ring-white/30"
                 />
                 <div
-                  className="rounded-3xl px-5 py-3 max-w-[75%] shadow-lg"
+                  className="rounded-2xl px-4 py-2 max-w-[70%]"
                   style={{
-                    background: "rgba(0, 0, 0, 0.75)",
-                    backdropFilter: "blur(16px)",
-                    border: "1.5px solid rgba(255, 255, 255, 0.4)",
-                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
+                    background: "rgba(0, 0, 0, 0.8)",
+                    backdropFilter: "blur(10px)",
+                    border: "1px solid rgba(255, 255, 255, 0.3)",
                   }}
                 >
-                  <p className="text-xs font-bold text-white mb-1.5 tracking-wide drop-shadow-lg">
+                  <p className="text-xs font-semibold text-white mb-0.5 drop-shadow-lg">
                     {comment.profiles?.full_name || "Anonymous"}
                   </p>
-                  <p className="text-sm text-white leading-relaxed drop-shadow-lg">
+                  <p className="text-sm text-white/95 leading-snug drop-shadow-lg">
                     {comment.content}
                   </p>
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
-        </motion.div>
+        </div>
       </div>
 
       {/* Bottom input area */}
-      <div className="absolute bottom-0 left-0 right-0 pointer-events-auto">
-        {/* Smart Comment Suggestions */}
-        <div className="px-4">
-          <SmartCommentSuggestions
-            storyId={contentId}
-            onSelectSuggestion={(text) => setNewComment(text)}
-          />
-        </div>
-
+      <div className="absolute bottom-20 left-0 right-0 pointer-events-auto px-4">
         {/* Input form */}
         <form
           onSubmit={handleSubmit}
-          className="flex items-center gap-3 px-4 pb-6 pt-3"
-          style={{
-            background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
-          }}
+          className="flex items-center gap-2"
         >
           <Input
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Add a comment..."
-            className="flex-1 bg-white/25 border-white/40 text-white placeholder:text-white/70 backdrop-blur-md rounded-full h-12 px-5 text-sm focus:ring-2 focus:ring-white/50"
+            className="flex-1 bg-black/60 border-white/30 text-white placeholder:text-white/60 backdrop-blur-md rounded-full h-11 px-4 text-sm focus:ring-2 focus:ring-white/40"
             disabled={isSubmitting}
             autoComplete="off"
           />
@@ -263,9 +223,9 @@ export const LivestreamComments = ({
             type="submit"
             size="icon"
             disabled={!newComment.trim() || isSubmitting}
-            className="rounded-full bg-primary hover:bg-primary/90 flex-shrink-0 h-12 w-12 shadow-lg disabled:opacity-50"
+            className="rounded-full bg-white/90 hover:bg-white text-black flex-shrink-0 h-11 w-11 shadow-lg disabled:opacity-50"
           >
-            <Send className="h-5 w-5" />
+            <Send className="h-4 w-4" />
           </Button>
         </form>
       </div>
