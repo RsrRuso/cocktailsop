@@ -169,19 +169,9 @@ export const LivestreamComments = ({
   if (!isOpen) return null;
 
   return (
-    <motion.div
-      initial={{ y: "100%" }}
-      animate={{ y: 0 }}
-      exit={{ y: "100%" }}
-      transition={{ type: "spring", damping: 25, stiffness: 200 }}
-      className="fixed inset-x-0 bottom-0 z-50 h-[70vh] pointer-events-auto"
-      style={{
-        background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.2) 80%, transparent 100%)",
-        backdropFilter: "blur(12px)",
-      }}
-    >
+    <div className="fixed inset-0 z-50 pointer-events-none">
       {/* Close button */}
-      <div className="absolute top-3 right-3 z-10">
+      <div className="absolute top-3 right-3 z-10 pointer-events-auto">
         <Button
           variant="ghost"
           size="icon"
@@ -192,90 +182,93 @@ export const LivestreamComments = ({
         </Button>
       </div>
 
-        {/* Comments container */}
-        <div className="h-full flex flex-col px-4 pt-14 pb-6">
-          <div className="flex-1 overflow-y-auto space-y-3 scrollbar-hide pb-4">
-            <AnimatePresence mode="popLayout">
-              {comments.map((comment, index) => (
-                <motion.div
-                  key={comment.id}
-                  initial={{ opacity: 0, x: -50, scale: 0.8 }}
-                  animate={{ 
-                    opacity: 1, 
-                    x: 0, 
-                    scale: 1,
-                    y: [10, 0, -2, 0]
+      {/* Floating comments - auto-scrolling upward */}
+      <div className="absolute bottom-32 left-0 right-0 h-[60vh] overflow-hidden pointer-events-none px-4">
+        <motion.div
+          className="flex flex-col-reverse gap-3"
+          animate={{ y: [-10, 0] }}
+          transition={{ duration: 0.5, repeat: Infinity, repeatType: "loop" }}
+        >
+          <AnimatePresence mode="popLayout">
+            {comments.slice(-10).reverse().map((comment, index) => (
+              <motion.div
+                key={comment.id}
+                initial={{ opacity: 0, y: 50, scale: 0.8 }}
+                animate={{ 
+                  opacity: [0, 1, 1, 0.5],
+                  y: 0,
+                  scale: 1,
+                }}
+                exit={{ opacity: 0, y: -50 }}
+                transition={{
+                  duration: 8,
+                  ease: "linear",
+                }}
+                className="flex items-start gap-3"
+              >
+                <OptimizedAvatar
+                  src={comment.profiles?.avatar_url || ""}
+                  alt={comment.profiles?.full_name || "User"}
+                  className="flex-shrink-0 w-9 h-9 ring-2 ring-white/20"
+                />
+                <div
+                  className="rounded-3xl px-5 py-3 max-w-[75%] shadow-lg"
+                  style={{
+                    background: "rgba(0, 0, 0, 0.75)",
+                    backdropFilter: "blur(16px)",
+                    border: "1.5px solid rgba(255, 255, 255, 0.4)",
+                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
                   }}
-                  exit={{ opacity: 0, x: -30, scale: 0.9 }}
-                  transition={{
-                    type: "spring",
-                    damping: 15,
-                    stiffness: 200,
-                    delay: index * 0.03,
-                  }}
-                  className="flex items-start gap-3 animate-in slide-in-from-left"
                 >
-                  <OptimizedAvatar
-                    src={comment.profiles?.avatar_url || ""}
-                    alt={comment.profiles?.full_name || "User"}
-                    className="flex-shrink-0 w-9 h-9 ring-2 ring-white/20"
-                  />
-                  <motion.div
-                    initial={{ scale: 0.95 }}
-                    animate={{ scale: 1 }}
-                    className="rounded-3xl px-5 py-3 max-w-[75%] shadow-lg"
-                    style={{
-                      background: "rgba(0, 0, 0, 0.75)",
-                      backdropFilter: "blur(16px)",
-                      border: "1.5px solid rgba(255, 255, 255, 0.4)",
-                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
-                    }}
-                  >
-                    <p className="text-xs font-bold text-white mb-1.5 tracking-wide drop-shadow-lg">
-                      {comment.profiles?.full_name || "Anonymous"}
-                    </p>
-                    <p className="text-sm text-white leading-relaxed drop-shadow-lg">
-                      {comment.content}
-                    </p>
-                  </motion.div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            <div ref={commentsEndRef} />
-          </div>
+                  <p className="text-xs font-bold text-white mb-1.5 tracking-wide drop-shadow-lg">
+                    {comment.profiles?.full_name || "Anonymous"}
+                  </p>
+                  <p className="text-sm text-white leading-relaxed drop-shadow-lg">
+                    {comment.content}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
+      </div>
 
-          {/* Smart Comment Suggestions */}
+      {/* Bottom input area */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-auto">
+        {/* Smart Comment Suggestions */}
+        <div className="px-4">
           <SmartCommentSuggestions
             storyId={contentId}
             onSelectSuggestion={(text) => setNewComment(text)}
           />
-
-          {/* Input form */}
-          <motion.form
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            onSubmit={handleSubmit}
-            className="flex items-center gap-3 pt-3"
-          >
-            <Input
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              className="flex-1 bg-white/25 border-white/40 text-white placeholder:text-white/70 backdrop-blur-md rounded-full h-12 px-5 text-sm focus:ring-2 focus:ring-white/50"
-              disabled={isSubmitting}
-              autoComplete="off"
-            />
-            <Button
-              type="submit"
-              size="icon"
-              disabled={!newComment.trim() || isSubmitting}
-              className="rounded-full bg-primary hover:bg-primary/90 flex-shrink-0 h-12 w-12 shadow-lg disabled:opacity-50"
-            >
-              <Send className="h-5 w-5" />
-            </Button>
-          </motion.form>
         </div>
-      </motion.div>
-    );
+
+        {/* Input form */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex items-center gap-3 px-4 pb-6 pt-3"
+          style={{
+            background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
+          }}
+        >
+          <Input
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Add a comment..."
+            className="flex-1 bg-white/25 border-white/40 text-white placeholder:text-white/70 backdrop-blur-md rounded-full h-12 px-5 text-sm focus:ring-2 focus:ring-white/50"
+            disabled={isSubmitting}
+            autoComplete="off"
+          />
+          <Button
+            type="submit"
+            size="icon"
+            disabled={!newComment.trim() || isSubmitting}
+            className="rounded-full bg-primary hover:bg-primary/90 flex-shrink-0 h-12 w-12 shadow-lg disabled:opacity-50"
+          >
+            <Send className="h-5 w-5" />
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
   };
