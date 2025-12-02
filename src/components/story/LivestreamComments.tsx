@@ -152,19 +152,6 @@ export const LivestreamComments = ({
         setComments((prev) => [...prev, commentWithProfile]);
       }
 
-      // Increment comment count
-      const { data: currentStory } = await supabase
-        .from("stories")
-        .select("comment_count")
-        .eq("id", contentId)
-        .single();
-        
-      if (currentStory) {
-        await supabase
-          .from("stories")
-          .update({ comment_count: (currentStory.comment_count || 0) + 1 })
-          .eq("id", contentId);
-      }
     } catch (error) {
       console.error("Error posting comment:", error);
       toast.error("Failed to post comment");
