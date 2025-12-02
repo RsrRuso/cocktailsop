@@ -224,16 +224,16 @@ export const LivestreamComments = ({
                   animate={{ scale: 1 }}
                   className="rounded-3xl px-5 py-3 max-w-[75%] shadow-lg"
                   style={{
-                    background: "rgba(255, 255, 255, 0.2)",
+                    background: "rgba(0, 0, 0, 0.75)",
                     backdropFilter: "blur(16px)",
-                    border: "1.5px solid rgba(255, 255, 255, 0.3)",
-                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                    border: "1.5px solid rgba(255, 255, 255, 0.4)",
+                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
                   }}
                 >
-                  <p className="text-xs font-bold text-white mb-1.5 tracking-wide">
+                  <p className="text-xs font-bold text-white mb-1.5 tracking-wide drop-shadow-lg">
                     {comment.profiles?.full_name || "Anonymous"}
                   </p>
-                  <p className="text-sm text-white/95 leading-relaxed">
+                  <p className="text-sm text-white leading-relaxed drop-shadow-lg">
                     {comment.content}
                   </p>
                 </motion.div>
