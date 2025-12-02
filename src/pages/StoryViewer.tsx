@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { queryClient } from "@/lib/queryClient";
+import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
 import { X, ChevronLeft, ChevronRight, Heart, Eye, Trash2, MoreVertical, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -46,13 +47,12 @@ const StoryViewer = () => {
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
-  const [isLiked, setIsLiked] = useState(false);
   const [floatingHearts, setFloatingHearts] = useState<FloatingHeart[]>([]);
   const [showViewersDialog, setShowViewersDialog] = useState(false);
   const [showLikesDialog, setShowLikesDialog] = useState(false);
   const [showCommentsDialog, setShowCommentsDialog] = useState(false);
 
-  // Pause story when any dialog is open
+  const { likedItems, toggleLike } = useUnifiedEngagement('story', currentUserId || undefined);
   useEffect(() => {
     setIsPaused(showViewersDialog || showLikesDialog || showCommentsDialog);
   }, [showViewersDialog, showLikesDialog, showCommentsDialog]);
@@ -73,7 +73,6 @@ const StoryViewer = () => {
   useEffect(() => {
     if (stories.length > 0 && currentUserId) {
       trackView();
-      checkIfLiked();
     }
   }, [currentStoryIndex, stories.length, currentUserId]);
 
@@ -146,56 +145,23 @@ const StoryViewer = () => {
     if (error) console.error("Error tracking view:", error);
   };
 
-  const checkIfLiked = async () => {
-    if (!currentUserId || !stories[currentStoryIndex]) return;
-
-    const { data } = await supabase
-      .from("story_likes")
-      .select("id")
-      .eq("story_id", stories[currentStoryIndex].id)
-      .eq("user_id", currentUserId)
-      .maybeSingle();
-
-    setIsLiked(!!data);
-  };
-
-  const handleLike = async () => {
-    if (!currentUserId || !stories[currentStoryIndex]) return;
+  
+  const handleLike = () => {
+    if (!currentUserId || !stories[currentStoryIndex]) {
+      toast.error("Please login to like stories");
+      return;
+    }
 
     const storyId = stories[currentStoryIndex].id;
-    const wasLiked = isLiked;
+    const isCurrentlyLiked = likedItems.has(storyId);
 
-    // Optimistic UI update only - database trigger handles the count
-    setIsLiked(!wasLiked);
-
-    if (!wasLiked) {
+    // Spawn heart only when changing from unliked to liked
+    if (!isCurrentlyLiked) {
       addFloatingHeart();
     }
 
-    // Database operation - trigger will update count automatically
-    try {
-      if (wasLiked) {
-        const { error } = await supabase
-          .from("story_likes")
-          .delete()
-          .eq("story_id", storyId)
-          .eq("user_id", currentUserId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("story_likes")
-          .insert({
-            story_id: storyId,
-            user_id: currentUserId,
-          });
-        // Ignore duplicate key errors - already liked
-        if (error && error.code !== '23505') throw error;
-      }
-    } catch (error) {
-      // Revert on error
-      console.error("Like error:", error);
-      setIsLiked(wasLiked);
-    }
+    // Use unified engagement system for reliable, idempotent likes
+    toggleLike(storyId);
   };
 
   const handleDoubleTap = () => {
@@ -487,6 +453,7 @@ const StoryViewer = () => {
     || currentStory.media_types?.[0] 
     || 'image';
   const totalMedia = currentStory.media_urls.length;
+  const isLiked = likedItems.has(currentStory.id);
   const isOwnStory = currentStory.user_id === currentUserId;
 
   return (
