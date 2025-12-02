@@ -73,20 +73,23 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.transcribe-audio]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-email-assistant]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-message-assistant]
-verify_jwt = false
+verify_jwt = true
 
 [functions.batch-ai-assistant]
-verify_jwt = false
+verify_jwt = true
 
 [functions.career-ai-mentor]
 verify_jwt = true
 
 [functions.matrix-music-curator]
-verify_jwt = false
+verify_jwt = true
+
+[functions.neuron-ai-assistant]
+verify_jwt = true
 
