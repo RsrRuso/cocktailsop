@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { Capacitor } from "@capacitor/core";
 
 interface StoryComment {
   id: string;
@@ -143,12 +144,18 @@ export const LivestreamComments = ({
 
   const triggerVibration = async () => {
     try {
-      await Haptics.impact({ style: ImpactStyle.Medium });
-    } catch (error) {
-      // Fallback for web
-      if (navigator.vibrate) {
+      const platform = Capacitor.getPlatform();
+
+      if (platform === "ios" || platform === "android") {
+        await Haptics.impact({ style: ImpactStyle.Medium });
+      } else if ("vibrate" in navigator) {
         navigator.vibrate(50);
       }
+    } catch (error) {
+      if ("vibrate" in navigator) {
+        navigator.vibrate(50);
+      }
+      console.error("Error triggering haptics:", error);
     }
   };
 
