@@ -257,7 +257,17 @@ export const LivestreamComments = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !user || isSubmitting) return;
+    console.log("Submit triggered", { 
+      hasComment: !!newComment.trim(), 
+      hasUser: !!user, 
+      isSubmitting,
+      replyingTo: replyingTo?.id 
+    });
+    
+    if (!newComment.trim() || !user || isSubmitting) {
+      console.log("Submit blocked - validation failed");
+      return;
+    }
 
     // Detect rapid typing
     const now = Date.now();
