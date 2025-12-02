@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, ChevronUp, ChevronDown } from "lucide-react";
+import { Send, ChevronUp, ChevronDown, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -8,6 +8,7 @@ import { SmartCommentSuggestions } from "./SmartCommentSuggestions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 interface StoryComment {
   id: string;
@@ -18,6 +19,14 @@ interface StoryComment {
     full_name: string | null;
     avatar_url: string | null;
   } | null;
+}
+
+interface FlyingHeart {
+  id: string;
+  x: number;
+  y: number;
+  color: string;
+  userId: string;
 }
 
 interface LivestreamCommentsProps {
@@ -34,13 +43,33 @@ export const LivestreamComments = ({
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const submittedIdsRef = useRef<Set<string>>(new Set());
+  const lastCommentTimeRef = useRef<number>(0);
+  const commentCountRef = useRef<number>(0);
+  const heartChannelRef = useRef<any>(null);
+
+  const heartColors = [
+    "#FF69B4", // Hot Pink
+    "#FF1493", // Deep Pink
+    "#FF6B9D", // Light Pink
+    "#C71585", // Medium Violet Red
+    "#FF4500", // Orange Red
+    "#FF69B4", // Hot Pink
+    "#FF10F0", // Bright Pink
+    "#E91E63", // Material Pink
+  ];
 
   useEffect(() => {
     fetchComments();
-    const unsubscribe = subscribeToComments();
-    return unsubscribe;
+    const commentsUnsubscribe = subscribeToComments();
+    const heartsUnsubscribe = subscribeToHearts();
+    
+    return () => {
+      commentsUnsubscribe();
+      heartsUnsubscribe();
+    };
   }, [contentId]);
 
   const fetchComments = async () => {
@@ -69,6 +98,67 @@ export const LivestreamComments = ({
       setComments((data || []) as unknown as StoryComment[]);
     } catch (error) {
       console.error("Error fetching comments:", error);
+    }
+  };
+
+  const subscribeToHearts = () => {
+    const channel = supabase
+      .channel(`story_hearts_${contentId}`)
+      .on(
+        "broadcast" as any,
+        { event: "heart" },
+        (payload: any) => {
+          if (payload.payload.userId !== user?.id) {
+            createHeart(payload.payload);
+            triggerVibration();
+          }
+        }
+      )
+      .subscribe();
+
+    heartChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const createHeart = (heartData?: { x?: number; y?: number; color?: string; userId?: string }) => {
+    const heart: FlyingHeart = {
+      id: Math.random().toString(36),
+      x: heartData?.x ?? Math.random() * (window.innerWidth - 100) + 50,
+      y: heartData?.y ?? window.innerHeight - 150,
+      color: heartData?.color ?? heartColors[Math.floor(Math.random() * heartColors.length)],
+      userId: heartData?.userId ?? user?.id ?? "unknown",
+    };
+
+    setFlyingHearts((prev) => [...prev, heart]);
+
+    setTimeout(() => {
+      setFlyingHearts((prev) => prev.filter((h) => h.id !== heart.id));
+    }, 2000);
+
+    return heart;
+  };
+
+  const triggerVibration = async () => {
+    try {
+      await Haptics.impact({ style: ImpactStyle.Medium });
+    } catch (error) {
+      // Fallback for web
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }
+  };
+
+  const broadcastHeart = async (heart: FlyingHeart) => {
+    if (heartChannelRef.current) {
+      await heartChannelRef.current.send({
+        type: "broadcast",
+        event: "heart",
+        payload: heart,
+      });
     }
   };
 
@@ -111,6 +201,31 @@ export const LivestreamComments = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || !user || isSubmitting) return;
+
+    // Detect rapid typing
+    const now = Date.now();
+    const timeSinceLastComment = now - lastCommentTimeRef.current;
+    
+    if (timeSinceLastComment < 2000) {
+      commentCountRef.current += 1;
+    } else {
+      commentCountRef.current = 1;
+    }
+    
+    lastCommentTimeRef.current = now;
+
+    // Trigger hearts if typing rapidly (3+ comments in 2 seconds)
+    if (commentCountRef.current >= 3) {
+      const heartsToCreate = Math.min(commentCountRef.current, 8);
+      for (let i = 0; i < heartsToCreate; i++) {
+        setTimeout(() => {
+          const heart = createHeart();
+          broadcastHeart(heart);
+          triggerVibration();
+        }, i * 100);
+      }
+      commentCountRef.current = 0;
+    }
 
     setIsSubmitting(true);
     const commentContent = newComment.trim();
@@ -161,6 +276,37 @@ export const LivestreamComments = ({
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col pointer-events-none">
+      {/* Flying hearts */}
+      <AnimatePresence>
+        {flyingHearts.map((heart) => (
+          <motion.div
+            key={heart.id}
+            initial={{ opacity: 0, y: 0, scale: 0.5 }}
+            animate={{ 
+              opacity: [0, 1, 1, 0],
+              y: -200,
+              x: [0, Math.random() * 40 - 20, Math.random() * 60 - 30],
+              scale: [0.5, 1.2, 1, 0.8],
+              rotate: [0, Math.random() * 20 - 10, Math.random() * 30 - 15]
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 2, ease: "easeOut" }}
+            className="absolute pointer-events-none"
+            style={{
+              left: heart.x,
+              bottom: 100,
+            }}
+          >
+            <Heart 
+              className="w-8 h-8" 
+              fill={heart.color}
+              color={heart.color}
+              style={{ filter: "drop-shadow(0 0 8px rgba(255,255,255,0.5))" }}
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
       {/* Toggle button */}
       <div className="flex justify-center pb-1 pointer-events-auto">
         <Button
