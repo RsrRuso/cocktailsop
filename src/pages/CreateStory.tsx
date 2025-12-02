@@ -3,14 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Upload, Camera, X, CheckCircle2, Zap } from "lucide-react";
+import { ArrowLeft, Upload, Camera, X, CheckCircle2, Zap, Music2, Image as ImageIcon, Layers, Settings, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
 import { StoryEditor } from "@/components/StoryEditor";
+import { Card } from "@/components/ui/card";
 
 const CreateStory = () => {
   const navigate = useNavigate();
+  const [showSelection, setShowSelection] = useState(true);
   const [selectedMedia, setSelectedMedia] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -21,6 +23,8 @@ const CreateStory = () => {
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+
+    setShowSelection(false);
 
     const validFiles: File[] = [];
     const newPreviewUrls: string[] = [];
@@ -266,6 +270,101 @@ const CreateStory = () => {
         onSave={(data) => handleSaveEdit(editingIndex, data)}
         onCancel={() => setEditingIndex(null)}
       />
+    );
+  }
+
+  // Instagram-style Add to Story Screen
+  if (showSelection) {
+    return (
+      <div className="fixed inset-0 bg-black z-50">
+        <div className="flex items-center justify-between p-4">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate("/create")}
+            className="text-white hover:bg-white/10"
+          >
+            <X className="w-6 h-6" />
+          </Button>
+          <h1 className="text-xl font-bold text-white">Add to story</h1>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-white/10"
+          >
+            <Settings className="w-6 h-6" />
+          </Button>
+        </div>
+
+        {/* Main Options */}
+        <div className="grid grid-cols-3 gap-4 px-4 mt-8">
+          <Card 
+            onClick={() => toast.info("Templates coming soon!")}
+            className="bg-white/10 border-white/20 backdrop-blur-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-white/15 transition-all"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <ImageIcon className="w-8 h-8 text-white" />
+            </div>
+            <span className="text-white font-medium">Templates</span>
+          </Card>
+
+          <Card 
+            onClick={() => toast.info("Music coming soon!")}
+            className="bg-white/10 border-white/20 backdrop-blur-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-white/15 transition-all"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+              <Music2 className="w-8 h-8 text-white" />
+            </div>
+            <span className="text-white font-medium">Music</span>
+          </Card>
+
+          <Card 
+            onClick={() => toast.info("Collage coming soon!")}
+            className="bg-white/10 border-white/20 backdrop-blur-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-white/15 transition-all"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+              <Layers className="w-8 h-8 text-white" />
+            </div>
+            <span className="text-white font-medium">Collage</span>
+          </Card>
+        </div>
+
+        {/* Recents Section */}
+        <div className="mt-8 px-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 text-white">
+              <span className="font-semibold">Recents</span>
+              <ChevronDown className="w-4 h-4" />
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-white hover:bg-white/10"
+            >
+              <ImageIcon className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Camera Button */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="aspect-square bg-white/10 border-2 border-white/20 rounded-xl flex items-center justify-center hover:bg-white/15 transition-all"
+            >
+              <Camera className="w-12 h-12 text-white" />
+            </button>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            onChange={handleMediaSelect}
+            className="hidden"
+          />
+        </div>
+      </div>
     );
   }
 
