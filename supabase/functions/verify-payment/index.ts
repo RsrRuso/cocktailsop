@@ -18,7 +18,9 @@ serve(async (req) => {
   );
 
   try {
+    console.log("[VERIFY-PAYMENT] Request received");
     const { session_id } = await req.json();
+    console.log("[VERIFY-PAYMENT] Session ID:", session_id);
     
     if (!session_id) {
       throw new Error("Session ID is required");
@@ -29,32 +31,46 @@ serve(async (req) => {
     });
 
     // Retrieve the checkout session
+    console.log("[VERIFY-PAYMENT] Retrieving Stripe session");
     const session = await stripe.checkout.sessions.retrieve(session_id);
+    console.log("[VERIFY-PAYMENT] Payment status:", session.payment_status);
+    console.log("[VERIFY-PAYMENT] Metadata:", session.metadata);
 
     if (session.payment_status === "paid") {
+      const orderId = session.metadata?.order_id;
+      console.log("[VERIFY-PAYMENT] Order ID from metadata:", orderId);
+      
+      if (!orderId) {
+        throw new Error("Order ID not found in session metadata");
+      }
+
       // Update order status to paid
+      console.log("[VERIFY-PAYMENT] Updating order status");
       const { error: updateError } = await supabaseClient
         .from("orders")
         .update({ 
           status: "paid",
           updated_at: new Date().toISOString()
         })
-        .eq("id", session.metadata?.order_id || "");
+        .eq("id", orderId);
 
       if (updateError) {
+        console.error("[VERIFY-PAYMENT] Database update error:", updateError);
         throw updateError;
       }
 
+      console.log("[VERIFY-PAYMENT] Order updated successfully");
       return new Response(
         JSON.stringify({ 
           success: true, 
           status: "paid",
-          order_id: session.metadata?.order_id 
+          order_id: orderId 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    console.log("[VERIFY-PAYMENT] Payment not completed");
     return new Response(
       JSON.stringify({ 
         success: false, 
