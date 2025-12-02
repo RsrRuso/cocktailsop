@@ -206,11 +206,12 @@ const StoryViewer = () => {
     const DOUBLE_TAP_DELAY = 300;
 
     if (now - lastTap < DOUBLE_TAP_DELAY) {
+      // Always spawn a flying heart for every double-tap
+      addFloatingHeart();
+      // Like the story if not already liked
       if (!isLiked) {
         handleLike();
       }
-      // Always spawn a flying heart for every double-tap
-      addFloatingHeart();
     }
     setLastTap(now);
   };
