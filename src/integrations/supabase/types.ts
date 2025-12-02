@@ -153,38 +153,162 @@ export type Database = {
           },
         ]
       }
+      automation_template_installs: {
+        Row: {
+          id: string
+          installed_at: string | null
+          template_id: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          installed_at?: string | null
+          template_id?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          installed_at?: string | null
+          template_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_template_installs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "automation_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_template_reviews: {
+        Row: {
+          created_at: string | null
+          id: string
+          rating: number | null
+          review_text: string | null
+          template_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          rating?: number | null
+          review_text?: string | null
+          template_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          rating?: number | null
+          review_text?: string | null
+          template_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_template_reviews_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "automation_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_templates: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          install_count: number | null
+          is_public: boolean | null
+          name: string
+          rating: number | null
+          tags: string[] | null
+          updated_at: string | null
+          user_id: string
+          workflow_data: Json
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          install_count?: number | null
+          is_public?: boolean | null
+          name: string
+          rating?: number | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id: string
+          workflow_data: Json
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          install_count?: number | null
+          is_public?: boolean | null
+          name?: string
+          rating?: number | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+          workflow_data?: Json
+        }
+        Relationships: []
+      }
       automation_triggers: {
         Row: {
+          conditions: Json | null
           config: Json | null
           created_at: string | null
           description: string | null
           id: string
           is_active: boolean | null
+          last_run_at: string | null
           name: string
+          next_run_at: string | null
+          schedule_cron: string | null
+          schedule_enabled: boolean | null
           trigger_type: string
           updated_at: string | null
           user_id: string
           webhook_id: string | null
         }
         Insert: {
+          conditions?: Json | null
           config?: Json | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
+          last_run_at?: string | null
           name: string
+          next_run_at?: string | null
+          schedule_cron?: string | null
+          schedule_enabled?: boolean | null
           trigger_type: string
           updated_at?: string | null
           user_id: string
           webhook_id?: string | null
         }
         Update: {
+          conditions?: Json | null
           config?: Json | null
           created_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
+          last_run_at?: string | null
           name?: string
+          next_run_at?: string | null
+          schedule_cron?: string | null
+          schedule_enabled?: boolean | null
           trigger_type?: string
           updated_at?: string | null
           user_id?: string
