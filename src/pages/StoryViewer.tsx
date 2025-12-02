@@ -55,6 +55,7 @@ export default function StoryViewer() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const heartCounterRef = useRef(0);
   const lastTapRef = useRef(0);
+  const singleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -66,6 +67,18 @@ export default function StoryViewer() {
   const mediaUrl = currentStory?.media_urls?.[0] || "";
   const mediaType = currentStory?.media_types?.[0] || "";
   const isVideo = mediaType.startsWith("video");
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+      }
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+    };
+  }, []);
 
   // Fetch current user
   useEffect(() => {
@@ -278,8 +291,8 @@ export default function StoryViewer() {
     const deltaY = touch.clientY - touchStartRef.current.y;
     const deltaTime = Date.now() - touchStartRef.current.time;
 
-    // Detect swipe (fast movement)
-    if (deltaTime < 300 && (Math.abs(deltaX) > 50 || Math.abs(deltaY) > 50)) {
+    // Detect swipe (fast movement) - more sensitive thresholds
+    if (deltaTime < 300 && (Math.abs(deltaX) > 30 || Math.abs(deltaY) > 30)) {
       if (Math.abs(deltaX) > Math.abs(deltaY)) {
         // Horizontal swipe
         if (deltaX > 0) {
@@ -291,7 +304,7 @@ export default function StoryViewer() {
         // Vertical swipe
         if (deltaY < 0) {
           setShowComments(true);
-        } else {
+        } else if (deltaY > 50) {
           navigate("/home");
         }
       }
@@ -302,14 +315,19 @@ export default function StoryViewer() {
     if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
       const now = Date.now();
       
-      // Double tap = like
+      // Double tap = like (clear any pending single tap timer)
       if (now - lastTapRef.current < 300) {
+        // Clear single tap timer to prevent navigation
+        if (singleTapTimerRef.current) {
+          clearTimeout(singleTapTimerRef.current);
+          singleTapTimerRef.current = null;
+        }
         handleLike(touch.clientX, touch.clientY);
         lastTapRef.current = 0;
       } else {
-        // Single tap = navigate
+        // Single tap = navigate (with delay to detect double tap)
         lastTapRef.current = now;
-        setTimeout(() => {
+        singleTapTimerRef.current = setTimeout(() => {
           if (Date.now() - lastTapRef.current >= 300) {
             const rect = containerRef.current?.getBoundingClientRect();
             if (rect) {
@@ -349,14 +367,19 @@ export default function StoryViewer() {
     
     if (!rect) return;
 
-    // Double click = like
+    // Double click = like (clear any pending single click timer)
     if (now - lastTapRef.current < 300) {
+      // Clear single click timer to prevent navigation
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = null;
+      }
       handleLike(e.clientX, e.clientY);
       lastTapRef.current = 0;
     } else {
-      // Single click = navigate
+      // Single click = navigate (with delay to detect double click)
       lastTapRef.current = now;
-      setTimeout(() => {
+      singleTapTimerRef.current = setTimeout(() => {
         if (Date.now() - lastTapRef.current >= 300) {
           const isLeftSide = e.clientX - rect.left < rect.width / 2;
           if (isLeftSide) {
