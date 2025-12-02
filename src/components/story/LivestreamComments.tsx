@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, X } from "lucide-react";
+import { Send, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -33,6 +33,7 @@ export const LivestreamComments = ({
   const [comments, setComments] = useState<StoryComment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const submittedIdsRef = useRef<Set<string>>(new Set());
 
@@ -160,37 +161,68 @@ export const LivestreamComments = ({
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col pointer-events-none">
+      {/* Toggle button */}
+      <div className="flex justify-center pb-1 pointer-events-auto">
+        <Button
+          onClick={() => setIsExpanded(!isExpanded)}
+          size="sm"
+          variant="ghost"
+          className="rounded-full h-8 px-3 bg-black/50 backdrop-blur-sm hover:bg-black/70 border border-white/20"
+        >
+          {isExpanded ? (
+            <ChevronDown className="w-4 h-4 text-white" />
+          ) : (
+            <ChevronUp className="w-4 h-4 text-white" />
+          )}
+          <span className="text-white text-xs ml-1">
+            {isExpanded ? "Hide" : "Show"} Comments
+          </span>
+        </Button>
+      </div>
+
       {/* Scrollable comments area - pauses story when scrolling */}
-      <div 
-        className="max-h-40 overflow-y-auto px-4 pb-1 pointer-events-auto scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent"
-        onTouchStart={() => onPauseChange?.(true)}
-        onTouchEnd={() => onPauseChange?.(false)}
-        onMouseEnter={() => onPauseChange?.(true)}
-        onMouseLeave={() => onPauseChange?.(false)}
-      >
-        <div className="space-y-1">
-          {comments.map((comment) => (
-            <div
-              key={comment.id}
-              className="flex items-start gap-1.5"
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div 
+              className="max-h-40 overflow-y-auto px-4 pb-1 pointer-events-auto scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent"
+              onTouchStart={() => onPauseChange?.(true)}
+              onTouchEnd={() => onPauseChange?.(false)}
+              onMouseEnter={() => onPauseChange?.(true)}
+              onMouseLeave={() => onPauseChange?.(false)}
             >
-              <OptimizedAvatar
-                src={comment.profiles?.avatar_url || ""}
-                alt={comment.profiles?.full_name || "User"}
-                className="w-5 h-5 flex-shrink-0 ring-1 ring-white/20"
-              />
-              <div className="bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 max-w-[75%]">
-                <span className="text-white font-semibold text-[10px]">
-                  {comment.profiles?.full_name || "Anonymous"}
-                </span>
-                <span className="text-white/90 text-[10px] ml-1.5">
-                  {comment.content}
-                </span>
+              <div className="space-y-1">
+                {comments.map((comment) => (
+                  <div
+                    key={comment.id}
+                    className="flex items-start gap-1.5"
+                  >
+                    <OptimizedAvatar
+                      src={comment.profiles?.avatar_url || ""}
+                      alt={comment.profiles?.full_name || "User"}
+                      className="w-5 h-5 flex-shrink-0 ring-1 ring-white/20"
+                    />
+                    <div className="bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 max-w-[75%]">
+                      <span className="text-white font-semibold text-[10px]">
+                        {comment.profiles?.full_name || "Anonymous"}
+                      </span>
+                      <span className="text-white/90 text-[10px] ml-1.5">
+                        {comment.content}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Input area */}
       <div className="bg-gradient-to-t from-black/70 via-black/50 to-transparent backdrop-blur-sm px-4 py-2 pointer-events-auto">
