@@ -97,7 +97,10 @@ const MessageThread = () => {
   }, [messages]);
 
   const handleSend = useCallback(async () => {
-    if (!newMessage.trim() || !currentUser || !conversationId) return;
+    if (!newMessage.trim() || !currentUser || !conversationId) {
+      console.log('Send blocked:', { hasMessage: !!newMessage.trim(), hasUser: !!currentUser, hasConvId: !!conversationId });
+      return;
+    }
 
     const trimmedMessage = newMessage.trim();
     setNewMessage("");
@@ -117,7 +120,7 @@ const MessageThread = () => {
       }
 
       if (editingMessage) {
-        await supabase
+        const { error } = await supabase
           .from("messages")
           .update({
             content: trimmedMessage,
@@ -125,21 +128,22 @@ const MessageThread = () => {
             edited_at: new Date().toISOString(),
           })
           .eq("id", editingMessage.id);
+        
+        if (error) throw error;
         setEditingMessage(null);
       } else {
-        await supabase.from("messages").insert(messageData);
+        const { error } = await supabase.from("messages").insert(messageData);
+        if (error) throw error;
       }
 
       updateTypingStatus(false);
       
       // Update conversation timestamp in background
-      requestAnimationFrame(() => {
-        supabase
-          .from("conversations")
-          .update({ last_message_at: new Date().toISOString() })
-          .eq("id", conversationId);
-      });
-    } catch (error) {
+      supabase
+        .from("conversations")
+        .update({ last_message_at: new Date().toISOString() })
+        .eq("id", conversationId);
+    } catch (error: any) {
       console.error("Failed to send message:", error);
       setNewMessage(trimmedMessage);
     }
