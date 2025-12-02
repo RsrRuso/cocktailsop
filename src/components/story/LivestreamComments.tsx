@@ -412,10 +412,11 @@ export const LivestreamComments = ({
                       key={comment.id}
                       className={`flex items-start gap-1.5 ${comment.reply_to ? "ml-6" : ""}`}
                       drag="x"
-                      dragConstraints={{ left: 0, right: 0 }}
-                      dragElastic={0.2}
+                      dragConstraints={{ left: -100, right: 100 }}
+                      dragElastic={0.7}
+                      dragDirectionLock
                       onDragEnd={(e, info) => {
-                        const swipeThreshold = 50;
+                        const swipeThreshold = 30;
                         if (info.offset.x < -swipeThreshold) {
                           // Swipe left → Reply
                           setReplyingTo(comment);
