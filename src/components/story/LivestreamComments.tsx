@@ -35,11 +35,13 @@ interface FlyingHeart {
 interface LivestreamCommentsProps {
   contentId: string;
   onPauseChange?: (paused: boolean) => void;
+  onForwardComment?: (comment: StoryComment) => void;
 }
 
 export const LivestreamComments = ({
   contentId,
   onPauseChange,
+  onForwardComment,
 }: LivestreamCommentsProps) => {
   const { user } = useAuth();
   const [comments, setComments] = useState<StoryComment[]>([]);
@@ -406,9 +408,24 @@ export const LivestreamComments = ({
                   const userReaction = comment.reactions?.[user?.id || ""];
                   
                   return (
-                    <div
+                    <motion.div
                       key={comment.id}
                       className={`flex items-start gap-1.5 ${comment.reply_to ? "ml-6" : ""}`}
+                      drag="x"
+                      dragConstraints={{ left: 0, right: 0 }}
+                      dragElastic={0.2}
+                      onDragEnd={(e, info) => {
+                        const swipeThreshold = 50;
+                        if (info.offset.x < -swipeThreshold) {
+                          // Swipe left → Reply
+                          setReplyingTo(comment);
+                          triggerVibration();
+                        } else if (info.offset.x > swipeThreshold) {
+                          // Swipe right → Forward
+                          onForwardComment?.(comment);
+                          triggerVibration();
+                        }
+                      }}
                     >
                       <OptimizedAvatar
                         src={comment.profiles?.avatar_url || ""}
@@ -446,7 +463,7 @@ export const LivestreamComments = ({
                           Reply
                         </button>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
