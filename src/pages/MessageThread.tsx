@@ -251,7 +251,7 @@ const MessageThread = () => {
 
       {/* Messages with enhanced styling */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-gradient-to-b from-transparent via-background/30 to-transparent relative">
-        {messages.slice().reverse().map((message) => {
+        {messages.map((message) => {
           const isOwn = message.sender_id === currentUser?.id;
           const replyMessage = message.reply_to_id ? messages.find((m) => m.id === message.reply_to_id) : null;
 
