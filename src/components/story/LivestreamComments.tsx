@@ -16,6 +16,8 @@ interface StoryComment {
   content: string;
   created_at: string;
   user_id: string;
+  reply_to?: string | null;
+  reactions?: { [userId: string]: string } | null;
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -45,11 +47,14 @@ export const LivestreamComments = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
+  const [replyingTo, setReplyingTo] = useState<StoryComment | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const submittedIdsRef = useRef<Set<string>>(new Set());
   const lastCommentTimeRef = useRef<number>(0);
   const commentCountRef = useRef<number>(0);
   const heartChannelRef = useRef<any>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout>();
 
   const heartColors = [
     "#FF69B4", // Hot Pink
@@ -205,6 +210,47 @@ export const LivestreamComments = ({
     };
   };
 
+  const handleReaction = async (commentId: string, emoji: string) => {
+    if (!user) return;
+    
+    setComments(prev => prev.map(comment => {
+      if (comment.id === commentId) {
+        const reactions = { ...(comment.reactions || {}) };
+        if (reactions[user.id] === emoji) {
+          delete reactions[user.id];
+        } else {
+          reactions[user.id] = emoji;
+        }
+        return { ...comment, reactions };
+      }
+      return comment;
+    }));
+    
+    setShowEmojiPicker(null);
+    triggerVibration();
+  };
+
+  const handleDoubleTap = (commentId: string) => {
+    handleReaction(commentId, "❤️");
+  };
+
+  const handleLongPress = (commentId: string) => {
+    setShowEmojiPicker(commentId);
+    triggerVibration();
+  };
+
+  const handleTouchStart = (commentId: string) => {
+    longPressTimerRef.current = setTimeout(() => {
+      handleLongPress(commentId);
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || !user || isSubmitting) return;
@@ -245,6 +291,7 @@ export const LivestreamComments = ({
           story_id: contentId,
           user_id: user.id,
           content: commentContent,
+          reply_to: replyingTo?.id || null,
         })
         .select(`
           id,
@@ -270,6 +317,7 @@ export const LivestreamComments = ({
         
         // Optimistically add to UI
         setComments((prev) => [...prev, commentWithProfile]);
+        setReplyingTo(null);
       }
 
     } catch (error) {
@@ -280,6 +328,8 @@ export const LivestreamComments = ({
       setIsSubmitting(false);
     }
   };
+
+  const reactionEmojis = ["❤️", "😂", "😮", "😢", "😍", "🙏", "👍", "🔥"];
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col pointer-events-none">
@@ -348,25 +398,80 @@ export const LivestreamComments = ({
               onMouseLeave={() => onPauseChange?.(false)}
             >
               <div className="space-y-1">
-                {comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    className="flex items-start gap-1.5"
-                  >
-                    <OptimizedAvatar
-                      src={comment.profiles?.avatar_url || ""}
-                      alt={comment.profiles?.full_name || "User"}
-                      className="w-5 h-5 flex-shrink-0 ring-1 ring-white/20"
-                    />
-                    <div className="bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 max-w-[75%]">
-                      <span className="text-white font-semibold text-[10px]">
-                        {comment.profiles?.full_name || "Anonymous"}
-                      </span>
-                      <span className="text-white/90 text-[10px] ml-1.5">
-                        {comment.content}
-                      </span>
+                {comments.map((comment) => {
+                  const reactionCount = comment.reactions ? Object.keys(comment.reactions).length : 0;
+                  const userReaction = comment.reactions?.[user?.id || ""];
+                  
+                  return (
+                    <div
+                      key={comment.id}
+                      className={`flex items-start gap-1.5 ${comment.reply_to ? "ml-6" : ""}`}
+                    >
+                      <OptimizedAvatar
+                        src={comment.profiles?.avatar_url || ""}
+                        alt={comment.profiles?.full_name || "User"}
+                        className="w-5 h-5 flex-shrink-0 ring-1 ring-white/20"
+                      />
+                      <div className="flex-1 max-w-[75%]">
+                        <div
+                          className="bg-black/50 backdrop-blur-sm rounded-2xl px-2.5 py-1 relative"
+                          onDoubleClick={() => handleDoubleTap(comment.id)}
+                          onTouchStart={() => handleTouchStart(comment.id)}
+                          onTouchEnd={handleTouchEnd}
+                        >
+                          <span className="text-white font-semibold text-[10px]">
+                            {comment.profiles?.full_name || "Anonymous"}
+                          </span>
+                          <span className="text-white/90 text-[10px] ml-1.5">
+                            {comment.content}
+                          </span>
+                          
+                          {reactionCount > 0 && (
+                            <div className="absolute -bottom-1 -right-1 bg-background/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 flex items-center gap-0.5 border border-border/20">
+                              <span className="text-[8px]">{Object.values(comment.reactions || {})[0]}</span>
+                              {reactionCount > 1 && (
+                                <span className="text-[8px] text-muted-foreground">{reactionCount}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <button
+                          onClick={() => setReplyingTo(comment)}
+                          className="text-[9px] text-white/60 mt-0.5 ml-2"
+                        >
+                          Reply
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Emoji Picker */}
+      <AnimatePresence>
+        {showEmojiPicker && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-auto"
+            onClick={() => setShowEmojiPicker(null)}
+          >
+            <div className="bg-black/90 backdrop-blur-xl rounded-3xl p-4 max-w-xs" onClick={(e) => e.stopPropagation()}>
+              <div className="grid grid-cols-4 gap-3">
+                {reactionEmojis.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleReaction(showEmojiPicker, emoji)}
+                    className="text-3xl hover:scale-125 transition-transform active:scale-95"
+                  >
+                    {emoji}
+                  </button>
                 ))}
               </div>
             </div>
@@ -376,11 +481,24 @@ export const LivestreamComments = ({
 
       {/* Input area */}
       <div className="bg-gradient-to-t from-black/70 via-black/50 to-transparent backdrop-blur-sm px-4 py-2 pointer-events-auto">
+        {replyingTo && (
+          <div className="flex items-center justify-between mb-1 px-2">
+            <span className="text-[10px] text-white/60">
+              Replying to {replyingTo.profiles?.full_name || "Anonymous"}
+            </span>
+            <button
+              onClick={() => setReplyingTo(null)}
+              className="text-[10px] text-white/80"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <Input
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Add a comment..."
+            placeholder={replyingTo ? "Write a reply..." : "Add a comment..."}
             className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60 text-xs rounded-full h-8"
             disabled={isSubmitting}
           />
