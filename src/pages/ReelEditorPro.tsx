@@ -13,11 +13,12 @@ import { StickerTool } from '@/components/reel-editor/StickerTool';
 import { DrawingTool } from '@/components/reel-editor/DrawingTool';
 import { AudioTool } from '@/components/reel-editor/AudioTool';
 import { LayoutTool } from '@/components/reel-editor/LayoutTool';
+import { CapCutTool } from '@/components/reel-editor/CapCutTool';
 import { useVideoEditor } from '@/hooks/useVideoEditor';
 import { ArrowLeft, Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
-export type EditorTool = 'trim' | 'speed' | 'filter' | 'adjust' | 'text' | 'sticker' | 'draw' | 'audio' | 'layout' | 'none';
+export type EditorTool = 'trim' | 'speed' | 'filter' | 'adjust' | 'text' | 'sticker' | 'draw' | 'audio' | 'layout' | 'capcut' | 'none';
 
 export default function ReelEditorPro() {
   const navigate = useNavigate();
@@ -246,6 +247,14 @@ export default function ReelEditorPro() {
               <LayoutTool
                 layoutMode={layoutMode}
                 onUpdate={updateLayoutMode}
+              />
+            )}
+            {activeTool === 'capcut' && (
+              <CapCutTool
+                videoUrl={videoUrl}
+                onImportVideo={(url) => {
+                  navigate(`/reel-editor-pro?video=${encodeURIComponent(url)}`);
+                }}
               />
             )}
             {activeTool === 'none' && (
