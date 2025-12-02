@@ -243,7 +243,8 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
         .from('messages')
         .select('*')
         .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true }),
+        .order('created_at', { ascending: false })
+        .limit(100),
     ]);
 
     if (conversationResult.data && currentUser) {
@@ -266,7 +267,7 @@ export const useMessageThread = (conversationId: string | undefined, currentUser
 
     if (messagesResult.data && currentUser) {
       setMessages(
-        messagesResult.data.map((msg: any) => ({
+        messagesResult.data.reverse().map((msg: any) => ({
           ...msg,
           reactions: (msg.reactions as Reaction[]) || [],
         }))

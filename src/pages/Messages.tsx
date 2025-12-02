@@ -113,8 +113,8 @@ const Messages = () => {
       .from("conversations")
       .select("*")
       .contains("participant_ids", [user.id])
-      .order("last_message_at", { ascending: false })
-      .limit(20);
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(50);
 
     if (data && data.length > 0) {
       const otherUserIds = data
