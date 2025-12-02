@@ -14,11 +14,12 @@ import { DrawingTool } from '@/components/reel-editor/DrawingTool';
 import { AudioTool } from '@/components/reel-editor/AudioTool';
 import { LayoutTool } from '@/components/reel-editor/LayoutTool';
 import { ProEditorTool } from '@/components/reel-editor/ProEditorTool';
+import { CapCutTool } from '@/components/reel-editor/CapCutTool';
 import { useVideoEditor } from '@/hooks/useVideoEditor';
 import { ArrowLeft, Download, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
-export type EditorTool = 'trim' | 'speed' | 'filter' | 'adjust' | 'text' | 'sticker' | 'draw' | 'audio' | 'layout' | 'pro' | 'none';
+export type EditorTool = 'trim' | 'speed' | 'filter' | 'adjust' | 'text' | 'sticker' | 'draw' | 'audio' | 'layout' | 'capcut' | 'pro' | 'none';
 
 export default function ReelEditorPro() {
   const navigate = useNavigate();
@@ -123,10 +124,17 @@ export default function ReelEditorPro() {
                 '✏️ Drawing',
                 '🎵 Music',
                 '📱 Layouts',
+                '🪄 CapCut',
                 '✨ Pro Editor',
               ].map((feature) => (
-                <div key={feature} className={`p-4 rounded-lg border ${feature.includes('Pro Editor') ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-purple-500/50' : 'bg-card'}`}>
-                  <span className="text-sm">{feature}</span>
+                <div key={feature} className={`p-4 rounded-lg border ${
+                  feature.includes('Pro Editor') 
+                    ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-purple-500/50' 
+                    : feature.includes('CapCut')
+                    ? 'bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border-cyan-500/50'
+                    : 'bg-card'
+                }`}>
+                  <span className={`text-sm ${feature.includes('CapCut') ? 'text-cyan-400 font-medium' : ''}`}>{feature}</span>
                 </div>
               ))}
             </div>
@@ -248,6 +256,14 @@ export default function ReelEditorPro() {
               <LayoutTool
                 layoutMode={layoutMode}
                 onUpdate={updateLayoutMode}
+              />
+            )}
+            {activeTool === 'capcut' && (
+              <CapCutTool
+                videoUrl={videoUrl}
+                onImportVideo={(url) => {
+                  navigate(`/reel-editor-pro?video=${encodeURIComponent(url)}`);
+                }}
               />
             )}
             {activeTool === 'pro' && (
