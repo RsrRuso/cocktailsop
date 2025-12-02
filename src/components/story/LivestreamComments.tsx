@@ -87,6 +87,8 @@ export const LivestreamComments = ({
           content,
           created_at,
           user_id,
+          reply_to,
+          reactions,
           profiles:user_id (
             full_name,
             avatar_url
@@ -261,6 +263,8 @@ export const LivestreamComments = ({
     
     if (timeSinceLastComment < 2000) {
       commentCountRef.current += 1;
+      // Trigger vibration on every rapid comment
+      triggerVibration();
     } else {
       commentCountRef.current = 1;
     }
@@ -274,7 +278,6 @@ export const LivestreamComments = ({
         setTimeout(() => {
           const heart = createHeart();
           broadcastHeart(heart);
-          triggerVibration();
         }, i * 100);
       }
       commentCountRef.current = 0;
