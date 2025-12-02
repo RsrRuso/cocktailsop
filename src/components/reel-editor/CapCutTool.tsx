@@ -66,22 +66,20 @@ export function CapCutTool({ videoUrl, onImportVideo }: CapCutToolProps) {
 
   const handleOpenCapCut = useCallback(() => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     
     if (isMobile) {
-      // CapCut deep link
-      window.location.href = 'capcut://';
-      
-      // Fallback to app store after delay
-      setTimeout(() => {
-        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (isIOS) {
-          window.open('https://apps.apple.com/app/capcut-video-editor/id1500855883', '_blank');
-        } else {
-          window.open('https://play.google.com/store/apps/details?id=com.lemon.lvoverseas', '_blank');
-        }
-      }, 2000);
+      // Go directly to app store - more reliable than deep links
+      if (isIOS) {
+        window.open('https://apps.apple.com/app/capcut-video-editor/id1500855883', '_blank');
+        toast.info('Opening App Store. Download CapCut, then import your video from Photos.');
+      } else {
+        window.open('https://play.google.com/store/apps/details?id=com.lemon.lvoverseas', '_blank');
+        toast.info('Opening Play Store. Download CapCut, then import your video from Gallery.');
+      }
     } else {
       window.open('https://www.capcut.com/editor', '_blank');
+      toast.info('CapCut web opened. Import your downloaded video there.');
     }
   }, []);
 
