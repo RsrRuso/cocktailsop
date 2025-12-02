@@ -38,12 +38,33 @@ export function CapCutTool({ videoUrl, onImportVideo }: CapCutToolProps) {
       
       // Ensure proper video MIME type
       const videoBlob = new Blob([blob], { type: 'video/mp4' });
+      const fileName = `sv-video-${Date.now()}.mp4`;
+      const videoFile = new File([videoBlob], fileName, { type: 'video/mp4' });
       
-      // Create download link
+      // Try Web Share API first (allows direct share to CapCut on mobile)
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [videoFile] })) {
+        try {
+          await navigator.share({
+            files: [videoFile],
+            title: 'Edit in CapCut',
+            text: 'Open this video in CapCut to edit'
+          });
+          setExportedForCapCut(true);
+          toast.success('Video shared! Select CapCut from the share menu');
+          return;
+        } catch (shareError) {
+          // User cancelled or share failed, fall back to download
+          if ((shareError as Error).name !== 'AbortError') {
+            console.log('Share failed, falling back to download');
+          }
+        }
+      }
+      
+      // Fallback: Download the video
       const downloadUrl = URL.createObjectURL(videoBlob);
       const a = document.createElement('a');
       a.href = downloadUrl;
-      a.download = `sv-video-${Date.now()}.mp4`;
+      a.download = fileName;
       a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
@@ -55,7 +76,7 @@ export function CapCutTool({ videoUrl, onImportVideo }: CapCutToolProps) {
       }, 100);
       
       setExportedForCapCut(true);
-      toast.success('Video downloaded! Open it in CapCut to edit');
+      toast.success('Video downloaded! Open CapCut and import from Photos/Gallery');
     } catch (error) {
       console.error('Export error:', error);
       toast.error('Failed to export video. Try again.');
