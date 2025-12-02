@@ -1,13 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { useFFmpeg } from '@/hooks/useFFmpeg';
 import { 
   Scissors, Gauge, Palette, Volume2, VolumeX, RotateCcw,
-  Crop, Maximize, Download, Loader2, Sparkles, Zap
+  Download, Loader2, Sparkles, Play, Pause
 } from 'lucide-react';
 
 interface ProEditorToolProps {
@@ -16,14 +14,14 @@ interface ProEditorToolProps {
 }
 
 const FILTERS = [
-  { id: 'none', label: 'Original', icon: '🎬' },
-  { id: 'grayscale', label: 'B&W', icon: '⬛' },
-  { id: 'sepia', label: 'Sepia', icon: '🟤' },
-  { id: 'vintage', label: 'Vintage', icon: '📼' },
-  { id: 'cinematic', label: 'Cinema', icon: '🎥' },
-  { id: 'contrast', label: 'Contrast', icon: '◐' },
-  { id: 'sharpen', label: 'Sharp', icon: '💎' },
-  { id: 'vignette', label: 'Vignette', icon: '🔘' },
+  { id: 'none', label: 'Original', filter: 'none' },
+  { id: 'grayscale', label: 'B&W', filter: 'grayscale(100%)' },
+  { id: 'sepia', label: 'Sepia', filter: 'sepia(100%)' },
+  { id: 'vintage', label: 'Vintage', filter: 'sepia(50%) contrast(90%) brightness(90%)' },
+  { id: 'contrast', label: 'Contrast', filter: 'contrast(130%)' },
+  { id: 'bright', label: 'Bright', filter: 'brightness(120%)' },
+  { id: 'saturate', label: 'Vivid', filter: 'saturate(150%)' },
+  { id: 'blur', label: 'Soft', filter: 'blur(1px)' },
 ];
 
 const SPEED_PRESETS = [
@@ -36,162 +34,173 @@ const SPEED_PRESETS = [
 ];
 
 export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps) {
-  const { loaded, loading, progress, load, trimVideo, changeSpeed, applyFilter, removeAudio, reverseVideo } = useFFmpeg();
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<'speed' | 'filter' | 'audio' | 'effects'>('speed');
   const [selectedSpeed, setSelectedSpeed] = useState(1);
   const [selectedFilter, setSelectedFilter] = useState('none');
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(100);
+  const [previewFilter, setPreviewFilter] = useState('none');
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const handleLoadFFmpeg = useCallback(async () => {
-    try {
-      await load();
-      toast.success('Pro Editor ready!');
-    } catch (error) {
-      toast.error('Failed to load editor');
-    }
-  }, [load]);
-
-  const handleApplySpeed = useCallback(async () => {
-    if (!videoUrl || selectedSpeed === 1) return;
-    
-    setIsProcessing(true);
-    try {
-      const result = await changeSpeed(videoUrl, selectedSpeed);
-      onVideoProcessed(result);
-      toast.success(`Speed changed to ${selectedSpeed}x`);
-    } catch (error) {
-      console.error('Speed change error:', error);
-      toast.error('Failed to change speed');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [videoUrl, selectedSpeed, changeSpeed, onVideoProcessed]);
-
-  const handleApplyFilter = useCallback(async () => {
-    if (!videoUrl || selectedFilter === 'none') return;
-    
-    setIsProcessing(true);
-    try {
-      const result = await applyFilter(videoUrl, selectedFilter);
-      onVideoProcessed(result);
-      toast.success(`Filter applied: ${selectedFilter}`);
-    } catch (error) {
-      console.error('Filter error:', error);
-      toast.error('Failed to apply filter');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [videoUrl, selectedFilter, applyFilter, onVideoProcessed]);
-
-  const handleRemoveAudio = useCallback(async () => {
-    if (!videoUrl) return;
-    
-    setIsProcessing(true);
-    try {
-      const result = await removeAudio(videoUrl);
-      onVideoProcessed(result);
-      toast.success('Audio removed');
-    } catch (error) {
-      console.error('Remove audio error:', error);
-      toast.error('Failed to remove audio');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [videoUrl, removeAudio, onVideoProcessed]);
-
-  const handleReverseVideo = useCallback(async () => {
-    if (!videoUrl) return;
-    
-    setIsProcessing(true);
-    try {
-      const result = await reverseVideo(videoUrl);
-      onVideoProcessed(result);
-      toast.success('Video reversed');
-    } catch (error) {
-      console.error('Reverse error:', error);
-      toast.error('Failed to reverse video');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [videoUrl, reverseVideo, onVideoProcessed]);
-
-  const handleTrimVideo = useCallback(async () => {
-    if (!videoUrl) return;
-    
-    // Get video duration from video element
+  // Apply speed to video preview
+  const handleApplySpeed = useCallback(() => {
     const video = document.querySelector('video');
-    if (!video) return;
-    
-    const duration = video.duration;
-    const startTime = (trimStart / 100) * duration;
-    const endTime = (trimEnd / 100) * duration;
-    
-    if (startTime >= endTime) {
-      toast.error('Invalid trim range');
-      return;
+    if (video) {
+      video.playbackRate = selectedSpeed;
+      toast.success(`Speed set to ${selectedSpeed}x`);
     }
+  }, [selectedSpeed]);
+
+  // Apply CSS filter to video preview
+  const handleApplyFilter = useCallback(() => {
+    const video = document.querySelector('video');
+    const filter = FILTERS.find(f => f.id === selectedFilter)?.filter || 'none';
+    if (video) {
+      video.style.filter = filter;
+      setPreviewFilter(filter);
+      toast.success(`Filter applied: ${FILTERS.find(f => f.id === selectedFilter)?.label}`);
+    }
+  }, [selectedFilter]);
+
+  // Mute video
+  const handleMuteVideo = useCallback(() => {
+    const video = document.querySelector('video');
+    if (video) {
+      video.muted = true;
+      toast.success('Video muted');
+    }
+  }, []);
+
+  // Unmute video
+  const handleUnmuteVideo = useCallback(() => {
+    const video = document.querySelector('video');
+    if (video) {
+      video.muted = false;
+      toast.success('Video unmuted');
+    }
+  }, []);
+
+  // Export with current settings using Canvas + MediaRecorder
+  const handleExportVideo = useCallback(async () => {
+    if (!videoUrl) return;
     
     setIsProcessing(true);
+    toast.info('Preparing export...', { duration: 2000 });
+
     try {
-      const result = await trimVideo(videoUrl, startTime, endTime);
-      onVideoProcessed(result);
-      toast.success('Video trimmed');
+      // Create offscreen video and canvas
+      const video = document.createElement('video');
+      video.src = videoUrl;
+      video.crossOrigin = 'anonymous';
+      video.muted = true;
+      
+      await new Promise((resolve, reject) => {
+        video.onloadedmetadata = resolve;
+        video.onerror = reject;
+        setTimeout(reject, 10000);
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 1080;
+      canvas.height = video.videoHeight || 1920;
+      const ctx = canvas.getContext('2d')!;
+
+      // Calculate trim times
+      const duration = video.duration;
+      const startTime = (trimStart / 100) * duration;
+      const endTime = (trimEnd / 100) * duration;
+      const recordDuration = (endTime - startTime) * 1000;
+
+      video.currentTime = startTime;
+      video.playbackRate = selectedSpeed;
+
+      // Setup MediaRecorder
+      const stream = canvas.captureStream(30);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: 5000000,
+      });
+
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      const recordingPromise = new Promise<string>((resolve) => {
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          resolve(URL.createObjectURL(blob));
+        };
+      });
+
+      // Start recording
+      await video.play();
+      mediaRecorder.start();
+
+      // Draw frames with filter
+      const filter = FILTERS.find(f => f.id === selectedFilter)?.filter || 'none';
+      
+      const drawFrame = () => {
+        if (video.currentTime >= endTime || video.ended) {
+          mediaRecorder.stop();
+          video.pause();
+          return;
+        }
+        
+        ctx.filter = filter;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        requestAnimationFrame(drawFrame);
+      };
+
+      drawFrame();
+
+      // Stop after duration
+      setTimeout(() => {
+        if (mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+          video.pause();
+        }
+      }, recordDuration / selectedSpeed + 500);
+
+      const exportedUrl = await recordingPromise;
+      onVideoProcessed(exportedUrl);
+      toast.success('Video exported!');
     } catch (error) {
-      console.error('Trim error:', error);
-      toast.error('Failed to trim video');
+      console.error('Export error:', error);
+      toast.error('Export failed. Try downloading instead.');
+      
+      // Fallback: download original
+      if (videoUrl) {
+        const a = document.createElement('a');
+        a.href = videoUrl;
+        a.download = `edited-video-${Date.now()}.mp4`;
+        a.click();
+      }
     } finally {
       setIsProcessing(false);
     }
-  }, [videoUrl, trimStart, trimEnd, trimVideo, onVideoProcessed]);
+  }, [videoUrl, selectedSpeed, selectedFilter, trimStart, trimEnd, onVideoProcessed]);
 
-  if (!loaded && !loading) {
-    return (
-      <div className="space-y-4">
-        <div className="text-center py-8">
-          <Sparkles className="w-12 h-12 mx-auto mb-4 text-primary" />
-          <h3 className="text-lg font-semibold mb-2">Pro Video Editor</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Professional editing powered by FFmpeg - no external apps needed
-          </p>
-          <Button onClick={handleLoadFFmpeg} className="gap-2">
-            <Zap className="w-4 h-4" />
-            Initialize Pro Editor
-          </Button>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
-            <Gauge className="w-4 h-4" />
-            Speed Control
-          </div>
-          <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
-            <Palette className="w-4 h-4" />
-            Video Filters
-          </div>
-          <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
-            <Scissors className="w-4 h-4" />
-            Precise Trimming
-          </div>
-          <div className="flex items-center gap-2 p-2 rounded bg-muted/50">
-            <RotateCcw className="w-4 h-4" />
-            Reverse Video
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="text-center py-8">
-        <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Loading Pro Editor...</p>
-        <p className="text-xs text-muted-foreground mt-2">This may take a moment</p>
-      </div>
-    );
-  }
+  // Quick download current video
+  const handleDownload = useCallback(async () => {
+    if (!videoUrl) return;
+    
+    try {
+      const response = await fetch(videoUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `video-${Date.now()}.mp4`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Download started');
+    } catch (error) {
+      toast.error('Download failed');
+    }
+  }, [videoUrl]);
 
   return (
     <div className="space-y-4">
@@ -200,17 +209,11 @@ export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps
           <Sparkles className="w-4 h-4 text-primary" />
           Pro Editor
         </h3>
-        {isProcessing && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            {progress.message || 'Processing...'}
-          </div>
-        )}
+        <Button size="sm" variant="outline" onClick={handleDownload} disabled={!videoUrl}>
+          <Download className="w-3 h-3 mr-1" />
+          Save
+        </Button>
       </div>
-
-      {isProcessing && (
-        <Progress value={progress.progress} className="h-2" />
-      )}
 
       {/* Tab Navigation */}
       <div className="flex gap-1 p-1 bg-muted rounded-lg">
@@ -218,7 +221,7 @@ export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps
           { id: 'speed', label: 'Speed', icon: Gauge },
           { id: 'filter', label: 'Filter', icon: Palette },
           { id: 'audio', label: 'Audio', icon: Volume2 },
-          { id: 'effects', label: 'Effects', icon: Sparkles },
+          { id: 'effects', label: 'Trim', icon: Scissors },
         ].map((tab) => (
           <Button
             key={tab.id}
@@ -257,10 +260,10 @@ export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps
           </div>
           <Button 
             onClick={handleApplySpeed} 
-            disabled={!videoUrl || isProcessing || selectedSpeed === 1}
+            disabled={!videoUrl || isProcessing}
             className="w-full gap-2"
           >
-            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gauge className="w-4 h-4" />}
+            <Play className="w-4 h-4" />
             Apply Speed
           </Button>
         </Card>
@@ -277,19 +280,18 @@ export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps
                 size="sm"
                 onClick={() => setSelectedFilter(filter.id)}
                 disabled={isProcessing}
-                className="flex flex-col gap-1 h-auto py-2"
+                className="text-xs py-3"
               >
-                <span className="text-lg">{filter.icon}</span>
-                <span className="text-xs">{filter.label}</span>
+                {filter.label}
               </Button>
             ))}
           </div>
           <Button 
             onClick={handleApplyFilter} 
-            disabled={!videoUrl || isProcessing || selectedFilter === 'none'}
+            disabled={!videoUrl || isProcessing}
             className="w-full gap-2"
           >
-            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
+            <Palette className="w-4 h-4" />
             Apply Filter
           </Button>
         </Card>
@@ -297,27 +299,36 @@ export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps
 
       {/* Audio Tab */}
       {activeTab === 'audio' && (
-        <Card className="p-4 space-y-4">
+        <Card className="p-4 space-y-3">
           <Button 
-            onClick={handleRemoveAudio} 
+            onClick={handleMuteVideo} 
             disabled={!videoUrl || isProcessing}
             variant="outline"
             className="w-full gap-2"
           >
-            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <VolumeX className="w-4 h-4" />}
-            Remove Audio
+            <VolumeX className="w-4 h-4" />
+            Mute Audio
+          </Button>
+          <Button 
+            onClick={handleUnmuteVideo} 
+            disabled={!videoUrl || isProcessing}
+            variant="outline"
+            className="w-full gap-2"
+          >
+            <Volume2 className="w-4 h-4" />
+            Unmute Audio
           </Button>
           <p className="text-xs text-muted-foreground text-center">
-            Use the Audio tool from the toolbar to add new music
+            Use Audio tool from toolbar to add music
           </p>
         </Card>
       )}
 
-      {/* Effects Tab */}
+      {/* Trim/Effects Tab */}
       {activeTab === 'effects' && (
         <Card className="p-4 space-y-4">
           <div>
-            <label className="text-sm font-medium mb-3 block">Trim Video</label>
+            <label className="text-sm font-medium mb-3 block">Trim Range</label>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>Start: {trimStart}%</span>
@@ -336,39 +347,34 @@ export function ProEditorTool({ videoUrl, onVideoProcessed }: ProEditorToolProps
                 disabled={isProcessing}
               />
             </div>
-            <Button 
-              onClick={handleTrimVideo} 
-              disabled={!videoUrl || isProcessing}
-              variant="outline"
-              className="w-full gap-2 mt-3"
-            >
-              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Scissors className="w-4 h-4" />}
-              Trim Video
-            </Button>
           </div>
           
-          <div className="border-t pt-4">
-            <Button 
-              onClick={handleReverseVideo} 
-              disabled={!videoUrl || isProcessing}
-              variant="outline"
-              className="w-full gap-2"
-            >
-              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
-              Reverse Video
-            </Button>
-          </div>
+          <Button 
+            onClick={handleExportVideo} 
+            disabled={!videoUrl || isProcessing}
+            className="w-full gap-2"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                Export with Effects
+              </>
+            )}
+          </Button>
         </Card>
       )}
 
-      {/* Pro Tips */}
+      {/* Quick Tips */}
       <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-        <p className="text-xs font-medium">💡 Pro Tips</p>
-        <ul className="text-xs text-muted-foreground space-y-0.5">
-          <li>• Process one effect at a time for best results</li>
-          <li>• Speed changes work best between 0.5x - 2x</li>
-          <li>• Filters are applied permanently - preview first!</li>
-        </ul>
+        <p className="text-xs font-medium">⚡ Instant Preview</p>
+        <p className="text-xs text-muted-foreground">
+          Speed and filters apply instantly to preview. Export to save with all effects.
+        </p>
       </div>
     </div>
   );
