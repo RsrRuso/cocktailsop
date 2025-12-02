@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,6 +33,7 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const touchStartY = useRef(0);
 
   useEffect(() => {
     if (open) {
@@ -123,10 +124,29 @@ const StoryCommentsDialog = ({ open, onOpenChange, storyId }: StoryCommentsDialo
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touchEndY = e.changedTouches[0].clientY;
+    const diffY = touchStartY.current - touchEndY;
+    const threshold = 100;
+
+    // Swipe down to close
+    if (diffY < -threshold) {
+      onOpenChange(false);
+    }
+  };
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none">
+    <div 
+      className="fixed inset-0 z-50 pointer-events-none"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Comments stream - bottom portion */}
       <div className="absolute bottom-0 left-0 right-0 pb-20 px-4 pointer-events-auto">
         {/* Close button */}

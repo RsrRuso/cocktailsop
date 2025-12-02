@@ -386,34 +386,40 @@ const StoryViewer = () => {
     const touchEndX = e.changedTouches[0].clientX;
     const diffY = touchStartY.current - touchEndY;
     const diffX = touchStartX.current - touchEndX;
-    const threshold = 100;
+    const swipeThreshold = 100;
+    const tapThreshold = 10; // Movement threshold to detect if it's a tap
+
+    // Check if it's a tap (minimal movement)
+    const isTap = Math.abs(diffY) < tapThreshold && Math.abs(diffX) < tapThreshold;
 
     // Swipe up - open comments
-    if (diffY > threshold && Math.abs(diffX) < threshold) {
+    if (diffY > swipeThreshold && Math.abs(diffX) < swipeThreshold) {
       setShowCommentsDialog(true);
       return;
     }
 
     // Swipe down - close story
-    if (diffY < -threshold && Math.abs(diffX) < threshold) {
+    if (diffY < -swipeThreshold && Math.abs(diffX) < swipeThreshold) {
       navigate(-1);
       return;
     }
 
     // Swipe left - next story/media
-    if (diffX > threshold && Math.abs(diffY) < threshold) {
+    if (diffX > swipeThreshold && Math.abs(diffY) < swipeThreshold) {
       goToNextMedia();
       return;
     }
 
     // Swipe right - previous story/media
-    if (diffX < -threshold && Math.abs(diffY) < threshold) {
+    if (diffX < -swipeThreshold && Math.abs(diffY) < swipeThreshold) {
       goToPreviousMedia();
       return;
     }
 
-    // No significant swipe: treat as tap for double-tap detection
-    handleDoubleTap();
+    // If it's a tap, check for double-tap
+    if (isTap) {
+      handleDoubleTap();
+    }
   };
 
   const goToNextMedia = () => {
@@ -583,7 +589,6 @@ const StoryViewer = () => {
       {/* Media content */}
       <div 
         className="w-full h-full flex items-center justify-center relative"
-        onDoubleClick={handleDoubleTap}
       >
         {currentMediaType.startsWith("video") ? (
           <video
@@ -611,7 +616,7 @@ const StoryViewer = () => {
         {/* Swipe hint text */}
         <div className="absolute bottom-32 left-0 right-0 text-center pointer-events-none">
           <p className="text-white/40 text-xs animate-pulse">
-            Swipe up to comment • Swipe down to close
+            Double tap to like • Swipe up to comment
           </p>
         </div>
       </div>
