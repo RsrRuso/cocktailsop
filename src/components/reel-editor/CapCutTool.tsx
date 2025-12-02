@@ -2,16 +2,18 @@ import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Upload, ExternalLink, Smartphone, Monitor, ArrowRight, Loader2, Wand2 } from 'lucide-react';
+import { Upload, ExternalLink, Smartphone, Monitor, ArrowRight, Loader2, Wand2, Film, Camera, FileImage } from 'lucide-react';
 
 interface CapCutToolProps {
   videoUrl: string | null;
-  onImportVideo: (url: string) => void;
+  onImportVideo: (url: string, destination: 'reel' | 'story' | 'post') => void;
 }
 
 export function CapCutTool({ videoUrl, onImportVideo }: CapCutToolProps) {
   const [isImporting, setIsImporting] = useState(false);
   const [hasOpenedCapCut, setHasOpenedCapCut] = useState(false);
+  const [importedVideoUrl, setImportedVideoUrl] = useState<string | null>(null);
+  const [showDestinationPicker, setShowDestinationPicker] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -55,9 +57,10 @@ export function CapCutTool({ videoUrl, onImportVideo }: CapCutToolProps) {
     
     try {
       const url = URL.createObjectURL(file);
-      onImportVideo(url);
+      setImportedVideoUrl(url);
+      setShowDestinationPicker(true);
       setHasOpenedCapCut(false);
-      toast.success('Video imported successfully!');
+      toast.success('Video imported! Choose where to share.');
     } catch (error) {
       console.error('Import error:', error);
       toast.error('Failed to import video');
@@ -67,11 +70,111 @@ export function CapCutTool({ videoUrl, onImportVideo }: CapCutToolProps) {
         importInputRef.current.value = '';
       }
     }
-  }, [onImportVideo]);
+  }, []);
 
   const handleImportClick = useCallback(() => {
     importInputRef.current?.click();
   }, []);
+
+  const handleSelectDestination = useCallback((destination: 'reel' | 'story' | 'post') => {
+    if (importedVideoUrl) {
+      onImportVideo(importedVideoUrl, destination);
+      setShowDestinationPicker(false);
+      setImportedVideoUrl(null);
+      
+      const labels = { reel: 'Reel', story: 'Story', post: 'Post' };
+      toast.success(`Creating ${labels[destination]}...`);
+    }
+  }, [importedVideoUrl, onImportVideo]);
+
+  const handleCancelDestination = useCallback(() => {
+    if (importedVideoUrl) {
+      URL.revokeObjectURL(importedVideoUrl);
+    }
+    setShowDestinationPicker(false);
+    setImportedVideoUrl(null);
+  }, [importedVideoUrl]);
+
+  // Destination Picker View
+  if (showDestinationPicker) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center gap-2">
+          <Wand2 className="w-5 h-5 text-cyan-500" />
+          <h3 className="font-semibold">Share To</h3>
+        </div>
+        
+        <p className="text-sm text-muted-foreground">
+          Choose where to publish your video
+        </p>
+
+        {/* Video Preview */}
+        {importedVideoUrl && (
+          <div className="rounded-lg overflow-hidden bg-black aspect-[9/16] max-h-48">
+            <video 
+              src={importedVideoUrl} 
+              className="w-full h-full object-contain"
+              muted
+              playsInline
+            />
+          </div>
+        )}
+
+        {/* Destination Options */}
+        <div className="grid gap-3">
+          <Button
+            onClick={() => handleSelectDestination('reel')}
+            variant="outline"
+            className="h-auto py-4 flex items-center gap-4 justify-start border-cyan-500/30 hover:border-cyan-500 hover:bg-cyan-500/10"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+              <Film className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left">
+              <div className="font-semibold">SV Reel</div>
+              <div className="text-xs text-muted-foreground">Short-form vertical video</div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => handleSelectDestination('story')}
+            variant="outline"
+            className="h-auto py-4 flex items-center gap-4 justify-start border-cyan-500/30 hover:border-cyan-500 hover:bg-cyan-500/10"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+              <Camera className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left">
+              <div className="font-semibold">SV Story</div>
+              <div className="text-xs text-muted-foreground">24-hour disappearing content</div>
+            </div>
+          </Button>
+
+          <Button
+            onClick={() => handleSelectDestination('post')}
+            variant="outline"
+            className="h-auto py-4 flex items-center gap-4 justify-start border-cyan-500/30 hover:border-cyan-500 hover:bg-cyan-500/10"
+          >
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+              <FileImage className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left">
+              <div className="font-semibold">SV Post</div>
+              <div className="text-xs text-muted-foreground">Feed post with video</div>
+            </div>
+          </Button>
+        </div>
+
+        <Button
+          onClick={handleCancelDestination}
+          variant="ghost"
+          className="w-full"
+        >
+          Cancel
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">

@@ -261,8 +261,13 @@ export default function ReelEditorPro() {
             {activeTool === 'capcut' && (
               <CapCutTool
                 videoUrl={videoUrl}
-                onImportVideo={(url) => {
-                  navigate(`/reel-editor-pro?video=${encodeURIComponent(url)}`);
+                onImportVideo={(url, destination) => {
+                  const routes = {
+                    reel: `/create-reel?video=${encodeURIComponent(url)}`,
+                    story: `/create-story?video=${encodeURIComponent(url)}`,
+                    post: `/create-post?video=${encodeURIComponent(url)}`
+                  };
+                  navigate(routes[destination]);
                 }}
               />
             )}
