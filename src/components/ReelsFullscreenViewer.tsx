@@ -432,7 +432,7 @@ export const ReelsFullscreenViewer = ({
 
       {/* Livestream Comments Overlay - Always visible in fullscreen */}
       {currentReel && (
-        <ReelLivestreamComments reelId={currentReel.id} />
+        <ReelLivestreamComments key={currentReel.id} reelId={currentReel.id} />
       )}
     </motion.div>
   );
