@@ -81,7 +81,7 @@ export const MessageInput = memo(({
   }, [onSend]);
 
   return (
-    <div className="p-4 border-t backdrop-blur-3xl border-primary/30 bg-gradient-to-b from-background/90 to-background/95 shadow-2xl relative">
+    <div className="p-4 border-t backdrop-blur-3xl border-primary/30 bg-gradient-to-b from-background/90 to-background/95 shadow-2xl relative z-[100]">
       {/* Glow effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 opacity-50 blur-xl" />
       
