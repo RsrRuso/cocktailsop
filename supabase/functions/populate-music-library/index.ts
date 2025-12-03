@@ -143,7 +143,7 @@ serve(async (req) => {
     console.log('Inserting tracks...');
     const { error } = await supabaseAdmin
       .from('platform_music_library')
-      .upsert(formattedTracks, { onConflict: 'track_id' });
+      .insert(formattedTracks);
 
     if (error) {
       console.error('Insert error:', error);
