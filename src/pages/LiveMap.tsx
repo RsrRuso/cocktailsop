@@ -228,26 +228,38 @@ const LiveMap = () => {
         ? [position.latitude, position.longitude]
         : [40, -74.5];
 
-      const map = L.map(mapContainerRef.current).setView(initialCenter, 14);
+      const map = L.map(mapContainerRef.current, {
+        scrollWheelZoom: true,
+        zoomControl: false,
+        doubleClickZoom: true,
+        touchZoom: true,
+        dragging: true,
+      }).setView(initialCenter, 14);
 
-      const streetLayer = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      // Dark mode map with bright lights - CARTO Dark Matter
+      const darkLayer = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
         {
           attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
           subdomains: 'abcd',
-          maxZoom: 19,
+          maxZoom: 20,
         }
       );
 
+      // Satellite layer for toggle
       const satelliteLayer = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         {
           attribution: '&copy; Esri',
-          maxZoom: 19,
+          maxZoom: 20,
         }
       );
 
-      (satelliteMode ? satelliteLayer : streetLayer).addTo(map);
+      (satelliteMode ? satelliteLayer : darkLayer).addTo(map);
+      
+      // Add zoom control to bottom right
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      
       mapRef.current = map;
     } catch (error) {
       console.error('Error initializing Leaflet map:', error);
