@@ -444,6 +444,11 @@ const BatchCalculator = () => {
       return;
     }
 
+    if (!selectedGroupId) {
+      toast.error("Please select a group before submitting batch");
+      return;
+    }
+
     if (!producedByUserId) {
       toast.error("Please select who produced this batch");
       return;
