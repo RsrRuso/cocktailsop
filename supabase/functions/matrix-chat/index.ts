@@ -66,129 +66,453 @@ serve(async (req) => {
       .in('status', ['proposed', 'in_progress'])
       .limit(5);
 
+    // Detect if user is asking about a specific person
+    const userMentionPatterns = /@(\w+)|who is (\w+)|tell me about (\w+)|profile of (\w+)|know (\w+)/i;
+    const mentionMatch = message?.match(userMentionPatterns);
+    let mentionedUserProfile = null;
+    
+    if (mentionMatch) {
+      const searchUsername = mentionMatch[1] || mentionMatch[2] || mentionMatch[3] || mentionMatch[4] || mentionMatch[5];
+      const { data: foundUser } = await supabaseClient
+        .from('profiles')
+        .select(`
+          username, full_name, user_type, professional_title, bio, location, badge_level,
+          avatar_url, cover_image_url, instagram_handle, twitter_handle, website
+        `)
+        .ilike('username', `%${searchUsername}%`)
+        .limit(1)
+        .single();
+      
+      if (foundUser) {
+        // Get their career details
+        const { data: experience } = await supabaseClient
+          .from('work_experience')
+          .select('company, position, start_date, end_date, is_current')
+          .eq('user_id', foundUser.username)
+          .order('start_date', { ascending: false })
+          .limit(3);
+        
+        const { data: certifications } = await supabaseClient
+          .from('certifications')
+          .select('title, issuing_organization, issue_date')
+          .eq('user_id', foundUser.username)
+          .limit(5);
+        
+        const { data: competitions } = await supabaseClient
+          .from('competitions')
+          .select('title, result, competition_date')
+          .eq('user_id', foundUser.username)
+          .limit(5);
+        
+        mentionedUserProfile = {
+          ...foundUser,
+          experience: experience || [],
+          certifications: certifications || [],
+          competitions: competitions || []
+        };
+      }
+    }
+
+    // Fetch platform stats for awareness
+    const { count: totalUsers } = await supabaseClient
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
+    
+    const { count: totalPosts } = await supabaseClient
+      .from('posts')
+      .select('*', { count: 'exact', head: true });
+
+    const platformIntroduction = `
+# SPECVERSE (SV) - Platform Introduction
+
+## Our Vision & Mission
+SpecVerse (SV) is the ULTIMATE professional network and operational platform for the global hospitality and beverage industry. We're building the LinkedIn + Instagram + Notion for hospitality professionals.
+
+### Why SpecVerse Exists
+The hospitality industry lacks a dedicated digital ecosystem. SV fills this gap by providing:
+- A professional network where bartenders, sommeliers, and hospitality pros can showcase careers
+- Operational tools that venues desperately need (inventory, scheduling, recipes)
+- A business hub connecting entrepreneurs with investors
+- Social features designed specifically for our industry
+
+### Our Core Values
+1. **Community First**: Every feature serves our professional community
+2. **Operational Excellence**: Real tools for real venue challenges
+3. **Career Growth**: Help professionals advance and get recognized
+4. **Innovation**: Push boundaries with AI and smart features
+5. **Global Reach**: Connect professionals across all regions and markets
+
+### Platform Stats
+- Active Users: ${totalUsers || 'Growing'}
+- Content Shared: ${totalPosts || 'Active'}
+- Venues Connected: Multiple regions globally
+
+### Target Audience
+- Bartenders & Mixologists (all levels)
+- Sommeliers & Wine Professionals
+- Bar Managers & Venue Operators
+- Restaurant Owners & Hospitality Entrepreneurs
+- Brand Ambassadors & Educators
+- Industry Suppliers & Distributors
+- Investors interested in hospitality ventures
+`;
+
+    const operationsToolsGuide = `
+# OPERATIONS TOOLS - Complete Usage Guide
+
+## 1. INVENTORY MANAGEMENT
+
+### All Inventory Page (/all-inventory)
+**Purpose**: View complete inventory across all stores in your workspace
+**How to Use**:
+1. Navigate to Tools → All Inventory
+2. Select your workspace from the dropdown
+3. Use filters to search by item name, category, or store
+4. View quantities, expiration dates, and batch numbers
+5. Click items to see detailed history and photos
+6. Export to PDF for reports
+
+### Low Stock Inventory (/low-stock-inventory)
+**Purpose**: Monitor items below minimum threshold
+**How to Use**:
+1. Navigate to Tools → Low Stock
+2. Items automatically appear when quantity drops below threshold
+3. Red indicators show critical stock levels
+4. Click "Reorder" to create purchase orders
+5. Set custom thresholds per item in settings
+
+### Inventory Manager (/inventory-manager)
+**Purpose**: Central hub for all inventory operations
+**How to Use**:
+1. **Active Tab**: View current inventory with FIFO priority
+2. **Receive Tab**: Log new inventory arrivals via QR scan or manual entry
+3. **FIFO Tab**: Track first-in-first-out with expiration dates
+4. **Transfer Tab**: Move items between stores
+
+### Scan Receive (/scan-receive)
+**Purpose**: Quickly log inventory arrivals by scanning QR codes
+**How to Use**:
+1. Navigate to Receive tab or scan icon
+2. Point camera at QR code on item/delivery
+3. System auto-fills item details
+4. Enter quantity and expiration date
+5. Add photos for documentation
+6. Submit to log the receipt
+
+### Scan Transfer (/scan-transfer)
+**Purpose**: Transfer items between stores
+**How to Use**:
+1. Select source store (where item is now)
+2. Select destination store (where it's going)
+3. Scan QR code or search for item
+4. Enter transfer quantity
+5. Confirm transfer - updates both stores instantly
+
+### Live Transactions
+**Purpose**: Real-time feed of all inventory movements
+**How to Use**:
+1. View in Inventory Manager main page
+2. See who did what, when, and where
+3. Filter by transaction type (receive, transfer, adjust)
+4. Export transaction history for audits
+
+## 2. STAFF SCHEDULING
+
+### Staff Scheduling Page (/staff-scheduling)
+**Purpose**: Create and manage weekly staff schedules
+**How to Use**:
+
+**Adding Staff Members**:
+1. Click "Add Staff" button
+2. Enter name, title/role, email
+3. Select area allocation (Indoor/Outdoor)
+4. Save - staff appears in available pool
+
+**Creating Daily Schedules**:
+1. Select the date from calendar
+2. View available staff in left panel
+3. Drag staff to stations or use "Auto-Assign"
+4. Stations: Indoor (1, 2, 3) and Outdoor (1, 2)
+5. Station 3 is garnishing station
+
+**Role Descriptions**:
+- **Head Bartender**: Supervise all operations, no station assignment
+- **Senior Bartender**: Work station, train juniors, ensure compliance
+- **Bartender**: Work assigned station, supervise bar backs
+- **Bar Back**: Handle pickups, polish glassware, stock supplies
+- **Support**: 10-hour shifts (3PM-1AM), general assistance
+
+**Station Rotation**:
+- System auto-rotates bartenders across days
+- Each bartender gets different station each shift
+- Prevents same person always on same station
+
+**PDF Export**:
+1. Click "Download PDF" button
+2. Exports daily breakdown with all assignments
+3. Includes low stock glassware with images
+4. Print for posting in venue
+
+## 3. COCKTAIL SOP SYSTEM
+
+### Cocktail SOP Page (/cocktail-sop)
+**Purpose**: Create and manage cocktail recipes with full specifications
+**How to Use**:
+
+**Creating a Recipe**:
+1. Click "Create New Recipe"
+2. Enter drink name and description
+3. Add ingredients with exact measurements (ml)
+4. Specify technique (Shaken, Stirred, Built, etc.)
+5. Select glass type and ice
+6. Add garnish instructions
+7. Upload main photo
+
+**Recipe Details**:
+- **Recipe Tab**: Ingredients, measurements, steps
+- **Costing Tab**: Add ingredient costs, calculate pour cost
+- **Nutrition Tab**: ABV%, calories, allergens
+- **Taste Profile**: Sweet, sour, bitter, umami ratings
+
+**Batch Scaling**:
+1. Open recipe details
+2. Click "Scale for Batch"
+3. Enter target servings or liters
+4. System calculates all ingredients
+5. Download batch card for production
+
+### Cocktail SOP Library (/cocktail-sop-library)
+**Purpose**: Access classic cocktail recipes library
+**How to Use**:
+1. Browse or search classic cocktails
+2. View PDF with traditional recipes
+3. Use as reference for your own recipes
+
+## 4. BATCH CALCULATOR
+
+### Batch Calculator Page (/batch-calculator)
+**Purpose**: Scale recipes and track batch production
+**How to Use**:
+
+**Recipes Tab**:
+1. Create batch recipes with ingredients
+2. Set base serving amount
+3. Ingredients auto-scale when you change servings
+
+**Scaling Options**:
+- Enter target servings (e.g., 50 drinks)
+- Or enter target liters (e.g., 5L batch)
+- System calculates ingredient quantities
+- Shows bottles needed based on master spirits
+
+**Production Recording**:
+1. Click "Record Production"
+2. Select recipe and enter quantity
+3. Add production date and notes
+4. Enter who produced it
+5. Submit - generates QR code for batch
+
+**QR Codes**:
+- Each batch gets unique QR code
+- Scan to view batch details
+- Print on waterproof stickers
+- Track batch through service
+
+**Analytics**:
+- View total production history
+- See daily/weekly/monthly averages
+- Forecast par levels for inventory
+- Track trend factors
+
+### Master Spirits (/master-spirits)
+**Purpose**: Manage ingredient database for batch calculator
+**How to Use**:
+1. Add spirits with name, brand, category
+2. Enter bottle size (ml)
+3. System uses this for bottles-needed calculations
+4. Paste bulk data to import multiple items
+
+## 5. WORKSPACE MANAGEMENT
+
+### Workspace Management (/workspace-management)
+**Purpose**: Create and manage workspaces for your organization
+**How to Use**:
+
+**Creating Workspace**:
+1. Click "Create Workspace"
+2. Enter name and description
+3. Select workspace type (Store, FIFO, Mixologist)
+4. You become Owner automatically
+
+**Inviting Members**:
+1. Go to Members tab
+2. Click "Invite Member"
+3. Search from followers/following or enter email
+4. Set role (Admin or Member)
+5. Send invitation
+
+**QR Access Codes**:
+1. Generate QR codes for workspace
+2. New members scan to request access
+3. Approve/deny requests in Approvals tab
+4. Members get permissions set by you
+
+**Permissions**:
+- **Owner**: Full control, cannot be removed
+- **Admin**: Manage members, settings, all operations
+- **Member**: View and transact based on permissions
+- Granular permissions: can_receive, can_transfer, can_manage
+
+## 6. CRM (Customer Relationship Management)
+
+### CRM Page (/crm)
+**Purpose**: Manage customers, leads, deals, and activities
+**How to Use**:
+
+**Contacts**:
+1. Add customer/client information
+2. Track company, position, contact details
+3. Tag contacts for easy filtering
+4. View interaction history
+
+**Leads**:
+1. Log potential customers
+2. Track lead source and status
+3. Set probability and budget
+4. Convert leads to contacts/deals
+
+**Deals**:
+1. Create sales opportunities
+2. Track deal value and stage
+3. Set expected close dates
+4. Move through pipeline stages
+
+**Activities**:
+1. Log calls, meetings, emails
+2. Set follow-up reminders
+3. Assign to team members
+4. Track completion status
+
+## 7. TASK MANAGER
+
+### Task Manager Page (/task-manager)
+**Purpose**: Create and track tasks and projects
+**How to Use**:
+1. Create tasks with title and description
+2. Set priority (Low, Medium, High, Critical)
+3. Assign to team members
+4. Set due dates and reminders
+5. Track time spent on tasks
+6. Move tasks through statuses (Todo, In Progress, Done)
+
+## 8. CALENDAR & EVENTS
+
+### Calendar Page (/calendar)
+**Purpose**: Schedule and manage events
+**How to Use**:
+1. View month/week/day calendar views
+2. Click date to create new event
+3. Add title, time, location, attendees
+4. Set reminders and notifications
+5. Sync with task deadlines
+
+## 9. TEMPERATURE LOGS
+
+### Temperature Log Page (/temperature-log)
+**Purpose**: Track equipment temperatures for compliance
+**How to Use**:
+1. Add equipment (fridges, freezers, ice wells)
+2. Log temperatures at scheduled times
+3. System flags out-of-range readings
+4. Export logs for health inspections
+
+## 10. WASTAGE TRACKER
+
+### Wastage Tracker Page (/wastage-tracker)
+**Purpose**: Track product waste and breakage
+**How to Use**:
+1. Log wastage incidents
+2. Select item and quantity
+3. Record reason (spilled, broken, expired)
+4. Track wastage costs over time
+5. Identify patterns to reduce waste
+
+## 11. STOCK AUDIT
+
+### Stock Audit Page (/stock-audit)
+**Purpose**: Conduct inventory counts and audits
+**How to Use**:
+1. Start new audit for a store
+2. Count items physically
+3. Enter actual quantities
+4. System shows variance from expected
+5. Investigate and document discrepancies
+6. Submit audit for records
+`;
+
+    const regionalKnowledge = `
+# Regional Industry Knowledge
+
+## Middle East (UAE Focus)
+### Dubai Bar Scene
+- **DIFC**: Financial district with rooftop bars, speakeasies (Zuma, CE LA VI, Distillery)
+- **Palm Jumeirah**: Resort bars, beach clubs (Nikki Beach, Cove Beach)
+- **Downtown**: Hotel bars, Burj area venues
+- **JBR/Marina**: Beach clubs, waterfront venues
+- **Business Bay**: Corporate entertaining venues
+
+### Key Awards in UAE
+- **Time Out Dubai Bar Awards**: Local recognition
+- **What's On Dubai Nightlife Awards**: Consumer choice
+- **Caterer Middle East Awards**: Industry recognition
+- **World's 50 Best Bars**: Global prestige (Zuma, etc.)
+
+### Regulations UAE
+- Alcohol license requirements
+- Dry days and Ramadan regulations
+- Age restrictions (21+)
+- Tourism license vs resident license
+
+## Europe
+### London
+- **Soho/West End**: Classic cocktail bars (Bar Termini, Swift)
+- **Shoreditch**: Hipster bars, experimental venues
+- **City**: Business district entertaining
+
+### Paris, Barcelona, Berlin
+- Wine culture dominance
+- Aperitif traditions
+- Late night culture variations
+
+## Americas
+### New York
+- **Manhattan**: Classic cocktail renaissance
+- **Brooklyn**: Craft cocktail movement
+- **Speakeasy culture**: Hidden gems
+
+### Key US Competitions
+- Tales of the Cocktail (New Orleans)
+- Speed Rack
+- Diageo World Class
+
+## Asia
+### Singapore/Hong Kong
+- **World's 50 Best presence**
+- **Strict regulations but vibrant scene**
+- **High-end hotel bars**
+
+### Tokyo/Osaka
+- **Ginza whisky bars**
+- **Precision bartending culture**
+- **Cocktail craftsmanship traditions**
+`;
+
     const appKnowledge = `
-# SpecVerse Platform Complete Guide
+${platformIntroduction}
 
-## Core Features & Tools
+${operationsToolsGuide}
 
-### 1. INVENTORY MANAGEMENT SYSTEM
-- **All Inventory**: View complete inventory across all stores with filters
-- **Low Stock Tracking**: Automatic alerts for items below threshold
-- **FIFO System**: First-in-first-out tracking with expiration dates
-- **QR Code Operations**: Scan to receive, transfer, and track inventory
-- **Live Transactions**: Real-time feed of all inventory movements
-- **Multi-Store Support**: Manage multiple locations with workspace system
-- **Batch Tracking**: Track items by batch number and expiration
-- **Photo Documentation**: Attach photos to inventory items and transactions
-
-### 2. STAFF SCHEDULING
-- **Daily Breakdown**: Visual schedule with staff assignments
-- **Station Management**: Indoor (3 stations) and Outdoor (2 stations) bars
-- **Area Allocation**: Assign staff to indoor/outdoor areas
-- **Role-Based Assignments**: Head Bartender, Senior, Bartender, Bar Back, Support
-- **Rotating Schedules**: Automatic station rotation across days
-- **PDF Export**: Download and print daily schedules
-
-### 3. COCKTAIL SOP SYSTEM
-- **Recipe Management**: Digital cocktail recipes with precise measurements
-- **Technique Library**: Standard operating procedures for preparation
-- **Classic Cocktails**: PDF library of classic cocktail recipes
-- **Cost Analysis**: Track ingredient costs and pricing
-- **Nutritional Info**: ABV, calories, allergen tracking
-- **Batch Calculations**: Scale recipes for batch production
-- **Photo Library**: Visual guides for each cocktail
-
-### 4. BUSINESS HUB
-- **Business Ideas**: Share and discover business opportunities
-- **Investor Matching**: Connect founders with investors
-- **Analytics Dashboard**: Track idea performance and engagement
-- **Category Filtering**: Browse ideas by industry category
-- **Funding Tracking**: Monitor funding goals and progress
-
-### 5. SOCIAL FEATURES (NEURON)
-- **Posts & Reels**: Share content with Instagram-style engagement
-- **Stories**: 24-hour temporary content with editing tools
-- **Music Sharing**: Share and discover music with Spotify integration
-- **Events**: Create and manage industry events
-- **Engagement**: Like, comment, share, save, and repost content
-- **AI Smart Features**: AI-powered content insights and suggestions
-- **Live Notifications**: Real-time alerts for all interactions
-
-### 6. NEURON MESSAGING & EMAIL
-- **Direct Messaging**: Fast, lightweight Instagram-style chat
-- **Internal Email**: Formal team communication system
-- **AI Smart Replies**: AI-generated message suggestions
-- **Voice Messages**: Record and send voice notes
-- **Group Chats**: Team conversations with workspace members
-- **Message Reactions**: Like and react to messages
-- **Swipe Actions**: Quick reply, forward, and delete
-
-### 7. CRM SYSTEM
-- **Contacts Management**: Store customer and client information
-- **Leads Tracking**: Pipeline management for potential customers
-- **Deals Management**: Track sales opportunities and revenue
-- **Activities**: Log calls, meetings, and follow-ups
-- **Notes**: Detailed customer interaction history
-
-### 8. WORKSPACE & TEAM MANAGEMENT
-- **Workspace Creation**: Multi-tenant workspaces for organizations
-- **Team Invitations**: Invite members with role-based permissions
-- **Access Control**: Owner, Admin, and Member permission levels
-- **QR Code Access**: Members can scan QR codes for operations
-- **Workspace Switching**: Easy navigation between workspaces
-
-### 9. PROFILE & CAREER
-- **Professional Profiles**: Showcase experience and skills
-- **Work History**: Employment verification with venues
-- **Certifications**: Display industry certifications
-- **Competitions**: Track competition results and awards
-- **Recognition**: Awards and achievements showcase
-- **Badge System**: Earn badges based on career level
-- **Career Metrics**: Track professional growth analytics
-
-### 10. MATRIX AI SYSTEM (THIS SYSTEM)
-- **AI Chat Assistant**: Context-aware guidance and support
-- **Platform Insights**: User feedback and idea collection
-- **Pattern Detection**: AI-powered trend analysis
-- **Roadmap Generation**: AI-suggested feature priorities
-- **Vision Recognition**: Analyze images via camera
-- **Voice Assistant**: Voice input and audio responses
-- **Memory System**: Persistent knowledge and learning
-- **Source Verification**: Validate information accuracy
-
-## Technical Capabilities
-- PWA Installation: Install as mobile app on home screen
-- Offline Support: Core features work without internet
-- Push Notifications: Real-time alerts with sound
-- Camera Access: Capture photos and QR codes
-- Microphone Access: Voice input and recording
-- Dark/Light Mode: Theme customization
-- Responsive Design: Mobile-first, tablet, and desktop optimized
-
-## User Roles & Permissions
-- **Founder**: Full platform access, creates workspaces
-- **Venue Manager**: Manages venue operations and staff
-- **Bartender/Professional**: Career profiles and content creation
-- **Investor**: Access to business hub and matching
-- **Workspace Owner**: Creates and manages workspace
-- **Workspace Admin**: Can manage members and settings
-- **Workspace Member**: Limited access, can view and transact
-
-## Navigation Structure
-- Home: Social feed with posts, reels, and stories
-- Explore: Discover new content and users
-- Create: Upload posts, reels, and stories
-- Neuron: Messaging and internal email
-- Profile: Personal profile and career information
-- Business Hub: Business ideas and investor matching
-- Tools: Operational tools (inventory, scheduling, CRM)
-- Matrix AI: This AI assistant system
-
-## Support & Help
-- Matrix AI provides guidance on all features
-- Each tool has contextual help and instructions
-- Community-driven insights and best practices
-- Real-time error handling and suggestions
+${regionalKnowledge}
 `;
 
     const context = {
@@ -197,6 +521,7 @@ serve(async (req) => {
       features: features || [],
       userProfile: userProfile || null,
       recentHistory: chatHistory?.reverse() || [],
+      mentionedUser: mentionedUserProfile,
       appKnowledge
     };
 
@@ -217,6 +542,20 @@ You are an expert hospitality and beverage industry mentor with comprehensive kn
 - E-commerce, online sales funnels, and revenue stream diversification
 - Customer acquisition costs, lifetime value calculations, and ROI analysis
 - Influencer marketing, brand partnerships, and sponsorship negotiations
+
+## USER PROFILE AWARENESS
+You have access to information about platform users. When someone asks about a user, you can share:
+- Their name, username, and profile details
+- Their professional title and bio
+- Their work experience and positions held
+- Their certifications and qualifications
+- Their competition results and achievements
+- Their location and social links
+
+${context.mentionedUser ? `
+### Mentioned User Profile:
+${JSON.stringify(context.mentionedUser, null, 2)}
+` : ''}
 
 ## Your Advanced Capabilities
 
@@ -335,6 +674,13 @@ When answering, ALWAYS follow this format:
 - Connect topics to their career growth
 - End responses with a question or actionable suggestion
 
+### Rule 6: Tool Usage Guides
+When users ask about ANY operations tool:
+- Explain WHAT the tool does
+- Give STEP-BY-STEP instructions
+- Mention keyboard shortcuts or quick actions
+- Offer to explain related tools
+
 ## Communication Examples
 
 BAD: "Here are 15 things you should know about cocktail competitions..."
@@ -353,7 +699,8 @@ Respond with: "I'm here to help! I can assist with:
 • 🎬 Content creation & editing  
 • 🍸 Cocktails & recipes
 • 📈 Career growth
-• 🛠️ Platform features
+• 🛠️ Platform features & tools
+• 👤 Find info about other users
 
 What sounds most useful right now?"
 
@@ -410,6 +757,21 @@ Remember: Be a helpful mentor who ASKS before assuming. Keep responses short and
     });
 
     if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('AI API error:', aiResponse.status, errorText);
+      
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'AI credits depleted. Please add credits to continue.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       throw new Error(`AI API error: ${aiResponse.status}`);
     }
 
@@ -428,7 +790,7 @@ Remember: Be a helpful mentor who ASKS before assuming. Keep responses short and
     );
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Matrix chat error:', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
