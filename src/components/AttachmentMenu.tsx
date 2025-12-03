@@ -16,7 +16,7 @@ export const AttachmentMenu = ({
   onSelectMusic,
 }: AttachmentMenuProps) => {
   return (
-    <div className="absolute bottom-full left-0 mb-2 bg-background/95 backdrop-blur-xl border border-primary/20 rounded-2xl shadow-2xl p-2 z-50 min-w-[200px]">
+    <div className="absolute bottom-full left-0 mb-2 bg-background border border-primary/20 rounded-2xl shadow-2xl p-2 z-[9999] min-w-[200px]">
       <button
         onClick={onSelectImage}
         className="w-full flex items-center gap-3 p-3 hover:bg-primary/10 rounded-lg transition-colors"
