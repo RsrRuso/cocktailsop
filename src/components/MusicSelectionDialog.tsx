@@ -69,23 +69,24 @@ const MusicSelectionDialog = ({ open, onOpenChange, onSelect }: MusicSelectionDi
 
   const fetchPlatformMusic = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('matrix-music-curator', {
-        body: { 
-          action: 'get_library',
-          data: { limit: 100 }
-        }
-      });
+      // Fetch directly from platform_music_library table
+      const { data, error } = await supabase
+        .from('platform_music_library')
+        .select('*')
+        .eq('is_active', true)
+        .order('popularity_score', { ascending: false })
+        .limit(100);
 
       if (error) throw error;
 
       // Convert platform library format to MusicTrack format
-      const tracks = (data.tracks || []).map((track: any) => ({
+      const tracks = (data || []).map((track: any) => ({
         id: track.id,
         track_id: track.track_id,
         title: track.title,
         artist: track.artist,
         duration: track.duration_seconds?.toString() || '0',
-        preview_url: track.cover_image_url || track.preview_url,
+        preview_url: track.cover_image_url,
         spotify_url: track.spotify_url,
         preview_audio: track.preview_url
       }));

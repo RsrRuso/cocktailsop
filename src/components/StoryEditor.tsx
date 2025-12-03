@@ -605,10 +605,13 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
         open={showMusicDialog}
         onOpenChange={setShowMusicDialog}
         onSelect={(track) => {
-          // Use preview_audio for playback (Spotify 30s preview)
-          const playUrl = track.preview_audio || track.spotify_url;
-          if (playUrl) {
-            setSelectedMusic(playUrl);
+          // Use preview_audio for direct playback, or construct Spotify embed URL
+          const playUrl = track.preview_audio || 
+            (track.spotify_url ? `https://open.spotify.com/embed/track/${track.track_id}` : null);
+          
+          if (playUrl || track.track_id) {
+            // For Spotify tracks without preview, we'll use the track_id for embed playback
+            setSelectedMusic(track.preview_audio || `spotify:${track.track_id}`);
             setSelectedMusicFile(null);
             setMusicName(`${track.title} - ${track.artist}`);
             setTrimStart(0);
