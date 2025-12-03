@@ -30,21 +30,15 @@ const getPasswordResetTemplate = (resetLink: string) => `
           <!-- Header with SV Logo -->
           <tr>
             <td style="padding: 40px 40px 20px 40px; text-align: center; background-color: #333333;">
-              <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: 0 auto 16px auto;">
-                <defs>
-                  <linearGradient id="sGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:#5BB5E0;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#7BC5A0;stop-opacity:1" />
-                  </linearGradient>
-                  <linearGradient id="vGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:#F5D050;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#E8C030;stop-opacity:1" />
-                  </linearGradient>
-                </defs>
-                <rect x="0" y="0" width="100" height="100" rx="20" ry="20" fill="#1a1a1a" />
-                <text x="15" y="72" font-family="Arial Black, Arial, sans-serif" font-size="55" font-weight="bold" fill="url(#sGradient)">S</text>
-                <text x="48" y="72" font-family="Arial Black, Arial, sans-serif" font-size="55" font-weight="bold" fill="url(#vGradient)">v</text>
-              </svg>
+              <table cellpadding="0" cellspacing="0" style="margin: 0 auto 16px auto;">
+                <tr>
+                  <td style="width: 80px; height: 80px; background-color: #1a1a1a; border-radius: 18px; text-align: center; vertical-align: middle;">
+                    <span style="font-family: Arial Black, Arial, sans-serif; font-size: 36px; font-weight: bold;">
+                      <span style="color: #5BB5E0;">S</span><span style="color: #F5D050;">v</span>
+                    </span>
+                  </td>
+                </tr>
+              </table>
               <p style="margin: 8px 0 0 0; color: #9a9a9a; font-size: 14px;">Your Professional Network</p>
             </td>
           </tr>
@@ -63,7 +57,7 @@ const getPasswordResetTemplate = (resetLink: string) => `
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center" style="padding: 20px 0;">
-                    <a href="${resetLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #5BB5E0 0%, #F5D050 100%); color: #1a1a1a; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
+                    <a href="${resetLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(90deg, #D4A55A 0%, #7BA8D4 100%); color: #1a1a1a; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
                       Reset Password
                     </a>
                   </td>
