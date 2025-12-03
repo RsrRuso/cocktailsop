@@ -15,6 +15,7 @@ const CreateReel = () => {
   const [caption, setCaption] = useState("");
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { uploadState, uploadSingle } = usePowerfulUpload();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -63,10 +64,17 @@ const CreateReel = () => {
   });
 
   const handleCreateReel = async () => {
+    // Prevent double submission
+    if (isSubmitting || uploadState.isUploading) {
+      return;
+    }
+
     if (!selectedVideo) {
       toast.error("Please select a video");
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -82,7 +90,7 @@ const CreateReel = () => {
         throw result.error;
       }
 
-      // Save to database
+      // Save to database with duplicate check
       const { error: dbError } = await supabase.from("reels").insert({
         user_id: user.id,
         video_url: result.publicUrl,
@@ -90,20 +98,23 @@ const CreateReel = () => {
         thumbnail_url: result.publicUrl,
       });
 
-      if (dbError) throw dbError;
+      // Ignore duplicate key errors (already uploaded)
+      if (dbError && dbError.code !== '23505') {
+        throw dbError;
+      }
 
       toast.success("Reel uploaded successfully!");
       
-      // Reset form
-      setTimeout(() => {
-        setPreviewUrl("");
-        setSelectedVideo(null);
-        setCaption("");
-        navigate("/reels");
-      }, 1000);
+      // Reset form and navigate
+      setPreviewUrl("");
+      setSelectedVideo(null);
+      setCaption("");
+      navigate("/reels");
     } catch (error: any) {
       console.error("Error:", error);
       toast.error("Upload failed: " + (error.message || "Unknown error"));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -124,14 +135,14 @@ const CreateReel = () => {
           <h1 className="text-xl font-bold">Create Reel</h1>
           <Button
             onClick={handleCreateReel}
-            disabled={uploadState.isUploading || !previewUrl}
+            disabled={isSubmitting || uploadState.isUploading || !previewUrl}
             className="glow-primary"
             size="sm"
           >
-            {uploadState.isUploading ? (
+            {isSubmitting || uploadState.isUploading ? (
               <>
                 <Zap className="w-4 h-4 mr-2 animate-pulse" />
-                Uploading
+                {isSubmitting ? 'Saving...' : 'Uploading'}
               </>
             ) : (
               <>
