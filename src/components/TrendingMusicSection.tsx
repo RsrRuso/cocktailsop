@@ -260,21 +260,61 @@ const TrendingMusicSection = () => {
         </div>
       </div>
 
-      {/* Spotify embed dialog */}
+      {/* Audio player dialog */}
       <Dialog open={!!playingTrackId} onOpenChange={() => setPlayingTrackId(null)}>
-        <DialogContent className="max-w-md p-0 overflow-hidden">
-          {playingTrackId && (
-            <iframe
-              src={`https://open.spotify.com/embed/track/${playingTrackId}?theme=0`}
-              width="100%"
-              height="352"
-              frameBorder="0"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-              title="Spotify Player"
-              className="rounded-lg"
-            />
-          )}
+        <DialogContent className="max-w-md p-4">
+          {playingTrackId && (() => {
+            const track = [...featuredTracks, ...trendingTracks].find(t => t.track_id === playingTrackId);
+            if (!track) return null;
+            
+            return (
+              <div className="space-y-4">
+                {/* Cover art */}
+                <div className="aspect-square w-full max-w-[280px] mx-auto rounded-xl overflow-hidden">
+                  {track.cover_image_url ? (
+                    <img 
+                      src={track.cover_image_url} 
+                      alt={track.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center">
+                      <TrendingUp className="w-16 h-16 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Track info */}
+                <div className="text-center">
+                  <h3 className="font-bold text-lg">{track.title}</h3>
+                  <p className="text-muted-foreground">{track.artist}</p>
+                  {track.album && <p className="text-xs text-muted-foreground">{track.album}</p>}
+                </div>
+                
+                {/* Tags */}
+                <div className="flex items-center justify-center gap-2">
+                  {track.genre && <Badge variant="outline">{track.genre}</Badge>}
+                  {track.mood && <Badge variant="secondary">{track.mood}</Badge>}
+                </div>
+                
+                {/* Audio player */}
+                {track.preview_url ? (
+                  <audio 
+                    controls 
+                    autoPlay 
+                    className="w-full"
+                    src={track.preview_url}
+                  >
+                    Your browser does not support audio playback.
+                  </audio>
+                ) : (
+                  <p className="text-center text-muted-foreground text-sm">
+                    No preview available for this track
+                  </p>
+                )}
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </>
