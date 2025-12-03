@@ -70,6 +70,8 @@ export default function StoryViewer() {
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const seekIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isSeeking, setIsSeeking] = useState<'rewind' | 'forward' | null>(null);
   
   // Derived state - must come before functions that use them
   const currentStory = stories[currentIndex];
@@ -100,6 +102,9 @@ export default function StoryViewer() {
       }
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
+      }
+      if (seekIntervalRef.current) {
+        clearInterval(seekIntervalRef.current);
       }
     };
   }, []);
@@ -577,31 +582,115 @@ export default function StoryViewer() {
         onMouseUp={handleMouseUp}
         style={{ touchAction: "none" }}
       >
-        {/* Left tap zone - instant previous */}
+        {/* Left tap zone - tap for previous, hold for rewind */}
         <div 
-          className="absolute left-0 top-20 bottom-32 w-1/4 z-20 cursor-pointer"
+          className="absolute left-0 top-20 bottom-32 w-1/4 z-20 cursor-pointer flex items-center justify-center"
           onClick={(e) => {
             e.stopPropagation();
-            goToPrevious();
+            if (!isSeeking) goToPrevious();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            setIsSeeking('rewind');
+            setIsPaused(true);
+            seekIntervalRef.current = setInterval(() => {
+              setProgress(prev => Math.max(0, prev - 2));
+              if (videoRef.current) {
+                videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 0.1);
+              }
+            }, 50);
+          }}
+          onMouseUp={(e) => {
+            e.stopPropagation();
+            if (seekIntervalRef.current) clearInterval(seekIntervalRef.current);
+            setIsSeeking(null);
+            setIsPaused(false);
+          }}
+          onMouseLeave={() => {
+            if (seekIntervalRef.current) clearInterval(seekIntervalRef.current);
+            if (isSeeking) {
+              setIsSeeking(null);
+              setIsPaused(false);
+            }
+          }}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            setIsSeeking('rewind');
+            setIsPaused(true);
+            seekIntervalRef.current = setInterval(() => {
+              setProgress(prev => Math.max(0, prev - 2));
+              if (videoRef.current) {
+                videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 0.1);
+              }
+            }, 50);
           }}
           onTouchEnd={(e) => {
             e.stopPropagation();
-            goToPrevious();
+            if (seekIntervalRef.current) clearInterval(seekIntervalRef.current);
+            if (!isSeeking) goToPrevious();
+            setIsSeeking(null);
+            setIsPaused(false);
           }}
-        />
+        >
+          {isSeeking === 'rewind' && (
+            <div className="text-white text-2xl font-bold animate-pulse">⏪</div>
+          )}
+        </div>
         
-        {/* Right tap zone - instant next */}
+        {/* Right tap zone - tap for next, hold for fast-forward */}
         <div 
-          className="absolute right-0 top-20 bottom-32 w-1/4 z-20 cursor-pointer"
+          className="absolute right-0 top-20 bottom-32 w-1/4 z-20 cursor-pointer flex items-center justify-center"
           onClick={(e) => {
             e.stopPropagation();
-            goToNext();
+            if (!isSeeking) goToNext();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            setIsSeeking('forward');
+            setIsPaused(true);
+            seekIntervalRef.current = setInterval(() => {
+              setProgress(prev => Math.min(100, prev + 2));
+              if (videoRef.current) {
+                videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 0.1);
+              }
+            }, 50);
+          }}
+          onMouseUp={(e) => {
+            e.stopPropagation();
+            if (seekIntervalRef.current) clearInterval(seekIntervalRef.current);
+            setIsSeeking(null);
+            setIsPaused(false);
+          }}
+          onMouseLeave={() => {
+            if (seekIntervalRef.current) clearInterval(seekIntervalRef.current);
+            if (isSeeking) {
+              setIsSeeking(null);
+              setIsPaused(false);
+            }
+          }}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            setIsSeeking('forward');
+            setIsPaused(true);
+            seekIntervalRef.current = setInterval(() => {
+              setProgress(prev => Math.min(100, prev + 2));
+              if (videoRef.current) {
+                videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 0.1);
+              }
+            }, 50);
           }}
           onTouchEnd={(e) => {
             e.stopPropagation();
-            goToNext();
+            if (seekIntervalRef.current) clearInterval(seekIntervalRef.current);
+            if (!isSeeking) goToNext();
+            setIsSeeking(null);
+            setIsPaused(false);
           }}
-        />
+        >
+          {isSeeking === 'forward' && (
+            <div className="text-white text-2xl font-bold animate-pulse">⏩</div>
+          )}
+        </div>
 
         {isVideo ? (
           <video
