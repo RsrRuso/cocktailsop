@@ -258,11 +258,12 @@ const LiveMap = () => {
         dragging: true,
       }).setView(initialCenter, 14);
 
-      // Neon glowing night map - Stadia Alidade Smooth Dark with vibrant roads
+      // Neon glowing night map - CARTO Dark Matter (free, no API key needed)
       const darkLayer = L.tileLayer(
-        'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
         {
-          attribution: '&copy; Stadia Maps &copy; OpenMapTiles &copy; OpenStreetMap contributors',
+          attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+          subdomains: 'abcd',
           maxZoom: 20,
         }
       );
