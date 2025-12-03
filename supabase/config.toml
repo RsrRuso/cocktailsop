@@ -98,3 +98,6 @@ verify_jwt = true
 
 [functions.send-branded-email]
 verify_jwt = false
+
+[functions.populate-music-library]
+verify_jwt = false
