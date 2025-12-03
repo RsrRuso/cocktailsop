@@ -392,7 +392,8 @@ export default function StoryViewer() {
         // Vertical swipe
         if (deltaY < 0) {
           setShowComments(true);
-        } else if (deltaY > 50) {
+        } else if (deltaY > 50 && !showComments) {
+          // Only close story on swipe down when comments are NOT open
           navigate("/home");
         }
       }
