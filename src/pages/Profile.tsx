@@ -32,7 +32,6 @@ import { ExperienceTimeline } from "@/components/ExperienceTimeline";
 import { calculateCareerScore } from "@/lib/careerMetrics";
 import BirthdayConfetti from "@/components/BirthdayConfetti";
 import BirthdayBadge from "@/components/BirthdayBadge";
-import { useUserBirthday } from "@/hooks/useUserBirthday";
 
 interface Profile {
   id: string;
@@ -121,7 +120,16 @@ const Profile = () => {
   const [showAddCertification, setShowAddCertification] = useState(false);
   const [showAddRecognition, setShowAddRecognition] = useState(false);
   const { data: userStatus, refetch: refetchStatus } = useUserStatus(user?.id || "");
-  const { data: birthdayData } = useUserBirthday(user?.id || null);
+  
+  // Calculate birthday from profile data directly (no extra request)
+  const birthdayData = useMemo(() => {
+    if (!authProfile?.date_of_birth) return { isBirthday: false };
+    const birthDate = new Date(authProfile.date_of_birth);
+    const today = new Date();
+    const isBirthday = birthDate.getMonth() === today.getMonth() && 
+      Math.abs(birthDate.getDate() - today.getDate()) <= 3;
+    return { isBirthday };
+  }, [authProfile?.date_of_birth]);
 
   // Calculate career score (memoized)
   const careerMetrics = useMemo(() => {
