@@ -530,204 +530,217 @@ const LiveMap = () => {
   return (
     <div className="relative w-full h-screen bg-background overflow-hidden">
       <div ref={mapContainerRef} className="absolute inset-0 bg-muted" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-background/60" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-background/30" />
 
-      {/* Control Panel - Top Left */}
+      {/* Top Bar - Back Button & Compact Stats */}
       <motion.div 
-        className="absolute top-4 left-4 flex flex-col gap-3 z-[1000]"
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
+        className="absolute top-3 left-3 right-3 flex items-start justify-between z-[1000]"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
       >
+        {/* Back Button */}
         <Button
           onClick={() => window.history.back()}
-          variant="default"
+          variant="ghost"
           size="icon"
-          className="w-12 h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 border-primary/20 hover:border-primary/40"
+          className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 text-white hover:bg-black/50"
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
 
-        <Button
-          onClick={() => setShowSettings(true)}
-          variant="default"
-          size="icon"
-          className="w-12 h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 border-primary/20 hover:border-primary/40"
-        >
-          <Settings2 className="w-5 h-5" />
-        </Button>
-
-        <Button
-          onClick={handleToggleGhostMode}
-          variant={ghostMode ? 'destructive' : 'default'}
-          size="icon"
-          className="w-12 h-12 rounded-full shadow-xl backdrop-blur-xl border-2"
-        >
-          {ghostMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-        </Button>
-
-        {position && (
-          <Button
-            onClick={handleCenterOnUser}
-            variant="default"
-            size="icon"
-            className="w-12 h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 border-blue-500/20 hover:border-blue-500/40"
-          >
-            <Navigation className="w-5 h-5 text-blue-500" />
-          </Button>
-        )}
-
-        <Button
-          onClick={handleToggleViewMode}
-          variant="default"
-          size="icon"
-          className={`w-12 h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 ${viewMode === 'city' ? 'border-green-500/40 bg-green-500/10' : 'border-primary/20'}`}
-        >
-          <Globe className="w-5 h-5" />
-        </Button>
-
-        <Button
-          onClick={() => setShowPlacesList(true)}
-          variant="default"
-          size="icon"
-          className="w-12 h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 border-orange-500/20 hover:border-orange-500/40"
-        >
-          <List className="w-5 h-5 text-orange-500" />
-        </Button>
-
-        <Button
-          onClick={() => setShowAwardsOrgs(true)}
-          variant="default"
-          size="icon"
-          className="w-12 h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 border-yellow-500/20 hover:border-yellow-500/40"
-        >
-          <Award className="w-5 h-5 text-yellow-500" />
-        </Button>
-
-        <Button
-          onClick={() => setSatelliteMode(!satelliteMode)}
-          variant="default"
-          size="icon"
-          className="w-12 h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 border-primary/20 hover:border-primary/40"
-        >
-          <MapPin className="w-5 h-5" />
-        </Button>
-      </motion.div>
-
-      {/* Status Panel - Bottom Left */}
-      <motion.div 
-        className="absolute bottom-20 sm:bottom-4 left-4 bg-background/95 backdrop-blur-xl rounded-2xl px-4 py-3 shadow-2xl z-[1000] border border-border/50"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full animate-pulse ${isTracking ? 'bg-green-500' : 'bg-red-500'}`} />
-          <div className="flex flex-col">
-            <span className="text-xs font-semibold text-muted-foreground">
-              {viewMode === 'city' ? 'City View' : 'Nearby'}
-            </span>
-            <span className="text-sm font-bold">
-              {ghostMode ? 'Hidden' : isTracking ? 'Tracking' : 'Not Tracking'}
-            </span>
+        {/* Compact Stats Panel */}
+        <div className="bg-black/40 backdrop-blur-xl rounded-2xl px-3 py-2 border border-white/10 max-w-[180px]">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-blue-400" />
+              <span className="text-xs text-white/80">
+                <span className="font-bold text-white">{nearbyFriends.length}</span> friends nearby
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <UtensilsCrossed className="w-4 h-4 text-orange-400" />
+              <span className="text-xs text-white/80">
+                {loadingPlaces ? 'Loading...' : <><span className="font-bold text-white">{places.length}</span> venues</>}
+              </span>
+            </div>
+            {awardedPlaces.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-yellow-400" />
+                <span className="text-xs text-white/80">
+                  <span className="font-bold text-white">{awardedPlaces.length}</span> awarded
+                </span>
+              </div>
+            )}
           </div>
+          
+          {/* Filter Pills */}
+          {places.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-white/10">
+              <Badge 
+                className={`text-[10px] cursor-pointer px-1.5 py-0 ${
+                  placesFilter === 'bar' 
+                    ? 'bg-purple-500/80 text-white' 
+                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                }`}
+                onClick={() => setPlacesFilter(placesFilter === 'bar' ? 'all' : 'bar')}
+              >
+                🍺 {places.filter(p => p.type === 'bar').length}
+              </Badge>
+              <Badge 
+                className={`text-[10px] cursor-pointer px-1.5 py-0 ${
+                  placesFilter === 'restaurant' 
+                    ? 'bg-orange-500/80 text-white' 
+                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                }`}
+                onClick={() => setPlacesFilter(placesFilter === 'restaurant' ? 'all' : 'restaurant')}
+              >
+                🍽️ {places.filter(p => p.type === 'restaurant').length}
+              </Badge>
+              <Badge 
+                className={`text-[10px] cursor-pointer px-1.5 py-0 ${
+                  placesFilter === 'cafe' 
+                    ? 'bg-amber-500/80 text-white' 
+                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                }`}
+                onClick={() => setPlacesFilter(placesFilter === 'cafe' ? 'all' : 'cafe')}
+              >
+                ☕ {places.filter(p => p.type === 'cafe').length}
+              </Badge>
+            </div>
+          )}
         </div>
       </motion.div>
 
-      {/* Stats Panel - Top Right */}
+      {/* Floating Action Buttons - Right Side */}
       <motion.div 
-        className="absolute top-4 right-4 bg-background/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl z-[1000] border border-border/50 space-y-3 max-w-[220px]"
+        className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-[1000]"
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
       >
-        {/* Nearby Friends */}
-        <div className="flex items-center gap-3">
-          <Users className="w-5 h-5 text-blue-500" />
-          <div className="flex flex-col">
-            <span className="text-xs font-semibold text-muted-foreground">Friends Nearby</span>
-            <span className="text-sm font-bold">
-              {nearbyFriends.length} within {NEARBY_RADIUS_KM}km
-            </span>
-          </div>
-        </div>
-
-        {/* Places */}
-        <div className="flex items-center gap-3">
-          <UtensilsCrossed className="w-5 h-5 text-orange-500" />
-          <div className="flex flex-col">
-            <span className="text-xs font-semibold text-muted-foreground">Places</span>
-            <span className="text-sm font-bold">
-              {loadingPlaces ? 'Loading...' : `${places.length} found`}
-            </span>
-          </div>
-        </div>
-
-        {/* Awarded Places */}
-        {awardedPlaces.length > 0 && (
-          <div className="flex items-center gap-3">
-            <Award className="w-5 h-5 text-yellow-500" />
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold text-muted-foreground">Award Winners</span>
-              <span className="text-sm font-bold">{awardedPlaces.length} venues</span>
-            </div>
-          </div>
+        {position && (
+          <Button
+            onClick={handleCenterOnUser}
+            variant="ghost"
+            size="icon"
+            className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 text-blue-400 hover:bg-black/50"
+          >
+            <Navigation className="w-5 h-5" />
+          </Button>
         )}
-
-        {/* Place type breakdown */}
-        {places.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            <Badge 
-              variant="secondary" 
-              className={`text-xs cursor-pointer ${placesFilter === 'bar' ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-700'}`}
-              onClick={() => setPlacesFilter(placesFilter === 'bar' ? 'all' : 'bar')}
-            >
-              🍺 {places.filter(p => p.type === 'bar').length}
-            </Badge>
-            <Badge 
-              variant="secondary" 
-              className={`text-xs cursor-pointer ${placesFilter === 'restaurant' ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-700'}`}
-              onClick={() => setPlacesFilter(placesFilter === 'restaurant' ? 'all' : 'restaurant')}
-            >
-              🍽️ {places.filter(p => p.type === 'restaurant').length}
-            </Badge>
-            <Badge 
-              variant="secondary" 
-              className={`text-xs cursor-pointer ${placesFilter === 'cafe' ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-700'}`}
-              onClick={() => setPlacesFilter(placesFilter === 'cafe' ? 'all' : 'cafe')}
-            >
-              ☕ {places.filter(p => p.type === 'cafe').length}
-            </Badge>
-            {awardedPlaces.length > 0 && (
-              <Badge 
-                variant="secondary" 
-                className={`text-xs cursor-pointer ${placesFilter === 'awarded' ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-700'}`}
-                onClick={() => setPlacesFilter(placesFilter === 'awarded' ? 'all' : 'awarded')}
-              >
-                🏆 {awardedPlaces.length}
-              </Badge>
-            )}
-          </div>
-        )}
+        <Button
+          onClick={() => setShowSettings(true)}
+          variant="ghost"
+          size="icon"
+          className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 text-white hover:bg-black/50"
+        >
+          <Settings2 className="w-5 h-5" />
+        </Button>
       </motion.div>
 
-      {/* Nearby Friends List - Bottom Right */}
+      {/* Bottom Action Bar */}
+      <motion.div 
+        className="absolute bottom-20 sm:bottom-6 left-3 right-3 z-[1000]"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-2 border border-white/10">
+          <div className="flex items-center justify-between gap-2">
+            {/* Left: Status */}
+            <div className="flex items-center gap-2 px-2">
+              <div className={`w-2 h-2 rounded-full ${isTracking ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+              <span className="text-xs text-white/80 font-medium">
+                {ghostMode ? '👻' : viewMode === 'city' ? '🌆' : '📍'}
+              </span>
+            </div>
+
+            {/* Center: Main Actions */}
+            <div className="flex items-center gap-1">
+              <Button
+                onClick={handleToggleGhostMode}
+                variant="ghost"
+                size="sm"
+                className={`h-9 px-3 rounded-xl ${
+                  ghostMode 
+                    ? 'bg-purple-500/30 text-purple-300' 
+                    : 'bg-white/10 text-white/80 hover:bg-white/20'
+                }`}
+              >
+                {ghostMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+
+              <Button
+                onClick={handleToggleViewMode}
+                variant="ghost"
+                size="sm"
+                className={`h-9 px-3 rounded-xl ${
+                  viewMode === 'city' 
+                    ? 'bg-green-500/30 text-green-300' 
+                    : 'bg-white/10 text-white/80 hover:bg-white/20'
+                }`}
+              >
+                <Globe className="w-4 h-4" />
+              </Button>
+
+              <Button
+                onClick={() => setShowPlacesList(true)}
+                variant="ghost"
+                size="sm"
+                className="h-9 px-3 rounded-xl bg-white/10 text-white/80 hover:bg-white/20"
+              >
+                <List className="w-4 h-4" />
+              </Button>
+
+              <Button
+                onClick={() => setShowAwardsOrgs(true)}
+                variant="ghost"
+                size="sm"
+                className="h-9 px-3 rounded-xl bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30"
+              >
+                <Award className="w-4 h-4" />
+              </Button>
+
+              <Button
+                onClick={() => setSatelliteMode(!satelliteMode)}
+                variant="ghost"
+                size="sm"
+                className={`h-9 px-3 rounded-xl ${
+                  satelliteMode 
+                    ? 'bg-teal-500/30 text-teal-300' 
+                    : 'bg-white/10 text-white/80 hover:bg-white/20'
+                }`}
+              >
+                <MapPin className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Right: View label */}
+            <span className="text-[10px] text-white/50 px-2 hidden sm:block">
+              {viewMode === 'city' ? `${CITY_RADIUS_KM}km` : `${NEARBY_RADIUS_KM}km`}
+            </span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Nearby Friends Floating Card */}
       {nearbyFriends.length > 0 && (
         <motion.div 
-          className="absolute bottom-20 sm:bottom-4 right-4 bg-background/95 backdrop-blur-xl rounded-2xl p-3 shadow-2xl z-[1000] border border-border/50 max-w-[200px]"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          className="absolute bottom-36 sm:bottom-24 left-3 bg-black/40 backdrop-blur-xl rounded-2xl p-3 border border-white/10 z-[1000] max-w-[160px]"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
         >
-          <div className="text-xs font-semibold text-muted-foreground mb-2">Nearby Friends</div>
-          <div className="space-y-2 max-h-[150px] overflow-y-auto">
-            {nearbyFriends.slice(0, 5).map((friend) => (
+          <div className="text-[10px] text-white/60 mb-2 uppercase tracking-wide">Friends</div>
+          <div className="space-y-1.5 max-h-[100px] overflow-y-auto scrollbar-thin">
+            {nearbyFriends.slice(0, 4).map((friend) => (
               <div key={friend.user_id} className="flex items-center gap-2">
                 <div 
-                  className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold overflow-hidden"
+                  className="w-6 h-6 rounded-full bg-blue-500/50 flex items-center justify-center text-white text-[10px] font-bold overflow-hidden border border-white/20"
                   style={friend.avatarUrl ? { backgroundImage: `url(${friend.avatarUrl})`, backgroundSize: 'cover' } : {}}
                 >
                   {!friend.avatarUrl && friend.username[0]?.toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium truncate">{friend.username}</div>
-                  <div className="text-[10px] text-muted-foreground">{friend.distance} km</div>
+                  <div className="text-[11px] text-white font-medium truncate">{friend.username}</div>
+                  <div className="text-[9px] text-white/50">{friend.distance}km</div>
                 </div>
               </div>
             ))}
@@ -737,29 +750,29 @@ const LiveMap = () => {
 
       {/* Places List Sheet */}
       <Sheet open={showPlacesList} onOpenChange={setShowPlacesList}>
-        <SheetContent side="right" className="w-full sm:w-[400px] p-0">
-          <SheetHeader className="p-4 border-b">
-            <SheetTitle className="flex items-center gap-2">
+        <SheetContent side="right" className="w-full sm:w-[400px] p-0 bg-black/70 backdrop-blur-2xl border-l border-white/10">
+          <SheetHeader className="p-4 border-b border-white/10">
+            <SheetTitle className="flex items-center gap-2 text-white">
               <Store className="w-5 h-5" />
               Venues ({filteredPlaces.length})
             </SheetTitle>
-            <SheetDescription>
+            <SheetDescription className="text-white/60">
               Bars, restaurants & cafes {viewMode === 'city' ? 'in your city' : 'near you'}
             </SheetDescription>
           </SheetHeader>
 
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="w-full grid grid-cols-4 p-1 mx-4 mt-4" style={{ width: 'calc(100% - 32px)' }}>
-              <TabsTrigger value="all" onClick={() => setPlacesFilter('all')}>All</TabsTrigger>
-              <TabsTrigger value="awarded" onClick={() => setPlacesFilter('awarded')}>🏆 Top</TabsTrigger>
-              <TabsTrigger value="bar" onClick={() => setPlacesFilter('bar')}>🍺 Bars</TabsTrigger>
-              <TabsTrigger value="restaurant" onClick={() => setPlacesFilter('restaurant')}>🍽️ Food</TabsTrigger>
+            <TabsList className="w-full grid grid-cols-4 p-1 mx-4 mt-4 bg-white/10" style={{ width: 'calc(100% - 32px)' }}>
+              <TabsTrigger value="all" onClick={() => setPlacesFilter('all')} className="text-white/70 data-[state=active]:bg-white/20 data-[state=active]:text-white">All</TabsTrigger>
+              <TabsTrigger value="awarded" onClick={() => setPlacesFilter('awarded')} className="text-white/70 data-[state=active]:bg-yellow-500/30 data-[state=active]:text-yellow-300">🏆</TabsTrigger>
+              <TabsTrigger value="bar" onClick={() => setPlacesFilter('bar')} className="text-white/70 data-[state=active]:bg-purple-500/30 data-[state=active]:text-purple-300">🍺</TabsTrigger>
+              <TabsTrigger value="restaurant" onClick={() => setPlacesFilter('restaurant')} className="text-white/70 data-[state=active]:bg-orange-500/30 data-[state=active]:text-orange-300">🍽️</TabsTrigger>
             </TabsList>
 
             <ScrollArea className="h-[calc(100vh-180px)]">
               <div className="p-4 space-y-3">
                 {filteredPlaces.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-center py-8 text-white/50">
                     <UtensilsCrossed className="w-12 h-12 mx-auto mb-2 opacity-50" />
                     <p>No venues found</p>
                   </div>
@@ -767,46 +780,46 @@ const LiveMap = () => {
                   filteredPlaces.map((place) => (
                     <motion.div
                       key={place.id}
-                      className="p-3 rounded-xl border bg-card hover:bg-accent/50 cursor-pointer transition-all"
+                      className="p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 cursor-pointer transition-all"
                       onClick={() => handlePlaceClick(place)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
                       <div className="flex items-start gap-3">
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg
-                          ${place.type === 'bar' ? 'bg-purple-100 dark:bg-purple-900/30' : 
-                            place.type === 'restaurant' ? 'bg-orange-100 dark:bg-orange-900/30' : 
-                            'bg-amber-100 dark:bg-amber-900/30'}`}
+                          ${place.type === 'bar' ? 'bg-purple-500/30' : 
+                            place.type === 'restaurant' ? 'bg-orange-500/30' : 
+                            'bg-amber-500/30'}`}
                         >
                           {place.type === 'bar' ? '🍺' : place.type === 'restaurant' ? '🍽️' : '☕'}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-sm truncate">{place.name}</h4>
+                            <h4 className="font-semibold text-sm truncate text-white">{place.name}</h4>
                             {place.awards && place.awards.length > 0 && (
-                              <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 text-[10px] px-1.5">
+                              <Badge className="bg-yellow-500/30 text-yellow-300 text-[10px] px-1.5">
                                 🏆 {place.awards.length}
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground capitalize">
+                          <p className="text-xs text-white/50 capitalize">
                             {place.type}{place.cuisine ? ` • ${place.cuisine}` : ''}
                           </p>
                           {place.rating && (
                             <div className="flex items-center gap-1 mt-1">
                               <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                              <span className="text-xs font-medium">{place.rating.toFixed(1)}</span>
+                              <span className="text-xs font-medium text-white/80">{place.rating.toFixed(1)}</span>
                             </div>
                           )}
                           {place.awards && place.awards.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
                               {place.awards.slice(0, 2).map((award, i) => (
-                                <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0">
+                                <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 border-white/20 text-white/60">
                                   {award.award}
                                 </Badge>
                               ))}
                               {place.awards.length > 2 && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-white/20 text-white/60">
                                   +{place.awards.length - 2}
                                 </Badge>
                               )}
@@ -825,13 +838,13 @@ const LiveMap = () => {
 
       {/* Awards Organizations Sheet */}
       <Sheet open={showAwardsOrgs} onOpenChange={setShowAwardsOrgs}>
-        <SheetContent side="right" className="w-full sm:w-[450px] p-0">
-          <SheetHeader className="p-4 border-b">
-            <SheetTitle className="flex items-center gap-2">
+        <SheetContent side="right" className="w-full sm:w-[450px] p-0 bg-black/70 backdrop-blur-2xl border-l border-white/10">
+          <SheetHeader className="p-4 border-b border-white/10">
+            <SheetTitle className="flex items-center gap-2 text-white">
               <Award className="w-5 h-5 text-yellow-500" />
               Award Organizations
             </SheetTitle>
-            <SheetDescription>
+            <SheetDescription className="text-white/60">
               Browse venues by award-granting companies
             </SheetDescription>
           </SheetHeader>
@@ -840,13 +853,13 @@ const LiveMap = () => {
             <div className="p-4 space-y-3">
               {/* Active Filter Indicator */}
               {selectedOrgFilter && (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-yellow-500/20 border border-yellow-500/30">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">
-                      Filtering by: {AWARD_ORGANIZATIONS.find(o => o.id === selectedOrgFilter)?.name}
+                    <span className="text-sm font-medium text-yellow-300">
+                      Filtering: {AWARD_ORGANIZATIONS.find(o => o.id === selectedOrgFilter)?.name}
                     </span>
                   </div>
-                  <Button size="sm" variant="ghost" onClick={() => setSelectedOrgFilter(null)}>
+                  <Button size="sm" variant="ghost" className="text-white/60 hover:text-white" onClick={() => setSelectedOrgFilter(null)}>
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
@@ -859,8 +872,8 @@ const LiveMap = () => {
                     key={org.id}
                     className={`p-4 rounded-xl border cursor-pointer transition-all ${
                       selectedOrgFilter === org.id 
-                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400' 
-                        : 'bg-card hover:bg-accent/50'
+                        ? 'bg-yellow-500/20 border-yellow-500/40' 
+                        : 'bg-white/5 border-white/10 hover:bg-white/10'
                     }`}
                     onClick={() => {
                       setSelectedOrgFilter(selectedOrgFilter === org.id ? null : org.id);
@@ -877,22 +890,22 @@ const LiveMap = () => {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <h4 className="font-bold text-base">{org.name}</h4>
-                          <Badge variant="secondary" className="bg-primary/10">
+                          <h4 className="font-bold text-base text-white">{org.name}</h4>
+                          <Badge className="bg-white/10 text-white/80">
                             {venues.length} venues
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">{org.description}</p>
+                        <p className="text-xs text-white/50 mt-1">{org.description}</p>
                         
                         {/* Award types */}
                         <div className="flex flex-wrap gap-1 mt-2">
                           {org.awards.slice(0, 3).map((award, i) => (
-                            <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0">
+                            <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 border-white/20 text-white/60">
                               {award}
                             </Badge>
                           ))}
                           {org.awards.length > 3 && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-white/20 text-white/60">
                               +{org.awards.length - 3}
                             </Badge>
                           )}
@@ -900,13 +913,13 @@ const LiveMap = () => {
 
                         {/* Venue preview */}
                         {venues.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-border/50">
-                            <p className="text-[10px] text-muted-foreground mb-2 uppercase tracking-wide">Top Venues</p>
+                          <div className="mt-3 pt-3 border-t border-white/10">
+                            <p className="text-[10px] text-white/40 mb-2 uppercase tracking-wide">Top Venues</p>
                             <div className="space-y-1.5">
                               {venues.slice(0, 3).map((venue) => (
                                 <div 
                                   key={venue.id} 
-                                  className="flex items-center gap-2 p-2 rounded-lg bg-background/50 hover:bg-background cursor-pointer"
+                                  className="flex items-center gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setShowAwardsOrgs(false);
@@ -914,14 +927,14 @@ const LiveMap = () => {
                                   }}
                                 >
                                   <div className={`w-6 h-6 rounded flex items-center justify-center text-xs
-                                    ${venue.type === 'bar' ? 'bg-purple-100 dark:bg-purple-900/30' : 
-                                      venue.type === 'restaurant' ? 'bg-orange-100 dark:bg-orange-900/30' : 
-                                      'bg-amber-100 dark:bg-amber-900/30'}`}
+                                    ${venue.type === 'bar' ? 'bg-purple-500/30' : 
+                                      venue.type === 'restaurant' ? 'bg-orange-500/30' : 
+                                      'bg-amber-500/30'}`}
                                   >
                                     {venue.type === 'bar' ? '🍺' : venue.type === 'restaurant' ? '🍽️' : '☕'}
                                   </div>
-                                  <span className="text-xs font-medium truncate flex-1">{venue.name}</span>
-                                  <Navigation className="w-3 h-3 text-muted-foreground" />
+                                  <span className="text-xs font-medium truncate flex-1 text-white/80">{venue.name}</span>
+                                  <Navigation className="w-3 h-3 text-white/40" />
                                 </div>
                               ))}
                             </div>
@@ -929,7 +942,7 @@ const LiveMap = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="w-full mt-2 text-xs"
+                                className="w-full mt-2 text-xs text-white/60 hover:text-white hover:bg-white/10"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedOrgFilter(org.id);
@@ -955,7 +968,7 @@ const LiveMap = () => {
       <AnimatePresence>
         {selectedPlace && (
           <motion.div
-            className="absolute bottom-0 left-0 right-0 z-[1001] bg-background/95 backdrop-blur-xl rounded-t-3xl shadow-2xl border-t border-border/50"
+            className="absolute bottom-0 left-0 right-0 z-[1001] bg-black/70 backdrop-blur-2xl rounded-t-3xl shadow-2xl border-t border-white/10"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -963,13 +976,13 @@ const LiveMap = () => {
           >
             <div className="p-4">
               {/* Handle */}
-              <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-4" />
+              <div className="w-12 h-1 bg-white/30 rounded-full mx-auto mb-4" />
               
               {/* Close Button */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-4 right-4"
+                className="absolute top-4 right-4 text-white/60 hover:text-white hover:bg-white/10"
                 onClick={() => setSelectedPlace(null)}
               >
                 <X className="w-5 h-5" />
@@ -978,21 +991,21 @@ const LiveMap = () => {
               {/* Header */}
               <div className="flex items-start gap-4 mb-4">
                 <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl
-                  ${selectedPlace.type === 'bar' ? 'bg-purple-100 dark:bg-purple-900/30' : 
-                    selectedPlace.type === 'restaurant' ? 'bg-orange-100 dark:bg-orange-900/30' : 
-                    'bg-amber-100 dark:bg-amber-900/30'}`}
+                  ${selectedPlace.type === 'bar' ? 'bg-purple-500/30' : 
+                    selectedPlace.type === 'restaurant' ? 'bg-orange-500/30' : 
+                    'bg-amber-500/30'}`}
                 >
                   {selectedPlace.type === 'bar' ? '🍺' : selectedPlace.type === 'restaurant' ? '🍽️' : '☕'}
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-xl font-bold">{selectedPlace.name}</h2>
-                  <p className="text-sm text-muted-foreground capitalize">
+                  <h2 className="text-xl font-bold text-white">{selectedPlace.name}</h2>
+                  <p className="text-sm text-white/50 capitalize">
                     {selectedPlace.type}{selectedPlace.cuisine ? ` • ${selectedPlace.cuisine}` : ''}
                   </p>
                   {selectedPlace.rating && (
                     <div className="flex items-center gap-1 mt-1">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold">{selectedPlace.rating.toFixed(1)}</span>
+                      <span className="font-semibold text-white">{selectedPlace.rating.toFixed(1)}</span>
                     </div>
                   )}
                 </div>
@@ -1001,7 +1014,7 @@ const LiveMap = () => {
               {/* Awards */}
               {selectedPlace.awards && selectedPlace.awards.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-white/80">
                     <Award className="w-4 h-4 text-yellow-500" />
                     Awards & Recognition
                   </h3>
@@ -1009,7 +1022,7 @@ const LiveMap = () => {
                     {selectedPlace.awards.map((award, i) => {
                       const org = AWARD_ORGANIZATIONS.find(o => o.id === award.organization);
                       return (
-                        <Badge key={i} className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                        <Badge key={i} className="bg-yellow-500/30 text-yellow-300">
                           {org?.icon || '🏆'} {award.award}
                         </Badge>
                       );
@@ -1021,15 +1034,15 @@ const LiveMap = () => {
               {/* Details */}
               <div className="space-y-2 mb-4">
                 {selectedPlace.address && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPinned className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex items-center gap-2 text-sm text-white/70">
+                    <MapPinned className="w-4 h-4 text-white/50" />
                     <span>{selectedPlace.address}</span>
                   </div>
                 )}
                 {selectedPlace.openingHours && (
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="text-muted-foreground">Hours:</span>
-                    <span>{selectedPlace.openingHours}</span>
+                    <span className="text-white/50">Hours:</span>
+                    <span className="text-white/70">{selectedPlace.openingHours}</span>
                   </div>
                 )}
               </div>
@@ -1037,7 +1050,7 @@ const LiveMap = () => {
               {/* Actions */}
               <div className="flex gap-3">
                 <Button 
-                  className="flex-1" 
+                  className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0" 
                   onClick={() => {
                     const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedPlace.lat},${selectedPlace.lon}`;
                     window.open(url, '_blank');
@@ -1047,7 +1060,7 @@ const LiveMap = () => {
                   Directions
                 </Button>
                 {selectedPlace.website && (
-                  <Button variant="outline" onClick={() => window.open(selectedPlace.website, '_blank')}>
+                  <Button variant="outline" className="border-white/20 text-white/70 hover:bg-white/10" onClick={() => window.open(selectedPlace.website, '_blank')}>
                     <ExternalLink className="w-4 h-4" />
                   </Button>
                 )}
@@ -1059,10 +1072,10 @@ const LiveMap = () => {
 
       {/* Settings Sheet */}
       <Sheet open={showSettings} onOpenChange={setShowSettings}>
-        <SheetContent side="bottom" className="h-[450px] rounded-t-3xl">
+        <SheetContent side="bottom" className="h-[450px] rounded-t-3xl bg-black/70 backdrop-blur-2xl border-t border-white/10">
           <SheetHeader>
-            <SheetTitle>Map Settings</SheetTitle>
-            <SheetDescription>
+            <SheetTitle className="text-white">Map Settings</SheetTitle>
+            <SheetDescription className="text-white/60">
               Customize your map tracking and visibility preferences
             </SheetDescription>
           </SheetHeader>
@@ -1070,10 +1083,10 @@ const LiveMap = () => {
           <div className="space-y-5 mt-6">
             <div className="flex items-center justify-between space-x-4">
               <div className="flex-1 space-y-1">
-                <Label htmlFor="auto-center" className="text-base font-medium">
+                <Label htmlFor="auto-center" className="text-base font-medium text-white">
                   Auto-Center on Location
                 </Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-white/50">
                   Automatically center map as you move
                 </p>
               </div>
@@ -1086,10 +1099,10 @@ const LiveMap = () => {
 
             <div className="flex items-center justify-between space-x-4">
               <div className="flex-1 space-y-1">
-                <Label htmlFor="ghost-mode" className="text-base font-medium">
+                <Label htmlFor="ghost-mode" className="text-base font-medium text-white">
                   Ghost Mode
                 </Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-white/50">
                   Hide your location from others
                 </p>
               </div>
@@ -1102,10 +1115,10 @@ const LiveMap = () => {
 
             <div className="flex items-center justify-between space-x-4">
               <div className="flex-1 space-y-1">
-                <Label htmlFor="show-places" className="text-base font-medium">
+                <Label htmlFor="show-places" className="text-base font-medium text-white">
                   Show Bars & Restaurants
                 </Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-white/50">
                   Display nearby venues on the map
                 </p>
               </div>
@@ -1118,10 +1131,10 @@ const LiveMap = () => {
 
             <div className="flex items-center justify-between space-x-4">
               <div className="flex-1 space-y-1">
-                <Label htmlFor="satellite-mode" className="text-base font-medium">
+                <Label htmlFor="satellite-mode" className="text-base font-medium text-white">
                   Satellite View
                 </Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-white/50">
                   Switch between street and satellite imagery
                 </p>
               </div>
@@ -1132,14 +1145,14 @@ const LiveMap = () => {
               />
             </div>
 
-            <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10">
               <div className="flex items-center gap-3">
                 <MapPin className={`w-5 h-5 ${isTracking ? 'text-green-500' : 'text-red-500'}`} />
                 <div>
-                  <p className="text-sm font-medium">
+                  <p className="text-sm font-medium text-white">
                     {isTracking ? 'GPS Active' : 'GPS Inactive'}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-white/50">
                     {viewMode === 'city' ? `City view (${CITY_RADIUS_KM}km)` : `Nearby view (${NEARBY_RADIUS_KM}km)`}
                   </p>
                 </div>
