@@ -98,3 +98,9 @@ verify_jwt = true
 
 [functions.send-branded-email]
 verify_jwt = false
+
+[functions.custom-password-reset]
+verify_jwt = false
+
+[functions.verify-reset-token]
+verify_jwt = false

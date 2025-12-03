@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 
 const passwordSchema = z.string()
@@ -16,54 +16,105 @@ const passwordSchema = z.string()
 
 const PasswordReset = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isValidToken, setIsValidToken] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+  const [customToken, setCustomToken] = useState<string | null>(null);
+  const [isSupabaseRecovery, setIsSupabaseRecovery] = useState(false);
 
   useEffect(() => {
-    // Check if we have a valid recovery token
-    const checkRecoveryToken = async () => {
+    const checkToken = async () => {
+      // Check for custom token in URL params
+      const token = searchParams.get('token');
+      
+      // Check for Supabase recovery token in hash
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const type = hashParams.get('type');
       
-      if (type !== 'recovery') {
+      if (token) {
+        // Verify custom token
+        try {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-reset-token`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token }),
+            }
+          );
+          
+          const result = await response.json();
+          
+          if (result.success && result.valid) {
+            setCustomToken(token);
+            setIsValidToken(true);
+          } else {
+            toast.error("Invalid or expired reset link");
+            navigate('/auth');
+          }
+        } catch (error) {
+          toast.error("Failed to verify reset link");
+          navigate('/auth');
+        }
+      } else if (type === 'recovery') {
+        // Supabase recovery flow (legacy support)
+        setIsSupabaseRecovery(true);
+        setIsValidToken(true);
+      } else {
         toast.error("Invalid password reset link");
         navigate('/auth');
-        return;
       }
-
-      setIsValidToken(true);
+      
+      setIsChecking(false);
     };
 
-    checkRecoveryToken();
-  }, [navigate]);
+    checkToken();
+  }, [navigate, searchParams]);
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Validate passwords match
       if (password !== confirmPassword) {
         toast.error("Passwords don't match");
         setLoading(false);
         return;
       }
 
-      // Validate password strength
       const validated = passwordSchema.parse(password);
 
-      // Update the user's password
-      const { error } = await supabase.auth.updateUser({
-        password: validated
-      });
+      if (customToken) {
+        // Use custom token verification
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-reset-token`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: customToken, newPassword: validated }),
+          }
+        );
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to update password');
+        }
+        
+        toast.success("Password updated successfully!");
+      } else if (isSupabaseRecovery) {
+        // Legacy Supabase recovery
+        const { error } = await supabase.auth.updateUser({
+          password: validated
+        });
+        
+        if (error) throw error;
+        toast.success("Password updated successfully!");
+      }
       
-      if (error) throw error;
-
-      toast.success("Password updated successfully! You can now sign in with your new password.");
-      
-      // Navigate to auth page after successful reset
       setTimeout(() => {
         navigate('/auth');
       }, 1500);
@@ -79,7 +130,7 @@ const PasswordReset = () => {
     }
   };
 
-  if (!isValidToken) {
+  if (isChecking) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -87,11 +138,14 @@ const PasswordReset = () => {
     );
   }
 
+  if (!isValidToken) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute top-20 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-20 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-50" />
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl opacity-30" />
       
       <div className="w-full max-w-md glass glow-primary rounded-2xl p-8 space-y-6 relative z-10">
         <div className="text-center space-y-2">
