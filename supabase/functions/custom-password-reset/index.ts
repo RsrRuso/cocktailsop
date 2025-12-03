@@ -22,28 +22,34 @@ const getPasswordResetTemplate = (resetLink: string) => `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; background-color: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #1a1a1a; padding: 40px 20px;">
+<body style="margin: 0; padding: 0; background-color: #2a2a2a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #2a2a2a; padding: 40px 20px;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #1a1a1a; border-radius: 16px; overflow: hidden; max-width: 600px;">
-          <!-- Header with Avatar Icon -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #333333; border-radius: 16px; overflow: hidden; max-width: 600px;">
+          <!-- Header with Logo Icon -->
           <tr>
-            <td style="padding: 40px 40px 20px 40px; text-align: center; background-color: #1a1a1a;">
-              <div style="width: 80px; height: 80px; background-color: #2a2a2a; border-radius: 50%; margin: 0 auto 16px auto; display: inline-block; line-height: 80px; font-size: 28px; font-weight: bold; color: #e0e0e0; border: 2px solid #3a3a3a;">
-                SV
-              </div>
-              <p style="margin: 8px 0 0 0; color: #909090; font-size: 14px;">Your Professional Network</p>
+            <td style="padding: 40px 40px 20px 40px; text-align: center; background-color: #333333;">
+              <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: 0 auto 16px auto;">
+                <defs>
+                  <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#D4A85A;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#5A8ED4;stop-opacity:1" />
+                  </linearGradient>
+                </defs>
+                <rect x="5" y="5" width="70" height="70" rx="18" ry="18" fill="url(#logoGradient)" />
+              </svg>
+              <p style="margin: 8px 0 0 0; color: #9a9a9a; font-size: 14px;">Your Professional Network</p>
             </td>
           </tr>
           
           <!-- Content -->
           <tr>
-            <td style="padding: 20px 40px 40px 40px; background-color: #1a1a1a;">
-              <h2 style="margin: 0 0 16px 0; color: #e0e0e0; font-size: 24px; font-weight: 600;">
+            <td style="padding: 20px 40px 40px 40px; background-color: #333333;">
+              <h2 style="margin: 0 0 16px 0; color: #ffffff; font-size: 24px; font-weight: 600;">
                 Reset Your Password
               </h2>
-              <p style="margin: 0 0 24px 0; color: #909090; font-size: 16px; line-height: 1.6;">
+              <p style="margin: 0 0 24px 0; color: #b0b0b0; font-size: 16px; line-height: 1.6;">
                 We received a request to reset your password. Click the button below to create a new password.
               </p>
               
@@ -51,18 +57,18 @@ const getPasswordResetTemplate = (resetLink: string) => `
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center" style="padding: 20px 0;">
-                    <a href="${resetLink}" style="display: inline-block; padding: 16px 40px; background-color: #3a3a3a; color: #e0e0e0; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
+                    <a href="${resetLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #D4A85A 0%, #5A8ED4 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
                       Reset Password
                     </a>
                   </td>
                 </tr>
               </table>
               
-              <p style="margin: 24px 0 0 0; color: #707070; font-size: 14px; line-height: 1.6;">
+              <p style="margin: 24px 0 0 0; color: #9a9a9a; font-size: 14px; line-height: 1.6;">
                 If you didn't request this, you can safely ignore this email. Your password will remain unchanged.
               </p>
               
-              <p style="margin: 16px 0 0 0; color: #606060; font-size: 12px;">
+              <p style="margin: 16px 0 0 0; color: #707070; font-size: 12px;">
                 This link will expire in 1 hour for security reasons.
               </p>
             </td>
@@ -70,8 +76,8 @@ const getPasswordResetTemplate = (resetLink: string) => `
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 40px; background-color: #1a1a1a; border-top: 1px solid #2a2a2a; text-align: center;">
-              <p style="margin: 0; color: #606060; font-size: 12px;">
+            <td style="padding: 20px 40px; background-color: #2a2a2a; text-align: center;">
+              <p style="margin: 0; color: #707070; font-size: 12px;">
                 © ${new Date().getFullYear()} SpecVerse. All rights reserved.
               </p>
             </td>
