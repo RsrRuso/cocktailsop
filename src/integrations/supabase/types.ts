@@ -6644,17 +6644,17 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
-          address?: string | null
+          address?: never
           avatar_url?: string | null
           badge_level?: Database["public"]["Enums"]["badge_level"] | null
           bio?: string | null
           career_score?: number | null
-          city?: string | null
-          country?: string | null
+          city?: never
+          country?: never
           cover_url?: string | null
           created_at?: string | null
           date_of_birth?: string | null
-          email?: string | null
+          email?: never
           email_verified?: boolean | null
           follower_count?: number | null
           following_count?: number | null
@@ -6665,7 +6665,7 @@ export type Database = {
           phone?: never
           phone_verified?: boolean | null
           post_count?: number | null
-          postal_code?: string | null
+          postal_code?: never
           professional_title?:
             | Database["public"]["Enums"]["professional_title"]
             | null
@@ -6680,17 +6680,17 @@ export type Database = {
           whatsapp?: never
         }
         Update: {
-          address?: string | null
+          address?: never
           avatar_url?: string | null
           badge_level?: Database["public"]["Enums"]["badge_level"] | null
           bio?: string | null
           career_score?: number | null
-          city?: string | null
-          country?: string | null
+          city?: never
+          country?: never
           cover_url?: string | null
           created_at?: string | null
           date_of_birth?: string | null
-          email?: string | null
+          email?: never
           email_verified?: boolean | null
           follower_count?: number | null
           following_count?: number | null
@@ -6701,7 +6701,7 @@ export type Database = {
           phone?: never
           phone_verified?: boolean | null
           post_count?: number | null
-          postal_code?: string | null
+          postal_code?: never
           professional_title?:
             | Database["public"]["Enums"]["professional_title"]
             | null
