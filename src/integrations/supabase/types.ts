@@ -6761,6 +6761,10 @@ export type Database = {
         Args: { p_expiration_date: string; p_received_date: string }
         Returns: number
       }
+      can_manage_batch_production: {
+        Args: { production_id: string }
+        Returns: boolean
+      }
       create_notification: {
         Args: {
           p_content: string
