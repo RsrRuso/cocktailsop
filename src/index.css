@@ -1658,3 +1658,27 @@ All colors MUST be HSL.
     display: none;
   }
 }
+
+/* Neon Glowing Night Map Effect */
+.leaflet-container {
+  background: #0a0a0f !important;
+}
+
+.leaflet-tile-pane {
+  filter: brightness(1.1) saturate(1.3) contrast(1.15);
+}
+
+/* Glowing roads overlay effect */
+.leaflet-tile-pane::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 200, 255, 0.03) 100%);
+  mix-blend-mode: screen;
+}
+
+/* Enhanced glow for map container */
+.leaflet-map-pane {
+  filter: drop-shadow(0 0 2px rgba(100, 200, 255, 0.15));
+}
