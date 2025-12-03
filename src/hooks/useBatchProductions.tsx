@@ -43,10 +43,14 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
         query = query.eq('recipe_id', recipeId);
       }
 
-      // RLS policy handles all access control:
-      // 1. User's own productions
-      // 2. Productions with group_id where user is a member
-      // 3. All productions from users who share groups with current user
+      // Filter by group_id when a group is selected
+      if (groupId) {
+        query = query.eq('group_id', groupId);
+      } else {
+        // When no group selected (personal), show only personal productions
+        query = query.is('group_id', null);
+      }
+
       const { data, error } = await query;
       if (error) throw error;
 
