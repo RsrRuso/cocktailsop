@@ -3186,28 +3186,59 @@ const BatchCalculator = () => {
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4 pb-4">
-            {selectedGroupId && (
-              <Card className="glass p-4 border-primary/50 mb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-primary" />
-                    <p className="text-sm">
-                      Viewing group data: <span className="font-semibold">{groups?.find(g => g.id === selectedGroupId)?.name}</span>
-                    </p>
-                  </div>
-                  {isGroupAdmin && (
-                    <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full font-semibold">
-                      Admin
-                    </span>
-                  )}
+            {/* Group Selection Dropdown */}
+            <Card className="glass p-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Select Group
+                </Label>
+                <Select 
+                  value={selectedGroupId || "personal"} 
+                  onValueChange={(value) => {
+                    setSelectedGroupId(value === "personal" ? null : value);
+                  }}
+                >
+                  <SelectTrigger className="bg-background border-border">
+                    <SelectValue placeholder="Choose a group" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border z-[100]">
+                    <SelectItem value="personal">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Personal Recipes
+                      </div>
+                    </SelectItem>
+                    {groups && groups.map((group) => (
+                      <SelectItem key={group.id} value={group.id}>
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4" />
+                          {group.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedGroupId && isGroupAdmin && (
+                <div className="flex items-center justify-end mt-2">
+                  <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full font-semibold">
+                    Admin
+                  </span>
                 </div>
-              </Card>
-            )}
+              )}
+            </Card>
+
             <Card className="glass p-4 sm:p-6">
               <div className="flex flex-col gap-4 mb-6">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <History className="w-5 h-5" />
                   Production History
+                  {selectedGroupId && (
+                    <span className="text-sm font-normal text-muted-foreground">
+                      - {groups?.find(g => g.id === selectedGroupId)?.name}
+                    </span>
+                  )}
                 </h3>
                 {productions && productions.length > 0 && (
                   <Button

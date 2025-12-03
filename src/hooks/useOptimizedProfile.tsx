@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { deduplicateRequest } from '@/lib/requestDeduplication';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Profile {
   id: string;
@@ -25,9 +25,14 @@ interface Profile {
 }
 
 export const useOptimizedProfile = (userId: string | null) => {
+  const { profile: authProfile, user } = useAuth();
+  
+  // Use auth profile as initial data if it's the current user
+  const isCurrentUser = user?.id === userId;
+  
   return useQuery({
     queryKey: ['profile', userId],
-    queryFn: () => deduplicateRequest(`profile-${userId}`, async () => {
+    queryFn: async () => {
       if (!userId) return null;
       
       const { data, error } = await supabase
@@ -38,10 +43,13 @@ export const useOptimizedProfile = (userId: string | null) => {
 
       if (error) throw error;
       return data as Profile | null;
-    }),
+    },
     enabled: !!userId,
-    staleTime: 30 * 60 * 1000, // 30 minutes - very aggressive
-    gcTime: 60 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+    // Use auth profile as placeholder for instant display
+    placeholderData: isCurrentUser ? authProfile : undefined,
   });
 };
 
@@ -50,7 +58,7 @@ export const useOptimizedProfileData = (userId: string | null) => {
 
   const posts = useQuery({
     queryKey: ['posts', userId],
-    queryFn: () => deduplicateRequest(`posts-${userId}`, async () => {
+    queryFn: async () => {
       if (!userId) return [];
       
       const { data } = await supabase
@@ -61,15 +69,16 @@ export const useOptimizedProfileData = (userId: string | null) => {
         .limit(12);
 
       return data || [];
-    }),
+    },
     enabled: !!userId,
-    staleTime: 30 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
   });
 
   const reels = useQuery({
     queryKey: ['reels', userId],
-    queryFn: () => deduplicateRequest(`reels-${userId}`, async () => {
+    queryFn: async () => {
       if (!userId) return [];
       
       const { data } = await supabase
@@ -80,15 +89,16 @@ export const useOptimizedProfileData = (userId: string | null) => {
         .limit(12);
 
       return data || [];
-    }),
+    },
     enabled: !!userId,
-    staleTime: 30 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
   });
 
   const experiences = useQuery({
     queryKey: ['experiences', userId],
-    queryFn: () => deduplicateRequest(`experiences-${userId}`, async () => {
+    queryFn: async () => {
       if (!userId) return [];
       
       const { data } = await supabase
@@ -98,15 +108,16 @@ export const useOptimizedProfileData = (userId: string | null) => {
         .order('start_date', { ascending: false });
 
       return data || [];
-    }),
+    },
     enabled: !!userId,
-    staleTime: 30 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
   });
 
   const certifications = useQuery({
     queryKey: ['certifications', userId],
-    queryFn: () => deduplicateRequest(`certifications-${userId}`, async () => {
+    queryFn: async () => {
       if (!userId) return [];
       
       const { data } = await supabase
@@ -116,15 +127,16 @@ export const useOptimizedProfileData = (userId: string | null) => {
         .order('issue_date', { ascending: false });
 
       return data || [];
-    }),
+    },
     enabled: !!userId,
-    staleTime: 30 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
   });
 
   const recognitions = useQuery({
     queryKey: ['recognitions', userId],
-    queryFn: () => deduplicateRequest(`recognitions-${userId}`, async () => {
+    queryFn: async () => {
       if (!userId) return [];
       
       const { data } = await supabase
@@ -134,15 +146,16 @@ export const useOptimizedProfileData = (userId: string | null) => {
         .order('issue_date', { ascending: false });
 
       return data || [];
-    }),
+    },
     enabled: !!userId,
-    staleTime: 30 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
   });
 
   const competitions = useQuery({
     queryKey: ['competitions', userId],
-    queryFn: () => deduplicateRequest(`competitions-${userId}`, async () => {
+    queryFn: async () => {
       if (!userId) return [];
       
       const { data } = await supabase
@@ -152,15 +165,16 @@ export const useOptimizedProfileData = (userId: string | null) => {
         .order('competition_date', { ascending: false });
 
       return data || [];
-    }),
+    },
     enabled: !!userId,
-    staleTime: 30 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
   });
 
   const stories = useQuery({
     queryKey: ['stories', userId],
-    queryFn: () => deduplicateRequest(`stories-${userId}`, async () => {
+    queryFn: async () => {
       if (!userId) return [];
       
       const { data } = await supabase
@@ -172,15 +186,16 @@ export const useOptimizedProfileData = (userId: string | null) => {
         .limit(6);
 
       return data || [];
-    }),
+    },
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000, // 5 minutes for stories
-    gcTime: 10 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: false,
   });
 
   const userRoles = useQuery({
     queryKey: ['userRoles', userId],
-    queryFn: () => deduplicateRequest(`userRoles-${userId}`, async () => {
+    queryFn: async () => {
       if (!userId) return { isFounder: false, isVerified: false };
       
       const { data } = await supabase
@@ -192,10 +207,11 @@ export const useOptimizedProfileData = (userId: string | null) => {
         isFounder: data?.some(r => r.role === 'founder') || false,
         isVerified: data?.some(r => r.role === 'verified') || false,
       };
-    }),
+    },
     enabled: !!userId,
-    staleTime: 30 * 60 * 1000, // 30 minutes for roles
-    gcTime: 60 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
   });
 
   return {
@@ -208,7 +224,7 @@ export const useOptimizedProfileData = (userId: string | null) => {
     competitions: competitions.data || [],
     stories: stories.data || [],
     userRoles: userRoles.data || { isFounder: false, isVerified: false },
-    isLoading: profile.isLoading || posts.isLoading || reels.isLoading || competitions.isLoading,
+    isLoading: profile.isLoading,
     refetchAll: () => {
       profile.refetch();
       posts.refetch();
