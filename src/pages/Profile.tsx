@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOptimizedProfileData } from "@/hooks/useOptimizedProfile";
+import { Loader2 } from "lucide-react";
 import { useRegionalRanking } from "@/hooks/useRegionalRanking";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -88,11 +89,11 @@ interface Reel {
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile: authProfile } = useAuth();
   
-  // Use optimized hook for all data - removed currentUserId references
+  // Use optimized hook for all data
   const { 
-    profile, 
+    profile: queryProfile, 
     posts, 
     reels, 
     experiences, 
@@ -104,6 +105,9 @@ const Profile = () => {
     isLoading,
     refetchAll 
   } = useOptimizedProfileData(user?.id || null);
+  
+  // Use auth profile immediately, fall back to query profile
+  const profile = queryProfile || authProfile;
   
   const [coverUrl, setCoverUrl] = useState<string>("");
   const [showFollowers, setShowFollowers] = useState(false);
@@ -211,9 +215,21 @@ const Profile = () => {
     navigate("/auth");
   };
 
-
-  // Show skeleton only on first load, not on navigation
-  if (!profile && isLoading) {
+  // Instant display - use authProfile if available, show minimal skeleton only if truly no data
+  if (!profile) {
+    // If auth is still loading, show brief skeleton
+    if (!user) {
+      return (
+        <div className="min-h-screen bg-background pb-20 pt-16">
+          <TopNav />
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+          <BottomNav />
+        </div>
+      );
+    }
+    // User exists but no profile yet - still show skeleton briefly
     return (
       <div className="min-h-screen bg-background pb-20 pt-16">
         <TopNav />
@@ -232,21 +248,6 @@ const Profile = () => {
       </div>
     );
   }
-
-  // If no profile but not loading, redirect to auth
-  if (!profile && !isLoading) {
-    return (
-      <div className="min-h-screen bg-background pb-20 pt-16">
-        <TopNav />
-        <div className="px-4 py-6 text-center">
-          <p className="text-muted-foreground">Loading profile...</p>
-        </div>
-        <BottomNav />
-      </div>
-    );
-  }
-
-  if (!profile) return null;
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
