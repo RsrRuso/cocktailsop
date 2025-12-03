@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOptimizedProfileData } from "@/hooks/useOptimizedProfile";
-import { Loader2 } from "lucide-react";
 import { useRegionalRanking } from "@/hooks/useRegionalRanking";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
@@ -32,6 +31,7 @@ import { ExperienceTimeline } from "@/components/ExperienceTimeline";
 import { calculateCareerScore } from "@/lib/careerMetrics";
 import BirthdayConfetti from "@/components/BirthdayConfetti";
 import BirthdayBadge from "@/components/BirthdayBadge";
+import { useUserBirthday } from "@/hooks/useUserBirthday";
 
 interface Profile {
   id: string;
@@ -88,11 +88,11 @@ interface Reel {
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, profile: authProfile, isLoading: authLoading } = useAuth();
+  const { user } = useAuth();
   
-  // Use optimized hook for all data
+  // Use optimized hook for all data - removed currentUserId references
   const { 
-    profile: queryProfile, 
+    profile, 
     posts, 
     reels, 
     experiences, 
@@ -101,12 +101,10 @@ const Profile = () => {
     competitions,
     stories, 
     userRoles, 
+    isLoading,
     refetchAll 
   } = useOptimizedProfileData(user?.id || null);
   
-  // Use query profile first (more complete), then auth profile as fallback
-  const profile = queryProfile || authProfile;
-
   const [coverUrl, setCoverUrl] = useState<string>("");
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
@@ -118,18 +116,8 @@ const Profile = () => {
   const [showAddExperience, setShowAddExperience] = useState(false);
   const [showAddCertification, setShowAddCertification] = useState(false);
   const [showAddRecognition, setShowAddRecognition] = useState(false);
-  const { data: userStatus, refetch: refetchStatus } = useUserStatus(user?.id || null);
-  
-  // Calculate birthday from profile data directly (no extra request)
-  const birthdayData = useMemo(() => {
-    const dob = profile?.date_of_birth || authProfile?.date_of_birth;
-    if (!dob) return { isBirthday: false };
-    const birthDate = new Date(dob);
-    const today = new Date();
-    const isBirthday = birthDate.getMonth() === today.getMonth() && 
-      Math.abs(birthDate.getDate() - today.getDate()) <= 3;
-    return { isBirthday };
-  }, [profile?.date_of_birth, authProfile?.date_of_birth]);
+  const { data: userStatus, refetch: refetchStatus } = useUserStatus(user?.id || "");
+  const { data: birthdayData } = useUserBirthday(user?.id || null);
 
   // Calculate career score (memoized)
   const careerMetrics = useMemo(() => {
@@ -146,10 +134,11 @@ const Profile = () => {
   );
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!user) {
       navigate("/auth");
+      return;
     }
-  }, [user, authLoading, navigate]);
+  }, [user, navigate]);
 
   useEffect(() => {
     if (profile?.cover_url) {
@@ -222,45 +211,26 @@ const Profile = () => {
     navigate("/auth");
   };
 
-  // Show loading only during initial auth check
-  if (authLoading) {
+
+  if (!profile) {
     return (
       <div className="min-h-screen bg-background pb-20 pt-16">
         <TopNav />
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <div className="px-4 py-6 space-y-6">
+          <div className="glass rounded-xl p-6 space-y-4 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="w-24 h-24 rounded-full bg-muted" />
+              <div className="space-y-2">
+                <div className="h-6 w-32 bg-muted rounded" />
+                <div className="h-4 w-24 bg-muted rounded" />
+              </div>
+            </div>
+          </div>
         </div>
         <BottomNav />
       </div>
     );
   }
-
-  // Redirect to auth if no user
-  if (!user) {
-    return null;
-  }
-
-  // Safe profile with defaults
-  const safeProfile = {
-    id: profile?.id || user.id,
-    username: profile?.username || user.user_metadata?.username || 'User',
-    full_name: profile?.full_name || user.user_metadata?.full_name || '',
-    bio: profile?.bio || null,
-    avatar_url: profile?.avatar_url || null,
-    cover_url: profile?.cover_url || null,
-    professional_title: profile?.professional_title || null,
-    badge_level: profile?.badge_level || 'bronze',
-    region: profile?.region || null,
-    follower_count: profile?.follower_count || 0,
-    following_count: profile?.following_count || 0,
-    post_count: profile?.post_count || 0,
-    phone: profile?.phone || null,
-    whatsapp: profile?.whatsapp || null,
-    website: profile?.website || null,
-    show_phone: profile?.show_phone || false,
-    show_whatsapp: profile?.show_whatsapp || false,
-    show_website: profile?.show_website || false,
-  };
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
@@ -286,11 +256,11 @@ const Profile = () => {
                   onClick={() => setShowAvatarDialog(true)}
                 >
                   <OptimizedAvatar
-                    src={safeProfile.avatar_url}
-                    alt={safeProfile.username}
-                    fallback={safeProfile.username[0]}
-                    userId={user.id}
-                    className={`w-24 h-24 avatar-3d ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(safeProfile.badge_level)}`}
+                    src={profile.avatar_url}
+                    alt={profile.username}
+                    fallback={profile.username[0]}
+                    userId={user?.id || ""}
+                    className={`w-24 h-24 avatar-3d ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)}`}
                     showStatus={true}
                     showAddButton={true}
                     onAddStatusClick={() => setShowStatusDialog(true)}
@@ -299,7 +269,7 @@ const Profile = () => {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h2 className="text-2xl font-bold">{safeProfile.full_name || safeProfile.username}</h2>
+                  <h2 className="text-2xl font-bold">{profile.full_name}</h2>
                   {/* Verification badge */}
                   {(userRoles.isFounder || userRoles.isVerified) && (
                     <div 
@@ -322,11 +292,11 @@ const Profile = () => {
                   )}
                 </div>
                 <p className="text-muted-foreground flex items-center gap-1.5">
-                  @{safeProfile.username}
-                  <BirthdayBadge userId={user.id} />
+                  @{profile.username}
+                  <BirthdayBadge userId={user?.id} />
                 </p>
                 <p className="text-sm text-primary capitalize mt-1">
-                  {safeProfile.professional_title?.replace(/_/g, " ")}
+                  {profile.professional_title?.replace(/_/g, " ")}
                 </p>
               </div>
             </div>
@@ -340,25 +310,25 @@ const Profile = () => {
             </Button>
           </div>
 
-          {safeProfile.bio && (
-            <p className="text-sm text-muted-foreground">{safeProfile.bio}</p>
+          {profile.bio && (
+            <p className="text-sm text-muted-foreground">{profile.bio}</p>
           )}
 
           {/* Contact Links */}
-          {(safeProfile.show_phone && safeProfile.phone) || (safeProfile.show_whatsapp && safeProfile.whatsapp) || (safeProfile.show_website && safeProfile.website) ? (
+          {(profile.show_phone && profile.phone) || (profile.show_whatsapp && profile.whatsapp) || (profile.show_website && profile.website) ? (
             <div className="flex flex-wrap gap-2">
-              {safeProfile.show_phone && safeProfile.phone && (
+              {profile.show_phone && profile.phone && (
                 <a
-                  href={`tel:${safeProfile.phone}`}
+                  href={`tel:${profile.phone}`}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
                 >
                   <Phone className="w-4 h-4 text-primary" />
-                  <span>{safeProfile.phone}</span>
+                  <span>{profile.phone}</span>
                 </a>
               )}
-              {safeProfile.show_whatsapp && safeProfile.whatsapp && (
+              {profile.show_whatsapp && profile.whatsapp && (
                 <a
-                  href={`https://wa.me/${safeProfile.whatsapp.replace(/[^0-9]/g, '')}`}
+                  href={`https://wa.me/${profile.whatsapp.replace(/[^0-9]/g, '')}`}
                   target="_blank"
                   className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
                 >
@@ -366,9 +336,9 @@ const Profile = () => {
                   <span>WhatsApp</span>
                 </a>
               )}
-              {safeProfile.show_website && safeProfile.website && (
+              {profile.show_website && profile.website && (
                 <a
-                  href={safeProfile.website.startsWith('http') ? safeProfile.website : `https://${safeProfile.website}`}
+                  href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
@@ -389,14 +359,14 @@ const Profile = () => {
               className="text-center hover:opacity-70 transition-opacity"
               onClick={() => setShowFollowers(true)}
             >
-              <p className="text-2xl font-bold">{safeProfile.follower_count}</p>
+              <p className="text-2xl font-bold">{profile.follower_count}</p>
               <p className="text-sm text-muted-foreground">Followers</p>
             </button>
             <button 
               className="text-center hover:opacity-70 transition-opacity"
               onClick={() => setShowFollowing(true)}
             >
-              <p className="text-2xl font-bold">{safeProfile.following_count}</p>
+              <p className="text-2xl font-bold">{profile.following_count}</p>
               <p className="text-sm text-muted-foreground">Following</p>
             </button>
           </div>
@@ -612,8 +582,8 @@ const Profile = () => {
                 </p>
               </div>
 
-              {safeProfile.professional_title && (() => {
-                const badge = getProfessionalBadge(safeProfile.professional_title);
+              {profile.professional_title && (() => {
+                const badge = getProfessionalBadge(profile.professional_title);
                 const BadgeIcon = badge.icon;
                 return (
                   <div className="relative">
@@ -669,7 +639,7 @@ const Profile = () => {
                         </div>
                         
                         <h4 className="text-2xl font-bold text-white mt-4 capitalize drop-shadow-lg">
-                          {safeProfile.professional_title?.replace(/_/g, " ")}
+                          {profile.professional_title.replace(/_/g, " ")}
                         </h4>
                       </div>
                     </div>
@@ -696,8 +666,8 @@ const Profile = () => {
                           Verified
                         </span>
                       )}
-                      <Badge className={`bg-gradient-to-r ${getBadgeColor(safeProfile.badge_level)} border-0 text-white capitalize group-hover:scale-105 transition-transform`}>
-                        {safeProfile.badge_level}
+                      <Badge className={`bg-gradient-to-r ${getBadgeColor(profile.badge_level)} border-0 text-white capitalize group-hover:scale-105 transition-transform`}>
+                        {profile.badge_level}
                       </Badge>
                     </div>
                   </div>
@@ -706,14 +676,14 @@ const Profile = () => {
                     onClick={() => setMetricsDialogOpen(true)}
                   >
                     <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Network Reach</span>
-                    <span className="text-sm font-semibold group-hover:scale-105 transition-transform">{calculateNetworkReach(safeProfile, posts, reels).toLocaleString()}</span>
+                    <span className="text-sm font-semibold group-hover:scale-105 transition-transform">{profile ? calculateNetworkReach(profile, posts, reels).toLocaleString() : 0}</span>
                   </div>
                   <div 
                     className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
                     onClick={() => setMetricsDialogOpen(true)}
                   >
                     <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Professional Score</span>
-                    <span className="text-sm font-semibold text-primary group-hover:scale-105 transition-transform">{calculateProfessionalScore(safeProfile, userRoles, posts, reels, stories)}/100</span>
+                    <span className="text-sm font-semibold text-primary group-hover:scale-105 transition-transform">{profile ? calculateProfessionalScore(profile, userRoles, posts, reels, stories) : 0}/100</span>
                   </div>
                 </div>
               </div>
@@ -751,7 +721,7 @@ const Profile = () => {
                         {metrics.score}
                       </div>
                       <div className="text-xs text-muted-foreground mb-2">
-                        {metrics.regionalRank} {safeProfile.region && safeProfile.region !== 'All' ? `in ${safeProfile.region}` : 'globally'}
+                        {metrics.regionalRank} {profile.region && profile.region !== 'All' ? `in ${profile.region}` : 'globally'}
                       </div>
                       <Badge className={`${metrics.badge.color} text-sm px-3 py-1`}>
                         {metrics.badge.level} - {metrics.badge.description}
@@ -874,8 +844,8 @@ const Profile = () => {
         onOpenChange={setBadgeDialogOpen}
         isFounder={userRoles.isFounder}
         isVerified={userRoles.isVerified}
-        badgeLevel={safeProfile.badge_level as any}
-        username={safeProfile.username}
+        badgeLevel={profile?.badge_level as any}
+        username={profile?.username}
         isOwnProfile={true}
         professionalScore={profile ? calculateProfessionalScore(profile, userRoles, posts, reels, stories) : undefined}
       />
@@ -928,15 +898,15 @@ const Profile = () => {
       <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden bg-black/95 border-none">
           <div className="relative w-full aspect-square flex items-center justify-center">
-            {safeProfile.avatar_url ? (
+            {profile.avatar_url ? (
               <img 
-                src={safeProfile.avatar_url} 
-                alt={safeProfile.full_name || safeProfile.username}
+                src={profile.avatar_url} 
+                alt={profile.full_name}
                 className="max-w-full max-h-full object-contain"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
-                <span className="text-9xl font-bold text-white/80">{safeProfile.username[0]}</span>
+                <span className="text-9xl font-bold text-white/80">{profile.username[0]}</span>
               </div>
             )}
           </div>

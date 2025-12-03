@@ -561,7 +561,6 @@ export type Database = {
           created_at: string
           current_serves: number
           description: string | null
-          group_id: string | null
           id: string
           ingredients: Json
           recipe_name: string
@@ -572,7 +571,6 @@ export type Database = {
           created_at?: string
           current_serves?: number
           description?: string | null
-          group_id?: string | null
           id?: string
           ingredients?: Json
           recipe_name: string
@@ -583,22 +581,13 @@ export type Database = {
           created_at?: string
           current_serves?: number
           description?: string | null
-          group_id?: string | null
           id?: string
           ingredients?: Json
           recipe_name?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "batch_recipes_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "mixologist_groups"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       business_analytics: {
         Row: {
@@ -6655,17 +6644,17 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
-          address?: never
+          address?: string | null
           avatar_url?: string | null
           badge_level?: Database["public"]["Enums"]["badge_level"] | null
           bio?: string | null
           career_score?: number | null
-          city?: never
-          country?: never
+          city?: string | null
+          country?: string | null
           cover_url?: string | null
           created_at?: string | null
           date_of_birth?: string | null
-          email?: never
+          email?: string | null
           email_verified?: boolean | null
           follower_count?: number | null
           following_count?: number | null
@@ -6676,7 +6665,7 @@ export type Database = {
           phone?: never
           phone_verified?: boolean | null
           post_count?: number | null
-          postal_code?: never
+          postal_code?: string | null
           professional_title?:
             | Database["public"]["Enums"]["professional_title"]
             | null
@@ -6691,17 +6680,17 @@ export type Database = {
           whatsapp?: never
         }
         Update: {
-          address?: never
+          address?: string | null
           avatar_url?: string | null
           badge_level?: Database["public"]["Enums"]["badge_level"] | null
           bio?: string | null
           career_score?: number | null
-          city?: never
-          country?: never
+          city?: string | null
+          country?: string | null
           cover_url?: string | null
           created_at?: string | null
           date_of_birth?: string | null
-          email?: never
+          email?: string | null
           email_verified?: boolean | null
           follower_count?: number | null
           following_count?: number | null
@@ -6712,7 +6701,7 @@ export type Database = {
           phone?: never
           phone_verified?: boolean | null
           post_count?: number | null
-          postal_code?: never
+          postal_code?: string | null
           professional_title?:
             | Database["public"]["Enums"]["professional_title"]
             | null

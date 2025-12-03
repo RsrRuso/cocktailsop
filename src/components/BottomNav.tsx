@@ -1,4 +1,4 @@
-import { Home, PlusSquare, Search, Video, MapPin, User } from "lucide-react";
+import { Home, PlusSquare, Search, Video, MapPin } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,14 +6,9 @@ import { useAuth } from "@/contexts/AuthContext";
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
-
-  // Get avatar from profile or user metadata
-  const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
-  const username = profile?.username || user?.user_metadata?.username || 'User';
-  const userId = profile?.id || user?.id;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50">
@@ -70,10 +65,10 @@ const BottomNav = () => {
             }`}
           >
             <OptimizedAvatar
-              src={avatarUrl}
-              alt={username}
-              fallback={username[0] || "U"}
-              userId={userId}
+              src={profile?.avatar_url}
+              alt={profile?.username || 'User'}
+              fallback={profile?.username?.[0] || "U"}
+              userId={profile?.id}
               className={`w-8 h-8 ${isActive("/profile") ? "ring-2 ring-foreground" : "ring-2 ring-muted-foreground/50"}`}
               showStatus={false}
               showAddButton={false}

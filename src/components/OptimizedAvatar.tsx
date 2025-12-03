@@ -3,6 +3,9 @@ import { User } from "lucide-react";
 import { useState, memo } from "react";
 import StatusRing from "./StatusRing";
 import { useUserStatus } from "@/hooks/useUserStatus";
+import BirthdayFireworks from "./BirthdayFireworks";
+import { useUserBirthday } from "@/hooks/useUserBirthday";
+import BirthdayBadge from "./BirthdayBadge";
 
 interface OptimizedAvatarProps {
   src: string | null | undefined;
@@ -13,6 +16,7 @@ interface OptimizedAvatarProps {
   showStatus?: boolean;
   showAddButton?: boolean;
   onAddStatusClick?: () => void;
+  showBirthdayBadge?: boolean;
 }
 
 const OptimizedAvatar = memo(({ 
@@ -21,13 +25,14 @@ const OptimizedAvatar = memo(({
   fallback, 
   className,
   userId,
-  showStatus = false,
+  showStatus = false, // Changed default to false for performance
   showAddButton = false,
   onAddStatusClick
 }: OptimizedAvatarProps) => {
   const [imageError, setImageError] = useState(false);
   // Only fetch status if explicitly requested
   const { data: status } = useUserStatus(showStatus && userId ? userId : null);
+  const { data: birthdayData } = useUserBirthday(userId);
 
   // Only render image if src exists and no error
   const shouldShowImage = src && !imageError;
@@ -48,17 +53,18 @@ const OptimizedAvatar = memo(({
     </Avatar>
   );
 
-  // Simple render without birthday overhead
   return (
-    <StatusRing 
-      hasStatus={!!status}
-      statusText={status?.status_text}
-      emoji={status?.emoji}
-      showAddButton={showAddButton}
-      onAddClick={onAddStatusClick}
-    >
-      {avatar}
-    </StatusRing>
+    <BirthdayFireworks isBirthday={birthdayData?.isBirthday || false}>
+      <StatusRing 
+        hasStatus={!!status}
+        statusText={status?.status_text}
+        emoji={status?.emoji}
+        showAddButton={showAddButton}
+        onAddClick={onAddStatusClick}
+      >
+        {avatar}
+      </StatusRing>
+    </BirthdayFireworks>
   );
 });
 
