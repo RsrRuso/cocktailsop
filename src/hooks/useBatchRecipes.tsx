@@ -15,6 +15,7 @@ export interface BatchRecipe {
   description?: string;
   current_serves: number;
   ingredients: BatchIngredient[];
+  group_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -24,19 +25,29 @@ export const useBatchRecipes = (groupId?: string | null) => {
 
   const { data: recipes, isLoading } = useQuery({
     queryKey: ['batch-recipes', groupId],
-    queryFn: async () => {
-      let query = supabase
+    queryFn: async (): Promise<BatchRecipe[]> => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      // Fetch all user's recipes and filter client-side to avoid TypeScript deep instantiation issue
+      const { data, error } = await supabase
         .from('batch_recipes')
         .select('*')
         .order('created_at', { ascending: false });
       
-      // Note: batch_recipes doesn't have group_id column currently
-      // All recipes are shared across groups, but we keep the parameter for future filtering
-      
-      const { data, error } = await query;
-      
       if (error) throw error;
-      return (data || []).map(recipe => ({
+      
+      // Cast to any to handle group_id which may not be in generated types yet
+      const filtered = (data || []).filter((recipe: any) => {
+        if (groupId) {
+          return recipe.group_id === groupId;
+        } else {
+          // Show personal recipes (no group) belonging to the user
+          return recipe.group_id === null && recipe.user_id === user.id;
+        }
+      });
+      
+      return filtered.map((recipe: any) => ({
         ...recipe,
         ingredients: recipe.ingredients as unknown as BatchIngredient[]
       })) as BatchRecipe[];
@@ -44,7 +55,7 @@ export const useBatchRecipes = (groupId?: string | null) => {
   });
 
   const createRecipe = useMutation({
-    mutationFn: async (recipe: Omit<BatchRecipe, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (recipe: { recipe_name: string; description?: string; current_serves: number; ingredients: BatchIngredient[]; group_id?: string | null }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
@@ -54,7 +65,8 @@ export const useBatchRecipes = (groupId?: string | null) => {
           recipe_name: recipe.recipe_name,
           description: recipe.description,
           current_serves: recipe.current_serves,
-          ingredients: recipe.ingredients as any,
+          ingredients: JSON.parse(JSON.stringify(recipe.ingredients)),
+          group_id: recipe.group_id || null,
           user_id: user.id 
         }])
         .select()
