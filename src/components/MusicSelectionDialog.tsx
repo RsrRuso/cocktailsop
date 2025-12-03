@@ -86,9 +86,10 @@ const MusicSelectionDialog = ({ open, onOpenChange, onSelect }: MusicSelectionDi
         title: track.title,
         artist: track.artist,
         duration: track.duration_seconds?.toString() || '0',
-        preview_url: track.cover_image_url,
+        preview_url: track.cover_image_url, // Album cover for display
         spotify_url: track.spotify_url,
-        preview_audio: track.preview_url
+        preview_audio: track.preview_url, // Audio preview URL for playback
+        hasAudio: !!track.preview_url // Flag to indicate if playable audio exists
       }));
 
       setPlatformTracks(tracks);
@@ -297,8 +298,16 @@ const MusicSelectionDialog = ({ open, onOpenChange, onSelect }: MusicSelectionDi
                   )}
                   
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-[11px] truncate leading-tight">{track.title}</p>
-                    <p className="text-[9px] text-muted-foreground truncate">{track.artist}</p>
+                    <p className="font-medium text-[11px] truncate leading-tight flex items-center gap-1">
+                      {track.title}
+                      {track.preview_audio && (
+                        <span className="text-green-500" title="Playable audio available">🎵</span>
+                      )}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground truncate">
+                      {track.artist}
+                      {!track.preview_audio && <span className="text-orange-400 ml-1">(No preview)</span>}
+                    </p>
                   </div>
                   
                   <div className="flex items-center gap-0.5">
