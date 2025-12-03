@@ -388,7 +388,7 @@ const BatchCalculator = () => {
       });
       setEditingRecipeId(null);
     } else {
-      // Create new recipe
+      // Create new recipe with selected group
       createRecipe({
         recipe_name: recipeName,
         description: batchDescription,
@@ -398,7 +398,8 @@ const BatchCalculator = () => {
           name: ing.name,
           amount: ing.amount,
           unit: ing.unit
-        }))
+        })),
+        group_id: selectedGroupId
       });
     }
   };
@@ -2776,8 +2777,47 @@ const BatchCalculator = () => {
                 </Button>
               </div>
 
-
+                {/* Group Selection for filtering recipes */}
                 <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Select Group *</Label>
+                  <Select 
+                    value={selectedGroupId || "personal"} 
+                    onValueChange={(value) => {
+                      setSelectedGroupId(value === "personal" ? null : value);
+                      setSelectedRecipeId(null);
+                      setRecipeName("");
+                      setBatchDescription("");
+                      setCurrentServes("1");
+                      setIngredients([{ id: "1", name: "", amount: "", unit: "ml" }]);
+                      setTargetLiters("");
+                    }}
+                  >
+                    <SelectTrigger className="glass bg-background/80 backdrop-blur-sm h-12">
+                      <SelectValue placeholder="Choose a group" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background/95 backdrop-blur-sm z-[100]">
+                      <SelectItem value="personal">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4" />
+                          Personal Recipes
+                        </div>
+                      </SelectItem>
+                      {groups && groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4" />
+                            {group.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedGroupId ? "Showing group recipes" : "Showing your personal recipes"}
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label>Select Saved Recipe *</Label>
                   <Select 

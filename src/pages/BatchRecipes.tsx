@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Plus, Trash2, Sparkles, Save, Edit2, X, Copy } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Sparkles, Save, Edit2, X, Copy, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useBatchRecipes } from "@/hooks/useBatchRecipes";
 import { useMasterSpirits } from "@/hooks/useMasterSpirits";
+import { useMixologistGroups } from "@/hooks/useMixologistGroups";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Select,
@@ -58,9 +59,11 @@ const BatchRecipes = () => {
   const [masterList, setMasterList] = useState("");
   const [showMasterList, setShowMasterList] = useState(false);
   const [openSpiritPopover, setOpenSpiritPopover] = useState<Record<string, boolean>>({});
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
-  const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes();
+  const { recipes, createRecipe, updateRecipe, deleteRecipe } = useBatchRecipes(selectedGroupId);
   const { spirits, calculateBottles } = useMasterSpirits();
+  const { groups } = useMixologistGroups();
 
   const parseMasterList = (text: string) => {
     const lines = text.split('\n').filter((line) => line.trim());
@@ -232,6 +235,7 @@ const BatchRecipes = () => {
           amount: ing.amount,
           unit: ing.unit,
         })),
+        group_id: selectedGroupId,
       });
     }
 
@@ -362,6 +366,39 @@ const BatchRecipes = () => {
           </div>
 
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Group *</Label>
+              <Select 
+                value={selectedGroupId || "personal"} 
+                onValueChange={(value) => {
+                  setSelectedGroupId(value === "personal" ? null : value);
+                }}
+              >
+                <SelectTrigger className="glass bg-background/80 backdrop-blur-sm">
+                  <SelectValue placeholder="Choose a group" />
+                </SelectTrigger>
+                <SelectContent className="bg-background/95 backdrop-blur-sm z-[100]">
+                  <SelectItem value="personal">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Personal Recipes
+                    </div>
+                  </SelectItem>
+                  {groups && groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        {group.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {selectedGroupId ? "Recipe will be shared with group members" : "Personal recipe, not shared"}
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label>Recipe Name *</Label>
               <Input
