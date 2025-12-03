@@ -214,7 +214,7 @@ const LiveMap = () => {
   const [ghostMode, setGhostMode] = useState(false);
   const [locations, setLocations] = useState<any[]>([]);
   const [nearbyFriends, setNearbyFriends] = useState<any[]>([]);
-  const [places, setPlaces] = useState<Place[]>([]);
+  const [places, setPlaces] = useState<Place[]>(FEATURED_VENUES);
   const [mapError, setMapError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showPlacesList, setShowPlacesList] = useState(false);
