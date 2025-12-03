@@ -257,28 +257,121 @@ const LiveMap = () => {
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [placesFetched, setPlacesFetched] = useState(false);
   
-  // Popular Dubai venues for quick search suggestions
+  // Popular Dubai venues for quick search suggestions - Comprehensive list
   const DUBAI_QUICK_SEARCH = [
-    { name: 'Zuma Dubai', icon: '🍽️', type: 'restaurant' },
-    { name: 'At.mosphere', icon: '🍽️', type: 'restaurant' },
-    { name: 'Attiko Dubai', icon: '🍸', type: 'bar' },
-    { name: 'Nobu Dubai', icon: '🍽️', type: 'restaurant' },
-    { name: 'Gold On 27', icon: '🍸', type: 'bar' },
-    { name: 'Penthouse', icon: '🍸', type: 'bar' },
-    { name: 'Galaxy Bar', icon: '🍸', type: 'bar' },
-    { name: 'Ossiano', icon: '🍽️', type: 'restaurant' },
-    { name: 'Tresind Studio', icon: '🍽️', type: 'restaurant' },
-    { name: 'STAY by Yannick Alléno', icon: '🍽️', type: 'restaurant' },
-    { name: 'Hakkasan Dubai', icon: '🍽️', type: 'restaurant' },
-    { name: 'CÉ LA VI Dubai', icon: '🍸', type: 'bar' },
-    { name: 'Coya Dubai', icon: '🍽️', type: 'restaurant' },
-    { name: 'Nammos Dubai', icon: '🍽️', type: 'restaurant' },
-    { name: 'Cipriani Dubai', icon: '🍽️', type: 'restaurant' },
-    { name: 'La Petite Maison', icon: '🍽️', type: 'restaurant' },
-    { name: 'Orfali Bros Bistro', icon: '🍽️', type: 'restaurant' },
-    { name: 'Pierchic', icon: '🍽️', type: 'restaurant' },
-    { name: 'Nusr-Et Steakhouse', icon: '🍽️', type: 'restaurant' },
-    { name: 'Mercury Lounge', icon: '🍸', type: 'bar' },
+    // Top Fine Dining
+    { name: 'Zuma Dubai', icon: '🍽️', type: 'restaurant', area: 'DIFC' },
+    { name: 'At.mosphere', icon: '🍽️', type: 'restaurant', area: 'Burj Khalifa' },
+    { name: 'Nobu Dubai', icon: '🍽️', type: 'restaurant', area: 'Atlantis' },
+    { name: 'Ossiano', icon: '🍽️', type: 'restaurant', area: 'Atlantis' },
+    { name: 'Tresind Studio', icon: '🍽️', type: 'restaurant', area: 'DIFC' },
+    { name: 'STAY by Yannick Alléno', icon: '🍽️', type: 'restaurant', area: 'Palm' },
+    { name: 'Il Ristorante Niko Romito', icon: '🍽️', type: 'restaurant', area: 'Burj Al Arab' },
+    { name: 'Dinner by Heston Blumenthal', icon: '🍽️', type: 'restaurant', area: 'Atlantis Royal' },
+    { name: 'Orfali Bros Bistro', icon: '🍽️', type: 'restaurant', area: 'JLT' },
+    { name: 'La Petite Maison', icon: '🍽️', type: 'restaurant', area: 'DIFC' },
+    { name: 'Hakkasan Dubai', icon: '🍽️', type: 'restaurant', area: 'Emirates Towers' },
+    { name: 'Cipriani Dubai', icon: '🍽️', type: 'restaurant', area: 'DIFC' },
+    { name: 'LPM Restaurant & Bar', icon: '🍽️', type: 'restaurant', area: 'DIFC' },
+    
+    // Celebrity & Premium Steakhouses
+    { name: 'Nusr-Et Steakhouse', icon: '🥩', type: 'restaurant', area: 'Four Seasons' },
+    { name: 'CUT by Wolfgang Puck', icon: '🥩', type: 'restaurant', area: 'Four Seasons' },
+    { name: 'Beefbar Dubai', icon: '🥩', type: 'restaurant', area: 'DIFC' },
+    { name: 'GAIA Dubai', icon: '🍽️', type: 'restaurant', area: 'DIFC' },
+    { name: 'Scalini', icon: '🍽️', type: 'restaurant', area: 'Four Seasons' },
+    
+    // Rooftop Bars & Lounges
+    { name: 'Attiko Dubai', icon: '🍸', type: 'bar', area: 'W Dubai' },
+    { name: 'Gold On 27', icon: '🍸', type: 'bar', area: 'Burj Al Arab' },
+    { name: 'Penthouse', icon: '🍸', type: 'bar', area: 'Five Palm' },
+    { name: 'Galaxy Bar', icon: '🍸', type: 'bar', area: 'DIFC' },
+    { name: 'CÉ LA VI Dubai', icon: '🍸', type: 'bar', area: 'Address Sky View' },
+    { name: 'Mercury Lounge', icon: '🍸', type: 'bar', area: 'Four Seasons JBR' },
+    { name: 'Level 43 Sky Lounge', icon: '🍸', type: 'bar', area: 'Media City' },
+    { name: 'SkyBar Dubai', icon: '🍸', type: 'bar', area: 'Media City' },
+    { name: 'Treehouse Dubai', icon: '🍸', type: 'bar', area: 'Taj Hotel' },
+    { name: 'SoBe Dubai', icon: '🍸', type: 'bar', area: 'W Palm' },
+    
+    // Beach Clubs & Day-to-Night
+    { name: 'Nammos Dubai', icon: '🏖️', type: 'restaurant', area: 'Four Seasons JBR' },
+    { name: 'WHITE Beach', icon: '🏖️', type: 'bar', area: 'Atlantis' },
+    { name: 'Twiggy by La Cantine', icon: '🏖️', type: 'bar', area: 'Park Hyatt' },
+    { name: 'Azure Beach', icon: '🏖️', type: 'bar', area: 'Rixos JBR' },
+    { name: 'Zero Gravity', icon: '🏖️', type: 'bar', area: 'Marina' },
+    { name: 'Barasti Beach', icon: '🏖️', type: 'bar', area: 'Le Meridien' },
+    { name: 'Nikki Beach Dubai', icon: '🏖️', type: 'bar', area: 'Pearl Jumeira' },
+    { name: 'DRIFT Beach Dubai', icon: '🏖️', type: 'bar', area: 'One&Only Royal' },
+    
+    // Nightclubs & Entertainment
+    { name: 'Soho Garden', icon: '🎉', type: 'bar', area: 'Meydan' },
+    { name: 'WHITE Dubai', icon: '🎉', type: 'bar', area: 'Meydan' },
+    { name: 'BASE Dubai', icon: '🎉', type: 'bar', area: 'D3' },
+    { name: 'BOA Dubai', icon: '🎉', type: 'bar', area: 'V Hotel' },
+    { name: 'VOID Dubai', icon: '🎉', type: 'bar', area: 'DIFC' },
+    { name: 'Billionaire Mansion', icon: '🎉', type: 'bar', area: 'Taj Hotel' },
+    { name: 'Cavalli Club Dubai', icon: '🎉', type: 'bar', area: 'Fairmont' },
+    
+    // Latin & Mediterranean
+    { name: 'Coya Dubai', icon: '🍽️', type: 'restaurant', area: 'Four Seasons' },
+    { name: 'Amazonico Dubai', icon: '🍽️', type: 'restaurant', area: 'DIFC' },
+    { name: 'Torno Subito', icon: '🍽️', type: 'restaurant', area: 'W Palm' },
+    { name: 'Netsu Dubai', icon: '🍽️', type: 'restaurant', area: 'Mandarin Oriental' },
+    { name: 'Sass Café', icon: '🍽️', type: 'restaurant', area: 'DIFC' },
+    { name: 'BOCA Dubai', icon: '🍽️', type: 'restaurant', area: 'DIFC' },
+    
+    // Waterfront & Iconic
+    { name: 'Pierchic', icon: '🍽️', type: 'restaurant', area: 'Madinat Jumeirah' },
+    { name: 'Pai Thai', icon: '🍽️', type: 'restaurant', area: 'Madinat Jumeirah' },
+    { name: 'Rockfish', icon: '🍽️', type: 'restaurant', area: 'Jumeirah Al Naseem' },
+    { name: 'Al Mahara', icon: '🍽️', type: 'restaurant', area: 'Burj Al Arab' },
+    { name: 'Nathan Outlaw', icon: '🍽️', type: 'restaurant', area: 'Burj Al Arab' },
+    { name: 'Shimmers', icon: '🏖️', type: 'restaurant', area: 'Madinat Jumeirah' },
+    
+    // Dubai Marina & JBR
+    { name: 'Siddharta Lounge', icon: '🍸', type: 'bar', area: 'Marina' },
+    { name: 'Tresind', icon: '🍽️', type: 'restaurant', area: 'Marina' },
+    { name: 'Indego by Vineet', icon: '🍽️', type: 'restaurant', area: 'Marina' },
+    { name: 'BiCE Ristorante', icon: '🍽️', type: 'restaurant', area: 'JBR' },
+    { name: 'Rhodes W1', icon: '🍽️', type: 'restaurant', area: 'Marina' },
+    { name: 'Boa Steakhouse JBR', icon: '🥩', type: 'restaurant', area: 'JBR' },
+    
+    // Downtown & Business Bay
+    { name: 'Karma Kafe', icon: '🍽️', type: 'restaurant', area: 'Downtown' },
+    { name: 'Thiptara', icon: '🍽️', type: 'restaurant', area: 'Palace Downtown' },
+    { name: 'Ewaan', icon: '🍽️', type: 'restaurant', area: 'Palace Downtown' },
+    { name: 'The Maine Oyster Bar', icon: '🦪', type: 'restaurant', area: 'Downtown' },
+    { name: 'La Serre Bistro', icon: '🍽️', type: 'restaurant', area: 'Downtown' },
+    { name: 'Bull & Bear', icon: '🍽️', type: 'restaurant', area: 'Waldorf Astoria' },
+    
+    // Old Dubai & Culture
+    { name: 'Arabian Tea House', icon: '☕', type: 'cafe', area: 'Al Fahidi' },
+    { name: 'XVA Café', icon: '☕', type: 'cafe', area: 'Al Fahidi' },
+    { name: 'Al Ustad Special Kabab', icon: '🍽️', type: 'restaurant', area: 'Al Fahidi' },
+    { name: 'Bu Qtair', icon: '🐟', type: 'restaurant', area: 'Jumeirah' },
+    { name: 'Ravi Restaurant', icon: '🍽️', type: 'restaurant', area: 'Satwa' },
+    
+    // Asian Cuisine
+    { name: 'Hutong Dubai', icon: '🍽️', type: 'restaurant', area: 'DIFC' },
+    { name: 'Akira Back Dubai', icon: '🍽️', type: 'restaurant', area: 'W Palm' },
+    { name: 'MIMI Kakushi', icon: '🍽️', type: 'restaurant', area: 'Four Seasons' },
+    { name: 'Zhen Wei', icon: '🍽️', type: 'restaurant', area: 'Atlantis Royal' },
+    { name: 'Morimoto Dubai', icon: '🍽️', type: 'restaurant', area: 'Renaissance' },
+    { name: 'ROKA Dubai', icon: '🍽️', type: 'restaurant', area: 'The Opus' },
+    { name: 'MOTT 32', icon: '🍽️', type: 'restaurant', area: 'Address Downtown' },
+    { name: 'Zengo Dubai', icon: '🍽️', type: 'restaurant', area: 'Le Royal Meridien' },
+    
+    // New Hotspots 2024
+    { name: 'Kayto Dubai', icon: '🍽️', type: 'restaurant', area: 'Five Palm' },
+    { name: 'MNKY HSE', icon: '🍸', type: 'bar', area: 'Waldorf Astoria' },
+    { name: 'Secret Room', icon: '🍸', type: 'bar', area: 'Five JVC' },
+    { name: 'La Mar Dubai', icon: '🍽️', type: 'restaurant', area: 'Four Seasons' },
+    { name: 'Ling Ling Dubai', icon: '🍽️', type: 'restaurant', area: 'Atlantis Royal' },
+    { name: 'Nobu by the Beach', icon: '🍽️', type: 'restaurant', area: 'Atlantis Royal' },
+    { name: 'Milos Dubai', icon: '🍽️', type: 'restaurant', area: 'Atlantis Royal' },
+    { name: 'Jaleo Dubai', icon: '🍽️', type: 'restaurant', area: 'Atlantis Royal' },
+    { name: 'Ariana\'s Persian Kitchen', icon: '🍽️', type: 'restaurant', area: 'JLT' },
+    { name: 'Trèsind Dubai', icon: '🍽️', type: 'restaurant', area: 'DIFC' },
   ];
 
   const handleQuickSearch = (venueName: string) => {
@@ -847,23 +940,26 @@ const LiveMap = () => {
                       >
                         <div className="p-1.5">
                           <div className="px-3 py-2 text-[10px] uppercase text-white/50 tracking-wider font-medium">
-                            🇦🇪 Popular Dubai Venues
+                            🇦🇪 Popular Dubai Venues ({DUBAI_QUICK_SEARCH.length}+)
                           </div>
                           {DUBAI_QUICK_SEARCH
-                            .filter(v => !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                            .slice(0, 10)
+                            .filter(v => !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()) || (v.area && v.area.toLowerCase().includes(searchQuery.toLowerCase())))
+                            .slice(0, 20)
                             .map((venue, index) => (
                               <button
                                 key={index}
                                 onClick={() => handleQuickSearch(venue.name)}
-                                className="w-full flex items-center gap-3 px-3 py-3 hover:bg-white/10 rounded-xl transition-all text-left group"
+                                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/10 rounded-xl transition-all text-left group"
                               >
-                                <span className="text-xl group-hover:scale-110 transition-transform">{venue.icon}</span>
+                                <span className="text-lg group-hover:scale-110 transition-transform">{venue.icon}</span>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm text-white font-semibold truncate">{venue.name}</div>
-                                  <div className="text-[10px] text-white/40 capitalize">{venue.type}</div>
+                                  <div className="text-sm text-white font-medium truncate">{venue.name}</div>
+                                  <div className="text-[10px] text-white/40 flex items-center gap-1.5">
+                                    <span className="capitalize">{venue.type}</span>
+                                    {venue.area && <><span className="text-white/20">•</span><span className="text-white/50">{venue.area}</span></>}
+                                  </div>
                                 </div>
-                                <MapPinned className="w-4 h-4 text-white/20 group-hover:text-primary transition-colors" />
+                                <MapPinned className="w-3.5 h-3.5 text-white/20 group-hover:text-primary transition-colors" />
                               </button>
                             ))}
                           {searchQuery && filteredPlaces.length > 0 && (
