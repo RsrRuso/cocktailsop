@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useGPSTracking } from '@/hooks/useGPSTracking';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff, MapPin, Settings2, Navigation, Users, ArrowLeft, UtensilsCrossed, Wine, Store, List, Globe, Award, Star, X, ExternalLink, MapPinned } from 'lucide-react';
+import { Eye, EyeOff, MapPin, Settings2, Navigation, Users, ArrowLeft, UtensilsCrossed, Wine, Store, List, Globe, Award, Star, X, ExternalLink, MapPinned, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -144,6 +145,8 @@ const LiveMap = () => {
   const [placesFilter, setPlacesFilter] = useState<'all' | 'bar' | 'restaurant' | 'cafe' | 'awarded'>('all');
   const [showAwardsOrgs, setShowAwardsOrgs] = useState(false);
   const [selectedOrgFilter, setSelectedOrgFilter] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
   const [placesFetched, setPlacesFetched] = useState(false);
   const fetchingRef = useRef(false);
   const lastFetchPositionRef = useRef<{ lat: number; lon: number } | null>(null);
@@ -366,9 +369,21 @@ const LiveMap = () => {
     }
   }, [position, ghostMode, autoCenter, fetchNearbyPlaces, viewMode]);
 
-  // Filter places based on current filter
+  // Filter places based on current filter and search query
   const filteredPlaces = places.filter(place => {
-    // First apply org filter if set
+    // First apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      const nameMatch = place.name.toLowerCase().includes(query);
+      const typeMatch = place.type.toLowerCase().includes(query);
+      const cuisineMatch = place.cuisine?.toLowerCase().includes(query);
+      const awardMatch = place.awards?.some(a => 
+        a.award.toLowerCase().includes(query) || 
+        AWARD_ORGANIZATIONS.find(o => o.id === a.organization)?.name.toLowerCase().includes(query)
+      );
+      if (!nameMatch && !typeMatch && !cuisineMatch && !awardMatch) return false;
+    }
+    // Then apply org filter if set
     if (selectedOrgFilter) {
       if (!place.awards?.some(a => a.organization === selectedOrgFilter)) return false;
     }
@@ -617,15 +632,68 @@ const LiveMap = () => {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        {/* Back Button */}
-        <Button
-          onClick={() => navigate('/home')}
-          variant="ghost"
-          size="icon"
-          className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 text-white hover:bg-black/50"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
+        {/* Back Button & Search */}
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => navigate('/home')}
+            variant="ghost"
+            size="icon"
+            className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 text-white hover:bg-black/50"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          
+          {/* Search Bar */}
+          <AnimatePresence>
+            {showSearch ? (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 'auto', opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                className="flex items-center gap-2"
+              >
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+                  <Input
+                    placeholder="Search venues..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-8 h-10 w-48 sm:w-64 bg-black/50 backdrop-blur-xl border-white/20 text-white placeholder:text-white/40 rounded-full"
+                    autoFocus
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <Button
+                  onClick={() => {
+                    setShowSearch(false);
+                    setSearchQuery('');
+                  }}
+                  variant="ghost"
+                  size="icon"
+                  className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 text-white hover:bg-black/50"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </motion.div>
+            ) : (
+              <Button
+                onClick={() => setShowSearch(true)}
+                variant="ghost"
+                size="icon"
+                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 text-white hover:bg-black/50"
+              >
+                <Search className="w-5 h-5" />
+              </Button>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Compact Stats Panel */}
         <div className="bg-black/40 backdrop-blur-xl rounded-2xl px-3 py-2 border border-white/10 max-w-[180px]">
@@ -838,6 +906,24 @@ const LiveMap = () => {
             <SheetDescription className="text-white/60">
               Bars, restaurants & cafes {viewMode === 'city' ? 'in your city' : 'near you'}
             </SheetDescription>
+            {/* Search in list */}
+            <div className="relative mt-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+              <Input
+                placeholder="Search by name, type, or award..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-8 h-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 rounded-lg"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </SheetHeader>
 
           <Tabs defaultValue="all" className="w-full">
@@ -1088,20 +1174,29 @@ const LiveMap = () => {
                 </div>
               </div>
 
-              {/* Awards */}
+              {/* Awards - Enhanced Display */}
               {selectedPlace.awards && selectedPlace.awards.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-white/80">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-white/80">
                     <Award className="w-4 h-4 text-yellow-500" />
-                    Awards & Recognition
+                    Awards & Recognition ({selectedPlace.awards.length})
                   </h3>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="space-y-2 max-h-40 overflow-y-auto scrollbar-thin">
                     {selectedPlace.awards.map((award, i) => {
                       const org = AWARD_ORGANIZATIONS.find(o => o.id === award.organization);
                       return (
-                        <Badge key={i} className="bg-yellow-500/30 text-yellow-300 border-0">
-                          {org?.icon || '🏆'} {award.award}
-                        </Badge>
+                        <div 
+                          key={i} 
+                          className="flex items-center gap-3 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20"
+                        >
+                          <div className={`w-10 h-10 rounded-lg ${org?.color || 'bg-yellow-500'} flex items-center justify-center text-lg shadow-md`}>
+                            {org?.icon || '🏆'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-yellow-300 truncate">{award.award}</p>
+                            <p className="text-xs text-white/50">{org?.name || 'Award'}</p>
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
