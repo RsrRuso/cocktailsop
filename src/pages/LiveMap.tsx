@@ -168,21 +168,24 @@ const LiveMap = () => {
     }
     setLoadingPlaces(true);
     
-    // Timeout after 10 seconds
+    // Timeout after 5 seconds for faster completion
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      setLoadingPlaces(false);
+    }, 5000);
     
     try {
       const radiusMeters = radiusKm * 1000;
       const query = `
-        [out:json][timeout:15];
+        [out:json][timeout:8];
         (
           node["amenity"="bar"](around:${radiusMeters},${lat},${lon});
           node["amenity"="restaurant"](around:${radiusMeters},${lat},${lon});
           node["amenity"="pub"](around:${radiusMeters},${lat},${lon});
           node["amenity"="cafe"](around:${radiusMeters},${lat},${lon});
         );
-        out body 100;
+        out body 50;
       `;
 
       const response = await fetch('https://overpass-api.de/api/interpreter', {
@@ -194,7 +197,11 @@ const LiveMap = () => {
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) throw new Error('Failed to fetch places');
+      if (!response.ok) {
+        setPlaces([]);
+        setLoadingPlaces(false);
+        return;
+      }
 
       const data = await response.json();
       
@@ -224,13 +231,13 @@ const LiveMap = () => {
         });
 
       setPlaces(fetchedPlaces);
+      setLoadingPlaces(false);
     } catch (error) {
       console.error('Error fetching places:', error);
-      // Set empty places on error so it doesn't stay loading
       setPlaces([]);
+      setLoadingPlaces(false);
     } finally {
       clearTimeout(timeoutId);
-      setLoadingPlaces(false);
     }
   }, [showPlaces]);
 
@@ -251,12 +258,11 @@ const LiveMap = () => {
         dragging: true,
       }).setView(initialCenter, 14);
 
-      // Dark mode map with bright lights - CARTO Dark Matter
+      // Neon glowing night map - Stadia Alidade Smooth Dark with vibrant roads
       const darkLayer = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
         {
-          attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-          subdomains: 'abcd',
+          attribution: '&copy; Stadia Maps &copy; OpenMapTiles &copy; OpenStreetMap contributors',
           maxZoom: 20,
         }
       );
@@ -276,9 +282,13 @@ const LiveMap = () => {
       L.control.zoom({ position: 'bottomright' }).addTo(map);
       
       mapRef.current = map;
+      
+      // Mark map as loaded
+      setLoadingPlaces(false);
     } catch (error) {
       console.error('Error initializing Leaflet map:', error);
       setMapError('Failed to initialize map');
+      setLoadingPlaces(false);
     }
 
     return () => {
