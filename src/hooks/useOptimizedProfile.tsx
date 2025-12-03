@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Profile {
   id: string;
@@ -24,6 +25,11 @@ interface Profile {
 }
 
 export const useOptimizedProfile = (userId: string | null) => {
+  const { profile: authProfile, user } = useAuth();
+  
+  // Use auth profile as initial data if it's the current user
+  const isCurrentUser = user?.id === userId;
+  
   return useQuery({
     queryKey: ['profile', userId],
     queryFn: async () => {
@@ -42,6 +48,8 @@ export const useOptimizedProfile = (userId: string | null) => {
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
     refetchOnMount: false,
+    // Use auth profile as placeholder for instant display
+    placeholderData: isCurrentUser ? authProfile : undefined,
   });
 };
 
