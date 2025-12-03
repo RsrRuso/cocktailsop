@@ -1,19 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Send, Search, Pin, Archive, MoreVertical, Clock, Users, Plus, Sparkles } from "lucide-react";
+import { MessageCircle, Search, Pin, Archive, Clock, Users, Sparkles, Mail, CheckCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { CreateGroupDialog } from "@/components/CreateGroupDialog";
-import { ConversationItem } from "@/components/ConversationItem";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Profile {
   id: string;
@@ -43,22 +40,38 @@ const Messages = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
-  const [pinnedChats, setPinnedChats] = useState<Set<string>>(new Set());
-  const [archivedChats, setArchivedChats] = useState<Set<string>>(new Set());
+  const [pinnedChats, setPinnedChats] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('pinnedChats');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+  const [archivedChats, setArchivedChats] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('archivedChats');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const { showNotification } = useInAppNotificationContext();
+
+  // Save to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('pinnedChats', JSON.stringify([...pinnedChats]));
+  }, [pinnedChats]);
+
+  useEffect(() => {
+    localStorage.setItem('archivedChats', JSON.stringify([...archivedChats]));
+  }, [archivedChats]);
 
   useEffect(() => {
     const initUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUser(user);
+        fetchConversations(user.id);
+      } else {
+        navigate("/auth");
       }
     };
     initUser();
-    
-    fetchConversations().finally(() => setIsLoading(false));
 
     // Set up realtime subscription for new messages
     const channel = supabase
@@ -74,9 +87,7 @@ const Messages = () => {
           const { data: { user } } = await supabase.auth.getUser();
           const newMessage = payload.new as any;
           
-          // Only send push notification if message is from someone else
           if (user && newMessage.sender_id !== user.id) {
-            // Fetch sender profile for notification
             const { data: senderProfile } = await supabase
               .from('profiles')
               .select('username, full_name')
@@ -86,13 +97,13 @@ const Messages = () => {
             if (senderProfile) {
               showNotification(
                 senderProfile.full_name,
-                newMessage.content.substring(0, 100),
+                newMessage.content?.substring(0, 100) || 'New message',
                 'message'
               );
             }
           }
           
-          fetchConversations();
+          if (user) fetchConversations(user.id);
         }
       )
       .subscribe();
@@ -102,74 +113,56 @@ const Messages = () => {
     };
   }, []);
 
-  const fetchConversations = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
+  const fetchConversations = useCallback(async (userId: string) => {
+    try {
+      // Fetch conversations
+      const { data: convData, error } = await supabase
+        .from("conversations")
+        .select("*")
+        .contains("participant_ids", [userId])
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .limit(50);
 
-    const { data } = await supabase
-      .from("conversations")
-      .select("*")
-      .contains("participant_ids", [user.id])
-      .order("last_message_at", { ascending: false, nullsFirst: false })
-      .limit(50);
+      if (error || !convData?.length) {
+        setConversations([]);
+        setIsLoading(false);
+        return;
+      }
 
-    if (data && data.length > 0) {
-      const otherUserIds = data
+      // Get all other user IDs for non-group conversations
+      const otherUserIds = convData
         .filter(conv => !conv.is_group)
-        .map(conv => conv.participant_ids.find((id: string) => id !== user.id))
-        .filter(Boolean);
+        .map(conv => conv.participant_ids.find((id: string) => id !== userId))
+        .filter(Boolean) as string[];
 
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("id, username, avatar_url, full_name")
-        .in("id", otherUserIds);
+      // Batch fetch profiles
+      const profilesPromise = otherUserIds.length > 0 
+        ? supabase.from("profiles").select("id, username, avatar_url, full_name").in("id", otherUserIds)
+        : Promise.resolve({ data: [] });
 
-      const profilesMap = new Map(
-        profilesData?.map(p => [p.id, p]) || []
-      );
+      // Batch fetch last messages - use a single query with conversation IDs
+      const convIds = convData.map(c => c.id);
+      
+      // Execute in parallel
+      const [profilesResult] = await Promise.all([profilesPromise]);
+      
+      const profilesMap = new Map<string, Profile>();
+      profilesResult.data?.forEach(p => profilesMap.set(p.id, p as Profile));
 
-      // Get unread counts for each conversation
-      const unreadCountsMap = new Map<string, number>();
-      for (const conv of data) {
-        const { count } = await supabase
-          .from("messages")
-          .select("*", { count: 'exact', head: true })
-          .eq("conversation_id", conv.id)
-          .eq("read", false)
-          .neq("sender_id", user.id);
-        
-        unreadCountsMap.set(conv.id, count || 0);
-      }
-
-      // Get last message for each conversation
-      const lastMessagesMap = new Map<string, string>();
-      for (const conv of data) {
-        const { data: lastMsg } = await supabase
-          .from("messages")
-          .select("content, media_type")
-          .eq("conversation_id", conv.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
-        
-        if (lastMsg) {
-          const preview = lastMsg.media_type 
-            ? `📎 ${lastMsg.media_type === 'image' ? 'Photo' : lastMsg.media_type === 'video' ? 'Video' : lastMsg.media_type === 'voice' ? 'Voice message' : 'File'}`
-            : lastMsg.content.substring(0, 50);
-          lastMessagesMap.set(conv.id, preview);
-        }
-      }
-
-      const conversationsWithData = data.map((conv) => {
-        const otherUserId = conv.participant_ids.find((id: string) => id !== user.id);
+      // Map conversations with data - defer expensive operations
+      const conversationsWithData: Conversation[] = convData.map((conv) => {
+        const otherUserId = conv.participant_ids.find((id: string) => id !== userId);
+        const otherUser = otherUserId ? profilesMap.get(otherUserId) : undefined;
         return {
-          ...conv,
-          otherUser: conv.is_group ? undefined : profilesMap.get(otherUserId),
-          unreadCount: unreadCountsMap.get(conv.id) || 0,
-          lastMessage: lastMessagesMap.get(conv.id),
+          id: conv.id,
+          participant_ids: conv.participant_ids,
+          last_message_at: conv.last_message_at,
+          is_group: conv.is_group,
+          group_name: conv.group_name,
+          group_avatar_url: conv.group_avatar_url,
+          otherUser: conv.is_group ? undefined : otherUser,
+          unreadCount: 0,
+          lastMessage: '',
           isPinned: pinnedChats.has(conv.id),
           isArchived: archivedChats.has(conv.id),
           memberCount: conv.participant_ids.length,
@@ -177,23 +170,84 @@ const Messages = () => {
       });
 
       setConversations(conversationsWithData);
+      setIsLoading(false);
+
+      // Lazy load unread counts and last messages (non-blocking)
+      setTimeout(() => {
+        loadAdditionalData(convIds, userId, conversationsWithData);
+      }, 0);
+
+    } catch (err) {
+      console.error('Error fetching conversations:', err);
+      setIsLoading(false);
     }
+  }, [pinnedChats, archivedChats]);
+
+  const loadAdditionalData = async (convIds: string[], userId: string, existingConvs: Conversation[]) => {
+    // Batch load last messages for all conversations at once
+    const lastMessagesPromises = convIds.map(id => 
+      supabase
+        .from("messages")
+        .select("content, media_type")
+        .eq("conversation_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    );
+
+    const unreadPromises = convIds.map(id =>
+      supabase
+        .from("messages")
+        .select("*", { count: 'exact', head: true })
+        .eq("conversation_id", id)
+        .eq("read", false)
+        .neq("sender_id", userId)
+    );
+
+    const [lastMsgsResults, unreadResults] = await Promise.all([
+      Promise.all(lastMessagesPromises),
+      Promise.all(unreadPromises)
+    ]);
+
+    const lastMessagesMap = new Map<string, string>();
+    const unreadCountsMap = new Map<string, number>();
+
+    lastMsgsResults.forEach((result, idx) => {
+      if (result.data) {
+        const msg = result.data;
+        const preview = msg.media_type 
+          ? `📎 ${msg.media_type === 'image' ? 'Photo' : msg.media_type === 'video' ? 'Video' : msg.media_type === 'voice' ? 'Voice' : 'File'}`
+          : msg.content?.substring(0, 50) || '';
+        lastMessagesMap.set(convIds[idx], preview);
+      }
+    });
+
+    unreadResults.forEach((result, idx) => {
+      unreadCountsMap.set(convIds[idx], result.count || 0);
+    });
+
+    setConversations(prev => prev.map(conv => ({
+      ...conv,
+      lastMessage: lastMessagesMap.get(conv.id) || conv.lastMessage,
+      unreadCount: unreadCountsMap.get(conv.id) ?? conv.unreadCount,
+      isPinned: pinnedChats.has(conv.id),
+      isArchived: archivedChats.has(conv.id),
+    })));
   };
 
   const handleMarkAllAsRead = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!currentUser) return;
 
     await supabase
       .from("messages")
       .update({ read: true })
       .eq("read", false)
-      .neq("sender_id", user.id);
+      .neq("sender_id", currentUser.id);
     
-    fetchConversations();
+    setConversations(prev => prev.map(c => ({ ...c, unreadCount: 0 })));
   };
 
-  const togglePin = (convId: string) => {
+  const togglePin = useCallback((convId: string) => {
     setPinnedChats(prev => {
       const newSet = new Set(prev);
       if (newSet.has(convId)) {
@@ -203,9 +257,12 @@ const Messages = () => {
       }
       return newSet;
     });
-  };
+    setConversations(prev => prev.map(c => 
+      c.id === convId ? { ...c, isPinned: !c.isPinned } : c
+    ));
+  }, []);
 
-  const toggleArchive = (convId: string) => {
+  const toggleArchive = useCallback((convId: string) => {
     setArchivedChats(prev => {
       const newSet = new Set(prev);
       if (newSet.has(convId)) {
@@ -215,15 +272,17 @@ const Messages = () => {
       }
       return newSet;
     });
-  };
+    setConversations(prev => prev.map(c => 
+      c.id === convId ? { ...c, isArchived: !c.isArchived } : c
+    ));
+  }, []);
 
-  // Memoize filtered conversations to prevent recalculation
   const filteredConversations = useMemo(() => {
     return conversations
       .filter(conv => {
         const matchesSearch = searchQuery === "" || 
-          conv.otherUser?.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          conv.otherUser?.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          conv.otherUser?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          conv.otherUser?.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           conv.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (conv.is_group && conv.group_name?.toLowerCase().includes(searchQuery.toLowerCase()));
         
@@ -232,228 +291,223 @@ const Messages = () => {
         return matchesSearch && matchesArchive;
       })
       .sort((a, b) => {
-        // Pinned chats first
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
-        // Then by last message time
         return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
       });
   }, [conversations, searchQuery, showArchived]);
 
+  const totalUnread = useMemo(() => 
+    conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0), 
+    [conversations]
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background/98 to-background pb-20">
+    <div className="min-h-screen bg-background pb-20">
       <TopNav />
       
-      <div className="pt-16 px-4">
-        <div className="flex items-center justify-between py-3 sm:py-4 gap-2">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient">
+      <div className="pt-16 px-3 sm:px-4 max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between py-3 gap-2">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
               Neuron
             </h1>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="glass backdrop-blur-xl rounded-full px-2 sm:px-3 py-1 border border-primary/30 hover:scale-105 transition-all h-7 sm:h-8"
-            >
-              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary animate-pulse" />
-              <span className="text-xs font-semibold text-primary ml-1 hidden sm:inline">Smart Features</span>
-              <span className="text-xs font-semibold text-primary ml-1 sm:hidden">AI</span>
-            </Button>
+            {totalUnread > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                {totalUnread}
+              </span>
+            )}
           </div>
-          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto whitespace-nowrap">
+          <div className="flex gap-1.5">
             <Button 
               onClick={() => navigate("/email")}
               size="sm"
-              className="glass bg-accent/20 hover:bg-accent/30 hover:scale-105 transition-all h-8 text-xs shrink-0"
+              variant="ghost"
+              className="h-8 px-2 sm:px-3"
             >
-              <MessageCircle className="w-3.5 h-3.5 sm:mr-2" />
-              <span className="hidden sm:inline">Email</span>
+              <Mail className="w-4 h-4" />
             </Button>
             <Button 
               onClick={() => setShowCreateGroup(true)}
               size="sm"
-              className="glass bg-primary/20 hover:bg-primary/30 hover:scale-105 transition-all h-8 text-xs shrink-0"
+              variant="ghost"
+              className="h-8 px-2 sm:px-3"
             >
-              <Users className="w-3.5 h-3.5 sm:mr-2" />
-              <span className="hidden sm:inline">New Group</span>
+              <Users className="w-4 h-4" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setShowArchived(!showArchived)}
-              className="glass hover:scale-105 transition-all h-8 text-xs shrink-0"
-            >
-              {showArchived ? 'Active' : 'Archived'}
-            </Button>
+            {totalUnread > 0 && (
+              <Button 
+                onClick={handleMarkAllAsRead}
+                size="sm"
+                variant="ghost"
+                className="h-8 px-2 sm:px-3"
+              >
+                <CheckCheck className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Search with modern styling */}
-        <div className="relative mb-3 sm:mb-4">
-          <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+        {/* Search */}
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search messages..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 sm:pl-11 glass backdrop-blur-xl border-border/30 focus:border-primary/50 transition-all rounded-full h-10 sm:h-12 text-sm sm:text-base"
+            className="pl-9 h-10 rounded-xl bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary/50"
           />
         </div>
 
-        {/* Stats with improved design */}
-        {!showArchived && (
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="glass backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center border border-border/10 hover:scale-105 transition-all">
-              <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{conversations.filter(c => !c.isArchived).length}</p>
-              <p className="text-xs text-muted-foreground font-medium mt-0.5 sm:mt-1">Active</p>
+        {/* Quick Stats */}
+        <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
+          <button 
+            onClick={() => setShowArchived(false)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
+              !showArchived ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            Active ({conversations.filter(c => !c.isArchived).length})
+          </button>
+          <button 
+            onClick={() => setShowArchived(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 ${
+              showArchived ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            <Archive className="w-3.5 h-3.5" />
+            Archived ({archivedChats.size})
+          </button>
+          {pinnedChats.size > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-accent/20 text-accent-foreground shrink-0">
+              <Pin className="w-3.5 h-3.5" />
+              {pinnedChats.size} Pinned
             </div>
-            <div className="glass backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center border border-border/10 hover:scale-105 transition-all">
-              <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-br from-accent to-primary bg-clip-text text-transparent">{conversations.filter(c => c.unreadCount! > 0).length}</p>
-              <p className="text-xs text-muted-foreground font-medium mt-0.5 sm:mt-1">Unread</p>
-            </div>
-            <div className="glass backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center border border-border/10 hover:scale-105 transition-all">
-              <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">{pinnedChats.size}</p>
-              <p className="text-xs text-muted-foreground font-medium mt-0.5 sm:mt-1">Pinned</p>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Conversations List */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           {isLoading ? (
-            // Loading skeletons
-            Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="glass rounded-xl p-4 flex items-center gap-3 animate-pulse">
-                <div className="w-14 h-14 rounded-full bg-muted" />
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-xl animate-pulse">
+                <div className="w-12 h-12 rounded-full bg-muted" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-32 bg-muted rounded" />
-                  <div className="h-3 w-24 bg-muted rounded" />
+                  <div className="h-4 w-28 bg-muted rounded" />
+                  <div className="h-3 w-40 bg-muted rounded" />
                 </div>
               </div>
             ))
           ) : filteredConversations.length === 0 ? (
-            <div className="glass rounded-2xl p-12 text-center space-y-4 mt-8">
-              <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                <MessageCircle className="w-10 h-10 text-primary" />
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                <MessageCircle className="w-8 h-8 text-muted-foreground" />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-semibold">No Messages Yet</h3>
-                <p className="text-muted-foreground text-sm">
-                  Start a conversation with beverage professionals
-                </p>
-              </div>
+              <p className="text-muted-foreground text-sm">
+                {showArchived ? "No archived chats" : "No conversations yet"}
+              </p>
             </div>
           ) : (
-            filteredConversations.map((conversation) => (
-              <div
-                key={conversation.id}
-                className={`relative group glass-hover rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02] backdrop-blur-xl border ${
-                  conversation.isPinned ? 'ring-2 ring-primary/50 shadow-lg shadow-primary/10 border-primary/30' : 'border-border/10'
-                }`}
-              >
-                <div
-                  className="p-3 sm:p-4 flex items-start gap-2.5 sm:gap-3 cursor-pointer"
+            <AnimatePresence mode="popLayout">
+              {filteredConversations.map((conversation, idx) => (
+                <motion.div
+                  key={conversation.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -100 }}
+                  transition={{ delay: idx * 0.02, duration: 0.2 }}
+                  className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all active:scale-[0.98] ${
+                    conversation.unreadCount! > 0 
+                      ? 'bg-primary/5 hover:bg-primary/10' 
+                      : 'hover:bg-muted/50'
+                  } ${conversation.isPinned ? 'border-l-2 border-l-primary' : ''}`}
                   onClick={() => navigate(`/messages/${conversation.id}`)}
                 >
-                <div className="relative shrink-0">
-                  {conversation.is_group ? (
-                    conversation.group_avatar_url ? (
-                      <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden glass border-2 border-primary/20">
-                        <img 
-                          src={conversation.group_avatar_url} 
-                          alt={conversation.group_name || 'Group'} 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                  {/* Avatar */}
+                  <div className="relative shrink-0">
+                    {conversation.is_group ? (
+                      conversation.group_avatar_url ? (
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
+                          <img 
+                            src={conversation.group_avatar_url} 
+                            alt={conversation.group_name || 'Group'} 
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-primary" />
+                        </div>
+                      )
                     ) : (
-                      <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full glass flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20">
-                        <Users className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-                      </div>
-                    )
-                  ) : (
-                    <OptimizedAvatar
-                      src={conversation.otherUser?.avatar_url}
-                      alt={conversation.otherUser?.username || 'User'}
-                      fallback={conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
-                      userId={conversation.otherUser?.id}
-                      className={`w-12 h-12 sm:w-16 sm:h-16 ${conversation.unreadCount! > 0 ? 'ring-2 ring-primary shadow-lg shadow-primary/20' : ''}`}
-                    />
-                  )}
-                  {conversation.isPinned && (
-                    <div className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                      <Pin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
-                    </div>
-                  )}
-                </div>
-                  
+                      <OptimizedAvatar
+                        src={conversation.otherUser?.avatar_url}
+                        alt={conversation.otherUser?.username || 'User'}
+                        fallback={conversation.otherUser?.username?.[0]?.toUpperCase() || '?'}
+                        userId={conversation.otherUser?.id}
+                        className="w-12 h-12"
+                      />
+                    )}
+                    {conversation.unreadCount! > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                        {conversation.unreadCount! > 9 ? '9+' : conversation.unreadCount}
+                      </span>
+                    )}
+                    {conversation.isPinned && (
+                      <Pin className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 text-primary" />
+                    )}
+                  </div>
+
+                  {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-0.5 sm:mb-1">
-                      <p className={`text-sm sm:text-base font-semibold truncate ${conversation.unreadCount! > 0 ? 'text-foreground' : ''}`}>
+                    <div className="flex items-center justify-between gap-2 mb-0.5">
+                      <p className={`text-sm truncate ${conversation.unreadCount! > 0 ? 'font-semibold text-foreground' : 'font-medium text-foreground'}`}>
                         {conversation.is_group 
                           ? conversation.group_name 
-                          : (conversation.otherUser?.full_name || 'Unknown User')}
+                          : (conversation.otherUser?.full_name || 'Unknown')}
                       </p>
-                      <p className="text-xs text-muted-foreground shrink-0 flex items-center gap-0.5 sm:gap-1">
-                        <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                        <span className="hidden sm:inline">{formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: true })}</span>
-                        <span className="sm:hidden">{formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: false })}</span>
-                      </p>
+                      <span className="text-[10px] text-muted-foreground shrink-0">
+                        {formatDistanceToNow(new Date(conversation.last_message_at), { addSuffix: false })}
+                      </span>
                     </div>
-                    
-                    <p className="text-xs text-muted-foreground truncate mb-0.5 sm:mb-1">
-                      {conversation.is_group 
-                        ? `${conversation.memberCount} members`
-                        : `@${conversation.otherUser?.username || 'unknown'}`}
+                    <p className={`text-xs truncate ${conversation.unreadCount! > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {conversation.lastMessage || (conversation.is_group ? `${conversation.memberCount} members` : `@${conversation.otherUser?.username || ''}`)}
                     </p>
-                    
-                    {conversation.lastMessage && (
-                      <p className={`text-xs sm:text-sm truncate ${conversation.unreadCount! > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                        {conversation.lastMessage}
-                      </p>
-                    )}
                   </div>
 
-                  <div className="flex flex-col items-end gap-1.5 sm:gap-2 shrink-0">
-                    {conversation.unreadCount! > 0 && (
-                      <Badge variant="default" className="bg-primary glow-primary text-xs h-5 min-w-[20px] sm:h-6 sm:min-w-[24px]">
-                        {conversation.unreadCount}
-                      </Badge>
-                    )}
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="glass backdrop-blur-xl">
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); togglePin(conversation.id); }}>
-                          <Pin className="w-4 h-4 mr-2" />
-                          {conversation.isPinned ? 'Unpin' : 'Pin'}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleArchive(conversation.id); }}>
-                          <Archive className="w-4 h-4 mr-2" />
-                          {conversation.isArchived ? 'Unarchive' : 'Archive'}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); togglePin(conversation.id); }}
+                      className="p-1.5 rounded-full hover:bg-muted"
+                    >
+                      <Pin className={`w-3.5 h-3.5 ${conversation.isPinned ? 'text-primary fill-primary' : 'text-muted-foreground'}`} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleArchive(conversation.id); }}
+                      className="p-1.5 rounded-full hover:bg-muted"
+                    >
+                      <Archive className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
                   </div>
-                </div>
-
-                {/* Gradient border effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-              </div>
-            ))
+                </motion.div>
+              ))}
+            </AnimatePresence>
           )}
         </div>
       </div>
 
-      <CreateGroupDialog 
-        open={showCreateGroup}
-        onOpenChange={setShowCreateGroup}
-        currentUserId={currentUser?.id || ''}
-      />
-
+      {currentUser && (
+        <CreateGroupDialog 
+          open={showCreateGroup} 
+          onOpenChange={setShowCreateGroup}
+          currentUserId={currentUser.id}
+        />
+      )}
       <BottomNav />
     </div>
   );
