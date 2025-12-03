@@ -612,8 +612,8 @@ const Profile = () => {
                 </p>
               </div>
 
-              {profile.professional_title && (() => {
-                const badge = getProfessionalBadge(profile.professional_title);
+              {safeProfile.professional_title && (() => {
+                const badge = getProfessionalBadge(safeProfile.professional_title);
                 const BadgeIcon = badge.icon;
                 return (
                   <div className="relative">
@@ -669,7 +669,7 @@ const Profile = () => {
                         </div>
                         
                         <h4 className="text-2xl font-bold text-white mt-4 capitalize drop-shadow-lg">
-                          {profile.professional_title.replace(/_/g, " ")}
+                          {safeProfile.professional_title?.replace(/_/g, " ")}
                         </h4>
                       </div>
                     </div>
@@ -696,8 +696,8 @@ const Profile = () => {
                           Verified
                         </span>
                       )}
-                      <Badge className={`bg-gradient-to-r ${getBadgeColor(profile.badge_level)} border-0 text-white capitalize group-hover:scale-105 transition-transform`}>
-                        {profile.badge_level}
+                      <Badge className={`bg-gradient-to-r ${getBadgeColor(safeProfile.badge_level)} border-0 text-white capitalize group-hover:scale-105 transition-transform`}>
+                        {safeProfile.badge_level}
                       </Badge>
                     </div>
                   </div>
@@ -706,14 +706,14 @@ const Profile = () => {
                     onClick={() => setMetricsDialogOpen(true)}
                   >
                     <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Network Reach</span>
-                    <span className="text-sm font-semibold group-hover:scale-105 transition-transform">{profile ? calculateNetworkReach(profile, posts, reels).toLocaleString() : 0}</span>
+                    <span className="text-sm font-semibold group-hover:scale-105 transition-transform">{calculateNetworkReach(safeProfile, posts, reels).toLocaleString()}</span>
                   </div>
                   <div 
                     className="flex justify-between items-center glass rounded-lg p-3 border border-border/50 cursor-pointer hover:border-primary/50 transition-colors group"
                     onClick={() => setMetricsDialogOpen(true)}
                   >
                     <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Professional Score</span>
-                    <span className="text-sm font-semibold text-primary group-hover:scale-105 transition-transform">{profile ? calculateProfessionalScore(profile, userRoles, posts, reels, stories) : 0}/100</span>
+                    <span className="text-sm font-semibold text-primary group-hover:scale-105 transition-transform">{calculateProfessionalScore(safeProfile, userRoles, posts, reels, stories)}/100</span>
                   </div>
                 </div>
               </div>
@@ -751,7 +751,7 @@ const Profile = () => {
                         {metrics.score}
                       </div>
                       <div className="text-xs text-muted-foreground mb-2">
-                        {metrics.regionalRank} {profile.region && profile.region !== 'All' ? `in ${profile.region}` : 'globally'}
+                        {metrics.regionalRank} {safeProfile.region && safeProfile.region !== 'All' ? `in ${safeProfile.region}` : 'globally'}
                       </div>
                       <Badge className={`${metrics.badge.color} text-sm px-3 py-1`}>
                         {metrics.badge.level} - {metrics.badge.description}
