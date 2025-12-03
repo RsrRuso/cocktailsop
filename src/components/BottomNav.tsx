@@ -10,6 +10,14 @@ const BottomNav = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  // Hide bottom nav on fullscreen pages (Reels, Story Viewer)
+  const hideOnRoutes = ['/reels', '/story-viewer'];
+  const shouldHide = hideOnRoutes.some(route => location.pathname.startsWith(route));
+  
+  if (shouldHide) {
+    return null;
+  }
+
   // Get avatar from profile or user metadata
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
   const username = profile?.username || user?.user_metadata?.username || 'User';
