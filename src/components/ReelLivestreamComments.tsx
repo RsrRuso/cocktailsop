@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, ChevronUp, ChevronDown, Heart } from "lucide-react";
+import { Send, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -44,7 +44,6 @@ export const ReelLivestreamComments = ({
   const [comments, setComments] = useState<ReelComment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(true);
   const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
   const submittedIdsRef = useRef<Set<string>>(new Set());
   const lastCommentTimeRef = useRef<number>(0);
@@ -279,7 +278,7 @@ export const ReelLivestreamComments = ({
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col pointer-events-none">
+    <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col pointer-events-none pb-safe">
       {/* Flying hearts */}
       <AnimatePresence>
         {flyingHearts.map((heart) => (
@@ -308,105 +307,90 @@ export const ReelLivestreamComments = ({
         ))}
       </AnimatePresence>
 
-      {/* Toggle button */}
-      <div className="flex justify-center pb-2 pointer-events-auto">
-        <Button
-          onClick={() => setIsExpanded(!isExpanded)}
-          size="sm"
-          variant="ghost"
-          className="rounded-full h-8 w-8 p-0 bg-black/60 backdrop-blur-md hover:bg-black/80 border border-white/20"
+      {/* Floating comments section - always visible at bottom */}
+      <div className="flex flex-col">
+        {/* Comments flowing up */}
+        <div 
+          ref={commentsContainerRef}
+          className="max-h-52 overflow-y-auto px-4 pb-2 pointer-events-auto scrollbar-hide"
+          onTouchStart={() => onPauseChange?.(true)}
+          onTouchEnd={() => onPauseChange?.(false)}
+          onMouseEnter={() => onPauseChange?.(true)}
+          onMouseLeave={() => onPauseChange?.(false)}
         >
-          {isExpanded ? (
-            <ChevronDown className="w-4 h-4 text-white" />
-          ) : (
-            <ChevronUp className="w-4 h-4 text-white" />
-          )}
-        </Button>
-      </div>
-
-      {/* Floating comments - scrolling from bottom to top */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="overflow-hidden"
-          >
-            <div 
-              ref={commentsContainerRef}
-              className="max-h-48 overflow-y-auto px-4 pb-2 pointer-events-auto scrollbar-hide"
-              onTouchStart={() => onPauseChange?.(true)}
-              onTouchEnd={() => onPauseChange?.(false)}
-              onMouseEnter={() => onPauseChange?.(true)}
-              onMouseLeave={() => onPauseChange?.(false)}
-            >
-              <div className="space-y-2">
-                <AnimatePresence mode="popLayout">
-                  {comments.map((comment, index) => (
-                    <motion.div
-                      key={comment.id}
-                      initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -20, scale: 0.9 }}
-                      transition={{ 
-                        duration: 0.3,
-                        delay: index * 0.02,
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 30
-                      }}
-                      className="flex items-start gap-2"
-                    >
-                      <OptimizedAvatar
-                        src={comment.profiles?.avatar_url || ""}
-                        alt={comment.profiles?.full_name || "User"}
-                        className="w-6 h-6 flex-shrink-0 ring-1 ring-white/30"
-                      />
-                      <div className="flex-1 max-w-[80%]">
-                        <div className="bg-black/60 backdrop-blur-md rounded-2xl px-3 py-1.5">
-                          <span className="text-white font-semibold text-xs">
-                            {comment.profiles?.username || comment.profiles?.full_name || "Anonymous"}
-                          </span>
-                          <span className="text-white/90 text-xs ml-2">
-                            {comment.content}
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Comment input */}
-      <form 
-        onSubmit={handleSubmit}
-        className="px-4 pb-4 pt-2 pointer-events-auto"
-      >
-        <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-full px-4 py-2 border border-white/20">
-          <Input
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Add a comment..."
-            className="flex-1 bg-transparent border-none text-white placeholder:text-white/50 text-sm focus-visible:ring-0 h-8 px-0"
-            disabled={isSubmitting}
-          />
-          <Button
-            type="submit"
-            size="sm"
-            variant="ghost"
-            className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
-            disabled={isSubmitting || !newComment.trim()}
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+          <div className="space-y-2">
+            <AnimatePresence mode="popLayout">
+              {comments.map((comment) => (
+                <motion.div
+                  key={comment.id}
+                  initial={{ opacity: 0, y: 40, scale: 0.85 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -30, scale: 0.9 }}
+                  transition={{ 
+                    duration: 0.4,
+                    type: "spring",
+                    stiffness: 350,
+                    damping: 25
+                  }}
+                  className="flex items-start gap-2"
+                >
+                  <OptimizedAvatar
+                    src={comment.profiles?.avatar_url || ""}
+                    alt={comment.profiles?.full_name || "User"}
+                    className="w-7 h-7 flex-shrink-0 ring-1 ring-white/30"
+                  />
+                  <div className="flex-1 max-w-[85%]">
+                    <div className="bg-black/50 backdrop-blur-sm rounded-2xl px-3 py-2 inline-block">
+                      <span className="text-white font-semibold text-xs block">
+                        {comment.profiles?.username || comment.profiles?.full_name || "Anonymous"}
+                      </span>
+                      <span className="text-white/90 text-sm">
+                        {comment.content}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            
+            {/* Empty state hint */}
+            {comments.length === 0 && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-white/40 text-xs text-center py-2"
+              >
+                Be the first to comment!
+              </motion.div>
+            )}
+          </div>
         </div>
-      </form>
+
+        {/* Comment input - always visible */}
+        <form 
+          onSubmit={handleSubmit}
+          className="px-4 pb-4 pt-2 pointer-events-auto"
+        >
+          <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md rounded-full px-4 py-2.5 border border-white/20">
+            <Input
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Add a comment..."
+              className="flex-1 bg-transparent border-none text-white placeholder:text-white/50 text-sm focus-visible:ring-0 h-8 px-0"
+              disabled={isSubmitting}
+            />
+            <Button
+              type="submit"
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
+              disabled={isSubmitting || !newComment.trim()}
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
