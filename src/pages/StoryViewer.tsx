@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { X, Heart, Brain, BarChart3 } from "lucide-react";
+import { X, Heart, Brain, BarChart3, Music2, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
 import { LivestreamComments } from "@/components/story/LivestreamComments";
@@ -58,6 +58,7 @@ export default function StoryViewer() {
   const [showComments, setShowComments] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
+  const [isMuted, setIsMuted] = useState(false);
   
   // Refs
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -178,11 +179,21 @@ export default function StoryViewer() {
     }
   };
 
+  // Calculate story duration based on music or content type
+  const getStoryDuration = () => {
+    if (musicData) {
+      const trimStart = musicData.trimStart || 0;
+      const trimEnd = musicData.trimEnd || 45;
+      return (trimEnd - trimStart) * 1000; // Convert to milliseconds
+    }
+    return isVideo ? 15000 : 5000;
+  };
+
   // Auto-progress timer
   useEffect(() => {
     if (!currentStory || isPaused || showComments) return;
 
-    const duration = isVideo ? 15000 : 5000;
+    const duration = getStoryDuration();
     const interval = 50;
     const increment = (interval / duration) * 100;
 
@@ -201,7 +212,7 @@ export default function StoryViewer() {
         clearInterval(progressIntervalRef.current);
       }
     };
-  }, [currentIndex, isPaused, showComments, stories]);
+  }, [currentIndex, isPaused, showComments, stories, musicData]);
 
   // Video sync
   useEffect(() => {
@@ -244,13 +255,22 @@ export default function StoryViewer() {
     
     // Set initial time to trim start
     audio.currentTime = musicData.trimStart || 0;
+    audio.muted = isMuted;
     
     if (isPaused || showComments) {
       audio.pause();
     } else {
       audio.play().catch(console.error);
     }
-  }, [isPaused, showComments, musicData, currentIndex]);
+  }, [isPaused, showComments, musicData, currentIndex, isMuted]);
+  
+  // Update mute state on audio element
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.muted = isMuted;
+    }
+  }, [isMuted]);
   
   // Handle music trim looping
   useEffect(() => {
@@ -455,13 +475,13 @@ export default function StoryViewer() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black z-50">
-      {/* Progress bars */}
-      <div className="absolute top-0 left-0 right-0 z-30 flex gap-1 p-2">
+    <div className="fixed inset-0 bg-black z-50 safe-area-inset">
+      {/* Progress bars - with safe area padding */}
+      <div className="absolute top-0 left-0 right-0 z-30 flex gap-1 px-3 pt-[env(safe-area-inset-top,12px)] pb-1">
         {stories.map((_, idx) => (
-          <div key={idx} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
+          <div key={idx} className="flex-1 h-1 bg-white/30 rounded-full overflow-hidden">
             <div
-              className="h-full bg-white transition-all duration-100"
+              className="h-full bg-white transition-all duration-100 ease-linear"
               style={{
                 width:
                   idx < currentIndex ? "100%" : idx === currentIndex ? `${progress}%` : "0%",
@@ -471,48 +491,80 @@ export default function StoryViewer() {
         ))}
       </div>
 
-      {/* Header */}
-      <div className="absolute top-4 left-0 right-0 z-30 flex items-center justify-between px-4 mt-3">
-        <div className="flex items-center gap-2">
+      {/* Header - improved mobile layout */}
+      <div className="absolute top-[calc(env(safe-area-inset-top,12px)+16px)] left-0 right-0 z-30 flex items-center justify-between px-3">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <OptimizedAvatar
             src={profile.avatar_url}
             alt={profile.full_name || "User"}
-            className="w-8 h-8 border-2 border-white"
+            className="w-10 h-10 border-2 border-white/80 flex-shrink-0"
           />
-          <div className="flex flex-col">
-            <span className="text-white font-semibold text-sm">
+          <div className="flex flex-col min-w-0">
+            <span className="text-white font-semibold text-sm truncate">
               {profile.full_name || profile.username || "User"}
             </span>
-            <span className="text-white/70 text-xs">
+            <span className="text-white/60 text-xs">
               {(() => {
                 const diff = Date.now() - new Date(currentStory.created_at).getTime();
                 const hours = Math.floor(diff / 3600000);
                 const mins = Math.floor(diff / 60000);
-                return hours > 0 ? `${hours}h` : `${mins}m`;
+                return hours > 0 ? `${hours}h ago` : `${mins}m ago`;
               })()}
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        
+        <div className="flex items-center gap-1">
+          {/* Mute/Unmute button */}
+          {musicData?.url && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMuted(!isMuted);
+              }}
+              className="p-2.5 hover:bg-white/10 active:bg-white/20 rounded-full transition-colors"
+            >
+              {isMuted ? (
+                <VolumeX className="w-5 h-5 text-white" />
+              ) : (
+                <Volume2 className="w-5 h-5 text-white" />
+              )}
+            </button>
+          )}
+          
           {currentUserId === userId && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setShowInsights(true);
               }}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              className="p-2.5 hover:bg-white/10 active:bg-white/20 rounded-full transition-colors"
             >
               <BarChart3 className="w-5 h-5 text-white" />
             </button>
           )}
           <button
             onClick={() => navigate("/home")}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            className="p-2.5 hover:bg-white/10 active:bg-white/20 rounded-full transition-colors"
           >
             <X className="w-6 h-6 text-white" />
           </button>
         </div>
       </div>
+
+      {/* Music indicator */}
+      {musicData?.url && (
+        <div className="absolute top-[calc(env(safe-area-inset-top,12px)+70px)] left-3 right-3 z-30">
+          <div className="flex items-center gap-2 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1.5 w-fit max-w-[70%]">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center animate-pulse">
+              <Music2 className="w-3 h-3 text-white" />
+            </div>
+            <span className="text-white text-xs font-medium truncate">
+              {musicData.name || "Background Music"}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Story content */}
       <div
@@ -596,17 +648,17 @@ export default function StoryViewer() {
         </div>
       )}
 
-      {/* Bottom actions */}
-      <div className="absolute bottom-6 left-0 right-0 z-30 px-4 flex items-center justify-between">
+      {/* Bottom actions - with safe area padding */}
+      <div className="absolute bottom-[calc(env(safe-area-inset-bottom,20px)+70px)] left-0 right-0 z-30 px-4 flex items-center justify-between">
         <button
           onClick={(e) => {
             e.stopPropagation();
             handleLike(e.clientX, e.clientY);
           }}
-          className="flex items-center gap-2 p-2 hover:bg-white/10 rounded-full transition-colors"
+          className="flex items-center gap-2 p-3 bg-black/30 backdrop-blur-sm hover:bg-white/10 active:bg-white/20 rounded-full transition-all"
         >
           <Heart
-            className={`w-7 h-7 transition-all ${
+            className={`w-7 h-7 transition-all duration-200 ${
               isLiked ? "fill-red-500 text-red-500 scale-110" : "text-white"
             }`}
           />
@@ -616,6 +668,15 @@ export default function StoryViewer() {
             </span>
           )}
         </button>
+        
+        {/* Story duration indicator */}
+        {musicData && (
+          <div className="bg-black/30 backdrop-blur-sm rounded-full px-3 py-1.5">
+            <span className="text-white/80 text-xs font-medium">
+              {Math.round((musicData.trimEnd || 45) - (musicData.trimStart || 0))}s
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Always-visible livestream comments */}
@@ -656,6 +717,12 @@ export default function StoryViewer() {
             opacity: 0;
             transform: translateY(-100px) scale(0.5);
           }
+        }
+        .safe-area-inset {
+          padding-top: env(safe-area-inset-top);
+          padding-bottom: env(safe-area-inset-bottom);
+          padding-left: env(safe-area-inset-left);
+          padding-right: env(safe-area-inset-right);
         }
       `}</style>
     </div>
