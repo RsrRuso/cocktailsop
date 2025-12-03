@@ -68,21 +68,42 @@ const createPlaceIcon = (type: 'bar' | 'restaurant' | 'cafe', hasAward = false) 
   });
 };
 
-// Mock awards data - in real app this would come from API
-const MOCK_AWARDS = [
-  'Michelin Star', 'World\'s 50 Best', 'James Beard Award', 'AAA Five Diamond',
-  'Best Cocktail Bar', 'Tales of the Cocktail Award', 'Spirited Award',
-  'Best New Restaurant', 'Wine Spectator Award', 'Zagat Rated'
+// Award-granting organizations with details
+const AWARD_ORGANIZATIONS = [
+  { id: 'michelin', name: 'Michelin Guide', icon: '⭐', color: 'bg-red-500', description: 'World\'s most prestigious restaurant rating', awards: ['Michelin Star', 'Michelin 2 Stars', 'Michelin 3 Stars', 'Bib Gourmand'] },
+  { id: 'worlds50best', name: 'World\'s 50 Best', icon: '🌍', color: 'bg-blue-500', description: 'Annual ranking of the world\'s best restaurants & bars', awards: ['World\'s 50 Best Restaurants', 'World\'s 50 Best Bars', 'Asia\'s 50 Best'] },
+  { id: 'jamesbeard', name: 'James Beard Foundation', icon: '🏆', color: 'bg-amber-600', description: 'Premier culinary awards in America', awards: ['James Beard Award', 'Outstanding Restaurant', 'Rising Star Chef'] },
+  { id: 'aaa', name: 'AAA Diamond', icon: '💎', color: 'bg-purple-500', description: 'North American hospitality rating', awards: ['AAA Five Diamond', 'AAA Four Diamond'] },
+  { id: 'spirited', name: 'Tales of the Cocktail', icon: '🍸', color: 'bg-teal-500', description: 'Cocktail industry\'s top awards', awards: ['Spirited Award', 'Best American Cocktail Bar', 'Best International Bar'] },
+  { id: 'winespectator', name: 'Wine Spectator', icon: '🍷', color: 'bg-rose-600', description: 'Premier wine awards', awards: ['Wine Spectator Award', 'Grand Award', 'Best of Award'] },
+  { id: 'zagat', name: 'Zagat', icon: '📖', color: 'bg-orange-500', description: 'Consumer-driven reviews and ratings', awards: ['Zagat Rated', 'Zagat Top Pick'] },
+  { id: 'forbes', name: 'Forbes Travel Guide', icon: '🌟', color: 'bg-slate-700', description: 'Luxury hospitality ratings', awards: ['Forbes Five-Star', 'Forbes Four-Star'] },
+  { id: 'tripadvisor', name: 'TripAdvisor', icon: '🦉', color: 'bg-green-500', description: 'Traveler\'s choice awards', awards: ['Travelers\' Choice', 'Best of the Best'] },
+  { id: 'timeout', name: 'Time Out', icon: '⏱️', color: 'bg-pink-500', description: 'City lifestyle awards', awards: ['Time Out Love Local', 'Best Bar Award'] },
 ];
 
-const generateMockAwards = (placeId: number): string[] => {
+const ALL_AWARDS = AWARD_ORGANIZATIONS.flatMap(org => org.awards);
+
+const generateMockAwards = (placeId: number): { award: string; organization: string }[] => {
   const seed = placeId % 100;
-  if (seed > 70) {
+  if (seed > 60) {
     const numAwards = Math.floor(seed % 3) + 1;
-    return MOCK_AWARDS.slice(0, numAwards);
+    const awards: { award: string; organization: string }[] = [];
+    for (let i = 0; i < numAwards; i++) {
+      const orgIndex = (placeId + i) % AWARD_ORGANIZATIONS.length;
+      const org = AWARD_ORGANIZATIONS[orgIndex];
+      const awardIndex = (placeId + i) % org.awards.length;
+      awards.push({ award: org.awards[awardIndex], organization: org.id });
+    }
+    return awards;
   }
   return [];
 };
+
+interface PlaceAward {
+  award: string;
+  organization: string;
+}
 
 interface Place {
   id: number;
@@ -92,7 +113,7 @@ interface Place {
   lon: number;
   rating?: number;
   cuisine?: string;
-  awards?: string[];
+  awards?: PlaceAward[];
   address?: string;
   phone?: string;
   website?: string;
@@ -119,6 +140,8 @@ const LiveMap = () => {
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [viewMode, setViewMode] = useState<'nearby' | 'city'>('nearby');
   const [placesFilter, setPlacesFilter] = useState<'all' | 'bar' | 'restaurant' | 'cafe' | 'awarded'>('all');
+  const [showAwardsOrgs, setShowAwardsOrgs] = useState(false);
+  const [selectedOrgFilter, setSelectedOrgFilter] = useState<string | null>(null);
   const { position, isTracking, toggleGhostMode } = useGPSTracking(!ghostMode);
   const { toast } = useToast();
 
@@ -277,10 +300,19 @@ const LiveMap = () => {
 
   // Filter places based on current filter
   const filteredPlaces = places.filter(place => {
+    // First apply org filter if set
+    if (selectedOrgFilter) {
+      if (!place.awards?.some(a => a.organization === selectedOrgFilter)) return false;
+    }
     if (placesFilter === 'all') return true;
     if (placesFilter === 'awarded') return place.awards && place.awards.length > 0;
     return place.type === placesFilter;
   });
+
+  // Get venues by organization
+  const getVenuesByOrg = (orgId: string) => {
+    return places.filter(p => p.awards?.some(a => a.organization === orgId));
+  };
 
   // Add place markers to map
   useEffect(() => {
@@ -563,6 +595,15 @@ const LiveMap = () => {
         </Button>
 
         <Button
+          onClick={() => setShowAwardsOrgs(true)}
+          variant="default"
+          size="icon"
+          className="w-12 h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 border-yellow-500/20 hover:border-yellow-500/40"
+        >
+          <Award className="w-5 h-5 text-yellow-500" />
+        </Button>
+
+        <Button
           onClick={() => setSatelliteMode(!satelliteMode)}
           variant="default"
           size="icon"
@@ -761,7 +802,7 @@ const LiveMap = () => {
                             <div className="flex flex-wrap gap-1 mt-2">
                               {place.awards.slice(0, 2).map((award, i) => (
                                 <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0">
-                                  {award}
+                                  {award.award}
                                 </Badge>
                               ))}
                               {place.awards.length > 2 && (
@@ -779,6 +820,134 @@ const LiveMap = () => {
               </div>
             </ScrollArea>
           </Tabs>
+        </SheetContent>
+      </Sheet>
+
+      {/* Awards Organizations Sheet */}
+      <Sheet open={showAwardsOrgs} onOpenChange={setShowAwardsOrgs}>
+        <SheetContent side="right" className="w-full sm:w-[450px] p-0">
+          <SheetHeader className="p-4 border-b">
+            <SheetTitle className="flex items-center gap-2">
+              <Award className="w-5 h-5 text-yellow-500" />
+              Award Organizations
+            </SheetTitle>
+            <SheetDescription>
+              Browse venues by award-granting companies
+            </SheetDescription>
+          </SheetHeader>
+
+          <ScrollArea className="h-[calc(100vh-120px)]">
+            <div className="p-4 space-y-3">
+              {/* Active Filter Indicator */}
+              {selectedOrgFilter && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">
+                      Filtering by: {AWARD_ORGANIZATIONS.find(o => o.id === selectedOrgFilter)?.name}
+                    </span>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedOrgFilter(null)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+
+              {AWARD_ORGANIZATIONS.map((org) => {
+                const venues = getVenuesByOrg(org.id);
+                return (
+                  <motion.div
+                    key={org.id}
+                    className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                      selectedOrgFilter === org.id 
+                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400' 
+                        : 'bg-card hover:bg-accent/50'
+                    }`}
+                    onClick={() => {
+                      setSelectedOrgFilter(selectedOrgFilter === org.id ? null : org.id);
+                      if (venues.length > 0) {
+                        setShowPlacesList(true);
+                      }
+                    }}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`w-12 h-12 rounded-xl ${org.color} flex items-center justify-center text-2xl text-white shadow-lg`}>
+                        {org.icon}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-base">{org.name}</h4>
+                          <Badge variant="secondary" className="bg-primary/10">
+                            {venues.length} venues
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{org.description}</p>
+                        
+                        {/* Award types */}
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {org.awards.slice(0, 3).map((award, i) => (
+                            <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0">
+                              {award}
+                            </Badge>
+                          ))}
+                          {org.awards.length > 3 && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              +{org.awards.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Venue preview */}
+                        {venues.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-border/50">
+                            <p className="text-[10px] text-muted-foreground mb-2 uppercase tracking-wide">Top Venues</p>
+                            <div className="space-y-1.5">
+                              {venues.slice(0, 3).map((venue) => (
+                                <div 
+                                  key={venue.id} 
+                                  className="flex items-center gap-2 p-2 rounded-lg bg-background/50 hover:bg-background cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowAwardsOrgs(false);
+                                    handlePlaceClick(venue);
+                                  }}
+                                >
+                                  <div className={`w-6 h-6 rounded flex items-center justify-center text-xs
+                                    ${venue.type === 'bar' ? 'bg-purple-100 dark:bg-purple-900/30' : 
+                                      venue.type === 'restaurant' ? 'bg-orange-100 dark:bg-orange-900/30' : 
+                                      'bg-amber-100 dark:bg-amber-900/30'}`}
+                                  >
+                                    {venue.type === 'bar' ? '🍺' : venue.type === 'restaurant' ? '🍽️' : '☕'}
+                                  </div>
+                                  <span className="text-xs font-medium truncate flex-1">{venue.name}</span>
+                                  <Navigation className="w-3 h-3 text-muted-foreground" />
+                                </div>
+                              ))}
+                            </div>
+                            {venues.length > 3 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full mt-2 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedOrgFilter(org.id);
+                                  setShowPlacesList(true);
+                                }}
+                              >
+                                View all {venues.length} venues →
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </ScrollArea>
         </SheetContent>
       </Sheet>
 
@@ -837,11 +1006,14 @@ const LiveMap = () => {
                     Awards & Recognition
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {selectedPlace.awards.map((award, i) => (
-                      <Badge key={i} className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
-                        🏆 {award}
-                      </Badge>
-                    ))}
+                    {selectedPlace.awards.map((award, i) => {
+                      const org = AWARD_ORGANIZATIONS.find(o => o.id === award.organization);
+                      return (
+                        <Badge key={i} className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                          {org?.icon || '🏆'} {award.award}
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               )}
