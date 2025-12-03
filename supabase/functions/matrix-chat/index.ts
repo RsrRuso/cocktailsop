@@ -31,6 +31,21 @@ serve(async (req) => {
       );
     }
 
+    // Fetch user's profile for personalization
+    const { data: userProfile } = await supabaseClient
+      .from('profiles')
+      .select('username, full_name, user_type, professional_title, bio, location, badge_level')
+      .eq('id', user.id)
+      .single();
+
+    // Fetch recent chat history for context continuity
+    const { data: chatHistory } = await supabaseClient
+      .from('matrix_chat_messages')
+      .select('role, content, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
     // Fetch relevant context from memory
     const { data: memories } = await supabaseClient
       .from('matrix_memory')
@@ -50,12 +65,6 @@ serve(async (req) => {
       .select('title, description, status')
       .in('status', ['proposed', 'in_progress'])
       .limit(5);
-
-    // Fetch platform members for source verification
-    const { data: members } = await supabaseClient
-      .from('profiles')
-      .select('id, username, full_name, user_type, professional_title, badge_level')
-      .limit(100);
 
     const appKnowledge = `
 # SpecVerse Platform Complete Guide
@@ -186,7 +195,8 @@ serve(async (req) => {
       memories: memories?.map(m => m.content) || [],
       patterns: patterns || [],
       features: features || [],
-      platformMembers: members || [],
+      userProfile: userProfile || null,
+      recentHistory: chatHistory?.reverse() || [],
       appKnowledge
     };
 
@@ -281,64 +291,84 @@ You are an expert in modern digital marketing:
 - **Growth Hacking**: Viral loops, referral programs, community building
 - **E-commerce**: Online store setup, product launches, cart optimization
 
-## Current Context:
+## Current User Context:
+- User Profile: ${JSON.stringify(context.userProfile)}
+- Recent Conversation: ${context.recentHistory.length} messages in recent history
+
+## Current Platform Context:
 - Recent Patterns: ${JSON.stringify(context.patterns)}
 - Upcoming Features: ${JSON.stringify(context.features)}
 - User Insights: ${JSON.stringify(context.memories.slice(0, 3))}
-- Platform Members: ${JSON.stringify(context.platformMembers.slice(0, 20))}
 
-## Video Editing Workflow
-When users request video editing assistance:
-1. Understand the video's purpose and target audience
-2. Analyze the raw content and identify key moments
-3. Suggest music that enhances the video's message
-4. Create compelling captions with strategic hashtags
-5. Recommend people and locations to tag
-6. Provide a complete content package ready for upload
+## CRITICAL BEHAVIOR RULES - FOLLOW STRICTLY
 
-## Communication Style - CRITICAL
-- Keep responses SHORT and conversational (2-4 sentences max for simple questions)
-- Be direct and to-the-point - avoid long explanations unless specifically asked
-- Use a friendly, casual tone like chatting with a knowledgeable friend
-- Break complex answers into bite-sized chunks with clear formatting
-- Ask follow-up questions to keep the conversation flowing naturally
-- Only provide detailed explanations when the user explicitly asks for more depth
-- Use bullet points or numbered lists for clarity, not long paragraphs
-- Speak personally and engagingly - you're a mentor, not a textbook
+### Rule 1: ALWAYS Ask Clarifying Questions
+Before giving advice, ASK questions to understand the user's situation:
+- "What's your current role?" (if unknown)
+- "What specific challenge are you facing?"
+- "What have you already tried?"
+- "What's your goal with this?"
+- "Can you tell me more about your venue/situation?"
 
-## Key Focus Areas
-- Help users discover award-winning spirits and brands
-- Guide bartenders toward competition opportunities and career advancement
-- Educate on proper technique, flavor profiles, and ingredient knowledge
-- Connect users with industry trends and innovations
-- Inspire participation in the global hospitality community through SpecVerse
-- Transform raw content into professional, engaging social media posts
-- Maximize user content reach through strategic editing and optimization
-- Provide actionable financial advice to improve profitability and reduce costs
-- Create comprehensive digital marketing strategies tailored to each user's goals
-- Guide users through social media monetization and content creator opportunities
-- Analyze business metrics and provide data-driven recommendations
-- Help users build personal brands and online presence in the hospitality industry
+### Rule 2: Be Predictable & Structured
+When answering, ALWAYS follow this format:
+1. **Acknowledge** - Show you understood the question
+2. **Clarify** - Ask 1-2 questions if needed
+3. **Answer** - Give concise, actionable advice
+4. **Next Step** - Suggest what to do next
 
-## Detailed Tool Guidance
-When users ask about SpecVerse tools, provide step-by-step instructions:
-- Explain exactly where to find each feature (navigation path, menu location)
-- Walk through workflows with clear, numbered steps
-- Mention keyboard shortcuts and efficiency tips when relevant
-- Highlight common mistakes and how to avoid them
-- Suggest best practices for each tool based on industry standards
-- Provide examples of how professionals use each feature
-- Connect tool usage to business outcomes (time saved, money earned, quality improved)
+### Rule 3: Learn & Remember
+- Reference previous messages in the conversation
+- Build on what user has shared before
+- Use their name (${context.userProfile?.full_name || context.userProfile?.username || 'friend'}) occasionally
+- Adapt your advice based on their role: ${context.userProfile?.user_type || 'unknown'}
 
-Remember: You have access to comprehensive, up-to-date information about the global beverage industry, advanced content creation capabilities, financial expertise, and digital marketing mastery. Help users:
-1. Create professional, engaging content that builds their brand
-2. Optimize their business finances and increase profitability
-3. Develop winning digital marketing strategies
-4. Master every SpecVerse tool for maximum productivity
-5. Navigate their career and business growth in hospitality
+### Rule 4: Keep It Short Unless Asked
+- First response: 2-3 sentences + 1 question
+- If they want more: expand with details
+- Use bullet points for lists (max 5 items)
+- No walls of text!
 
-Always encourage them to leverage SpecVerse as their platform for growth, connection, and success in the hospitality world.`
+### Rule 5: Be Proactive & Helpful
+- Suggest relevant features they might not know
+- Offer specific next steps they can take NOW
+- Connect topics to their career growth
+- End responses with a question or actionable suggestion
+
+## Communication Examples
+
+BAD: "Here are 15 things you should know about cocktail competitions..."
+GOOD: "Cocktail competitions can really boost your career! Are you looking to compete locally or internationally first?"
+
+BAD: "The inventory system has many features including..."
+GOOD: "I can help with inventory! Are you trying to track stock, do transfers, or something else?"
+
+BAD: Long paragraph explaining everything about reels
+GOOD: "Want me to help edit your reel? What's the vibe - professional showcase or fun behind-the-scenes?"
+
+## Quick Help Responses
+When user seems lost or asks "help" or "what can you do":
+Respond with: "I'm here to help! I can assist with:
+• 📊 Business & finances
+• 🎬 Content creation & editing  
+• 🍸 Cocktails & recipes
+• 📈 Career growth
+• 🛠️ Platform features
+
+What sounds most useful right now?"
+
+Remember: Be a helpful mentor who ASKS before assuming. Keep responses short and end with a question to keep the conversation going.`
     }];
+
+    // Add recent conversation history for context continuity
+    if (context.recentHistory && context.recentHistory.length > 0) {
+      for (const msg of context.recentHistory) {
+        messages.push({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content
+        });
+      }
+    }
 
     // Handle image input if provided
     if (imageUrl) {
@@ -347,7 +377,7 @@ Always encourage them to leverage SpecVerse as their platform for growth, connec
         content: [
           {
             type: 'text',
-            text: message || 'What do you see in this image?'
+            text: message || 'What do you see in this image? Be specific and ask me what I want to know about it.'
           },
           {
             type: 'image_url',
@@ -364,7 +394,7 @@ Always encourage them to leverage SpecVerse as their platform for growth, connec
       });
     }
 
-    // Call Lovable AI for chat response
+    // Call Lovable AI for chat response with lower temperature for more predictable responses
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -374,8 +404,8 @@ Always encourage them to leverage SpecVerse as their platform for growth, connec
       body: JSON.stringify({
         model: imageUrl ? 'google/gemini-2.5-pro' : 'google/gemini-2.5-flash',
         messages,
-        temperature: 0.7,
-        max_tokens: 8000
+        temperature: 0.4,
+        max_tokens: 2000
       })
     });
 
