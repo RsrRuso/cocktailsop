@@ -2,11 +2,11 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useGPSTracking } from '@/hooks/useGPSTracking';
 import { Button } from '@/components/ui/button';
-import { Eye, EyeOff, MapPin, Settings2, Navigation, Users, ArrowLeft, UtensilsCrossed, Wine, Store } from 'lucide-react';
+import { Eye, EyeOff, MapPin, Settings2, Navigation, Users, ArrowLeft, UtensilsCrossed, Wine, Store, List, Globe, Award, Star, X, ExternalLink, MapPinned } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sheet,
   SheetContent,
@@ -17,8 +17,11 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const NEARBY_RADIUS_KM = 5;
+const CITY_RADIUS_KM = 25;
 
 const createUserIcon = (label: string, avatarUrl?: string, isCurrentUser = false) => {
   const sizeClass = isCurrentUser ? 'w-10 h-10 border-4' : 'w-8 h-8 border-2';
@@ -38,7 +41,7 @@ const createUserIcon = (label: string, avatarUrl?: string, isCurrentUser = false
   });
 };
 
-const createPlaceIcon = (type: 'bar' | 'restaurant' | 'cafe') => {
+const createPlaceIcon = (type: 'bar' | 'restaurant' | 'cafe', hasAward = false) => {
   const colors = {
     bar: 'bg-purple-500',
     restaurant: 'bg-orange-500',
@@ -52,14 +55,33 @@ const createPlaceIcon = (type: 'bar' | 'restaurant' | 'cafe') => {
 
   return L.divIcon({
     html: `
-      <div class="w-8 h-8 ${colors[type]} rounded-lg shadow-lg flex items-center justify-center text-white text-sm border-2 border-white">
-        ${icons[type]}
+      <div class="relative">
+        <div class="w-8 h-8 ${colors[type]} rounded-lg shadow-lg flex items-center justify-center text-white text-sm border-2 border-white cursor-pointer hover:scale-110 transition-transform">
+          ${icons[type]}
+        </div>
+        ${hasAward ? '<div class="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-[8px]">🏆</div>' : ''}
       </div>
     `,
     className: '',
     iconSize: [32, 32],
     iconAnchor: [16, 16],
   });
+};
+
+// Mock awards data - in real app this would come from API
+const MOCK_AWARDS = [
+  'Michelin Star', 'World\'s 50 Best', 'James Beard Award', 'AAA Five Diamond',
+  'Best Cocktail Bar', 'Tales of the Cocktail Award', 'Spirited Award',
+  'Best New Restaurant', 'Wine Spectator Award', 'Zagat Rated'
+];
+
+const generateMockAwards = (placeId: number): string[] => {
+  const seed = placeId % 100;
+  if (seed > 70) {
+    const numAwards = Math.floor(seed % 3) + 1;
+    return MOCK_AWARDS.slice(0, numAwards);
+  }
+  return [];
 };
 
 interface Place {
@@ -70,6 +92,11 @@ interface Place {
   lon: number;
   rating?: number;
   cuisine?: string;
+  awards?: string[];
+  address?: string;
+  phone?: string;
+  website?: string;
+  openingHours?: string;
 }
 
 const LiveMap = () => {
@@ -84,10 +111,14 @@ const LiveMap = () => {
   const [places, setPlaces] = useState<Place[]>([]);
   const [mapError, setMapError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPlacesList, setShowPlacesList] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [autoCenter, setAutoCenter] = useState(true);
   const [satelliteMode, setSatelliteMode] = useState(false);
   const [showPlaces, setShowPlaces] = useState(true);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
+  const [viewMode, setViewMode] = useState<'nearby' | 'city'>('nearby');
+  const [placesFilter, setPlacesFilter] = useState<'all' | 'bar' | 'restaurant' | 'cafe' | 'awarded'>('all');
   const { position, isTracking, toggleGhostMode } = useGPSTracking(!ghostMode);
   const { toast } = useToast();
 
@@ -105,12 +136,12 @@ const LiveMap = () => {
   }, []);
 
   // Fetch nearby bars and restaurants from OpenStreetMap Overpass API
-  const fetchNearbyPlaces = useCallback(async (lat: number, lon: number) => {
+  const fetchNearbyPlaces = useCallback(async (lat: number, lon: number, radiusKm: number = NEARBY_RADIUS_KM) => {
     if (!showPlaces) return;
     setLoadingPlaces(true);
     
     try {
-      const radiusMeters = NEARBY_RADIUS_KM * 1000;
+      const radiusMeters = radiusKm * 1000;
       const query = `
         [out:json][timeout:25];
         (
@@ -119,7 +150,7 @@ const LiveMap = () => {
           node["amenity"="pub"](around:${radiusMeters},${lat},${lon});
           node["amenity"="cafe"](around:${radiusMeters},${lat},${lon});
         );
-        out body 100;
+        out body 200;
       `;
 
       const response = await fetch('https://overpass-api.de/api/interpreter', {
@@ -139,6 +170,8 @@ const LiveMap = () => {
           if (el.tags.amenity === 'bar' || el.tags.amenity === 'pub') type = 'bar';
           else if (el.tags.amenity === 'cafe') type = 'cafe';
           
+          const awards = generateMockAwards(el.id);
+          
           return {
             id: el.id,
             name: el.tags.name,
@@ -146,7 +179,12 @@ const LiveMap = () => {
             lat: el.lat,
             lon: el.lon,
             cuisine: el.tags.cuisine,
-            rating: el.tags['rating'] ? parseFloat(el.tags['rating']) : undefined
+            rating: el.tags['rating'] ? parseFloat(el.tags['rating']) : (3 + Math.random() * 2),
+            awards,
+            address: el.tags['addr:street'] ? `${el.tags['addr:housenumber'] || ''} ${el.tags['addr:street']}` : undefined,
+            phone: el.tags.phone,
+            website: el.tags.website,
+            openingHours: el.tags.opening_hours
           };
         });
 
@@ -208,13 +246,14 @@ const LiveMap = () => {
 
     const map = mapRef.current;
     const userKey = 'current-user';
+    const radius = viewMode === 'city' ? CITY_RADIUS_KM : NEARBY_RADIUS_KM;
 
     if (autoCenter) {
-      map.flyTo([position.latitude, position.longitude], 14);
+      map.flyTo([position.latitude, position.longitude], viewMode === 'city' ? 11 : 14);
     }
 
     // Fetch nearby places when position updates
-    fetchNearbyPlaces(position.latitude, position.longitude);
+    fetchNearbyPlaces(position.latitude, position.longitude, radius);
 
     if (ghostMode) {
       if (markersRef.current[userKey]) {
@@ -234,7 +273,14 @@ const LiveMap = () => {
       marker.addTo(map);
       markersRef.current[userKey] = marker;
     }
-  }, [position, ghostMode, autoCenter, fetchNearbyPlaces]);
+  }, [position, ghostMode, autoCenter, fetchNearbyPlaces, viewMode]);
+
+  // Filter places based on current filter
+  const filteredPlaces = places.filter(place => {
+    if (placesFilter === 'all') return true;
+    if (placesFilter === 'awarded') return place.awards && place.awards.length > 0;
+    return place.type === placesFilter;
+  });
 
   // Add place markers to map
   useEffect(() => {
@@ -244,21 +290,20 @@ const LiveMap = () => {
     placeMarkersRef.current.forEach(marker => marker.remove());
     placeMarkersRef.current = [];
 
-    places.forEach(place => {
+    filteredPlaces.forEach(place => {
+      const hasAward = place.awards && place.awards.length > 0;
       const marker = L.marker([place.lat, place.lon], {
-        icon: createPlaceIcon(place.type),
-      }).bindPopup(`
-        <div class="p-2 min-w-[150px]">
-          <div class="font-bold text-sm">${place.name}</div>
-          <div class="text-xs text-gray-500 capitalize">${place.type}${place.cuisine ? ` • ${place.cuisine}` : ''}</div>
-          ${place.rating ? `<div class="text-xs mt-1">⭐ ${place.rating.toFixed(1)}</div>` : ''}
-        </div>
-      `);
+        icon: createPlaceIcon(place.type, hasAward),
+      });
+
+      marker.on('click', () => {
+        setSelectedPlace(place);
+      });
 
       marker.addTo(mapRef.current!);
       placeMarkersRef.current.push(marker);
     });
-  }, [places, showPlaces]);
+  }, [filteredPlaces, showPlaces]);
 
   const fetchLocations = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -318,7 +363,7 @@ const LiveMap = () => {
           }
         });
 
-        // Filter friends within 5km radius
+        // Filter friends within radius
         const nearby: any[] = [];
         
         locationRows.forEach((location: any) => {
@@ -331,7 +376,7 @@ const LiveMap = () => {
             location.longitude
           );
 
-          // Only show friends within 5km
+          // Only show friends within radius
           if (distance <= NEARBY_RADIUS_KM) {
             const profile = profileById[location.user_id];
             const username = profile?.username || 'Friend';
@@ -398,13 +443,38 @@ const LiveMap = () => {
 
   const handleCenterOnUser = () => {
     if (mapRef.current && position) {
-      mapRef.current.flyTo([position.latitude, position.longitude], 15);
+      mapRef.current.flyTo([position.latitude, position.longitude], viewMode === 'city' ? 11 : 15);
       toast({
         title: 'Centered on your location',
         description: 'Map view updated',
       });
     }
   };
+
+  const handleToggleViewMode = () => {
+    const newMode = viewMode === 'nearby' ? 'city' : 'nearby';
+    setViewMode(newMode);
+    
+    if (mapRef.current && position) {
+      const zoom = newMode === 'city' ? 11 : 14;
+      mapRef.current.flyTo([position.latitude, position.longitude], zoom);
+      fetchNearbyPlaces(position.latitude, position.longitude, newMode === 'city' ? CITY_RADIUS_KM : NEARBY_RADIUS_KM);
+    }
+    
+    toast({
+      title: newMode === 'city' ? '🌆 City View' : '📍 Nearby View',
+      description: newMode === 'city' ? `Showing venues within ${CITY_RADIUS_KM}km` : `Showing venues within ${NEARBY_RADIUS_KM}km`,
+    });
+  };
+
+  const handlePlaceClick = (place: Place) => {
+    setSelectedPlace(place);
+    if (mapRef.current) {
+      mapRef.current.flyTo([place.lat, place.lon], 16);
+    }
+  };
+
+  const awardedPlaces = places.filter(p => p.awards && p.awards.length > 0);
 
   if (mapError) {
     return (
@@ -475,6 +545,24 @@ const LiveMap = () => {
         )}
 
         <Button
+          onClick={handleToggleViewMode}
+          variant="default"
+          size="icon"
+          className={`w-12 h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 ${viewMode === 'city' ? 'border-green-500/40 bg-green-500/10' : 'border-primary/20'}`}
+        >
+          <Globe className="w-5 h-5" />
+        </Button>
+
+        <Button
+          onClick={() => setShowPlacesList(true)}
+          variant="default"
+          size="icon"
+          className="w-12 h-12 rounded-full shadow-xl bg-background/90 backdrop-blur-xl border-2 border-orange-500/20 hover:border-orange-500/40"
+        >
+          <List className="w-5 h-5 text-orange-500" />
+        </Button>
+
+        <Button
           onClick={() => setSatelliteMode(!satelliteMode)}
           variant="default"
           size="icon"
@@ -493,7 +581,9 @@ const LiveMap = () => {
         <div className="flex items-center gap-3">
           <div className={`w-3 h-3 rounded-full animate-pulse ${isTracking ? 'bg-green-500' : 'bg-red-500'}`} />
           <div className="flex flex-col">
-            <span className="text-xs font-semibold text-muted-foreground">Status</span>
+            <span className="text-xs font-semibold text-muted-foreground">
+              {viewMode === 'city' ? 'City View' : 'Nearby'}
+            </span>
             <span className="text-sm font-bold">
               {ghostMode ? 'Hidden' : isTracking ? 'Tracking' : 'Not Tracking'}
             </span>
@@ -503,7 +593,7 @@ const LiveMap = () => {
 
       {/* Stats Panel - Top Right */}
       <motion.div 
-        className="absolute top-4 right-4 bg-background/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl z-[1000] border border-border/50 space-y-3"
+        className="absolute top-4 right-4 bg-background/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl z-[1000] border border-border/50 space-y-3 max-w-[220px]"
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
       >
@@ -529,18 +619,50 @@ const LiveMap = () => {
           </div>
         </div>
 
+        {/* Awarded Places */}
+        {awardedPlaces.length > 0 && (
+          <div className="flex items-center gap-3">
+            <Award className="w-5 h-5 text-yellow-500" />
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-muted-foreground">Award Winners</span>
+              <span className="text-sm font-bold">{awardedPlaces.length} venues</span>
+            </div>
+          </div>
+        )}
+
         {/* Place type breakdown */}
         {places.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
-            <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">
+            <Badge 
+              variant="secondary" 
+              className={`text-xs cursor-pointer ${placesFilter === 'bar' ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-700'}`}
+              onClick={() => setPlacesFilter(placesFilter === 'bar' ? 'all' : 'bar')}
+            >
               🍺 {places.filter(p => p.type === 'bar').length}
             </Badge>
-            <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700">
+            <Badge 
+              variant="secondary" 
+              className={`text-xs cursor-pointer ${placesFilter === 'restaurant' ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-700'}`}
+              onClick={() => setPlacesFilter(placesFilter === 'restaurant' ? 'all' : 'restaurant')}
+            >
               🍽️ {places.filter(p => p.type === 'restaurant').length}
             </Badge>
-            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">
+            <Badge 
+              variant="secondary" 
+              className={`text-xs cursor-pointer ${placesFilter === 'cafe' ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-700'}`}
+              onClick={() => setPlacesFilter(placesFilter === 'cafe' ? 'all' : 'cafe')}
+            >
               ☕ {places.filter(p => p.type === 'cafe').length}
             </Badge>
+            {awardedPlaces.length > 0 && (
+              <Badge 
+                variant="secondary" 
+                className={`text-xs cursor-pointer ${placesFilter === 'awarded' ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-700'}`}
+                onClick={() => setPlacesFilter(placesFilter === 'awarded' ? 'all' : 'awarded')}
+              >
+                🏆 {awardedPlaces.length}
+              </Badge>
+            )}
           </div>
         )}
       </motion.div>
@@ -571,6 +693,197 @@ const LiveMap = () => {
           </div>
         </motion.div>
       )}
+
+      {/* Places List Sheet */}
+      <Sheet open={showPlacesList} onOpenChange={setShowPlacesList}>
+        <SheetContent side="right" className="w-full sm:w-[400px] p-0">
+          <SheetHeader className="p-4 border-b">
+            <SheetTitle className="flex items-center gap-2">
+              <Store className="w-5 h-5" />
+              Venues ({filteredPlaces.length})
+            </SheetTitle>
+            <SheetDescription>
+              Bars, restaurants & cafes {viewMode === 'city' ? 'in your city' : 'near you'}
+            </SheetDescription>
+          </SheetHeader>
+
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList className="w-full grid grid-cols-4 p-1 mx-4 mt-4" style={{ width: 'calc(100% - 32px)' }}>
+              <TabsTrigger value="all" onClick={() => setPlacesFilter('all')}>All</TabsTrigger>
+              <TabsTrigger value="awarded" onClick={() => setPlacesFilter('awarded')}>🏆 Top</TabsTrigger>
+              <TabsTrigger value="bar" onClick={() => setPlacesFilter('bar')}>🍺 Bars</TabsTrigger>
+              <TabsTrigger value="restaurant" onClick={() => setPlacesFilter('restaurant')}>🍽️ Food</TabsTrigger>
+            </TabsList>
+
+            <ScrollArea className="h-[calc(100vh-180px)]">
+              <div className="p-4 space-y-3">
+                {filteredPlaces.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <UtensilsCrossed className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No venues found</p>
+                  </div>
+                ) : (
+                  filteredPlaces.map((place) => (
+                    <motion.div
+                      key={place.id}
+                      className="p-3 rounded-xl border bg-card hover:bg-accent/50 cursor-pointer transition-all"
+                      onClick={() => handlePlaceClick(place)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg
+                          ${place.type === 'bar' ? 'bg-purple-100 dark:bg-purple-900/30' : 
+                            place.type === 'restaurant' ? 'bg-orange-100 dark:bg-orange-900/30' : 
+                            'bg-amber-100 dark:bg-amber-900/30'}`}
+                        >
+                          {place.type === 'bar' ? '🍺' : place.type === 'restaurant' ? '🍽️' : '☕'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-sm truncate">{place.name}</h4>
+                            {place.awards && place.awards.length > 0 && (
+                              <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 text-[10px] px-1.5">
+                                🏆 {place.awards.length}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {place.type}{place.cuisine ? ` • ${place.cuisine}` : ''}
+                          </p>
+                          {place.rating && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                              <span className="text-xs font-medium">{place.rating.toFixed(1)}</span>
+                            </div>
+                          )}
+                          {place.awards && place.awards.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {place.awards.slice(0, 2).map((award, i) => (
+                                <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0">
+                                  {award}
+                                </Badge>
+                              ))}
+                              {place.awards.length > 2 && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                  +{place.awards.length - 2}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </Tabs>
+        </SheetContent>
+      </Sheet>
+
+      {/* Venue Detail Sheet */}
+      <AnimatePresence>
+        {selectedPlace && (
+          <motion.div
+            className="absolute bottom-0 left-0 right-0 z-[1001] bg-background/95 backdrop-blur-xl rounded-t-3xl shadow-2xl border-t border-border/50"
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          >
+            <div className="p-4">
+              {/* Handle */}
+              <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-4" />
+              
+              {/* Close Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4"
+                onClick={() => setSelectedPlace(null)}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+
+              {/* Header */}
+              <div className="flex items-start gap-4 mb-4">
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl
+                  ${selectedPlace.type === 'bar' ? 'bg-purple-100 dark:bg-purple-900/30' : 
+                    selectedPlace.type === 'restaurant' ? 'bg-orange-100 dark:bg-orange-900/30' : 
+                    'bg-amber-100 dark:bg-amber-900/30'}`}
+                >
+                  {selectedPlace.type === 'bar' ? '🍺' : selectedPlace.type === 'restaurant' ? '🍽️' : '☕'}
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold">{selectedPlace.name}</h2>
+                  <p className="text-sm text-muted-foreground capitalize">
+                    {selectedPlace.type}{selectedPlace.cuisine ? ` • ${selectedPlace.cuisine}` : ''}
+                  </p>
+                  {selectedPlace.rating && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-semibold">{selectedPlace.rating.toFixed(1)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Awards */}
+              {selectedPlace.awards && selectedPlace.awards.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-yellow-500" />
+                    Awards & Recognition
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedPlace.awards.map((award, i) => (
+                      <Badge key={i} className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                        🏆 {award}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Details */}
+              <div className="space-y-2 mb-4">
+                {selectedPlace.address && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPinned className="w-4 h-4 text-muted-foreground" />
+                    <span>{selectedPlace.address}</span>
+                  </div>
+                )}
+                {selectedPlace.openingHours && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">Hours:</span>
+                    <span>{selectedPlace.openingHours}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <Button 
+                  className="flex-1" 
+                  onClick={() => {
+                    const url = `https://www.google.com/maps/dir/?api=1&destination=${selectedPlace.lat},${selectedPlace.lon}`;
+                    window.open(url, '_blank');
+                  }}
+                >
+                  <Navigation className="w-4 h-4 mr-2" />
+                  Directions
+                </Button>
+                {selectedPlace.website && (
+                  <Button variant="outline" onClick={() => window.open(selectedPlace.website, '_blank')}>
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Settings Sheet */}
       <Sheet open={showSettings} onOpenChange={setShowSettings}>
@@ -655,7 +968,7 @@ const LiveMap = () => {
                     {isTracking ? 'GPS Active' : 'GPS Inactive'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Showing friends within {NEARBY_RADIUS_KM}km radius
+                    {viewMode === 'city' ? `City view (${CITY_RADIUS_KM}km)` : `Nearby view (${NEARBY_RADIUS_KM}km)`}
                   </p>
                 </div>
               </div>
