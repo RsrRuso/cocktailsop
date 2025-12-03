@@ -212,7 +212,8 @@ const Profile = () => {
   };
 
 
-  if (!profile) {
+  // Show skeleton only on first load, not on navigation
+  if (!profile && isLoading) {
     return (
       <div className="min-h-screen bg-background pb-20 pt-16">
         <TopNav />
@@ -231,6 +232,21 @@ const Profile = () => {
       </div>
     );
   }
+
+  // If no profile but not loading, redirect to auth
+  if (!profile && !isLoading) {
+    return (
+      <div className="min-h-screen bg-background pb-20 pt-16">
+        <TopNav />
+        <div className="px-4 py-6 text-center">
+          <p className="text-muted-foreground">Loading profile...</p>
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  if (!profile) return null;
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
