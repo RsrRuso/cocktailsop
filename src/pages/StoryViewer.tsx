@@ -716,13 +716,28 @@ export default function StoryViewer() {
         )}
         
         {/* Background music audio */}
-        {musicData?.url && (
+        {musicData?.url && !musicData.url.startsWith('spotify:') && (
           <audio
             ref={audioRef}
             src={musicData.url}
             loop={false}
             preload="auto"
           />
+        )}
+        
+        {/* Spotify embed for tracks without direct preview */}
+        {musicData?.url && musicData.url.startsWith('spotify:') && (
+          <div className="absolute bottom-36 left-4 right-4 z-20">
+            <iframe
+              src={`https://open.spotify.com/embed/track/${musicData.url.replace('spotify:', '')}?theme=0`}
+              width="100%"
+              height="80"
+              frameBorder="0"
+              allow="autoplay; clipboard-write; encrypted-media"
+              loading="lazy"
+              className="rounded-xl shadow-xl"
+            />
+          </div>
         )}
 
         {/* Flying hearts - Instagram style */}
