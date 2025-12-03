@@ -703,11 +703,21 @@ const BatchCalculator = () => {
       if (error) throw error;
 
       // Fetch productions for THIS recipe only to calculate recipe-specific totals
-      const { data: allProductions, error: allError } = await supabase
+      // Don't filter by user_id - RLS will handle access control for group members
+      let productionsQuery = supabase
         .from('batch_productions')
         .select('*, batch_production_ingredients(*)')
-        .eq('user_id', user?.id)
         .eq('recipe_id', production.recipe_id);
+      
+      // If this production belongs to a group, filter by group to get all group member submissions
+      if (production.group_id) {
+        productionsQuery = productionsQuery.eq('group_id', production.group_id);
+      } else {
+        // For non-group batches, filter by current user
+        productionsQuery = productionsQuery.eq('user_id', user?.id);
+      }
+      
+      const { data: allProductions, error: allError } = await productionsQuery;
       
       if (allError) console.error("Error fetching recipe productions:", allError);
 
@@ -970,6 +980,7 @@ const BatchCalculator = () => {
               sharpBottles.push({
                 name: ing.ingredient_name,
                 bottles: fullBottles,
+                bottleSize: spirit.bottle_size_ml,
               });
             }
 
@@ -1033,7 +1044,9 @@ const BatchCalculator = () => {
             
             doc.setTextColor(...deepBlue);
             doc.setFont('helvetica', 'bold');
-            doc.text(item.bottles.toString() + " btl", 135, yPos + 3.5);
+            // Show bottles with ml equivalent
+            const bottleMl = item.bottleSize ? item.bottles * item.bottleSize : 0;
+            doc.text(`${item.bottles} btl (${bottleMl.toFixed(0)} ml)`, 135, yPos + 3.5);
             
             yPos += 5.5;
           });
@@ -1219,6 +1232,7 @@ const BatchCalculator = () => {
               overallSharpBottles.push({
                 name,
                 bottles: data.bottles,
+                bottleSize: data.bottleSize,
               });
             }
 
@@ -1281,7 +1295,9 @@ const BatchCalculator = () => {
             
             doc.setTextColor(...deepBlue);
             doc.setFont('helvetica', 'bold');
-            doc.text(item.bottles.toString() + " btl", 135, yPos + 4);
+            // Show bottles with ml equivalent
+            const bottleMl = item.bottleSize ? item.bottles * item.bottleSize : 0;
+            doc.text(`${item.bottles} btl (${bottleMl.toFixed(0)} ml)`, 135, yPos + 4);
             
             yPos += 6;
           });
