@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, ChevronUp, ChevronDown, Heart } from "lucide-react";
+import { Send, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
-import { SmartCommentSuggestions } from "./SmartCommentSuggestions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -47,11 +46,11 @@ export const LivestreamComments = ({
   const [comments, setComments] = useState<StoryComment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
   const [replyingTo, setReplyingTo] = useState<StoryComment | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
+  const commentsContainerRef = useRef<HTMLDivElement>(null);
   const submittedIdsRef = useRef<Set<string>>(new Set());
   const lastCommentTimeRef = useRef<number>(0);
   const commentCountRef = useRef<number>(0);
@@ -79,6 +78,13 @@ export const LivestreamComments = ({
       heartsUnsubscribe();
     };
   }, [contentId]);
+
+  // Auto-scroll to latest comment
+  useEffect(() => {
+    if (commentsContainerRef.current && comments.length > 0) {
+      commentsContainerRef.current.scrollTop = commentsContainerRef.current.scrollHeight;
+    }
+  }, [comments]);
 
   const fetchComments = async () => {
     try {
@@ -347,7 +353,7 @@ export const LivestreamComments = ({
   const reactionEmojis = ["❤️", "😂", "😮", "😢", "😍", "🙏", "👍", "🔥"];
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col pointer-events-none">
+    <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col pointer-events-none pb-safe">
       {/* Flying hearts */}
       <AnimatePresence>
         {flyingHearts.map((heart) => (
@@ -379,109 +385,89 @@ export const LivestreamComments = ({
         ))}
       </AnimatePresence>
 
-      {/* Toggle button */}
-      <div className="flex justify-center pb-1 pointer-events-auto">
-        <Button
-          onClick={() => setIsExpanded(!isExpanded)}
-          size="sm"
-          variant="ghost"
-          className="rounded-full h-8 w-8 p-0 bg-black/50 backdrop-blur-sm hover:bg-black/70 border border-white/20"
+      {/* Floating comments section - always visible at bottom */}
+      <div className="flex flex-col">
+        {/* Comments flowing up */}
+        <div 
+          ref={commentsContainerRef}
+          className="max-h-52 overflow-y-auto px-4 pb-2 pointer-events-auto scrollbar-hide"
+          onTouchStart={() => onPauseChange?.(true)}
+          onTouchEnd={() => onPauseChange?.(false)}
+          onMouseEnter={() => onPauseChange?.(true)}
+          onMouseLeave={() => onPauseChange?.(false)}
         >
-          {isExpanded ? (
-            <ChevronDown className="w-4 h-4 text-white" />
-          ) : (
-            <ChevronUp className="w-4 h-4 text-white" />
-          )}
-        </Button>
-      </div>
-
-      {/* Scrollable comments area - pauses story when scrolling */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div 
-              className="max-h-40 overflow-y-auto px-4 pb-1 pointer-events-auto scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent"
-              onTouchStart={() => onPauseChange?.(true)}
-              onTouchEnd={() => onPauseChange?.(false)}
-              onMouseEnter={() => onPauseChange?.(true)}
-              onMouseLeave={() => onPauseChange?.(false)}
-            >
-              <div className="space-y-1">
-                {comments.map((comment) => {
-                  const reactionCount = comment.reactions ? Object.keys(comment.reactions).length : 0;
-                  const userReaction = comment.reactions?.[user?.id || ""];
-                  
-                  return (
-                    <motion.div
-                      key={comment.id}
-                      className={`flex items-start gap-1.5 ${comment.reply_to ? "ml-6" : ""}`}
-                      drag="x"
-                      dragConstraints={{ left: -100, right: 100 }}
-                      dragElastic={0.7}
-                      dragDirectionLock
-                      onDragEnd={(e, info) => {
-                        const swipeThreshold = 30;
-                        if (info.offset.x < -swipeThreshold) {
-                          // Swipe left → Reply
-                          setReplyingTo(comment);
-                          triggerVibration();
-                        } else if (info.offset.x > swipeThreshold) {
-                          // Swipe right → Forward
-                          onForwardComment?.(comment);
-                          triggerVibration();
-                        }
-                      }}
-                    >
-                      <OptimizedAvatar
-                        src={comment.profiles?.avatar_url || ""}
-                        alt={comment.profiles?.full_name || "User"}
-                        className="w-5 h-5 flex-shrink-0 ring-1 ring-white/20"
-                      />
-                      <div className="flex-1 max-w-[75%]">
-                        <div
-                          className="bg-black/50 backdrop-blur-sm rounded-2xl px-2.5 py-1 relative"
-                          onDoubleClick={() => handleDoubleTap(comment.id)}
-                          onTouchStart={() => handleTouchStart(comment.id)}
-                          onTouchEnd={handleTouchEnd}
-                        >
-                          <span className="text-white font-semibold text-[10px]">
-                            {comment.profiles?.full_name || "Anonymous"}
-                          </span>
-                          <span className="text-white/90 text-[10px] ml-1.5">
-                            {comment.content}
-                          </span>
-                          
-                          {reactionCount > 0 && (
-                            <div className="absolute -bottom-1 -right-1 bg-background/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 flex items-center gap-0.5 border border-border/20">
-                              <span className="text-[8px]">{Object.values(comment.reactions || {})[0]}</span>
-                              {reactionCount > 1 && (
-                                <span className="text-[8px] text-muted-foreground">{reactionCount}</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
+          <div className="space-y-2">
+            <AnimatePresence mode="popLayout">
+              {comments.map((comment) => {
+                const reactionCount = comment.reactions ? Object.keys(comment.reactions).length : 0;
+                
+                return (
+                  <motion.div
+                    key={comment.id}
+                    initial={{ opacity: 0, y: 40, scale: 0.85 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -30, scale: 0.9 }}
+                    transition={{ 
+                      duration: 0.4,
+                      type: "spring",
+                      stiffness: 350,
+                      damping: 25
+                    }}
+                    className={`flex items-start gap-2 ${comment.reply_to ? "ml-6" : ""}`}
+                  >
+                    <OptimizedAvatar
+                      src={comment.profiles?.avatar_url || ""}
+                      alt={comment.profiles?.full_name || "User"}
+                      className="w-7 h-7 flex-shrink-0 ring-1 ring-white/30"
+                    />
+                    <div className="flex-1 max-w-[85%]">
+                      <div 
+                        className="bg-black/50 backdrop-blur-sm rounded-2xl px-3 py-2 inline-block relative"
+                        onDoubleClick={() => handleDoubleTap(comment.id)}
+                        onTouchStart={() => handleTouchStart(comment.id)}
+                        onTouchEnd={handleTouchEnd}
+                      >
+                        <span className="text-white font-semibold text-xs block">
+                          {comment.profiles?.full_name || "Anonymous"}
+                        </span>
+                        <span className="text-white/90 text-sm">
+                          {comment.content}
+                        </span>
                         
-                        <button
-                          onClick={() => setReplyingTo(comment)}
-                          className="text-[9px] text-white/60 mt-0.5 ml-2"
-                        >
-                          Reply
-                        </button>
+                        {reactionCount > 0 && (
+                          <div className="absolute -bottom-1 -right-1 bg-background/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 flex items-center gap-0.5 border border-border/20">
+                            <span className="text-[10px]">{Object.values(comment.reactions || {})[0]}</span>
+                            {reactionCount > 1 && (
+                              <span className="text-[10px] text-muted-foreground">{reactionCount}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                      <button
+                        onClick={() => setReplyingTo(comment)}
+                        className="text-[10px] text-white/60 mt-0.5 ml-2"
+                      >
+                        Reply
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+            
+            {/* Empty state hint */}
+            {comments.length === 0 && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-white/40 text-xs text-center py-2"
+              >
+                Be the first to comment!
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Emoji Picker */}
       <AnimatePresence>
@@ -511,38 +497,42 @@ export const LivestreamComments = ({
       </AnimatePresence>
 
       {/* Input area */}
-      <div className="bg-gradient-to-t from-black/70 via-black/50 to-transparent backdrop-blur-sm px-4 py-2 pointer-events-auto">
+      <form 
+        onSubmit={handleSubmit}
+        className="px-4 pb-4 pt-2 pointer-events-auto"
+      >
         {replyingTo && (
-          <div className="flex items-center justify-between mb-1 px-2">
-            <span className="text-[10px] text-white/60">
+          <div className="flex items-center justify-between mb-2 px-2">
+            <span className="text-xs text-white/60">
               Replying to {replyingTo.profiles?.full_name || "Anonymous"}
             </span>
             <button
               onClick={() => setReplyingTo(null)}
-              className="text-[10px] text-white/80"
+              className="text-xs text-white/80"
             >
               Cancel
             </button>
           </div>
         )}
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+        <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md rounded-full px-4 py-2.5 border border-white/20">
           <Input
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder={replyingTo ? "Write a reply..." : "Add a comment..."}
-            className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60 text-xs rounded-full h-8"
+            className="flex-1 bg-transparent border-none text-white placeholder:text-white/50 text-sm focus-visible:ring-0 h-8 px-0"
             disabled={isSubmitting}
           />
           <Button
             type="submit"
             size="sm"
-            disabled={!newComment.trim() || isSubmitting}
-            className="rounded-full h-8 w-8 p-0"
+            variant="ghost"
+            className="h-8 w-8 p-0 text-white hover:bg-white/20 rounded-full"
+            disabled={isSubmitting || !newComment.trim()}
           >
-            <Send className="w-3 h-3" />
+            <Send className="w-4 h-4" />
           </Button>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 };
