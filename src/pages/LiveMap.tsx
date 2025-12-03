@@ -938,13 +938,12 @@ const LiveMap = () => {
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         className="absolute top-12 left-0 w-72 sm:w-80 bg-black/60 backdrop-blur-2xl rounded-2xl max-h-96 overflow-y-auto z-[9999] scrollbar-thin scrollbar-thumb-white/20"
                       >
-                        <div className="p-1.5">
-                          <div className="px-3 py-2 text-[10px] uppercase text-white/50 tracking-wider font-medium">
-                            🇦🇪 Popular Dubai Venues ({DUBAI_QUICK_SEARCH.length}+)
+                        <div className="p-1.5 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+                          <div className="px-3 py-2 text-[10px] uppercase text-white/50 tracking-wider font-medium sticky top-0 bg-black/80 backdrop-blur-sm z-10">
+                            🇦🇪 Popular Dubai Venues ({DUBAI_QUICK_SEARCH.filter(v => !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()) || (v.area && v.area.toLowerCase().includes(searchQuery.toLowerCase()))).length})
                           </div>
                           {DUBAI_QUICK_SEARCH
                             .filter(v => !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()) || (v.area && v.area.toLowerCase().includes(searchQuery.toLowerCase())))
-                            .slice(0, 20)
                             .map((venue, index) => (
                               <button
                                 key={index}
