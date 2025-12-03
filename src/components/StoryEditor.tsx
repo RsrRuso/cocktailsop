@@ -515,7 +515,7 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
             <input
               ref={musicFileInputRef}
               type="file"
-              accept="audio/*"
+              accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"
               onChange={handleMusicFileSelect}
               className="hidden"
             />

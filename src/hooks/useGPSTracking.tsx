@@ -89,20 +89,25 @@ export const useGPSTracking = (enabled: boolean = true) => {
 
         for (const friend of nearbyFriends) {
           if (!recentlyNotifiedIds.has(friend.user_id)) {
-            // Create notification
-            await supabase.from('notifications').insert({
-              user_id: user.id,
-              type: 'friend_nearby',
-              content: `${friend.profiles.username} is nearby (${friend.distance} km away) 📍`,
-              reference_user_id: friend.user_id,
-              read: false
-            });
+            // Create notification - ignore duplicates
+            try {
+              await supabase.from('notifications').insert({
+                user_id: user.id,
+                type: 'friend_nearby',
+                content: `${friend.profiles.username} is nearby (${friend.distance} km away) 📍`,
+                reference_user_id: friend.user_id,
+                read: false
+              });
 
-            // Show in-app toast
-            sonnerToast.info(`📍 ${friend.profiles.username} is nearby`, {
-              description: `${friend.distance} km away from you`,
-              duration: 5000
-            });
+              // Show in-app toast
+              sonnerToast.info(`📍 ${friend.profiles.username} is nearby`, {
+                description: `${friend.distance} km away from you`,
+                duration: 5000
+              });
+            } catch (e) {
+              // Silently ignore duplicate notification errors
+              console.log('Notification already exists');
+            }
           }
         }
       }
