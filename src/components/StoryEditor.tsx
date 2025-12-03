@@ -330,39 +330,39 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
                 }}
               />
               
-              {/* Music Controls Overlay */}
-              <div className="absolute top-20 left-4 right-4 bg-black/60 backdrop-blur-xl rounded-2xl p-4 space-y-3">
-                <div className="flex items-center gap-3">
+              {/* Music Controls Overlay - Compact Mobile */}
+              <div className="absolute top-16 left-2 right-16 bg-black/70 backdrop-blur-xl rounded-xl p-3 space-y-2">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={togglePlayPause}
-                    className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center hover:scale-105 transition-all shadow-lg"
+                    className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center hover:scale-105 transition-all shadow-lg flex-shrink-0"
                   >
                     {isPlaying ? (
-                      <Pause className="w-6 h-6 text-white" />
+                      <Pause className="w-5 h-5 text-white" />
                     ) : (
-                      <Play className="w-6 h-6 text-white ml-0.5" />
+                      <Play className="w-5 h-5 text-white ml-0.5" />
                     )}
                   </button>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-semibold truncate flex items-center gap-2">
-                      <Music2 className="w-4 h-4 text-pink-400" />
+                    <p className="text-white text-xs font-semibold truncate flex items-center gap-1">
+                      <Music2 className="w-3 h-3 text-pink-400 flex-shrink-0" />
                       {musicName || selectedMusicFile?.name || "Music Track"}
                     </p>
-                    <p className="text-white/60 text-xs mt-0.5">
-                      Duration: {formatTime(getTrimDuration())} / 45s max
+                    <p className="text-white/60 text-[10px]">
+                      {formatTime(getTrimDuration())} / 45s
                     </p>
                   </div>
                   
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setIsMuted(!isMuted)}
-                      className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
+                      className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center"
                     >
                       {isMuted ? (
-                        <VolumeX className="w-4 h-4 text-white" />
+                        <VolumeX className="w-3 h-3 text-white" />
                       ) : (
-                        <Volume2 className="w-4 h-4 text-white" />
+                        <Volume2 className="w-3 h-3 text-white" />
                       )}
                     </button>
                     <button
@@ -372,87 +372,63 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
                         setMusicName("");
                         setIsPlaying(false);
                       }}
-                      className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center hover:bg-red-500/40 transition-all"
+                      className="w-7 h-7 rounded-full bg-red-500/30 flex items-center justify-center"
                     >
-                      <X className="w-4 h-4 text-red-400" />
+                      <X className="w-3 h-3 text-red-400" />
                     </button>
                   </div>
                 </div>
                 
-                {/* Playback Progress */}
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white/60 text-xs w-10">{formatTime(musicCurrentTime - trimStart)}</span>
-                    <Slider
-                      value={[musicCurrentTime]}
-                      min={trimStart}
-                      max={trimEnd}
-                      step={0.1}
-                      onValueChange={handleSeek}
-                      className="flex-1"
-                    />
-                    <span className="text-white/60 text-xs w-10">{formatTime(getTrimDuration())}</span>
-                  </div>
+                {/* Playback Progress - Compact */}
+                <div className="flex items-center gap-2">
+                  <span className="text-white/60 text-[10px] w-8">{formatTime(musicCurrentTime - trimStart)}</span>
+                  <Slider
+                    value={[musicCurrentTime]}
+                    min={trimStart}
+                    max={trimEnd}
+                    step={0.1}
+                    onValueChange={handleSeek}
+                    className="flex-1"
+                  />
+                  <span className="text-white/60 text-[10px] w-8">{formatTime(getTrimDuration())}</span>
                 </div>
 
-                {/* Trim Controls */}
+                {/* Trim Controls - Compact */}
                 {musicDuration > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-white/10">
+                  <div className="space-y-1 pt-1 border-t border-white/10">
                     <div className="flex items-center justify-between">
-                      <span className="text-white/80 text-xs font-medium">Trim (max 45s)</span>
-                      <span className="text-pink-400 text-xs font-semibold">
+                      <span className="text-white/70 text-[10px]">Trim</span>
+                      <span className="text-pink-400 text-[10px] font-medium">
                         {formatTime(trimStart)} - {formatTime(trimEnd)}
                       </span>
                     </div>
-                    <div className="relative">
-                      {/* Dual range slider simulation */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-white/50 text-[10px]">Start</span>
-                        <Slider
-                          value={[trimStart]}
-                          min={0}
-                          max={Math.max(0, musicDuration - 5)}
-                          step={0.5}
-                          onValueChange={(v) => {
-                            const newStart = v[0];
-                            setTrimStart(newStart);
-                            if (trimEnd - newStart > 45) {
-                              setTrimEnd(newStart + 45);
-                            }
-                            if (audioRef.current && audioRef.current.currentTime < newStart) {
-                              audioRef.current.currentTime = newStart;
-                            }
-                          }}
-                          className="flex-1"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-white/50 text-[10px]">End</span>
-                        <Slider
-                          value={[trimEnd]}
-                          min={trimStart + 5}
-                          max={Math.min(musicDuration, trimStart + 45)}
-                          step={0.5}
-                          onValueChange={(v) => setTrimEnd(v[0])}
-                          className="flex-1"
-                        />
-                      </div>
+                    <div className="space-y-1">
+                      <Slider
+                        value={[trimStart]}
+                        min={0}
+                        max={Math.max(0, musicDuration - 5)}
+                        step={0.5}
+                        onValueChange={(v) => {
+                          const newStart = v[0];
+                          setTrimStart(newStart);
+                          if (trimEnd - newStart > 45) {
+                            setTrimEnd(newStart + 45);
+                          }
+                          if (audioRef.current && audioRef.current.currentTime < newStart) {
+                            audioRef.current.currentTime = newStart;
+                          }
+                        }}
+                        className="w-full"
+                      />
+                      <Slider
+                        value={[trimEnd]}
+                        min={trimStart + 5}
+                        max={Math.min(musicDuration, trimStart + 45)}
+                        step={0.5}
+                        onValueChange={(v) => setTrimEnd(v[0])}
+                        className="w-full"
+                      />
                     </div>
-                  </div>
-                )}
-                
-                {/* Volume Slider */}
-                {!isMuted && (
-                  <div className="flex items-center gap-2 pt-2 border-t border-white/10">
-                    <Volume2 className="w-3 h-3 text-white/60" />
-                    <Slider
-                      value={[musicVolume * 100]}
-                      max={100}
-                      step={1}
-                      onValueChange={(v) => setMusicVolume(v[0] / 100)}
-                      className="flex-1"
-                    />
-                    <span className="text-white/50 text-xs">{Math.round(musicVolume * 100)}%</span>
                   </div>
                 )}
               </div>
@@ -460,57 +436,45 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
           )}
         </div>
 
-        {/* Right Side Toolbar - Instagram Style */}
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-6">
+        {/* Right Side Toolbar - Mobile Optimized */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-3">
           <button
             onClick={() => setActiveTool(activeTool === "text" ? null : "text")}
-            className="flex flex-col items-center gap-1"
+            className="flex flex-col items-center gap-0.5"
           >
             <div className={cn(
-              "w-12 h-12 rounded-full flex items-center justify-center transition-all",
-              activeTool === "text" ? "bg-white text-black" : "bg-white/10 text-white"
+              "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+              activeTool === "text" ? "bg-white text-black" : "bg-white/20 text-white"
             )}>
-              <Type className="w-6 h-6" />
+              <Type className="w-5 h-5" />
             </div>
-            <span className="text-white text-xs font-medium">Text</span>
           </button>
 
-          <button
-            onClick={() => toast.info("Stickers coming soon!")}
-            className="flex flex-col items-center gap-1"
-          >
-            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">
-              <Smile className="w-6 h-6" />
-            </div>
-            <span className="text-white text-xs font-medium">Stickers</span>
-          </button>
-
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-center gap-0.5">
             <button
               onClick={() => setShowMusicDialog(true)}
               className="relative"
             >
               <div className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center transition-all",
-                selectedMusic ? "bg-white text-black" : "bg-white/10 text-white"
+                "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                selectedMusic ? "bg-white text-black" : "bg-white/20 text-white"
               )}>
-                <Music2 className="w-6 h-6" />
+                <Music2 className="w-5 h-5" />
               </div>
             </button>
             
             <button
               onClick={() => musicFileInputRef.current?.click()}
               disabled={uploadingMusic}
-              className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all mt-2"
+              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white"
             >
               {uploadingMusic ? (
-                <Disc3 className="w-6 h-6 animate-spin" />
+                <Disc3 className="w-5 h-5 animate-spin" />
               ) : (
-                <Upload className="w-6 h-6" />
+                <Upload className="w-5 h-5" />
               )}
             </button>
-            
-            <span className="text-white text-xs font-medium">Audio</span>
+            <span className="text-white text-[10px]">Audio</span>
             
             <input
               ref={musicFileInputRef}
@@ -523,52 +487,30 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
 
           <button
             onClick={() => setShowSmartFeatures(true)}
-            className="flex flex-col items-center gap-1"
+            className="flex flex-col items-center gap-0.5"
           >
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg">
-              <Brain className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg">
+              <Brain className="w-5 h-5" />
             </div>
-            <span className="text-white text-xs font-medium">AI Tools</span>
+            <span className="text-white text-[10px]">AI</span>
           </button>
 
           <button
             onClick={() => toast.info("Effects coming soon!")}
-            className="flex flex-col items-center gap-1"
+            className="flex flex-col items-center gap-0.5"
           >
-            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">
-              <Sparkles className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+              <Sparkles className="w-5 h-5" />
             </div>
-            <span className="text-white text-xs font-medium">Effects</span>
           </button>
 
           <button
             onClick={() => toast.info("Draw coming soon!")}
-            className="flex flex-col items-center gap-1"
+            className="flex flex-col items-center gap-0.5"
           >
-            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">
-              <Pen className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+              <Pen className="w-5 h-5" />
             </div>
-            <span className="text-white text-xs font-medium">Draw</span>
-          </button>
-
-          <button
-            onClick={() => toast.info("Download coming soon!")}
-            className="flex flex-col items-center gap-1"
-          >
-            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">
-              <Download className="w-6 h-6" />
-            </div>
-            <span className="text-white text-xs font-medium">Download</span>
-          </button>
-
-          <button
-            onClick={() => toast.info("More options coming soon!")}
-            className="flex flex-col items-center gap-1"
-          >
-            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white">
-              <MoreHorizontal className="w-6 h-6" />
-            </div>
-            <span className="text-white text-xs font-medium">More</span>
           </button>
         </div>
       </div>
@@ -611,30 +553,30 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
         </div>
       )}
 
-      {/* Bottom Section - Caption & Share */}
-      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 pt-16">
+      {/* Bottom Section - Caption & Share - Mobile Optimized */}
+      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-3 pt-12">
         <Input
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
           placeholder="Add a caption..."
-          className="bg-white/10 border-0 text-white placeholder:text-white/50 mb-4"
+          className="bg-white/10 border-0 text-white placeholder:text-white/50 mb-3 h-10 text-sm"
         />
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => {
               setShareOption("story");
               handleShare();
             }}
-            className="flex-1 flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-full px-4 py-3 transition-all"
+            className="flex-1 flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-full px-3 py-2.5 transition-all"
           >
-            <Avatar className="w-10 h-10 ring-2 ring-white/50">
+            <Avatar className="w-8 h-8 ring-2 ring-white/30">
               <AvatarImage src={user?.user_metadata?.avatar_url} />
-              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs">
                 {user?.user_metadata?.username?.[0]?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
-            <span className="text-white font-medium">Your story</span>
+            <span className="text-white text-sm font-medium">Story</span>
           </button>
 
           <button
@@ -642,19 +584,19 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
               setShareOption("close-friends");
               handleShare();
             }}
-            className="flex-1 flex items-center justify-center gap-2 bg-green-500/20 hover:bg-green-500/30 rounded-full px-4 py-3 transition-all"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-green-500/20 hover:bg-green-500/30 rounded-full px-3 py-2.5 transition-all"
           >
-            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-              <Sparkles className="w-3 h-3 text-white" />
+            <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+              <Sparkles className="w-2.5 h-2.5 text-white" />
             </div>
-            <span className="text-white font-medium">Close Friends</span>
+            <span className="text-white text-sm font-medium">Close</span>
           </button>
 
           <button
             onClick={handleShare}
-            className="w-12 h-12 rounded-full bg-white hover:bg-white/90 flex items-center justify-center transition-all"
+            className="w-11 h-11 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center transition-all shadow-lg"
           >
-            <ArrowRight className="w-6 h-6 text-black" />
+            <ArrowRight className="w-5 h-5 text-primary-foreground" />
           </button>
         </div>
       </div>
