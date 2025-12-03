@@ -200,14 +200,14 @@ const LiveMap = () => {
     try {
       const radiusMeters = radiusKm * 1000;
       const query = `
-        [out:json][timeout:10];
+        [out:json][timeout:15];
         (
           node["amenity"="bar"](around:${radiusMeters},${lat},${lon});
           node["amenity"="restaurant"](around:${radiusMeters},${lat},${lon});
           node["amenity"="pub"](around:${radiusMeters},${lat},${lon});
           node["amenity"="cafe"](around:${radiusMeters},${lat},${lon});
         );
-        out body 30;
+        out body 150;
       `;
 
       const response = await fetch('https://overpass-api.de/api/interpreter', {
@@ -554,11 +554,15 @@ const LiveMap = () => {
   const handleToggleViewMode = () => {
     const newMode = viewMode === 'nearby' ? 'city' : 'nearby';
     setViewMode(newMode);
+    setPlacesFetched(false); // Reset to force re-fetch
     
     if (mapRef.current && position) {
       const zoom = newMode === 'city' ? 11 : 14;
       mapRef.current.flyTo([position.latitude, position.longitude], zoom);
-      fetchNearbyPlaces(position.latitude, position.longitude, newMode === 'city' ? CITY_RADIUS_KM : NEARBY_RADIUS_KM);
+      // Force re-fetch with new radius
+      setTimeout(() => {
+        fetchNearbyPlaces(position.latitude, position.longitude, newMode === 'city' ? CITY_RADIUS_KM : NEARBY_RADIUS_KM, true);
+      }, 300);
     }
     
     toast({
@@ -569,8 +573,15 @@ const LiveMap = () => {
 
   const handlePlaceClick = (place: Place) => {
     setSelectedPlace(place);
+    setShowPlacesList(false);
+    setShowAwardsOrgs(false);
+    
     if (mapRef.current) {
-      mapRef.current.flyTo([place.lat, place.lon], 16);
+      // Fly to place with animation
+      mapRef.current.flyTo([place.lat, place.lon], 17, {
+        duration: 1.5,
+        easeLinearity: 0.25
+      });
     }
   };
 

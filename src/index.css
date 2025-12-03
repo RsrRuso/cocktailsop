@@ -1659,33 +1659,58 @@ All colors MUST be HSL.
   }
 }
 
-/* Warm Glowing Night Map Effect */
+/* Warm Glowing Night City Map Effect */
 .leaflet-container {
-  background: #0d0d12 !important;
+  background: #080810 !important;
 }
 
 .leaflet-tile-pane {
-  filter: brightness(1.15) saturate(1.4) contrast(1.1) sepia(0.15);
+  filter: brightness(1.2) saturate(1.6) contrast(1.15) hue-rotate(-5deg);
 }
 
-/* Warm glowing roads overlay effect */
+/* Warm glowing city lights overlay effect */
 .leaflet-tile-pane::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 1000;
   background: 
-    radial-gradient(ellipse at center, transparent 30%, rgba(255, 180, 100, 0.04) 70%, rgba(255, 140, 50, 0.06) 100%),
-    linear-gradient(180deg, transparent 0%, rgba(255, 200, 150, 0.02) 100%);
+    radial-gradient(ellipse 80% 60% at 50% 80%, rgba(255, 160, 60, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 30% 30%, rgba(255, 200, 100, 0.06) 0%, transparent 40%),
+    radial-gradient(ellipse 50% 40% at 70% 20%, rgba(255, 180, 80, 0.05) 0%, transparent 35%),
+    linear-gradient(180deg, transparent 0%, rgba(255, 140, 50, 0.04) 100%);
   mix-blend-mode: screen;
 }
 
-/* Warm ambient glow for map */
+/* Warm ambient glow for map markers */
 .leaflet-map-pane {
-  filter: drop-shadow(0 0 3px rgba(255, 180, 100, 0.2));
+  filter: drop-shadow(0 0 6px rgba(255, 180, 100, 0.3));
 }
 
-/* Street lights glow effect */
+/* Street lights neon glow effect */
 .leaflet-overlay-pane {
-  filter: drop-shadow(0 0 8px rgba(255, 200, 120, 0.3));
+  filter: drop-shadow(0 0 12px rgba(255, 200, 120, 0.4)) drop-shadow(0 0 20px rgba(255, 160, 80, 0.2));
+}
+
+/* Marker pane warm glow */
+.leaflet-marker-pane {
+  filter: drop-shadow(0 0 8px rgba(255, 200, 100, 0.5));
+}
+
+/* Popup warm styling */
+.leaflet-popup-content-wrapper {
+  background: rgba(20, 20, 30, 0.95) !important;
+  border: 1px solid rgba(255, 200, 100, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 180, 100, 0.15) !important;
+}
+
+.leaflet-popup-content {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(20, 20, 30, 0.95) !important;
+  border: 1px solid rgba(255, 200, 100, 0.2) !important;
 }
