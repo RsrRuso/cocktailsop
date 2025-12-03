@@ -1659,26 +1659,33 @@ All colors MUST be HSL.
   }
 }
 
-/* Neon Glowing Night Map Effect */
+/* Warm Glowing Night Map Effect */
 .leaflet-container {
-  background: #0a0a0f !important;
+  background: #0d0d12 !important;
 }
 
 .leaflet-tile-pane {
-  filter: brightness(1.1) saturate(1.3) contrast(1.15);
+  filter: brightness(1.15) saturate(1.4) contrast(1.1) sepia(0.15);
 }
 
-/* Glowing roads overlay effect */
+/* Warm glowing roads overlay effect */
 .leaflet-tile-pane::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 200, 255, 0.03) 100%);
+  background: 
+    radial-gradient(ellipse at center, transparent 30%, rgba(255, 180, 100, 0.04) 70%, rgba(255, 140, 50, 0.06) 100%),
+    linear-gradient(180deg, transparent 0%, rgba(255, 200, 150, 0.02) 100%);
   mix-blend-mode: screen;
 }
 
-/* Enhanced glow for map container */
+/* Warm ambient glow for map */
 .leaflet-map-pane {
-  filter: drop-shadow(0 0 2px rgba(100, 200, 255, 0.15));
+  filter: drop-shadow(0 0 3px rgba(255, 180, 100, 0.2));
+}
+
+/* Street lights glow effect */
+.leaflet-overlay-pane {
+  filter: drop-shadow(0 0 8px rgba(255, 200, 120, 0.3));
 }
