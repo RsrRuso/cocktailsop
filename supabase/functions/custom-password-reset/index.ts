@@ -26,24 +26,22 @@ const getPasswordResetTemplate = (resetLink: string) => `
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; padding: 40px 20px;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; overflow: hidden; max-width: 600px;">
-          <!-- Header -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; border-radius: 16px; overflow: hidden; max-width: 600px;">
+          <!-- Header with Logo -->
           <tr>
             <td style="padding: 40px 40px 20px 40px; text-align: center;">
-              <h1 style="margin: 0; font-size: 32px; font-weight: bold; color: #667eea;">
-                SpecVerse
-              </h1>
-              <p style="margin: 8px 0 0 0; color: #888; font-size: 14px;">Your Professional Network</p>
+              <img src="https://cbfqwaqwliehgxsdueem.supabase.co/storage/v1/object/public/assets/specverse-logo.jpeg" alt="SpecVerse" width="80" height="80" style="border-radius: 16px; margin-bottom: 16px;" />
+              <p style="margin: 8px 0 0 0; color: #a0a0a0; font-size: 14px;">Your Professional Network</p>
             </td>
           </tr>
           
           <!-- Content -->
           <tr>
             <td style="padding: 20px 40px 40px 40px;">
-              <h2 style="margin: 0 0 16px 0; color: #ffffff; font-size: 24px; font-weight: 600;">
+              <h2 style="margin: 0 0 16px 0; color: #e0e0e0; font-size: 24px; font-weight: 600;">
                 Reset Your Password
               </h2>
-              <p style="margin: 0 0 24px 0; color: #b0b0b0; font-size: 16px; line-height: 1.6;">
+              <p style="margin: 0 0 24px 0; color: #a0a0a0; font-size: 16px; line-height: 1.6;">
                 We received a request to reset your password. Click the button below to create a new password.
               </p>
               
@@ -51,18 +49,18 @@ const getPasswordResetTemplate = (resetLink: string) => `
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center" style="padding: 20px 0;">
-                    <a href="${resetLink}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
+                    <a href="${resetLink}" style="display: inline-block; padding: 16px 40px; background-color: #e0e0e0; color: #0a0a0a; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
                       Reset Password
                     </a>
                   </td>
                 </tr>
               </table>
               
-              <p style="margin: 24px 0 0 0; color: #888; font-size: 14px; line-height: 1.6;">
+              <p style="margin: 24px 0 0 0; color: #808080; font-size: 14px; line-height: 1.6;">
                 If you didn't request this, you can safely ignore this email. Your password will remain unchanged.
               </p>
               
-              <p style="margin: 16px 0 0 0; color: #666; font-size: 12px;">
+              <p style="margin: 16px 0 0 0; color: #606060; font-size: 12px;">
                 This link will expire in 1 hour for security reasons.
               </p>
             </td>
@@ -70,8 +68,8 @@ const getPasswordResetTemplate = (resetLink: string) => `
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 20px 40px; background-color: rgba(0,0,0,0.3); text-align: center;">
-              <p style="margin: 0; color: #666; font-size: 12px;">
+            <td style="padding: 20px 40px; background-color: #0a0a0a; border-top: 1px solid #1a1a1a; text-align: center;">
+              <p style="margin: 0; color: #606060; font-size: 12px;">
                 © ${new Date().getFullYear()} SpecVerse. All rights reserved.
               </p>
             </td>
