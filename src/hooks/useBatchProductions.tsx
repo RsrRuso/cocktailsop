@@ -15,6 +15,7 @@ export interface BatchProduction {
   qr_code_data?: string;
   notes?: string;
   group_id?: string;
+  user_id: string;
   created_at: string;
 }
 
@@ -58,7 +59,7 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
       production,
       ingredients
     }: {
-      production: Omit<BatchProduction, 'id' | 'created_at'>;
+      production: Omit<BatchProduction, 'id' | 'created_at' | 'user_id'>;
       ingredients: Omit<BatchProductionIngredient, 'id' | 'production_id'>[];
     }) => {
       const { data: { user } } = await supabase.auth.getUser();

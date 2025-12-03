@@ -16,6 +16,7 @@ import { useBatchRecipes } from "@/hooks/useBatchRecipes";
 import { useBatchProductions } from "@/hooks/useBatchProductions";
 import { useMixologistGroups } from "@/hooks/useMixologistGroups";
 import { useMasterSpirits } from "@/hooks/useMasterSpirits";
+import { useGroupAdmin } from "@/hooks/useGroupAdmin";
 import { MixologistGroupMembersDialog } from "@/components/MixologistGroupMembersDialog";
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
@@ -115,6 +116,7 @@ const BatchCalculator = () => {
   );
   const { groups, createGroup } = useMixologistGroups();
   const { spirits, calculateBottles } = useMasterSpirits();
+  const { isAdmin: isGroupAdmin } = useGroupAdmin(selectedGroupId);
   const queryClient = useQueryClient();
 
   // Set default producer to current user
@@ -3240,22 +3242,26 @@ const BatchCalculator = () => {
                                 <Download className="w-4 h-4 mr-2" />
                                 PDF
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleEditProduction(production)}
-                                className="glass-hover"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleDeleteProduction(production.id)}
-                                className="glass-hover text-destructive"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              {(isGroupAdmin || production.user_id === user?.id || production.produced_by_user_id === user?.id) && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleEditProduction(production)}
+                                    className="glass-hover"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleDeleteProduction(production.id)}
+                                    className="glass-hover text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </div>
                           
