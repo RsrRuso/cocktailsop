@@ -109,11 +109,36 @@ const FEATURED_VENUES: Place[] = [
   { id: 100015, name: 'The NoMad Bar', type: 'bar', lat: 40.7453, lon: -73.9883, rating: 4.8, cuisine: 'Classic Cocktails', awards: [{ award: 'Spirited Award', organization: 'spirited' }, { award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'NoMad, NYC', openingHours: '17:00-02:00' },
   { id: 100016, name: 'Momofuku Ko', type: 'restaurant', lat: 40.7232, lon: -73.9890, rating: 4.8, cuisine: 'Korean-American', awards: [{ award: 'Michelin 2 Stars', organization: 'michelin' }], address: 'East Village, NYC', openingHours: '17:00-22:00' },
   
-  // Dubai
-  { id: 100017, name: 'Zuma Dubai', type: 'restaurant', lat: 25.2175, lon: 55.2797, rating: 4.8, cuisine: 'Japanese', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }, { award: 'Time Out Love Local', organization: 'timeout' }], address: 'DIFC, Dubai', openingHours: '12:00-15:00, 19:00-00:00' },
-  { id: 100018, name: 'At.mosphere', type: 'restaurant', lat: 25.1972, lon: 55.2744, rating: 4.9, cuisine: 'European', awards: [{ award: 'Forbes Five-Star', organization: 'forbes' }], address: 'Burj Khalifa, Dubai', openingHours: '12:30-15:00, 19:00-23:00' },
-  { id: 100019, name: 'Gold On 27', type: 'bar', lat: 25.2025, lon: 55.2735, rating: 4.7, cuisine: 'Cocktails', awards: [{ award: 'Asia\'s 50 Best', organization: 'worlds50best' }], address: 'Burj Al Arab, Dubai', openingHours: '18:00-02:00' },
-  { id: 100020, name: 'Nobu Dubai', type: 'restaurant', lat: 25.2041, lon: 55.2684, rating: 4.8, cuisine: 'Japanese-Peruvian', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'Atlantis, Dubai', openingHours: '18:00-23:00' },
+  // Dubai - Comprehensive List
+  { id: 100017, name: 'Zuma Dubai', type: 'restaurant', lat: 25.2175, lon: 55.2797, rating: 4.9, cuisine: 'Japanese', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }, { award: 'Time Out Love Local', organization: 'timeout' }], address: 'DIFC, Gate Village 06, Dubai', openingHours: '12:00-15:00, 19:00-00:00', phone: '+971 4 425 5660', website: 'https://zumarestaurant.com/dubai' },
+  { id: 100018, name: 'At.mosphere', type: 'restaurant', lat: 25.1972, lon: 55.2744, rating: 4.9, cuisine: 'European Fine Dining', awards: [{ award: 'Forbes Five-Star', organization: 'forbes' }], address: 'Burj Khalifa Level 122, Downtown Dubai', openingHours: '12:30-15:00, 19:00-23:00', phone: '+971 4 888 3828', website: 'https://atmosphereburjkhalifa.com' },
+  { id: 100019, name: 'Gold On 27', type: 'bar', lat: 25.1413, lon: 55.1853, rating: 4.8, cuisine: 'Luxury Cocktails', awards: [{ award: 'Asia\'s 50 Best', organization: 'worlds50best' }], address: 'Burj Al Arab, Jumeirah', openingHours: '18:00-02:00', phone: '+971 4 301 7600', website: 'https://jumeirah.com' },
+  { id: 100020, name: 'Nobu Dubai', type: 'restaurant', lat: 25.1305, lon: 55.1171, rating: 4.8, cuisine: 'Japanese-Peruvian', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'Atlantis The Palm, Palm Jumeirah', openingHours: '18:00-23:00', phone: '+971 4 426 2626', website: 'https://noburestaurants.com/dubai' },
+  { id: 100051, name: 'Attiko Dubai', type: 'bar', lat: 25.0921, lon: 55.1444, rating: 4.8, cuisine: 'Rooftop Cocktails', awards: [{ award: 'Time Out Love Local', organization: 'timeout' }], address: 'W Dubai - Mina Seyahi, Al Sufouh', openingHours: '18:00-02:00', phone: '+971 4 350 9998', website: 'https://marriott.com' },
+  { id: 100052, name: 'Penthouse', type: 'bar', lat: 25.0769, lon: 55.1343, rating: 4.7, cuisine: 'Rooftop Lounge', awards: [{ award: 'Best Bar Award', organization: 'timeout' }], address: 'Five Palm Jumeirah, Palm Jumeirah', openingHours: '17:00-03:00', phone: '+971 4 455 9999', website: 'https://fivehotelsandresorts.com' },
+  { id: 100053, name: 'Galaxy Bar', type: 'bar', lat: 25.2208, lon: 55.2818, rating: 4.8, cuisine: 'Sky Bar', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'Four Seasons DIFC, Gate Village', openingHours: '18:00-02:00', phone: '+971 4 506 0000', website: 'https://fourseasons.com/dubai' },
+  { id: 100054, name: 'Ossiano', type: 'restaurant', lat: 25.1305, lon: 55.1171, rating: 4.9, cuisine: 'Seafood Fine Dining', awards: [{ award: 'Michelin Star', organization: 'michelin' }], address: 'Atlantis The Palm, Palm Jumeirah', openingHours: '18:00-23:00', phone: '+971 4 426 2626', website: 'https://atlantis.com/dubai/restaurants/ossiano' },
+  { id: 100055, name: 'Tresind Studio', type: 'restaurant', lat: 25.2175, lon: 55.2800, rating: 4.9, cuisine: 'Modern Indian', awards: [{ award: 'Michelin Star', organization: 'michelin' }, { award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'DIFC, Dubai', openingHours: '19:00-23:00', phone: '+971 4 327 8088', website: 'https://tresindstudio.com' },
+  { id: 100056, name: 'STAY by Yannick Alléno', type: 'restaurant', lat: 25.1981, lon: 55.2746, rating: 4.9, cuisine: 'French Fine Dining', awards: [{ award: 'Michelin 2 Stars', organization: 'michelin' }], address: 'One&Only The Palm, Palm Jumeirah', openingHours: '19:00-23:00', phone: '+971 4 440 1010', website: 'https://oneandonlyresorts.com' },
+  { id: 100057, name: 'Il Ristorante Niko Romito', type: 'restaurant', lat: 25.1413, lon: 55.1853, rating: 4.9, cuisine: 'Italian', awards: [{ award: 'Michelin Star', organization: 'michelin' }], address: 'Burj Al Arab, Jumeirah', openingHours: '18:30-23:00', phone: '+971 4 301 7600', website: 'https://jumeirah.com' },
+  { id: 100058, name: 'Hakkasan Dubai', type: 'restaurant', lat: 25.2205, lon: 55.2705, rating: 4.8, cuisine: 'Modern Cantonese', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'Jumeirah Emirates Towers, Sheikh Zayed Road', openingHours: '18:00-00:00', phone: '+971 4 384 8484', website: 'https://hakkasan.com/dubai' },
+  { id: 100059, name: 'La Petite Maison', type: 'restaurant', lat: 25.2175, lon: 55.2797, rating: 4.8, cuisine: 'French Mediterranean', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'DIFC, Gate Village 08, Dubai', openingHours: '12:00-15:00, 19:00-23:30', phone: '+971 4 439 0505', website: 'https://lpmrestaurants.com' },
+  { id: 100060, name: 'Nammos Dubai', type: 'restaurant', lat: 25.0769, lon: 55.1343, rating: 4.7, cuisine: 'Greek Mediterranean', awards: [{ award: 'Time Out Love Local', organization: 'timeout' }], address: 'Four Seasons Resort, Jumeirah Beach', openingHours: '12:00-02:00', phone: '+971 4 349 0007', website: 'https://nammosdubai.com' },
+  { id: 100061, name: 'CÉ LA VI Dubai', type: 'bar', lat: 25.2086, lon: 55.2681, rating: 4.7, cuisine: 'Modern Asian', awards: [{ award: 'Best Bar Award', organization: 'timeout' }], address: 'Address Sky View, Downtown Dubai', openingHours: '17:00-03:00', phone: '+971 4 582 6111', website: 'https://celavi.com/dubai' },
+  { id: 100062, name: 'Mercury Lounge', type: 'bar', lat: 25.0769, lon: 55.1343, rating: 4.6, cuisine: 'Rooftop Bar', awards: [{ award: 'Time Out Love Local', organization: 'timeout' }], address: 'Four Seasons Resort, Jumeirah Beach', openingHours: '18:00-02:00', phone: '+971 4 270 7777', website: 'https://fourseasons.com/dubaijb' },
+  { id: 100063, name: 'VOID Dubai', type: 'bar', lat: 25.1988, lon: 55.2773, rating: 4.6, cuisine: 'Modern Cocktails', awards: [], address: 'Index Tower, DIFC', openingHours: '20:00-03:00', phone: '+971 4 330 3033', website: 'https://voiddubai.com' },
+  { id: 100064, name: 'Sass Café', type: 'restaurant', lat: 25.1988, lon: 55.2773, rating: 4.7, cuisine: 'French-Mediterranean', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'ICD Brookfield Place, DIFC', openingHours: '12:00-02:00', phone: '+971 4 436 7272', website: 'https://sasscafe.com' },
+  { id: 100065, name: 'Twiggy by La Cantine', type: 'bar', lat: 25.0905, lon: 55.1378, rating: 4.6, cuisine: 'Beach Club', awards: [{ award: 'Time Out Love Local', organization: 'timeout' }], address: 'Park Hyatt Dubai, Dubai Creek', openingHours: '10:00-02:00', phone: '+971 4 602 1234', website: 'https://twiggybylacantinenew.com' },
+  { id: 100066, name: 'Coya Dubai', type: 'restaurant', lat: 25.0769, lon: 55.1343, rating: 4.8, cuisine: 'Peruvian', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'Four Seasons Resort, Jumeirah Beach', openingHours: '12:00-02:00', phone: '+971 4 316 9600', website: 'https://coyadubai.com' },
+  { id: 100067, name: 'Soho Garden', type: 'bar', lat: 25.1139, lon: 55.1969, rating: 4.5, cuisine: 'Entertainment Complex', awards: [], address: 'Meydan Racecourse, Nad Al Sheba', openingHours: '20:00-04:00', phone: '+971 4 388 8849', website: 'https://sohogardendxb.com' },
+  { id: 100068, name: 'WHITE Beach', type: 'bar', lat: 25.2086, lon: 55.2681, rating: 4.6, cuisine: 'Beach Club', awards: [{ award: 'Time Out Love Local', organization: 'timeout' }], address: 'Atlantis The Palm, Palm Jumeirah', openingHours: '10:00-22:00', phone: '+971 4 426 2000', website: 'https://atlantis.com/dubai/white-beach' },
+  { id: 100069, name: 'Cipriani Dubai', type: 'restaurant', lat: 25.2175, lon: 55.2797, rating: 4.8, cuisine: 'Italian', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'DIFC, Burj Daman, Dubai', openingHours: '12:00-00:00', phone: '+971 4 325 5550', website: 'https://cipriani.com' },
+  { id: 100070, name: 'Amazonico Dubai', type: 'restaurant', lat: 25.2175, lon: 55.2797, rating: 4.7, cuisine: 'Latin American', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'DIFC, Gate Village, Dubai', openingHours: '12:00-02:00', phone: '+971 4 571 3999', website: 'https://amazonicorestaurant.com' },
+  { id: 100071, name: 'Nusr-Et Steakhouse', type: 'restaurant', lat: 25.0769, lon: 55.1343, rating: 4.7, cuisine: 'Steakhouse', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'Four Seasons Resort, Jumeirah Beach', openingHours: '12:00-00:00', phone: '+971 4 323 5099', website: 'https://nusr-et.com' },
+  { id: 100072, name: 'Dinner by Heston Blumenthal', type: 'restaurant', lat: 25.1305, lon: 55.1171, rating: 4.8, cuisine: 'British Gastronomy', awards: [{ award: 'Michelin Star', organization: 'michelin' }], address: 'Atlantis The Royal, Palm Jumeirah', openingHours: '18:00-23:00', phone: '+971 4 426 3636', website: 'https://atlantis.com' },
+  { id: 100073, name: 'LPM Restaurant & Bar', type: 'restaurant', lat: 25.2175, lon: 55.2797, rating: 4.8, cuisine: 'French Riviera', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'DIFC, Dubai', openingHours: '12:00-00:00', phone: '+971 4 439 0909', website: 'https://lpmrestaurants.com' },
+  { id: 100074, name: 'Orfali Bros Bistro', type: 'restaurant', lat: 25.2490, lon: 55.3010, rating: 4.9, cuisine: 'Modern Middle Eastern', awards: [{ award: 'World\'s 50 Best Restaurants', organization: 'worlds50best' }], address: 'Jumeirah Lakes Towers, Dubai', openingHours: '12:00-23:00', phone: '+971 4 277 1525', website: 'https://orfalibros.com' },
+  { id: 100075, name: 'Pierchic', type: 'restaurant', lat: 25.0921, lon: 55.1444, rating: 4.8, cuisine: 'Seafood', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'Al Qasr, Madinat Jumeirah', openingHours: '12:30-23:30', phone: '+971 4 366 6730', website: 'https://jumeirah.com' },
   
   // Singapore
   { id: 100021, name: 'Atlas Bar', type: 'bar', lat: 1.2990, lon: 103.8591, rating: 4.9, cuisine: 'Art Deco Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }, { award: 'Asia\'s 50 Best', organization: 'worlds50best' }], address: 'Parkview Square, Singapore', openingHours: '10:00-01:00' },
@@ -229,7 +254,44 @@ const LiveMap = () => {
   const [selectedOrgFilter, setSelectedOrgFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [placesFetched, setPlacesFetched] = useState(false);
+  
+  // Popular Dubai venues for quick search suggestions
+  const DUBAI_QUICK_SEARCH = [
+    { name: 'Zuma Dubai', icon: '🍽️', type: 'restaurant' },
+    { name: 'At.mosphere', icon: '🍽️', type: 'restaurant' },
+    { name: 'Attiko Dubai', icon: '🍸', type: 'bar' },
+    { name: 'Nobu Dubai', icon: '🍽️', type: 'restaurant' },
+    { name: 'Gold On 27', icon: '🍸', type: 'bar' },
+    { name: 'Penthouse', icon: '🍸', type: 'bar' },
+    { name: 'Galaxy Bar', icon: '🍸', type: 'bar' },
+    { name: 'Ossiano', icon: '🍽️', type: 'restaurant' },
+    { name: 'Tresind Studio', icon: '🍽️', type: 'restaurant' },
+    { name: 'STAY by Yannick Alléno', icon: '🍽️', type: 'restaurant' },
+    { name: 'Hakkasan Dubai', icon: '🍽️', type: 'restaurant' },
+    { name: 'CÉ LA VI Dubai', icon: '🍸', type: 'bar' },
+    { name: 'Coya Dubai', icon: '🍽️', type: 'restaurant' },
+    { name: 'Nammos Dubai', icon: '🍽️', type: 'restaurant' },
+    { name: 'Cipriani Dubai', icon: '🍽️', type: 'restaurant' },
+    { name: 'La Petite Maison', icon: '🍽️', type: 'restaurant' },
+    { name: 'Orfali Bros Bistro', icon: '🍽️', type: 'restaurant' },
+    { name: 'Pierchic', icon: '🍽️', type: 'restaurant' },
+    { name: 'Nusr-Et Steakhouse', icon: '🍽️', type: 'restaurant' },
+    { name: 'Mercury Lounge', icon: '🍸', type: 'bar' },
+  ];
+
+  const handleQuickSearch = (venueName: string) => {
+    setSearchQuery(venueName);
+    setShowSearchSuggestions(false);
+    // Find the venue and navigate to it
+    const venue = places.find(p => p.name.toLowerCase() === venueName.toLowerCase());
+    if (venue && mapRef.current) {
+      mapRef.current.flyTo([venue.lat, venue.lon], 16);
+      // Optionally open the venue detail
+      navigate(`/venue/${venue.id}`, { state: { place: venue } });
+    }
+  };
   const fetchingRef = useRef(false);
   const lastFetchPositionRef = useRef<{ lat: number; lon: number } | null>(null);
   const { position, isTracking, toggleGhostMode } = useGPSTracking(!ghostMode);
@@ -733,27 +795,101 @@ const LiveMap = () => {
                 className="flex items-center gap-2"
               >
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 z-10" />
                   <Input
-                    placeholder="Search venues..."
+                    placeholder="Search Dubai venues..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-8 h-10 w-48 sm:w-64 bg-black/50 backdrop-blur-xl border-white/20 text-white placeholder:text-white/40 rounded-full"
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setShowSearchSuggestions(true);
+                    }}
+                    onFocus={() => setShowSearchSuggestions(true)}
+                    className="pl-9 pr-8 h-10 w-56 sm:w-72 bg-black/50 backdrop-blur-xl border-white/20 text-white placeholder:text-white/40 rounded-full"
                     autoFocus
                   />
                   {searchQuery && (
                     <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setShowSearchSuggestions(false);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white z-10"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   )}
+                  
+                  {/* Search Suggestions Dropdown */}
+                  <AnimatePresence>
+                    {showSearchSuggestions && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-12 left-0 right-0 bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl max-h-80 overflow-y-auto z-50 shadow-xl"
+                      >
+                        <div className="p-2">
+                          <div className="px-3 py-2 text-[10px] uppercase text-white/40 tracking-wide font-semibold">
+                            🇦🇪 Popular Dubai Venues
+                          </div>
+                          {DUBAI_QUICK_SEARCH
+                            .filter(v => !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                            .slice(0, 8)
+                            .map((venue, index) => (
+                              <button
+                                key={index}
+                                onClick={() => handleQuickSearch(venue.name)}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/10 rounded-lg transition-colors text-left"
+                              >
+                                <span className="text-lg">{venue.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm text-white font-medium truncate">{venue.name}</div>
+                                  <div className="text-[10px] text-white/50 capitalize">{venue.type}</div>
+                                </div>
+                                <MapPinned className="w-4 h-4 text-white/30" />
+                              </button>
+                            ))}
+                          {searchQuery && filteredPlaces.length > 0 && (
+                            <>
+                              <div className="px-3 py-2 text-[10px] uppercase text-white/40 tracking-wide font-semibold border-t border-white/10 mt-2 pt-2">
+                                🔍 Search Results
+                              </div>
+                              {filteredPlaces.slice(0, 5).map((place) => (
+                                <button
+                                  key={place.id}
+                                  onClick={() => {
+                                    setShowSearchSuggestions(false);
+                                    if (mapRef.current) {
+                                      mapRef.current.flyTo([place.lat, place.lon], 16);
+                                    }
+                                    navigate(`/venue/${place.id}`, { state: { place } });
+                                  }}
+                                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/10 rounded-lg transition-colors text-left"
+                                >
+                                  <span className="text-lg">
+                                    {place.type === 'bar' ? '🍸' : place.type === 'restaurant' ? '🍽️' : '☕'}
+                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm text-white font-medium truncate">{place.name}</div>
+                                    <div className="text-[10px] text-white/50">{place.address || place.type}</div>
+                                  </div>
+                                  {place.awards && place.awards.length > 0 && (
+                                    <span className="text-yellow-400 text-xs">🏆</span>
+                                  )}
+                                </button>
+                              ))}
+                            </>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
                 <Button
                   onClick={() => {
                     setShowSearch(false);
                     setSearchQuery('');
+                    setShowSearchSuggestions(false);
                   }}
                   variant="ghost"
                   size="icon"
