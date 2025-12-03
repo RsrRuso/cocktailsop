@@ -245,8 +245,10 @@ const CreateStory = () => {
         
         toast.success(`Added ${uploadedUrls.length} to your story! (${updatedMediaUrls.length} total)`);
       } else {
-        // Create new story with edited data
-        const { error: insertError } = await supabase
+        // Create new story with edited data - explicitly set expires_at
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        
+        const { data: newStory, error: insertError } = await supabase
           .from("stories")
           .insert({
             user_id: user.id,
@@ -256,17 +258,23 @@ const CreateStory = () => {
             filters: filtersArray,
             text_overlays: textOverlaysArray,
             trim_data: trimDataArray,
-          });
+            expires_at: expiresAt,
+          })
+          .select()
+          .single();
 
         if (insertError) {
-          // Ignore duplicate notification errors from triggers
-          if (insertError.code !== '23505' || !insertError.message?.includes('notifications')) {
-            console.error('Insert error:', insertError);
+          console.error('Insert error:', insertError);
+          // Only ignore duplicate notification errors, not actual insert failures
+          if (insertError.code === '23505' && insertError.message?.includes('notifications')) {
+            toast.success(`Story created with ${uploadedUrls.length} media!`);
+          } else {
             throw insertError;
           }
+        } else {
+          console.log('Story created:', newStory);
+          toast.success(`Story created with ${uploadedUrls.length} media!`);
         }
-        
-        toast.success(`Story created with ${uploadedUrls.length} media!`);
       }
 
       navigate("/home");
