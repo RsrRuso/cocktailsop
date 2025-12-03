@@ -383,7 +383,6 @@ const Reels = () => {
           setShowShare(true);
         }}
         onDelete={handleDeleteReel}
-        showLivestreamComments={showLivestreamComments}
       />
     </div>
   );
