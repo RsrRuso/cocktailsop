@@ -224,9 +224,13 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
         .from('batch_productions')
         .select('batch_name, group_id')
         .eq('id', productionId)
-        .single();
+        .maybeSingle();
 
       console.log('Fetched production:', production, 'Error:', fetchError);
+
+      if (!production) {
+        throw new Error("Production not found or you don't have permission to delete it");
+      }
 
       // Delete ingredients first
       console.log('Deleting ingredients for production:', productionId);
@@ -241,18 +245,26 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
       }
       console.log('Ingredients deleted successfully');
 
-      // Delete production row
+      // Delete production row and verify it was actually deleted
       console.log('Deleting production row:', productionId);
-      const { error: productionError } = await supabase
+      const { data: deletedData, error: productionError } = await supabase
         .from('batch_productions')
         .delete()
-        .eq('id', productionId);
+        .eq('id', productionId)
+        .select();
 
       if (productionError) {
         console.error('Error deleting production:', productionError);
         throw productionError;
       }
-      console.log('Production deleted successfully');
+
+      // Check if anything was actually deleted
+      if (!deletedData || deletedData.length === 0) {
+        console.error('No rows deleted - RLS may have blocked the operation');
+        throw new Error("Failed to delete: You don't have permission to delete this batch");
+      }
+      
+      console.log('Production deleted successfully, rows affected:', deletedData.length);
 
       return production;
     },
