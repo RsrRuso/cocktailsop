@@ -160,27 +160,37 @@ const LiveMap = () => {
 
   // Fetch nearby bars and restaurants from OpenStreetMap Overpass API
   const fetchNearbyPlaces = useCallback(async (lat: number, lon: number, radiusKm: number = NEARBY_RADIUS_KM) => {
-    if (!showPlaces) return;
+    if (!showPlaces) {
+      setLoadingPlaces(false);
+      return;
+    }
     setLoadingPlaces(true);
+    
+    // Timeout after 10 seconds
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     
     try {
       const radiusMeters = radiusKm * 1000;
       const query = `
-        [out:json][timeout:25];
+        [out:json][timeout:15];
         (
           node["amenity"="bar"](around:${radiusMeters},${lat},${lon});
           node["amenity"="restaurant"](around:${radiusMeters},${lat},${lon});
           node["amenity"="pub"](around:${radiusMeters},${lat},${lon});
           node["amenity"="cafe"](around:${radiusMeters},${lat},${lon});
         );
-        out body 200;
+        out body 100;
       `;
 
       const response = await fetch('https://overpass-api.de/api/interpreter', {
         method: 'POST',
         body: query,
-        headers: { 'Content-Type': 'text/plain' }
+        headers: { 'Content-Type': 'text/plain' },
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) throw new Error('Failed to fetch places');
 
@@ -214,7 +224,10 @@ const LiveMap = () => {
       setPlaces(fetchedPlaces);
     } catch (error) {
       console.error('Error fetching places:', error);
+      // Set empty places on error so it doesn't stay loading
+      setPlaces([]);
     } finally {
+      clearTimeout(timeoutId);
       setLoadingPlaces(false);
     }
   }, [showPlaces]);
@@ -980,38 +993,36 @@ const LiveMap = () => {
       <AnimatePresence>
         {selectedPlace && (
           <motion.div
-            className="absolute bottom-0 left-0 right-0 z-[1001] bg-black/70 backdrop-blur-2xl rounded-t-3xl shadow-2xl border-t border-white/10"
+            className="absolute bottom-0 left-0 right-0 z-[1001] bg-black/50 backdrop-blur-xl rounded-t-[2rem]"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           >
-            <div className="p-4">
+            <div className="p-4 pb-6">
               {/* Handle */}
-              <div className="w-12 h-1 bg-white/30 rounded-full mx-auto mb-4" />
+              <div className="w-10 h-1 bg-white/40 rounded-full mx-auto mb-3" />
               
-              {/* Close Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-4 right-4 text-white/60 hover:text-white hover:bg-white/10"
+              {/* Close Button - More prominent */}
+              <button
+                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 active:scale-95 transition-all"
                 onClick={() => setSelectedPlace(null)}
               >
                 <X className="w-5 h-5" />
-              </Button>
+              </button>
 
               {/* Header */}
-              <div className="flex items-start gap-4 mb-4">
+              <div className="flex items-start gap-4 mb-4 pr-10">
                 <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-2xl
-                  ${selectedPlace.type === 'bar' ? 'bg-purple-500/30' : 
-                    selectedPlace.type === 'restaurant' ? 'bg-orange-500/30' : 
-                    'bg-amber-500/30'}`}
+                  ${selectedPlace.type === 'bar' ? 'bg-purple-500/40' : 
+                    selectedPlace.type === 'restaurant' ? 'bg-orange-500/40' : 
+                    'bg-amber-500/40'}`}
                 >
                   {selectedPlace.type === 'bar' ? '🍺' : selectedPlace.type === 'restaurant' ? '🍽️' : '☕'}
                 </div>
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-white">{selectedPlace.name}</h2>
-                  <p className="text-sm text-white/50 capitalize">
+                  <p className="text-sm text-white/60 capitalize">
                     {selectedPlace.type}{selectedPlace.cuisine ? ` • ${selectedPlace.cuisine}` : ''}
                   </p>
                   {selectedPlace.rating && (
@@ -1034,7 +1045,7 @@ const LiveMap = () => {
                     {selectedPlace.awards.map((award, i) => {
                       const org = AWARD_ORGANIZATIONS.find(o => o.id === award.organization);
                       return (
-                        <Badge key={i} className="bg-yellow-500/30 text-yellow-300">
+                        <Badge key={i} className="bg-yellow-500/30 text-yellow-300 border-0">
                           {org?.icon || '🏆'} {award.award}
                         </Badge>
                       );
@@ -1072,7 +1083,7 @@ const LiveMap = () => {
                   Directions
                 </Button>
                 {selectedPlace.website && (
-                  <Button variant="outline" className="border-white/20 text-white/70 hover:bg-white/10" onClick={() => window.open(selectedPlace.website, '_blank')}>
+                  <Button variant="ghost" className="text-white/70 hover:bg-white/10 hover:text-white" onClick={() => window.open(selectedPlace.website, '_blank')}>
                     <ExternalLink className="w-4 h-4" />
                   </Button>
                 )}
