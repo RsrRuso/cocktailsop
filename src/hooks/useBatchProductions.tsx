@@ -217,28 +217,42 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
 
   const deleteProduction = useMutation({
     mutationFn: async (productionId: string) => {
+      console.log('deleteProduction called with productionId:', productionId);
+      
       // Get production data before deletion for notifications
-      const { data: production } = await supabase
+      const { data: production, error: fetchError } = await supabase
         .from('batch_productions')
         .select('batch_name, group_id')
         .eq('id', productionId)
         .single();
 
+      console.log('Fetched production:', production, 'Error:', fetchError);
+
       // Delete ingredients first
+      console.log('Deleting ingredients for production:', productionId);
       const { error: ingredientsError } = await supabase
         .from('batch_production_ingredients')
         .delete()
         .eq('production_id', productionId);
 
-      if (ingredientsError) throw ingredientsError;
+      if (ingredientsError) {
+        console.error('Error deleting ingredients:', ingredientsError);
+        throw ingredientsError;
+      }
+      console.log('Ingredients deleted successfully');
 
       // Delete production row
+      console.log('Deleting production row:', productionId);
       const { error: productionError } = await supabase
         .from('batch_productions')
         .delete()
         .eq('id', productionId);
 
-      if (productionError) throw productionError;
+      if (productionError) {
+        console.error('Error deleting production:', productionError);
+        throw productionError;
+      }
+      console.log('Production deleted successfully');
 
       return production;
     },
