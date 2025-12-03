@@ -11,14 +11,21 @@ serve(async (req) => {
   }
 
   try {
-    const { storyId, mediaUrl } = await req.json();
+    const { storyId, mediaUrl, mediaType, caption } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    // Analyze story content with AI
+    // Don't send raw base64 data - just describe the content type
+    const isVideo = mediaUrl?.includes('video') || mediaUrl?.startsWith('data:video');
+    const isImage = mediaUrl?.includes('image') || mediaUrl?.startsWith('data:image');
+    const contentDescription = isVideo ? "video content" : isImage ? "image content" : "media content";
+    
+    console.log("Analyzing story:", { storyId, contentDescription, captionLength: caption?.length || 0 });
+
+    // Analyze story content with AI - WITHOUT sending raw media data
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -30,7 +37,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert social media analyst. Analyze story content and provide insights.
+            content: `You are an expert social media analyst. Analyze story content and provide insights based on the description provided.
 Return a JSON object with:
 - viralScore (0-100): likelihood of going viral
 - mood: detected emotional tone
@@ -43,7 +50,9 @@ Return a JSON object with:
           },
           {
             role: "user",
-            content: `Analyze this story. Media URL: ${mediaUrl || "image/video content"}`
+            content: `Analyze this story: Content type is ${contentDescription}. ${caption ? `Caption: "${caption}"` : "No caption provided."}
+            
+Please provide social media engagement predictions and optimization suggestions for this type of content.`
           }
         ],
         tools: [
@@ -90,6 +99,7 @@ Return a JSON object with:
     }
 
     const insights = JSON.parse(toolCall.function.arguments);
+    console.log("Analysis complete:", insights);
 
     return new Response(JSON.stringify(insights), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
