@@ -87,6 +87,87 @@ const AWARD_ORGANIZATIONS = [
 
 const ALL_AWARDS = AWARD_ORGANIZATIONS.flatMap(org => org.awards);
 
+// Curated list of prestigious bars and restaurants worldwide
+const FEATURED_VENUES: Place[] = [
+  // London
+  { id: 100001, name: 'Attiko', type: 'bar', lat: 51.5074, lon: -0.1278, rating: 4.8, cuisine: 'Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'London, UK', openingHours: '17:00-02:00' },
+  { id: 100002, name: 'Galaxy Bar', type: 'bar', lat: 51.5085, lon: -0.0757, rating: 4.9, cuisine: 'Rooftop Cocktails', awards: [{ award: 'Best International Bar', organization: 'spirited' }], address: 'London, UK', openingHours: '18:00-02:00' },
+  { id: 100003, name: 'Tattoo Bar', type: 'bar', lat: 51.5118, lon: -0.0960, rating: 4.7, cuisine: 'Craft Cocktails', awards: [{ award: 'Spirited Award', organization: 'spirited' }], address: 'London, UK', openingHours: '17:00-01:00' },
+  { id: 100004, name: 'SUSHISAMBA', type: 'restaurant', lat: 51.5152, lon: -0.0815, rating: 4.8, cuisine: 'Japanese-Brazilian-Peruvian', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }, { award: 'Time Out Love Local', organization: 'timeout' }], address: 'Heron Tower, London', openingHours: '11:30-02:00' },
+  { id: 100005, name: 'The Connaught Bar', type: 'bar', lat: 51.5105, lon: -0.1490, rating: 4.9, cuisine: 'Luxury Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }, { award: 'Best American Cocktail Bar', organization: 'spirited' }], address: 'Mayfair, London', openingHours: '11:00-01:00' },
+  { id: 100006, name: 'Sketch', type: 'restaurant', lat: 51.5128, lon: -0.1425, rating: 4.8, cuisine: 'Modern European', awards: [{ award: 'Michelin 2 Stars', organization: 'michelin' }], address: 'Mayfair, London', openingHours: '12:00-02:00' },
+  { id: 100007, name: 'The Ritz Restaurant', type: 'restaurant', lat: 51.5073, lon: -0.1419, rating: 4.9, cuisine: 'French', awards: [{ award: 'Michelin Star', organization: 'michelin' }, { award: 'Forbes Five-Star', organization: 'forbes' }], address: 'Piccadilly, London', openingHours: '12:30-22:00' },
+  { id: 100008, name: 'Duck & Waffle', type: 'restaurant', lat: 51.5152, lon: -0.0815, rating: 4.7, cuisine: 'British', awards: [{ award: 'Time Out Love Local', organization: 'timeout' }], address: 'Heron Tower, London', openingHours: '24 hours' },
+  { id: 100009, name: 'Lyaness', type: 'bar', lat: 51.5080, lon: -0.1030, rating: 4.8, cuisine: 'Innovative Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'Sea Containers, London', openingHours: '16:00-01:00' },
+  { id: 100010, name: 'Nightjar', type: 'bar', lat: 51.5265, lon: -0.0878, rating: 4.9, cuisine: 'Speakeasy Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }, { award: 'Spirited Award', organization: 'spirited' }], address: 'Shoreditch, London', openingHours: '18:00-03:00' },
+  
+  // New York
+  { id: 100011, name: 'Death & Co', type: 'bar', lat: 40.7267, lon: -73.9850, rating: 4.9, cuisine: 'Craft Cocktails', awards: [{ award: 'James Beard Award', organization: 'jamesbeard' }, { award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'East Village, NYC', openingHours: '18:00-02:00' },
+  { id: 100012, name: 'Eleven Madison Park', type: 'restaurant', lat: 40.7416, lon: -73.9872, rating: 4.9, cuisine: 'New American', awards: [{ award: 'Michelin 3 Stars', organization: 'michelin' }, { award: 'World\'s 50 Best Restaurants', organization: 'worlds50best' }], address: 'Madison Ave, NYC', openingHours: '17:30-22:00' },
+  { id: 100013, name: 'Le Bernardin', type: 'restaurant', lat: 40.7614, lon: -73.9818, rating: 4.9, cuisine: 'French Seafood', awards: [{ award: 'Michelin 3 Stars', organization: 'michelin' }, { award: 'James Beard Award', organization: 'jamesbeard' }], address: 'Midtown, NYC', openingHours: '12:00-22:30' },
+  { id: 100014, name: 'Attaboy', type: 'bar', lat: 40.7218, lon: -73.9927, rating: 4.8, cuisine: 'Speakeasy', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'Lower East Side, NYC', openingHours: '18:00-04:00' },
+  { id: 100015, name: 'The NoMad Bar', type: 'bar', lat: 40.7453, lon: -73.9883, rating: 4.8, cuisine: 'Classic Cocktails', awards: [{ award: 'Spirited Award', organization: 'spirited' }, { award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'NoMad, NYC', openingHours: '17:00-02:00' },
+  { id: 100016, name: 'Momofuku Ko', type: 'restaurant', lat: 40.7232, lon: -73.9890, rating: 4.8, cuisine: 'Korean-American', awards: [{ award: 'Michelin 2 Stars', organization: 'michelin' }], address: 'East Village, NYC', openingHours: '17:00-22:00' },
+  
+  // Dubai
+  { id: 100017, name: 'Zuma Dubai', type: 'restaurant', lat: 25.2175, lon: 55.2797, rating: 4.8, cuisine: 'Japanese', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }, { award: 'Time Out Love Local', organization: 'timeout' }], address: 'DIFC, Dubai', openingHours: '12:00-15:00, 19:00-00:00' },
+  { id: 100018, name: 'At.mosphere', type: 'restaurant', lat: 25.1972, lon: 55.2744, rating: 4.9, cuisine: 'European', awards: [{ award: 'Forbes Five-Star', organization: 'forbes' }], address: 'Burj Khalifa, Dubai', openingHours: '12:30-15:00, 19:00-23:00' },
+  { id: 100019, name: 'Gold On 27', type: 'bar', lat: 25.2025, lon: 55.2735, rating: 4.7, cuisine: 'Cocktails', awards: [{ award: 'Asia\'s 50 Best', organization: 'worlds50best' }], address: 'Burj Al Arab, Dubai', openingHours: '18:00-02:00' },
+  { id: 100020, name: 'Nobu Dubai', type: 'restaurant', lat: 25.2041, lon: 55.2684, rating: 4.8, cuisine: 'Japanese-Peruvian', awards: [{ award: 'Travelers\' Choice', organization: 'tripadvisor' }], address: 'Atlantis, Dubai', openingHours: '18:00-23:00' },
+  
+  // Singapore
+  { id: 100021, name: 'Atlas Bar', type: 'bar', lat: 1.2990, lon: 103.8591, rating: 4.9, cuisine: 'Art Deco Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }, { award: 'Asia\'s 50 Best', organization: 'worlds50best' }], address: 'Parkview Square, Singapore', openingHours: '10:00-01:00' },
+  { id: 100022, name: 'Odette', type: 'restaurant', lat: 1.2896, lon: 103.8515, rating: 4.9, cuisine: 'French', awards: [{ award: 'Michelin 3 Stars', organization: 'michelin' }, { award: 'Asia\'s 50 Best', organization: 'worlds50best' }], address: 'National Gallery, Singapore', openingHours: '12:00-14:00, 19:00-21:00' },
+  { id: 100023, name: 'Jigger & Pony', type: 'bar', lat: 1.2805, lon: 103.8510, rating: 4.8, cuisine: 'Southeast Asian Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'Amara Hotel, Singapore', openingHours: '18:00-01:00' },
+  { id: 100024, name: 'Burnt Ends', type: 'restaurant', lat: 1.3047, lon: 103.8073, rating: 4.8, cuisine: 'Modern Australian BBQ', awards: [{ award: 'Michelin Star', organization: 'michelin' }, { award: 'Asia\'s 50 Best', organization: 'worlds50best' }], address: 'Dempsey, Singapore', openingHours: '17:45-23:00' },
+  
+  // Paris
+  { id: 100025, name: 'Little Red Door', type: 'bar', lat: 48.8629, lon: 2.3621, rating: 4.8, cuisine: 'Concept Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'Marais, Paris', openingHours: '18:00-02:00' },
+  { id: 100026, name: 'Le Cinq', type: 'restaurant', lat: 48.8688, lon: 2.3018, rating: 4.9, cuisine: 'French', awards: [{ award: 'Michelin 3 Stars', organization: 'michelin' }], address: 'Four Seasons, Paris', openingHours: '12:30-14:00, 19:00-22:00' },
+  { id: 100027, name: 'L\'Ambroisie', type: 'restaurant', lat: 48.8537, lon: 2.3602, rating: 4.9, cuisine: 'French', awards: [{ award: 'Michelin 3 Stars', organization: 'michelin' }], address: 'Place des Vosges, Paris', openingHours: '12:00-14:00, 20:00-22:00' },
+  { id: 100028, name: 'Experimental Cocktail Club', type: 'bar', lat: 48.8634, lon: 2.3481, rating: 4.7, cuisine: 'Speakeasy', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'Rue Saint-Sauveur, Paris', openingHours: '19:00-04:00' },
+  
+  // Tokyo
+  { id: 100029, name: 'Bar High Five', type: 'bar', lat: 35.6762, lon: 139.7683, rating: 4.9, cuisine: 'Japanese Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }, { award: 'Asia\'s 50 Best', organization: 'worlds50best' }], address: 'Ginza, Tokyo', openingHours: '18:00-02:00' },
+  { id: 100030, name: 'Sukiyabashi Jiro', type: 'restaurant', lat: 35.6735, lon: 139.7639, rating: 4.9, cuisine: 'Sushi', awards: [{ award: 'Michelin 3 Stars', organization: 'michelin' }], address: 'Ginza, Tokyo', openingHours: '11:30-14:00, 17:30-20:30' },
+  { id: 100031, name: 'Den', type: 'restaurant', lat: 35.6628, lon: 139.7180, rating: 4.9, cuisine: 'Japanese', awards: [{ award: 'Michelin 2 Stars', organization: 'michelin' }, { award: 'Asia\'s 50 Best', organization: 'worlds50best' }], address: 'Jingumae, Tokyo', openingHours: '18:00-23:00' },
+  { id: 100032, name: 'Star Bar Ginza', type: 'bar', lat: 35.6729, lon: 139.7658, rating: 4.8, cuisine: 'Whisky Bar', awards: [{ award: 'Asia\'s 50 Best', organization: 'worlds50best' }], address: 'Ginza, Tokyo', openingHours: '17:00-00:00' },
+  
+  // Hong Kong  
+  { id: 100033, name: 'Coa', type: 'bar', lat: 22.2819, lon: 114.1554, rating: 4.9, cuisine: 'Agave Spirits', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }, { award: 'Asia\'s 50 Best', organization: 'worlds50best' }], address: 'Central, Hong Kong', openingHours: '18:00-01:00' },
+  { id: 100034, name: 'Lung King Heen', type: 'restaurant', lat: 22.2862, lon: 114.1623, rating: 4.9, cuisine: 'Cantonese', awards: [{ award: 'Michelin 3 Stars', organization: 'michelin' }], address: 'Four Seasons, Hong Kong', openingHours: '12:00-14:30, 18:00-22:30' },
+  { id: 100035, name: 'The Old Man', type: 'bar', lat: 22.2821, lon: 114.1527, rating: 4.8, cuisine: 'Literary Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }, { award: 'Asia\'s 50 Best', organization: 'worlds50best' }], address: 'Central, Hong Kong', openingHours: '17:00-01:00' },
+  
+  // Barcelona
+  { id: 100036, name: 'Paradiso', type: 'bar', lat: 41.3853, lon: 2.1849, rating: 4.9, cuisine: 'Hidden Speakeasy', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'El Born, Barcelona', openingHours: '19:00-02:30' },
+  { id: 100037, name: 'Disfrutar', type: 'restaurant', lat: 41.3890, lon: 2.1577, rating: 4.9, cuisine: 'Avant-Garde', awards: [{ award: 'Michelin 3 Stars', organization: 'michelin' }, { award: 'World\'s 50 Best Restaurants', organization: 'worlds50best' }], address: 'Villarroel, Barcelona', openingHours: '13:00-15:00, 20:00-22:00' },
+  { id: 100038, name: 'Tickets', type: 'restaurant', lat: 41.3757, lon: 2.1647, rating: 4.8, cuisine: 'Tapas', awards: [{ award: 'Michelin Star', organization: 'michelin' }], address: 'Parallel, Barcelona', openingHours: '19:00-23:30' },
+  
+  // Mexico City
+  { id: 100039, name: 'Licorería Limantour', type: 'bar', lat: 19.4210, lon: -99.1680, rating: 4.8, cuisine: 'Mexican Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'Roma Norte, CDMX', openingHours: '13:00-02:00' },
+  { id: 100040, name: 'Pujol', type: 'restaurant', lat: 19.4338, lon: -99.1965, rating: 4.9, cuisine: 'Mexican', awards: [{ award: 'World\'s 50 Best Restaurants', organization: 'worlds50best' }], address: 'Polanco, CDMX', openingHours: '13:30-16:00, 18:30-23:00' },
+  
+  // Sydney
+  { id: 100041, name: 'Maybe Sammy', type: 'bar', lat: -33.8570, lon: 151.2088, rating: 4.8, cuisine: 'Retro Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'The Rocks, Sydney', openingHours: '16:00-00:00' },
+  { id: 100042, name: 'Quay', type: 'restaurant', lat: -33.8563, lon: 151.2105, rating: 4.9, cuisine: 'Australian', awards: [{ award: 'Michelin 3 Stars', organization: 'michelin' }], address: 'Overseas Passenger Terminal, Sydney', openingHours: '18:00-22:00' },
+  
+  // Los Angeles
+  { id: 100043, name: 'Providence', type: 'restaurant', lat: 34.0835, lon: -118.3450, rating: 4.9, cuisine: 'Seafood', awards: [{ award: 'Michelin 2 Stars', organization: 'michelin' }], address: 'Melrose Ave, LA', openingHours: '18:00-22:00' },
+  { id: 100044, name: 'n/naka', type: 'restaurant', lat: 34.0310, lon: -118.4020, rating: 4.9, cuisine: 'Kaiseki', awards: [{ award: 'Michelin 2 Stars', organization: 'michelin' }], address: 'Palms, LA', openingHours: '17:00-22:00' },
+  
+  // Copenhagen
+  { id: 100045, name: 'Noma', type: 'restaurant', lat: 55.6832, lon: 12.6107, rating: 4.9, cuisine: 'New Nordic', awards: [{ award: 'Michelin 3 Stars', organization: 'michelin' }, { award: 'World\'s 50 Best Restaurants', organization: 'worlds50best' }], address: 'Refshalevej, Copenhagen', openingHours: '17:00-00:30' },
+  { id: 100046, name: 'Geranium', type: 'restaurant', lat: 55.7028, lon: 12.5724, rating: 4.9, cuisine: 'Danish', awards: [{ award: 'Michelin 3 Stars', organization: 'michelin' }, { award: 'World\'s 50 Best Restaurants', organization: 'worlds50best' }], address: 'Parken, Copenhagen', openingHours: '18:00-00:00' },
+  
+  // Miami
+  { id: 100047, name: 'Sweet Liberty', type: 'bar', lat: 25.7877, lon: -80.1294, rating: 4.7, cuisine: 'Beach Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }, { award: 'Spirited Award', organization: 'spirited' }], address: 'South Beach, Miami', openingHours: '16:00-03:00' },
+  { id: 100048, name: 'Ariete', type: 'restaurant', lat: 25.7511, lon: -80.2369, rating: 4.8, cuisine: 'New American', awards: [{ award: 'James Beard Award', organization: 'jamesbeard' }], address: 'Coconut Grove, Miami', openingHours: '18:00-22:00' },
+  
+  // Amsterdam
+  { id: 100049, name: 'Flying Dutchmen Cocktails', type: 'bar', lat: 52.3676, lon: 4.9041, rating: 4.7, cuisine: 'Dutch Cocktails', awards: [{ award: 'World\'s 50 Best Bars', organization: 'worlds50best' }], address: 'Singel, Amsterdam', openingHours: '17:00-01:00' },
+  { id: 100050, name: 'De Librije', type: 'restaurant', lat: 52.5125, lon: 6.0944, rating: 4.9, cuisine: 'Dutch', awards: [{ award: 'Michelin 3 Stars', organization: 'michelin' }], address: 'Zwolle, Netherlands', openingHours: '12:00-14:00, 18:30-21:30' },
+];
+
 const generateMockAwards = (placeId: number): { award: string; organization: string }[] => {
   const seed = placeId % 100;
   if (seed > 60) {
@@ -224,7 +305,8 @@ const LiveMap = () => {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        setPlaces([]);
+        setPlaces(FEATURED_VENUES);
+        setPlacesFetched(true);
         setLoadingPlaces(false);
         fetchingRef.current = false;
         return;
@@ -257,14 +339,20 @@ const LiveMap = () => {
           };
         });
 
-      setPlaces(fetchedPlaces);
+      // Merge API results with featured venues, avoiding duplicates by name
+      const existingNames = new Set(fetchedPlaces.map(p => p.name.toLowerCase()));
+      const uniqueFeatured = FEATURED_VENUES.filter(f => !existingNames.has(f.name.toLowerCase()));
+      setPlaces([...uniqueFeatured, ...fetchedPlaces]);
       setPlacesFetched(true);
       lastFetchPositionRef.current = { lat, lon };
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         console.error('Error fetching places:', error);
       }
-      // Keep existing places on error
+      // Use featured venues as fallback on error
+      if (places.length === 0) {
+        setPlaces(FEATURED_VENUES);
+      }
     } finally {
       clearTimeout(timeoutId);
       setLoadingPlaces(false);
