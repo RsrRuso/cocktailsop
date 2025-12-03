@@ -561,6 +561,7 @@ export type Database = {
           created_at: string
           current_serves: number
           description: string | null
+          group_id: string | null
           id: string
           ingredients: Json
           recipe_name: string
@@ -571,6 +572,7 @@ export type Database = {
           created_at?: string
           current_serves?: number
           description?: string | null
+          group_id?: string | null
           id?: string
           ingredients?: Json
           recipe_name: string
@@ -581,13 +583,22 @@ export type Database = {
           created_at?: string
           current_serves?: number
           description?: string | null
+          group_id?: string | null
           id?: string
           ingredients?: Json
           recipe_name?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "batch_recipes_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "mixologist_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       business_analytics: {
         Row: {
