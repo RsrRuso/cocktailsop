@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Smile, Settings } from "lucide-react";
+import { ArrowLeft, Smile, Settings, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -13,6 +13,7 @@ import { MediaRecorder } from "@/components/MediaRecorder";
 import { ForwardMessageDialog } from "@/components/ForwardMessageDialog";
 import { GroupSettingsDialog } from "@/components/GroupSettingsDialog";
 import { SmartReplySuggestions } from "@/components/SmartReplySuggestions";
+import { ChatBackgroundPicker, Chat3DBackground, getStoredBackground, ChatBackground } from "@/components/ChatBackgroundPicker";
 
 const MessageThread = () => {
   const { conversationId } = useParams();
@@ -28,6 +29,8 @@ const MessageThread = () => {
   const [groupName, setGroupName] = useState('');
   const [groupAvatarUrl, setGroupAvatarUrl] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
+  const [chatBackground, setChatBackground] = useState<ChatBackground>(getStoredBackground);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -150,13 +153,9 @@ const MessageThread = () => {
   }, [newMessage, currentUser, conversationId, replyingTo, editingMessage, updateTypingStatus]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-background via-primary/5 to-accent/10 flex flex-col">
-      {/* Floating particles background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-10 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-40 h-40 bg-accent/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-primary/5 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '2s' }} />
-      </div>
+    <div className="fixed inset-0 flex flex-col overflow-hidden">
+      {/* Dynamic 3D Background */}
+      <Chat3DBackground background={chatBackground} />
 
       {/* Header with enhanced design */}
       <div className="relative backdrop-blur-3xl border-b border-primary/20 p-4 flex items-center gap-3 overflow-hidden shadow-2xl z-10">
@@ -199,16 +198,26 @@ const MessageThread = () => {
                 Group • {messages.length > 0 ? `${messages.length} messages` : 'No messages yet'}
               </p>
             </div>
-            {isAdmin && (
+            <div className="flex items-center gap-1 shrink-0 z-10">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setShowGroupSettings(true)}
-                className="glass shrink-0 relative z-10"
+                onClick={() => setShowBackgroundPicker(true)}
+                className="glass rounded-full hover:bg-primary/20"
               >
-                <Settings className="w-5 h-5" />
+                <Palette className="w-4 h-4" />
               </Button>
-            )}
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowGroupSettings(true)}
+                  className="glass rounded-full"
+                >
+                  <Settings className="w-5 h-5" />
+                </Button>
+              )}
+            </div>
           </>
         ) : otherUser && (
           <>
@@ -249,6 +258,14 @@ const MessageThread = () => {
                 </p>
               )}
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowBackgroundPicker(true)}
+              className="glass rounded-full hover:bg-primary/20 shrink-0 z-10"
+            >
+              <Palette className="w-4 h-4" />
+            </Button>
           </>
         )}
       </div>
@@ -356,6 +373,13 @@ const MessageThread = () => {
         conversationId={conversationId || ''}
         currentUserId={currentUser?.id || ''}
         isAdmin={isAdmin}
+      />
+
+      <ChatBackgroundPicker
+        open={showBackgroundPicker}
+        onClose={() => setShowBackgroundPicker(false)}
+        onSelectBackground={setChatBackground}
+        currentBackground={chatBackground}
       />
     </div>
   );
