@@ -30,15 +30,7 @@ const getPasswordResetTemplate = (resetLink: string) => `
           <!-- Header with SV Logo -->
           <tr>
             <td style="padding: 40px 40px 20px 40px; text-align: center; background-color: #333333;">
-              <table cellpadding="0" cellspacing="0" style="margin: 0 auto 16px auto;">
-                <tr>
-                  <td style="width: 80px; height: 80px; background-color: #1a1a1a; border-radius: 18px; text-align: center; vertical-align: middle;">
-                    <span style="font-family: Arial Black, Arial, sans-serif; font-size: 36px; font-weight: bold;">
-                      <span style="color: #5BB5E0;">S</span><span style="color: #F5D050;">v</span>
-                    </span>
-                  </td>
-                </tr>
-              </table>
+              <img src="https://specverse.app/sv-logo-email.png" alt="SV Logo" width="80" height="80" style="display: block; margin: 0 auto 16px auto; border-radius: 18px;" />
               <p style="margin: 8px 0 0 0; color: #9a9a9a; font-size: 14px;">Your Professional Network</p>
             </td>
           </tr>
