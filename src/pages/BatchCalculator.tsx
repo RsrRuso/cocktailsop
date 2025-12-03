@@ -3162,6 +3162,9 @@ const BatchCalculator = () => {
                   {/* Aggregated Consumption removed from UI - only available in PDF report */}
 
                   {productions.map((production) => {
+                    // Check if current user can edit/delete this production
+                    const canEditDelete = isGroupAdmin || production.user_id === user?.id || production.produced_by_user_id === user?.id;
+                    
                     // Component for each production with ingredient data
                     const ProductionCard = () => {
                       const [ingredientsData, setIngredientsData] = useState<{
@@ -3242,7 +3245,7 @@ const BatchCalculator = () => {
                                 <Download className="w-4 h-4 mr-2" />
                                 PDF
                               </Button>
-                              {(isGroupAdmin || production.user_id === user?.id || production.produced_by_user_id === user?.id) && (
+                              {canEditDelete && (
                                 <>
                                   <Button
                                     size="sm"
