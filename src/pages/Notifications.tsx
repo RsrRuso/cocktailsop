@@ -299,7 +299,10 @@ const Notifications = () => {
     } else if (notification.type === 'new_post' && notification.post_id) {
       navigate(`/post/${notification.post_id}`);
     } else if (notification.type === 'new_reel' && notification.reel_id) {
-      navigate('/reels');
+      navigate('/reels', { state: { scrollToReelId: notification.reel_id, showLivestreamComments: true } });
+    } else if (notification.reel_id) {
+      // Any reel-related notification (like, comment on reel)
+      navigate('/reels', { state: { scrollToReelId: notification.reel_id, showLivestreamComments: true } });
     } else if (notification.type === 'new_story' && notification.reference_user_id) {
       navigate(`/story/${notification.reference_user_id}`);
     } else if (notification.type === 'new_event' && notification.event_id) {
@@ -309,8 +312,6 @@ const Notifications = () => {
     } else if (notification.post_id) {
       // Generic post-related notification
       navigate(`/post/${notification.post_id}`);
-    } else if (notification.reel_id) {
-      navigate('/reels');
     } else if (notification.story_id && notification.reference_user_id) {
       navigate(`/story/${notification.reference_user_id}`);
     } else if (notification.music_share_id) {
