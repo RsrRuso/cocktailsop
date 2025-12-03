@@ -55,6 +55,7 @@ const Reels = () => {
   const [targetReelId, setTargetReelId] = useState<string | null>(null);
   const [showFullscreenViewer, setShowFullscreenViewer] = useState(false);
   const [fullscreenStartIndex, setFullscreenStartIndex] = useState(0);
+  const [showLivestreamComments, setShowLivestreamComments] = useState(false);
 
   // Auto-unmute current reel, mute others
   useEffect(() => {
@@ -82,11 +83,15 @@ const Reels = () => {
     };
   }, [user]);
 
-  // Navigate to specific reel if coming from profile
+  // Navigate to specific reel if coming from profile or notification
   useEffect(() => {
-    const state = location.state as { scrollToReelId?: string; reelData?: any };
+    const state = location.state as { scrollToReelId?: string; reelData?: any; showLivestreamComments?: boolean };
     if (state?.scrollToReelId && !targetReelId) {
       setTargetReelId(state.scrollToReelId);
+      // Enable livestream comments if coming from notification
+      if (state.showLivestreamComments) {
+        setShowLivestreamComments(true);
+      }
       // If reel data was passed, use it immediately for instant display
       if (state.reelData) {
         setReels([state.reelData]);
@@ -97,12 +102,17 @@ const Reels = () => {
     }
   }, [location.state, targetReelId, navigate, location.pathname]);
 
-  // Scroll to target reel when all reels are loaded
+  // Scroll to target reel when all reels are loaded and auto-open fullscreen
   useEffect(() => {
-    if (targetReelId && reels.length > 1) {
+    if (targetReelId && reels.length > 0) {
       const reelIndex = reels.findIndex(r => r.id === targetReelId);
       if (reelIndex !== -1) {
         setCurrentIndex(reelIndex);
+        setFullscreenStartIndex(reelIndex);
+        // Auto-open fullscreen viewer when coming from notification
+        if (showLivestreamComments) {
+          setShowFullscreenViewer(true);
+        }
         requestAnimationFrame(() => {
           const container = document.querySelector('.snap-y') as HTMLElement;
           if (container) {
@@ -112,7 +122,7 @@ const Reels = () => {
         setTargetReelId(null); // Clear after successful scroll
       }
     }
-  }, [reels, targetReelId]);
+  }, [reels, targetReelId, showLivestreamComments]);
 
   const fetchReels = async () => {
     // Fetch reels WITHOUT expensive profile joins
@@ -353,7 +363,10 @@ const Reels = () => {
 
       <ReelsFullscreenViewer
         isOpen={showFullscreenViewer}
-        onClose={() => setShowFullscreenViewer(false)}
+        onClose={() => {
+          setShowFullscreenViewer(false);
+          setShowLivestreamComments(false);
+        }}
         reels={reels}
         initialIndex={fullscreenStartIndex}
         currentUserId={user?.id || ''}
@@ -370,6 +383,7 @@ const Reels = () => {
           setShowShare(true);
         }}
         onDelete={handleDeleteReel}
+        showLivestreamComments={showLivestreamComments}
       />
     </div>
   );

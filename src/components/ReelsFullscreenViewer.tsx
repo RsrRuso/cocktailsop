@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import OptimizedAvatar from "./OptimizedAvatar";
+import { ReelLivestreamComments } from "./ReelLivestreamComments";
 
 interface Reel {
   id: string;
@@ -37,6 +38,7 @@ interface ReelsFullscreenViewerProps {
   onComment: (reelId: string) => void;
   onShare: (reelId: string, caption: string, videoUrl: string) => void;
   onDelete: (reelId: string) => void;
+  showLivestreamComments?: boolean;
 }
 
 export const ReelsFullscreenViewer = ({
@@ -50,6 +52,7 @@ export const ReelsFullscreenViewer = ({
   onComment,
   onShare,
   onDelete,
+  showLivestreamComments = false,
 }: ReelsFullscreenViewerProps) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isMuted, setIsMuted] = useState(false);
@@ -429,7 +432,10 @@ export const ReelsFullscreenViewer = ({
         )}
       </motion.div>
 
-      {/* Progress Indicator - Hidden for cleaner UI */}
+      {/* Livestream Comments Overlay */}
+      {showLivestreamComments && currentReel && (
+        <ReelLivestreamComments reelId={currentReel.id} />
+      )}
     </motion.div>
   );
 };
