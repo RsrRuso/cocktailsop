@@ -88,7 +88,7 @@ interface Reel {
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, profile: authProfile } = useAuth();
+  const { user, profile: authProfile, isLoading: authLoading } = useAuth();
   
   // Use optimized hook for all data
   const { 
@@ -101,12 +101,11 @@ const Profile = () => {
     competitions,
     stories, 
     userRoles, 
-    isLoading,
     refetchAll 
   } = useOptimizedProfileData(user?.id || null);
   
-  // Use auth profile immediately, fall back to query profile
-  const profile = queryProfile || authProfile;
+  // Use query profile first (more complete), then auth profile as fallback
+  const fetchedProfile = queryProfile || authProfile;
   
   const [coverUrl, setCoverUrl] = useState<string>("");
   const [showFollowers, setShowFollowers] = useState(false);
@@ -119,17 +118,18 @@ const Profile = () => {
   const [showAddExperience, setShowAddExperience] = useState(false);
   const [showAddCertification, setShowAddCertification] = useState(false);
   const [showAddRecognition, setShowAddRecognition] = useState(false);
-  const { data: userStatus, refetch: refetchStatus } = useUserStatus(user?.id || "");
+  const { data: userStatus, refetch: refetchStatus } = useUserStatus(user?.id || null);
   
   // Calculate birthday from profile data directly (no extra request)
   const birthdayData = useMemo(() => {
-    if (!authProfile?.date_of_birth) return { isBirthday: false };
-    const birthDate = new Date(authProfile.date_of_birth);
+    const dob = fetchedProfile?.date_of_birth || authProfile?.date_of_birth;
+    if (!dob) return { isBirthday: false };
+    const birthDate = new Date(dob);
     const today = new Date();
     const isBirthday = birthDate.getMonth() === today.getMonth() && 
       Math.abs(birthDate.getDate() - today.getDate()) <= 3;
     return { isBirthday };
-  }, [authProfile?.date_of_birth]);
+  }, [fetchedProfile?.date_of_birth, authProfile?.date_of_birth]);
 
   // Calculate career score (memoized)
   const careerMetrics = useMemo(() => {
@@ -141,7 +141,7 @@ const Profile = () => {
 
   // Fetch regional ranking with caching and deduplication
   const { data: regionalData } = useRegionalRanking(
-    profile?.region || null,
+    fetchedProfile?.region || null,
     careerMetrics.rawScore
   );
 
@@ -153,15 +153,15 @@ const Profile = () => {
   }, [user, navigate]);
 
   useEffect(() => {
-    if (profile?.cover_url) {
-      setCoverUrl(profile.cover_url);
+    if (fetchedProfile?.cover_url) {
+      setCoverUrl(fetchedProfile.cover_url);
     }
-  }, [profile]);
+  }, [fetchedProfile]);
 
   // Update career score in database (debounced to prevent excessive writes)
   useEffect(() => {
     const updateCareerScore = async () => {
-      if (!profile || !user?.id || careerMetrics.rawScore === 0) return;
+      if (!fetchedProfile || !user?.id || careerMetrics.rawScore === 0) return;
 
       await supabase
         .from('profiles')
@@ -171,7 +171,7 @@ const Profile = () => {
 
     const timeoutId = setTimeout(updateCareerScore, 1000); // Debounce 1 second
     return () => clearTimeout(timeoutId);
-  }, [careerMetrics.rawScore, profile, user?.id]);
+  }, [careerMetrics.rawScore, fetchedProfile, user?.id]);
 
   const fetchStories = async () => {
     if (!user?.id) return;
@@ -223,39 +223,46 @@ const Profile = () => {
     navigate("/auth");
   };
 
-  // Instant display - use authProfile if available, show minimal skeleton only if truly no data
-  if (!profile) {
-    // If auth is still loading, show brief skeleton
-    if (!user) {
-      return (
-        <div className="min-h-screen bg-background pb-20 pt-16">
-          <TopNav />
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-          <BottomNav />
-        </div>
-      );
-    }
-    // User exists but no profile yet - still show skeleton briefly
+  // Only show loading if auth is still initializing
+  if (authLoading && !user) {
     return (
       <div className="min-h-screen bg-background pb-20 pt-16">
         <TopNav />
-        <div className="px-4 py-6 space-y-6">
-          <div className="glass rounded-xl p-6 space-y-4 animate-pulse">
-            <div className="flex items-center gap-4">
-              <div className="w-24 h-24 rounded-full bg-muted" />
-              <div className="space-y-2">
-                <div className="h-6 w-32 bg-muted rounded" />
-                <div className="h-4 w-24 bg-muted rounded" />
-              </div>
-            </div>
-          </div>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
         <BottomNav />
       </div>
     );
   }
+
+  // Redirect to auth if no user after loading
+  if (!user && !authLoading) {
+    navigate("/auth");
+    return null;
+  }
+
+  // Create profile with fallback values for instant display
+  const profile = fetchedProfile || {
+    id: user?.id || '',
+    username: user?.user_metadata?.username || 'User',
+    full_name: user?.user_metadata?.full_name || '',
+    bio: null,
+    avatar_url: null,
+    cover_url: null,
+    professional_title: null,
+    badge_level: 'bronze',
+    region: null,
+    follower_count: 0,
+    following_count: 0,
+    post_count: 0,
+    phone: null,
+    whatsapp: null,
+    website: null,
+    show_phone: false,
+    show_whatsapp: false,
+    show_website: false,
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
