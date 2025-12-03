@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { X, Heart, Brain, BarChart3, Music2, Volume2, VolumeX } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
 import { LivestreamComments } from "@/components/story/LivestreamComments";
@@ -313,7 +314,7 @@ export default function StoryViewer() {
     }
   };
 
-  // Like with animation
+  // Like with animation - spawn multiple flying hearts
   const handleLike = async (x: number, y: number) => {
     if (!currentStory || !currentUserId) return;
 
@@ -321,11 +322,19 @@ export default function StoryViewer() {
     await toggleLike(currentStory.id);
 
     if (!wasLiked) {
-      const id = heartCounterRef.current++;
-      setFlyingHearts((prev) => [...prev, { id, x, y }]);
-      setTimeout(() => {
-        setFlyingHearts((prev) => prev.filter((h) => h.id !== id));
-      }, 1000);
+      // Spawn multiple hearts for dramatic effect
+      const heartsCount = 5;
+      for (let i = 0; i < heartsCount; i++) {
+        setTimeout(() => {
+          const id = heartCounterRef.current++;
+          const offsetX = (Math.random() - 0.5) * 60;
+          const offsetY = (Math.random() - 0.5) * 40;
+          setFlyingHearts((prev) => [...prev, { id, x: x + offsetX, y: y + offsetY }]);
+          setTimeout(() => {
+            setFlyingHearts((prev) => prev.filter((h) => h.id !== id));
+          }, 1200);
+        }, i * 80);
+      }
     }
   };
 
@@ -715,20 +724,34 @@ export default function StoryViewer() {
           />
         )}
 
-        {/* Flying hearts */}
-        {flyingHearts.map((heart) => (
-          <div
-            key={heart.id}
-            className="absolute pointer-events-none"
-            style={{
-              left: heart.x - 24,
-              top: heart.y - 24,
-              animation: "fly-up 1s ease-out forwards",
-            }}
-          >
-            <Heart className="w-12 h-12 text-red-500 fill-red-500" />
-          </div>
-        ))}
+        {/* Flying hearts - Instagram style */}
+        <AnimatePresence>
+          {flyingHearts.map((heart) => (
+            <motion.div
+              key={heart.id}
+              className="absolute pointer-events-none z-50"
+              initial={{ 
+                left: heart.x - 24, 
+                top: heart.y - 24, 
+                scale: 0,
+                opacity: 1 
+              }}
+              animate={{ 
+                top: heart.y - 200,
+                scale: [0, 1.5, 1.2, 1],
+                opacity: [1, 1, 1, 0],
+                x: [0, Math.random() * 60 - 30, Math.random() * 40 - 20],
+              }}
+              exit={{ opacity: 0, scale: 0 }}
+              transition={{ 
+                duration: 1,
+                ease: "easeOut"
+              }}
+            >
+              <Heart className="w-12 h-12 text-red-500 fill-red-500 drop-shadow-lg" />
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {/* Paused indicator */}
         {isPaused && (
