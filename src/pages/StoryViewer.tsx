@@ -62,12 +62,25 @@ export default function StoryViewer() {
   // Refs
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const heartCounterRef = useRef(0);
   const lastTapRef = useRef(0);
   const singleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Get music data for current story
+  const getMusicData = () => {
+    if (!currentStory?.music_data) return null;
+    const musicData = Array.isArray(currentStory.music_data) 
+      ? currentStory.music_data[0] 
+      : currentStory.music_data;
+    if (!musicData?.url) return null;
+    return musicData;
+  };
+  
+  const musicData = getMusicData();
 
   const { likedItems, toggleLike } = useUnifiedEngagement("story", currentUserId);
 
@@ -222,6 +235,37 @@ export default function StoryViewer() {
       video.play().catch(console.error);
     }
   }, [isPaused, showComments, isVideo]);
+  
+  // Handle music playback
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !musicData?.url) return;
+    
+    // Set initial time to trim start
+    audio.currentTime = musicData.trimStart || 0;
+    
+    if (isPaused || showComments) {
+      audio.pause();
+    } else {
+      audio.play().catch(console.error);
+    }
+  }, [isPaused, showComments, musicData, currentIndex]);
+  
+  // Handle music trim looping
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !musicData?.url) return;
+    
+    const handleTimeUpdate = () => {
+      const trimEnd = musicData.trimEnd || 45;
+      if (audio.currentTime >= trimEnd) {
+        audio.currentTime = musicData.trimStart || 0;
+      }
+    };
+    
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
+  }, [musicData]);
 
   // Navigation
   const goToNext = () => {
@@ -491,6 +535,16 @@ export default function StoryViewer() {
           />
         ) : (
           <img src={mediaUrl} alt="Story" className="w-full h-full object-contain" />
+        )}
+        
+        {/* Background music audio */}
+        {musicData?.url && (
+          <audio
+            ref={audioRef}
+            src={musicData.url}
+            loop={false}
+            preload="auto"
+          />
         )}
 
         {/* Flying hearts */}
