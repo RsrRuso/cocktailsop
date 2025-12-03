@@ -70,6 +70,12 @@ export default function StoryViewer() {
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   
+  // Derived state - must come before functions that use them
+  const currentStory = stories[currentIndex];
+  const mediaUrl = currentStory?.media_urls?.[0] || "";
+  const mediaType = currentStory?.media_types?.[0] || "";
+  const isVideo = mediaType.startsWith("video");
+
   // Get music data for current story
   const getMusicData = () => {
     if (!currentStory?.music_data) return null;
@@ -83,12 +89,7 @@ export default function StoryViewer() {
   const musicData = getMusicData();
 
   const { likedItems, toggleLike } = useUnifiedEngagement("story", currentUserId);
-
-  const currentStory = stories[currentIndex];
   const isLiked = currentStory ? likedItems.has(currentStory.id) : false;
-  const mediaUrl = currentStory?.media_urls?.[0] || "";
-  const mediaType = currentStory?.media_types?.[0] || "";
-  const isVideo = mediaType.startsWith("video");
 
   // Cleanup timers on unmount
   useEffect(() => {
