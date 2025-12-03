@@ -248,7 +248,8 @@ const CreateStory = () => {
         // Create new story with edited data - explicitly set expires_at
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         
-        const { data: newStory, error: insertError } = await supabase
+        // First insert the story without select to avoid trigger errors breaking the query
+        const { error: insertError } = await supabase
           .from("stories")
           .insert({
             user_id: user.id,
@@ -259,20 +260,19 @@ const CreateStory = () => {
             text_overlays: textOverlaysArray,
             trim_data: trimDataArray,
             expires_at: expiresAt,
-          })
-          .select()
-          .single();
+          });
 
+        // Check if it's a notification duplicate error (from triggers) - story was still created
         if (insertError) {
-          console.error('Insert error:', insertError);
-          // Only ignore duplicate notification errors, not actual insert failures
           if (insertError.code === '23505' && insertError.message?.includes('notifications')) {
+            // This is fine - story was created, just notification trigger had a conflict
+            console.log('Story created (notification trigger had duplicate, ignoring)');
             toast.success(`Story created with ${uploadedUrls.length} media!`);
           } else {
+            console.error('Insert error:', insertError);
             throw insertError;
           }
         } else {
-          console.log('Story created:', newStory);
           toast.success(`Story created with ${uploadedUrls.length} media!`);
         }
       }
