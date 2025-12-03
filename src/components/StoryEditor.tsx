@@ -63,6 +63,9 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
   const [isMuted, setIsMuted] = useState(false);
   const [musicDuration, setMusicDuration] = useState(0);
   const [musicCurrentTime, setMusicCurrentTime] = useState(0);
+  const [trimStart, setTrimStart] = useState(0);
+  const [trimEnd, setTrimEnd] = useState(45); // Max 45 seconds
+  const [musicName, setMusicName] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const musicFileInputRef = useRef<HTMLInputElement>(null);
@@ -102,15 +105,45 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
 
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
-      setMusicDuration(audioRef.current.duration);
+      const duration = audioRef.current.duration;
+      setMusicDuration(duration);
+      // Set trim end to min of duration or 45 seconds
+      setTrimEnd(Math.min(duration, 45));
+      // Start playback from trim start
+      audioRef.current.currentTime = trimStart;
     }
   };
 
   const handleSeek = (value: number[]) => {
     if (audioRef.current) {
-      audioRef.current.currentTime = value[0];
-      setMusicCurrentTime(value[0]);
+      const newTime = Math.max(trimStart, Math.min(value[0], trimEnd));
+      audioRef.current.currentTime = newTime;
+      setMusicCurrentTime(newTime);
     }
+  };
+
+  // Loop within trim range
+  useEffect(() => {
+    if (audioRef.current && musicCurrentTime >= trimEnd) {
+      audioRef.current.currentTime = trimStart;
+      setMusicCurrentTime(trimStart);
+    }
+  }, [musicCurrentTime, trimStart, trimEnd]);
+
+  const handleTrimChange = (values: number[]) => {
+    const [start, end] = values;
+    const maxDuration = 45;
+    const actualEnd = Math.min(end, start + maxDuration, musicDuration);
+    setTrimStart(start);
+    setTrimEnd(actualEnd);
+    if (audioRef.current && audioRef.current.currentTime < start) {
+      audioRef.current.currentTime = start;
+      setMusicCurrentTime(start);
+    }
+  };
+
+  const getTrimDuration = () => {
+    return Math.min(trimEnd - trimStart, 45);
   };
 
   const formatTime = (time: number) => {
@@ -179,6 +212,9 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
 
       setSelectedMusicFile(file);
       setSelectedMusic(publicUrl);
+      setMusicName(file.name);
+      setTrimStart(0);
+      setTrimEnd(45);
       toast.success(`Music uploaded: ${file.name}`);
     } catch (error: any) {
       console.error('Music upload error:', error);
@@ -198,6 +234,8 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
       musicTrackId: selectedMusic || undefined,
       textOverlays,
       filter: "",
+      trimStart: selectedMusic ? trimStart : undefined,
+      trimEnd: selectedMusic ? trimEnd : undefined,
       caption,
       shareOption,
     });
@@ -282,58 +320,130 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
               <audio
                 ref={audioRef}
                 src={selectedMusic}
-                loop
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
-                onEnded={() => setIsPlaying(false)}
+                onEnded={() => {
+                  if (audioRef.current) {
+                    audioRef.current.currentTime = trimStart;
+                    audioRef.current.play();
+                  }
+                }}
               />
               
               {/* Music Controls Overlay */}
-              <div className="absolute top-20 left-4 right-4 bg-black/40 backdrop-blur-xl rounded-2xl p-3 space-y-2">
+              <div className="absolute top-20 left-4 right-4 bg-black/60 backdrop-blur-xl rounded-2xl p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={togglePlayPause}
-                    className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-all"
+                    className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center hover:scale-105 transition-all shadow-lg"
                   >
                     {isPlaying ? (
-                      <Pause className="w-5 h-5 text-white" />
+                      <Pause className="w-6 h-6 text-white" />
                     ) : (
-                      <Play className="w-5 h-5 text-white ml-0.5" />
+                      <Play className="w-6 h-6 text-white ml-0.5" />
                     )}
                   </button>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium truncate">
-                      {selectedMusicFile?.name || "Music Track"}
+                    <p className="text-white text-sm font-semibold truncate flex items-center gap-2">
+                      <Music2 className="w-4 h-4 text-pink-400" />
+                      {musicName || selectedMusicFile?.name || "Music Track"}
                     </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-white/60 text-xs">{formatTime(musicCurrentTime)}</span>
-                      <Slider
-                        value={[musicCurrentTime]}
-                        max={musicDuration || 100}
-                        step={0.1}
-                        onValueChange={handleSeek}
-                        className="flex-1"
-                      />
-                      <span className="text-white/60 text-xs">{formatTime(musicDuration)}</span>
-                    </div>
+                    <p className="text-white/60 text-xs mt-0.5">
+                      Duration: {formatTime(getTrimDuration())} / 45s max
+                    </p>
                   </div>
                   
-                  <button
-                    onClick={() => setIsMuted(!isMuted)}
-                    className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
-                  >
-                    {isMuted ? (
-                      <VolumeX className="w-4 h-4 text-white" />
-                    ) : (
-                      <Volume2 className="w-4 h-4 text-white" />
-                    )}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setIsMuted(!isMuted)}
+                      className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
+                    >
+                      {isMuted ? (
+                        <VolumeX className="w-4 h-4 text-white" />
+                      ) : (
+                        <Volume2 className="w-4 h-4 text-white" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedMusic(null);
+                        setSelectedMusicFile(null);
+                        setMusicName("");
+                        setIsPlaying(false);
+                      }}
+                      className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center hover:bg-red-500/40 transition-all"
+                    >
+                      <X className="w-4 h-4 text-red-400" />
+                    </button>
+                  </div>
                 </div>
+                
+                {/* Playback Progress */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white/60 text-xs w-10">{formatTime(musicCurrentTime - trimStart)}</span>
+                    <Slider
+                      value={[musicCurrentTime]}
+                      min={trimStart}
+                      max={trimEnd}
+                      step={0.1}
+                      onValueChange={handleSeek}
+                      className="flex-1"
+                    />
+                    <span className="text-white/60 text-xs w-10">{formatTime(getTrimDuration())}</span>
+                  </div>
+                </div>
+
+                {/* Trim Controls */}
+                {musicDuration > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-white/10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/80 text-xs font-medium">Trim (max 45s)</span>
+                      <span className="text-pink-400 text-xs font-semibold">
+                        {formatTime(trimStart)} - {formatTime(trimEnd)}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      {/* Dual range slider simulation */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-white/50 text-[10px]">Start</span>
+                        <Slider
+                          value={[trimStart]}
+                          min={0}
+                          max={Math.max(0, musicDuration - 5)}
+                          step={0.5}
+                          onValueChange={(v) => {
+                            const newStart = v[0];
+                            setTrimStart(newStart);
+                            if (trimEnd - newStart > 45) {
+                              setTrimEnd(newStart + 45);
+                            }
+                            if (audioRef.current && audioRef.current.currentTime < newStart) {
+                              audioRef.current.currentTime = newStart;
+                            }
+                          }}
+                          className="flex-1"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-white/50 text-[10px]">End</span>
+                        <Slider
+                          value={[trimEnd]}
+                          min={trimStart + 5}
+                          max={Math.min(musicDuration, trimStart + 45)}
+                          step={0.5}
+                          onValueChange={(v) => setTrimEnd(v[0])}
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Volume Slider */}
                 {!isMuted && (
-                  <div className="flex items-center gap-2 px-2">
+                  <div className="flex items-center gap-2 pt-2 border-t border-white/10">
                     <Volume2 className="w-3 h-3 text-white/60" />
                     <Slider
                       value={[musicVolume * 100]}
@@ -342,6 +452,7 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
                       onValueChange={(v) => setMusicVolume(v[0] / 100)}
                       className="flex-1"
                     />
+                    <span className="text-white/50 text-xs">{Math.round(musicVolume * 100)}%</span>
                   </div>
                 )}
               </div>
@@ -557,6 +668,9 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
           if (playUrl) {
             setSelectedMusic(playUrl);
             setSelectedMusicFile(null);
+            setMusicName(`${track.title} - ${track.artist}`);
+            setTrimStart(0);
+            setTrimEnd(45);
             toast.success(`Added: ${track.title} by ${track.artist}`);
           } else {
             toast.error("No audio preview available for this track");
