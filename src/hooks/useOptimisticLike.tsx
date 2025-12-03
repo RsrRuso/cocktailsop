@@ -34,7 +34,7 @@ export const useOptimisticLike = (
   }, [currentUserId, itemType]);
 
   const toggleLike = useCallback(
-    async (itemId: string, updateCount?: (increment: number) => void) => {
+    async (itemId: string) => {
       if (!currentUserId) {
         toast.error(`Please login to like ${itemType}s`);
         return;
@@ -46,12 +46,11 @@ export const useOptimisticLike = (
       }
 
       const isLiked = likedItems.has(itemId);
-      const increment = isLiked ? -1 : 1;
 
       // Mark as processing
       processingRef.current.add(itemId);
 
-      // Optimistic updates - instant feedback (UI only, database trigger handles counts)
+      // Optimistic UI update for liked state only - DB trigger handles count
       setLikedItems((prev) => {
         const newSet = new Set(prev);
         if (isLiked) {
@@ -62,10 +61,7 @@ export const useOptimisticLike = (
         return newSet;
       });
 
-      // Background API call with request deduplication
       try {
-        console.log(`[LIKE] Starting ${isLiked ? 'unlike' : 'like'} for ${itemType} ${itemId}`);
-        
         if (itemType === 'post') {
           if (isLiked) {
             const { error } = await supabase
@@ -74,16 +70,11 @@ export const useOptimisticLike = (
               .eq('post_id', itemId)
               .eq('user_id', currentUserId);
             if (error) throw error;
-            console.log(`[LIKE] Successfully unliked post ${itemId}`);
           } else {
             const { error } = await supabase
               .from('post_likes')
               .insert({ post_id: itemId, user_id: currentUserId });
-            // Ignore duplicate key errors (23505) - already liked
-            if (error && error.code !== '23505') {
-              throw error;
-            }
-            console.log(`[LIKE] Successfully liked post ${itemId}. Duplicate error code: ${error?.code || 'none'}`);
+            if (error && error.code !== '23505') throw error;
           }
         } else {
           if (isLiked) {
@@ -93,23 +84,18 @@ export const useOptimisticLike = (
               .eq('reel_id', itemId)
               .eq('user_id', currentUserId);
             if (error) throw error;
-            console.log(`[LIKE] Successfully unliked reel ${itemId}`);
           } else {
             const { error } = await supabase
               .from('reel_likes')
               .insert({ reel_id: itemId, user_id: currentUserId });
-            // Ignore duplicate key errors (23505) - already liked
-            if (error && error.code !== '23505') {
-              throw error;
-            }
-            console.log(`[LIKE] Successfully liked reel ${itemId}. Duplicate error code: ${error?.code || 'none'}`);
+            if (error && error.code !== '23505') throw error;
           }
         }
       } catch (error: any) {
         console.error('[LIKE] Error:', error);
         toast.error(`Failed to ${isLiked ? 'unlike' : 'like'}`);
         
-        // Revert on error
+        // Revert liked state on error
         setLikedItems((prev) => {
           const newSet = new Set(prev);
           if (isLiked) {
@@ -120,7 +106,6 @@ export const useOptimisticLike = (
           return newSet;
         });
       } finally {
-        // Remove from processing
         processingRef.current.delete(itemId);
       }
     },
