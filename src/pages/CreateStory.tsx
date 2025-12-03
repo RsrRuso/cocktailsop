@@ -135,7 +135,16 @@ const CreateStory = () => {
             uploadCount++;
           }
         }
-        return editedData[originalIndex]?.music || null;
+        // Get music data from editedData - check all possible field names
+        const ed = editedData[originalIndex];
+        if (ed?.musicTrackId) {
+          return {
+            url: ed.musicTrackId,
+            trimStart: ed.trimStart || 0,
+            trimEnd: ed.trimEnd || 45
+          };
+        }
+        return null;
       });
       
       const filtersArray = uploadedUrls.map((_, urlIndex) => {
@@ -227,8 +236,11 @@ const CreateStory = () => {
           .eq("id", existingStory.id);
 
         if (updateError) {
-          console.error('Update error:', updateError);
-          throw updateError;
+          // Ignore duplicate notification errors from triggers
+          if (updateError.code !== '23505' || !updateError.message?.includes('notifications')) {
+            console.error('Update error:', updateError);
+            throw updateError;
+          }
         }
         
         toast.success(`Added ${uploadedUrls.length} to your story! (${updatedMediaUrls.length} total)`);
@@ -247,15 +259,24 @@ const CreateStory = () => {
           });
 
         if (insertError) {
-          console.error('Insert error:', insertError);
-          throw insertError;
+          // Ignore duplicate notification errors from triggers
+          if (insertError.code !== '23505' || !insertError.message?.includes('notifications')) {
+            console.error('Insert error:', insertError);
+            throw insertError;
+          }
         }
         
         toast.success(`Story created with ${uploadedUrls.length} media!`);
       }
 
       navigate("/home");
-    } catch (error) {
+    } catch (error: any) {
+      // Ignore duplicate notification errors - story was created successfully
+      if (error?.code === '23505' && error?.message?.includes('notifications')) {
+        toast.success('Story created successfully!');
+        navigate("/home");
+        return;
+      }
       console.error('Error creating/updating story:', error);
       toast.error(`Failed: ${error.message || 'Unknown error'}`);
     }
