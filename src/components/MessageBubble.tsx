@@ -368,16 +368,58 @@ export const MessageBubble = memo(({
         )}
 
         {message.media_url && message.media_type === 'document' && (
-          <div className="flex items-center gap-2">
-            <a
-              href={message.media_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              📎 View Document
-            </a>
-          </div>
+          <a
+            href={message.media_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted/80 transition-colors min-w-[200px] max-w-[280px]"
+          >
+            {/* File Icon */}
+            <div className="shrink-0 w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+              {(() => {
+                const fileName = message.media_url.split('/').pop()?.toLowerCase() || '';
+                const ext = fileName.split('.').pop() || '';
+                if (['pdf'].includes(ext)) return <span className="text-lg">📄</span>;
+                if (['doc', 'docx'].includes(ext)) return <span className="text-lg">📝</span>;
+                if (['xls', 'xlsx'].includes(ext)) return <span className="text-lg">📊</span>;
+                if (['ppt', 'pptx'].includes(ext)) return <span className="text-lg">📽️</span>;
+                if (['zip', 'rar', '7z'].includes(ext)) return <span className="text-lg">🗜️</span>;
+                if (['mp3', 'wav', 'aac'].includes(ext)) return <span className="text-lg">🎵</span>;
+                if (['mp4', 'mov', 'avi'].includes(ext)) return <span className="text-lg">🎬</span>;
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return <span className="text-lg">🖼️</span>;
+                if (['txt'].includes(ext)) return <span className="text-lg">📃</span>;
+                return <span className="text-lg">📎</span>;
+              })()}
+            </div>
+            {/* File Info */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate text-foreground">
+                {(() => {
+                  const fileName = message.media_url.split('/').pop() || 'Document';
+                  // Decode URL encoding and limit length
+                  try {
+                    const decoded = decodeURIComponent(fileName);
+                    return decoded.length > 25 ? decoded.substring(0, 22) + '...' : decoded;
+                  } catch {
+                    return fileName.length > 25 ? fileName.substring(0, 22) + '...' : fileName;
+                  }
+                })()}
+              </p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                {(() => {
+                  const fileName = message.media_url.split('/').pop()?.toLowerCase() || '';
+                  const ext = fileName.split('.').pop() || 'file';
+                  return ext.toUpperCase();
+                })()}
+              </p>
+            </div>
+            {/* Download Arrow */}
+            <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+            </div>
+          </a>
         )}
 
         {(message as any).forwarded && !(message.media_url && message.media_type === 'video') && !(message.media_url && message.media_type === 'voice') && (
