@@ -105,8 +105,8 @@ const Profile = () => {
   } = useOptimizedProfileData(user?.id || null);
   
   // Use query profile first (more complete), then auth profile as fallback
-  const fetchedProfile = queryProfile || authProfile;
-  
+  const profile = queryProfile || authProfile;
+
   const [coverUrl, setCoverUrl] = useState<string>("");
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
@@ -122,14 +122,14 @@ const Profile = () => {
   
   // Calculate birthday from profile data directly (no extra request)
   const birthdayData = useMemo(() => {
-    const dob = fetchedProfile?.date_of_birth || authProfile?.date_of_birth;
+    const dob = profile?.date_of_birth || authProfile?.date_of_birth;
     if (!dob) return { isBirthday: false };
     const birthDate = new Date(dob);
     const today = new Date();
     const isBirthday = birthDate.getMonth() === today.getMonth() && 
       Math.abs(birthDate.getDate() - today.getDate()) <= 3;
     return { isBirthday };
-  }, [fetchedProfile?.date_of_birth, authProfile?.date_of_birth]);
+  }, [profile?.date_of_birth, authProfile?.date_of_birth]);
 
   // Calculate career score (memoized)
   const careerMetrics = useMemo(() => {
@@ -141,27 +141,26 @@ const Profile = () => {
 
   // Fetch regional ranking with caching and deduplication
   const { data: regionalData } = useRegionalRanking(
-    fetchedProfile?.region || null,
+    profile?.region || null,
     careerMetrics.rawScore
   );
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       navigate("/auth");
-      return;
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (fetchedProfile?.cover_url) {
-      setCoverUrl(fetchedProfile.cover_url);
+    if (profile?.cover_url) {
+      setCoverUrl(profile.cover_url);
     }
-  }, [fetchedProfile]);
+  }, [profile]);
 
   // Update career score in database (debounced to prevent excessive writes)
   useEffect(() => {
     const updateCareerScore = async () => {
-      if (!fetchedProfile || !user?.id || careerMetrics.rawScore === 0) return;
+      if (!profile || !user?.id || careerMetrics.rawScore === 0) return;
 
       await supabase
         .from('profiles')
@@ -171,7 +170,7 @@ const Profile = () => {
 
     const timeoutId = setTimeout(updateCareerScore, 1000); // Debounce 1 second
     return () => clearTimeout(timeoutId);
-  }, [careerMetrics.rawScore, fetchedProfile, user?.id]);
+  }, [careerMetrics.rawScore, profile, user?.id]);
 
   const fetchStories = async () => {
     if (!user?.id) return;
@@ -223,8 +222,8 @@ const Profile = () => {
     navigate("/auth");
   };
 
-  // Only show loading if auth is still initializing
-  if (authLoading && !user) {
+  // Show loading only during initial auth check
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background pb-20 pt-16">
         <TopNav />
@@ -236,32 +235,31 @@ const Profile = () => {
     );
   }
 
-  // Redirect to auth if no user after loading
-  if (!user && !authLoading) {
-    navigate("/auth");
+  // Redirect to auth if no user
+  if (!user) {
     return null;
   }
 
-  // Create profile with fallback values for instant display
-  const profile = fetchedProfile || {
-    id: user?.id || '',
-    username: user?.user_metadata?.username || 'User',
-    full_name: user?.user_metadata?.full_name || '',
-    bio: null,
-    avatar_url: null,
-    cover_url: null,
-    professional_title: null,
-    badge_level: 'bronze',
-    region: null,
-    follower_count: 0,
-    following_count: 0,
-    post_count: 0,
-    phone: null,
-    whatsapp: null,
-    website: null,
-    show_phone: false,
-    show_whatsapp: false,
-    show_website: false,
+  // Safe profile with defaults
+  const safeProfile = {
+    id: profile?.id || user.id,
+    username: profile?.username || user.user_metadata?.username || 'User',
+    full_name: profile?.full_name || user.user_metadata?.full_name || '',
+    bio: profile?.bio || null,
+    avatar_url: profile?.avatar_url || null,
+    cover_url: profile?.cover_url || null,
+    professional_title: profile?.professional_title || null,
+    badge_level: profile?.badge_level || 'bronze',
+    region: profile?.region || null,
+    follower_count: profile?.follower_count || 0,
+    following_count: profile?.following_count || 0,
+    post_count: profile?.post_count || 0,
+    phone: profile?.phone || null,
+    whatsapp: profile?.whatsapp || null,
+    website: profile?.website || null,
+    show_phone: profile?.show_phone || false,
+    show_whatsapp: profile?.show_whatsapp || false,
+    show_website: profile?.show_website || false,
   };
 
   return (
@@ -288,11 +286,11 @@ const Profile = () => {
                   onClick={() => setShowAvatarDialog(true)}
                 >
                   <OptimizedAvatar
-                    src={profile.avatar_url}
-                    alt={profile.username}
-                    fallback={profile.username[0]}
-                    userId={user?.id || ""}
-                    className={`w-24 h-24 avatar-3d ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(profile.badge_level)}`}
+                    src={safeProfile.avatar_url}
+                    alt={safeProfile.username}
+                    fallback={safeProfile.username[0]}
+                    userId={user.id}
+                    className={`w-24 h-24 avatar-3d ring-2 ring-offset-2 ring-offset-background bg-gradient-to-br ${getBadgeColor(safeProfile.badge_level)}`}
                     showStatus={true}
                     showAddButton={true}
                     onAddStatusClick={() => setShowStatusDialog(true)}
@@ -301,7 +299,7 @@ const Profile = () => {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h2 className="text-2xl font-bold">{profile.full_name}</h2>
+                  <h2 className="text-2xl font-bold">{safeProfile.full_name || safeProfile.username}</h2>
                   {/* Verification badge */}
                   {(userRoles.isFounder || userRoles.isVerified) && (
                     <div 
@@ -324,11 +322,11 @@ const Profile = () => {
                   )}
                 </div>
                 <p className="text-muted-foreground flex items-center gap-1.5">
-                  @{profile.username}
-                  <BirthdayBadge userId={user?.id} />
+                  @{safeProfile.username}
+                  <BirthdayBadge userId={user.id} />
                 </p>
                 <p className="text-sm text-primary capitalize mt-1">
-                  {profile.professional_title?.replace(/_/g, " ")}
+                  {safeProfile.professional_title?.replace(/_/g, " ")}
                 </p>
               </div>
             </div>
@@ -342,25 +340,25 @@ const Profile = () => {
             </Button>
           </div>
 
-          {profile.bio && (
-            <p className="text-sm text-muted-foreground">{profile.bio}</p>
+          {safeProfile.bio && (
+            <p className="text-sm text-muted-foreground">{safeProfile.bio}</p>
           )}
 
           {/* Contact Links */}
-          {(profile.show_phone && profile.phone) || (profile.show_whatsapp && profile.whatsapp) || (profile.show_website && profile.website) ? (
+          {(safeProfile.show_phone && safeProfile.phone) || (safeProfile.show_whatsapp && safeProfile.whatsapp) || (safeProfile.show_website && safeProfile.website) ? (
             <div className="flex flex-wrap gap-2">
-              {profile.show_phone && profile.phone && (
+              {safeProfile.show_phone && safeProfile.phone && (
                 <a
-                  href={`tel:${profile.phone}`}
+                  href={`tel:${safeProfile.phone}`}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
                 >
                   <Phone className="w-4 h-4 text-primary" />
-                  <span>{profile.phone}</span>
+                  <span>{safeProfile.phone}</span>
                 </a>
               )}
-              {profile.show_whatsapp && profile.whatsapp && (
+              {safeProfile.show_whatsapp && safeProfile.whatsapp && (
                 <a
-                  href={`https://wa.me/${profile.whatsapp.replace(/[^0-9]/g, '')}`}
+                  href={`https://wa.me/${safeProfile.whatsapp.replace(/[^0-9]/g, '')}`}
                   target="_blank"
                   className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
                 >
@@ -368,9 +366,9 @@ const Profile = () => {
                   <span>WhatsApp</span>
                 </a>
               )}
-              {profile.show_website && profile.website && (
+              {safeProfile.show_website && safeProfile.website && (
                 <a
-                  href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
+                  href={safeProfile.website.startsWith('http') ? safeProfile.website : `https://${safeProfile.website}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 px-3 py-2 rounded-lg glass-hover border border-border/50 text-sm hover:border-primary/50 transition-colors"
@@ -391,14 +389,14 @@ const Profile = () => {
               className="text-center hover:opacity-70 transition-opacity"
               onClick={() => setShowFollowers(true)}
             >
-              <p className="text-2xl font-bold">{profile.follower_count}</p>
+              <p className="text-2xl font-bold">{safeProfile.follower_count}</p>
               <p className="text-sm text-muted-foreground">Followers</p>
             </button>
             <button 
               className="text-center hover:opacity-70 transition-opacity"
               onClick={() => setShowFollowing(true)}
             >
-              <p className="text-2xl font-bold">{profile.following_count}</p>
+              <p className="text-2xl font-bold">{safeProfile.following_count}</p>
               <p className="text-sm text-muted-foreground">Following</p>
             </button>
           </div>
@@ -876,8 +874,8 @@ const Profile = () => {
         onOpenChange={setBadgeDialogOpen}
         isFounder={userRoles.isFounder}
         isVerified={userRoles.isVerified}
-        badgeLevel={profile?.badge_level as any}
-        username={profile?.username}
+        badgeLevel={safeProfile.badge_level as any}
+        username={safeProfile.username}
         isOwnProfile={true}
         professionalScore={profile ? calculateProfessionalScore(profile, userRoles, posts, reels, stories) : undefined}
       />
@@ -930,15 +928,15 @@ const Profile = () => {
       <Dialog open={showAvatarDialog} onOpenChange={setShowAvatarDialog}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden bg-black/95 border-none">
           <div className="relative w-full aspect-square flex items-center justify-center">
-            {profile.avatar_url ? (
+            {safeProfile.avatar_url ? (
               <img 
-                src={profile.avatar_url} 
-                alt={profile.full_name}
+                src={safeProfile.avatar_url} 
+                alt={safeProfile.full_name || safeProfile.username}
                 className="max-w-full max-h-full object-contain"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
-                <span className="text-9xl font-bold text-white/80">{profile.username[0]}</span>
+                <span className="text-9xl font-bold text-white/80">{safeProfile.username[0]}</span>
               </div>
             )}
           </div>
