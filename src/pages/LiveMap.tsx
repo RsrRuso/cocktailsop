@@ -284,12 +284,29 @@ const LiveMap = () => {
   const handleQuickSearch = (venueName: string) => {
     setSearchQuery(venueName);
     setShowSearchSuggestions(false);
-    // Find the venue and navigate to it
+    setShowSearch(false);
+    // Find the venue and fly to it on map
     const venue = places.find(p => p.name.toLowerCase() === venueName.toLowerCase());
     if (venue && mapRef.current) {
-      mapRef.current.flyTo([venue.lat, venue.lon], 16);
-      // Optionally open the venue detail
-      navigate(`/venue/${venue.id}`, { state: { place: venue } });
+      mapRef.current.flyTo([venue.lat, venue.lon], 17, { duration: 1.5 });
+      // Show a brief toast with venue info
+      toast({
+        title: venue.name,
+        description: `${venue.type} • ${venue.cuisine || 'View on map'}`,
+      });
+    }
+  };
+  
+  const handleVenueSelect = (place: Place) => {
+    setShowSearchSuggestions(false);
+    setShowSearch(false);
+    setSearchQuery('');
+    if (mapRef.current) {
+      mapRef.current.flyTo([place.lat, place.lon], 17, { duration: 1.5 });
+      toast({
+        title: place.name,
+        description: `${place.type} • ${place.cuisine || place.address || 'View on map'}`,
+      });
     }
   };
   const fetchingRef = useRef(false);
@@ -819,62 +836,56 @@ const LiveMap = () => {
                     </button>
                   )}
                   
-                  {/* Search Suggestions Dropdown */}
+                  {/* Search Suggestions Dropdown - Frameless & Transparent */}
                   <AnimatePresence>
                     {showSearchSuggestions && (
                       <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-12 left-0 right-0 bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl max-h-80 overflow-y-auto z-50 shadow-xl"
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        className="absolute top-12 left-0 w-72 sm:w-80 bg-black/60 backdrop-blur-2xl rounded-2xl max-h-96 overflow-y-auto z-[9999] scrollbar-thin scrollbar-thumb-white/20"
                       >
-                        <div className="p-2">
-                          <div className="px-3 py-2 text-[10px] uppercase text-white/40 tracking-wide font-semibold">
+                        <div className="p-1.5">
+                          <div className="px-3 py-2 text-[10px] uppercase text-white/50 tracking-wider font-medium">
                             🇦🇪 Popular Dubai Venues
                           </div>
                           {DUBAI_QUICK_SEARCH
                             .filter(v => !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                            .slice(0, 8)
+                            .slice(0, 10)
                             .map((venue, index) => (
                               <button
                                 key={index}
                                 onClick={() => handleQuickSearch(venue.name)}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/10 rounded-lg transition-colors text-left"
+                                className="w-full flex items-center gap-3 px-3 py-3 hover:bg-white/10 rounded-xl transition-all text-left group"
                               >
-                                <span className="text-lg">{venue.icon}</span>
+                                <span className="text-xl group-hover:scale-110 transition-transform">{venue.icon}</span>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm text-white font-medium truncate">{venue.name}</div>
-                                  <div className="text-[10px] text-white/50 capitalize">{venue.type}</div>
+                                  <div className="text-sm text-white font-semibold truncate">{venue.name}</div>
+                                  <div className="text-[10px] text-white/40 capitalize">{venue.type}</div>
                                 </div>
-                                <MapPinned className="w-4 h-4 text-white/30" />
+                                <MapPinned className="w-4 h-4 text-white/20 group-hover:text-primary transition-colors" />
                               </button>
                             ))}
                           {searchQuery && filteredPlaces.length > 0 && (
                             <>
-                              <div className="px-3 py-2 text-[10px] uppercase text-white/40 tracking-wide font-semibold border-t border-white/10 mt-2 pt-2">
+                              <div className="px-3 py-2 text-[10px] uppercase text-white/50 tracking-wider font-medium mt-1">
                                 🔍 Search Results
                               </div>
-                              {filteredPlaces.slice(0, 5).map((place) => (
+                              {filteredPlaces.slice(0, 6).map((place) => (
                                 <button
                                   key={place.id}
-                                  onClick={() => {
-                                    setShowSearchSuggestions(false);
-                                    if (mapRef.current) {
-                                      mapRef.current.flyTo([place.lat, place.lon], 16);
-                                    }
-                                    navigate(`/venue/${place.id}`, { state: { place } });
-                                  }}
-                                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/10 rounded-lg transition-colors text-left"
+                                  onClick={() => handleVenueSelect(place)}
+                                  className="w-full flex items-center gap-3 px-3 py-3 hover:bg-white/10 rounded-xl transition-all text-left group"
                                 >
-                                  <span className="text-lg">
+                                  <span className="text-xl group-hover:scale-110 transition-transform">
                                     {place.type === 'bar' ? '🍸' : place.type === 'restaurant' ? '🍽️' : '☕'}
                                   </span>
                                   <div className="flex-1 min-w-0">
-                                    <div className="text-sm text-white font-medium truncate">{place.name}</div>
-                                    <div className="text-[10px] text-white/50">{place.address || place.type}</div>
+                                    <div className="text-sm text-white font-semibold truncate">{place.name}</div>
+                                    <div className="text-[10px] text-white/40 truncate">{place.address || place.cuisine || place.type}</div>
                                   </div>
                                   {place.awards && place.awards.length > 0 && (
-                                    <span className="text-yellow-400 text-xs">🏆</span>
+                                    <span className="text-yellow-400 text-sm">🏆</span>
                                   )}
                                 </button>
                               ))}
