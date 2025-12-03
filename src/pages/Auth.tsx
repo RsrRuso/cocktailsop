@@ -116,10 +116,25 @@ const Auth = () => {
     try {
       if (isForgotPassword) {
         const validated = resetPasswordSchema.parse({ email });
-        const { error } = await supabase.auth.resetPasswordForEmail(validated.email, {
-          redirectTo: `${window.location.origin}/password-reset`,
-        });
-        if (error) throw error;
+        
+        // Use custom password reset function (no Lovable branding)
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/custom-password-reset`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              email: validated.email,
+              siteUrl: window.location.origin
+            }),
+          }
+        );
+        
+        const result = await response.json();
+        if (!result.success && result.error) {
+          throw new Error(result.error);
+        }
+        
         toast.success("Password reset link sent! Check your email");
         setIsForgotPassword(false);
       } else if (isSignUp) {
