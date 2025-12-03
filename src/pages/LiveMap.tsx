@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useGPSTracking } from '@/hooks/useGPSTracking';
 import { Button } from '@/components/ui/button';
@@ -121,6 +122,7 @@ interface Place {
 }
 
 const LiveMap = () => {
+  const navigate = useNavigate();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Record<string, L.Marker>>({});
@@ -565,7 +567,7 @@ const LiveMap = () => {
       >
         {/* Back Button */}
         <Button
-          onClick={() => window.history.back()}
+          onClick={() => navigate('/home')}
           variant="ghost"
           size="icon"
           className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 text-white hover:bg-black/50"
