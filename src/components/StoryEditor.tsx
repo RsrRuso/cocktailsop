@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Type, Music2, Sparkles, Download, Pen, Smile, MoreHorizontal, ArrowRight, Upload, Disc3, Brain } from "lucide-react";
+import { X, Type, Music2, Sparkles, Download, Pen, Smile, MoreHorizontal, ArrowRight, Upload, Disc3, Brain, Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import MusicSelectionDialog from "./MusicSelectionDialog";
 import { SmartStoryFeatures } from "./story/SmartStoryFeatures";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Slider } from "@/components/ui/slider";
 import {
   Sheet,
   SheetContent,
@@ -57,9 +58,66 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
   const [selectedMusicFile, setSelectedMusicFile] = useState<File | null>(null);
   const [uploadingMusic, setUploadingMusic] = useState(false);
   const [shareOption, setShareOption] = useState<"story" | "close-friends" | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [musicVolume, setMusicVolume] = useState(0.7);
+  const [isMuted, setIsMuted] = useState(false);
+  const [musicDuration, setMusicDuration] = useState(0);
+  const [musicCurrentTime, setMusicCurrentTime] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const musicFileInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Handle audio playback
+  useEffect(() => {
+    if (audioRef.current && selectedMusic) {
+      audioRef.current.volume = isMuted ? 0 : musicVolume;
+    }
+  }, [musicVolume, isMuted, selectedMusic]);
+
+  // Auto-play music when selected
+  useEffect(() => {
+    if (selectedMusic && audioRef.current) {
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(console.error);
+    }
+  }, [selectedMusic]);
+
+  const togglePlayPause = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setMusicCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setMusicDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleSeek = (value: number[]) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = value[0];
+      setMusicCurrentTime(value[0]);
+    }
+  };
+
+  const formatTime = (time: number) => {
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const addTextOverlay = () => {
     if (!currentText.trim()) return;
@@ -217,14 +275,77 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
             </div>
           ))}
           
-          {/* Music indicator */}
+          {/* Music Player - Instagram Style */}
           {selectedMusic && (
-            <div className="absolute top-20 right-4 bg-white/20 backdrop-blur-xl rounded-full px-4 py-2 flex items-center gap-2">
-              <Music2 className="w-4 h-4 text-white animate-pulse" />
-              <span className="text-white text-sm font-medium">
-                {selectedMusicFile ? selectedMusicFile.name : "Music added"}
-              </span>
-            </div>
+            <>
+              {/* Hidden Audio Element */}
+              <audio
+                ref={audioRef}
+                src={selectedMusic}
+                loop
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onEnded={() => setIsPlaying(false)}
+              />
+              
+              {/* Music Controls Overlay */}
+              <div className="absolute top-20 left-4 right-4 bg-black/40 backdrop-blur-xl rounded-2xl p-3 space-y-2">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={togglePlayPause}
+                    className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-all"
+                  >
+                    {isPlaying ? (
+                      <Pause className="w-5 h-5 text-white" />
+                    ) : (
+                      <Play className="w-5 h-5 text-white ml-0.5" />
+                    )}
+                  </button>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">
+                      {selectedMusicFile?.name || "Music Track"}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-white/60 text-xs">{formatTime(musicCurrentTime)}</span>
+                      <Slider
+                        value={[musicCurrentTime]}
+                        max={musicDuration || 100}
+                        step={0.1}
+                        onValueChange={handleSeek}
+                        className="flex-1"
+                      />
+                      <span className="text-white/60 text-xs">{formatTime(musicDuration)}</span>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => setIsMuted(!isMuted)}
+                    className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
+                  >
+                    {isMuted ? (
+                      <VolumeX className="w-4 h-4 text-white" />
+                    ) : (
+                      <Volume2 className="w-4 h-4 text-white" />
+                    )}
+                  </button>
+                </div>
+                
+                {/* Volume Slider */}
+                {!isMuted && (
+                  <div className="flex items-center gap-2 px-2">
+                    <Volume2 className="w-3 h-3 text-white/60" />
+                    <Slider
+                      value={[musicVolume * 100]}
+                      max={100}
+                      step={1}
+                      onValueChange={(v) => setMusicVolume(v[0] / 100)}
+                      className="flex-1"
+                    />
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
 
@@ -431,9 +552,16 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
         open={showMusicDialog}
         onOpenChange={setShowMusicDialog}
         onSelect={(track) => {
-          setSelectedMusic(track.track_id);
+          // Use preview_audio for playback (Spotify 30s preview)
+          const playUrl = track.preview_audio || track.spotify_url;
+          if (playUrl) {
+            setSelectedMusic(playUrl);
+            setSelectedMusicFile(null);
+            toast.success(`Added: ${track.title} by ${track.artist}`);
+          } else {
+            toast.error("No audio preview available for this track");
+          }
           setShowMusicDialog(false);
-          toast.success(`Added: ${track.title}`);
         }}
       />
 
