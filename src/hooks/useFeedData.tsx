@@ -121,9 +121,9 @@ export const useFeedData = (selectedRegion: string | null) => {
     }
   }, [selectedRegion]);
 
-  const refreshFeed = useCallback(async () => {
-    // Check cache first
-    if (feedCache && Date.now() - feedCache.timestamp < CACHE_TIME && feedCache.region === selectedRegion) {
+  const refreshFeed = useCallback(async (forceRefresh: boolean = false) => {
+    // Check cache first - BUT skip cache if force refresh (e.g. after like/comment)
+    if (!forceRefresh && feedCache && Date.now() - feedCache.timestamp < CACHE_TIME && feedCache.region === selectedRegion) {
       setPosts(feedCache.posts);
       setReels(feedCache.reels);
       setIsLoading(false);

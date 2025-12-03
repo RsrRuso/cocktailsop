@@ -156,15 +156,15 @@ const Home = () => {
       fetchLikedReels();
     }
 
-    // Subscribe to comment count changes
+    // Subscribe to count changes - FORCE refresh to bypass cache
     const postsChannel = supabase
       .channel('posts-comments')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => refreshFeed())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => refreshFeed(true))
       .subscribe();
 
     const reelsChannel = supabase
       .channel('reels-comments')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reels' }, () => refreshFeed())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reels' }, () => refreshFeed(true))
       .subscribe();
 
     // Listen for region changes from TopNav
