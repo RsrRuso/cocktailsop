@@ -577,6 +577,32 @@ export default function StoryViewer() {
         onMouseUp={handleMouseUp}
         style={{ touchAction: "none" }}
       >
+        {/* Left tap zone - instant previous */}
+        <div 
+          className="absolute left-0 top-20 bottom-32 w-1/4 z-20 cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            goToPrevious();
+          }}
+          onTouchEnd={(e) => {
+            e.stopPropagation();
+            goToPrevious();
+          }}
+        />
+        
+        {/* Right tap zone - instant next */}
+        <div 
+          className="absolute right-0 top-20 bottom-32 w-1/4 z-20 cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            goToNext();
+          }}
+          onTouchEnd={(e) => {
+            e.stopPropagation();
+            goToNext();
+          }}
+        />
+
         {isVideo ? (
           <video
             ref={videoRef}
