@@ -119,12 +119,16 @@ export const useMixologistGroups = () => {
 
       if (members && inviterProfile && newMemberProfile && groupInfo) {
         for (const member of members) {
-          await supabase.from('notifications').insert({
-            user_id: member.user_id,
-            type: 'member_added',
-            content: `${inviterProfile.username} added ${newMemberProfile.username} to ${groupInfo.name}`,
-            read: false
-          });
+          try {
+            await supabase.from('notifications').insert({
+              user_id: member.user_id,
+              type: 'member_added',
+              content: `${inviterProfile.username} added ${newMemberProfile.username} to ${groupInfo.name}`,
+              read: false
+            });
+          } catch (e) {
+            // Ignore duplicate notification errors
+          }
         }
       }
     },

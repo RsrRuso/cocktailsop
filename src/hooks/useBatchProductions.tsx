@@ -127,12 +127,16 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
 
         if (members && profile) {
           for (const member of members) {
-            await supabase.from('notifications').insert({
-              user_id: member.user_id,
-              type: 'batch_submission',
-              content: `${profile.username} submitted a new batch: ${data.batch_name}`,
-              read: false
-            });
+            try {
+              await supabase.from('notifications').insert({
+                user_id: member.user_id,
+                type: 'batch_submission',
+                content: `${profile.username} submitted a new batch: ${data.batch_name}`,
+                read: false
+              });
+            } catch (e) {
+              // Ignore duplicate notification errors
+            }
           }
         }
       }
@@ -204,12 +208,16 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
 
         if (members && profile) {
           for (const member of members) {
-            await supabase.from('notifications').insert({
-              user_id: member.user_id,
-              type: 'batch_edit',
-              content: `${profile.username} edited batch: ${data.batch_name}`,
-              read: false
-            });
+            try {
+              await supabase.from('notifications').insert({
+                user_id: member.user_id,
+                type: 'batch_edit',
+                content: `${profile.username} edited batch: ${data.batch_name}`,
+                read: false
+              });
+            } catch (e) {
+              // Ignore duplicate notification errors
+            }
           }
         }
       }
@@ -293,12 +301,16 @@ export const useBatchProductions = (recipeId?: string, groupId?: string | null) 
 
         if (members && profile) {
           for (const member of members) {
-            await supabase.from('notifications').insert({
-              user_id: member.user_id,
-              type: 'batch_delete',
-              content: `${profile.username} deleted batch: ${production.batch_name}`,
-              read: false
-            });
+            try {
+              await supabase.from('notifications').insert({
+                user_id: member.user_id,
+                type: 'batch_delete',
+                content: `${profile.username} deleted batch: ${production.batch_name}`,
+                read: false
+              });
+            } catch (e) {
+              // Ignore duplicate notification errors
+            }
           }
         }
       }

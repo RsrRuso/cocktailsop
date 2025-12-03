@@ -102,12 +102,16 @@ export const useBatchRecipes = (groupId?: string | null) => {
 
           if (members) {
             for (const member of members) {
-              await supabase.from('notifications').insert({
-                user_id: member.user_id,
-                type: 'recipe_created',
-                content: `${profile.username} created a new recipe: ${data.recipe_name}`,
-                read: false
-              });
+              try {
+                await supabase.from('notifications').insert({
+                  user_id: member.user_id,
+                  type: 'recipe_created',
+                  content: `${profile.username} created a new recipe: ${data.recipe_name}`,
+                  read: false
+                });
+              } catch (e) {
+                // Ignore duplicate notification errors
+              }
             }
           }
         }
