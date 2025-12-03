@@ -144,6 +144,9 @@ const LiveMap = () => {
   const [placesFilter, setPlacesFilter] = useState<'all' | 'bar' | 'restaurant' | 'cafe' | 'awarded'>('all');
   const [showAwardsOrgs, setShowAwardsOrgs] = useState(false);
   const [selectedOrgFilter, setSelectedOrgFilter] = useState<string | null>(null);
+  const [placesFetched, setPlacesFetched] = useState(false);
+  const fetchingRef = useRef(false);
+  const lastFetchPositionRef = useRef<{ lat: number; lon: number } | null>(null);
   const { position, isTracking, toggleGhostMode } = useGPSTracking(!ghostMode);
   const { toast } = useToast();
 
@@ -160,32 +163,51 @@ const LiveMap = () => {
     return R * c;
   }, []);
 
-  // Fetch nearby bars and restaurants from OpenStreetMap Overpass API
-  const fetchNearbyPlaces = useCallback(async (lat: number, lon: number, radiusKm: number = NEARBY_RADIUS_KM) => {
+  // Fetch nearby bars and restaurants from OpenStreetMap Overpass API - with deduplication
+  const fetchNearbyPlaces = useCallback(async (lat: number, lon: number, radiusKm: number = NEARBY_RADIUS_KM, force = false) => {
     if (!showPlaces) {
       setLoadingPlaces(false);
       return;
     }
+
+    // Prevent concurrent fetches
+    if (fetchingRef.current) {
+      return;
+    }
+
+    // Only fetch if position changed significantly (500m) or forced
+    if (!force && lastFetchPositionRef.current) {
+      const dist = Math.sqrt(
+        Math.pow(lat - lastFetchPositionRef.current.lat, 2) +
+        Math.pow(lon - lastFetchPositionRef.current.lon, 2)
+      ) * 111000; // rough meters
+      if (dist < 500 && placesFetched) {
+        setLoadingPlaces(false);
+        return;
+      }
+    }
+
+    fetchingRef.current = true;
     setLoadingPlaces(true);
     
-    // Timeout after 5 seconds for faster completion
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       controller.abort();
+      fetchingRef.current = false;
       setLoadingPlaces(false);
-    }, 5000);
+    }, 8000);
     
     try {
       const radiusMeters = radiusKm * 1000;
       const query = `
-        [out:json][timeout:8];
+        [out:json][timeout:10];
         (
           node["amenity"="bar"](around:${radiusMeters},${lat},${lon});
           node["amenity"="restaurant"](around:${radiusMeters},${lat},${lon});
           node["amenity"="pub"](around:${radiusMeters},${lat},${lon});
           node["amenity"="cafe"](around:${radiusMeters},${lat},${lon});
         );
-        out body 50;
+        out body 30;
       `;
 
       const response = await fetch('https://overpass-api.de/api/interpreter', {
@@ -200,6 +222,7 @@ const LiveMap = () => {
       if (!response.ok) {
         setPlaces([]);
         setLoadingPlaces(false);
+        fetchingRef.current = false;
         return;
       }
 
@@ -231,15 +254,19 @@ const LiveMap = () => {
         });
 
       setPlaces(fetchedPlaces);
-      setLoadingPlaces(false);
-    } catch (error) {
-      console.error('Error fetching places:', error);
-      setPlaces([]);
-      setLoadingPlaces(false);
+      setPlacesFetched(true);
+      lastFetchPositionRef.current = { lat, lon };
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Error fetching places:', error);
+      }
+      // Keep existing places on error
     } finally {
       clearTimeout(timeoutId);
+      setLoadingPlaces(false);
+      fetchingRef.current = false;
     }
-  }, [showPlaces]);
+  }, [showPlaces, placesFetched]);
 
   // Initialize Leaflet map
   useEffect(() => {
@@ -301,20 +328,23 @@ const LiveMap = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [satelliteMode]);
 
+  // Fetch places once when map is ready and position is available
+  useEffect(() => {
+    if (!mapRef.current || !position || placesFetched) return;
+    const radius = viewMode === 'city' ? CITY_RADIUS_KM : NEARBY_RADIUS_KM;
+    fetchNearbyPlaces(position.latitude, position.longitude, radius, true);
+  }, [position, viewMode, placesFetched, fetchNearbyPlaces]);
+
   // Center map and update current user marker when GPS position changes
   useEffect(() => {
     if (!mapRef.current || !position) return;
 
     const map = mapRef.current;
     const userKey = 'current-user';
-    const radius = viewMode === 'city' ? CITY_RADIUS_KM : NEARBY_RADIUS_KM;
 
     if (autoCenter) {
       map.flyTo([position.latitude, position.longitude], viewMode === 'city' ? 11 : 14);
     }
-
-    // Fetch nearby places when position updates
-    fetchNearbyPlaces(position.latitude, position.longitude, radius);
 
     if (ghostMode) {
       if (markersRef.current[userKey]) {
