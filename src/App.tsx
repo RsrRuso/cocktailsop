@@ -128,6 +128,7 @@ const MapPlanner = lazy(() => import("@/pages/MapPlanner"));
 const Install = lazy(() => import("@/pages/Install"));
 const MatrixAI = lazy(() => import("@/pages/MatrixAI"));
 const LiveMap = lazy(() => import("@/pages/LiveMap"));
+const VenueDetail = lazy(() => import("@/pages/VenueDetail"));
 const Automations = lazy(() => import("@/pages/Automations"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -270,6 +271,7 @@ const AppContent = () => {
           <Route path="/staff-scheduling" element={<StaffScheduling />} />
           <Route path="/map-planner" element={<MapPlanner />} />
           <Route path="/map" element={<LiveMap />} />
+          <Route path="/venue/:venueId" element={<VenueDetail />} />
           <Route path="/install" element={<Install />} />
           <Route path="/matrix-ai" element={<MatrixAI />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

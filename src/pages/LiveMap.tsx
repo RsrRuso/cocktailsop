@@ -413,7 +413,7 @@ const LiveMap = () => {
       });
 
       marker.on('click', () => {
-        setSelectedPlace(place);
+        navigate(`/venue/${place.id}`, { state: { place } });
       });
 
       marker.addTo(mapRef.current!);
@@ -588,17 +588,8 @@ const LiveMap = () => {
   };
 
   const handlePlaceClick = (place: Place) => {
-    setSelectedPlace(place);
-    setShowPlacesList(false);
-    setShowAwardsOrgs(false);
-    
-    if (mapRef.current) {
-      // Fly to place with animation
-      mapRef.current.flyTo([place.lat, place.lon], 17, {
-        duration: 1.5,
-        easeLinearity: 0.25
-      });
-    }
+    // Navigate to venue detail page
+    navigate(`/venue/${place.id}`, { state: { place } });
   };
 
   const awardedPlaces = places.filter(p => p.awards && p.awards.length > 0);
