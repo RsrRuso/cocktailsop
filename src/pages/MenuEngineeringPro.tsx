@@ -337,13 +337,13 @@ export default function MenuEngineeringPro() {
       doc.text('BCG Matrix Summary', 14, yPos);
       yPos += 10;
       
-      // Summary cards data
+      // Summary cards data with colored indicators
       const summaryData = [
         ['Category', 'Count', 'Description', 'Strategy'],
-        ['⭐ Stars', String(summary.stars), 'High profit, High popularity', 'Maintain & feature prominently'],
-        ['🐴 Plowhorses', String(summary.plowhorses), 'Low profit, High popularity', 'Engineer costs or increase price'],
-        ['🧩 Puzzles', String(summary.puzzles), 'High profit, Low popularity', 'Increase visibility & upselling'],
-        ['🐕 Dogs', String(summary.dogs), 'Low profit, Low popularity', 'Consider removal or overhaul']
+        ['[*] STARS', String(summary.stars), 'High profit, High popularity', 'Maintain & feature prominently'],
+        ['[+] PLOWHORSES', String(summary.plowhorses), 'Low profit, High popularity', 'Engineer costs or increase price'],
+        ['[?] PUZZLES', String(summary.puzzles), 'High profit, Low popularity', 'Increase visibility & upselling'],
+        ['[!] DOGS', String(summary.dogs), 'Low profit, Low popularity', 'Consider removal or overhaul']
       ];
       
       autoTable(doc, {
@@ -352,7 +352,21 @@ export default function MenuEngineeringPro() {
         body: summaryData.slice(1),
         theme: 'striped',
         headStyles: { fillColor: [60, 60, 60] },
-        columnStyles: { 0: { fontStyle: 'bold' } }
+        columnStyles: { 0: { fontStyle: 'bold' } },
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.column.index === 0) {
+            const text = String(data.cell.raw);
+            if (text.includes('STARS')) {
+              data.cell.styles.textColor = [180, 150, 30]; // Gold
+            } else if (text.includes('PLOWHORSES')) {
+              data.cell.styles.textColor = [50, 100, 180]; // Blue
+            } else if (text.includes('PUZZLES')) {
+              data.cell.styles.textColor = [130, 80, 170]; // Purple
+            } else if (text.includes('DOGS')) {
+              data.cell.styles.textColor = [200, 60, 60]; // Red
+            }
+          }
+        }
       });
       
       yPos = (doc as any).lastAutoTable.finalY + 15;
