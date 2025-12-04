@@ -1781,7 +1781,13 @@ export default function MenuEngineeringPro() {
                       <Card className="border-primary/30">
                         <CardHeader className="pb-2">
                           <CardTitle className="text-sm flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 text-primary" />
+                            <div className="relative w-5 h-5">
+                              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-purple-500 to-pink-500 animate-spin" style={{ animationDuration: '3s' }} />
+                              <div className="absolute inset-[2px] rounded-full bg-background" />
+                              <div className="absolute inset-[4px] rounded-full bg-gradient-to-tr from-cyan-400 via-primary to-amber-400 animate-spin" style={{ animationDuration: '2s', animationDirection: 'reverse' }} />
+                              <div className="absolute inset-[6px] rounded-full bg-background" />
+                              <div className="absolute inset-[8px] rounded-full bg-gradient-to-r from-primary to-pink-500 animate-pulse" />
+                            </div>
                             AI Suggestions
                           </CardTitle>
                         </CardHeader>
@@ -1987,7 +1993,13 @@ export default function MenuEngineeringPro() {
                     <Card className="border-primary/30">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm flex items-center gap-2">
-                          <Sparkles className="h-4 w-4 text-primary" />
+                          <div className="relative w-5 h-5">
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-purple-500 to-pink-500 animate-spin" style={{ animationDuration: '3s' }} />
+                            <div className="absolute inset-[2px] rounded-full bg-background" />
+                            <div className="absolute inset-[4px] rounded-full bg-gradient-to-tr from-cyan-400 via-primary to-amber-400 animate-spin" style={{ animationDuration: '2s', animationDirection: 'reverse' }} />
+                            <div className="absolute inset-[6px] rounded-full bg-background" />
+                            <div className="absolute inset-[8px] rounded-full bg-gradient-to-r from-primary to-pink-500 animate-pulse" />
+                          </div>
                           AI Optimization Suggestions
                           <InfoTooltip content="Smart recommendations based on ingredient usage, cross-utilization patterns, and menu engineering best practices" />
                         </CardTitle>
