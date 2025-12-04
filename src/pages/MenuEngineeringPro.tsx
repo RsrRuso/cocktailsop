@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1680,12 +1680,12 @@ export default function MenuEngineeringPro() {
         {/* Recipe Detail - Mobile Sheet / Desktop Dialog */}
         {selectedItem && (
           <>
-            {/* Mobile: Full-screen Sheet */}
-            <Sheet open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
-              <SheetContent side="bottom" className="h-[95vh] md:hidden p-0 overflow-hidden">
+            {/* Mobile: Full-screen Drawer */}
+            <Drawer open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
+              <DrawerContent className="h-[95vh] md:hidden">
                 <div className="flex flex-col h-full overflow-hidden">
                   {/* Mobile Header */}
-                  <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-10 shrink-0">
+                  <div className="flex items-center justify-between px-4 pb-4 border-b bg-background shrink-0">
                     <div className="flex items-center gap-2">
                       <Utensils className="h-5 w-5 text-primary" />
                       <div>
@@ -1823,8 +1823,8 @@ export default function MenuEngineeringPro() {
                     </div>
                   </div>
                 </div>
-              </SheetContent>
-            </Sheet>
+              </DrawerContent>
+            </Drawer>
 
             {/* Desktop: Standard Dialog */}
             <Dialog open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
