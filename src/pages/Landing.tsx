@@ -22,11 +22,11 @@ const Landing = () => {
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Animated background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-blue-950/20 to-background" />
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-blue-950/20 to-background pointer-events-none" />
       
-      {/* Glow effects */}
-      <div className="absolute top-20 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      {/* Glow effects - pointer-events-none to prevent blocking interactions */}
+      <div className="absolute top-20 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse pointer-events-none" />
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
 
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col">
