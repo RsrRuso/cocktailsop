@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import EditableRecipeIngredients, { EditableIngredient } from "@/components/menu-engineering/EditableRecipeIngredients";
 
 // Educational tooltips for all menu engineering terms
 const TOOLTIPS = {
@@ -50,9 +51,12 @@ const TOOLTIPS = {
 type ActionDialog = 'plowhorses' | 'puzzles' | 'dogs' | 'pricing' | null;
 
 interface Ingredient {
+  id: string;
   name: string;
   amount: number;
   unit: string;
+  bottleSize: number;
+  bottleCost: number;
   cost: number;
 }
 
@@ -115,72 +119,122 @@ export default function MenuEngineeringPro() {
   const [actionDialog, setActionDialog] = useState<ActionDialog>(null);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [showRecipeDialog, setShowRecipeDialog] = useState(false);
+  const [currency, setCurrency] = useState("USD");
+  const [editableIngredients, setEditableIngredients] = useState<EditableIngredient[]>([]);
 
-  // Mock ingredients data for demo items
+  // Mock ingredients data for demo items (with bottle cost structure)
   const DEMO_INGREDIENTS: Record<string, Ingredient[]> = {
     'Margarita': [
-      { name: 'Tequila Blanco', amount: 60, unit: 'ml', cost: 2.40 },
-      { name: 'Triple Sec', amount: 30, unit: 'ml', cost: 0.90 },
-      { name: 'Fresh Lime Juice', amount: 30, unit: 'ml', cost: 0.50 },
-      { name: 'Agave Syrup', amount: 15, unit: 'ml', cost: 0.20 },
-      { name: 'Salt', amount: 2, unit: 'g', cost: 0.05 },
-      { name: 'Lime Wheel', amount: 1, unit: 'pc', cost: 0.15 }
+      { id: '1', name: 'Tequila Blanco', amount: 60, unit: 'ml', bottleSize: 700, bottleCost: 28, cost: 2.40 },
+      { id: '2', name: 'Triple Sec', amount: 30, unit: 'ml', bottleSize: 700, bottleCost: 21, cost: 0.90 },
+      { id: '3', name: 'Fresh Lime Juice', amount: 30, unit: 'ml', bottleSize: 500, bottleCost: 8.33, cost: 0.50 },
+      { id: '4', name: 'Agave Syrup', amount: 15, unit: 'ml', bottleSize: 750, bottleCost: 10, cost: 0.20 },
+      { id: '5', name: 'Salt', amount: 2, unit: 'g', bottleSize: 1000, bottleCost: 2.5, cost: 0.05 },
+      { id: '6', name: 'Lime Wheel', amount: 1, unit: 'pc', bottleSize: 1, bottleCost: 0.15, cost: 0.15 }
     ],
     'Old Fashioned': [
-      { name: 'Bourbon', amount: 60, unit: 'ml', cost: 3.50 },
-      { name: 'Angostura Bitters', amount: 3, unit: 'dashes', cost: 0.30 },
-      { name: 'Sugar Cube', amount: 1, unit: 'pc', cost: 0.10 },
-      { name: 'Orange Peel', amount: 1, unit: 'pc', cost: 0.20 },
-      { name: 'Luxardo Cherry', amount: 1, unit: 'pc', cost: 0.40 }
+      { id: '1', name: 'Bourbon', amount: 60, unit: 'ml', bottleSize: 700, bottleCost: 40.83, cost: 3.50 },
+      { id: '2', name: 'Angostura Bitters', amount: 3, unit: 'dashes', bottleSize: 100, bottleCost: 10, cost: 0.30 },
+      { id: '3', name: 'Sugar Cube', amount: 1, unit: 'pc', bottleSize: 1, bottleCost: 0.10, cost: 0.10 },
+      { id: '4', name: 'Orange Peel', amount: 1, unit: 'pc', bottleSize: 1, bottleCost: 0.20, cost: 0.20 },
+      { id: '5', name: 'Luxardo Cherry', amount: 1, unit: 'pc', bottleSize: 1, bottleCost: 0.40, cost: 0.40 }
     ],
     'Mojito': [
-      { name: 'White Rum', amount: 60, unit: 'ml', cost: 2.00 },
-      { name: 'Fresh Lime Juice', amount: 30, unit: 'ml', cost: 0.50 },
-      { name: 'Sugar Syrup', amount: 20, unit: 'ml', cost: 0.15 },
-      { name: 'Fresh Mint', amount: 8, unit: 'leaves', cost: 0.30 },
-      { name: 'Soda Water', amount: 60, unit: 'ml', cost: 0.20 }
+      { id: '1', name: 'White Rum', amount: 60, unit: 'ml', bottleSize: 700, bottleCost: 23.33, cost: 2.00 },
+      { id: '2', name: 'Fresh Lime Juice', amount: 30, unit: 'ml', bottleSize: 500, bottleCost: 8.33, cost: 0.50 },
+      { id: '3', name: 'Sugar Syrup', amount: 20, unit: 'ml', bottleSize: 1000, bottleCost: 7.5, cost: 0.15 },
+      { id: '4', name: 'Fresh Mint', amount: 8, unit: 'leaves', bottleSize: 1, bottleCost: 0.0375, cost: 0.30 },
+      { id: '5', name: 'Soda Water', amount: 60, unit: 'ml', bottleSize: 1000, bottleCost: 3.33, cost: 0.20 }
     ],
     'Cosmopolitan': [
-      { name: 'Vodka', amount: 45, unit: 'ml', cost: 1.80 },
-      { name: 'Triple Sec', amount: 15, unit: 'ml', cost: 0.45 },
-      { name: 'Fresh Lime Juice', amount: 15, unit: 'ml', cost: 0.25 },
-      { name: 'Cranberry Juice', amount: 30, unit: 'ml', cost: 0.40 },
-      { name: 'Orange Peel', amount: 1, unit: 'pc', cost: 0.20 }
+      { id: '1', name: 'Vodka', amount: 45, unit: 'ml', bottleSize: 700, bottleCost: 28, cost: 1.80 },
+      { id: '2', name: 'Triple Sec', amount: 15, unit: 'ml', bottleSize: 700, bottleCost: 21, cost: 0.45 },
+      { id: '3', name: 'Fresh Lime Juice', amount: 15, unit: 'ml', bottleSize: 500, bottleCost: 8.33, cost: 0.25 },
+      { id: '4', name: 'Cranberry Juice', amount: 30, unit: 'ml', bottleSize: 1000, bottleCost: 13.33, cost: 0.40 },
+      { id: '5', name: 'Orange Peel', amount: 1, unit: 'pc', bottleSize: 1, bottleCost: 0.20, cost: 0.20 }
     ],
     'Negroni': [
-      { name: 'Gin', amount: 30, unit: 'ml', cost: 2.00 },
-      { name: 'Campari', amount: 30, unit: 'ml', cost: 1.80 },
-      { name: 'Sweet Vermouth', amount: 30, unit: 'ml', cost: 1.00 },
-      { name: 'Orange Peel', amount: 1, unit: 'pc', cost: 0.20 }
+      { id: '1', name: 'Gin', amount: 30, unit: 'ml', bottleSize: 700, bottleCost: 46.67, cost: 2.00 },
+      { id: '2', name: 'Campari', amount: 30, unit: 'ml', bottleSize: 700, bottleCost: 42, cost: 1.80 },
+      { id: '3', name: 'Sweet Vermouth', amount: 30, unit: 'ml', bottleSize: 750, bottleCost: 25, cost: 1.00 },
+      { id: '4', name: 'Orange Peel', amount: 1, unit: 'pc', bottleSize: 1, bottleCost: 0.20, cost: 0.20 }
     ],
     'Caesar Salad': [
-      { name: 'Romaine Lettuce', amount: 150, unit: 'g', cost: 0.80 },
-      { name: 'Caesar Dressing', amount: 50, unit: 'ml', cost: 0.60 },
-      { name: 'Parmesan Cheese', amount: 30, unit: 'g', cost: 0.90 },
-      { name: 'Croutons', amount: 30, unit: 'g', cost: 0.30 },
-      { name: 'Anchovy Fillet', amount: 2, unit: 'pc', cost: 0.50 }
+      { id: '1', name: 'Romaine Lettuce', amount: 150, unit: 'g', bottleSize: 500, bottleCost: 2.67, cost: 0.80 },
+      { id: '2', name: 'Caesar Dressing', amount: 50, unit: 'ml', bottleSize: 500, bottleCost: 6, cost: 0.60 },
+      { id: '3', name: 'Parmesan Cheese', amount: 30, unit: 'g', bottleSize: 200, bottleCost: 6, cost: 0.90 },
+      { id: '4', name: 'Croutons', amount: 30, unit: 'g', bottleSize: 200, bottleCost: 2, cost: 0.30 },
+      { id: '5', name: 'Anchovy Fillet', amount: 2, unit: 'pc', bottleSize: 1, bottleCost: 0.25, cost: 0.50 }
     ],
     'Truffle Fries': [
-      { name: 'French Fries', amount: 200, unit: 'g', cost: 1.20 },
-      { name: 'Truffle Oil', amount: 10, unit: 'ml', cost: 1.50 },
-      { name: 'Parmesan Cheese', amount: 20, unit: 'g', cost: 0.60 },
-      { name: 'Fresh Parsley', amount: 5, unit: 'g', cost: 0.20 },
-      { name: 'Garlic Aioli', amount: 30, unit: 'ml', cost: 0.40 }
+      { id: '1', name: 'French Fries', amount: 200, unit: 'g', bottleSize: 1000, bottleCost: 6, cost: 1.20 },
+      { id: '2', name: 'Truffle Oil', amount: 10, unit: 'ml', bottleSize: 250, bottleCost: 37.5, cost: 1.50 },
+      { id: '3', name: 'Parmesan Cheese', amount: 20, unit: 'g', bottleSize: 200, bottleCost: 6, cost: 0.60 },
+      { id: '4', name: 'Fresh Parsley', amount: 5, unit: 'g', bottleSize: 50, bottleCost: 2, cost: 0.20 },
+      { id: '5', name: 'Garlic Aioli', amount: 30, unit: 'ml', bottleSize: 500, bottleCost: 6.67, cost: 0.40 }
     ],
     'Wagyu Slider': [
-      { name: 'Wagyu Beef Patty', amount: 100, unit: 'g', cost: 8.00 },
-      { name: 'Brioche Bun', amount: 1, unit: 'pc', cost: 1.00 },
-      { name: 'Cheddar Cheese', amount: 30, unit: 'g', cost: 0.80 },
-      { name: 'Truffle Aioli', amount: 20, unit: 'ml', cost: 1.00 },
-      { name: 'Arugula', amount: 10, unit: 'g', cost: 0.30 },
-      { name: 'Tomato Slice', amount: 1, unit: 'pc', cost: 0.15 }
+      { id: '1', name: 'Wagyu Beef Patty', amount: 100, unit: 'g', bottleSize: 100, bottleCost: 8, cost: 8.00 },
+      { id: '2', name: 'Brioche Bun', amount: 1, unit: 'pc', bottleSize: 1, bottleCost: 1, cost: 1.00 },
+      { id: '3', name: 'Cheddar Cheese', amount: 30, unit: 'g', bottleSize: 200, bottleCost: 5.33, cost: 0.80 },
+      { id: '4', name: 'Truffle Aioli', amount: 20, unit: 'ml', bottleSize: 250, bottleCost: 12.5, cost: 1.00 },
+      { id: '5', name: 'Arugula', amount: 10, unit: 'g', bottleSize: 100, bottleCost: 3, cost: 0.30 },
+      { id: '6', name: 'Tomato Slice', amount: 1, unit: 'pc', bottleSize: 1, bottleCost: 0.15, cost: 0.15 }
     ],
     'House Wine': [
-      { name: 'House Red/White Wine', amount: 175, unit: 'ml', cost: 2.50 }
+      { id: '1', name: 'House Red/White Wine', amount: 175, unit: 'ml', bottleSize: 750, bottleCost: 10.71, cost: 2.50 }
     ],
     'Premium Whiskey': [
-      { name: 'Premium Whiskey', amount: 45, unit: 'ml', cost: 7.50 }
+      { id: '1', name: 'Premium Whiskey', amount: 45, unit: 'ml', bottleSize: 700, bottleCost: 116.67, cost: 7.50 }
     ]
+  };
+
+  // Initialize editable ingredients when item selected
+  const initializeEditableIngredients = (item: MenuItem) => {
+    const ings = item.ingredients || DEMO_INGREDIENTS[item.item_name] || [];
+    setEditableIngredients(ings.map((ing, idx) => ({
+      id: ing.id || `ing-${idx}`,
+      name: ing.name,
+      amount: ing.amount,
+      unit: ing.unit,
+      bottleSize: ing.bottleSize || 700,
+      bottleCost: ing.bottleCost || 0,
+      cost: ing.cost
+    })));
+  };
+
+  const handleSelectItem = (item: MenuItem) => {
+    setSelectedItem(item);
+    initializeEditableIngredients(item);
+    setShowRecipeDialog(true);
+  };
+
+  const handleIngredientsChange = (newIngredients: EditableIngredient[]) => {
+    setEditableIngredients(newIngredients);
+    // Update the menu item's food cost based on new ingredients
+    if (selectedItem) {
+      const newFoodCost = newIngredients.reduce((sum, ing) => sum + ing.cost, 0);
+      const updatedItem = {
+        ...selectedItem,
+        food_cost: newFoodCost,
+        food_cost_pct: selectedItem.selling_price > 0 ? (newFoodCost / selectedItem.selling_price) * 100 : 0,
+        contribution_margin: selectedItem.selling_price - newFoodCost,
+        ingredients: newIngredients
+      };
+      setSelectedItem(updatedItem);
+      // Update in menuItems array
+      setMenuItems(prev => prev.map(item => 
+        item.id === selectedItem.id ? updatedItem : item
+      ));
+    }
+  };
+
+  const getCurrencySymbol = () => {
+    const symbols: Record<string, string> = {
+      'USD': '$', 'EUR': '€', 'GBP': '£', 'AED': 'د.إ', 'SAR': '﷼',
+      'AUD': 'A$', 'CAD': 'C$', 'JPY': '¥', 'INR': '₹', 'CHF': 'CHF'
+    };
+    return symbols[currency] || '$';
   };
 
   // Get cross-utilized ingredients
@@ -1129,7 +1183,7 @@ export default function MenuEngineeringPro() {
                         <TableRow 
                           key={item.id} 
                           className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => { setSelectedItem(item); setShowRecipeDialog(true); }}
+                          onClick={() => handleSelectItem(item)}
                         >
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
@@ -1290,8 +1344,7 @@ export default function MenuEngineeringPro() {
                                   onClick={() => {
                                     const menuItem = menuItems.find(i => i.item_name === item);
                                     if (menuItem) {
-                                      setSelectedItem(menuItem);
-                                      setShowRecipeDialog(true);
+                                      handleSelectItem(menuItem);
                                     }
                                   }}
                                 >
@@ -1673,51 +1726,13 @@ export default function MenuEngineeringPro() {
                         </div>
                       </div>
 
-                      {/* Ingredients - Mobile Cards */}
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm flex items-center gap-2">
-                            <Package className="h-4 w-4" />
-                            Ingredients ({(selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || []).length})
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                          {(selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || []).map((ing, idx) => {
-                            const crossUse = getCrossUtilization[ing.name];
-                            const isShared = crossUse && crossUse.items.length > 1;
-                            
-                            return (
-                              <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                                <div className="flex-1">
-                                  <p className="font-medium text-sm">{ing.name}</p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs text-muted-foreground">{ing.amount} {ing.unit}</span>
-                                    <span className="text-xs text-muted-foreground">•</span>
-                                    <span className="text-xs font-medium">${ing.cost.toFixed(2)}</span>
-                                  </div>
-                                </div>
-                                {isShared ? (
-                                  <Badge variant="outline" className="text-green-600 border-green-500/30 bg-green-500/10 text-xs">
-                                    <Link2 className="h-3 w-3 mr-1" />
-                                    {crossUse.items.length}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-500/10 text-xs">
-                                    Single
-                                  </Badge>
-                                )}
-                              </div>
-                            );
-                          })}
-                          <div className="flex justify-between items-center pt-3 border-t mt-3">
-                            <span className="text-sm text-muted-foreground">Total Cost:</span>
-                            <span className="text-lg font-bold">
-                              ${(selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || [])
-                                .reduce((sum, ing) => sum + ing.cost, 0).toFixed(2)}
-                            </span>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      {/* Editable Ingredients - Mobile */}
+                      <EditableRecipeIngredients
+                        ingredients={editableIngredients}
+                        onIngredientsChange={handleIngredientsChange}
+                        currency={currency}
+                        onCurrencyChange={setCurrency}
+                      />
 
                       {/* Cross-Utilized Products - Mobile */}
                       <Card>
@@ -1854,75 +1869,13 @@ export default function MenuEngineeringPro() {
                       </CardContent>
                     </Card>
 
-                    {/* Ingredients List */}
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <Package className="h-4 w-4" />
-                          Ingredients
-                          <InfoTooltip content="List of all ingredients used in this item with their costs and cross-utilization status" />
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Ingredient</TableHead>
-                              <TableHead className="text-right">Amount</TableHead>
-                              <TableHead className="text-right">Cost</TableHead>
-                              <TableHead>Cross-Use</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {(selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || []).map((ing, idx) => {
-                              const crossUse = getCrossUtilization[ing.name];
-                              const isShared = crossUse && crossUse.items.length > 1;
-                              const otherItems = crossUse ? crossUse.items.filter(i => i !== selectedItem.item_name) : [];
-                              
-                              return (
-                                <TableRow key={idx}>
-                                  <TableCell className="font-medium">{ing.name}</TableCell>
-                                  <TableCell className="text-right">{ing.amount} {ing.unit}</TableCell>
-                                  <TableCell className="text-right">${ing.cost.toFixed(2)}</TableCell>
-                                  <TableCell>
-                                    {isShared ? (
-                                      <Tooltip>
-                                        <TooltipTrigger>
-                                          <Badge variant="outline" className="text-green-600 border-green-500/30 bg-green-500/10">
-                                            <Link2 className="h-3 w-3 mr-1" />
-                                            {crossUse.items.length} items
-                                          </Badge>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p className="font-medium mb-1">Also used in:</p>
-                                          <ul className="text-xs">
-                                            {otherItems.map((item, i) => (
-                                              <li key={i}>• {item}</li>
-                                            ))}
-                                          </ul>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    ) : (
-                                      <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-500/10">
-                                        Single use
-                                      </Badge>
-                                    )}
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                        
-                        <div className="mt-3 pt-3 border-t flex justify-between text-sm">
-                          <span className="text-muted-foreground">Total Ingredient Cost:</span>
-                          <span className="font-bold">
-                            ${(selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || [])
-                              .reduce((sum, ing) => sum + ing.cost, 0).toFixed(2)}
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    {/* Editable Ingredients - Desktop */}
+                    <EditableRecipeIngredients
+                      ingredients={editableIngredients}
+                      onIngredientsChange={handleIngredientsChange}
+                      currency={currency}
+                      onCurrencyChange={setCurrency}
+                    />
 
                     {/* Cross-Utilized Products */}
                     <Card>
