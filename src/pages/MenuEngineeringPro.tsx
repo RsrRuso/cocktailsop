@@ -25,6 +25,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Educational tooltips for all menu engineering terms
 const TOOLTIPS = {
@@ -308,10 +310,213 @@ export default function MenuEngineeringPro() {
     }
   };
 
-  // Export analysis to PDF
+  // Export analysis to PDF based on active tab
   const exportAnalysis = () => {
-    toast.success("Exporting analysis report...");
-    // Implementation would use jsPDF similar to other reports
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const now = new Date().toLocaleDateString();
+    
+    // Header
+    doc.setFillColor(30, 30, 30);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Menu Engineering Pro', pageWidth / 2, 15, { align: 'center' });
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${activeTab === 'matrix' ? 'BCG Matrix' : activeTab === 'analysis' ? 'Analysis Report' : 'AI Insights'} - ${now}`, pageWidth / 2, 25, { align: 'center' });
+    
+    doc.setTextColor(0, 0, 0);
+    let yPos = 45;
+
+    if (activeTab === 'matrix') {
+      // Matrix Summary
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('BCG Matrix Summary', 14, yPos);
+      yPos += 10;
+      
+      // Summary cards data
+      const summaryData = [
+        ['Category', 'Count', 'Description', 'Strategy'],
+        ['⭐ Stars', String(summary.stars), 'High profit, High popularity', 'Maintain & feature prominently'],
+        ['🐴 Plowhorses', String(summary.plowhorses), 'Low profit, High popularity', 'Engineer costs or increase price'],
+        ['🧩 Puzzles', String(summary.puzzles), 'High profit, Low popularity', 'Increase visibility & upselling'],
+        ['🐕 Dogs', String(summary.dogs), 'Low profit, Low popularity', 'Consider removal or overhaul']
+      ];
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [summaryData[0]],
+        body: summaryData.slice(1),
+        theme: 'striped',
+        headStyles: { fillColor: [60, 60, 60] },
+        columnStyles: { 0: { fontStyle: 'bold' } }
+      });
+      
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+      
+      // Items by category
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Items by Category', 14, yPos);
+      yPos += 8;
+      
+      const matrixItems = menuItems.map(item => [
+        item.item_name,
+        item.category,
+        `$${item.contribution_margin.toFixed(2)}`,
+        `${item.sales_mix_pct.toFixed(1)}%`,
+        item.matrix_category.charAt(0).toUpperCase() + item.matrix_category.slice(1)
+      ]);
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Item', 'Category', 'CM', 'Mix %', 'Matrix']],
+        body: matrixItems,
+        theme: 'striped',
+        headStyles: { fillColor: [60, 60, 60] },
+        styles: { fontSize: 9 }
+      });
+      
+    } else if (activeTab === 'analysis') {
+      // Analysis Report
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Menu Analysis Report', 14, yPos);
+      yPos += 10;
+      
+      // Filtered summary stats
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Total Revenue: $${filteredSummary.totalRevenue.toLocaleString()}`, 14, yPos);
+      doc.text(`Avg Food Cost: ${filteredSummary.avgFoodCostPct.toFixed(1)}%`, 80, yPos);
+      doc.text(`Avg CM: $${filteredSummary.avgContributionMargin.toFixed(2)}`, 140, yPos);
+      yPos += 8;
+      doc.text(`Items: ${filteredSummary.totalItems} | Stars: ${filteredSummary.stars} | Plowhorses: ${filteredSummary.plowhorses} | Puzzles: ${filteredSummary.puzzles} | Dogs: ${filteredSummary.dogs}`, 14, yPos);
+      yPos += 12;
+      
+      // Filtered items table
+      const analysisItems = filteredItems.map(item => [
+        item.item_name,
+        item.category,
+        String(item.units_sold),
+        `$${item.revenue.toFixed(2)}`,
+        `${item.food_cost_pct.toFixed(1)}%`,
+        `$${item.contribution_margin.toFixed(2)}`,
+        `${item.sales_mix_pct.toFixed(1)}%`,
+        item.matrix_category.charAt(0).toUpperCase() + item.matrix_category.slice(1)
+      ]);
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Item', 'Category', 'Units', 'Revenue', 'FC%', 'CM', 'Mix%', 'Matrix']],
+        body: analysisItems,
+        theme: 'striped',
+        headStyles: { fillColor: [60, 60, 60] },
+        styles: { fontSize: 8 },
+        columnStyles: { 
+          0: { cellWidth: 35 },
+          4: { halign: 'right' },
+          5: { halign: 'right' },
+          6: { halign: 'right' }
+        }
+      });
+      
+    } else if (activeTab === 'insights') {
+      // AI Insights Report
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('AI-Powered Menu Recommendations', 14, yPos);
+      yPos += 10;
+      
+      // Overall stats
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Total Items: ${summary.totalItems} | Revenue: $${summary.totalRevenue.toLocaleString()} | Avg FC: ${summary.avgFoodCostPct.toFixed(1)}%`, 14, yPos);
+      yPos += 12;
+      
+      // Recommendations by category
+      const categories = [
+        { name: 'Stars', items: menuItems.filter(i => i.matrix_category === 'star'), action: 'Maintain & Feature' },
+        { name: 'Plowhorses', items: menuItems.filter(i => i.matrix_category === 'plowhorse'), action: 'Improve Margins' },
+        { name: 'Puzzles', items: menuItems.filter(i => i.matrix_category === 'puzzle'), action: 'Boost Visibility' },
+        { name: 'Dogs', items: menuItems.filter(i => i.matrix_category === 'dog'), action: 'Review/Remove' }
+      ];
+      
+      categories.forEach(cat => {
+        if (cat.items.length > 0) {
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${cat.name} (${cat.items.length}) - ${cat.action}`, 14, yPos);
+          yPos += 6;
+          
+          const catItems = cat.items.map(item => [
+            item.item_name,
+            item.category,
+            `$${item.contribution_margin.toFixed(2)}`,
+            `${item.food_cost_pct.toFixed(1)}%`,
+            `${item.sales_mix_pct.toFixed(1)}%`
+          ]);
+          
+          autoTable(doc, {
+            startY: yPos,
+            head: [['Item', 'Category', 'CM', 'FC%', 'Mix%']],
+            body: catItems,
+            theme: 'grid',
+            headStyles: { fillColor: [80, 80, 80], fontSize: 8 },
+            styles: { fontSize: 8 },
+            margin: { left: 14 }
+          });
+          
+          yPos = (doc as any).lastAutoTable.finalY + 10;
+          
+          // Check for page break
+          if (yPos > 260) {
+            doc.addPage();
+            yPos = 20;
+          }
+        }
+      });
+      
+      // High food cost items
+      const highFCItems = menuItems.filter(i => i.food_cost_pct > 35);
+      if (highFCItems.length > 0) {
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Price Optimization Opportunities (FC > 35%)`, 14, yPos);
+        yPos += 6;
+        
+        const priceItems = highFCItems.map(item => [
+          item.item_name,
+          `$${item.selling_price.toFixed(2)}`,
+          `${item.food_cost_pct.toFixed(1)}%`,
+          `$${(item.food_cost / 0.30).toFixed(2)}`
+        ]);
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Item', 'Current Price', 'FC%', 'Suggested Price (30% FC)']],
+          body: priceItems,
+          theme: 'grid',
+          headStyles: { fillColor: [180, 100, 50], fontSize: 8 },
+          styles: { fontSize: 8 }
+        });
+      }
+    }
+    
+    // Footer
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      doc.text(`SpecVerse Menu Engineering Pro | Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+    }
+    
+    doc.save(`menu-engineering-${activeTab}-${now.replace(/\//g, '-')}.pdf`);
+    toast.success(`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} exported successfully!`);
   };
 
   return (
