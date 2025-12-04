@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1624,12 +1624,12 @@ export default function MenuEngineeringPro() {
           </TabsContent>
         </Tabs>
 
-        {/* Recipe Detail - Mobile Drawer / Desktop Dialog */}
+        {/* Recipe Detail - Mobile Sheet / Desktop Dialog */}
         {selectedItem && (
           <>
-            {/* Mobile: Full-screen Drawer */}
-            <Drawer open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
-              <DrawerContent className="h-[95vh] md:hidden">
+            {/* Mobile: Full-screen Sheet */}
+            <Sheet open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
+              <SheetContent side="bottom" className="h-[95vh] md:hidden p-0">
                 <div className="flex flex-col h-full">
                   {/* Mobile Header */}
                   <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-10">
@@ -1685,7 +1685,6 @@ export default function MenuEngineeringPro() {
                           {(selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || []).map((ing, idx) => {
                             const crossUse = getCrossUtilization[ing.name];
                             const isShared = crossUse && crossUse.items.length > 1;
-                            const otherItems = crossUse ? crossUse.items.filter(i => i !== selectedItem.item_name) : [];
                             
                             return (
                               <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
@@ -1782,11 +1781,9 @@ export default function MenuEngineeringPro() {
                         <CardHeader className="pb-2">
                           <CardTitle className="text-sm flex items-center gap-2">
                             <div className="relative w-5 h-5">
-                              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-purple-500 to-pink-500 animate-spin" style={{ animationDuration: '3s' }} />
-                              <div className="absolute inset-[2px] rounded-full bg-background" />
-                              <div className="absolute inset-[4px] rounded-full bg-gradient-to-tr from-cyan-400 via-primary to-amber-400 animate-spin" style={{ animationDuration: '2s', animationDirection: 'reverse' }} />
-                              <div className="absolute inset-[6px] rounded-full bg-background" />
-                              <div className="absolute inset-[8px] rounded-full bg-gradient-to-r from-primary to-pink-500 animate-pulse" />
+                              <div className="absolute inset-0 border border-white/80" style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }} />
+                              <div className="absolute inset-[3px] border border-white/60" style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }} />
+                              <div className="absolute inset-[6px] bg-white/80" style={{ clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" }} />
                             </div>
                             AI Suggestions
                           </CardTitle>
@@ -1811,8 +1808,8 @@ export default function MenuEngineeringPro() {
                     </div>
                   </ScrollArea>
                 </div>
-              </DrawerContent>
-            </Drawer>
+              </SheetContent>
+            </Sheet>
 
             {/* Desktop: Standard Dialog */}
             <Dialog open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
@@ -1994,11 +1991,9 @@ export default function MenuEngineeringPro() {
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm flex items-center gap-2">
                           <div className="relative w-5 h-5">
-                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary via-purple-500 to-pink-500 animate-spin" style={{ animationDuration: '3s' }} />
-                            <div className="absolute inset-[2px] rounded-full bg-background" />
-                            <div className="absolute inset-[4px] rounded-full bg-gradient-to-tr from-cyan-400 via-primary to-amber-400 animate-spin" style={{ animationDuration: '2s', animationDirection: 'reverse' }} />
-                            <div className="absolute inset-[6px] rounded-full bg-background" />
-                            <div className="absolute inset-[8px] rounded-full bg-gradient-to-r from-primary to-pink-500 animate-pulse" />
+                            <div className="absolute inset-0 border border-white/80" style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }} />
+                            <div className="absolute inset-[3px] border border-white/60" style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }} />
+                            <div className="absolute inset-[6px] bg-white/80" style={{ clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" }} />
                           </div>
                           AI Optimization Suggestions
                           <InfoTooltip content="Smart recommendations based on ingredient usage, cross-utilization patterns, and menu engineering best practices" />
