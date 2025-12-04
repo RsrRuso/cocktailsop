@@ -130,6 +130,17 @@ const MatrixAI = lazy(() => import("@/pages/MatrixAI"));
 const LiveMap = lazy(() => import("@/pages/LiveMap"));
 const VenueDetail = lazy(() => import("@/pages/VenueDetail"));
 const Automations = lazy(() => import("@/pages/Automations"));
+const FinancialReportsHub = lazy(() => import("@/pages/FinancialReportsHub"));
+const ProfitLossReport = lazy(() => import("@/pages/reports/ProfitLossReport"));
+const DailySalesReport = lazy(() => import("@/pages/reports/DailySalesReport"));
+const CashFlowReport = lazy(() => import("@/pages/reports/CashFlowReport"));
+const COGSReport = lazy(() => import("@/pages/reports/COGSReport"));
+const LaborCostReport = lazy(() => import("@/pages/reports/LaborCostReport"));
+const BudgetActualReport = lazy(() => import("@/pages/reports/BudgetActualReport"));
+const StockMovementReport = lazy(() => import("@/pages/reports/StockMovementReport"));
+const RevenueByCategory = lazy(() => import("@/pages/reports/RevenueByCategory"));
+const BreakevenReport = lazy(() => import("@/pages/reports/BreakevenReport"));
+const DailyOpsReport = lazy(() => import("@/pages/reports/DailyOpsReport"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -250,6 +261,17 @@ const AppContent = () => {
           <Route path="/reposted" element={<Reposted />} />
           <Route path="/update-music-library" element={<UpdateMusicLibrary />} />
           <Route path="/automations" element={<Automations />} />
+          <Route path="/financial-reports" element={<FinancialReportsHub />} />
+          <Route path="/reports/profit-loss" element={<ProfitLossReport />} />
+          <Route path="/reports/daily-sales" element={<DailySalesReport />} />
+          <Route path="/reports/cash-flow" element={<CashFlowReport />} />
+          <Route path="/reports/cogs" element={<COGSReport />} />
+          <Route path="/reports/labor-cost" element={<LaborCostReport />} />
+          <Route path="/reports/budget-actual" element={<BudgetActualReport />} />
+          <Route path="/reports/stock-movement" element={<StockMovementReport />} />
+          <Route path="/reports/revenue-category" element={<RevenueByCategory />} />
+          <Route path="/reports/breakeven" element={<BreakevenReport />} />
+          <Route path="/reports/daily-ops" element={<DailyOpsReport />} />
           <Route path="/music" element={<Music />} />
           <Route path="/introduction" element={<Introduction />} />
           <Route path="/chat" element={<Chat />} />
