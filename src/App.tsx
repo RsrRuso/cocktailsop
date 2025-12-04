@@ -59,6 +59,7 @@ const CostCalculator = lazy(() => import("./pages/CostCalculator"));
 const PourCostAnalysis = lazy(() => import("./pages/PourCostAnalysis"));
 const WastageTracker = lazy(() => import("./pages/WastageTracker"));
 const MenuEngineering = lazy(() => import("./pages/MenuEngineering"));
+const MenuEngineeringPro = lazy(() => import("./pages/MenuEngineeringPro"));
 const StockAudit = lazy(() => import("./pages/StockAudit"));
 const YieldCalculator = lazy(() => import("./pages/YieldCalculator"));
 const SalesReport = lazy(() => import("./pages/SalesReport"));
@@ -236,6 +237,7 @@ const AppContent = () => {
           <Route path="/pour-cost-analysis" element={<PourCostAnalysis />} />
           <Route path="/wastage-tracker" element={<WastageTracker />} />
           <Route path="/menu-engineering" element={<MenuEngineering />} />
+          <Route path="/menu-engineering-pro" element={<MenuEngineeringPro />} />
           <Route path="/stock-audit" element={<StockAudit />} />
           <Route path="/yield-calculator" element={<YieldCalculator />} />
           <Route path="/sales-report" element={<SalesReport />} />
