@@ -1,8 +1,6 @@
-import { Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useHaptic } from "@/hooks/useHaptic";
-import brainIcon from "@/assets/brain-icon.png";
 
 export const MatrixAIButton = () => {
   const navigate = useNavigate();
@@ -14,154 +12,149 @@ export const MatrixAIButton = () => {
         lightTap();
         navigate("/matrix-ai");
       }}
-      className="relative group bg-transparent"
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      className="relative group bg-transparent w-14 h-14 flex items-center justify-center"
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
     >
-      {/* Brain icon - 3D bright breathing with round light and rotation */}
-      <div className="relative">
-        {/* Breathing light glow backdrop */}
+      {/* Outer glow ring */}
+      <motion.div
+        className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/30 via-accent/30 to-primary/30 blur-xl"
+        animate={{
+          scale: [1, 1.3, 1],
+          opacity: [0.5, 0.8, 0.5],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+
+      {/* 3D Rotating Engine Container */}
+      <div className="relative w-12 h-12" style={{ perspective: "200px" }}>
+        {/* Inner rotating cube/engine */}
         <motion.div
-          className="absolute inset-0 rounded-full bg-gradient-radial from-primary/40 via-accent/30 to-transparent blur-xl"
-          animate={{
-            scale: [1.2, 1.8, 1.2],
-            opacity: [0.6, 0.9, 0.6],
-          }}
-          transition={{
-            duration: 2.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        
-        {/* 3D depth layers */}
-        <img 
-          src={brainIcon} 
-          alt="MATRIX AI Brain"
-          className="w-12 h-12 absolute top-[4px] left-[4px] rounded-full opacity-30 blur-[2px] z-0"
-        />
-        <img 
-          src={brainIcon} 
-          alt="MATRIX AI Brain"
-          className="w-12 h-12 absolute top-[2px] left-[2px] rounded-full opacity-50 blur-[1px] z-[1]"
-        />
-        
-        {/* Main brain icon with intense glow, breathing, and rotation */}
-        <motion.img 
-          src={brainIcon} 
-          alt="MATRIX AI Brain"
-          className="w-12 h-12 relative z-10 rounded-full drop-shadow-[0_0_24px_rgba(59,130,246,1)] shadow-[0_8px_32px_rgba(59,130,246,0.9),0_0_48px_rgba(147,51,234,0.7)]"
-          animate={{
-            scale: [1, 1.15, 1],
-            rotateY: [0, 15, 0, -15, 0],
-            filter: [
-              "brightness(1.2) drop-shadow(0 0 24px rgba(59,130,246,1))",
-              "brightness(1.5) drop-shadow(0 0 36px rgba(147,51,234,1))",
-              "brightness(1.2) drop-shadow(0 0 24px rgba(59,130,246,1))"
-            ]
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+          className="absolute inset-0"
           style={{ transformStyle: "preserve-3d" }}
-        />
-        
-        {/* Sparkle effect */}
-        <motion.div
-          className="absolute -top-1 -right-1"
           animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 180, 360],
+            rotateY: [0, 360],
+            rotateX: [0, 15, 0, -15, 0],
           }}
           transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
+            rotateY: { duration: 4, repeat: Infinity, ease: "linear" },
+            rotateX: { duration: 2, repeat: Infinity, ease: "easeInOut" },
           }}
         >
-          <Sparkles className="w-3 h-3 text-accent" />
+          {/* Front face - Infinity symbol */}
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ transform: "translateZ(12px)" }}
+          >
+            <svg viewBox="0 0 48 24" className="w-10 h-5 drop-shadow-[0_0_12px_rgba(59,130,246,0.9)]">
+              <motion.path
+                d="M12 12c0-3.3-2.7-6-6-6s-6 2.7-6 6 2.7 6 6 6c2.1 0 4-1.1 5.1-2.7L24 12l6.9 3.3c1.1 1.6 3 2.7 5.1 2.7 3.3 0 6-2.7 6-6s-2.7-6-6-6-6 2.7-6 6c0 .9.2 1.8.6 2.5L24 12l-6.6-2.5c.4-.7.6-1.6.6-2.5z"
+                fill="none"
+                stroke="url(#infinityGradient)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                animate={{
+                  pathLength: [0, 1, 1],
+                  opacity: [0.8, 1, 0.8],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+              <defs>
+                <linearGradient id="infinityGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" />
+                  <stop offset="50%" stopColor="hsl(var(--accent))" />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </motion.div>
+
+          {/* Back face */}
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ transform: "translateZ(-12px) rotateY(180deg)" }}
+          >
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/60 to-accent/60 blur-[1px]" />
+          </motion.div>
+
+          {/* Top face */}
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ transform: "rotateX(90deg) translateZ(12px)" }}
+          >
+            <div className="w-8 h-6 rounded bg-gradient-to-b from-primary/50 to-transparent" />
+          </motion.div>
+
+          {/* Bottom face */}
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ transform: "rotateX(-90deg) translateZ(12px)" }}
+          >
+            <div className="w-8 h-6 rounded bg-gradient-to-t from-accent/50 to-transparent" />
+          </motion.div>
         </motion.div>
 
-        {/* Breathing round light rings - Multiple layers */}
-        <motion.div
-          className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 blur-md"
-          animate={{
-            scale: [1, 1.4, 1],
-            opacity: [0.7, 0.3, 0.7],
-          }}
-          transition={{
-            duration: 2.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute inset-0 rounded-full border-2 border-primary/40"
-          animate={{
-            scale: [1, 1.6, 1],
-            opacity: [0.6, 0, 0.6],
-          }}
-          transition={{
-            duration: 2.5,
-            repeat: Infinity,
-            ease: "easeOut",
-          }}
-        />
-        <motion.div
-          className="absolute inset-0 rounded-full border-2 border-accent/40"
-          animate={{
-            scale: [1, 2, 1],
-            opacity: [0.4, 0, 0.4],
-          }}
-          transition={{
-            duration: 2.5,
-            repeat: Infinity,
-            ease: "easeOut",
-            delay: 0.6,
-          }}
-        />
-        
-        {/* Outer breathing glow circle */}
-        <motion.div
-          className="absolute inset-0 rounded-full shadow-[0_0_40px_8px_rgba(59,130,246,0.5)]"
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.8, 0.4, 0.8],
-          }}
-          transition={{
-            duration: 2.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      </div>
-
-      {/* Floating particles effect */}
-      <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+        {/* Orbiting particles */}
         {[...Array(3)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 bg-primary/50 rounded-full"
+            className="absolute w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.8)]"
             style={{
-              left: `${30 + i * 20}%`,
-              bottom: 0,
+              top: "50%",
+              left: "50%",
+              marginTop: "-4px",
+              marginLeft: "-4px",
             }}
             animate={{
-              y: [-40, -60],
-              opacity: [0, 1, 0],
-              scale: [0, 1, 0],
+              x: [0, 20 * Math.cos((i * 2 * Math.PI) / 3), 0, -20 * Math.cos((i * 2 * Math.PI) / 3), 0],
+              y: [0, 20 * Math.sin((i * 2 * Math.PI) / 3), 0, -20 * Math.sin((i * 2 * Math.PI) / 3), 0],
+              scale: [1, 1.2, 1, 0.8, 1],
+              opacity: [1, 0.8, 1, 0.8, 1],
             }}
             transition={{
               duration: 2,
               repeat: Infinity,
-              delay: i * 0.4,
-              ease: "easeOut",
+              delay: i * 0.3,
+              ease: "easeInOut",
             }}
           />
         ))}
       </div>
+
+      {/* Pulsing rings */}
+      <motion.div
+        className="absolute inset-0 rounded-full border border-primary/40"
+        animate={{
+          scale: [1, 1.5],
+          opacity: [0.6, 0],
+        }}
+        transition={{
+          duration: 1.5,
+          repeat: Infinity,
+          ease: "easeOut",
+        }}
+      />
+      <motion.div
+        className="absolute inset-0 rounded-full border border-accent/40"
+        animate={{
+          scale: [1, 1.8],
+          opacity: [0.4, 0],
+        }}
+        transition={{
+          duration: 1.5,
+          repeat: Infinity,
+          ease: "easeOut",
+          delay: 0.5,
+        }}
+      />
     </motion.button>
   );
 };
