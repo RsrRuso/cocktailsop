@@ -18,10 +18,11 @@ export const MatrixAIButton = () => {
     >
       {/* Outer glow */}
       <motion.div
-        className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/40 via-purple-500/40 to-cyan-400/40 blur-xl"
+        className="absolute inset-0 bg-white/20 blur-xl"
+        style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }}
         animate={{
-          scale: [1, 1.4, 1],
-          opacity: [0.4, 0.7, 0.4],
+          scale: [1, 1.3, 1],
+          opacity: [0.3, 0.6, 0.3],
         }}
         transition={{
           duration: 3,
@@ -32,64 +33,45 @@ export const MatrixAIButton = () => {
 
       {/* Fractal Container */}
       <div className="relative w-12 h-12">
-        {/* Outermost ring - slow spin */}
+        {/* Outermost hexagon - slow spin */}
         <motion.div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background: "conic-gradient(from 0deg, hsl(var(--primary)), hsl(280, 80%, 60%), hsl(190, 90%, 50%), hsl(var(--primary)))",
-          }}
+          className="absolute inset-0 border-2 border-white/80"
+          style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }}
           animate={{ rotate: 360 }}
-          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
         />
         
-        {/* First gap ring */}
-        <div className="absolute inset-[3px] rounded-full bg-background" />
-        
-        {/* Second ring - reverse spin */}
+        {/* Second hexagon - reverse spin */}
         <motion.div
-          className="absolute inset-[5px] rounded-full"
-          style={{
-            background: "conic-gradient(from 180deg, hsl(var(--accent)), hsl(330, 80%, 60%), hsl(45, 90%, 55%), hsl(var(--accent)))",
-          }}
+          className="absolute inset-[4px] border-2 border-white/60"
+          style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }}
           animate={{ rotate: -360 }}
-          transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
         />
         
-        {/* Second gap ring */}
-        <div className="absolute inset-[8px] rounded-full bg-background" />
-        
-        {/* Third ring - faster spin */}
+        {/* Third hexagon - faster spin */}
         <motion.div
-          className="absolute inset-[10px] rounded-full"
-          style={{
-            background: "conic-gradient(from 90deg, hsl(var(--primary)), hsl(200, 90%, 60%), hsl(var(--primary)))",
-          }}
+          className="absolute inset-[8px] border-2 border-white/90"
+          style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }}
           animate={{ rotate: 360 }}
-          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
         />
         
-        {/* Third gap ring */}
-        <div className="absolute inset-[13px] rounded-full bg-background" />
-        
-        {/* Fourth ring - reverse faster */}
+        {/* Fourth hexagon - reverse faster */}
         <motion.div
-          className="absolute inset-[15px] rounded-full"
-          style={{
-            background: "conic-gradient(from 270deg, hsl(280, 80%, 60%), hsl(var(--accent)), hsl(280, 80%, 60%))",
-          }}
+          className="absolute inset-[12px] border-2 border-white/70"
+          style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }}
           animate={{ rotate: -360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
         />
         
-        {/* Fourth gap ring */}
-        <div className="absolute inset-[17px] rounded-full bg-background" />
-        
-        {/* Core - pulsing */}
+        {/* Inner diamond - pulsing */}
         <motion.div
-          className="absolute inset-[19px] rounded-full bg-gradient-to-br from-primary via-purple-500 to-cyan-400"
+          className="absolute inset-[16px] bg-white/90"
+          style={{ clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" }}
           animate={{
-            scale: [1, 1.15, 1],
-            opacity: [0.9, 1, 0.9],
+            scale: [1, 1.2, 1],
+            opacity: [0.8, 1, 0.8],
           }}
           transition={{
             duration: 1.5,
@@ -97,95 +79,63 @@ export const MatrixAIButton = () => {
             ease: "easeInOut",
           }}
         />
-        
-        {/* Core inner glow */}
-        <motion.div
-          className="absolute inset-[21px] rounded-full bg-background/80"
-          animate={{
-            opacity: [0.6, 0.9, 0.6],
-          }}
-          transition={{
-            duration: 1,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        
-        {/* Center dot */}
-        <motion.div
-          className="absolute inset-[22px] rounded-full bg-gradient-to-r from-primary to-accent"
-          animate={{
-            scale: [1, 1.3, 1],
-          }}
-          transition={{
-            duration: 0.8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
 
-        {/* Floating orbital dots */}
-        {[0, 1, 2, 3].map((i) => (
+        {/* Corner triangles */}
+        {[0, 60, 120, 180, 240, 300].map((angle, i) => (
           <motion.div
             key={i}
-            className="absolute w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]"
+            className="absolute w-1.5 h-1.5 bg-white"
             style={{
               top: "50%",
               left: "50%",
               marginTop: "-3px",
               marginLeft: "-3px",
+              clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)",
             }}
             animate={{
               x: [
-                24 * Math.cos((i * Math.PI) / 2),
-                24 * Math.cos((i * Math.PI) / 2 + Math.PI / 2),
-                24 * Math.cos((i * Math.PI) / 2 + Math.PI),
-                24 * Math.cos((i * Math.PI) / 2 + (3 * Math.PI) / 2),
-                24 * Math.cos((i * Math.PI) / 2),
+                22 * Math.cos((angle * Math.PI) / 180),
+                22 * Math.cos(((angle + 60) * Math.PI) / 180),
+                22 * Math.cos(((angle + 120) * Math.PI) / 180),
+                22 * Math.cos(((angle + 180) * Math.PI) / 180),
+                22 * Math.cos(((angle + 240) * Math.PI) / 180),
+                22 * Math.cos(((angle + 300) * Math.PI) / 180),
+                22 * Math.cos((angle * Math.PI) / 180),
               ],
               y: [
-                24 * Math.sin((i * Math.PI) / 2),
-                24 * Math.sin((i * Math.PI) / 2 + Math.PI / 2),
-                24 * Math.sin((i * Math.PI) / 2 + Math.PI),
-                24 * Math.sin((i * Math.PI) / 2 + (3 * Math.PI) / 2),
-                24 * Math.sin((i * Math.PI) / 2),
+                22 * Math.sin((angle * Math.PI) / 180),
+                22 * Math.sin(((angle + 60) * Math.PI) / 180),
+                22 * Math.sin(((angle + 120) * Math.PI) / 180),
+                22 * Math.sin(((angle + 180) * Math.PI) / 180),
+                22 * Math.sin(((angle + 240) * Math.PI) / 180),
+                22 * Math.sin(((angle + 300) * Math.PI) / 180),
+                22 * Math.sin((angle * Math.PI) / 180),
               ],
-              opacity: [1, 0.6, 1, 0.6, 1],
+              rotate: [0, 360],
+              opacity: [1, 0.5, 1, 0.5, 1, 0.5, 1],
             }}
             transition={{
-              duration: 4,
+              duration: 6,
               repeat: Infinity,
               ease: "linear",
-              delay: i * 0.2,
+              delay: i * 0.15,
             }}
           />
         ))}
       </div>
 
-      {/* Expanding pulse rings */}
+      {/* Expanding hexagon pulse */}
       <motion.div
-        className="absolute inset-0 rounded-full border-2 border-primary/50"
+        className="absolute inset-0 border border-white/50"
+        style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }}
         animate={{
-          scale: [1, 1.6],
+          scale: [1, 1.8],
           opacity: [0.5, 0],
         }}
         transition={{
           duration: 2,
           repeat: Infinity,
           ease: "easeOut",
-        }}
-      />
-      <motion.div
-        className="absolute inset-0 rounded-full border border-accent/40"
-        animate={{
-          scale: [1, 2],
-          opacity: [0.3, 0],
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeOut",
-          delay: 0.7,
         }}
       />
     </motion.button>
