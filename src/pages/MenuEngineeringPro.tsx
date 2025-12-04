@@ -15,8 +15,9 @@ import {
   Upload, FileSpreadsheet, Star, TrendingUp, TrendingDown, 
   AlertTriangle, Target, DollarSign, BarChart3, Lightbulb,
   Download, RefreshCw, Filter, Search, ChevronRight, Sparkles,
-  ArrowUpRight, ArrowDownRight, PieChart, Activity
+  ArrowUpRight, ArrowDownRight, PieChart, Activity, ArrowLeft
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,6 +70,7 @@ const MICROS_FIELD_MAP: Record<string, string> = {
 };
 
 export default function MenuEngineeringPro() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("import");
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -250,35 +252,44 @@ export default function MenuEngineeringPro() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       <TopNav />
       
-      <main className="container max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <PieChart className="h-6 w-6 text-primary" />
-              Menu Engineering Pro
+      <main className="container max-w-7xl mx-auto px-4 pt-20 pb-6 space-y-4">
+        {/* Header with Back Button */}
+        <div className="flex items-center gap-3 mb-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate('/ops-tools')}
+            className="shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2 truncate">
+              <PieChart className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" />
+              <span className="truncate">Menu Engineering Pro</span>
             </h1>
-            <p className="text-muted-foreground text-sm">
-              Optimize profitability with Micros Oracle data analysis
+            <p className="text-muted-foreground text-xs md:text-sm truncate">
+              BCG Matrix analysis with Micros Oracle import
             </p>
           </div>
-          
-          {menuItems.length > 0 && (
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setMenuItems([])}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Reset
-              </Button>
-              <Button size="sm" onClick={exportAnalysis}>
-                <Download className="h-4 w-4 mr-2" />
-                Export Report
-              </Button>
-            </div>
-          )}
         </div>
+
+        {/* Action Buttons */}
+        {menuItems.length > 0 && (
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => setMenuItems([])}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reset
+            </Button>
+            <Button size="sm" onClick={exportAnalysis}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-4 w-full max-w-md">
