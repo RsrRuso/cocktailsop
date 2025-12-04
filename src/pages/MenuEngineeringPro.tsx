@@ -462,7 +462,7 @@ export default function MenuEngineeringPro() {
     doc.text('Menu Engineering Pro', pageWidth / 2, 15, { align: 'center' });
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text(`${activeTab === 'matrix' ? 'BCG Matrix' : activeTab === 'analysis' ? 'Analysis Report' : 'AI Insights'} - ${now}`, pageWidth / 2, 25, { align: 'center' });
+    doc.text(`${activeTab === 'matrix' ? 'BCG Matrix' : activeTab === 'analysis' ? 'Analysis Report' : activeTab === 'ingredients' ? 'Ingredient Cross-Utilization' : 'AI Insights'} - ${now}`, pageWidth / 2, 25, { align: 'center' });
     
     doc.setTextColor(0, 0, 0);
     let yPos = 45;
@@ -574,6 +574,62 @@ export default function MenuEngineeringPro() {
           6: { halign: 'right' }
         }
       });
+      
+    } else if (activeTab === 'ingredients') {
+      // Ingredients Cross-Utilization Report
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Ingredient Cross-Utilization Report', 14, yPos);
+      yPos += 10;
+      
+      // Build ingredient data
+      const ingredientData: [string, string, string, string][] = [];
+      Object.entries(getCrossUtilization).forEach(([ingName, data]) => {
+        ingredientData.push([
+          ingName,
+          String(data.items.length),
+          data.items.join(', '),
+          data.items.length > 2 ? 'Bulk Purchase' : data.items.length === 1 ? 'Single Use' : 'Shared'
+        ]);
+      });
+      
+      // Sort by usage count (descending)
+      ingredientData.sort((a, b) => parseInt(b[1]) - parseInt(a[1]));
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Ingredient', 'Used In', 'Menu Items', 'Status']],
+        body: ingredientData,
+        theme: 'striped',
+        headStyles: { fillColor: [60, 60, 60] },
+        styles: { fontSize: 8 },
+        columnStyles: { 
+          0: { cellWidth: 40 },
+          1: { cellWidth: 20, halign: 'center' },
+          2: { cellWidth: 90 },
+          3: { cellWidth: 30 }
+        },
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.column.index === 3) {
+            const text = String(data.cell.raw);
+            if (text === 'Bulk Purchase') {
+              data.cell.styles.textColor = [50, 150, 50]; // Green
+            } else if (text === 'Single Use') {
+              data.cell.styles.textColor = [200, 100, 50]; // Orange
+            }
+          }
+        }
+      });
+      
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+      
+      // Summary stats
+      const totalIngredients = Object.keys(getCrossUtilization).length;
+      const sharedIngredients = Object.values(getCrossUtilization).filter(d => d.items.length > 1).length;
+      const bulkOpportunities = Object.values(getCrossUtilization).filter(d => d.items.length >= 3).length;
+      
+      doc.setFontSize(10);
+      doc.text(`Total Ingredients: ${totalIngredients} | Shared (2+ items): ${sharedIngredients} | Bulk Opportunities (3+ items): ${bulkOpportunities}`, 14, yPos);
       
     } else if (activeTab === 'insights') {
       // AI Insights Report
@@ -712,11 +768,12 @@ export default function MenuEngineeringPro() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 w-full max-w-md">
+          <TabsList className="grid grid-cols-5 w-full max-w-lg">
             <TabsTrigger value="import">Import</TabsTrigger>
             <TabsTrigger value="matrix" disabled={menuItems.length === 0}>Matrix</TabsTrigger>
             <TabsTrigger value="analysis" disabled={menuItems.length === 0}>Analysis</TabsTrigger>
-            <TabsTrigger value="insights" disabled={menuItems.length === 0}>AI Insights</TabsTrigger>
+            <TabsTrigger value="ingredients" disabled={menuItems.length === 0}>Ingredients</TabsTrigger>
+            <TabsTrigger value="insights" disabled={menuItems.length === 0}>AI</TabsTrigger>
           </TabsList>
 
           {/* Import Tab */}
@@ -1140,6 +1197,177 @@ export default function MenuEngineeringPro() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Ingredients Cross-Utilization Tab */}
+          <TabsContent value="ingredients" className="space-y-6">
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Package className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm">Ingredient Cross-Utilization Analysis</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      See which ingredients are shared across multiple menu items. Ingredients used in 3+ items are 
+                      <strong className="text-green-600"> bulk purchase opportunities</strong>. Single-use ingredients may indicate 
+                      <strong className="text-amber-600"> cost inefficiencies</strong>.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Summary Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold">{Object.keys(getCrossUtilization).length}</p>
+                  <p className="text-xs text-muted-foreground">Total Ingredients</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-green-500/10 border-green-500/30">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-green-600">
+                    {Object.values(getCrossUtilization).filter(d => d.items.length >= 3).length}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Bulk Opportunities (3+)</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-blue-500/10 border-blue-500/30">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-blue-600">
+                    {Object.values(getCrossUtilization).filter(d => d.items.length === 2).length}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Shared (2 items)</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-amber-500/10 border-amber-500/30">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-amber-600">
+                    {Object.values(getCrossUtilization).filter(d => d.items.length === 1).length}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Single Use</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Ingredients Table */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Link2 className="h-4 w-4" />
+                  All Ingredients Cross-Utilization
+                  <InfoTooltip content="Complete list of all ingredients showing how many times each is used and in which menu items" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ingredient</TableHead>
+                      <TableHead className="text-center">Used In</TableHead>
+                      <TableHead>Menu Items</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(getCrossUtilization)
+                      .sort((a, b) => b[1].items.length - a[1].items.length)
+                      .map(([ingName, data]) => (
+                        <TableRow key={ingName}>
+                          <TableCell className="font-medium">{ingName}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline">{data.items.length}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {data.items.map((item, idx) => (
+                                <Badge 
+                                  key={idx} 
+                                  variant="secondary" 
+                                  className="text-xs cursor-pointer hover:bg-primary/20"
+                                  onClick={() => {
+                                    const menuItem = menuItems.find(i => i.item_name === item);
+                                    if (menuItem) {
+                                      setSelectedItem(menuItem);
+                                      setShowRecipeDialog(true);
+                                    }
+                                  }}
+                                >
+                                  {item}
+                                </Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {data.items.length >= 3 ? (
+                              <Badge className="bg-green-500/10 text-green-600 border-green-500/30">
+                                Bulk Purchase
+                              </Badge>
+                            ) : data.items.length === 2 ? (
+                              <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/30">
+                                Shared
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30">
+                                Single Use
+                              </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* Optimization Recommendations */}
+            <Card className="border-primary/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  Cross-Utilization Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {Object.values(getCrossUtilization).filter(d => d.items.length >= 3).length > 0 && (
+                  <div className="flex items-start gap-2 text-sm p-3 bg-green-500/10 rounded-lg">
+                    <Package className="h-4 w-4 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-green-700">Bulk Purchase Opportunities</p>
+                      <p className="text-xs text-muted-foreground">
+                        {Object.entries(getCrossUtilization)
+                          .filter(([_, d]) => d.items.length >= 3)
+                          .map(([name]) => name)
+                          .slice(0, 5)
+                          .join(', ')}
+                        {Object.values(getCrossUtilization).filter(d => d.items.length >= 3).length > 5 && 
+                          ` and ${Object.values(getCrossUtilization).filter(d => d.items.length >= 3).length - 5} more`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {Object.values(getCrossUtilization).filter(d => d.items.length === 1).length > 0 && (
+                  <div className="flex items-start gap-2 text-sm p-3 bg-amber-500/10 rounded-lg">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-amber-700">Single-Use Ingredients Review</p>
+                      <p className="text-xs text-muted-foreground">
+                        Consider if these can be replaced with shared ingredients: {' '}
+                        {Object.entries(getCrossUtilization)
+                          .filter(([_, d]) => d.items.length === 1)
+                          .map(([name]) => name)
+                          .slice(0, 5)
+                          .join(', ')}
+                        {Object.values(getCrossUtilization).filter(d => d.items.length === 1).length > 5 && 
+                          ` and ${Object.values(getCrossUtilization).filter(d => d.items.length === 1).length - 5} more`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* AI Insights Tab */}
