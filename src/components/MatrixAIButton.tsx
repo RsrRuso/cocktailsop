@@ -16,128 +16,161 @@ export const MatrixAIButton = () => {
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
     >
-      {/* Outer glow ring */}
+      {/* Outer glow */}
       <motion.div
-        className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/30 via-accent/30 to-primary/30 blur-xl"
+        className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/40 via-purple-500/40 to-cyan-400/40 blur-xl"
         animate={{
-          scale: [1, 1.3, 1],
-          opacity: [0.5, 0.8, 0.5],
+          scale: [1, 1.4, 1],
+          opacity: [0.4, 0.7, 0.4],
         }}
         transition={{
-          duration: 2,
+          duration: 3,
           repeat: Infinity,
           ease: "easeInOut",
         }}
       />
 
-      {/* 3D Rotating Engine Container */}
-      <div className="relative w-12 h-12" style={{ perspective: "200px" }}>
-        {/* Inner rotating cube/engine */}
+      {/* Fractal Container */}
+      <div className="relative w-12 h-12">
+        {/* Outermost ring - slow spin */}
         <motion.div
-          className="absolute inset-0"
-          style={{ transformStyle: "preserve-3d" }}
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: "conic-gradient(from 0deg, hsl(var(--primary)), hsl(280, 80%, 60%), hsl(190, 90%, 50%), hsl(var(--primary)))",
+          }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+        />
+        
+        {/* First gap ring */}
+        <div className="absolute inset-[3px] rounded-full bg-background" />
+        
+        {/* Second ring - reverse spin */}
+        <motion.div
+          className="absolute inset-[5px] rounded-full"
+          style={{
+            background: "conic-gradient(from 180deg, hsl(var(--accent)), hsl(330, 80%, 60%), hsl(45, 90%, 55%), hsl(var(--accent)))",
+          }}
+          animate={{ rotate: -360 }}
+          transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+        />
+        
+        {/* Second gap ring */}
+        <div className="absolute inset-[8px] rounded-full bg-background" />
+        
+        {/* Third ring - faster spin */}
+        <motion.div
+          className="absolute inset-[10px] rounded-full"
+          style={{
+            background: "conic-gradient(from 90deg, hsl(var(--primary)), hsl(200, 90%, 60%), hsl(var(--primary)))",
+          }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+        />
+        
+        {/* Third gap ring */}
+        <div className="absolute inset-[13px] rounded-full bg-background" />
+        
+        {/* Fourth ring - reverse faster */}
+        <motion.div
+          className="absolute inset-[15px] rounded-full"
+          style={{
+            background: "conic-gradient(from 270deg, hsl(280, 80%, 60%), hsl(var(--accent)), hsl(280, 80%, 60%))",
+          }}
+          animate={{ rotate: -360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        />
+        
+        {/* Fourth gap ring */}
+        <div className="absolute inset-[17px] rounded-full bg-background" />
+        
+        {/* Core - pulsing */}
+        <motion.div
+          className="absolute inset-[19px] rounded-full bg-gradient-to-br from-primary via-purple-500 to-cyan-400"
           animate={{
-            rotateY: [0, 360],
-            rotateX: [0, 15, 0, -15, 0],
+            scale: [1, 1.15, 1],
+            opacity: [0.9, 1, 0.9],
           }}
           transition={{
-            rotateY: { duration: 4, repeat: Infinity, ease: "linear" },
-            rotateX: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeInOut",
           }}
-        >
-          {/* Front face - Infinity symbol */}
-          <motion.div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ transform: "translateZ(12px)" }}
-          >
-            <svg viewBox="0 0 48 24" className="w-10 h-5 drop-shadow-[0_0_12px_rgba(59,130,246,0.9)]">
-              <motion.path
-                d="M12 12c0-3.3-2.7-6-6-6s-6 2.7-6 6 2.7 6 6 6c2.1 0 4-1.1 5.1-2.7L24 12l6.9 3.3c1.1 1.6 3 2.7 5.1 2.7 3.3 0 6-2.7 6-6s-2.7-6-6-6-6 2.7-6 6c0 .9.2 1.8.6 2.5L24 12l-6.6-2.5c.4-.7.6-1.6.6-2.5z"
-                fill="none"
-                stroke="url(#infinityGradient)"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                animate={{
-                  pathLength: [0, 1, 1],
-                  opacity: [0.8, 1, 0.8],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-              <defs>
-                <linearGradient id="infinityGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" />
-                  <stop offset="50%" stopColor="hsl(var(--accent))" />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </motion.div>
+        />
+        
+        {/* Core inner glow */}
+        <motion.div
+          className="absolute inset-[21px] rounded-full bg-background/80"
+          animate={{
+            opacity: [0.6, 0.9, 0.6],
+          }}
+          transition={{
+            duration: 1,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        
+        {/* Center dot */}
+        <motion.div
+          className="absolute inset-[22px] rounded-full bg-gradient-to-r from-primary to-accent"
+          animate={{
+            scale: [1, 1.3, 1],
+          }}
+          transition={{
+            duration: 0.8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
 
-          {/* Back face */}
-          <motion.div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ transform: "translateZ(-12px) rotateY(180deg)" }}
-          >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/60 to-accent/60 blur-[1px]" />
-          </motion.div>
-
-          {/* Top face */}
-          <motion.div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ transform: "rotateX(90deg) translateZ(12px)" }}
-          >
-            <div className="w-8 h-6 rounded bg-gradient-to-b from-primary/50 to-transparent" />
-          </motion.div>
-
-          {/* Bottom face */}
-          <motion.div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ transform: "rotateX(-90deg) translateZ(12px)" }}
-          >
-            <div className="w-8 h-6 rounded bg-gradient-to-t from-accent/50 to-transparent" />
-          </motion.div>
-        </motion.div>
-
-        {/* Orbiting particles */}
-        {[...Array(3)].map((_, i) => (
+        {/* Floating orbital dots */}
+        {[0, 1, 2, 3].map((i) => (
           <motion.div
             key={i}
-            className="absolute w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.8)]"
+            className="absolute w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_hsl(var(--primary))]"
             style={{
               top: "50%",
               left: "50%",
-              marginTop: "-4px",
-              marginLeft: "-4px",
+              marginTop: "-3px",
+              marginLeft: "-3px",
             }}
             animate={{
-              x: [0, 20 * Math.cos((i * 2 * Math.PI) / 3), 0, -20 * Math.cos((i * 2 * Math.PI) / 3), 0],
-              y: [0, 20 * Math.sin((i * 2 * Math.PI) / 3), 0, -20 * Math.sin((i * 2 * Math.PI) / 3), 0],
-              scale: [1, 1.2, 1, 0.8, 1],
-              opacity: [1, 0.8, 1, 0.8, 1],
+              x: [
+                24 * Math.cos((i * Math.PI) / 2),
+                24 * Math.cos((i * Math.PI) / 2 + Math.PI / 2),
+                24 * Math.cos((i * Math.PI) / 2 + Math.PI),
+                24 * Math.cos((i * Math.PI) / 2 + (3 * Math.PI) / 2),
+                24 * Math.cos((i * Math.PI) / 2),
+              ],
+              y: [
+                24 * Math.sin((i * Math.PI) / 2),
+                24 * Math.sin((i * Math.PI) / 2 + Math.PI / 2),
+                24 * Math.sin((i * Math.PI) / 2 + Math.PI),
+                24 * Math.sin((i * Math.PI) / 2 + (3 * Math.PI) / 2),
+                24 * Math.sin((i * Math.PI) / 2),
+              ],
+              opacity: [1, 0.6, 1, 0.6, 1],
             }}
             transition={{
-              duration: 2,
+              duration: 4,
               repeat: Infinity,
-              delay: i * 0.3,
-              ease: "easeInOut",
+              ease: "linear",
+              delay: i * 0.2,
             }}
           />
         ))}
       </div>
 
-      {/* Pulsing rings */}
+      {/* Expanding pulse rings */}
       <motion.div
-        className="absolute inset-0 rounded-full border border-primary/40"
+        className="absolute inset-0 rounded-full border-2 border-primary/50"
         animate={{
-          scale: [1, 1.5],
-          opacity: [0.6, 0],
+          scale: [1, 1.6],
+          opacity: [0.5, 0],
         }}
         transition={{
-          duration: 1.5,
+          duration: 2,
           repeat: Infinity,
           ease: "easeOut",
         }}
@@ -145,14 +178,14 @@ export const MatrixAIButton = () => {
       <motion.div
         className="absolute inset-0 rounded-full border border-accent/40"
         animate={{
-          scale: [1, 1.8],
-          opacity: [0.4, 0],
+          scale: [1, 2],
+          opacity: [0.3, 0],
         }}
         transition={{
-          duration: 1.5,
+          duration: 2,
           repeat: Infinity,
           ease: "easeOut",
-          delay: 0.5,
+          delay: 0.7,
         }}
       />
     </motion.button>
