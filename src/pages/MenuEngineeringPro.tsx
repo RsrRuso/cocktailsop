@@ -79,7 +79,7 @@ export default function MenuEngineeringPro() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [matrixFilter, setMatrixFilter] = useState("all");
 
-  // Calculate analysis summary
+  // Calculate analysis summary (all items)
   const summary = useMemo<AnalysisSummary>(() => {
     if (menuItems.length === 0) {
       return {
@@ -212,6 +212,33 @@ export default function MenuEngineeringPro() {
       return matchesSearch && matchesCategory && matchesMatrix;
     });
   }, [menuItems, searchQuery, categoryFilter, matrixFilter]);
+
+  // Calculate filtered summary (adjusts based on category/matrix filter)
+  const filteredSummary = useMemo<AnalysisSummary>(() => {
+    if (filteredItems.length === 0) {
+      return {
+        totalItems: 0, totalRevenue: 0, totalFoodCost: 0,
+        avgFoodCostPct: 0, avgContributionMargin: 0,
+        stars: 0, plowhorses: 0, puzzles: 0, dogs: 0
+      };
+    }
+
+    const totalRevenue = filteredItems.reduce((sum, i) => sum + i.revenue, 0);
+    const totalFoodCost = filteredItems.reduce((sum, i) => sum + (i.food_cost * i.units_sold), 0);
+    const avgContributionMargin = filteredItems.reduce((sum, i) => sum + i.contribution_margin, 0) / filteredItems.length;
+
+    return {
+      totalItems: filteredItems.length,
+      totalRevenue,
+      totalFoodCost,
+      avgFoodCostPct: totalRevenue > 0 ? (totalFoodCost / totalRevenue) * 100 : 0,
+      avgContributionMargin,
+      stars: filteredItems.filter(i => i.matrix_category === 'star').length,
+      plowhorses: filteredItems.filter(i => i.matrix_category === 'plowhorse').length,
+      puzzles: filteredItems.filter(i => i.matrix_category === 'puzzle').length,
+      dogs: filteredItems.filter(i => i.matrix_category === 'dog').length
+    };
+  }, [filteredItems]);
 
   // Get unique categories
   const categories = useMemo(() => {
@@ -621,7 +648,7 @@ export default function MenuEngineeringPro() {
                     <DollarSign className="h-4 w-4" />
                     <span className="text-sm">Total Revenue</span>
                   </div>
-                  <p className="text-2xl font-bold">${summary.totalRevenue.toLocaleString()}</p>
+                  <p className="text-2xl font-bold">${filteredSummary.totalRevenue.toLocaleString()}</p>
                 </CardContent>
               </Card>
               
@@ -631,7 +658,7 @@ export default function MenuEngineeringPro() {
                     <Activity className="h-4 w-4" />
                     <span className="text-sm">Avg Food Cost</span>
                   </div>
-                  <p className="text-2xl font-bold">{summary.avgFoodCostPct.toFixed(1)}%</p>
+                  <p className="text-2xl font-bold">{filteredSummary.avgFoodCostPct.toFixed(1)}%</p>
                 </CardContent>
               </Card>
               
@@ -641,7 +668,7 @@ export default function MenuEngineeringPro() {
                     <BarChart3 className="h-4 w-4" />
                     <span className="text-sm">Avg Contribution Margin</span>
                   </div>
-                  <p className="text-2xl font-bold">${summary.avgContributionMargin.toFixed(2)}</p>
+                  <p className="text-2xl font-bold">${filteredSummary.avgContributionMargin.toFixed(2)}</p>
                 </CardContent>
               </Card>
             </div>
