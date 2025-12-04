@@ -429,6 +429,15 @@ const OpsTools = () => {
         path: "/menu-engineering",
       },
       {
+        name: "Menu Engineering Pro",
+        description: "BCG Matrix with Micros Oracle import",
+        details: "Import sales data from Micros Oracle (CSV/Excel). Automatically categorize items as Stars, Plowhorses, Puzzles, and Dogs with AI recommendations.",
+        icon: PieChart,
+        gradient: "from-amber-500 to-orange-600",
+        premium: false,
+        path: "/menu-engineering-pro",
+      },
+      {
         name: "Sales Analytics",
         description: "Track sales trends and performance",
         details: "Comprehensive sales dashboard. View top sellers, sales by category, time-based trends, and revenue analytics to inform menu decisions.",
