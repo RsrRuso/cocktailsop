@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1680,25 +1680,21 @@ export default function MenuEngineeringPro() {
         {/* Recipe Detail - Mobile Sheet / Desktop Dialog */}
         {selectedItem && (
           <>
-            {/* Mobile: Full-screen Drawer */}
-            <Drawer open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
-              <DrawerContent className="h-[95vh] md:hidden">
-                <div className="flex flex-col h-full overflow-hidden">
-                  {/* Mobile Header */}
-                  <div className="flex items-center justify-between px-4 pb-4 border-b bg-background shrink-0">
-                    <div className="flex items-center gap-2">
-                      <Utensils className="h-5 w-5 text-primary" />
-                      <div>
-                        <h3 className="font-semibold text-base">{selectedItem.item_name}</h3>
-                        <p className="text-xs text-muted-foreground">Recipe & Ingredients</p>
-                      </div>
+            {/* Mobile: Full-screen Dialog */}
+            <Dialog open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
+              <DialogContent className="h-[95vh] w-[95vw] max-w-none md:hidden p-0 flex flex-col overflow-hidden">
+                {/* Mobile Header */}
+                <div className="flex items-center justify-between p-4 border-b bg-background shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Utensils className="h-5 w-5 text-primary" />
+                    <div>
+                      <h3 className="font-semibold text-base">{selectedItem.item_name}</h3>
+                      <p className="text-xs text-muted-foreground">Recipe & Ingredients</p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => setShowRecipeDialog(false)}>
-                      <X className="h-5 w-5" />
-                    </Button>
                   </div>
+                </div>
 
-                  <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto">
                     <div className="p-4 pb-20 space-y-4">
                       {/* Item Summary - Mobile Grid */}
                       <div className={`rounded-xl p-4 ${getCategoryStyle(selectedItem.matrix_category).bg}`}>
@@ -1821,10 +1817,9 @@ export default function MenuEngineeringPro() {
                         </CardContent>
                       </Card>
                     </div>
-                  </div>
                 </div>
-              </DrawerContent>
-            </Drawer>
+              </DialogContent>
+            </Dialog>
 
             {/* Desktop: Standard Dialog */}
             <Dialog open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
