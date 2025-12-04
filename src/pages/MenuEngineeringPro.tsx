@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,19 +9,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Upload, FileSpreadsheet, Star, TrendingUp, TrendingDown, 
   AlertTriangle, Target, DollarSign, BarChart3, Lightbulb,
   Download, RefreshCw, Filter, Search, ChevronRight, Sparkles,
-  ArrowUpRight, ArrowDownRight, PieChart, Activity, ArrowLeft
+  ArrowUpRight, ArrowDownRight, PieChart, Activity, ArrowLeft,
+  Info, HelpCircle, X
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
+
+// Educational tooltips for all menu engineering terms
+const TOOLTIPS = {
+  units: "Number of times this item was sold during the analysis period. Higher units indicate popularity.",
+  revenue: "Total money earned from selling this item. Calculated as: Units Sold × Selling Price.",
+  foodCostPct: "Percentage of selling price spent on ingredients. Target: 25-35%. Formula: (Food Cost ÷ Selling Price) × 100.",
+  contributionMargin: "Profit earned per item after ingredient costs. Formula: Selling Price - Food Cost. Higher CM = more profitable.",
+  mixPct: "This item's share of total sales volume. Formula: (Item Units ÷ Total Units) × 100. Shows relative popularity.",
+  matrix: "BCG Matrix category based on profitability (CM) and popularity (Mix %). Used to determine strategic actions.",
+  star: "⭐ STAR: High profit, High popularity. Your best performers! Strategy: Maintain quality, feature prominently, protect the recipe.",
+  plowhorse: "🐴 PLOWHORSE: Low profit, High popularity. Customers love it but margins are thin. Strategy: Engineer recipe to reduce costs or increase price subtly.",
+  puzzle: "🧩 PUZZLE: High profit, Low popularity. Hidden gems with great margins. Strategy: Increase visibility, train staff to upsell, add to specials.",
+  dog: "🐕 DOG: Low profit, Low popularity. Underperformers dragging you down. Strategy: Remove from menu, complete redesign, or repurpose ingredients.",
+  bcgMatrix: "The BCG Matrix (Boston Consulting Group) categorizes menu items into 4 quadrants based on profitability and popularity to guide strategic decisions.",
+  avgFoodCost: "Average food cost percentage across all items. Industry benchmark: 28-35% for restaurants, 20-25% for bars.",
+  avgCM: "Average contribution margin across all items. Higher averages indicate a more profitable menu overall."
+};
+
+// Action dialog state type
+type ActionDialog = 'plowhorses' | 'puzzles' | 'dogs' | 'pricing' | null;
 
 interface MenuItem {
   id: string;
@@ -78,6 +101,19 @@ export default function MenuEngineeringPro() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [matrixFilter, setMatrixFilter] = useState("all");
+  const [actionDialog, setActionDialog] = useState<ActionDialog>(null);
+
+  // Helper component for educational tooltips
+  const InfoTooltip = ({ content }: { content: string }) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help inline ml-1" />
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs text-xs">
+        <p>{content}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
 
   // Calculate analysis summary (all items)
   const summary = useMemo<AnalysisSummary>(() => {
@@ -279,6 +315,7 @@ export default function MenuEngineeringPro() {
   };
 
   return (
+    <TooltipProvider>
     <div className="min-h-screen bg-background pb-24">
       <TopNav />
       
@@ -416,49 +453,90 @@ export default function MenuEngineeringPro() {
 
           {/* Matrix Tab */}
           <TabsContent value="matrix" className="space-y-6">
-            {/* Summary Cards */}
+            {/* Educational Header */}
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm">Understanding the BCG Matrix</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      The BCG (Boston Consulting Group) Matrix categorizes menu items into 4 quadrants based on 
+                      <strong> Contribution Margin</strong> (profitability) and <strong>Sales Mix %</strong> (popularity). 
+                      Click any category below to learn its strategy.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Summary Cards with Click to Filter */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-yellow-500/10 border-yellow-500/30">
+              <Card 
+                className="bg-yellow-500/10 border-yellow-500/30 cursor-pointer hover:bg-yellow-500/20 transition-colors"
+                onClick={() => { setMatrixFilter('star'); setActiveTab('analysis'); }}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2">
                     <Star className="h-5 w-5 text-yellow-500" />
                     <span className="text-2xl font-bold">{summary.stars}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">Stars</p>
-                  <p className="text-xs text-yellow-600">High profit, High popularity</p>
+                  <p className="text-sm font-medium">Stars ⭐</p>
+                  <p className="text-xs text-yellow-600 mt-1">High profit, High popularity</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    💎 Your best performers! Protect & feature prominently.
+                  </p>
                 </CardContent>
               </Card>
               
-              <Card className="bg-blue-500/10 border-blue-500/30">
+              <Card 
+                className="bg-blue-500/10 border-blue-500/30 cursor-pointer hover:bg-blue-500/20 transition-colors"
+                onClick={() => { setMatrixFilter('plowhorse'); setActiveTab('analysis'); }}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-blue-500" />
                     <span className="text-2xl font-bold">{summary.plowhorses}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">Plowhorses</p>
-                  <p className="text-xs text-blue-600">Low profit, High popularity</p>
+                  <p className="text-sm font-medium">Plowhorses 🐴</p>
+                  <p className="text-xs text-blue-600 mt-1">Low profit, High popularity</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    🔧 Popular but thin margins. Engineer recipe costs.
+                  </p>
                 </CardContent>
               </Card>
               
-              <Card className="bg-purple-500/10 border-purple-500/30">
+              <Card 
+                className="bg-purple-500/10 border-purple-500/30 cursor-pointer hover:bg-purple-500/20 transition-colors"
+                onClick={() => { setMatrixFilter('puzzle'); setActiveTab('analysis'); }}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2">
                     <Lightbulb className="h-5 w-5 text-purple-500" />
                     <span className="text-2xl font-bold">{summary.puzzles}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">Puzzles</p>
-                  <p className="text-xs text-purple-600">High profit, Low popularity</p>
+                  <p className="text-sm font-medium">Puzzles 🧩</p>
+                  <p className="text-xs text-purple-600 mt-1">High profit, Low popularity</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    📣 Hidden gems! Increase visibility & upselling.
+                  </p>
                 </CardContent>
               </Card>
               
-              <Card className="bg-red-500/10 border-red-500/30">
+              <Card 
+                className="bg-red-500/10 border-red-500/30 cursor-pointer hover:bg-red-500/20 transition-colors"
+                onClick={() => { setMatrixFilter('dog'); setActiveTab('analysis'); }}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-5 w-5 text-red-500" />
                     <span className="text-2xl font-bold">{summary.dogs}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground">Dogs</p>
-                  <p className="text-xs text-red-600">Low profit, Low popularity</p>
+                  <p className="text-sm font-medium">Dogs 🐕</p>
+                  <p className="text-xs text-red-600 mt-1">Low profit, Low popularity</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    ⚠️ Underperformers. Consider removal or overhaul.
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -592,20 +670,42 @@ export default function MenuEngineeringPro() {
               </CardContent>
             </Card>
 
-            {/* Items Table */}
+            {/* Items Table with Educational Headers */}
             <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Info className="h-4 w-4 text-primary" />
+                  Menu Items Analysis
+                  <InfoTooltip content={TOOLTIPS.bcgMatrix} />
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Hover over column headers for explanations. Click any header (?) icon to learn more.
+                </CardDescription>
+              </CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Item</TableHead>
                       <TableHead>Category</TableHead>
-                      <TableHead className="text-right">Units</TableHead>
-                      <TableHead className="text-right">Revenue</TableHead>
-                      <TableHead className="text-right">Food Cost %</TableHead>
-                      <TableHead className="text-right">CM</TableHead>
-                      <TableHead className="text-right">Mix %</TableHead>
-                      <TableHead>Matrix</TableHead>
+                      <TableHead className="text-right">
+                        Units<InfoTooltip content={TOOLTIPS.units} />
+                      </TableHead>
+                      <TableHead className="text-right">
+                        Revenue<InfoTooltip content={TOOLTIPS.revenue} />
+                      </TableHead>
+                      <TableHead className="text-right">
+                        Food Cost %<InfoTooltip content={TOOLTIPS.foodCostPct} />
+                      </TableHead>
+                      <TableHead className="text-right">
+                        CM<InfoTooltip content={TOOLTIPS.contributionMargin} />
+                      </TableHead>
+                      <TableHead className="text-right">
+                        Mix %<InfoTooltip content={TOOLTIPS.mixPct} />
+                      </TableHead>
+                      <TableHead>
+                        Matrix<InfoTooltip content={TOOLTIPS.matrix} />
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -640,13 +740,14 @@ export default function MenuEngineeringPro() {
               </CardContent>
             </Card>
 
-            {/* Summary Stats */}
+            {/* Summary Stats with Educational Tooltips */}
             <div className="grid md:grid-cols-3 gap-4">
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 text-muted-foreground mb-1">
                     <DollarSign className="h-4 w-4" />
                     <span className="text-sm">Total Revenue</span>
+                    <InfoTooltip content={TOOLTIPS.revenue} />
                   </div>
                   <p className="text-2xl font-bold">${filteredSummary.totalRevenue.toLocaleString()}</p>
                 </CardContent>
@@ -657,6 +758,7 @@ export default function MenuEngineeringPro() {
                   <div className="flex items-center gap-2 text-muted-foreground mb-1">
                     <Activity className="h-4 w-4" />
                     <span className="text-sm">Avg Food Cost</span>
+                    <InfoTooltip content={TOOLTIPS.avgFoodCost} />
                   </div>
                   <p className="text-2xl font-bold">{filteredSummary.avgFoodCostPct.toFixed(1)}%</p>
                 </CardContent>
@@ -667,6 +769,7 @@ export default function MenuEngineeringPro() {
                   <div className="flex items-center gap-2 text-muted-foreground mb-1">
                     <BarChart3 className="h-4 w-4" />
                     <span className="text-sm">Avg Contribution Margin</span>
+                    <InfoTooltip content={TOOLTIPS.avgCM} />
                   </div>
                   <p className="text-2xl font-bold">${filteredSummary.avgContributionMargin.toFixed(2)}</p>
                 </CardContent>
@@ -717,32 +820,219 @@ export default function MenuEngineeringPro() {
             {/* Quick Actions */}
             <Card>
               <CardHeader>
-                <CardTitle>Quick Optimization Actions</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Quick Optimization Actions
+                  <InfoTooltip content="Click each action to view specific items and get detailed recommendations for that category." />
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setActionDialog('plowhorses')}
+                  disabled={summary.plowhorses === 0}
+                >
                   <TrendingUp className="h-4 w-4 mr-2 text-blue-500" />
-                  Improve Plowhorse Margins (Recipe Engineering)
+                  Improve Plowhorse Margins ({summary.plowhorses} items)
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setActionDialog('puzzles')}
+                  disabled={summary.puzzles === 0}
+                >
                   <Lightbulb className="h-4 w-4 mr-2 text-purple-500" />
-                  Boost Puzzle Visibility (Menu Placement)
+                  Boost Puzzle Visibility ({summary.puzzles} items)
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setActionDialog('dogs')}
+                  disabled={summary.dogs === 0}
+                >
                   <AlertTriangle className="h-4 w-4 mr-2 text-red-500" />
-                  Review Dogs for Removal
+                  Review Dogs for Removal ({summary.dogs} items)
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setActionDialog('pricing')}
+                  disabled={menuItems.length === 0}
+                >
                   <DollarSign className="h-4 w-4 mr-2 text-green-500" />
                   Price Optimization Analysis
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Action Dialogs */}
+            <Dialog open={actionDialog === 'plowhorses'} onOpenChange={(open) => !open && setActionDialog(null)}>
+              <DialogContent className="max-w-lg max-h-[80vh]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-blue-500" />
+                    Plowhorse Margin Improvement
+                  </DialogTitle>
+                  <DialogDescription>{TOOLTIPS.plowhorse}</DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[50vh]">
+                  <div className="space-y-3">
+                    {menuItems.filter(i => i.matrix_category === 'plowhorse').map(item => (
+                      <Card key={item.id} className="bg-blue-500/5 border-blue-500/20">
+                        <CardContent className="p-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium">{item.item_name}</p>
+                              <p className="text-xs text-muted-foreground">{item.category}</p>
+                            </div>
+                            <Badge variant="outline" className="text-blue-500">FC: {item.food_cost_pct.toFixed(1)}%</Badge>
+                          </div>
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            <p>💡 <strong>Actions:</strong></p>
+                            <ul className="list-disc ml-4 mt-1 space-y-1">
+                              <li>Review portion sizes - can you reduce slightly without affecting perception?</li>
+                              <li>Substitute expensive ingredients with similar alternatives</li>
+                              <li>Consider increasing price by 5-10% gradually</li>
+                              <li>CM: ${item.contribution_margin.toFixed(2)} → Target: ${(item.contribution_margin * 1.15).toFixed(2)}</li>
+                            </ul>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={actionDialog === 'puzzles'} onOpenChange={(open) => !open && setActionDialog(null)}>
+              <DialogContent className="max-w-lg max-h-[80vh]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-purple-500" />
+                    Puzzle Visibility Boost
+                  </DialogTitle>
+                  <DialogDescription>{TOOLTIPS.puzzle}</DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[50vh]">
+                  <div className="space-y-3">
+                    {menuItems.filter(i => i.matrix_category === 'puzzle').map(item => (
+                      <Card key={item.id} className="bg-purple-500/5 border-purple-500/20">
+                        <CardContent className="p-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium">{item.item_name}</p>
+                              <p className="text-xs text-muted-foreground">{item.category}</p>
+                            </div>
+                            <Badge variant="outline" className="text-purple-500">CM: ${item.contribution_margin.toFixed(2)}</Badge>
+                          </div>
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            <p>💡 <strong>Actions:</strong></p>
+                            <ul className="list-disc ml-4 mt-1 space-y-1">
+                              <li>Move to prime menu real estate (top-right, boxed section)</li>
+                              <li>Add to daily specials board</li>
+                              <li>Train staff to recommend this item</li>
+                              <li>Current Mix: {item.sales_mix_pct.toFixed(1)}% → Target: {(item.sales_mix_pct * 1.5).toFixed(1)}%</li>
+                            </ul>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={actionDialog === 'dogs'} onOpenChange={(open) => !open && setActionDialog(null)}>
+              <DialogContent className="max-w-lg max-h-[80vh]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-red-500" />
+                    Dog Items Review
+                  </DialogTitle>
+                  <DialogDescription>{TOOLTIPS.dog}</DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[50vh]">
+                  <div className="space-y-3">
+                    {menuItems.filter(i => i.matrix_category === 'dog').map(item => (
+                      <Card key={item.id} className="bg-red-500/5 border-red-500/20">
+                        <CardContent className="p-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium">{item.item_name}</p>
+                              <p className="text-xs text-muted-foreground">{item.category}</p>
+                            </div>
+                            <Badge variant="outline" className="text-red-500">⚠️ Review</Badge>
+                          </div>
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            <p>💡 <strong>Decision Points:</strong></p>
+                            <ul className="list-disc ml-4 mt-1 space-y-1">
+                              <li>CM: ${item.contribution_margin.toFixed(2)} | Mix: {item.sales_mix_pct.toFixed(1)}%</li>
+                              <li>🔴 Remove from menu if no strategic value</li>
+                              <li>🟡 Complete recipe overhaul if keeping</li>
+                              <li>🟢 Repurpose ingredients into better-performing items</li>
+                            </ul>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={actionDialog === 'pricing'} onOpenChange={(open) => !open && setActionDialog(null)}>
+              <DialogContent className="max-w-lg max-h-[80vh]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-green-500" />
+                    Price Optimization Analysis
+                  </DialogTitle>
+                  <DialogDescription>Items with pricing opportunities based on food cost and contribution margin analysis.</DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[50vh]">
+                  <div className="space-y-3">
+                    <Card className="bg-green-500/5 border-green-500/20">
+                      <CardContent className="p-3">
+                        <p className="font-medium text-sm mb-2">📊 Overall Pricing Health</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>Avg Food Cost: <strong>{summary.avgFoodCostPct.toFixed(1)}%</strong></div>
+                          <div>Target: <strong>28-32%</strong></div>
+                          <div>Avg CM: <strong>${summary.avgContributionMargin.toFixed(2)}</strong></div>
+                          <div>Items: <strong>{summary.totalItems}</strong></div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <p className="text-xs font-medium text-muted-foreground">Items with High Food Cost (&gt;35%):</p>
+                    {menuItems.filter(i => i.food_cost_pct > 35).map(item => (
+                      <Card key={item.id} className="border-amber-500/20">
+                        <CardContent className="p-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-sm">{item.item_name}</p>
+                              <p className="text-xs text-muted-foreground">Current: ${item.selling_price.toFixed(2)}</p>
+                            </div>
+                            <Badge variant="outline" className="text-amber-500">FC: {item.food_cost_pct.toFixed(1)}%</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            💡 Suggested price: ${(item.food_cost / 0.30).toFixed(2)} (to achieve 30% FC)
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {menuItems.filter(i => i.food_cost_pct > 35).length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-4">✅ No items with high food cost!</p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
         </Tabs>
       </main>
 
       <BottomNav />
     </div>
+    </TooltipProvider>
   );
 }
