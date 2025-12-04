@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1623,212 +1624,396 @@ export default function MenuEngineeringPro() {
           </TabsContent>
         </Tabs>
 
-        {/* Recipe Detail Dialog with Cross-Utilization */}
-        <Dialog open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Utensils className="h-5 w-5 text-primary" />
-                {selectedItem?.item_name} - Recipe & Ingredients
-              </DialogTitle>
-              <DialogDescription>
-                View ingredients, cross-utilization analysis, and optimization suggestions
-              </DialogDescription>
-            </DialogHeader>
-            
-            {selectedItem && (
-              <ScrollArea className="max-h-[70vh]">
-                <div className="space-y-4 pr-4">
-                  {/* Item Summary */}
-                  <Card className={`${getCategoryStyle(selectedItem.matrix_category).bg} border-0`}>
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                        <div>
-                          <p className="text-muted-foreground text-xs">Selling Price</p>
-                          <p className="font-bold">${selectedItem.selling_price.toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground text-xs">Food Cost</p>
-                          <p className="font-bold">${selectedItem.food_cost.toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground text-xs">Food Cost %</p>
-                          <p className={`font-bold ${selectedItem.food_cost_pct > 35 ? 'text-red-500' : 'text-green-500'}`}>
-                            {selectedItem.food_cost_pct.toFixed(1)}%
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground text-xs">Matrix</p>
-                          <Badge className={`${getCategoryStyle(selectedItem.matrix_category).bg} ${getCategoryStyle(selectedItem.matrix_category).color} border-0`}>
-                            {getCategoryStyle(selectedItem.matrix_category).label}
-                          </Badge>
+        {/* Recipe Detail - Mobile Drawer / Desktop Dialog */}
+        {selectedItem && (
+          <>
+            {/* Mobile: Full-screen Drawer */}
+            <Drawer open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
+              <DrawerContent className="h-[95vh] md:hidden">
+                <div className="flex flex-col h-full">
+                  {/* Mobile Header */}
+                  <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-10">
+                    <div className="flex items-center gap-2">
+                      <Utensils className="h-5 w-5 text-primary" />
+                      <div>
+                        <h3 className="font-semibold text-base">{selectedItem.item_name}</h3>
+                        <p className="text-xs text-muted-foreground">Recipe & Ingredients</p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => setShowRecipeDialog(false)}>
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </div>
+
+                  <ScrollArea className="flex-1">
+                    <div className="p-4 pb-20 space-y-4">
+                      {/* Item Summary - Mobile Grid */}
+                      <div className={`rounded-xl p-4 ${getCategoryStyle(selectedItem.matrix_category).bg}`}>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="text-center p-3 bg-background/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Selling Price</p>
+                            <p className="text-lg font-bold">${selectedItem.selling_price.toFixed(2)}</p>
+                          </div>
+                          <div className="text-center p-3 bg-background/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Food Cost</p>
+                            <p className="text-lg font-bold">${selectedItem.food_cost.toFixed(2)}</p>
+                          </div>
+                          <div className="text-center p-3 bg-background/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Food Cost %</p>
+                            <p className={`text-lg font-bold ${selectedItem.food_cost_pct > 35 ? 'text-red-500' : 'text-green-500'}`}>
+                              {selectedItem.food_cost_pct.toFixed(1)}%
+                            </p>
+                          </div>
+                          <div className="text-center p-3 bg-background/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground">Matrix</p>
+                            <Badge className={`${getCategoryStyle(selectedItem.matrix_category).bg} ${getCategoryStyle(selectedItem.matrix_category).color} border-0 mt-1`}>
+                              {getCategoryStyle(selectedItem.matrix_category).label}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
 
-                  {/* Ingredients List */}
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Package className="h-4 w-4" />
-                        Ingredients
-                        <InfoTooltip content="List of all ingredients used in this item with their costs and cross-utilization status" />
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Ingredient</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                            <TableHead className="text-right">Cost</TableHead>
-                            <TableHead>Cross-Use</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                      {/* Ingredients - Mobile Cards */}
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Package className="h-4 w-4" />
+                            Ingredients ({(selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || []).length})
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
                           {(selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || []).map((ing, idx) => {
                             const crossUse = getCrossUtilization[ing.name];
                             const isShared = crossUse && crossUse.items.length > 1;
                             const otherItems = crossUse ? crossUse.items.filter(i => i !== selectedItem.item_name) : [];
                             
                             return (
-                              <TableRow key={idx}>
-                                <TableCell className="font-medium">{ing.name}</TableCell>
-                                <TableCell className="text-right">{ing.amount} {ing.unit}</TableCell>
-                                <TableCell className="text-right">${ing.cost.toFixed(2)}</TableCell>
-                                <TableCell>
-                                  {isShared ? (
-                                    <Tooltip>
-                                      <TooltipTrigger>
-                                        <Badge variant="outline" className="text-green-600 border-green-500/30 bg-green-500/10">
-                                          <Link2 className="h-3 w-3 mr-1" />
-                                          {crossUse.items.length} items
-                                        </Badge>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p className="font-medium mb-1">Also used in:</p>
-                                        <ul className="text-xs">
-                                          {otherItems.map((item, i) => (
-                                            <li key={i}>• {item}</li>
-                                          ))}
-                                        </ul>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  ) : (
-                                    <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-500/10">
-                                      Single use
-                                    </Badge>
-                                  )}
-                                </TableCell>
-                              </TableRow>
+                              <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                                <div className="flex-1">
+                                  <p className="font-medium text-sm">{ing.name}</p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs text-muted-foreground">{ing.amount} {ing.unit}</span>
+                                    <span className="text-xs text-muted-foreground">•</span>
+                                    <span className="text-xs font-medium">${ing.cost.toFixed(2)}</span>
+                                  </div>
+                                </div>
+                                {isShared ? (
+                                  <Badge variant="outline" className="text-green-600 border-green-500/30 bg-green-500/10 text-xs">
+                                    <Link2 className="h-3 w-3 mr-1" />
+                                    {crossUse.items.length}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-500/10 text-xs">
+                                    Single
+                                  </Badge>
+                                )}
+                              </div>
                             );
                           })}
-                        </TableBody>
-                      </Table>
-                      
-                      <div className="mt-3 pt-3 border-t flex justify-between text-sm">
-                        <span className="text-muted-foreground">Total Ingredient Cost:</span>
-                        <span className="font-bold">
-                          ${(selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || [])
-                            .reduce((sum, ing) => sum + ing.cost, 0).toFixed(2)}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
+                          <div className="flex justify-between items-center pt-3 border-t mt-3">
+                            <span className="text-sm text-muted-foreground">Total Cost:</span>
+                            <span className="text-lg font-bold">
+                              ${(selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || [])
+                                .reduce((sum, ing) => sum + ing.cost, 0).toFixed(2)}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
 
-                  {/* Cross-Utilized Products */}
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Link2 className="h-4 w-4" />
-                        Cross-Utilized Products
-                        <InfoTooltip content="Other menu items that share ingredients with this item - useful for bulk purchasing and inventory management" />
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {(() => {
-                        const ingredients = selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || [];
-                        const sharedItems = new Set<string>();
-                        
-                        ingredients.forEach(ing => {
-                          const crossUse = getCrossUtilization[ing.name];
-                          if (crossUse) {
-                            crossUse.items.forEach(item => {
-                              if (item !== selectedItem.item_name) sharedItems.add(item);
+                      {/* Cross-Utilized Products - Mobile */}
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Link2 className="h-4 w-4" />
+                            Cross-Utilized Products
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {(() => {
+                            const ingredients = selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || [];
+                            const sharedItems = new Set<string>();
+                            
+                            ingredients.forEach(ing => {
+                              const crossUse = getCrossUtilization[ing.name];
+                              if (crossUse) {
+                                crossUse.items.forEach(item => {
+                                  if (item !== selectedItem.item_name) sharedItems.add(item);
+                                });
+                              }
                             });
-                          }
-                        });
-                        
-                        if (sharedItems.size === 0) {
-                          return <p className="text-sm text-muted-foreground text-center py-4">No shared ingredients with other items</p>;
-                        }
-                        
-                        return (
-                          <div className="space-y-2">
-                            {Array.from(sharedItems).map(itemName => {
-                              const menuItem = menuItems.find(i => i.item_name === itemName);
-                              const sharedIngs = ingredients.filter(ing => {
-                                const crossUse = getCrossUtilization[ing.name];
-                                return crossUse && crossUse.items.includes(itemName);
-                              });
-                              
-                              return (
-                                <Card key={itemName} className="bg-muted/30">
-                                  <CardContent className="p-3">
-                                    <div className="flex justify-between items-start">
+                            
+                            if (sharedItems.size === 0) {
+                              return <p className="text-sm text-muted-foreground text-center py-4">No shared ingredients</p>;
+                            }
+                            
+                            return (
+                              <div className="space-y-2">
+                                {Array.from(sharedItems).map(itemName => {
+                                  const menuItem = menuItems.find(i => i.item_name === itemName);
+                                  const sharedIngs = ingredients.filter(ing => {
+                                    const crossUse = getCrossUtilization[ing.name];
+                                    return crossUse && crossUse.items.includes(itemName);
+                                  });
+                                  
+                                  return (
+                                    <div key={itemName} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
                                       <div>
                                         <p className="font-medium text-sm">{itemName}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                          Shared: {sharedIngs.map(i => i.name).join(', ')}
+                                        <p className="text-xs text-muted-foreground line-clamp-1">
+                                          {sharedIngs.map(i => i.name).join(', ')}
                                         </p>
                                       </div>
                                       {menuItem && (
-                                        <Badge className={`${getCategoryStyle(menuItem.matrix_category).bg} ${getCategoryStyle(menuItem.matrix_category).color} border-0 text-xs`}>
+                                        <Badge className={`${getCategoryStyle(menuItem.matrix_category).bg} ${getCategoryStyle(menuItem.matrix_category).color} border-0 text-xs shrink-0`}>
                                           {getCategoryStyle(menuItem.matrix_category).label}
                                         </Badge>
                                       )}
                                     </div>
-                                  </CardContent>
-                                </Card>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </CardContent>
+                      </Card>
+
+                      {/* AI Suggestions - Mobile */}
+                      <Card className="border-primary/30">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                            AI Suggestions
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            {getOptimizationSuggestions(selectedItem).map((suggestion, idx) => (
+                              <div key={idx} className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg">
+                                <Lightbulb className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+                                <span className="text-sm">{suggestion}</span>
+                              </div>
+                            ))}
+                            {getOptimizationSuggestions(selectedItem).length === 0 && (
+                              <div className="text-center py-6">
+                                <div className="text-3xl mb-2">✅</div>
+                                <p className="text-sm text-muted-foreground">This item is well optimized!</p>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </ScrollArea>
+                </div>
+              </DrawerContent>
+            </Drawer>
+
+            {/* Desktop: Standard Dialog */}
+            <Dialog open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
+              <DialogContent className="max-w-2xl max-h-[90vh] hidden md:flex md:flex-col">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Utensils className="h-5 w-5 text-primary" />
+                    {selectedItem.item_name} - Recipe & Ingredients
+                  </DialogTitle>
+                  <DialogDescription>
+                    View ingredients, cross-utilization analysis, and optimization suggestions
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <ScrollArea className="max-h-[70vh]">
+                  <div className="space-y-4 pr-4">
+                    {/* Item Summary */}
+                    <Card className={`${getCategoryStyle(selectedItem.matrix_category).bg} border-0`}>
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-4 gap-3 text-sm">
+                          <div>
+                            <p className="text-muted-foreground text-xs">Selling Price</p>
+                            <p className="font-bold">${selectedItem.selling_price.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs">Food Cost</p>
+                            <p className="font-bold">${selectedItem.food_cost.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs">Food Cost %</p>
+                            <p className={`font-bold ${selectedItem.food_cost_pct > 35 ? 'text-red-500' : 'text-green-500'}`}>
+                              {selectedItem.food_cost_pct.toFixed(1)}%
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs">Matrix</p>
+                            <Badge className={`${getCategoryStyle(selectedItem.matrix_category).bg} ${getCategoryStyle(selectedItem.matrix_category).color} border-0`}>
+                              {getCategoryStyle(selectedItem.matrix_category).label}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Ingredients List */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Package className="h-4 w-4" />
+                          Ingredients
+                          <InfoTooltip content="List of all ingredients used in this item with their costs and cross-utilization status" />
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Ingredient</TableHead>
+                              <TableHead className="text-right">Amount</TableHead>
+                              <TableHead className="text-right">Cost</TableHead>
+                              <TableHead>Cross-Use</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {(selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || []).map((ing, idx) => {
+                              const crossUse = getCrossUtilization[ing.name];
+                              const isShared = crossUse && crossUse.items.length > 1;
+                              const otherItems = crossUse ? crossUse.items.filter(i => i !== selectedItem.item_name) : [];
+                              
+                              return (
+                                <TableRow key={idx}>
+                                  <TableCell className="font-medium">{ing.name}</TableCell>
+                                  <TableCell className="text-right">{ing.amount} {ing.unit}</TableCell>
+                                  <TableCell className="text-right">${ing.cost.toFixed(2)}</TableCell>
+                                  <TableCell>
+                                    {isShared ? (
+                                      <Tooltip>
+                                        <TooltipTrigger>
+                                          <Badge variant="outline" className="text-green-600 border-green-500/30 bg-green-500/10">
+                                            <Link2 className="h-3 w-3 mr-1" />
+                                            {crossUse.items.length} items
+                                          </Badge>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p className="font-medium mb-1">Also used in:</p>
+                                          <ul className="text-xs">
+                                            {otherItems.map((item, i) => (
+                                              <li key={i}>• {item}</li>
+                                            ))}
+                                          </ul>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ) : (
+                                      <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-500/10">
+                                        Single use
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
                               );
                             })}
-                          </div>
-                        );
-                      })()}
-                    </CardContent>
-                  </Card>
+                          </TableBody>
+                        </Table>
+                        
+                        <div className="mt-3 pt-3 border-t flex justify-between text-sm">
+                          <span className="text-muted-foreground">Total Ingredient Cost:</span>
+                          <span className="font-bold">
+                            ${(selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || [])
+                              .reduce((sum, ing) => sum + ing.cost, 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                  {/* Optimization Suggestions */}
-                  <Card className="border-primary/30">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        AI Optimization Suggestions
-                        <InfoTooltip content="Smart recommendations based on ingredient usage, cross-utilization patterns, and menu engineering best practices" />
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {getOptimizationSuggestions(selectedItem).map((suggestion, idx) => (
-                          <div key={idx} className="flex items-start gap-2 text-sm">
-                            <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                            <span>{suggestion}</span>
-                          </div>
-                        ))}
-                        {getOptimizationSuggestions(selectedItem).length === 0 && (
-                          <p className="text-sm text-muted-foreground text-center py-4">
-                            ✅ This item is well optimized!
-                          </p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </ScrollArea>
-            )}
-          </DialogContent>
-        </Dialog>
+                    {/* Cross-Utilized Products */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Link2 className="h-4 w-4" />
+                          Cross-Utilized Products
+                          <InfoTooltip content="Other menu items that share ingredients with this item - useful for bulk purchasing and inventory management" />
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {(() => {
+                          const ingredients = selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || [];
+                          const sharedItems = new Set<string>();
+                          
+                          ingredients.forEach(ing => {
+                            const crossUse = getCrossUtilization[ing.name];
+                            if (crossUse) {
+                              crossUse.items.forEach(item => {
+                                if (item !== selectedItem.item_name) sharedItems.add(item);
+                              });
+                            }
+                          });
+                          
+                          if (sharedItems.size === 0) {
+                            return <p className="text-sm text-muted-foreground text-center py-4">No shared ingredients with other items</p>;
+                          }
+                          
+                          return (
+                            <div className="space-y-2">
+                              {Array.from(sharedItems).map(itemName => {
+                                const menuItem = menuItems.find(i => i.item_name === itemName);
+                                const sharedIngs = ingredients.filter(ing => {
+                                  const crossUse = getCrossUtilization[ing.name];
+                                  return crossUse && crossUse.items.includes(itemName);
+                                });
+                                
+                                return (
+                                  <Card key={itemName} className="bg-muted/30">
+                                    <CardContent className="p-3">
+                                      <div className="flex justify-between items-start">
+                                        <div>
+                                          <p className="font-medium text-sm">{itemName}</p>
+                                          <p className="text-xs text-muted-foreground">
+                                            Shared: {sharedIngs.map(i => i.name).join(', ')}
+                                          </p>
+                                        </div>
+                                        {menuItem && (
+                                          <Badge className={`${getCategoryStyle(menuItem.matrix_category).bg} ${getCategoryStyle(menuItem.matrix_category).color} border-0 text-xs`}>
+                                            {getCategoryStyle(menuItem.matrix_category).label}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </CardContent>
+                    </Card>
+
+                    {/* Optimization Suggestions */}
+                    <Card className="border-primary/30">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          AI Optimization Suggestions
+                          <InfoTooltip content="Smart recommendations based on ingredient usage, cross-utilization patterns, and menu engineering best practices" />
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {getOptimizationSuggestions(selectedItem).map((suggestion, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-sm">
+                              <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                              <span>{suggestion}</span>
+                            </div>
+                          ))}
+                          {getOptimizationSuggestions(selectedItem).length === 0 && (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              ✅ This item is well optimized!
+                            </p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
       </main>
 
       <BottomNav />
