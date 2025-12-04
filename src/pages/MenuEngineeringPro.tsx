@@ -1677,297 +1677,146 @@ export default function MenuEngineeringPro() {
           </TabsContent>
         </Tabs>
 
-        {/* Recipe Detail - Mobile Sheet / Desktop Dialog */}
+        {/* Recipe Detail - Single Responsive Dialog */}
         {selectedItem && (
-          <>
-            {/* Mobile: Full-screen Dialog */}
-            <Dialog open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
-              <DialogContent className="h-[95vh] w-[95vw] max-w-none md:hidden p-0 flex flex-col overflow-hidden">
-                {/* Mobile Header */}
-                <div className="flex items-center justify-between p-4 border-b bg-background shrink-0">
-                  <div className="flex items-center gap-2">
-                    <Utensils className="h-5 w-5 text-primary" />
-                    <div>
-                      <h3 className="font-semibold text-base">{selectedItem.item_name}</h3>
-                      <p className="text-xs text-muted-foreground">Recipe & Ingredients</p>
+          <Dialog open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
+            <DialogContent className="w-[95vw] max-w-2xl h-[90vh] md:h-auto md:max-h-[90vh] p-0 flex flex-col overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b bg-background shrink-0">
+                <div className="flex items-center gap-2">
+                  <Utensils className="h-5 w-5 text-primary" />
+                  <div>
+                    <h3 className="font-semibold text-base">{selectedItem.item_name}</h3>
+                    <p className="text-xs text-muted-foreground">Recipe & Ingredients</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Item Summary Grid */}
+                <div className={`rounded-xl p-4 ${getCategoryStyle(selectedItem.matrix_category).bg}`}>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="text-center p-3 bg-background/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Selling Price</p>
+                      <p className="text-lg font-bold">${selectedItem.selling_price.toFixed(2)}</p>
+                    </div>
+                    <div className="text-center p-3 bg-background/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Food Cost</p>
+                      <p className="text-lg font-bold">${selectedItem.food_cost.toFixed(2)}</p>
+                    </div>
+                    <div className="text-center p-3 bg-background/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Food Cost %</p>
+                      <p className={`text-lg font-bold ${selectedItem.food_cost_pct > 35 ? 'text-red-500' : 'text-green-500'}`}>
+                        {selectedItem.food_cost_pct.toFixed(1)}%
+                      </p>
+                    </div>
+                    <div className="text-center p-3 bg-background/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Matrix</p>
+                      <Badge className={`${getCategoryStyle(selectedItem.matrix_category).bg} ${getCategoryStyle(selectedItem.matrix_category).color} border-0 mt-1`}>
+                        {getCategoryStyle(selectedItem.matrix_category).label}
+                      </Badge>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto">
-                    <div className="p-4 pb-20 space-y-4">
-                      {/* Item Summary - Mobile Grid */}
-                      <div className={`rounded-xl p-4 ${getCategoryStyle(selectedItem.matrix_category).bg}`}>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="text-center p-3 bg-background/50 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Selling Price</p>
-                            <p className="text-lg font-bold">${selectedItem.selling_price.toFixed(2)}</p>
-                          </div>
-                          <div className="text-center p-3 bg-background/50 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Food Cost</p>
-                            <p className="text-lg font-bold">${selectedItem.food_cost.toFixed(2)}</p>
-                          </div>
-                          <div className="text-center p-3 bg-background/50 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Food Cost %</p>
-                            <p className={`text-lg font-bold ${selectedItem.food_cost_pct > 35 ? 'text-red-500' : 'text-green-500'}`}>
-                              {selectedItem.food_cost_pct.toFixed(1)}%
-                            </p>
-                          </div>
-                          <div className="text-center p-3 bg-background/50 rounded-lg">
-                            <p className="text-xs text-muted-foreground">Matrix</p>
-                            <Badge className={`${getCategoryStyle(selectedItem.matrix_category).bg} ${getCategoryStyle(selectedItem.matrix_category).color} border-0 mt-1`}>
-                              {getCategoryStyle(selectedItem.matrix_category).label}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
+                {/* Editable Ingredients */}
+                <EditableRecipeIngredients
+                  ingredients={editableIngredients}
+                  onIngredientsChange={handleIngredientsChange}
+                  currency={currency}
+                  onCurrencyChange={setCurrency}
+                />
 
-                      {/* Editable Ingredients - Mobile */}
-                      <EditableRecipeIngredients
-                        ingredients={editableIngredients}
-                        onIngredientsChange={handleIngredientsChange}
-                        currency={currency}
-                        onCurrencyChange={setCurrency}
-                      />
-
-                      {/* Cross-Utilized Products - Mobile */}
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm flex items-center gap-2">
-                            <Link2 className="h-4 w-4" />
-                            Cross-Utilized Products
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {(() => {
-                            const ingredients = selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || [];
-                            const sharedItems = new Set<string>();
-                            
-                            ingredients.forEach(ing => {
+                {/* Cross-Utilized Products */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Link2 className="h-4 w-4" />
+                      Cross-Utilized Products
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const ingredients = selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || [];
+                      const sharedItems = new Set<string>();
+                      
+                      ingredients.forEach(ing => {
+                        const crossUse = getCrossUtilization[ing.name];
+                        if (crossUse) {
+                          crossUse.items.forEach(item => {
+                            if (item !== selectedItem.item_name) sharedItems.add(item);
+                          });
+                        }
+                      });
+                      
+                      if (sharedItems.size === 0) {
+                        return <p className="text-sm text-muted-foreground text-center py-4">No shared ingredients</p>;
+                      }
+                      
+                      return (
+                        <div className="space-y-2">
+                          {Array.from(sharedItems).map(itemName => {
+                            const menuItem = menuItems.find(i => i.item_name === itemName);
+                            const sharedIngs = ingredients.filter(ing => {
                               const crossUse = getCrossUtilization[ing.name];
-                              if (crossUse) {
-                                crossUse.items.forEach(item => {
-                                  if (item !== selectedItem.item_name) sharedItems.add(item);
-                                });
-                              }
+                              return crossUse && crossUse.items.includes(itemName);
                             });
                             
-                            if (sharedItems.size === 0) {
-                              return <p className="text-sm text-muted-foreground text-center py-4">No shared ingredients</p>;
-                            }
-                            
                             return (
-                              <div className="space-y-2">
-                                {Array.from(sharedItems).map(itemName => {
-                                  const menuItem = menuItems.find(i => i.item_name === itemName);
-                                  const sharedIngs = ingredients.filter(ing => {
-                                    const crossUse = getCrossUtilization[ing.name];
-                                    return crossUse && crossUse.items.includes(itemName);
-                                  });
-                                  
-                                  return (
-                                    <div key={itemName} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
-                                      <div>
-                                        <p className="font-medium text-sm">{itemName}</p>
-                                        <p className="text-xs text-muted-foreground line-clamp-1">
-                                          {sharedIngs.map(i => i.name).join(', ')}
-                                        </p>
-                                      </div>
-                                      {menuItem && (
-                                        <Badge className={`${getCategoryStyle(menuItem.matrix_category).bg} ${getCategoryStyle(menuItem.matrix_category).color} border-0 text-xs shrink-0`}>
-                                          {getCategoryStyle(menuItem.matrix_category).label}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  );
-                                })}
+                              <div key={itemName} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
+                                <div>
+                                  <p className="font-medium text-sm">{itemName}</p>
+                                  <p className="text-xs text-muted-foreground line-clamp-1">
+                                    {sharedIngs.map(i => i.name).join(', ')}
+                                  </p>
+                                </div>
+                                {menuItem && (
+                                  <Badge className={`${getCategoryStyle(menuItem.matrix_category).bg} ${getCategoryStyle(menuItem.matrix_category).color} border-0 text-xs shrink-0`}>
+                                    {getCategoryStyle(menuItem.matrix_category).label}
+                                  </Badge>
+                                )}
                               </div>
                             );
-                          })()}
-                        </CardContent>
-                      </Card>
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
 
-                      {/* AI Suggestions - Mobile */}
-                      <Card className="border-primary/30">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm flex items-center gap-2">
-                            <div className="relative w-5 h-5">
-                              <div className="absolute inset-0 border border-white/80" style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }} />
-                              <div className="absolute inset-[3px] border border-white/60" style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }} />
-                              <div className="absolute inset-[6px] bg-white/80" style={{ clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" }} />
-                            </div>
-                            AI Suggestions
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            {getOptimizationSuggestions(selectedItem).map((suggestion, idx) => (
-                              <div key={idx} className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg">
-                                <Lightbulb className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
-                                <span className="text-sm">{suggestion}</span>
-                              </div>
-                            ))}
-                            {getOptimizationSuggestions(selectedItem).length === 0 && (
-                              <div className="text-center py-6">
-                                <div className="text-3xl mb-2">✅</div>
-                                <p className="text-sm text-muted-foreground">This item is well optimized!</p>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
+                {/* AI Suggestions */}
+                <Card className="border-primary/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <div className="relative w-5 h-5">
+                        <div className="absolute inset-0 border border-white/80" style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }} />
+                        <div className="absolute inset-[3px] border border-white/60" style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }} />
+                        <div className="absolute inset-[6px] bg-white/80" style={{ clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" }} />
+                      </div>
+                      AI Suggestions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {getOptimizationSuggestions(selectedItem).map((suggestion, idx) => (
+                        <div key={idx} className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg">
+                          <Lightbulb className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+                          <span className="text-sm">{suggestion}</span>
+                        </div>
+                      ))}
+                      {getOptimizationSuggestions(selectedItem).length === 0 && (
+                        <div className="text-center py-6">
+                          <div className="text-3xl mb-2">✅</div>
+                          <p className="text-sm text-muted-foreground">This item is well optimized!</p>
+                        </div>
+                      )}
                     </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            {/* Desktop: Standard Dialog */}
-            <Dialog open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
-              <DialogContent className="max-w-2xl max-h-[90vh] hidden md:flex md:flex-col overflow-hidden">
-                <DialogHeader className="shrink-0">
-                  <DialogTitle className="flex items-center gap-2">
-                    <Utensils className="h-5 w-5 text-primary" />
-                    {selectedItem.item_name} - Recipe & Ingredients
-                  </DialogTitle>
-                  <DialogDescription>
-                    View ingredients, cross-utilization analysis, and optimization suggestions
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="flex-1 overflow-y-auto max-h-[70vh] pr-2">
-                  <div className="space-y-4 pr-2">
-                    {/* Item Summary */}
-                    <Card className={`${getCategoryStyle(selectedItem.matrix_category).bg} border-0`}>
-                      <CardContent className="p-4">
-                        <div className="grid grid-cols-4 gap-3 text-sm">
-                          <div>
-                            <p className="text-muted-foreground text-xs">Selling Price</p>
-                            <p className="font-bold">${selectedItem.selling_price.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-xs">Food Cost</p>
-                            <p className="font-bold">${selectedItem.food_cost.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-xs">Food Cost %</p>
-                            <p className={`font-bold ${selectedItem.food_cost_pct > 35 ? 'text-red-500' : 'text-green-500'}`}>
-                              {selectedItem.food_cost_pct.toFixed(1)}%
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-xs">Matrix</p>
-                            <Badge className={`${getCategoryStyle(selectedItem.matrix_category).bg} ${getCategoryStyle(selectedItem.matrix_category).color} border-0`}>
-                              {getCategoryStyle(selectedItem.matrix_category).label}
-                            </Badge>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Editable Ingredients - Desktop */}
-                    <EditableRecipeIngredients
-                      ingredients={editableIngredients}
-                      onIngredientsChange={handleIngredientsChange}
-                      currency={currency}
-                      onCurrencyChange={setCurrency}
-                    />
-
-                    {/* Cross-Utilized Products */}
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <Link2 className="h-4 w-4" />
-                          Cross-Utilized Products
-                          <InfoTooltip content="Other menu items that share ingredients with this item - useful for bulk purchasing and inventory management" />
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {(() => {
-                          const ingredients = selectedItem.ingredients || DEMO_INGREDIENTS[selectedItem.item_name] || [];
-                          const sharedItems = new Set<string>();
-                          
-                          ingredients.forEach(ing => {
-                            const crossUse = getCrossUtilization[ing.name];
-                            if (crossUse) {
-                              crossUse.items.forEach(item => {
-                                if (item !== selectedItem.item_name) sharedItems.add(item);
-                              });
-                            }
-                          });
-                          
-                          if (sharedItems.size === 0) {
-                            return <p className="text-sm text-muted-foreground text-center py-4">No shared ingredients with other items</p>;
-                          }
-                          
-                          return (
-                            <div className="space-y-2">
-                              {Array.from(sharedItems).map(itemName => {
-                                const menuItem = menuItems.find(i => i.item_name === itemName);
-                                const sharedIngs = ingredients.filter(ing => {
-                                  const crossUse = getCrossUtilization[ing.name];
-                                  return crossUse && crossUse.items.includes(itemName);
-                                });
-                                
-                                return (
-                                  <Card key={itemName} className="bg-muted/30">
-                                    <CardContent className="p-3">
-                                      <div className="flex justify-between items-start">
-                                        <div>
-                                          <p className="font-medium text-sm">{itemName}</p>
-                                          <p className="text-xs text-muted-foreground">
-                                            Shared: {sharedIngs.map(i => i.name).join(', ')}
-                                          </p>
-                                        </div>
-                                        {menuItem && (
-                                          <Badge className={`${getCategoryStyle(menuItem.matrix_category).bg} ${getCategoryStyle(menuItem.matrix_category).color} border-0 text-xs`}>
-                                            {getCategoryStyle(menuItem.matrix_category).label}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </CardContent>
-                                  </Card>
-                                );
-                              })}
-                            </div>
-                          );
-                        })()}
-                      </CardContent>
-                    </Card>
-
-                    {/* Optimization Suggestions */}
-                    <Card className="border-primary/30">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <div className="relative w-5 h-5">
-                            <div className="absolute inset-0 border border-white/80" style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }} />
-                            <div className="absolute inset-[3px] border border-white/60" style={{ clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }} />
-                            <div className="absolute inset-[6px] bg-white/80" style={{ clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" }} />
-                          </div>
-                          AI Optimization Suggestions
-                          <InfoTooltip content="Smart recommendations based on ingredient usage, cross-utilization patterns, and menu engineering best practices" />
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          {getOptimizationSuggestions(selectedItem).map((suggestion, idx) => (
-                            <div key={idx} className="flex items-start gap-2 text-sm">
-                              <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                              <span>{suggestion}</span>
-                            </div>
-                          ))}
-                          {getOptimizationSuggestions(selectedItem).length === 0 && (
-                            <p className="text-sm text-muted-foreground text-center py-4">
-                              ✅ This item is well optimized!
-                            </p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </>
+                  </CardContent>
+                </Card>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </main>
 
