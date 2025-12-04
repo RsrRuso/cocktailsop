@@ -1680,9 +1680,9 @@ export default function MenuEngineeringPro() {
         {/* Recipe Detail - Single Responsive Dialog */}
         {selectedItem && (
           <Dialog open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
-            <DialogContent className="w-[95vw] max-w-2xl h-[90vh] md:h-auto md:max-h-[90vh] p-0 flex flex-col overflow-hidden">
+            <DialogContent className="w-[95vw] max-w-2xl h-[90vh] md:h-auto md:max-h-[90vh] p-0 flex flex-col overflow-hidden bg-background/80 backdrop-blur-xl border-white/10">
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b bg-background shrink-0">
+              <div className="flex items-center justify-between p-4 border-b border-white/10 bg-background/50 shrink-0">
                 <div className="flex items-center gap-2">
                   <Utensils className="h-5 w-5 text-primary" />
                   <div>
