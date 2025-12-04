@@ -1682,10 +1682,10 @@ export default function MenuEngineeringPro() {
           <>
             {/* Mobile: Full-screen Sheet */}
             <Sheet open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
-              <SheetContent side="bottom" className="h-[95vh] md:hidden p-0">
-                <div className="flex flex-col h-full">
+              <SheetContent side="bottom" className="h-[95vh] md:hidden p-0 overflow-hidden">
+                <div className="flex flex-col h-full overflow-hidden">
                   {/* Mobile Header */}
-                  <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-10">
+                  <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-10 shrink-0">
                     <div className="flex items-center gap-2">
                       <Utensils className="h-5 w-5 text-primary" />
                       <div>
@@ -1698,7 +1698,7 @@ export default function MenuEngineeringPro() {
                     </Button>
                   </div>
 
-                  <ScrollArea className="flex-1">
+                  <div className="flex-1 overflow-y-auto">
                     <div className="p-4 pb-20 space-y-4">
                       {/* Item Summary - Mobile Grid */}
                       <div className={`rounded-xl p-4 ${getCategoryStyle(selectedItem.matrix_category).bg}`}>
@@ -1821,15 +1821,15 @@ export default function MenuEngineeringPro() {
                         </CardContent>
                       </Card>
                     </div>
-                  </ScrollArea>
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>
 
             {/* Desktop: Standard Dialog */}
             <Dialog open={showRecipeDialog} onOpenChange={setShowRecipeDialog}>
-              <DialogContent className="max-w-2xl max-h-[90vh] hidden md:flex md:flex-col">
-                <DialogHeader>
+              <DialogContent className="max-w-2xl max-h-[90vh] hidden md:flex md:flex-col overflow-hidden">
+                <DialogHeader className="shrink-0">
                   <DialogTitle className="flex items-center gap-2">
                     <Utensils className="h-5 w-5 text-primary" />
                     {selectedItem.item_name} - Recipe & Ingredients
@@ -1839,8 +1839,8 @@ export default function MenuEngineeringPro() {
                   </DialogDescription>
                 </DialogHeader>
                 
-                <ScrollArea className="max-h-[70vh]">
-                  <div className="space-y-4 pr-4">
+                <div className="flex-1 overflow-y-auto max-h-[70vh] pr-2">
+                  <div className="space-y-4 pr-2">
                     {/* Item Summary */}
                     <Card className={`${getCategoryStyle(selectedItem.matrix_category).bg} border-0`}>
                       <CardContent className="p-4">
@@ -1969,7 +1969,7 @@ export default function MenuEngineeringPro() {
                       </CardContent>
                     </Card>
                   </div>
-                </ScrollArea>
+                </div>
               </DialogContent>
             </Dialog>
           </>
