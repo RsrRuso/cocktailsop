@@ -3446,6 +3446,266 @@ export type Database = {
         }
         Relationships: []
       }
+      menu_analysis: {
+        Row: {
+          analysis_date: string | null
+          avg_food_cost_pct: number | null
+          created_at: string | null
+          dogs_count: number | null
+          id: string
+          period_end: string | null
+          period_start: string | null
+          plowhorses_count: number | null
+          puzzles_count: number | null
+          stars_count: number | null
+          total_food_cost: number | null
+          total_items: number | null
+          total_revenue: number | null
+          user_id: string
+        }
+        Insert: {
+          analysis_date?: string | null
+          avg_food_cost_pct?: number | null
+          created_at?: string | null
+          dogs_count?: number | null
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          plowhorses_count?: number | null
+          puzzles_count?: number | null
+          stars_count?: number | null
+          total_food_cost?: number | null
+          total_items?: number | null
+          total_revenue?: number | null
+          user_id: string
+        }
+        Update: {
+          analysis_date?: string | null
+          avg_food_cost_pct?: number | null
+          created_at?: string | null
+          dogs_count?: number | null
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          plowhorses_count?: number | null
+          puzzles_count?: number | null
+          stars_count?: number | null
+          total_food_cost?: number | null
+          total_items?: number | null
+          total_revenue?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      menu_import_batches: {
+        Row: {
+          error_message: string | null
+          id: string
+          import_date: string | null
+          period_end: string | null
+          period_start: string | null
+          raw_data: Json | null
+          records_imported: number | null
+          source_name: string | null
+          source_type: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          error_message?: string | null
+          id?: string
+          import_date?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          raw_data?: Json | null
+          records_imported?: number | null
+          source_name?: string | null
+          source_type?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          error_message?: string | null
+          id?: string
+          import_date?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          raw_data?: Json | null
+          records_imported?: number | null
+          source_name?: string | null
+          source_type?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      menu_item_analysis: {
+        Row: {
+          ai_recommendation: string | null
+          analysis_id: string | null
+          category: string | null
+          contribution_margin: number | null
+          created_at: string | null
+          food_cost: number | null
+          food_cost_pct: number | null
+          id: string
+          menu_item_id: string | null
+          popularity_index: number | null
+          profitability_index: number | null
+          revenue: number | null
+          sales_mix_pct: number | null
+          units_sold: number | null
+        }
+        Insert: {
+          ai_recommendation?: string | null
+          analysis_id?: string | null
+          category?: string | null
+          contribution_margin?: number | null
+          created_at?: string | null
+          food_cost?: number | null
+          food_cost_pct?: number | null
+          id?: string
+          menu_item_id?: string | null
+          popularity_index?: number | null
+          profitability_index?: number | null
+          revenue?: number | null
+          sales_mix_pct?: number | null
+          units_sold?: number | null
+        }
+        Update: {
+          ai_recommendation?: string | null
+          analysis_id?: string | null
+          category?: string | null
+          contribution_margin?: number | null
+          created_at?: string | null
+          food_cost?: number | null
+          food_cost_pct?: number | null
+          id?: string
+          menu_item_id?: string | null
+          popularity_index?: number | null
+          profitability_index?: number | null
+          revenue?: number | null
+          sales_mix_pct?: number | null
+          units_sold?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_analysis_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "menu_analysis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_analysis_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          food_cost: number | null
+          id: string
+          is_active: boolean | null
+          item_name: string
+          micros_item_id: string | null
+          portion_size: string | null
+          recipe_id: string | null
+          selling_price: number | null
+          subcategory: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          food_cost?: number | null
+          id?: string
+          is_active?: boolean | null
+          item_name: string
+          micros_item_id?: string | null
+          portion_size?: string | null
+          recipe_id?: string | null
+          selling_price?: number | null
+          subcategory?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          food_cost?: number | null
+          id?: string
+          is_active?: boolean | null
+          item_name?: string
+          micros_item_id?: string | null
+          portion_size?: string | null
+          recipe_id?: string | null
+          selling_price?: number | null
+          subcategory?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      menu_sales_data: {
+        Row: {
+          created_at: string | null
+          daypart: string | null
+          id: string
+          import_batch_id: string | null
+          menu_item_id: string | null
+          modifier_revenue: number | null
+          revenue: number | null
+          sale_date: string
+          units_sold: number | null
+          user_id: string
+          waste_cost: number | null
+          waste_units: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          daypart?: string | null
+          id?: string
+          import_batch_id?: string | null
+          menu_item_id?: string | null
+          modifier_revenue?: number | null
+          revenue?: number | null
+          sale_date: string
+          units_sold?: number | null
+          user_id: string
+          waste_cost?: number | null
+          waste_units?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          daypart?: string | null
+          id?: string
+          import_batch_id?: string | null
+          menu_item_id?: string | null
+          modifier_revenue?: number | null
+          revenue?: number | null
+          sale_date?: string
+          units_sold?: number | null
+          user_id?: string
+          waste_cost?: number | null
+          waste_units?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_sales_data_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
