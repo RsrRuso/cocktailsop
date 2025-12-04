@@ -10,19 +10,13 @@ const Index = () => {
   usePageTransition();
 
   useEffect(() => {
+    let isMounted = true;
+    
     const checkAuth = async () => {
       try {
-        // Quick session check with timeout
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 1000)
-        );
+        const { data: { session } } = await supabase.auth.getSession();
         
-        const sessionPromise = supabase.auth.getSession();
-        
-        const { data: { session } } = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]) as any;
+        if (!isMounted) return;
         
         if (session) {
           navigate("/home", { replace: true });
@@ -30,15 +24,33 @@ const Index = () => {
           navigate("/landing", { replace: true });
         }
       } catch (error) {
-        // If timeout or error, assume not logged in
-        console.log('Auth check timeout, redirecting to landing');
-        navigate("/landing", { replace: true });
+        console.log('Auth check error, redirecting to landing');
+        if (isMounted) {
+          navigate("/landing", { replace: true });
+        }
       } finally {
-        setIsChecking(false);
+        if (isMounted) {
+          setIsChecking(false);
+        }
       }
     };
 
+    // Start auth check immediately
     checkAuth();
+    
+    // Fallback timeout - if still checking after 2 seconds, redirect to landing
+    const fallbackTimeout = setTimeout(() => {
+      if (isMounted && isChecking) {
+        console.log('Auth check fallback timeout, redirecting to landing');
+        navigate("/landing", { replace: true });
+        setIsChecking(false);
+      }
+    }, 2000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(fallbackTimeout);
+    };
   }, [navigate]);
 
   if (isChecking) {
