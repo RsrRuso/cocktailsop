@@ -1218,6 +1218,13 @@ All colors MUST be HSL.
         0 0 36px hsl(var(--primary) / 0.15);
     }
   }
+
+  /* Ensure all blur background effects don't block interactions */
+  .blur-3xl,
+  .blur-2xl,
+  .blur-xl {
+    pointer-events: none;
+  }
   
   .glow-accent {
     box-shadow: 
