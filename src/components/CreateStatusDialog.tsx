@@ -182,12 +182,26 @@ const CreateStatusDialog = ({ open, onOpenChange, userId }: CreateStatusDialogPr
         throw new Error('No active session');
       }
 
+      // Fetch existing status to preserve music data
+      const { data: existingStatus } = await supabase
+        .from('user_status')
+        .select('music_track_id, music_track_name, music_artist, music_album_art, music_preview_url, music_spotify_url')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
       const { error } = await supabase
         .from('user_status')
         .upsert({
           user_id: session.user.id,
           status_text: statusText,
           emoji: selectedEmoji || null,
+          // Preserve existing music data
+          music_track_id: existingStatus?.music_track_id || null,
+          music_track_name: existingStatus?.music_track_name || null,
+          music_artist: existingStatus?.music_artist || null,
+          music_album_art: existingStatus?.music_album_art || null,
+          music_preview_url: existingStatus?.music_preview_url || null,
+          music_spotify_url: existingStatus?.music_spotify_url || null,
           expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         }, {
           onConflict: 'user_id',
