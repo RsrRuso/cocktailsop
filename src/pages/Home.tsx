@@ -335,27 +335,37 @@ const Home = () => {
           {/* Your Story */}
           <div className="flex flex-col items-center gap-2 min-w-[82px]">
             <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
-              <button
-                onClick={() => navigate(hasActiveStory ? `/story/${user?.id}` : "/story-options")}
-                className="relative group"
-              >
-                <Avatar className="w-[76px] h-[76px] rounded-full shadow-lg">
-                  <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
-                  <AvatarFallback className="text-lg">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
-                </Avatar>
-                {hasActiveStory ? (
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center border-2 border-background shadow-md z-10">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                  </div>
-                ) : (
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-10">
-                    <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
-                  </div>
+              <div className="relative">
+                <button
+                  onClick={() => navigate(hasActiveStory ? `/story/${user?.id}` : "/story-options")}
+                  className="relative group"
+                >
+                  <Avatar className="w-[76px] h-[76px] rounded-full shadow-lg">
+                    <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
+                    <AvatarFallback className="text-lg">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                  </Avatar>
+                  {!hasActiveStory && (
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-10">
+                      <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
+                    </div>
+                  )}
+                  {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) && (
+                    <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
+                  )}
+                </button>
+                {/* Add more button when story exists */}
+                {hasActiveStory && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate("/story-options");
+                    }}
+                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-20 active:scale-95 transition-transform"
+                  >
+                    <span className="text-primary-foreground text-base font-bold leading-none">+</span>
+                  </button>
                 )}
-                {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) && (
-                  <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
-                )}
-              </button>
+              </div>
             </BirthdayFireworks>
             <span className="text-xs text-muted-foreground font-medium">
               {hasActiveStory ? "Your Story" : "Add Story"}
