@@ -344,26 +344,6 @@ const Home = () => {
           <div className="flex flex-col items-center gap-2 min-w-[82px] pt-12">
             <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
               <div className="relative">
-                {/* Music Status Bubble */}
-                {currentUserStatus?.music_track_name && (
-                  <MusicStatusBubble
-                    trackName={currentUserStatus.music_track_name}
-                    artist={currentUserStatus.music_artist || ''}
-                    albumArt={currentUserStatus.music_album_art || undefined}
-                    previewUrl={currentUserStatus.music_preview_url}
-                    spotifyUrl={currentUserStatus.music_spotify_url || undefined}
-                  />
-                )}
-                {/* Regular Status Bubble (when no music) */}
-                {!currentUserStatus?.music_track_name && currentUserStatus?.status_text && (
-                  <StatusRing
-                    hasStatus={true}
-                    statusText={currentUserStatus.status_text}
-                    emoji={currentUserStatus.emoji || undefined}
-                  >
-                    <div />
-                  </StatusRing>
-                )}
                 {/* White glow when has active story */}
                 {hasActiveStory && (
                   <div className="absolute inset-0 rounded-full bg-white/30 blur-md animate-pulse" />
