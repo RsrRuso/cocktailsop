@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Heart, MessageCircle, Send, X,
   Smile, Reply, Trash2, Edit2, Music2, Play, Pause,
-  Volume2, VolumeX, RotateCcw, ExternalLink
+  Volume2, VolumeX, ExternalLink
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -54,20 +54,30 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   const commentInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
-  // Reset states when dialog opens/closes
+  // Reset states when dialog opens/closes - auto-play music
   useEffect(() => {
     if (open) {
       // If no preview URL, set error state immediately (no toast needed)
       const hasPreview = !!status?.music_preview_url;
       setAudioError(!hasPreview && !!status?.music_track_name);
       setAudioLoaded(false);
-      setIsPlaying(false);
+      
+      // Auto-play music when dialog opens
+      if (hasPreview && audioRef.current) {
+        audioRef.current.play().catch(() => {
+          setAudioError(true);
+        });
+      }
     } else {
       setShowComments(false);
       setShowEmojiPicker(false);
       setReplyingTo(null);
       setEditingComment(null);
       setIsPlaying(false);
+      // Stop audio when closing
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
     }
   }, [open, status?.music_preview_url, status?.music_track_name]);
 
@@ -126,19 +136,6 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
         setAudioError(true);
       });
     }
-  };
-
-  const handleReplay = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    
-    const audio = audioRef.current;
-    if (!audio || !status?.music_preview_url) return;
-    
-    audio.currentTime = 0;
-    audio.play().catch(() => {
-      setAudioError(true);
-    });
   };
 
   const toggleMute = (e: React.MouseEvent) => {
@@ -442,22 +439,27 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                 </div>
               </motion.div>
 
-              {/* Track info */}
-              <div className="text-center mt-6 space-y-1">
-                <h3 className="font-bold text-xl text-white">{status.music_track_name}</h3>
-                <p className="text-white/60 font-medium">{status.music_artist}</p>
+              {/* Track info with running marquee */}
+              <div className="text-center mt-6 space-y-1 max-w-[280px] overflow-hidden">
+                <div className="overflow-hidden">
+                  <h3 className={`font-bold text-xl text-white whitespace-nowrap ${(status.music_track_name?.length || 0) > 20 ? 'animate-marquee' : ''}`}>
+                    {status.music_track_name}
+                  </h3>
+                </div>
+                <p className="text-white/60 font-medium truncate">{status.music_artist}</p>
               </div>
 
-              {/* Audio controls */}
+              {/* Text status if exists alongside music */}
+              {status.status_text && !status.status_text.startsWith('🎵') && (
+                <div className="mt-4 px-4 py-2 bg-white/5 rounded-xl">
+                  <p className="text-white/80 text-sm text-center">{status.status_text}</p>
+                  {status.emoji && <span className="text-2xl block text-center mt-1">{status.emoji}</span>}
+                </div>
+              )}
+
+              {/* Simplified audio controls - just mute and spotify */}
               {status.music_preview_url && !audioError && (
                 <div className="flex items-center gap-3 mt-4">
-                  <button
-                    type="button"
-                    onClick={handleReplay}
-                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </button>
                   <button
                     type="button"
                     onClick={toggleMute}

@@ -120,12 +120,22 @@ const MusicStatusDialog = ({ open, onOpenChange }: MusicStatusDialogProps) => {
         return;
       }
 
+      // Fetch existing status to preserve text status
+      const { data: existingStatus } = await supabase
+        .from('user_status')
+        .select('status_text, emoji')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      // Keep existing text status if it exists and isn't a music status
+      const preserveText = existingStatus?.status_text && !existingStatus.status_text.startsWith('🎵');
+
       const { error } = await supabase
         .from('user_status')
         .upsert({
           user_id: session.user.id,
-          status_text: `🎵 ${track.name}`,
-          emoji: '🎵',
+          status_text: preserveText ? existingStatus.status_text : `🎵 ${track.name}`,
+          emoji: preserveText ? existingStatus.emoji : '🎵',
           music_track_id: track.id,
           music_track_name: track.name,
           music_artist: track.artist,
@@ -141,7 +151,9 @@ const MusicStatusDialog = ({ open, onOpenChange }: MusicStatusDialogProps) => {
 
       toast({
         title: "Music shared!",
-        description: `Now sharing "${track.name}" by ${track.artist}`,
+        description: preserveText 
+          ? `Added "${track.name}" to your status` 
+          : `Now sharing "${track.name}" by ${track.artist}`,
       });
       
       onOpenChange(false);
