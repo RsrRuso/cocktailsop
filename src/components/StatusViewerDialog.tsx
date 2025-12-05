@@ -72,13 +72,22 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   }, [open, status?.music_preview_url]);
 
   const togglePlay = () => {
+    // Create audio if it doesn't exist
+    if (!audioRef.current && status?.music_preview_url) {
+      audioRef.current = new Audio(status.music_preview_url);
+      audioRef.current.volume = 0.5;
+      audioRef.current.addEventListener('ended', () => setIsPlaying(false));
+    }
     if (!audioRef.current) return;
+    
     if (isPlaying) {
       audioRef.current.pause();
+      setIsPlaying(false);
     } else {
-      audioRef.current.play();
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => console.log('Playback error:', err));
     }
-    setIsPlaying(!isPlaying);
   };
 
   // Check if current user liked the status
@@ -276,7 +285,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                 {status.music_preview_url && (
                   <button
                     onClick={togglePlay}
-                    className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                    className="absolute inset-0 bg-black/40 flex items-center justify-center"
                   >
                     {isPlaying ? (
                       <Pause className="w-10 h-10 text-white" />
