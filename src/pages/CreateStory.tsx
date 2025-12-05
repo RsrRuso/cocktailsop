@@ -97,13 +97,24 @@ const CreateStory = () => {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    let user;
+    try {
+      const { data } = await supabase.auth.getUser();
+      user = data?.user;
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+    } catch (authError) {
+      console.error('Auth error:', authError);
+      toast.error("Please log in to create a story");
       navigate("/auth");
       return;
     }
 
     try {
+      toast.loading("Uploading story...", { id: "story-upload" });
+      
       // Upload files using powerful upload system
       const results = await uploadMultiple('stories', user.id, selectedMedia);
       
@@ -111,19 +122,20 @@ const CreateStory = () => {
       const mediaTypes: string[] = [];
       
       results.forEach((result, index) => {
-        if (!result.error) {
+        if (!result.error && result.publicUrl) {
           uploadedUrls.push(result.publicUrl);
-          mediaTypes.push(selectedMedia[index].type.startsWith('video') ? 'video' : 'image');
+          mediaTypes.push(selectedMedia[index]?.type?.startsWith('video') ? 'video' : 'image');
         }
       });
       
       if (uploadedUrls.length === 0) {
-        throw new Error('All uploads failed');
+        toast.dismiss("story-upload");
+        toast.error('Upload failed. Please try again.');
+        return;
       }
 
-      // Prepare edited data arrays aligned with uploaded URLs
+      // Prepare edited data arrays
       const musicDataArray = uploadedUrls.map((_, urlIndex) => {
-        // Find the original index in selectedMedia that corresponds to this uploaded URL
         let originalIndex = 0;
         let uploadCount = 0;
         for (let i = 0; i < results.length; i++) {
@@ -135,7 +147,6 @@ const CreateStory = () => {
             uploadCount++;
           }
         }
-        // Get music data from editedData - check all possible field names
         const ed = editedData[originalIndex];
         if (ed?.musicTrackId) {
           return {
@@ -193,37 +204,26 @@ const CreateStory = () => {
       });
 
       // Check if user has an active story (within last 24 hours)
-      const { data: existingStories, error: fetchError } = await supabase
+      const { data: existingStories } = await supabase
         .from("stories")
-        .select("*")
+        .select("id, media_urls, media_types, music_data, filters, text_overlays, trim_data")
         .eq("user_id", user.id)
         .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false });
-
-      if (fetchError) {
-        console.error('Error fetching existing stories:', fetchError);
-        throw fetchError;
-      }
+        .order("created_at", { ascending: false })
+        .limit(1);
 
       if (existingStories && existingStories.length > 0) {
-        // Add to the most recent story
+        // Append to existing story
         const existingStory = existingStories[0];
         
         const updatedMediaUrls = [...(existingStory.media_urls || []), ...uploadedUrls];
         const updatedMediaTypes = [...(existingStory.media_types || []), ...mediaTypes];
-        
-        // Safely merge edited data arrays, ensuring existing data is an array
-        const existingMusicData = Array.isArray(existingStory.music_data) ? existingStory.music_data : [];
-        const existingFilters = Array.isArray(existingStory.filters) ? existingStory.filters : [];
-        const existingTextOverlays = Array.isArray(existingStory.text_overlays) ? existingStory.text_overlays : [];
-        const existingTrimData = Array.isArray(existingStory.trim_data) ? existingStory.trim_data : [];
-        
-        const updatedMusicData = [...existingMusicData, ...musicDataArray];
-        const updatedFilters = [...existingFilters, ...filtersArray];
-        const updatedTextOverlays = [...existingTextOverlays, ...textOverlaysArray];
-        const updatedTrimData = [...existingTrimData, ...trimDataArray];
+        const updatedMusicData = [...(Array.isArray(existingStory.music_data) ? existingStory.music_data : []), ...musicDataArray];
+        const updatedFilters = [...(Array.isArray(existingStory.filters) ? existingStory.filters : []), ...filtersArray];
+        const updatedTextOverlays = [...(Array.isArray(existingStory.text_overlays) ? existingStory.text_overlays : []), ...textOverlaysArray];
+        const updatedTrimData = [...(Array.isArray(existingStory.trim_data) ? existingStory.trim_data : []), ...trimDataArray];
 
-        const { error: updateError } = await supabase
+        await supabase
           .from("stories")
           .update({
             media_urls: updatedMediaUrls,
@@ -234,22 +234,14 @@ const CreateStory = () => {
             trim_data: updatedTrimData,
           })
           .eq("id", existingStory.id);
-
-        if (updateError) {
-          // Ignore duplicate notification errors from triggers
-          if (updateError.code !== '23505' || !updateError.message?.includes('notifications')) {
-            console.error('Update error:', updateError);
-            throw updateError;
-          }
-        }
         
-        toast.success(`Added ${uploadedUrls.length} to your story! (${updatedMediaUrls.length} total)`);
+        toast.dismiss("story-upload");
+        toast.success(`Added ${uploadedUrls.length} to your story!`);
       } else {
-        // Create new story with edited data - explicitly set expires_at
+        // Create new story
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         
-        // First insert the story without select to avoid trigger errors breaking the query
-        const { error: insertError } = await supabase
+        await supabase
           .from("stories")
           .insert({
             user_id: user.id,
@@ -262,31 +254,15 @@ const CreateStory = () => {
             expires_at: expiresAt,
           });
 
-        // Check if it's a notification duplicate error (from triggers) - story was still created
-        if (insertError) {
-          if (insertError.code === '23505' && insertError.message?.includes('notifications')) {
-            // This is fine - story was created, just notification trigger had a conflict
-            console.log('Story created (notification trigger had duplicate, ignoring)');
-            toast.success(`Story created with ${uploadedUrls.length} media!`);
-          } else {
-            console.error('Insert error:', insertError);
-            throw insertError;
-          }
-        } else {
-          toast.success(`Story created with ${uploadedUrls.length} media!`);
-        }
+        toast.dismiss("story-upload");
+        toast.success(`Story created!`);
       }
 
       navigate("/home");
     } catch (error: any) {
-      // Ignore duplicate notification errors - story was created successfully
-      if (error?.code === '23505' && error?.message?.includes('notifications')) {
-        toast.success('Story created successfully!');
-        navigate("/home");
-        return;
-      }
-      console.error('Error creating/updating story:', error);
-      toast.error(`Failed: ${error.message || 'Unknown error'}`);
+      console.error('Story creation error:', error);
+      toast.dismiss("story-upload");
+      toast.error("Failed to create story. Please try again.");
     }
   };
 
