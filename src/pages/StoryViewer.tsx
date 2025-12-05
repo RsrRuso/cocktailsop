@@ -81,8 +81,8 @@ export default function StoryViewer() {
   const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [recentViewers, setRecentViewers] = useState<Profile[]>([]);
-  const [isLoading, setIsLoading] = useState(false); // Start false for instant display
-  const [mediaLoaded, setMediaLoaded] = useState(true); // Assume loaded for instant start
+  const [isLoading, setIsLoading] = useState(false);
+  const [mediaLoaded, setMediaLoaded] = useState(true); // Always true for instant display
   
   // Refs
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -270,9 +270,9 @@ export default function StoryViewer() {
     return isVideo ? 15000 : 5000;
   }, [musicData, isVideo]);
 
-  // Auto-progress timer
+  // Auto-progress timer - INSTANT, no media loading check
   useEffect(() => {
-    if (!currentStory || isPaused || showComments || !mediaLoaded) return;
+    if (!currentStory || isPaused || showComments) return;
 
     const duration = getStoryDuration();
     const interval = 50;
@@ -281,7 +281,15 @@ export default function StoryViewer() {
     progressIntervalRef.current = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
-          goToNext();
+          // Navigate to next inline instead of calling goToNext
+          setCurrentMediaIndex(idx => {
+            if (idx < totalMediaCount - 1) {
+              return idx + 1;
+            } else {
+              navigate("/home");
+              return idx;
+            }
+          });
           return 0;
         }
         return prev + increment;
@@ -291,7 +299,7 @@ export default function StoryViewer() {
     return () => {
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
-  }, [currentMediaIndex, isPaused, showComments, allMediaItems, musicData, mediaLoaded]);
+  }, [currentMediaIndex, isPaused, showComments, currentStory, getStoryDuration, totalMediaCount, navigate]);
 
   // Video sync
   useEffect(() => {
@@ -365,10 +373,7 @@ export default function StoryViewer() {
     return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
   }, [musicData]);
 
-  // Reset media loaded state on media change
-  useEffect(() => {
-    setMediaLoaded(false);
-  }, [currentMediaIndex]);
+  // No longer reset media loaded - keep instant transitions
 
   // Navigation
   const goToNext = useCallback(() => {
