@@ -54,20 +54,13 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   const commentInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
-  // Reset states when dialog opens/closes - auto-play music
+  // Reset states when dialog opens/closes
   useEffect(() => {
     if (open) {
       // If no preview URL, set error state immediately (no toast needed)
       const hasPreview = !!status?.music_preview_url;
       setAudioError(!hasPreview && !!status?.music_track_name);
       setAudioLoaded(false);
-      
-      // Auto-play music when dialog opens
-      if (hasPreview && audioRef.current) {
-        audioRef.current.play().catch(() => {
-          setAudioError(true);
-        });
-      }
     } else {
       setShowComments(false);
       setShowEmojiPicker(false);
@@ -77,18 +70,23 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
       // Stop audio when closing
       if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current.currentTime = 0;
       }
     }
   }, [open, status?.music_preview_url, status?.music_track_name]);
 
-  // Handle audio events
+  // Handle audio events and auto-play
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !open) return;
 
     const handleCanPlay = () => {
       setAudioLoaded(true);
       setAudioError(false);
+      // Auto-play when audio is ready
+      audio.play().catch(() => {
+        setAudioError(true);
+      });
     };
 
     const handleError = () => {
@@ -112,6 +110,9 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
 
+    // Try to load and play
+    audio.load();
+
     return () => {
       audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('error', handleError);
@@ -119,7 +120,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
     };
-  }, [status?.music_preview_url]);
+  }, [open, status?.music_preview_url]);
 
   const togglePlay = (e?: React.MouseEvent) => {
     e?.stopPropagation();
