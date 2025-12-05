@@ -317,70 +317,52 @@ const Home = () => {
       <TopNav isVisible={showTopNav} />
 
       {/* Stories */}
-      <div className="px-4 py-4 overflow-x-auto scrollbar-hide">
-        <div className="flex gap-4">
+      <div className="px-4 py-3 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-3">
           {/* Your Story */}
-          <div className="flex flex-col items-center gap-2 min-w-[88px]">
+          <div className="flex flex-col items-center gap-1.5 min-w-[72px]">
             <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
               <button
                 onClick={() => navigate("/story-options")}
                 className="relative group"
               >
                 {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) ? (
-                  // Birthday - golden celebration squircle
+                  // Birthday style
                   <>
-                    <div 
-                      className="absolute -inset-1 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur-md group-hover:opacity-100 transition-all duration-300 animate-pulse"
-                      style={{ borderRadius: '32%' }}
-                    ></div>
-                    <div 
-                      className="relative bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-[3px] shadow-xl shadow-pink-500/50"
-                      style={{ borderRadius: '30%' }}
-                    >
-                      <div 
-                        className="bg-background p-[2px]"
-                        style={{ borderRadius: '28%' }}
-                      >
-                        <Avatar 
-                          className="w-[74px] h-[74px]"
-                          style={{ borderRadius: '26%' }}
-                        >
-                          <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" style={{ borderRadius: '26%' }} />
-                          <AvatarFallback style={{ borderRadius: '26%' }}>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                    <div className="absolute -inset-0.5 rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-500 opacity-80 blur-md group-hover:opacity-100 animate-pulse" />
+                    <div className="relative bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-500 p-[2.5px] rounded-full">
+                      <div className="bg-background p-[2px] rounded-full">
+                        <Avatar className="w-[66px] h-[66px] rounded-full">
+                          <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
+                          <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
                         </Avatar>
                       </div>
                     </div>
-                    {/* Birthday badge */}
-                    <div className="absolute -top-1 -right-1 text-2xl animate-bounce z-10">🎂</div>
-                    {/* Add button */}
-                    <div className="absolute -bottom-1 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary z-10">
-                      <span className="text-white text-lg font-bold">+</span>
+                    <div className="absolute -top-0.5 -right-0.5 text-base animate-bounce z-10">🎂</div>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center border-[1.5px] border-background shadow-lg z-10">
+                      <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
                     </div>
                   </>
                 ) : (
-                  // Regular story ring - modern squircle shape
+                  // Regular style
                   <>
-                    <div 
-                      className="w-[74px] h-[74px] glass border-2 border-primary/30 flex items-center justify-center relative overflow-hidden"
-                      style={{ borderRadius: '30%' }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/20" />
-                      <Avatar 
-                        className="w-[66px] h-[66px] relative z-10"
-                        style={{ borderRadius: '28%' }}
-                      >
-                        <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" style={{ borderRadius: '28%' }} />
-                        <AvatarFallback style={{ borderRadius: '28%' }}>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
-                      </Avatar>
+                    <div className="absolute -inset-0.5 rounded-full bg-muted-foreground/20 opacity-50 blur-sm" />
+                    <div className="relative p-[2.5px] rounded-full bg-gradient-to-tr from-muted-foreground/30 to-muted-foreground/50">
+                      <div className="bg-background p-[2px] rounded-full">
+                        <Avatar className="w-[66px] h-[66px] rounded-full">
+                          <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
+                          <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                        </Avatar>
+                      </div>
                     </div>
-                    <div className="absolute -bottom-1 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary z-10">
-                      <span className="text-white text-lg font-bold">+</span>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center border-[1.5px] border-background shadow-lg z-10">
+                      <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
                     </div>
                   </>
                 )}
               </button>
             </BirthdayFireworks>
-            <span className="text-xs text-muted-foreground">Your Story</span>
+            <span className="text-[11px] text-muted-foreground font-medium">Your Story</span>
           </div>
 
           {/* Other Stories - Live Preview */}
@@ -392,98 +374,80 @@ const Home = () => {
             const isVideo = previewType?.startsWith('video');
             
             return (
-              <div key={story.id} className="flex flex-col items-center gap-2 min-w-[88px]">
+              <div key={story.id} className="flex flex-col items-center gap-1.5 min-w-[72px]">
                 <BirthdayFireworks isBirthday={hasBirthday}>
                   <button 
                     onClick={() => navigate(`/story/${story.user_id}`)}
                     className="relative group cursor-pointer"
                   >
-                    {/* Animated glow effect */}
+                    {/* Outer glow */}
                     <div 
-                      className={`absolute -inset-1 blur-lg transition-all duration-500 ${
+                      className={`absolute -inset-0.5 rounded-full blur-md transition-all duration-300 ${
                         hasBirthday 
-                          ? 'bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-80 animate-pulse' 
+                          ? 'bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-500 opacity-90' 
                           : isViewed 
-                            ? 'bg-muted-foreground/20 opacity-40' 
-                            : 'bg-gradient-to-br from-primary via-accent to-rose-500 opacity-80'
-                      } group-hover:opacity-100 group-hover:scale-110`}
-                      style={{ borderRadius: '32%' }}
+                            ? 'bg-muted-foreground/30 opacity-50' 
+                            : 'bg-gradient-to-tr from-amber-500 via-rose-500 to-violet-600 opacity-80'
+                      } group-hover:opacity-100 group-hover:blur-lg`}
                     />
                     
-                    {/* Animated ring */}
+                    {/* Gradient ring */}
                     <div 
-                      className={`relative p-[3px] shadow-xl transition-transform duration-300 group-hover:scale-105 ${
+                      className={`relative p-[2.5px] rounded-full transition-all duration-300 group-hover:scale-[1.02] ${
                         hasBirthday 
-                          ? 'bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 shadow-pink-500/50' 
+                          ? 'bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-500' 
                           : isViewed 
-                            ? 'bg-gradient-to-br from-muted-foreground/40 to-muted-foreground/60' 
-                            : 'bg-gradient-to-br from-primary via-accent to-rose-500 shadow-primary/40'
+                            ? 'bg-gradient-to-tr from-muted-foreground/40 to-muted-foreground/60' 
+                            : 'bg-gradient-to-tr from-amber-500 via-rose-500 to-violet-600'
                       }`}
-                      style={{ borderRadius: '30%' }}
                     >
-                      <div className="bg-background p-[2px]" style={{ borderRadius: '28%' }}>
+                      <div className="bg-background p-[2px] rounded-full">
                         {/* Live Preview Content */}
-                        <div 
-                          className="w-[78px] h-[78px] overflow-hidden relative"
-                          style={{ borderRadius: '26%' }}
-                        >
+                        <div className="w-[66px] h-[66px] rounded-full overflow-hidden relative">
                           {previewMedia ? (
                             <>
                               {isVideo ? (
                                 <video
                                   src={previewMedia}
-                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                   autoPlay
                                   loop
                                   muted
                                   playsInline
-                                  style={{ borderRadius: '26%' }}
                                 />
                               ) : (
                                 <img
                                   src={previewMedia}
                                   alt={story.profiles.username}
-                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                  style={{ borderRadius: '26%' }}
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                 />
                               )}
                               
-                              {/* Gradient overlay for depth */}
-                              <div 
-                                className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"
-                                style={{ borderRadius: '26%' }}
-                              />
+                              {/* Subtle vignette */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10 pointer-events-none" />
                               
-                              {/* Shimmer effect */}
-                              <div 
-                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none"
-                                style={{ borderRadius: '26%' }}
-                              />
-                              
-                              {/* Video play indicator */}
+                              {/* Video indicator */}
                               {isVideo && (
-                                <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm">
-                                  <div className="w-0 h-0 border-l-[5px] border-l-white border-y-[3px] border-y-transparent ml-0.5" />
+                                <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                                  <div className="w-0 h-0 border-l-[4px] border-l-white border-y-[2.5px] border-y-transparent ml-0.5" />
                                 </div>
                               )}
+                              
+                              {/* Mini avatar */}
+                              <div className={`absolute bottom-0.5 right-0.5 w-5 h-5 rounded-full border-[1.5px] overflow-hidden shadow-md ${
+                                isViewed ? 'border-muted-foreground/60' : 'border-background'
+                              }`}>
+                                <Avatar className="w-full h-full">
+                                  <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
+                                  <AvatarFallback className="text-[7px] bg-muted">{story.profiles.username[0]}</AvatarFallback>
+                                </Avatar>
+                              </div>
                             </>
                           ) : (
-                            <Avatar className="w-full h-full" style={{ borderRadius: '26%' }}>
-                              <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" style={{ borderRadius: '26%' }} />
-                              <AvatarFallback style={{ borderRadius: '26%' }}>{story.profiles.username[0]}</AvatarFallback>
+                            <Avatar className="w-full h-full rounded-full">
+                              <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
+                              <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
                             </Avatar>
-                          )}
-                          
-                          {/* Avatar overlay with ring */}
-                          {previewMedia && (
-                            <div className={`absolute bottom-1 left-1 w-7 h-7 rounded-full border-2 overflow-hidden shadow-lg transition-transform duration-300 group-hover:scale-110 ${
-                              isViewed ? 'border-muted-foreground/50' : 'border-primary'
-                            }`}>
-                              <Avatar className="w-full h-full">
-                                <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
-                                <AvatarFallback className="text-[8px] bg-muted">{story.profiles.username[0]}</AvatarFallback>
-                              </Avatar>
-                            </div>
                           )}
                         </div>
                       </div>
@@ -491,11 +455,11 @@ const Home = () => {
                     
                     {/* Birthday badge */}
                     {hasBirthday && (
-                      <div className="absolute -top-1 -right-1 text-xl animate-bounce z-10">🎂</div>
+                      <div className="absolute -top-0.5 -right-0.5 text-base animate-bounce z-10">🎂</div>
                     )}
                   </button>
                 </BirthdayFireworks>
-                <span className="text-xs text-foreground font-medium truncate w-full text-center max-w-[80px]">
+                <span className="text-[11px] text-foreground/90 font-medium truncate w-full text-center max-w-[72px]">
                   {story.profiles.username}
                 </span>
               </div>
