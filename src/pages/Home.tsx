@@ -353,7 +353,7 @@ const Home = () => {
                 )}
                 <button
                   onClick={() => navigate(hasActiveStory ? `/story/${user?.id}` : "/story-options")}
-                  className={`relative group ${hasActiveStory ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-background rounded-full' : ''}`}
+                  className={`relative group ${hasActiveStory ? 'ring-2 ring-white/80 rounded-full' : ''}`}
                 >
                   <Avatar className="w-[84px] h-[84px] rounded-full shadow-lg">
                     <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
