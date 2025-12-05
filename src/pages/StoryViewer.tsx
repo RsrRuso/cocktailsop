@@ -47,10 +47,10 @@ interface FlyingHeart {
   y: number;
 }
 
-// Memoized progress bar component
-const ProgressBars = memo(({ stories, currentIndex, progress }: { stories: Story[], currentIndex: number, progress: number }) => (
+// Memoized progress bar component - now counts individual media items
+const ProgressBars = memo(({ totalItems, currentIndex, progress }: { totalItems: number, currentIndex: number, progress: number }) => (
   <div className="absolute top-2 left-2 right-2 z-30 flex gap-1">
-    {stories.map((_, idx) => (
+    {Array.from({ length: totalItems }).map((_, idx) => (
       <div key={idx} className="flex-1 h-1 sm:h-0.5 bg-white/30 rounded-full overflow-hidden">
         <div
           className="h-full bg-white transition-all duration-100 ease-linear"
@@ -71,7 +71,7 @@ export default function StoryViewer() {
   
   // State
   const [stories, setStories] = useState<Story[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0); // Index across ALL media items
   const [profile, setProfile] = useState<Profile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [progress, setProgress] = useState(0);
@@ -95,21 +95,34 @@ export default function StoryViewer() {
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Derived state
-  const currentStory = stories[currentIndex];
-  const mediaUrl = currentStory?.media_urls?.[0] || "";
-  const mediaType = currentStory?.media_types?.[0] || "";
+  // Flatten all media items from all stories
+  const allMediaItems = stories.flatMap((story, storyIdx) => 
+    (story.media_urls || []).map((url, mediaIdx) => ({
+      storyId: story.id,
+      storyIndex: storyIdx,
+      url,
+      type: story.media_types?.[mediaIdx] || 'image',
+      musicData: Array.isArray(story.music_data) ? story.music_data[mediaIdx] : story.music_data,
+      textOverlays: Array.isArray(story.text_overlays) ? story.text_overlays[mediaIdx] : story.text_overlays,
+      trimData: Array.isArray(story.trim_data) ? story.trim_data[mediaIdx] : story.trim_data,
+      filter: Array.isArray(story.filters) ? story.filters[mediaIdx] : story.filters,
+    }))
+  );
+  
+  const totalMediaCount = allMediaItems.length;
+  const currentMedia = allMediaItems[currentMediaIndex];
+  const currentStory = currentMedia ? stories[currentMedia.storyIndex] : null;
+  const mediaUrl = currentMedia?.url || "";
+  const mediaType = currentMedia?.type || "";
   const isVideo = mediaType.startsWith("video");
 
-  // Get music data for current story
+  // Get music data for current media item
   const getMusicData = useCallback(() => {
-    if (!currentStory?.music_data) return null;
-    const musicData = Array.isArray(currentStory.music_data) 
-      ? currentStory.music_data[0] 
-      : currentStory.music_data;
+    if (!currentMedia?.musicData) return null;
+    const musicData = currentMedia.musicData;
     if (!musicData?.url) return null;
     return musicData;
-  }, [currentStory?.music_data]);
+  }, [currentMedia?.musicData]);
   
   const musicData = getMusicData();
 
@@ -197,15 +210,15 @@ export default function StoryViewer() {
     }
   };
 
-  // Preload next story
+  // Preload next media
   useEffect(() => {
-    if (stories.length > currentIndex + 1) {
-      const nextStory = stories[currentIndex + 1];
-      if (nextStory?.media_urls?.[0]) {
-        preloadMedia(nextStory.media_urls[0], nextStory.media_types?.[0] || "image");
+    if (allMediaItems.length > currentMediaIndex + 1) {
+      const nextMedia = allMediaItems[currentMediaIndex + 1];
+      if (nextMedia?.url) {
+        preloadMedia(nextMedia.url, nextMedia.type || "image");
       }
     }
-  }, [currentIndex, stories]);
+  }, [currentMediaIndex, allMediaItems]);
 
   // Fetch recent viewers
   const fetchRecentViewers = useCallback(async (storyId: string) => {
@@ -275,7 +288,7 @@ export default function StoryViewer() {
     return () => {
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
-  }, [currentIndex, isPaused, showComments, stories, musicData, mediaLoaded]);
+  }, [currentMediaIndex, isPaused, showComments, allMediaItems, musicData, mediaLoaded]);
 
   // Video sync
   useEffect(() => {
@@ -327,7 +340,7 @@ export default function StoryViewer() {
     } else {
       audio.play().catch(console.error);
     }
-  }, [isPaused, showComments, musicData, currentIndex, isMuted]);
+  }, [isPaused, showComments, musicData, currentMediaIndex, isMuted]);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -349,33 +362,34 @@ export default function StoryViewer() {
     return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
   }, [musicData]);
 
-  // Reset media loaded state on story change
+  // Reset media loaded state on media change
   useEffect(() => {
     setMediaLoaded(false);
-  }, [currentIndex]);
+  }, [currentMediaIndex]);
 
   // Navigation
   const goToNext = useCallback(() => {
-    if (currentIndex < stories.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+    if (currentMediaIndex < totalMediaCount - 1) {
+      const nextMedia = allMediaItems[currentMediaIndex + 1];
+      setCurrentMediaIndex(currentMediaIndex + 1);
       setProgress(0);
-      if (currentUserId) {
-        trackView(stories[currentIndex + 1].id);
-        fetchRecentViewers(stories[currentIndex + 1].id);
+      if (currentUserId && nextMedia) {
+        trackView(nextMedia.storyId);
+        fetchRecentViewers(nextMedia.storyId);
       }
     } else {
       navigate("/home");
     }
-  }, [currentIndex, stories, currentUserId, navigate, trackView, fetchRecentViewers]);
+  }, [currentMediaIndex, totalMediaCount, allMediaItems, currentUserId, navigate, trackView, fetchRecentViewers]);
 
   const goToPrevious = useCallback(() => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+    if (currentMediaIndex > 0) {
+      setCurrentMediaIndex(currentMediaIndex - 1);
       setProgress(0);
     } else {
       navigate("/home");
     }
-  }, [currentIndex, navigate]);
+  }, [currentMediaIndex, navigate]);
 
   // Like with animation
   const handleLike = useCallback(async (x: number, y: number) => {
@@ -588,7 +602,7 @@ export default function StoryViewer() {
       <div className="flex-1 flex items-center justify-center px-2 sm:px-4 py-1 sm:py-2 overflow-hidden min-h-0">
         <div className="w-full max-w-md h-full sm:max-h-[75vh] relative rounded-xl sm:rounded-2xl overflow-hidden bg-card border border-border/30">
           {/* Progress bars */}
-          <ProgressBars stories={stories} currentIndex={currentIndex} progress={progress} />
+          <ProgressBars totalItems={totalMediaCount} currentIndex={currentMediaIndex} progress={progress} />
 
           {/* User info overlay */}
           <div className="absolute top-5 sm:top-6 left-2 right-2 sm:left-3 sm:right-3 z-30 flex items-center justify-between">
