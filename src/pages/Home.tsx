@@ -320,41 +320,59 @@ const Home = () => {
       <div className="px-4 py-4 overflow-x-auto scrollbar-hide">
         <div className="flex gap-4">
           {/* Your Story */}
-          <div className="flex flex-col items-center gap-2 min-w-[80px]">
+          <div className="flex flex-col items-center gap-2 min-w-[88px]">
             <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
               <button
                 onClick={() => navigate("/story-options")}
                 className="relative group"
               >
                 {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) ? (
-                  // Birthday - golden celebration ring
+                  // Birthday - golden celebration hexagonal ring
                   <>
-                    <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
-                    <div className="relative rounded-full bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-0.5 shadow-xl shadow-pink-500/50">
-                      <div className="bg-background rounded-full p-0.5">
-                        <Avatar className="w-16 h-16">
+                    <div 
+                      className="absolute -inset-1 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"
+                      style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                    ></div>
+                    <div 
+                      className="relative bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-[3px] shadow-xl shadow-pink-500/50"
+                      style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                    >
+                      <div 
+                        className="bg-background p-[2px]"
+                        style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                      >
+                        <Avatar 
+                          className="w-[72px] h-[72px]"
+                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                        >
                           <AvatarImage src={currentUser?.avatar_url || undefined} />
                           <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
                         </Avatar>
                       </div>
                     </div>
                     {/* Birthday badge */}
-                    <div className="absolute -top-1 -right-1 text-2xl animate-bounce">🎂</div>
+                    <div className="absolute -top-1 -right-1 text-2xl animate-bounce z-10">🎂</div>
                     {/* Add button */}
-                    <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary z-10">
+                    <div className="absolute -bottom-1 right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary z-10">
                       <span className="text-white text-lg font-bold">+</span>
                     </div>
                   </>
                 ) : (
-                  // Regular story ring
+                  // Regular story ring - hexagonal fractal shape
                   <>
-                    <div className="w-16 h-16 rounded-full glass border-2 border-border flex items-center justify-center">
-                      <Avatar className="w-14 h-14">
+                    <div 
+                      className="w-[72px] h-[72px] glass border-2 border-border flex items-center justify-center"
+                      style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                    >
+                      <Avatar 
+                        className="w-16 h-16"
+                        style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                      >
                         <AvatarImage src={currentUser?.avatar_url || undefined} />
                         <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
                       </Avatar>
                     </div>
-                    <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary">
+                    <div className="absolute -bottom-1 right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary z-10">
                       <span className="text-white text-lg font-bold">+</span>
                     </div>
                   </>
@@ -370,7 +388,7 @@ const Home = () => {
             const hasBirthday = isBirthday(story.profiles.date_of_birth);
             
             return (
-              <div key={story.id} className="flex flex-col items-center gap-2 min-w-[80px]">
+              <div key={story.id} className="flex flex-col items-center gap-2 min-w-[88px]">
                 <BirthdayFireworks isBirthday={hasBirthday}>
                   <button 
                     onClick={() => {
@@ -380,27 +398,51 @@ const Home = () => {
                     className="relative group cursor-pointer"
                   >
                     {hasBirthday ? (
-                      // Birthday story - golden celebration ring with confetti effect
+                      // Birthday story - golden celebration hexagonal ring
                       <>
-                        <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
-                        <div className="relative rounded-full bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-0.5 shadow-xl shadow-pink-500/50">
-                          <div className="bg-background rounded-full p-0.5">
-                            <Avatar className="w-16 h-16">
+                        <div 
+                          className="absolute -inset-1 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"
+                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                        ></div>
+                        <div 
+                          className="relative bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-[3px] shadow-xl shadow-pink-500/50"
+                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                        >
+                          <div 
+                            className="bg-background p-[2px]"
+                            style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                          >
+                            <Avatar 
+                              className="w-[72px] h-[72px]"
+                              style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                            >
                               <AvatarImage src={story.profiles.avatar_url || undefined} />
                               <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
                             </Avatar>
                           </div>
                         </div>
                         {/* Birthday badge */}
-                        <div className="absolute -top-1 -right-1 text-2xl animate-bounce">🎂</div>
+                        <div className="absolute -top-1 -right-1 text-2xl animate-bounce z-10">🎂</div>
                       </>
                     ) : isViewed ? (
-                      // Viewed story - dark blue ring
+                      // Viewed story - dark blue hexagonal ring
                       <>
-                        <div className="absolute -inset-1 rounded-full bg-blue-900 opacity-50 blur group-hover:opacity-75 transition-all duration-300"></div>
-                        <div className="relative rounded-full bg-blue-900 p-0.5 shadow-xl shadow-blue-900/50">
-                          <div className="bg-background rounded-full p-0.5">
-                            <Avatar className="w-16 h-16">
+                        <div 
+                          className="absolute -inset-1 bg-blue-900/60 opacity-50 blur group-hover:opacity-75 transition-all duration-300"
+                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                        ></div>
+                        <div 
+                          className="relative bg-blue-900/80 p-[3px] shadow-xl shadow-blue-900/50"
+                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                        >
+                          <div 
+                            className="bg-background p-[2px]"
+                            style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                          >
+                            <Avatar 
+                              className="w-[72px] h-[72px]"
+                              style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                            >
                               <AvatarImage src={story.profiles.avatar_url || undefined} />
                               <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
                             </Avatar>
@@ -408,12 +450,24 @@ const Home = () => {
                         </div>
                       </>
                     ) : (
-                      // Unviewed story - gradient ring
+                      // Unviewed story - gradient hexagonal ring
                       <>
-                        <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
-                        <div className="relative rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-0.5 shadow-xl shadow-orange-500/50">
-                          <div className="bg-background rounded-full p-0.5">
-                            <Avatar className="w-16 h-16">
+                        <div 
+                          className="absolute -inset-1 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"
+                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                        ></div>
+                        <div 
+                          className="relative bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-[3px] shadow-xl shadow-orange-500/50"
+                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                        >
+                          <div 
+                            className="bg-background p-[2px]"
+                            style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                          >
+                            <Avatar 
+                              className="w-[72px] h-[72px]"
+                              style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                            >
                               <AvatarImage src={story.profiles.avatar_url || undefined} />
                               <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
                             </Avatar>
