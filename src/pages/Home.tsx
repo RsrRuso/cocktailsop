@@ -327,52 +327,53 @@ const Home = () => {
                 className="relative group"
               >
                 {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) ? (
-                  // Birthday - golden celebration hexagonal ring
+                  // Birthday - golden celebration squircle
                   <>
                     <div 
-                      className="absolute -inset-1 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"
-                      style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                      className="absolute -inset-1 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur-md group-hover:opacity-100 transition-all duration-300 animate-pulse"
+                      style={{ borderRadius: '32%' }}
                     ></div>
                     <div 
                       className="relative bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-[3px] shadow-xl shadow-pink-500/50"
-                      style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                      style={{ borderRadius: '30%' }}
                     >
                       <div 
                         className="bg-background p-[2px]"
-                        style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                        style={{ borderRadius: '28%' }}
                       >
                         <Avatar 
-                          className="w-[72px] h-[72px]"
-                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                          className="w-[74px] h-[74px]"
+                          style={{ borderRadius: '26%' }}
                         >
-                          <AvatarImage src={currentUser?.avatar_url || undefined} />
-                          <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                          <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" style={{ borderRadius: '26%' }} />
+                          <AvatarFallback style={{ borderRadius: '26%' }}>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
                         </Avatar>
                       </div>
                     </div>
                     {/* Birthday badge */}
                     <div className="absolute -top-1 -right-1 text-2xl animate-bounce z-10">🎂</div>
                     {/* Add button */}
-                    <div className="absolute -bottom-1 right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary z-10">
+                    <div className="absolute -bottom-1 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary z-10">
                       <span className="text-white text-lg font-bold">+</span>
                     </div>
                   </>
                 ) : (
-                  // Regular story ring - hexagonal fractal shape
+                  // Regular story ring - modern squircle shape
                   <>
                     <div 
-                      className="w-[72px] h-[72px] glass border-2 border-border flex items-center justify-center"
-                      style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                      className="w-[74px] h-[74px] glass border-2 border-primary/30 flex items-center justify-center relative overflow-hidden"
+                      style={{ borderRadius: '30%' }}
                     >
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/20" />
                       <Avatar 
-                        className="w-16 h-16"
-                        style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                        className="w-[66px] h-[66px] relative z-10"
+                        style={{ borderRadius: '28%' }}
                       >
-                        <AvatarImage src={currentUser?.avatar_url || undefined} />
-                        <AvatarFallback>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                        <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" style={{ borderRadius: '28%' }} />
+                        <AvatarFallback style={{ borderRadius: '28%' }}>{currentUser?.username?.[0] || "Y"}</AvatarFallback>
                       </Avatar>
                     </div>
-                    <div className="absolute -bottom-1 right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary z-10">
+                    <div className="absolute -bottom-1 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background glow-primary z-10">
                       <span className="text-white text-lg font-bold">+</span>
                     </div>
                   </>
@@ -398,26 +399,26 @@ const Home = () => {
                     className="relative group cursor-pointer"
                   >
                     {hasBirthday ? (
-                      // Birthday story - golden celebration hexagonal ring
+                      // Birthday story - golden celebration squircle
                       <>
                         <div 
-                          className="absolute -inset-1 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"
-                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                          className="absolute -inset-1 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur-md group-hover:opacity-100 transition-all duration-300 animate-pulse"
+                          style={{ borderRadius: '32%' }}
                         ></div>
                         <div 
                           className="relative bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-[3px] shadow-xl shadow-pink-500/50"
-                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                          style={{ borderRadius: '30%' }}
                         >
                           <div 
                             className="bg-background p-[2px]"
-                            style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                            style={{ borderRadius: '28%' }}
                           >
                             <Avatar 
-                              className="w-[72px] h-[72px]"
-                              style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                              className="w-[74px] h-[74px]"
+                              style={{ borderRadius: '26%' }}
                             >
-                              <AvatarImage src={story.profiles.avatar_url || undefined} />
-                              <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
+                              <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" style={{ borderRadius: '26%' }} />
+                              <AvatarFallback style={{ borderRadius: '26%' }}>{story.profiles.username[0]}</AvatarFallback>
                             </Avatar>
                           </div>
                         </div>
@@ -425,51 +426,51 @@ const Home = () => {
                         <div className="absolute -top-1 -right-1 text-2xl animate-bounce z-10">🎂</div>
                       </>
                     ) : isViewed ? (
-                      // Viewed story - dark blue hexagonal ring
+                      // Viewed story - muted squircle
                       <>
                         <div 
-                          className="absolute -inset-1 bg-blue-900/60 opacity-50 blur group-hover:opacity-75 transition-all duration-300"
-                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                          className="absolute -inset-1 bg-muted-foreground/30 opacity-50 blur-md group-hover:opacity-75 transition-all duration-300"
+                          style={{ borderRadius: '32%' }}
                         ></div>
                         <div 
-                          className="relative bg-blue-900/80 p-[3px] shadow-xl shadow-blue-900/50"
-                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                          className="relative bg-muted-foreground/50 p-[3px] shadow-lg"
+                          style={{ borderRadius: '30%' }}
                         >
                           <div 
                             className="bg-background p-[2px]"
-                            style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                            style={{ borderRadius: '28%' }}
                           >
                             <Avatar 
-                              className="w-[72px] h-[72px]"
-                              style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                              className="w-[74px] h-[74px]"
+                              style={{ borderRadius: '26%' }}
                             >
-                              <AvatarImage src={story.profiles.avatar_url || undefined} />
-                              <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
+                              <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" style={{ borderRadius: '26%' }} />
+                              <AvatarFallback style={{ borderRadius: '26%' }}>{story.profiles.username[0]}</AvatarFallback>
                             </Avatar>
                           </div>
                         </div>
                       </>
                     ) : (
-                      // Unviewed story - gradient hexagonal ring
+                      // Unviewed story - vibrant gradient squircle
                       <>
                         <div 
-                          className="absolute -inset-1 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 blur group-hover:opacity-100 transition-all duration-300 animate-pulse"
-                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                          className="absolute -inset-1 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 blur-md group-hover:opacity-100 transition-all duration-300 animate-pulse"
+                          style={{ borderRadius: '32%' }}
                         ></div>
                         <div 
                           className="relative bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-[3px] shadow-xl shadow-orange-500/50"
-                          style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                          style={{ borderRadius: '30%' }}
                         >
                           <div 
                             className="bg-background p-[2px]"
-                            style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                            style={{ borderRadius: '28%' }}
                           >
                             <Avatar 
-                              className="w-[72px] h-[72px]"
-                              style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
+                              className="w-[74px] h-[74px]"
+                              style={{ borderRadius: '26%' }}
                             >
-                              <AvatarImage src={story.profiles.avatar_url || undefined} />
-                              <AvatarFallback>{story.profiles.username[0]}</AvatarFallback>
+                              <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" style={{ borderRadius: '26%' }} />
+                              <AvatarFallback style={{ borderRadius: '26%' }}>{story.profiles.username[0]}</AvatarFallback>
                             </Avatar>
                           </div>
                         </div>
