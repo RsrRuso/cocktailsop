@@ -78,6 +78,24 @@ interface Reel {
 
 type FeedItem = (Post & { type: 'post' }) | (Reel & { type: 'reel'; content: string; media_urls: string[] });
 
+// Preload story media for instant viewing
+const preloadStoryMedia = (stories: Story[]) => {
+  stories.forEach(story => {
+    story.media_urls?.forEach((url, idx) => {
+      const type = story.media_types?.[idx] || 'image';
+      if (type.startsWith('video')) {
+        const video = document.createElement('video');
+        video.preload = 'auto';
+        video.src = url;
+        video.load();
+      } else {
+        const img = new Image();
+        img.src = url;
+      }
+    });
+  });
+};
+
 const Home = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth(); // Use cached auth
@@ -228,6 +246,9 @@ const Home = () => {
       }));
 
       setStories(storiesWithProfiles);
+      
+      // Preload all story media for instant viewing
+      preloadStoryMedia(storiesWithProfiles);
 
       // Fetch viewed stories for current user
       if (user?.id) {

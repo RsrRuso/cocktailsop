@@ -82,7 +82,7 @@ export default function StoryViewer() {
   const [isMuted, setIsMuted] = useState(false);
   const [recentViewers, setRecentViewers] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [mediaLoaded, setMediaLoaded] = useState(false);
+  const [mediaLoaded, setMediaLoaded] = useState(true); // Start as true for instant display
   
   // Refs
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -363,9 +363,9 @@ export default function StoryViewer() {
     return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
   }, [musicData]);
 
-  // Reset media loaded state on media change
+  // Reset media loaded state on media change - immediately set to true for preloaded content
   useEffect(() => {
-    setMediaLoaded(false);
+    setMediaLoaded(true);
   }, [currentMediaIndex]);
 
   // Navigation
