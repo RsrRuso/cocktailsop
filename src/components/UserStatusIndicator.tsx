@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { Music2, Play, Pause } from "lucide-react";
+import { useState } from "react";
+import { Music2, Play } from "lucide-react";
 import { useUserStatus } from "@/hooks/useUserStatus";
 import StatusViewerDialog from "./StatusViewerDialog";
 import { useQuery } from "@tanstack/react-query";
@@ -13,9 +13,7 @@ interface UserStatusIndicatorProps {
 
 const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatusIndicatorProps) => {
   const { data: status } = useUserStatus(userId);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Fetch user profile for the dialog
   const { data: userProfile } = useQuery({
@@ -31,31 +29,6 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
     },
     enabled: !!userId,
   });
-
-  useEffect(() => {
-    if (status?.music_preview_url) {
-      audioRef.current = new Audio(status.music_preview_url);
-      audioRef.current.volume = 0.3;
-      audioRef.current.addEventListener('ended', () => setIsPlaying(false));
-    }
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, [status?.music_preview_url]);
-
-  const togglePlay = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
 
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -96,14 +69,6 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
                       <Music2 className="w-2 h-2" />
                     </div>
                   )}
-                  {isPlaying && (
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                      <div className="flex gap-px">
-                        <div className="w-0.5 h-1.5 bg-white animate-pulse" />
-                        <div className="w-0.5 h-1.5 bg-white animate-pulse" style={{ animationDelay: '150ms' }} />
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Track Info with Marquee */}
@@ -118,19 +83,13 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
                   </div>
                 </div>
 
-                {/* Play Button */}
-                {status.music_preview_url && (
-                  <button
-                    onClick={togglePlay}
-                    className="w-3 h-3 rounded-full bg-emerald-500/60 hover:bg-emerald-500 flex items-center justify-center flex-shrink-0"
-                  >
-                    {isPlaying ? (
-                      <Pause className="w-1.5 h-1.5" />
-                    ) : (
-                      <Play className="w-1.5 h-1.5 ml-px" />
-                    )}
-                  </button>
-                )}
+                {/* Play Button - opens dialog with auto-play */}
+                <button
+                  onClick={handleStatusClick}
+                  className="w-3 h-3 rounded-full bg-emerald-500/60 hover:bg-emerald-500 flex items-center justify-center flex-shrink-0"
+                >
+                  <Play className="w-1.5 h-1.5 ml-px" />
+                </button>
               </div>
             </div>
             
