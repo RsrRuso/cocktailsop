@@ -10,8 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Heart, MessageCircle, Send, X,
-  Smile, Reply, Trash2, Edit2, Music2, Play, Pause,
-  Volume2, VolumeX, ExternalLink
+  Smile, Reply, Trash2, Edit2, Music2, ExternalLink
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -46,111 +45,19 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   const [editText, setEditText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [audioError, setAudioError] = useState(false);
-  const [audioLoaded, setAudioLoaded] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
   const commentInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
-  // Reset states when dialog opens/closes
+  // Reset states when dialog closes
   useEffect(() => {
-    if (open) {
-      // Only set error if there's genuinely no preview URL
-      setAudioError(false);
-      setAudioLoaded(false);
-      setIsPlaying(false);
-    } else {
+    if (!open) {
       setShowComments(false);
       setShowEmojiPicker(false);
       setReplyingTo(null);
       setEditingComment(null);
-      setIsPlaying(false);
-      // Stop audio when closing
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
     }
   }, [open]);
 
-  // Handle audio events - NO auto-play, user clicks to play
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleCanPlay = () => {
-      setAudioLoaded(true);
-      setAudioError(false);
-    };
-
-    const handleError = () => {
-      setAudioError(true);
-      setAudioLoaded(false);
-      setIsPlaying(false);
-    };
-
-    const handleEnded = () => {
-      // Loop playback
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
-    };
-
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
-
-    audio.addEventListener('canplay', handleCanPlay);
-    audio.addEventListener('error', handleError);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('play', handlePlay);
-    audio.addEventListener('pause', handlePause);
-
-    return () => {
-      audio.removeEventListener('canplay', handleCanPlay);
-      audio.removeEventListener('error', handleError);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('play', handlePlay);
-      audio.removeEventListener('pause', handlePause);
-    };
-  }, [status?.music_preview_url]);
-
-  const togglePlay = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    e?.preventDefault();
-    
-    if (!status?.music_preview_url) return;
-    
-    // Create audio on demand if not exists
-    if (!audioRef.current) {
-      audioRef.current = document.createElement('audio');
-      audioRef.current.src = status.music_preview_url;
-      audioRef.current.loop = true;
-      audioRef.current.volume = 0.5;
-      audioRef.current.addEventListener('play', () => setIsPlaying(true));
-      audioRef.current.addEventListener('pause', () => setIsPlaying(false));
-    }
-
-    const audio = audioRef.current;
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      audio.play().catch(() => {
-        setAudioError(true);
-      });
-    }
-  };
-
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    audio.muted = !audio.muted;
-    setIsMuted(!isMuted);
-  };
 
   const handleCommentsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -331,15 +238,6 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
         className="sm:max-w-lg max-h-[95vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-gradient-to-b from-black/95 via-black/90 to-black/95 backdrop-blur-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Hidden audio element */}
-        {status.music_preview_url && (
-          <audio
-            ref={audioRef}
-            src={status.music_preview_url}
-            preload="auto"
-            loop
-          />
-        )}
 
         {/* Header with glassmorphism */}
         <div className="flex items-center gap-3 p-4 bg-white/5 border-b border-white/10">
@@ -373,74 +271,50 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
           {/* Music Status Content */}
           {isMusicStatus ? (
             <div className="p-6 flex flex-col items-center">
-              {/* Album Art with Controls */}
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="relative group"
-              >
-                {/* Glow effect */}
-                <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/30 via-teal-500/30 to-cyan-500/30 rounded-3xl blur-2xl opacity-60" />
-                
-                {/* Album art */}
-                <div className="relative w-48 h-48 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/20">
-                  {status.music_album_art ? (
-                    <img 
-                      src={status.music_album_art} 
-                      alt={status.music_track_name || ''} 
-                      className={`w-full h-full object-cover transition-transform duration-500 ${isPlaying ? 'scale-105' : 'scale-100'}`}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-emerald-600 via-teal-500 to-cyan-500 flex items-center justify-center">
-                      <Music2 className="w-20 h-20 text-white/80" />
-                    </div>
-                  )}
-                  
-                  {/* Play overlay */}
-                  <button
-                    onClick={togglePlay}
-                    disabled={!status.music_preview_url}
-                    className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-100 hover:bg-black/50 transition-all"
-                  >
-                    {!status.music_preview_url ? (
+              {/* Spotify Embed Player - like Music page */}
+              {status.music_spotify_url && (
+                <div className="w-full max-w-[300px] mb-4">
+                  <iframe
+                    src={`https://open.spotify.com/embed/track/${status.music_spotify_url.split('/track/')[1]?.split('?')[0]}`}
+                    width="100%"
+                    height="152"
+                    frameBorder="0"
+                    allow="encrypted-media; autoplay"
+                    title="Spotify Player"
+                    className="rounded-xl"
+                  />
+                </div>
+              )}
+
+              {/* Fallback Album Art if no Spotify URL */}
+              {!status.music_spotify_url && (
+                <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="relative group"
+                >
+                  <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/30 via-teal-500/30 to-cyan-500/30 rounded-3xl blur-2xl opacity-60" />
+                  <div className="relative w-48 h-48 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/20">
+                    {status.music_album_art ? (
+                      <img 
+                        src={status.music_album_art} 
+                        alt={status.music_track_name || ''} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-emerald-600 via-teal-500 to-cyan-500 flex items-center justify-center">
+                        <Music2 className="w-20 h-20 text-white/80" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                       <div className="text-center text-white/60">
                         <Music2 className="w-10 h-10 mx-auto mb-1" />
-                        <span className="text-xs">Preview unavailable</span>
+                        <span className="text-xs">Open in Spotify to play</span>
                       </div>
-                    ) : isPlaying ? (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
-                      >
-                        <Pause className="w-8 h-8 text-white" />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="w-16 h-16 rounded-full bg-emerald-500/90 flex items-center justify-center shadow-lg shadow-emerald-500/50"
-                      >
-                        <Play className="w-8 h-8 text-white ml-1" />
-                      </motion.div>
-                    )}
-                  </button>
-
-                  {/* Playing indicator */}
-                  {isPlaying && !audioError && (
-                    <div className="absolute bottom-3 left-3 flex gap-1">
-                      {[...Array(4)].map((_, i) => (
-                        <motion.div
-                          key={i}
-                          className="w-1 bg-emerald-400 rounded-full"
-                          animate={{ height: [8, 16, 8] }}
-                          transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
-                        />
-                      ))}
                     </div>
-                  )}
-                </div>
-              </motion.div>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Track info with running marquee */}
               <div className="text-center mt-6 space-y-1 max-w-[280px] overflow-hidden">
@@ -460,30 +334,19 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                 </div>
               )}
 
-              {/* Simplified audio controls - just mute and spotify */}
-              {status.music_preview_url && (
-                <div className="flex items-center gap-3 mt-4">
-                  <button
-                    type="button"
-                    onClick={toggleMute}
-                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
-                  >
-                    {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                  </button>
-                  {status.music_spotify_url && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        window.open(status.music_spotify_url!, '_blank');
-                      }}
-                      className="w-10 h-10 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 flex items-center justify-center transition-colors"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+              {/* Open in Spotify button */}
+              {status.music_spotify_url && !status.music_spotify_url.includes('/embed/') && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(status.music_spotify_url!, '_blank');
+                  }}
+                  className="mt-4 px-6 py-2 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 flex items-center gap-2 transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span className="text-sm font-medium">Open in Spotify</span>
+                </button>
               )}
             </div>
           ) : (
