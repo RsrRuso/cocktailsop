@@ -290,7 +290,10 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] p-0 overflow-hidden flex flex-col bg-transparent border-none shadow-none backdrop-blur-xl">
+      <DialogContent 
+        className="sm:max-w-md max-h-[90vh] p-0 overflow-hidden flex flex-col bg-transparent border-none shadow-none backdrop-blur-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header - Transparent */}
         <div className="flex items-center gap-3 p-4">
           <Avatar className="w-10 h-10 ring-2 ring-white/20">
@@ -321,7 +324,11 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                 )}
                 {status.music_preview_url && (
                   <button
-                    onClick={togglePlay}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      togglePlay();
+                    }}
                     className="absolute inset-0 bg-black/30 flex items-center justify-center hover:bg-black/40 transition-colors"
                   >
                     {isPlaying ? (
@@ -369,11 +376,15 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
         )}
 
         {/* Actions - Frameless */}
-        <div className="flex items-center gap-4 px-4 py-3 border-t border-white/10">
+        <div className="flex items-center gap-4 px-4 py-3 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => likeMutation.mutate()}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              likeMutation.mutate();
+            }}
             className="flex items-center gap-2 text-white hover:bg-white/10"
           >
             <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
@@ -382,7 +393,11 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={handleCommentsClick}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              handleCommentsClick();
+            }}
             className={`flex items-center gap-2 text-white hover:bg-white/10 ${showComments ? 'bg-white/10' : ''}`}
           >
             <MessageCircle className={`w-5 h-5 ${showComments ? 'fill-white/30' : ''}`} />
@@ -392,7 +407,11 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setShowEmojiPicker(!showEmojiPicker);
+              }}
               className="text-white hover:bg-white/10"
             >
               <Smile className="w-5 h-5" />
@@ -408,7 +427,11 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                   {quickEmojis.map((emoji) => (
                     <button
                       key={emoji}
-                      onClick={() => addReactionMutation.mutate(emoji)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        addReactionMutation.mutate(emoji);
+                      }}
                       className="text-xl hover:scale-125 transition-transform p-1"
                     >
                       {emoji}
