@@ -81,8 +81,8 @@ export default function StoryViewer() {
   const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [recentViewers, setRecentViewers] = useState<Profile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [mediaLoaded, setMediaLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Start false for instant display
+  const [mediaLoaded, setMediaLoaded] = useState(true); // Assume loaded for instant start
   
   // Refs
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -148,14 +148,13 @@ export default function StoryViewer() {
     fetchUser();
   }, []);
 
-  // Fetch stories and profile - optimized with parallel fetches
+  // Fetch stories and profile - optimized for INSTANT loading
   useEffect(() => {
     if (!userId) return;
 
     const fetchData = async () => {
-      setIsLoading(true);
       try {
-        // Parallel fetch for faster loading
+        // Parallel fetch for faster loading - no loading state delay
         const [profileResult, storiesResult] = await Promise.all([
           supabase
             .from("profiles")
@@ -174,11 +173,16 @@ export default function StoryViewer() {
 
         if (storiesResult.data && storiesResult.data.length > 0) {
           setStories(storiesResult.data);
-          // Preload first story media
-          if (storiesResult.data[0]?.media_urls?.[0]) {
-            preloadMedia(storiesResult.data[0].media_urls[0], storiesResult.data[0].media_types?.[0] || "image");
-          }
-          // Prefetch recent viewers async
+          setIsLoading(false);
+          
+          // Preload ALL media for instant transitions
+          storiesResult.data.forEach(story => {
+            story.media_urls?.forEach((url: string, idx: number) => {
+              preloadMedia(url, story.media_types?.[idx] || "image");
+            });
+          });
+          
+          // Track view in background (non-blocking)
           if (currentUserId) {
             trackView(storiesResult.data[0].id);
             fetchRecentViewers(storiesResult.data[0].id);
@@ -191,8 +195,6 @@ export default function StoryViewer() {
         console.error("Error loading stories:", error);
         toast.error("Failed to load stories");
         navigate("/home");
-      } finally {
-        setIsLoading(false);
       }
     };
 
