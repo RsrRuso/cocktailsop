@@ -98,6 +98,8 @@ const Home = () => {
   const { isManager } = useManagerRole();
   const [showTopNav, setShowTopNav] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [hasActiveStory, setHasActiveStory] = useState(false);
+  const [showHandAnimation, setShowHandAnimation] = useState(true);
   
   // Update currentUser when profile changes
   useEffect(() => {
@@ -183,6 +185,18 @@ const Home = () => {
   // Merge posts and reels into unified feed
   const fetchStories = useCallback(async () => {
     try {
+      // Check if current user has an active story
+      if (user?.id) {
+        const { data: userStory } = await supabase
+          .from("stories")
+          .select("id")
+          .eq("user_id", user.id)
+          .gt("expires_at", new Date().toISOString())
+          .limit(1);
+        
+        setHasActiveStory(!!userStory && userStory.length > 0);
+      }
+
       // Fetch stories WITHOUT profile join
       const { data } = await supabase
         .from("stories")
@@ -320,13 +334,53 @@ const Home = () => {
       <div className="px-4 py-3 overflow-x-auto scrollbar-hide">
         <div className="flex gap-4">
           {/* Your Story */}
-          <div className="flex flex-col items-center gap-2 min-w-[82px]">
+          <div className="flex flex-col items-center gap-2 min-w-[82px] relative">
+            {/* Animated Hand Gesture - "Check my story" */}
+            {hasActiveStory && showHandAnimation && (
+              <div 
+                className="absolute -right-2 top-1/2 -translate-y-1/2 z-20 animate-bounce"
+                style={{ 
+                  animation: 'handWave 1.5s ease-in-out infinite, fadeInOut 4s ease-in-out forwards'
+                }}
+                onAnimationEnd={() => setShowHandAnimation(false)}
+              >
+                <div className="relative">
+                  {/* Hand pointing gesture */}
+                  <span className="text-3xl transform -scale-x-100 inline-block drop-shadow-lg">👈</span>
+                  {/* Speech bubble */}
+                  <div className="absolute -top-8 -right-4 bg-foreground/90 text-background text-[10px] px-2 py-1 rounded-full whitespace-nowrap font-medium shadow-lg animate-pulse">
+                    Check it!
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
               <button
-                onClick={() => navigate("/story-options")}
+                onClick={() => {
+                  setShowHandAnimation(false);
+                  navigate(hasActiveStory ? `/story/${user?.id}` : "/story-options");
+                }}
                 className="relative group"
               >
-                {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) ? (
+                {hasActiveStory ? (
+                  // Has active story - show grey ring with colorful gradient
+                  <>
+                    <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-slate-400 via-slate-500 to-slate-600 opacity-60 blur-md group-hover:opacity-80 transition-opacity" />
+                    <div className="relative bg-gradient-to-tr from-slate-400 via-slate-500 to-slate-600 p-[3px] rounded-full shadow-lg">
+                      <div className="bg-background p-[2px] rounded-full">
+                        <Avatar className="w-[76px] h-[76px] rounded-full ring-2 ring-slate-400/30">
+                          <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover grayscale-[30%]" />
+                          <AvatarFallback className="text-lg bg-slate-500/20">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                        </Avatar>
+                      </div>
+                    </div>
+                    {/* Live indicator */}
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center border-2 border-background shadow-lg z-10 animate-pulse">
+                      <div className="w-2 h-2 rounded-full bg-white" />
+                    </div>
+                  </>
+                ) : currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) ? (
                   // Birthday style
                   <>
                     <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-500 opacity-80 blur-md group-hover:opacity-100 animate-pulse" />
@@ -344,7 +398,7 @@ const Home = () => {
                     </div>
                   </>
                 ) : (
-                  // Regular style
+                  // Regular style - no story
                   <>
                     <div className="absolute -inset-0.5 rounded-full bg-muted-foreground/20 opacity-50 blur-sm" />
                     <div className="relative p-[3px] rounded-full bg-gradient-to-tr from-muted-foreground/30 to-muted-foreground/50">
@@ -362,7 +416,9 @@ const Home = () => {
                 )}
               </button>
             </BirthdayFireworks>
-            <span className="text-xs text-muted-foreground font-medium">Your Story</span>
+            <span className="text-xs text-muted-foreground font-medium">
+              {hasActiveStory ? "Your Story" : "Add Story"}
+            </span>
           </div>
 
           {/* Other Stories - Live Preview */}
