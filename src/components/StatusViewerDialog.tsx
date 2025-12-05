@@ -43,50 +43,87 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const commentInputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Audio setup for music status - auto-play when dialog opens with loop
   useEffect(() => {
     if (open && status?.music_preview_url) {
-      audioRef.current = new Audio(status.music_preview_url);
-      audioRef.current.volume = 0.5;
-      audioRef.current.loop = true; // Enable looping for continuous playback
+      // Always create fresh audio element
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      
+      const audio = new Audio(status.music_preview_url);
+      audio.volume = 0.5;
+      audio.loop = true;
+      audioRef.current = audio;
       
       // Auto-play when dialog opens
-      audioRef.current.play().then(() => {
+      audio.play().then(() => {
         setIsPlaying(true);
       }).catch(err => {
         console.log('Auto-play blocked:', err);
+        setIsPlaying(false);
       });
     }
+    
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
-        setIsPlaying(false);
         audioRef.current = null;
       }
+      setIsPlaying(false);
     };
   }, [open, status?.music_preview_url]);
 
-  const togglePlay = () => {
-    // Create audio if it doesn't exist
-    if (!audioRef.current && status?.music_preview_url) {
-      audioRef.current = new Audio(status.music_preview_url);
-      audioRef.current.volume = 0.5;
-      audioRef.current.loop = true; // Enable looping
+  // Reset states when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setShowComments(false);
+      setShowEmojiPicker(false);
+      setReplyingTo(null);
+      setEditingComment(null);
     }
-    if (!audioRef.current) return;
+  }, [open]);
+
+  const togglePlay = () => {
+    if (!status?.music_preview_url) return;
+    
+    // Create audio if it doesn't exist
+    if (!audioRef.current) {
+      const audio = new Audio(status.music_preview_url);
+      audio.volume = 0.5;
+      audio.loop = true;
+      audioRef.current = audio;
+    }
     
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
+      // Reset to beginning for replay effect
+      audioRef.current.currentTime = 0;
       audioRef.current.play().then(() => {
         setIsPlaying(true);
-      }).catch(err => console.log('Playback error:', err));
+      }).catch(err => {
+        console.log('Playback error:', err);
+        toast({ title: "Playback failed", variant: "destructive" });
+      });
+    }
+  };
+
+  const handleCommentsClick = () => {
+    setShowComments(!showComments);
+    if (!showComments) {
+      setTimeout(() => {
+        commentInputRef.current?.focus();
+      }, 100);
     }
   };
 
@@ -342,8 +379,13 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
             <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
             <span className="text-white">{status.like_count || 0}</span>
           </Button>
-          <Button variant="ghost" size="sm" className="flex items-center gap-2 text-white hover:bg-white/10">
-            <MessageCircle className="w-5 h-5" />
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleCommentsClick}
+            className={`flex items-center gap-2 text-white hover:bg-white/10 ${showComments ? 'bg-white/10' : ''}`}
+          >
+            <MessageCircle className={`w-5 h-5 ${showComments ? 'fill-white/30' : ''}`} />
             <span>{comments.length}</span>
           </Button>
           <div className="relative ml-auto">
@@ -378,76 +420,87 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
           </div>
         </div>
 
-        {/* Comments */}
-        <ScrollArea className="flex-1 max-h-[250px]">
-          <div className="p-4 space-y-4">
-            {comments.length === 0 ? (
-              <p className="text-center text-white/50 text-sm py-4">
-                No comments yet. Be the first!
-              </p>
-            ) : (
-              comments.map((c: any) => (
-                <motion.div
-                  key={c.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex gap-3 ${c.parent_comment_id ? 'ml-8' : ''}`}
-                >
-                  <Avatar className="w-8 h-8 flex-shrink-0 ring-1 ring-white/20">
-                    <AvatarImage src={c.profiles?.avatar_url} />
-                    <AvatarFallback className="bg-white/10 text-white">{c.profiles?.username?.[0] || "U"}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2">
-                      <p className="font-semibold text-sm text-white">{c.profiles?.username || "User"}</p>
-                      {editingComment === c.id ? (
-                        <div className="flex gap-2 mt-1">
-                          <Input
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            className="h-8 text-sm bg-white/10 border-white/20 text-white"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => updateCommentMutation.mutate({ id: c.id, content: editText })}
-                          >
-                            Save
-                          </Button>
+        {/* Comments - Collapsible */}
+        <AnimatePresence>
+          {showComments && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ScrollArea className="max-h-[250px]">
+                <div className="p-4 space-y-4">
+                  {comments.length === 0 ? (
+                    <p className="text-center text-white/50 text-sm py-4">
+                      No comments yet. Be the first!
+                    </p>
+                  ) : (
+                    comments.map((c: any) => (
+                      <motion.div
+                        key={c.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`flex gap-3 ${c.parent_comment_id ? 'ml-8' : ''}`}
+                      >
+                        <Avatar className="w-8 h-8 flex-shrink-0 ring-1 ring-white/20">
+                          <AvatarImage src={c.profiles?.avatar_url} />
+                          <AvatarFallback className="bg-white/10 text-white">{c.profiles?.username?.[0] || "U"}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2">
+                            <p className="font-semibold text-sm text-white">{c.profiles?.username || "User"}</p>
+                            {editingComment === c.id ? (
+                              <div className="flex gap-2 mt-1">
+                                <Input
+                                  value={editText}
+                                  onChange={(e) => setEditText(e.target.value)}
+                                  className="h-8 text-sm bg-white/10 border-white/20 text-white"
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => updateCommentMutation.mutate({ id: c.id, content: editText })}
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-white/90">{c.content}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-white/50">
+                            <span>{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
+                            <button
+                              onClick={() => setReplyingTo(c.id)}
+                              className="hover:text-white flex items-center gap-1"
+                            >
+                              <Reply className="w-3 h-3" /> Reply
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingComment(c.id);
+                                setEditText(c.content);
+                              }}
+                              className="hover:text-white flex items-center gap-1"
+                            >
+                              <Edit2 className="w-3 h-3" /> Edit
+                            </button>
+                            <button
+                              onClick={() => deleteCommentMutation.mutate(c.id)}
+                              className="hover:text-red-400 flex items-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" /> Delete
+                            </button>
+                          </div>
                         </div>
-                      ) : (
-                        <p className="text-sm text-white/90">{c.content}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-white/50">
-                      <span>{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
-                      <button
-                        onClick={() => setReplyingTo(c.id)}
-                        className="hover:text-white flex items-center gap-1"
-                      >
-                        <Reply className="w-3 h-3" /> Reply
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingComment(c.id);
-                          setEditText(c.content);
-                        }}
-                        className="hover:text-white flex items-center gap-1"
-                      >
-                        <Edit2 className="w-3 h-3" /> Edit
-                      </button>
-                      <button
-                        onClick={() => deleteCommentMutation.mutate(c.id)}
-                        className="hover:text-red-400 flex items-center gap-1"
-                      >
-                        <Trash2 className="w-3 h-3" /> Delete
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))
-            )}
-          </div>
-        </ScrollArea>
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Comment Input - Transparent */}
         <div className="p-4 border-t border-white/10">
@@ -462,10 +515,12 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
           )}
           <div className="flex gap-2">
             <Input
+              ref={commentInputRef}
               placeholder="Add a comment..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
+              onFocus={() => setShowComments(true)}
               className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/40"
             />
             <Button
