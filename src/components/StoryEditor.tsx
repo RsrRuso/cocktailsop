@@ -192,8 +192,11 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
 
     setUploadingMusic(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!user) {
+        toast.error("Please log in to upload music");
+        setUploadingMusic(false);
+        return;
+      }
 
       // Upload to Supabase storage
       const fileExt = file.name.split('.').pop();
