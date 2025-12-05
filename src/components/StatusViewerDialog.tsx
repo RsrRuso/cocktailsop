@@ -48,12 +48,12 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Audio setup for music status - auto-play when dialog opens
+  // Audio setup for music status - auto-play when dialog opens with loop
   useEffect(() => {
     if (open && status?.music_preview_url) {
       audioRef.current = new Audio(status.music_preview_url);
       audioRef.current.volume = 0.5;
-      audioRef.current.addEventListener('ended', () => setIsPlaying(false));
+      audioRef.current.loop = true; // Enable looping for continuous playback
       
       // Auto-play when dialog opens
       audioRef.current.play().then(() => {
@@ -76,7 +76,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
     if (!audioRef.current && status?.music_preview_url) {
       audioRef.current = new Audio(status.music_preview_url);
       audioRef.current.volume = 0.5;
-      audioRef.current.addEventListener('ended', () => setIsPlaying(false));
+      audioRef.current.loop = true; // Enable looping
     }
     if (!audioRef.current) return;
     
@@ -253,51 +253,51 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] p-0 overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b">
-          <Avatar className="w-10 h-10">
+      <DialogContent className="sm:max-w-md max-h-[90vh] p-0 overflow-hidden flex flex-col bg-transparent border-none shadow-none backdrop-blur-xl">
+        {/* Header - Transparent */}
+        <div className="flex items-center gap-3 p-4">
+          <Avatar className="w-10 h-10 ring-2 ring-white/20">
             <AvatarImage src={userProfile?.avatar_url || undefined} />
-            <AvatarFallback>{userProfile?.username?.[0] || "U"}</AvatarFallback>
+            <AvatarFallback className="bg-white/10">{userProfile?.username?.[0] || "U"}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <p className="font-semibold">{userProfile?.username || "User"}</p>
-            <p className="text-xs text-muted-foreground">Status</p>
+            <p className="font-semibold text-white">{userProfile?.username || "User"}</p>
+            <p className="text-xs text-white/60">Status</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="text-white hover:bg-white/10">
             <X className="w-5 h-5" />
           </Button>
         </div>
 
-        {/* Status Content */}
-        <div className="p-6 flex flex-col items-center justify-center min-h-[200px] bg-gradient-to-br from-primary/5 to-accent/5">
+        {/* Status Content - Transparent */}
+        <div className="p-6 flex flex-col items-center justify-center min-h-[200px]">
           {status.music_track_name ? (
-            // Music Status
+            // Music Status - Transparent
             <div className="flex flex-col items-center gap-4">
-              <div className="relative w-24 h-24 rounded-xl overflow-hidden shadow-lg">
+              <div className="relative w-28 h-28 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-white/20">
                 {status.music_album_art ? (
                   <img src={status.music_album_art} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                    <Music2 className="w-10 h-10 text-white" />
+                    <Music2 className="w-12 h-12 text-white" />
                   </div>
                 )}
                 {status.music_preview_url && (
                   <button
                     onClick={togglePlay}
-                    className="absolute inset-0 bg-black/40 flex items-center justify-center"
+                    className="absolute inset-0 bg-black/30 flex items-center justify-center hover:bg-black/40 transition-colors"
                   >
                     {isPlaying ? (
-                      <Pause className="w-10 h-10 text-white" />
+                      <Pause className="w-12 h-12 text-white drop-shadow-lg" />
                     ) : (
-                      <Play className="w-10 h-10 text-white" />
+                      <Play className="w-12 h-12 text-white drop-shadow-lg" />
                     )}
                   </button>
                 )}
               </div>
               <div className="text-center">
-                <p className="font-semibold text-lg">{status.music_track_name}</p>
-                <p className="text-muted-foreground">{status.music_artist}</p>
+                <p className="font-semibold text-xl text-white">{status.music_track_name}</p>
+                <p className="text-white/70">{status.music_artist}</p>
               </div>
             </div>
           ) : (
@@ -312,7 +312,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                   {status.emoji}
                 </motion.span>
               )}
-              <p className="text-xl font-medium">{status.status_text}</p>
+              <p className="text-xl font-medium text-white">{status.status_text}</p>
             </div>
           )}
         </div>
@@ -323,7 +323,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
             {Object.entries(reactionCounts).map(([emoji, count]) => (
               <span
                 key={emoji}
-                className="px-2 py-1 bg-secondary/50 rounded-full text-sm flex items-center gap-1"
+                className="px-2 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1 text-white"
               >
                 {emoji} {count as number}
               </span>
@@ -331,18 +331,18 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center gap-4 px-4 py-3 border-t border-b">
+        {/* Actions - Frameless */}
+        <div className="flex items-center gap-4 px-4 py-3 border-t border-white/10">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => likeMutation.mutate()}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 text-white hover:bg-white/10"
           >
-            <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-            <span>{status.like_count || 0}</span>
+            <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
+            <span className="text-white">{status.like_count || 0}</span>
           </Button>
-          <Button variant="ghost" size="sm" className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="flex items-center gap-2 text-white hover:bg-white/10">
             <MessageCircle className="w-5 h-5" />
             <span>{comments.length}</span>
           </Button>
@@ -351,6 +351,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
               variant="ghost"
               size="sm"
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="text-white hover:bg-white/10"
             >
               <Smile className="w-5 h-5" />
             </Button>
@@ -360,7 +361,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="absolute bottom-full right-0 mb-2 bg-background border rounded-xl p-2 shadow-lg flex gap-1"
+                  className="absolute bottom-full right-0 mb-2 bg-black/80 backdrop-blur-lg border border-white/20 rounded-xl p-2 shadow-lg flex gap-1"
                 >
                   {quickEmojis.map((emoji) => (
                     <button
@@ -381,7 +382,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
         <ScrollArea className="flex-1 max-h-[250px]">
           <div className="p-4 space-y-4">
             {comments.length === 0 ? (
-              <p className="text-center text-muted-foreground text-sm py-4">
+              <p className="text-center text-white/50 text-sm py-4">
                 No comments yet. Be the first!
               </p>
             ) : (
@@ -392,19 +393,19 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex gap-3 ${c.parent_comment_id ? 'ml-8' : ''}`}
                 >
-                  <Avatar className="w-8 h-8 flex-shrink-0">
+                  <Avatar className="w-8 h-8 flex-shrink-0 ring-1 ring-white/20">
                     <AvatarImage src={c.profiles?.avatar_url} />
-                    <AvatarFallback>{c.profiles?.username?.[0] || "U"}</AvatarFallback>
+                    <AvatarFallback className="bg-white/10 text-white">{c.profiles?.username?.[0] || "U"}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="bg-secondary/50 rounded-xl px-3 py-2">
-                      <p className="font-semibold text-sm">{c.profiles?.username || "User"}</p>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2">
+                      <p className="font-semibold text-sm text-white">{c.profiles?.username || "User"}</p>
                       {editingComment === c.id ? (
                         <div className="flex gap-2 mt-1">
                           <Input
                             value={editText}
                             onChange={(e) => setEditText(e.target.value)}
-                            className="h-8 text-sm"
+                            className="h-8 text-sm bg-white/10 border-white/20 text-white"
                           />
                           <Button
                             size="sm"
@@ -414,14 +415,14 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                           </Button>
                         </div>
                       ) : (
-                        <p className="text-sm">{c.content}</p>
+                        <p className="text-sm text-white/90">{c.content}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-3 mt-1 text-xs text-white/50">
                       <span>{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}</span>
                       <button
                         onClick={() => setReplyingTo(c.id)}
-                        className="hover:text-foreground flex items-center gap-1"
+                        className="hover:text-white flex items-center gap-1"
                       >
                         <Reply className="w-3 h-3" /> Reply
                       </button>
@@ -430,13 +431,13 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                           setEditingComment(c.id);
                           setEditText(c.content);
                         }}
-                        className="hover:text-foreground flex items-center gap-1"
+                        className="hover:text-white flex items-center gap-1"
                       >
                         <Edit2 className="w-3 h-3" /> Edit
                       </button>
                       <button
                         onClick={() => deleteCommentMutation.mutate(c.id)}
-                        className="hover:text-destructive flex items-center gap-1"
+                        className="hover:text-red-400 flex items-center gap-1"
                       >
                         <Trash2 className="w-3 h-3" /> Delete
                       </button>
@@ -448,13 +449,13 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
           </div>
         </ScrollArea>
 
-        {/* Comment Input */}
-        <div className="p-4 border-t">
+        {/* Comment Input - Transparent */}
+        <div className="p-4 border-t border-white/10">
           {replyingTo && (
-            <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 mb-2 text-sm text-white/50">
               <Reply className="w-4 h-4" />
               <span>Replying to comment</span>
-              <button onClick={() => setReplyingTo(null)} className="ml-auto">
+              <button onClick={() => setReplyingTo(null)} className="ml-auto text-white/70 hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -465,12 +466,13 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
-              className="flex-1"
+              className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/40"
             />
             <Button
               onClick={handleSubmitComment}
               disabled={!comment.trim() || addCommentMutation.isPending}
               size="icon"
+              className="bg-white/20 hover:bg-white/30 text-white"
             >
               <Send className="w-4 h-4" />
             </Button>

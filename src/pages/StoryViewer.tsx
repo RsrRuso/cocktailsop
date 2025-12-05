@@ -605,9 +605,9 @@ export default function StoryViewer() {
         </button>
       </div>
 
-      {/* Story Card Container - Mobile optimized */}
-      <div className="flex-1 flex items-center justify-center px-2 sm:px-4 py-1 sm:py-2 overflow-hidden min-h-0">
-        <div className="w-full max-w-md h-full sm:max-h-[75vh] relative rounded-xl sm:rounded-2xl overflow-hidden bg-card border border-border/30">
+      {/* Story Container - Fullscreen */}
+      <div className="flex-1 flex items-center justify-center overflow-hidden min-h-0">
+        <div className="w-full h-full relative overflow-hidden">
           {/* Progress bars */}
           <ProgressBars totalItems={totalMediaCount} currentIndex={currentMediaIndex} progress={progress} />
 
@@ -764,64 +764,64 @@ export default function StoryViewer() {
         </div>
       </div>
 
-      {/* Bottom Actions Bar - Mobile optimized */}
-      <div className="flex items-center justify-around px-2 sm:px-4 py-2 sm:py-3 bg-black border-t border-white/10 shrink-0">
+      {/* Bottom Actions Bar - Transparent frameless */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-around px-4 py-4 bg-gradient-to-t from-black/60 to-transparent">
         {/* Activity */}
         <button 
-          className="flex flex-col items-center gap-0.5 sm:gap-1 p-1"
+          className="flex flex-col items-center gap-1"
           onClick={() => currentUserId === userId && setShowInsights(true)}
         >
-          <div className="flex -space-x-1.5 sm:-space-x-2">
+          <div className="flex -space-x-2">
             {recentViewers.length > 0 ? (
               recentViewers.slice(0, 3).map((viewer, i) => (
                 <OptimizedAvatar
                   key={i}
                   src={viewer.avatar_url}
                   alt={viewer.full_name || "Viewer"}
-                  className="w-5 h-5 sm:w-6 sm:h-6 border border-black"
+                  className="w-6 h-6 border border-black/50"
                 />
               ))
             ) : (
-              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20" />
+              <div className="w-6 h-6 rounded-full bg-white/20" />
             )}
           </div>
-          <span className="text-white/70 text-[10px] sm:text-xs">Activity</span>
+          <span className="text-white/80 text-xs">Activity</span>
         </button>
 
         {/* Highlight */}
         <button 
-          className="flex flex-col items-center gap-0.5 sm:gap-1 p-1"
+          className="flex flex-col items-center gap-1"
           onClick={() => toast.info("Highlight feature coming soon")}
         >
-          <Heart className={`w-5 h-5 sm:w-6 sm:h-6 ${isLiked ? 'text-red-500 fill-red-500' : 'text-white'}`} />
-          <span className="text-white/70 text-[10px] sm:text-xs">Highlight</span>
+          <Heart className={`w-6 h-6 ${isLiked ? 'text-red-500 fill-red-500' : 'text-white/90'}`} />
+          <span className="text-white/80 text-xs">Highlight</span>
         </button>
 
         {/* Mention */}
         <button 
-          className="flex flex-col items-center gap-0.5 sm:gap-1 p-1"
+          className="flex flex-col items-center gap-1"
           onClick={() => toast.info("Mention feature coming soon")}
         >
-          <AtSign className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-          <span className="text-white/70 text-[10px] sm:text-xs">Mention</span>
+          <AtSign className="w-6 h-6 text-white/90" />
+          <span className="text-white/80 text-xs">Mention</span>
         </button>
 
         {/* Send */}
         <button 
-          className="flex flex-col items-center gap-0.5 sm:gap-1 p-1"
+          className="flex flex-col items-center gap-1"
           onClick={() => toast.info("Share feature coming soon")}
         >
-          <Send className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-          <span className="text-white/70 text-[10px] sm:text-xs">Send</span>
+          <Send className="w-6 h-6 text-white/90" />
+          <span className="text-white/80 text-xs">Send</span>
         </button>
 
         {/* More */}
         <button 
-          className="flex flex-col items-center gap-0.5 sm:gap-1 p-1"
+          className="flex flex-col items-center gap-1"
           onClick={() => toast.info("More options coming soon")}
         >
-          <MoreHorizontal className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-          <span className="text-white/70 text-[10px] sm:text-xs">More</span>
+          <MoreHorizontal className="w-6 h-6 text-white/90" />
+          <span className="text-white/80 text-xs">More</span>
         </button>
       </div>
 
