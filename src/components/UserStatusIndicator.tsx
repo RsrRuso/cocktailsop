@@ -64,43 +64,43 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
 
   if (!status) return null;
 
-  // Music status
+  // Music status - smaller dark background with bright text
   if (status.music_track_name) {
     const sizeClasses = {
-      sm: 'min-w-[80px] max-w-[120px] py-1 px-1.5',
-      md: 'min-w-[100px] max-w-[160px] py-1.5 px-2',
-      lg: 'min-w-[140px] max-w-[200px] py-2 px-3'
+      sm: 'min-w-[70px] max-w-[100px] py-0.5 px-1',
+      md: 'min-w-[80px] max-w-[120px] py-1 px-1.5',
+      lg: 'min-w-[100px] max-w-[140px] py-1.5 px-2'
     };
     
     const textClasses = {
-      sm: 'text-[8px]',
-      md: 'text-[9px]',
-      lg: 'text-[10px]'
+      sm: 'text-[7px]',
+      md: 'text-[8px]',
+      lg: 'text-[9px]'
     };
 
     return (
       <>
         <div 
-          className={`absolute -top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-auto cursor-pointer ${className}`}
+          className={`absolute -top-5 left-1/2 -translate-x-1/2 z-20 pointer-events-auto cursor-pointer ${className}`}
           onClick={handleStatusClick}
         >
           <div className="relative">
-            <div className={`bg-gradient-to-r from-emerald-500/90 to-teal-500/90 backdrop-blur-sm text-white rounded-xl shadow-lg shadow-emerald-500/20 ${sizeClasses[size]} overflow-hidden`}>
+            <div className={`bg-black/85 backdrop-blur-sm text-white rounded-xl shadow-md ${sizeClasses[size]} overflow-hidden`}>
               <div className="flex items-center gap-1">
                 {/* Album Art */}
-                <div className="relative w-5 h-5 rounded flex-shrink-0 overflow-hidden">
+                <div className="relative w-4 h-4 rounded flex-shrink-0 overflow-hidden">
                   {status.music_album_art ? (
                     <img src={status.music_album_art} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-white/20 flex items-center justify-center">
-                      <Music2 className="w-2.5 h-2.5" />
+                    <div className="w-full h-full bg-emerald-500/40 flex items-center justify-center">
+                      <Music2 className="w-2 h-2" />
                     </div>
                   )}
                   {isPlaying && (
                     <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
                       <div className="flex gap-px">
-                        <div className="w-0.5 h-2 bg-white animate-pulse" />
-                        <div className="w-0.5 h-2 bg-white animate-pulse" style={{ animationDelay: '150ms' }} />
+                        <div className="w-0.5 h-1.5 bg-white animate-pulse" />
+                        <div className="w-0.5 h-1.5 bg-white animate-pulse" style={{ animationDelay: '150ms' }} />
                       </div>
                     </div>
                   )}
@@ -108,11 +108,11 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
 
                 {/* Track Info with Marquee */}
                 <div className="flex-1 min-w-0 overflow-hidden">
-                  <div className={`whitespace-nowrap font-medium ${textClasses[size]}`}>
+                  <div className={`whitespace-nowrap font-semibold text-white ${textClasses[size]}`}>
                     <div className="animate-marquee inline-block">
                       {status.music_track_name}
-                      {status.music_track_name && status.music_track_name.length > 10 && (
-                        <span className="ml-8">{status.music_track_name}</span>
+                      {status.music_track_name && status.music_track_name.length > 8 && (
+                        <span className="ml-6">{status.music_track_name}</span>
                       )}
                     </div>
                   </div>
@@ -122,12 +122,12 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
                 {status.music_preview_url && (
                   <button
                     onClick={togglePlay}
-                    className="w-4 h-4 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center flex-shrink-0"
+                    className="w-3 h-3 rounded-full bg-emerald-500/60 hover:bg-emerald-500 flex items-center justify-center flex-shrink-0"
                   >
                     {isPlaying ? (
-                      <Pause className="w-2 h-2" />
+                      <Pause className="w-1.5 h-1.5" />
                     ) : (
-                      <Play className="w-2 h-2 ml-px" />
+                      <Play className="w-1.5 h-1.5 ml-px" />
                     )}
                   </button>
                 )}
@@ -135,7 +135,7 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
             </div>
             
             {/* Connector */}
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full" />
+            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-black/85 rounded-full" />
           </div>
         </div>
         <StatusViewerDialog
@@ -148,32 +148,32 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
     );
   }
 
-  // Regular text status with marquee - closer to avatar with bigger, brighter text
+  // Regular text status with marquee - smaller dark background with bright text
   if (status.status_text) {
     const sizeClasses = {
-      sm: 'min-w-[70px] max-w-[120px] py-1 px-2',
-      md: 'min-w-[90px] max-w-[140px] py-1.5 px-2.5',
-      lg: 'min-w-[110px] max-w-[160px] py-2 px-3'
+      sm: 'min-w-[50px] max-w-[90px] py-0.5 px-1.5',
+      md: 'min-w-[60px] max-w-[100px] py-0.5 px-2',
+      lg: 'min-w-[70px] max-w-[110px] py-1 px-2'
     };
     
     const textClasses = {
-      sm: 'text-[10px]',
-      md: 'text-[11px]',
-      lg: 'text-[12px]'
+      sm: 'text-[8px]',
+      md: 'text-[9px]',
+      lg: 'text-[10px]'
     };
 
     return (
       <>
         <div 
-          className={`absolute -top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto cursor-pointer ${className}`}
+          className={`absolute -top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto cursor-pointer ${className}`}
           onClick={handleStatusClick}
         >
           <div className="relative">
-            <div className={`bg-gradient-to-r from-primary/90 to-accent/90 backdrop-blur-sm rounded-full shadow-lg shadow-primary/20 ${sizeClasses[size]} overflow-hidden border border-white/20`}>
-              <div className="flex items-center gap-1 justify-center overflow-hidden">
-                {status.emoji && <span className={`text-sm flex-shrink-0`}>{status.emoji}</span>}
+            <div className={`bg-black/80 backdrop-blur-sm rounded-full shadow-md ${sizeClasses[size]} overflow-hidden`}>
+              <div className="flex items-center gap-0.5 justify-center overflow-hidden">
+                {status.emoji && <span className={`${textClasses[size]} flex-shrink-0`}>{status.emoji}</span>}
                 <div className="overflow-hidden flex-1 min-w-0">
-                  <div className={`whitespace-nowrap ${textClasses[size]} font-semibold text-white drop-shadow-sm`}>
+                  <div className={`whitespace-nowrap ${textClasses[size]} font-semibold text-white`}>
                     <div className="animate-marquee inline-block">
                       {status.status_text}
                       {status.status_text.length > 10 && (
@@ -184,7 +184,7 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
                 </div>
               </div>
             </div>
-            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gradient-to-r from-primary to-accent rounded-full" />
+            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-black/80 rounded-full" />
           </div>
         </div>
         <StatusViewerDialog

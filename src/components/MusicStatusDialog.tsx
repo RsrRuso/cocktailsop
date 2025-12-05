@@ -82,13 +82,13 @@ const MusicStatusDialog = ({ open, onOpenChange }: MusicStatusDialogProps) => {
       
       if (data?.tracks) {
         setTracks(data.tracks.map((track: any) => ({
-          id: track.id,
-          name: track.name,
-          artist: track.artists?.[0]?.name || 'Unknown Artist',
-          album: track.album?.name || '',
-          album_art: track.album?.images?.[0]?.url || '',
-          preview_url: track.preview_url,
-          spotify_url: track.external_urls?.spotify || '',
+          id: track.id || track.track_id,
+          name: track.title || track.name,
+          artist: track.artist || track.artists?.[0]?.name || 'Unknown Artist',
+          album: track.album || '',
+          album_art: track.preview_url || track.album?.images?.[0]?.url || '',
+          preview_url: track.preview_audio || track.preview_url || null,
+          spotify_url: track.spotify_url || track.external_urls?.spotify || '',
         })));
       }
     } catch (error) {
