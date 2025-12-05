@@ -341,7 +341,7 @@ const Home = () => {
       <div className="px-4 py-3 overflow-x-auto scrollbar-hide">
         <div className="flex gap-4">
           {/* Your Story */}
-          <div className="flex flex-col items-center gap-2 min-w-[82px] pt-12">
+          <div className="flex flex-col items-center gap-2 min-w-[90px] pt-6">
             <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
               <div className="relative">
                 {/* White glow when has active story */}
@@ -352,12 +352,12 @@ const Home = () => {
                   onClick={() => navigate(hasActiveStory ? `/story/${user?.id}` : "/story-options")}
                   className={`relative group ${hasActiveStory ? 'ring-2 ring-white/50 ring-offset-2 ring-offset-background rounded-full' : ''}`}
                 >
-                  <Avatar className="w-[76px] h-[76px] rounded-full shadow-lg">
+                  <Avatar className="w-[84px] h-[84px] rounded-full shadow-lg">
                     <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
-                    <AvatarFallback className="text-lg">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                    <AvatarFallback className="text-xl">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
                   </Avatar>
                   {!hasActiveStory && (
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-10">
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-10">
                       <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
                     </div>
                   )}
@@ -379,9 +379,7 @@ const Home = () => {
                 )}
               </div>
             </BirthdayFireworks>
-            <span className="text-xs text-muted-foreground font-medium">
-              {hasActiveStory ? "Your Story" : "Add Story"}
-            </span>
+            <span className="text-xs text-muted-foreground font-medium">Your Story</span>
           </div>
 
           {/* Other Stories - Live Preview */}
@@ -393,18 +391,18 @@ const Home = () => {
             const isVideo = previewType?.startsWith('video');
             
             return (
-              <div key={story.id} className="flex flex-col items-center gap-2 min-w-[82px] pt-8">
+              <div key={story.id} className="flex flex-col items-center gap-2 min-w-[90px] pt-6">
                 <BirthdayFireworks isBirthday={hasBirthday}>
                   <div className="relative">
                     {/* User Status Indicator */}
-                    <UserStatusIndicator userId={story.user_id} size="sm" />
+                    <UserStatusIndicator userId={story.user_id} size="md" />
                     
                     <button 
                       onClick={() => navigate(`/story/${story.user_id}`)}
                       className="relative group cursor-pointer"
                     >
                       {/* Live Preview Content */}
-                      <div className="w-[76px] h-[76px] rounded-full overflow-hidden relative shadow-lg">
+                      <div className="w-[84px] h-[84px] rounded-full overflow-hidden relative shadow-lg">
                         {previewMedia ? (
                           <>
                             {isVideo ? (
