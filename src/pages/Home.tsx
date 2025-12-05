@@ -398,54 +398,75 @@ const Home = () => {
                     onClick={() => navigate(`/story/${story.user_id}`)}
                     className="relative group cursor-pointer"
                   >
-                    {/* Glow effect based on state */}
+                    {/* Animated glow effect */}
                     <div 
-                      className={`absolute -inset-1 blur-md transition-all duration-300 ${
+                      className={`absolute -inset-1 blur-lg transition-all duration-500 ${
                         hasBirthday 
-                          ? 'bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 animate-pulse' 
+                          ? 'bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-80 animate-pulse' 
                           : isViewed 
-                            ? 'bg-muted-foreground/30 opacity-50' 
-                            : 'bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 animate-pulse'
-                      } group-hover:opacity-100`}
+                            ? 'bg-muted-foreground/20 opacity-40' 
+                            : 'bg-gradient-to-br from-primary via-accent to-rose-500 opacity-80'
+                      } group-hover:opacity-100 group-hover:scale-110`}
                       style={{ borderRadius: '32%' }}
                     />
                     
-                    {/* Border container */}
+                    {/* Animated ring */}
                     <div 
-                      className={`relative p-[3px] shadow-xl ${
+                      className={`relative p-[3px] shadow-xl transition-transform duration-300 group-hover:scale-105 ${
                         hasBirthday 
                           ? 'bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 shadow-pink-500/50' 
                           : isViewed 
-                            ? 'bg-muted-foreground/50 shadow-lg' 
-                            : 'bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 shadow-orange-500/50'
+                            ? 'bg-gradient-to-br from-muted-foreground/40 to-muted-foreground/60' 
+                            : 'bg-gradient-to-br from-primary via-accent to-rose-500 shadow-primary/40'
                       }`}
                       style={{ borderRadius: '30%' }}
                     >
                       <div className="bg-background p-[2px]" style={{ borderRadius: '28%' }}>
                         {/* Live Preview Content */}
                         <div 
-                          className="w-[74px] h-[74px] overflow-hidden relative"
+                          className="w-[78px] h-[78px] overflow-hidden relative"
                           style={{ borderRadius: '26%' }}
                         >
                           {previewMedia ? (
-                            isVideo ? (
-                              <video
-                                src={previewMedia}
-                                className="w-full h-full object-cover"
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
+                            <>
+                              {isVideo ? (
+                                <video
+                                  src={previewMedia}
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                  autoPlay
+                                  loop
+                                  muted
+                                  playsInline
+                                  style={{ borderRadius: '26%' }}
+                                />
+                              ) : (
+                                <img
+                                  src={previewMedia}
+                                  alt={story.profiles.username}
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                  style={{ borderRadius: '26%' }}
+                                />
+                              )}
+                              
+                              {/* Gradient overlay for depth */}
+                              <div 
+                                className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"
                                 style={{ borderRadius: '26%' }}
                               />
-                            ) : (
-                              <img
-                                src={previewMedia}
-                                alt={story.profiles.username}
-                                className="w-full h-full object-cover"
+                              
+                              {/* Shimmer effect */}
+                              <div 
+                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none"
                                 style={{ borderRadius: '26%' }}
                               />
-                            )
+                              
+                              {/* Video play indicator */}
+                              {isVideo && (
+                                <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm">
+                                  <div className="w-0 h-0 border-l-[5px] border-l-white border-y-[3px] border-y-transparent ml-0.5" />
+                                </div>
+                              )}
+                            </>
                           ) : (
                             <Avatar className="w-full h-full" style={{ borderRadius: '26%' }}>
                               <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" style={{ borderRadius: '26%' }} />
@@ -453,12 +474,14 @@ const Home = () => {
                             </Avatar>
                           )}
                           
-                          {/* Small avatar overlay at bottom-left */}
+                          {/* Avatar overlay with ring */}
                           {previewMedia && (
-                            <div className="absolute bottom-1 left-1 w-6 h-6 rounded-full border-2 border-background overflow-hidden shadow-lg">
+                            <div className={`absolute bottom-1 left-1 w-7 h-7 rounded-full border-2 overflow-hidden shadow-lg transition-transform duration-300 group-hover:scale-110 ${
+                              isViewed ? 'border-muted-foreground/50' : 'border-primary'
+                            }`}>
                               <Avatar className="w-full h-full">
                                 <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
-                                <AvatarFallback className="text-[8px]">{story.profiles.username[0]}</AvatarFallback>
+                                <AvatarFallback className="text-[8px] bg-muted">{story.profiles.username[0]}</AvatarFallback>
                               </Avatar>
                             </div>
                           )}
@@ -468,11 +491,11 @@ const Home = () => {
                     
                     {/* Birthday badge */}
                     {hasBirthday && (
-                      <div className="absolute -top-1 -right-1 text-2xl animate-bounce z-10">🎂</div>
+                      <div className="absolute -top-1 -right-1 text-xl animate-bounce z-10">🎂</div>
                     )}
                   </button>
                 </BirthdayFireworks>
-                <span className="text-xs text-foreground font-medium truncate w-full text-center">
+                <span className="text-xs text-foreground font-medium truncate w-full text-center max-w-[80px]">
                   {story.profiles.username}
                 </span>
               </div>
