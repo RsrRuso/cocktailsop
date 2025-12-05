@@ -119,14 +119,23 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
     e?.stopPropagation();
     e?.preventDefault();
     
-    const audio = audioRef.current;
-    if (!audio || audioError || !status?.music_preview_url) return;
+    if (!status?.music_preview_url) return;
+    
+    // Create audio on demand if not exists
+    if (!audioRef.current) {
+      audioRef.current = document.createElement('audio');
+      audioRef.current.src = status.music_preview_url;
+      audioRef.current.loop = true;
+      audioRef.current.volume = 0.5;
+      audioRef.current.addEventListener('play', () => setIsPlaying(true));
+      audioRef.current.addEventListener('pause', () => setIsPlaying(false));
+    }
 
+    const audio = audioRef.current;
     if (isPlaying) {
       audio.pause();
     } else {
       audio.play().catch(() => {
-        // Silently handle - no toast, just show unavailable state
         setAudioError(true);
       });
     }
