@@ -6564,6 +6564,12 @@ export type Database = {
           emoji: string | null
           expires_at: string
           id: string
+          music_album_art: string | null
+          music_artist: string | null
+          music_preview_url: string | null
+          music_spotify_url: string | null
+          music_track_id: string | null
+          music_track_name: string | null
           reaction_count: number | null
           reply_count: number | null
           status_text: string
@@ -6574,6 +6580,12 @@ export type Database = {
           emoji?: string | null
           expires_at?: string
           id?: string
+          music_album_art?: string | null
+          music_artist?: string | null
+          music_preview_url?: string | null
+          music_spotify_url?: string | null
+          music_track_id?: string | null
+          music_track_name?: string | null
           reaction_count?: number | null
           reply_count?: number | null
           status_text: string
@@ -6584,6 +6596,12 @@ export type Database = {
           emoji?: string | null
           expires_at?: string
           id?: string
+          music_album_art?: string | null
+          music_artist?: string | null
+          music_preview_url?: string | null
+          music_spotify_url?: string | null
+          music_track_id?: string | null
+          music_track_name?: string | null
           reaction_count?: number | null
           reply_count?: number | null
           status_text?: string

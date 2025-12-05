@@ -16,6 +16,9 @@ import { useOptimisticLike } from "@/hooks/useOptimisticLike";
 import { useManagerRole } from "@/hooks/useManagerRole";
 import { EventsTicker } from "@/components/EventsTicker";
 import BirthdayFireworks from "@/components/BirthdayFireworks";
+import MusicStatusBubble from "@/components/MusicStatusBubble";
+import StatusRing from "@/components/StatusRing";
+import { useUserStatus } from "@/hooks/useUserStatus";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -109,6 +112,10 @@ const Home = () => {
   const { posts, reels, isLoading, refreshFeed, setPosts, setReels } = useFeedData(selectedRegion);
   const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', user?.id);
   const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', user?.id);
+  
+  // Get current user's status (including music status)
+  const { data: currentUserStatus } = useUserStatus(user?.id);
+
 
   
   // Memoize merged feed to avoid recalculation
@@ -333,9 +340,29 @@ const Home = () => {
       <div className="px-4 py-3 overflow-x-auto scrollbar-hide">
         <div className="flex gap-4">
           {/* Your Story */}
-          <div className="flex flex-col items-center gap-2 min-w-[82px]">
+          <div className="flex flex-col items-center gap-2 min-w-[82px] pt-12">
             <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
               <div className="relative">
+                {/* Music Status Bubble */}
+                {currentUserStatus?.music_track_name && (
+                  <MusicStatusBubble
+                    trackName={currentUserStatus.music_track_name}
+                    artist={currentUserStatus.music_artist || ''}
+                    albumArt={currentUserStatus.music_album_art || undefined}
+                    previewUrl={currentUserStatus.music_preview_url}
+                    spotifyUrl={currentUserStatus.music_spotify_url || undefined}
+                  />
+                )}
+                {/* Regular Status Bubble (when no music) */}
+                {!currentUserStatus?.music_track_name && currentUserStatus?.status_text && (
+                  <StatusRing
+                    hasStatus={true}
+                    statusText={currentUserStatus.status_text}
+                    emoji={currentUserStatus.emoji || undefined}
+                  >
+                    <div />
+                  </StatusRing>
+                )}
                 {/* White glow when has active story */}
                 {hasActiveStory && (
                   <div className="absolute inset-0 rounded-full bg-white/30 blur-md animate-pulse" />

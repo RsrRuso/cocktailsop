@@ -50,13 +50,13 @@ const MusicStatusDialog = ({ open, onOpenChange }: MusicStatusDialogProps) => {
   const fetchPopularMusic = async () => {
     try {
       const { data, error } = await supabase
-        .from('music_library')
+        .from('music_library' as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(20);
 
       if (!error && data) {
-        setPopularTracks(data.map(track => ({
+        setPopularTracks((data as any[]).map((track: any) => ({
           id: track.track_id || track.id,
           name: track.title,
           artist: track.artist,
