@@ -401,11 +401,11 @@ const Home = () => {
                       onClick={() => navigate(`/story/${story.user_id}`)}
                       className="relative group cursor-pointer"
                     >
-                      {/* White glow for new/unviewed stories - persists until viewed */}
+                      {/* White glow for new/unviewed stories - constant until viewed */}
                       {!isViewed && (
                         <>
-                          <div className="absolute -inset-2 rounded-full bg-white/70 blur-lg animate-pulse" />
-                          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-white/80 via-white/60 to-white/80 blur-sm animate-pulse" />
+                          <div className="absolute -inset-2 rounded-full bg-white/60 blur-lg" />
+                          <div className="absolute -inset-1 rounded-full bg-white/50 blur-sm" />
                         </>
                       )}
                       
