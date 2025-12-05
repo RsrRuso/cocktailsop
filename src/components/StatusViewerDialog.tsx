@@ -451,34 +451,32 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
               {/* Audio controls */}
               {status.music_preview_url && !audioError && (
                 <div className="flex items-center gap-3 mt-4">
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                  <button
+                    type="button"
                     onClick={handleReplay}
-                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white"
+                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
                   >
                     <RotateCcw className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                  </button>
+                  <button
+                    type="button"
                     onClick={toggleMute}
-                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white"
+                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
                   >
                     {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                  </Button>
+                  </button>
                   {status.music_spotify_url && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
+                    <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
+                        e.preventDefault();
                         window.open(status.music_spotify_url!, '_blank');
                       }}
-                      className="w-10 h-10 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400"
+                      className="w-10 h-10 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 flex items-center justify-center transition-colors"
                     >
                       <ExternalLink className="w-4 h-4" />
-                    </Button>
+                    </button>
                   )}
                 </div>
               )}
