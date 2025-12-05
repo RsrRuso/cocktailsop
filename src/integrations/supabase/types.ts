@@ -600,6 +600,81 @@ export type Database = {
           },
         ]
       }
+      budget_actuals: {
+        Row: {
+          actual_amount: number
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          source: string | null
+          transaction_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_amount?: number
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          source?: string | null
+          transaction_date?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_amount?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          source?: string | null
+          transaction_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      budgets: {
+        Row: {
+          budget_amount: number
+          category: string
+          created_at: string
+          id: string
+          notes: string | null
+          period: string
+          period_end: string
+          period_start: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_amount?: number
+          category: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          period?: string
+          period_end: string
+          period_start: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_amount?: number
+          category?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          period?: string
+          period_end?: string
+          period_start?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       business_analytics: {
         Row: {
           created_at: string | null
