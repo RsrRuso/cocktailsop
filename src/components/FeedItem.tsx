@@ -7,6 +7,7 @@ import { LazyImage } from "@/components/LazyImage";
 import { LazyVideo } from "@/components/LazyVideo";
 import { useViewTracking } from "@/hooks/useViewTracking";
 import { EngagementInsightsDialog, EnhancedLikesDialog, EnhancedCommentsDialog } from "@/components/engagement";
+import UserStatusIndicator from "@/components/UserStatusIndicator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,9 +63,12 @@ export const FeedItem = memo(({
       <div className="relative px-3 py-4 bg-transparent backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center gap-3">
             <div 
-              className="relative cursor-pointer"
+              className="relative cursor-pointer pt-6"
               onClick={() => navigate(`/user/${item.user_id}`)}
             >
+              {/* User Status on Avatar */}
+              <UserStatusIndicator userId={item.user_id} size="sm" />
+              
               <OptimizedAvatar
                 src={item.profiles?.avatar_url}
                 alt={item.profiles?.username || 'User'}

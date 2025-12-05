@@ -18,6 +18,7 @@ import { EventsTicker } from "@/components/EventsTicker";
 import BirthdayFireworks from "@/components/BirthdayFireworks";
 import MusicStatusBubble from "@/components/MusicStatusBubble";
 import StatusRing from "@/components/StatusRing";
+import UserStatusIndicator from "@/components/UserStatusIndicator";
 import { useUserStatus } from "@/hooks/useUserStatus";
 import {
   DropdownMenu,
@@ -412,53 +413,58 @@ const Home = () => {
             const isVideo = previewType?.startsWith('video');
             
             return (
-              <div key={story.id} className="flex flex-col items-center gap-2 min-w-[82px]">
+              <div key={story.id} className="flex flex-col items-center gap-2 min-w-[82px] pt-8">
                 <BirthdayFireworks isBirthday={hasBirthday}>
-                  <button 
-                    onClick={() => navigate(`/story/${story.user_id}`)}
-                    className="relative group cursor-pointer"
-                  >
-                    {/* Live Preview Content */}
-                    <div className="w-[76px] h-[76px] rounded-full overflow-hidden relative shadow-lg">
-                      {previewMedia ? (
-                        <>
-                          {isVideo ? (
-                            <video
-                              src={previewMedia}
-                              className="w-full h-full object-cover"
-                              autoPlay
-                              loop
-                              muted
-                              playsInline
-                            />
-                          ) : (
-                            <img
-                              src={previewMedia}
-                              alt={story.profiles.username}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                          
-                          {/* Video indicator */}
-                          {isVideo && (
-                            <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                              <div className="w-0 h-0 border-l-[5px] border-l-white border-y-[3px] border-y-transparent ml-0.5" />
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <Avatar className="w-full h-full rounded-full">
-                          <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
-                          <AvatarFallback className="text-lg">{story.profiles.username[0]}</AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
+                  <div className="relative">
+                    {/* User Status Indicator */}
+                    <UserStatusIndicator userId={story.user_id} size="sm" />
                     
-                    {/* Birthday badge */}
-                    {hasBirthday && (
-                      <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
-                    )}
-                  </button>
+                    <button 
+                      onClick={() => navigate(`/story/${story.user_id}`)}
+                      className="relative group cursor-pointer"
+                    >
+                      {/* Live Preview Content */}
+                      <div className="w-[76px] h-[76px] rounded-full overflow-hidden relative shadow-lg">
+                        {previewMedia ? (
+                          <>
+                            {isVideo ? (
+                              <video
+                                src={previewMedia}
+                                className="w-full h-full object-cover"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                              />
+                            ) : (
+                              <img
+                                src={previewMedia}
+                                alt={story.profiles.username}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                            
+                            {/* Video indicator */}
+                            {isVideo && (
+                              <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                                <div className="w-0 h-0 border-l-[5px] border-l-white border-y-[3px] border-y-transparent ml-0.5" />
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <Avatar className="w-full h-full rounded-full">
+                            <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
+                            <AvatarFallback className="text-lg">{story.profiles.username[0]}</AvatarFallback>
+                          </Avatar>
+                        )}
+                      </div>
+                      
+                      {/* Birthday badge */}
+                      {hasBirthday && (
+                        <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
+                      )}
+                    </button>
+                  </div>
                 </BirthdayFireworks>
                 <span className="text-xs text-foreground/90 font-medium truncate w-full text-center max-w-[80px]">
                   {story.profiles.username}
