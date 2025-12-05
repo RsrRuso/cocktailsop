@@ -48,20 +48,28 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Audio setup for music status
+  // Audio setup for music status - auto-play when dialog opens
   useEffect(() => {
-    if (status?.music_preview_url) {
+    if (open && status?.music_preview_url) {
       audioRef.current = new Audio(status.music_preview_url);
       audioRef.current.volume = 0.5;
       audioRef.current.addEventListener('ended', () => setIsPlaying(false));
+      
+      // Auto-play when dialog opens
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => {
+        console.log('Auto-play blocked:', err);
+      });
     }
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
+        setIsPlaying(false);
         audioRef.current = null;
       }
     };
-  }, [status?.music_preview_url]);
+  }, [open, status?.music_preview_url]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;
