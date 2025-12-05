@@ -336,9 +336,13 @@ const Home = () => {
           <div className="flex flex-col items-center gap-2 min-w-[82px]">
             <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
               <div className="relative">
+                {/* White glow when has active story */}
+                {hasActiveStory && (
+                  <div className="absolute inset-0 rounded-full bg-white/30 blur-md animate-pulse" />
+                )}
                 <button
                   onClick={() => navigate(hasActiveStory ? `/story/${user?.id}` : "/story-options")}
-                  className="relative group"
+                  className={`relative group ${hasActiveStory ? 'ring-2 ring-white/50 ring-offset-2 ring-offset-background rounded-full' : ''}`}
                 >
                   <Avatar className="w-[76px] h-[76px] rounded-full shadow-lg">
                     <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
