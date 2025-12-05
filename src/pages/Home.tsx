@@ -99,7 +99,6 @@ const Home = () => {
   const [showTopNav, setShowTopNav] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [hasActiveStory, setHasActiveStory] = useState(false);
-  const [showHandAnimation, setShowHandAnimation] = useState(true);
   
   // Update currentUser when profile changes
   useEffect(() => {
@@ -334,85 +333,27 @@ const Home = () => {
       <div className="px-4 py-3 overflow-x-auto scrollbar-hide">
         <div className="flex gap-4">
           {/* Your Story */}
-          <div className="flex flex-col items-center gap-2 min-w-[82px] relative">
-            {/* Animated Hand Gesture - "Check my story" */}
-            {hasActiveStory && showHandAnimation && (
-              <div 
-                className="absolute -right-2 top-1/2 -translate-y-1/2 z-20 animate-bounce"
-                style={{ 
-                  animation: 'handWave 1.5s ease-in-out infinite, fadeInOut 4s ease-in-out forwards'
-                }}
-                onAnimationEnd={() => setShowHandAnimation(false)}
-              >
-                <div className="relative">
-                  {/* Hand pointing gesture */}
-                  <span className="text-3xl transform -scale-x-100 inline-block drop-shadow-lg">👈</span>
-                  {/* Speech bubble */}
-                  <div className="absolute -top-8 -right-4 bg-foreground/90 text-background text-[10px] px-2 py-1 rounded-full whitespace-nowrap font-medium shadow-lg animate-pulse">
-                    Check it!
-                  </div>
-                </div>
-              </div>
-            )}
-            
+          <div className="flex flex-col items-center gap-2 min-w-[82px]">
             <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
               <button
-                onClick={() => {
-                  setShowHandAnimation(false);
-                  navigate(hasActiveStory ? `/story/${user?.id}` : "/story-options");
-                }}
+                onClick={() => navigate(hasActiveStory ? `/story/${user?.id}` : "/story-options")}
                 className="relative group"
               >
+                <Avatar className="w-[76px] h-[76px] rounded-full shadow-lg">
+                  <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
+                  <AvatarFallback className="text-lg">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
+                </Avatar>
                 {hasActiveStory ? (
-                  // Has active story - show grey ring with colorful gradient
-                  <>
-                    <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-slate-400 via-slate-500 to-slate-600 opacity-60 blur-md group-hover:opacity-80 transition-opacity" />
-                    <div className="relative bg-gradient-to-tr from-slate-400 via-slate-500 to-slate-600 p-[3px] rounded-full shadow-lg">
-                      <div className="bg-background p-[2px] rounded-full">
-                        <Avatar className="w-[76px] h-[76px] rounded-full ring-2 ring-slate-400/30">
-                          <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover grayscale-[30%]" />
-                          <AvatarFallback className="text-lg bg-slate-500/20">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
-                        </Avatar>
-                      </div>
-                    </div>
-                    {/* Live indicator */}
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center border-2 border-background shadow-lg z-10 animate-pulse">
-                      <div className="w-2 h-2 rounded-full bg-white" />
-                    </div>
-                  </>
-                ) : currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) ? (
-                  // Birthday style
-                  <>
-                    <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-500 opacity-80 blur-md group-hover:opacity-100 animate-pulse" />
-                    <div className="relative bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-500 p-[3px] rounded-full">
-                      <div className="bg-background p-[2px] rounded-full">
-                        <Avatar className="w-[76px] h-[76px] rounded-full">
-                          <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
-                          <AvatarFallback className="text-lg">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
-                        </Avatar>
-                      </div>
-                    </div>
-                    <div className="absolute -top-1 -right-1 text-lg animate-bounce z-10">🎂</div>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-lg z-10">
-                      <span className="text-primary-foreground text-base font-bold leading-none">+</span>
-                    </div>
-                  </>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center border-2 border-background shadow-md z-10">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                  </div>
                 ) : (
-                  // Regular style - no story
-                  <>
-                    <div className="absolute -inset-0.5 rounded-full bg-muted-foreground/20 opacity-50 blur-sm" />
-                    <div className="relative p-[3px] rounded-full bg-gradient-to-tr from-muted-foreground/30 to-muted-foreground/50">
-                      <div className="bg-background p-[2px] rounded-full">
-                        <Avatar className="w-[76px] h-[76px] rounded-full">
-                          <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
-                          <AvatarFallback className="text-lg">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
-                        </Avatar>
-                      </div>
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-lg z-10">
-                      <span className="text-primary-foreground text-base font-bold leading-none">+</span>
-                    </div>
-                  </>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center border-2 border-background shadow-md z-10">
+                    <span className="text-primary-foreground text-sm font-bold leading-none">+</span>
+                  </div>
+                )}
+                {currentUser?.date_of_birth && isBirthday(currentUser.date_of_birth) && (
+                  <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
                 )}
               </button>
             </BirthdayFireworks>
@@ -436,82 +377,45 @@ const Home = () => {
                     onClick={() => navigate(`/story/${story.user_id}`)}
                     className="relative group cursor-pointer"
                   >
-                    {/* Outer glow */}
-                    <div 
-                      className={`absolute -inset-1 rounded-full blur-md transition-all duration-300 ${
-                        hasBirthday 
-                          ? 'bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-500 opacity-90' 
-                          : isViewed 
-                            ? 'bg-muted-foreground/30 opacity-50' 
-                            : 'bg-gradient-to-tr from-amber-500 via-rose-500 to-violet-600 opacity-80'
-                      } group-hover:opacity-100 group-hover:blur-lg`}
-                    />
-                    
-                    {/* Gradient ring */}
-                    <div 
-                      className={`relative p-[3px] rounded-full transition-all duration-300 group-hover:scale-[1.02] ${
-                        hasBirthday 
-                          ? 'bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-500' 
-                          : isViewed 
-                            ? 'bg-gradient-to-tr from-muted-foreground/40 to-muted-foreground/60' 
-                            : 'bg-gradient-to-tr from-amber-500 via-rose-500 to-violet-600'
-                      }`}
-                    >
-                      <div className="bg-background p-[2px] rounded-full">
-                        {/* Live Preview Content */}
-                        <div className="w-[76px] h-[76px] rounded-full overflow-hidden relative">
-                          {previewMedia ? (
-                            <>
-                              {isVideo ? (
-                                <video
-                                  src={previewMedia}
-                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                  autoPlay
-                                  loop
-                                  muted
-                                  playsInline
-                                />
-                              ) : (
-                                <img
-                                  src={previewMedia}
-                                  alt={story.profiles.username}
-                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                              )}
-                              
-                              {/* Subtle vignette */}
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10 pointer-events-none" />
-                              
-                              {/* Video indicator */}
-                              {isVideo && (
-                                <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                                  <div className="w-0 h-0 border-l-[5px] border-l-white border-y-[3px] border-y-transparent ml-0.5" />
-                                </div>
-                              )}
-                              
-                              {/* Mini avatar */}
-                              <div className={`absolute bottom-1 right-1 w-6 h-6 rounded-full border-2 overflow-hidden shadow-md ${
-                                isViewed ? 'border-muted-foreground/60' : 'border-background'
-                              }`}>
-                                <Avatar className="w-full h-full">
-                                  <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
-                                  <AvatarFallback className="text-[8px] bg-muted">{story.profiles.username[0]}</AvatarFallback>
-                                </Avatar>
-                              </div>
-                            </>
+                    {/* Live Preview Content */}
+                    <div className="w-[76px] h-[76px] rounded-full overflow-hidden relative shadow-lg">
+                      {previewMedia ? (
+                        <>
+                          {isVideo ? (
+                            <video
+                              src={previewMedia}
+                              className="w-full h-full object-cover"
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                            />
                           ) : (
-                            <Avatar className="w-full h-full rounded-full">
-                              <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
-                              <AvatarFallback className="text-lg">{story.profiles.username[0]}</AvatarFallback>
-                            </Avatar>
+                            <img
+                              src={previewMedia}
+                              alt={story.profiles.username}
+                              className="w-full h-full object-cover"
+                            />
                           )}
-                        </div>
-                      </div>
+                          
+                          {/* Video indicator */}
+                          {isVideo && (
+                            <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                              <div className="w-0 h-0 border-l-[5px] border-l-white border-y-[3px] border-y-transparent ml-0.5" />
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <Avatar className="w-full h-full rounded-full">
+                          <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
+                          <AvatarFallback className="text-lg">{story.profiles.username[0]}</AvatarFallback>
+                        </Avatar>
+                      )}
                     </div>
                     
                     {/* Birthday badge */}
                     {hasBirthday && (
-                      <div className="absolute -top-1 -right-1 text-lg animate-bounce z-10">🎂</div>
+                      <div className="absolute -top-1 -right-1 text-base z-10">🎂</div>
                     )}
                   </button>
                 </BirthdayFireworks>
