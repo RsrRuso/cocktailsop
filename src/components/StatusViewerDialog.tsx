@@ -57,10 +57,10 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   // Reset states when dialog opens/closes
   useEffect(() => {
     if (open) {
-      // If no preview URL, set error state immediately (no toast needed)
-      const hasPreview = !!status?.music_preview_url;
-      setAudioError(!hasPreview && !!status?.music_track_name);
+      // Only set error if there's genuinely no preview URL
+      setAudioError(false);
       setAudioLoaded(false);
+      setIsPlaying(false);
     } else {
       setShowComments(false);
       setShowEmojiPicker(false);
@@ -73,20 +73,16 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
         audioRef.current.currentTime = 0;
       }
     }
-  }, [open, status?.music_preview_url, status?.music_track_name]);
+  }, [open]);
 
-  // Handle audio events and auto-play
+  // Handle audio events - NO auto-play, user clicks to play
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !open) return;
+    if (!audio) return;
 
     const handleCanPlay = () => {
       setAudioLoaded(true);
       setAudioError(false);
-      // Auto-play when audio is ready
-      audio.play().catch(() => {
-        setAudioError(true);
-      });
     };
 
     const handleError = () => {
@@ -110,9 +106,6 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
 
-    // Try to load and play
-    audio.load();
-
     return () => {
       audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('error', handleError);
@@ -120,7 +113,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
     };
-  }, [open, status?.music_preview_url]);
+  }, [status?.music_preview_url]);
 
   const togglePlay = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -397,10 +390,10 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                   {/* Play overlay */}
                   <button
                     onClick={togglePlay}
-                    disabled={audioError}
+                    disabled={!status.music_preview_url}
                     className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-100 hover:bg-black/50 transition-all"
                   >
-                    {audioError ? (
+                    {!status.music_preview_url ? (
                       <div className="text-center text-white/60">
                         <Music2 className="w-10 h-10 mx-auto mb-1" />
                         <span className="text-xs">Preview unavailable</span>
@@ -459,7 +452,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
               )}
 
               {/* Simplified audio controls - just mute and spotify */}
-              {status.music_preview_url && !audioError && (
+              {status.music_preview_url && (
                 <div className="flex items-center gap-3 mt-4">
                   <button
                     type="button"
