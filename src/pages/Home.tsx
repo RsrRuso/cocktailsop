@@ -341,21 +341,18 @@ const Home = () => {
       <div className="px-4 py-3 overflow-x-auto scrollbar-hide">
         <div className="flex gap-4">
           {/* Your Story */}
-          <div className="flex flex-col items-center gap-2 min-w-[90px] pt-6">
+          <div className="flex flex-col items-center gap-2 min-w-fit">
             <BirthdayFireworks isBirthday={currentUser?.date_of_birth ? isBirthday(currentUser.date_of_birth) : false}>
-              <div className="relative">
+              <div className="relative overflow-visible">
                 {/* White glow when has active story - constant until expires */}
                 {hasActiveStory && (
-                  <>
-                    <div className="absolute -inset-2 rounded-full bg-white/60 blur-lg" />
-                    <div className="absolute -inset-1 rounded-full bg-white/50 blur-sm" />
-                  </>
+                  <div className="absolute inset-0 rounded-full bg-white/50 blur-md scale-110" />
                 )}
                 <button
                   onClick={() => navigate(hasActiveStory ? `/story/${user?.id}` : "/story-options")}
                   className={`relative group ${hasActiveStory ? 'ring-2 ring-white/80 rounded-full' : ''}`}
                 >
-                  <Avatar className="w-[84px] h-[84px] rounded-full shadow-lg">
+                  <Avatar className="w-[84px] h-[84px] rounded-full">
                     <AvatarImage src={currentUser?.avatar_url || undefined} className="object-cover" />
                     <AvatarFallback className="text-xl">{currentUser?.username?.[0] || "Y"}</AvatarFallback>
                   </Avatar>
