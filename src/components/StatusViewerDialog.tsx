@@ -57,7 +57,9 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   // Reset states when dialog opens/closes
   useEffect(() => {
     if (open) {
-      setAudioError(false);
+      // If no preview URL, set error state immediately (no toast needed)
+      const hasPreview = !!status?.music_preview_url;
+      setAudioError(!hasPreview && !!status?.music_track_name);
       setAudioLoaded(false);
       setIsPlaying(false);
     } else {
@@ -67,7 +69,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
       setEditingComment(null);
       setIsPlaying(false);
     }
-  }, [open]);
+  }, [open, status?.music_preview_url, status?.music_track_name]);
 
   // Handle audio events
   useEffect(() => {
@@ -114,15 +116,14 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
     e?.preventDefault();
     
     const audio = audioRef.current;
-    if (!audio || audioError) return;
+    if (!audio || audioError || !status?.music_preview_url) return;
 
     if (isPlaying) {
       audio.pause();
     } else {
-      audio.play().catch(err => {
-        console.log('Play failed:', err);
+      audio.play().catch(() => {
+        // Silently handle - no toast, just show unavailable state
         setAudioError(true);
-        toast.error("Unable to play audio");
       });
     }
   };
@@ -132,7 +133,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
     e.preventDefault();
     
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !status?.music_preview_url) return;
     
     audio.currentTime = 0;
     audio.play().catch(() => {
