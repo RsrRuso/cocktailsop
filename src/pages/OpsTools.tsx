@@ -46,7 +46,8 @@ const OpsTools = () => {
         details: "Track budget performance across all expense categories. Monitor variances, identify overspending, and maintain financial control with detailed monthly comparisons.",
         icon: Target,
         gradient: "from-violet-600 to-purple-500",
-        premium: true,
+        premium: false,
+        path: "/reports/budget-actual",
       },
       {
         name: "Cash Flow Statement",
