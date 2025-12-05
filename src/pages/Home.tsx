@@ -391,11 +391,11 @@ const Home = () => {
             const isVideo = previewType?.startsWith('video');
             
             return (
-              <div key={story.id} className="flex flex-col items-center gap-2 min-w-[90px] pt-6">
+              <div key={story.id} className="flex flex-col items-center gap-2 min-w-[90px] pt-5">
                 <BirthdayFireworks isBirthday={hasBirthday}>
                   <div className="relative">
                     {/* User Status Indicator */}
-                    <UserStatusIndicator userId={story.user_id} size="md" />
+                    <UserStatusIndicator userId={story.user_id} size="sm" />
                     
                     <button 
                       onClick={() => navigate(`/story/${story.user_id}`)}
