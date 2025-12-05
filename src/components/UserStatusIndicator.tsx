@@ -148,35 +148,35 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
     );
   }
 
-  // Regular text status with marquee
+  // Regular text status with marquee - closer to avatar with bigger, brighter text
   if (status.status_text) {
     const sizeClasses = {
-      sm: 'min-w-[60px] max-w-[100px] py-0.5 px-1.5',
-      md: 'min-w-[80px] max-w-[120px] py-1 px-2',
-      lg: 'min-w-[100px] max-w-[140px] py-1.5 px-2.5'
+      sm: 'min-w-[70px] max-w-[120px] py-1 px-2',
+      md: 'min-w-[90px] max-w-[140px] py-1.5 px-2.5',
+      lg: 'min-w-[110px] max-w-[160px] py-2 px-3'
     };
     
     const textClasses = {
-      sm: 'text-[7px]',
-      md: 'text-[8px]',
-      lg: 'text-[9px]'
+      sm: 'text-[10px]',
+      md: 'text-[11px]',
+      lg: 'text-[12px]'
     };
 
     return (
       <>
         <div 
-          className={`absolute -top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-auto cursor-pointer ${className}`}
+          className={`absolute -top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-auto cursor-pointer ${className}`}
           onClick={handleStatusClick}
         >
           <div className="relative">
-            <div className={`bg-muted/95 backdrop-blur-sm text-muted-foreground rounded-full shadow-md ${sizeClasses[size]} overflow-hidden`}>
-              <div className="flex items-center gap-0.5 justify-center overflow-hidden">
-                {status.emoji && <span className={`${textClasses[size]} flex-shrink-0`}>{status.emoji}</span>}
+            <div className={`bg-gradient-to-r from-primary/90 to-accent/90 backdrop-blur-sm rounded-full shadow-lg shadow-primary/20 ${sizeClasses[size]} overflow-hidden border border-white/20`}>
+              <div className="flex items-center gap-1 justify-center overflow-hidden">
+                {status.emoji && <span className={`text-sm flex-shrink-0`}>{status.emoji}</span>}
                 <div className="overflow-hidden flex-1 min-w-0">
-                  <div className={`whitespace-nowrap ${textClasses[size]}`}>
+                  <div className={`whitespace-nowrap ${textClasses[size]} font-semibold text-white drop-shadow-sm`}>
                     <div className="animate-marquee inline-block">
                       {status.status_text}
-                      {status.status_text.length > 12 && (
+                      {status.status_text.length > 10 && (
                         <span className="ml-6">{status.status_text}</span>
                       )}
                     </div>
@@ -184,7 +184,7 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
                 </div>
               </div>
             </div>
-            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-muted/95 rounded-full" />
+            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-gradient-to-r from-primary to-accent rounded-full" />
           </div>
         </div>
         <StatusViewerDialog
