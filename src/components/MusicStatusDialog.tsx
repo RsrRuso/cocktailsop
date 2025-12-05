@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Music2, Play, ExternalLink, Loader2 } from "lucide-react";
+import { Search, Music2, ExternalLink, Loader2, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface MusicStatusDialogProps {
@@ -111,7 +111,6 @@ const MusicStatusDialog = ({ open, onOpenChange }: MusicStatusDialogProps) => {
         return;
       }
 
-      // Save music status to user_status with music data
       const { error } = await supabase
         .from('user_status')
         .upsert({
@@ -152,97 +151,119 @@ const MusicStatusDialog = ({ open, onOpenChange }: MusicStatusDialogProps) => {
   const displayTracks = searchQuery.trim().length >= 2 ? tracks : popularTracks;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[85vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="h-[85vh] bg-background/95 backdrop-blur-xl border-0 rounded-t-3xl">
+        {/* Handle bar */}
+        <div className="flex justify-center pt-3 pb-2">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+        </div>
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pb-3">
+          <div className="flex items-center gap-2">
             <Music2 className="w-5 h-5 text-emerald-500" />
-            Share Music
-          </DialogTitle>
-        </DialogHeader>
+            <h2 className="text-lg font-semibold">Share Music</h2>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={() => onOpenChange(false)}
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
 
-        <div className="space-y-4">
+        {/* Search */}
+        <div className="px-4 pb-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search Spotify..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-11 rounded-xl bg-secondary/50 border-0 focus-visible:ring-1"
             />
           </div>
-
-          <ScrollArea className="h-[400px] pr-2">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : displayTracks.length > 0 ? (
-              <div className="space-y-2">
-                {!searchQuery.trim() && (
-                  <p className="text-xs text-muted-foreground mb-3">Popular tracks</p>
-                )}
-                {displayTracks.map((track) => (
-                  <div
-                    key={track.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors group"
-                  >
-                    <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                      {track.album_art ? (
-                        <img
-                          src={track.album_art}
-                          alt={track.album}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                          <Music2 className="w-5 h-5 text-white" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{track.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      {track.spotify_url && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => window.open(track.spotify_url, '_blank')}
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        onClick={() => handleShareMusic(track)}
-                        disabled={sharing}
-                        className="bg-emerald-500 hover:bg-emerald-600"
-                      >
-                        {sharing ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          "Share"
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <Music2 className="w-12 h-12 mb-3 opacity-50" />
-                <p className="text-sm">Search for music to share</p>
-              </div>
-            )}
-          </ScrollArea>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        {/* Track List */}
+        <ScrollArea className="flex-1 px-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+            </div>
+          ) : displayTracks.length > 0 ? (
+            <div className="space-y-2 pb-8">
+              {!searchQuery.trim() && (
+                <p className="text-xs text-muted-foreground mb-3 px-1">Popular tracks</p>
+              )}
+              {displayTracks.map((track) => (
+                <div
+                  key={track.id}
+                  className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/40 active:bg-secondary/60 transition-colors"
+                >
+                  {/* Album Art */}
+                  <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
+                    {track.album_art ? (
+                      <img
+                        src={track.album_art}
+                        alt={track.album}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                        <Music2 className="w-6 h-6 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Track Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{track.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    {track.spotify_url && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 rounded-full"
+                        onClick={() => window.open(track.spotify_url, '_blank')}
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => handleShareMusic(track)}
+                      disabled={sharing}
+                      className="bg-emerald-500 hover:bg-emerald-600 rounded-full px-4 h-9 font-medium"
+                    >
+                      {sharing ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        "Share"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <div className="w-20 h-20 rounded-full bg-secondary/50 flex items-center justify-center mb-4">
+                <Music2 className="w-10 h-10 opacity-50" />
+              </div>
+              <p className="text-sm font-medium">Search for music to share</p>
+              <p className="text-xs mt-1 opacity-70">Find songs on Spotify</p>
+            </div>
+          )}
+        </ScrollArea>
+      </DrawerContent>
+    </Drawer>
   );
 };
 
