@@ -394,20 +394,23 @@ const Home = () => {
               <div key={story.id} className="flex flex-col items-center gap-2 min-w-[90px] pt-5">
                 <BirthdayFireworks isBirthday={hasBirthday}>
                   <div className="relative">
-                    {/* White glow for new/unviewed stories */}
-                    {!isViewed && (
-                      <div className="absolute -inset-1 rounded-full bg-white/50 blur-md animate-pulse z-0" />
-                    )}
-                    
                     {/* User Status Indicator */}
                     <UserStatusIndicator userId={story.user_id} size="sm" />
                     
                     <button 
                       onClick={() => navigate(`/story/${story.user_id}`)}
-                      className={`relative group cursor-pointer ${!isViewed ? 'ring-2 ring-white/60 ring-offset-2 ring-offset-background rounded-full' : ''}`}
+                      className="relative group cursor-pointer"
                     >
+                      {/* White glow for new/unviewed stories - persists until viewed */}
+                      {!isViewed && (
+                        <>
+                          <div className="absolute -inset-2 rounded-full bg-white/70 blur-lg animate-pulse" />
+                          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-white/80 via-white/60 to-white/80 blur-sm animate-pulse" />
+                        </>
+                      )}
+                      
                       {/* Live Preview Content */}
-                      <div className="w-[84px] h-[84px] rounded-full overflow-hidden relative shadow-lg">
+                      <div className={`w-[84px] h-[84px] rounded-full overflow-hidden relative shadow-lg ${!isViewed ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-background' : ''}`}>
                         {previewMedia ? (
                           <>
                             {isVideo ? (
