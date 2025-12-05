@@ -262,7 +262,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
 
   return (
     <>
-      <div className={`fixed top-0 left-0 right-0 z-50 glass border-b border-primary/20 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+      <div className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
         <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3">
           {/* Left section */}
           <div className="flex items-center gap-1 sm:gap-2 flex-1">
