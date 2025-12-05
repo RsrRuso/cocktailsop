@@ -275,11 +275,11 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
               {status.music_spotify_url && (
                 <div className="w-full max-w-[300px] mb-4">
                   <iframe
-                    src={`https://open.spotify.com/embed/track/${status.music_spotify_url.split('/track/')[1]?.split('?')[0]}`}
+                    src={`https://open.spotify.com/embed/track/${status.music_spotify_url.split('/track/')[1]?.split('?')[0]}?utm_source=generator&autoplay=1`}
                     width="100%"
                     height="152"
                     frameBorder="0"
-                    allow="encrypted-media; autoplay"
+                    allow="encrypted-media; autoplay; clipboard-write"
                     title="Spotify Player"
                     className="rounded-xl"
                   />
