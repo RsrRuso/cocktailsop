@@ -1,11 +1,16 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
-import { Camera, Video } from "lucide-react";
+import { Camera, Video, MessageCircle, Music2 } from "lucide-react";
 import { toast } from "sonner";
+import CreateStatusDialog from "@/components/CreateStatusDialog";
+import MusicStatusDialog from "@/components/MusicStatusDialog";
 
 const StoryOptions = () => {
   const navigate = useNavigate();
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [showMusicStatusDialog, setShowMusicStatusDialog] = useState(false);
 
   const handleLiveStream = () => {
     toast.info("Live Stream feature coming soon!");
@@ -34,6 +39,32 @@ const StoryOptions = () => {
           </button>
 
           <button 
+            onClick={() => setShowStatusDialog(true)}
+            className="w-full glass-hover rounded-2xl p-8 flex items-center gap-4 group hover:scale-[1.02] transition-all"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-violet-500 flex items-center justify-center shadow-xl shadow-blue-500/50 group-hover:shadow-blue-500/70 transition-all">
+              <MessageCircle className="w-8 h-8 text-white" />
+            </div>
+            <div className="text-left flex-1">
+              <h3 className="font-bold text-lg">Add Status</h3>
+              <p className="text-sm text-muted-foreground">Share what's on your mind with emoji</p>
+            </div>
+          </button>
+
+          <button 
+            onClick={() => setShowMusicStatusDialog(true)}
+            className="w-full glass-hover rounded-2xl p-8 flex items-center gap-4 group hover:scale-[1.02] transition-all"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center shadow-xl shadow-emerald-500/50 group-hover:shadow-emerald-500/70 transition-all">
+              <Music2 className="w-8 h-8 text-white" />
+            </div>
+            <div className="text-left flex-1">
+              <h3 className="font-bold text-lg">Share Music</h3>
+              <p className="text-sm text-muted-foreground">Share what you're listening to from Spotify</p>
+            </div>
+          </button>
+
+          <button 
             onClick={handleLiveStream}
             className="w-full glass-hover rounded-2xl p-8 flex items-center gap-4 group hover:scale-[1.02] transition-all"
           >
@@ -47,6 +78,16 @@ const StoryOptions = () => {
           </button>
         </div>
       </div>
+
+      <CreateStatusDialog 
+        open={showStatusDialog} 
+        onOpenChange={setShowStatusDialog} 
+      />
+      
+      <MusicStatusDialog
+        open={showMusicStatusDialog}
+        onOpenChange={setShowMusicStatusDialog}
+      />
 
       <BottomNav />
     </div>
