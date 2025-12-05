@@ -382,8 +382,8 @@ const Home = () => {
             <span className="text-xs text-muted-foreground font-medium">Your Story</span>
           </div>
 
-          {/* Other Stories - Live Preview */}
-          {stories.map((story) => {
+          {/* Other Stories - Live Preview (exclude current user's stories) */}
+          {stories.filter(s => s.user_id !== user?.id).map((story) => {
             const isViewed = viewedStories.has(story.id);
             const hasBirthday = isBirthday(story.profiles.date_of_birth);
             const previewMedia = story.media_urls?.[0];
