@@ -57,15 +57,19 @@ const MusicStatusDialog = ({ open, onOpenChange }: MusicStatusDialogProps) => {
         .limit(20);
 
       if (!error && data) {
-        setPopularTracks((data as any[]).map((track: any) => ({
-          id: track.track_id || track.id,
-          name: track.title,
-          artist: track.artist,
-          album: track.album || '',
-          album_art: track.album_art || '',
-          preview_url: track.preview_url,
-          spotify_url: track.spotify_url || `https://open.spotify.com/track/${track.track_id}`,
-        })));
+        // Only show tracks with preview URLs available
+        const tracksWithPreview = (data as any[])
+          .filter((track: any) => track.preview_url)
+          .map((track: any) => ({
+            id: track.track_id || track.id,
+            name: track.title,
+            artist: track.artist,
+            album: track.album || '',
+            album_art: track.album_art || '',
+            preview_url: track.preview_url,
+            spotify_url: track.spotify_url || `https://open.spotify.com/track/${track.track_id}`,
+          }));
+        setPopularTracks(tracksWithPreview);
       }
     } catch (error) {
       console.error('Error fetching popular music:', error);
@@ -82,15 +86,19 @@ const MusicStatusDialog = ({ open, onOpenChange }: MusicStatusDialogProps) => {
       if (error) throw error;
       
       if (data?.tracks) {
-        setTracks(data.tracks.map((track: any) => ({
-          id: track.id || track.track_id,
-          name: track.title || track.name,
-          artist: track.artist || track.artists?.[0]?.name || 'Unknown Artist',
-          album: track.album || '',
-          album_art: track.preview_url || track.album?.images?.[0]?.url || '',
-          preview_url: track.preview_audio || track.preview_url || null,
-          spotify_url: track.spotify_url || track.external_urls?.spotify || '',
-        })));
+        // Only show tracks with preview URLs available
+        const tracksWithPreview = data.tracks
+          .filter((track: any) => track.preview_audio || track.preview_url)
+          .map((track: any) => ({
+            id: track.id || track.track_id,
+            name: track.title || track.name,
+            artist: track.artist || track.artists?.[0]?.name || 'Unknown Artist',
+            album: track.album || '',
+            album_art: track.album_art || track.album?.images?.[0]?.url || '',
+            preview_url: track.preview_audio || track.preview_url,
+            spotify_url: track.spotify_url || track.external_urls?.spotify || '',
+          }));
+        setTracks(tracksWithPreview);
       }
     } catch (error) {
       console.error('Error searching Spotify:', error);
