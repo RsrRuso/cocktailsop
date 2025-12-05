@@ -328,6 +328,7 @@ const Auth = () => {
           </Button>
         </form>
 
+        {/* OAuth providers hidden temporarily - uncomment when fixed
         {!isForgotPassword && (
           <>
             <div className="relative">
@@ -371,6 +372,7 @@ const Auth = () => {
             </div>
           </>
         )}
+        */}
 
         <div className="text-center space-y-2">
           {isForgotPassword ? (
