@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { X, Heart, Brain, BarChart3, Music2, Volume2, VolumeX, Send, Star, AtSign, MoreHorizontal, BadgeCheck, Sparkles } from "lucide-react";
+import { X, Heart, Brain, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
@@ -9,6 +9,7 @@ import { LivestreamComments } from "@/components/story/LivestreamComments";
 import { StoryInsights } from "@/components/story/StoryInsights";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sheet,
   SheetContent,
@@ -47,6 +48,24 @@ interface FlyingHeart {
   y: number;
 }
 
+// Memoized progress bar component
+const ProgressBars = memo(({ stories, currentIndex, progress }: { stories: Story[], currentIndex: number, progress: number }) => (
+  <div className="absolute top-2 left-2 right-2 z-30 flex gap-1">
+    {stories.map((_, idx) => (
+      <div key={idx} className="flex-1 h-1 sm:h-0.5 bg-white/30 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-white transition-all duration-100 ease-linear"
+          style={{
+            width: idx < currentIndex ? "100%" : idx === currentIndex ? `${progress}%` : "0%",
+          }}
+        />
+      </div>
+    ))}
+  </div>
+));
+
+ProgressBars.displayName = "ProgressBars";
+
 export default function StoryViewer() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -64,6 +83,8 @@ export default function StoryViewer() {
   const [isMuted, setIsMuted] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [recentViewers, setRecentViewers] = useState<Profile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [mediaLoaded, setMediaLoaded] = useState(false);
   
   // Refs
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -75,8 +96,6 @@ export default function StoryViewer() {
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
-  const seekIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [isSeeking, setIsSeeking] = useState<'rewind' | 'forward' | null>(null);
   
   // Derived state
   const currentStory = stories[currentIndex];
@@ -85,14 +104,14 @@ export default function StoryViewer() {
   const isVideo = mediaType.startsWith("video");
 
   // Get music data for current story
-  const getMusicData = () => {
+  const getMusicData = useCallback(() => {
     if (!currentStory?.music_data) return null;
     const musicData = Array.isArray(currentStory.music_data) 
       ? currentStory.music_data[0] 
       : currentStory.music_data;
     if (!musicData?.url) return null;
     return musicData;
-  };
+  }, [currentStory?.music_data]);
   
   const musicData = getMusicData();
 
@@ -104,7 +123,7 @@ export default function StoryViewer() {
     return () => {
       if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
       if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-      if (seekIntervalRef.current) clearInterval(seekIntervalRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
   }, []);
 
@@ -117,32 +136,40 @@ export default function StoryViewer() {
     fetchUser();
   }, []);
 
-  // Fetch stories and profile
+  // Fetch stories and profile - optimized with parallel fetches
   useEffect(() => {
     if (!userId) return;
 
     const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("id, full_name, avatar_url, username, professional_title")
-          .eq("id", userId)
-          .single();
+        // Parallel fetch for faster loading
+        const [profileResult, storiesResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id, full_name, avatar_url, username, professional_title")
+            .eq("id", userId)
+            .single(),
+          supabase
+            .from("stories")
+            .select("id, user_id, media_urls, media_types, created_at, expires_at, view_count, like_count, comment_count, music_data, text_overlays, trim_data, filters")
+            .eq("user_id", userId)
+            .gt("expires_at", new Date().toISOString())
+            .order("created_at", { ascending: true })
+        ]);
 
-        if (profileData) setProfile(profileData);
+        if (profileResult.data) setProfile(profileResult.data);
 
-        const { data: storiesData } = await supabase
-          .from("stories")
-          .select("*")
-          .eq("user_id", userId)
-          .gt("expires_at", new Date().toISOString())
-          .order("created_at", { ascending: true });
-
-        if (storiesData && storiesData.length > 0) {
-          setStories(storiesData);
+        if (storiesResult.data && storiesResult.data.length > 0) {
+          setStories(storiesResult.data);
+          // Preload first story media
+          if (storiesResult.data[0]?.media_urls?.[0]) {
+            preloadMedia(storiesResult.data[0].media_urls[0], storiesResult.data[0].media_types?.[0] || "image");
+          }
+          // Prefetch recent viewers async
           if (currentUserId) {
-            trackView(storiesData[0].id);
-            fetchRecentViewers(storiesData[0].id);
+            trackView(storiesResult.data[0].id);
+            fetchRecentViewers(storiesResult.data[0].id);
           }
         } else {
           toast.error("No active stories");
@@ -152,14 +179,38 @@ export default function StoryViewer() {
         console.error("Error loading stories:", error);
         toast.error("Failed to load stories");
         navigate("/home");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchData();
   }, [userId, currentUserId, navigate]);
 
+  // Preload media helper
+  const preloadMedia = (url: string, type: string) => {
+    if (type.startsWith("video")) {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.src = url;
+    } else {
+      const img = new Image();
+      img.src = url;
+    }
+  };
+
+  // Preload next story
+  useEffect(() => {
+    if (stories.length > currentIndex + 1) {
+      const nextStory = stories[currentIndex + 1];
+      if (nextStory?.media_urls?.[0]) {
+        preloadMedia(nextStory.media_urls[0], nextStory.media_types?.[0] || "image");
+      }
+    }
+  }, [currentIndex, stories]);
+
   // Fetch recent viewers
-  const fetchRecentViewers = async (storyId: string) => {
+  const fetchRecentViewers = useCallback(async (storyId: string) => {
     const { data } = await supabase
       .from("story_views")
       .select("user_id, profiles!inner(id, avatar_url, full_name)")
@@ -170,10 +221,10 @@ export default function StoryViewer() {
     if (data) {
       setRecentViewers(data.map((v: any) => v.profiles));
     }
-  };
+  }, []);
 
   // Track view
-  const trackView = async (storyId: string) => {
+  const trackView = useCallback(async (storyId: string) => {
     if (!currentUserId) return;
 
     try {
@@ -189,30 +240,25 @@ export default function StoryViewer() {
           story_id: storyId,
           user_id: currentUserId,
         });
-
-        await supabase
-          .from("stories")
-          .update({ view_count: (currentStory?.view_count || 0) + 1 })
-          .eq("id", storyId);
       }
     } catch (error) {
       console.error("Error tracking view:", error);
     }
-  };
+  }, [currentUserId]);
 
-  // Calculate story duration based on music or content type
-  const getStoryDuration = () => {
+  // Calculate story duration
+  const getStoryDuration = useCallback(() => {
     if (musicData) {
       const trimStart = musicData.trimStart || 0;
       const trimEnd = musicData.trimEnd || 45;
       return (trimEnd - trimStart) * 1000;
     }
     return isVideo ? 15000 : 5000;
-  };
+  }, [musicData, isVideo]);
 
   // Auto-progress timer
   useEffect(() => {
-    if (!currentStory || isPaused || showComments) return;
+    if (!currentStory || isPaused || showComments || !mediaLoaded) return;
 
     const duration = getStoryDuration();
     const interval = 50;
@@ -231,7 +277,7 @@ export default function StoryViewer() {
     return () => {
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
-  }, [currentIndex, isPaused, showComments, stories, musicData]);
+  }, [currentIndex, isPaused, showComments, stories, musicData, mediaLoaded]);
 
   // Video sync
   useEffect(() => {
@@ -245,13 +291,16 @@ export default function StoryViewer() {
     };
 
     const handleEnded = () => goToNext();
+    const handleLoadedData = () => setMediaLoaded(true);
 
     video.addEventListener("timeupdate", handleTimeUpdate);
     video.addEventListener("ended", handleEnded);
+    video.addEventListener("loadeddata", handleLoadedData);
 
     return () => {
       video.removeEventListener("timeupdate", handleTimeUpdate);
       video.removeEventListener("ended", handleEnded);
+      video.removeEventListener("loadeddata", handleLoadedData);
     };
   }, [currentStory, isPaused, showComments]);
 
@@ -302,8 +351,13 @@ export default function StoryViewer() {
     return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
   }, [musicData]);
 
+  // Reset media loaded state on story change
+  useEffect(() => {
+    setMediaLoaded(false);
+  }, [currentIndex]);
+
   // Navigation
-  const goToNext = () => {
+  const goToNext = useCallback(() => {
     if (currentIndex < stories.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setProgress(0);
@@ -314,19 +368,19 @@ export default function StoryViewer() {
     } else {
       navigate("/home");
     }
-  };
+  }, [currentIndex, stories, currentUserId, navigate, trackView, fetchRecentViewers]);
 
-  const goToPrevious = () => {
+  const goToPrevious = useCallback(() => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
       setProgress(0);
     } else {
       navigate("/home");
     }
-  };
+  }, [currentIndex, navigate]);
 
   // Like with animation
-  const handleLike = async (x: number, y: number) => {
+  const handleLike = useCallback(async (x: number, y: number) => {
     if (!currentStory || !currentUserId) return;
 
     const wasLiked = isLiked;
@@ -346,10 +400,10 @@ export default function StoryViewer() {
         }, i * 80);
       }
     }
-  };
+  }, [currentStory, currentUserId, isLiked, toggleLike]);
 
   // Touch handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
     touchStartRef.current = {
       x: touch.clientX,
@@ -360,16 +414,16 @@ export default function StoryViewer() {
     longPressTimerRef.current = setTimeout(() => {
       setIsPaused(true);
     }, 200);
-  };
+  }, []);
 
-  const handleTouchMove = () => {
+  const handleTouchMove = useCallback(() => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-  };
+  }, []);
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -420,13 +474,13 @@ export default function StoryViewer() {
         }, 300);
       }
     }
-  };
+  }, [isPaused, goToPrevious, goToNext, showComments, navigate, handleLike]);
 
-  const handleMouseDown = () => {
+  const handleMouseDown = useCallback(() => {
     longPressTimerRef.current = setTimeout(() => setIsPaused(true), 200);
-  };
+  }, []);
 
-  const handleMouseUp = (e: React.MouseEvent) => {
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -459,10 +513,10 @@ export default function StoryViewer() {
         }
       }, 300);
     }
-  };
+  }, [isPaused, goToPrevious, goToNext, handleLike]);
 
   // Send reply
-  const handleSendReply = async () => {
+  const handleSendReply = useCallback(async () => {
     if (!replyText.trim() || !currentStory || !currentUserId) return;
     
     try {
@@ -476,16 +530,39 @@ export default function StoryViewer() {
     } catch (error) {
       toast.error("Failed to send reply");
     }
-  };
+  }, [replyText, currentStory, currentUserId]);
 
   // Get time ago
-  const getTimeAgo = () => {
+  const getTimeAgo = useCallback(() => {
     if (!currentStory) return "";
     const diff = Date.now() - new Date(currentStory.created_at).getTime();
     const hours = Math.floor(diff / 3600000);
     const mins = Math.floor(diff / 60000);
     return hours > 0 ? `${hours}h` : `${mins}m`;
-  };
+  }, [currentStory]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col z-50">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-10 h-10 rounded-full bg-white/10" />
+            <div className="flex flex-col gap-1">
+              <Skeleton className="w-24 h-4 bg-white/10" />
+              <Skeleton className="w-16 h-3 bg-white/10" />
+            </div>
+          </div>
+          <button onClick={() => navigate("/home")} className="p-2">
+            <X className="w-6 h-6 text-white" />
+          </button>
+        </div>
+        <div className="flex-1 flex items-center justify-center px-4">
+          <Skeleton className="w-full max-w-md aspect-[9/16] rounded-2xl bg-white/10" />
+        </div>
+      </div>
+    );
+  }
 
   if (!currentStory || !profile) {
     return (
@@ -496,97 +573,86 @@ export default function StoryViewer() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      {/* Top Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-black">
-        <div className="flex items-center gap-3">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col safe-area-inset">
+      {/* Top Header - Mobile optimized */}
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-black shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <OptimizedAvatar
             src={profile.avatar_url}
             alt={profile.full_name || "User"}
-            className="w-10 h-10 border-2 border-primary"
+            className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-primary shrink-0"
           />
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-white font-semibold text-sm">
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <span className="text-white font-semibold text-xs sm:text-sm truncate">
                 {currentUserId === userId ? "Your story" : profile.full_name || profile.username}
               </span>
-              <BadgeCheck className="w-4 h-4 text-primary fill-primary" />
-              <span className="text-white/50 text-sm">{getTimeAgo()}</span>
+              <BadgeCheck className="w-3 h-3 sm:w-4 sm:h-4 text-primary fill-primary shrink-0" />
+              <span className="text-white/50 text-xs sm:text-sm shrink-0">{getTimeAgo()}</span>
             </div>
-            <span className="text-primary text-xs flex items-center gap-1">
+            <span className="text-primary text-[10px] sm:text-xs flex items-center gap-1">
               <span>🎬</span> Watch full reel &gt;
             </span>
           </div>
         </div>
         <button
           onClick={() => navigate("/home")}
-          className="p-2 hover:bg-white/10 rounded-full transition-colors"
+          className="p-1.5 sm:p-2 hover:bg-white/10 rounded-full transition-colors shrink-0"
         >
-          <X className="w-6 h-6 text-white" />
+          <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
         </button>
       </div>
 
-      {/* Story Card Container */}
-      <div className="flex-1 flex items-center justify-center px-4 py-2 overflow-hidden">
-        <div className="w-full max-w-md h-full max-h-[70vh] relative rounded-2xl overflow-hidden bg-card border border-border/30">
-          {/* Progress bars inside card */}
-          <div className="absolute top-2 left-2 right-2 z-30 flex gap-1">
-            {stories.map((_, idx) => (
-              <div key={idx} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-white transition-all duration-100 ease-linear"
-                  style={{
-                    width: idx < currentIndex ? "100%" : idx === currentIndex ? `${progress}%` : "0%",
-                  }}
-                />
-              </div>
-            ))}
-          </div>
+      {/* Story Card Container - Mobile optimized */}
+      <div className="flex-1 flex items-center justify-center px-2 sm:px-4 py-1 sm:py-2 overflow-hidden min-h-0">
+        <div className="w-full max-w-md h-full sm:max-h-[75vh] relative rounded-xl sm:rounded-2xl overflow-hidden bg-card border border-border/30">
+          {/* Progress bars */}
+          <ProgressBars stories={stories} currentIndex={currentIndex} progress={progress} />
 
-          {/* User info overlay in card */}
-          <div className="absolute top-6 left-3 right-3 z-30 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          {/* User info overlay */}
+          <div className="absolute top-5 sm:top-6 left-2 right-2 sm:left-3 sm:right-3 z-30 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
               <OptimizedAvatar
                 src={profile.avatar_url}
                 alt={profile.full_name || "User"}
-                className="w-8 h-8 border border-white/50"
+                className="w-7 h-7 sm:w-8 sm:h-8 border border-white/50 shrink-0"
               />
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1">
-                  <span className="text-white font-semibold text-sm drop-shadow-lg">
+                  <span className="text-white font-semibold text-xs sm:text-sm drop-shadow-lg truncate">
                     {profile.username || profile.full_name}
                   </span>
-                  <span className="bg-primary/90 text-primary-foreground text-[10px] px-1.5 py-0.5 rounded font-semibold">
+                  <span className="bg-primary/90 text-primary-foreground text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded font-semibold shrink-0">
                     P
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-primary text-xs drop-shadow-lg">
+                  <span className="text-primary text-[10px] sm:text-xs drop-shadow-lg truncate">
                     {profile.professional_title || "founder of specverse"}
                   </span>
-                  <Sparkles className="w-3 h-3 text-primary" />
-                  <span className="text-white/70 text-[10px]">AI</span>
+                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary shrink-0" />
+                  <span className="text-white/70 text-[8px] sm:text-[10px] shrink-0">AI</span>
                 </div>
               </div>
             </div>
-            <button className="p-1.5 hover:bg-white/10 rounded-full">
-              <MoreHorizontal className="w-5 h-5 text-white" />
+            <button className="p-1 sm:p-1.5 hover:bg-white/10 rounded-full shrink-0">
+              <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </button>
           </div>
 
-          {/* Mute button on media */}
+          {/* Mute button */}
           {(musicData?.url || isVideo) && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setIsMuted(!isMuted);
               }}
-              className="absolute top-6 right-3 z-30 p-2 bg-black/50 backdrop-blur-sm rounded-full"
+              className="absolute top-5 sm:top-6 right-2 sm:right-3 z-30 p-1.5 sm:p-2 bg-black/50 backdrop-blur-sm rounded-full"
             >
               {isMuted ? (
-                <VolumeX className="w-4 h-4 text-white" />
+                <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
               ) : (
-                <Volume2 className="w-4 h-4 text-white" />
+                <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
               )}
             </button>
           )}
@@ -602,6 +668,13 @@ export default function StoryViewer() {
             onMouseUp={handleMouseUp}
             style={{ touchAction: "none" }}
           >
+            {/* Loading skeleton while media loads */}
+            {!mediaLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white" />
+              </div>
+            )}
+            
             {isVideo ? (
               <video
                 ref={videoRef}
@@ -610,9 +683,17 @@ export default function StoryViewer() {
                 autoPlay
                 playsInline
                 muted={isMuted}
+                preload="auto"
+                onLoadedData={() => setMediaLoaded(true)}
               />
             ) : (
-              <img src={mediaUrl} alt="Story" className="w-full h-full object-cover" />
+              <img 
+                src={mediaUrl} 
+                alt="Story" 
+                className="w-full h-full object-cover"
+                loading="eager"
+                onLoad={() => setMediaLoaded(true)}
+              />
             )}
             
             {musicData?.url && !musicData.url.startsWith('spotify:') && (
@@ -635,7 +716,7 @@ export default function StoryViewer() {
                   exit={{ opacity: 0, scale: 0 }}
                   transition={{ duration: 1, ease: "easeOut" }}
                 >
-                  <Heart className="w-12 h-12 text-red-500 fill-red-500 drop-shadow-lg" />
+                  <Heart className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 fill-red-500 drop-shadow-lg" />
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -644,8 +725,8 @@ export default function StoryViewer() {
             {isPaused && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="flex gap-2">
-                  <div className="w-1 h-12 bg-white/80 rounded-full" />
-                  <div className="w-1 h-12 bg-white/80 rounded-full" />
+                  <div className="w-1 h-10 sm:h-12 bg-white/80 rounded-full" />
+                  <div className="w-1 h-10 sm:h-12 bg-white/80 rounded-full" />
                 </div>
               </div>
             )}
@@ -675,77 +756,77 @@ export default function StoryViewer() {
         </div>
       </div>
 
-      {/* Reply Input */}
-      <div className="px-4 py-3 bg-black">
-        <div className="flex items-center gap-3">
+      {/* Reply Input - Mobile optimized */}
+      <div className="px-3 sm:px-4 py-2 sm:py-3 bg-black shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Input
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
             placeholder="Say something..."
-            className="flex-1 bg-transparent border-0 border-b border-white/20 rounded-none text-white placeholder:text-white/40 focus-visible:ring-0 focus-visible:border-white/40"
+            className="flex-1 bg-transparent border-0 border-b border-white/20 rounded-none text-white text-sm placeholder:text-white/40 focus-visible:ring-0 focus-visible:border-white/40 h-9 sm:h-10"
             onKeyDown={(e) => e.key === 'Enter' && handleSendReply()}
           />
         </div>
       </div>
 
-      {/* Bottom Actions Bar */}
-      <div className="flex items-center justify-around px-4 py-3 bg-black border-t border-white/10">
+      {/* Bottom Actions Bar - Mobile optimized */}
+      <div className="flex items-center justify-around px-2 sm:px-4 py-2 sm:py-3 bg-black border-t border-white/10 shrink-0">
         {/* Activity */}
         <button 
-          className="flex flex-col items-center gap-1"
+          className="flex flex-col items-center gap-0.5 sm:gap-1 p-1"
           onClick={() => currentUserId === userId && setShowInsights(true)}
         >
-          <div className="flex -space-x-2">
+          <div className="flex -space-x-1.5 sm:-space-x-2">
             {recentViewers.length > 0 ? (
               recentViewers.slice(0, 3).map((viewer, i) => (
                 <OptimizedAvatar
                   key={i}
                   src={viewer.avatar_url}
                   alt={viewer.full_name || "Viewer"}
-                  className="w-6 h-6 border border-black"
+                  className="w-5 h-5 sm:w-6 sm:h-6 border border-black"
                 />
               ))
             ) : (
-              <div className="w-6 h-6 rounded-full bg-white/20" />
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20" />
             )}
           </div>
-          <span className="text-white/70 text-xs">Activity</span>
+          <span className="text-white/70 text-[10px] sm:text-xs">Activity</span>
         </button>
 
         {/* Highlight */}
         <button 
-          className="flex flex-col items-center gap-1"
+          className="flex flex-col items-center gap-0.5 sm:gap-1 p-1"
           onClick={() => toast.info("Highlight feature coming soon")}
         >
-          <Heart className={`w-6 h-6 ${isLiked ? 'text-red-500 fill-red-500' : 'text-white'}`} />
-          <span className="text-white/70 text-xs">Highlight</span>
+          <Heart className={`w-5 h-5 sm:w-6 sm:h-6 ${isLiked ? 'text-red-500 fill-red-500' : 'text-white'}`} />
+          <span className="text-white/70 text-[10px] sm:text-xs">Highlight</span>
         </button>
 
         {/* Mention */}
         <button 
-          className="flex flex-col items-center gap-1"
+          className="flex flex-col items-center gap-0.5 sm:gap-1 p-1"
           onClick={() => toast.info("Mention feature coming soon")}
         >
-          <AtSign className="w-6 h-6 text-white" />
-          <span className="text-white/70 text-xs">Mention</span>
+          <AtSign className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <span className="text-white/70 text-[10px] sm:text-xs">Mention</span>
         </button>
 
         {/* Send */}
         <button 
-          className="flex flex-col items-center gap-1"
+          className="flex flex-col items-center gap-0.5 sm:gap-1 p-1"
           onClick={() => toast.info("Share feature coming soon")}
         >
-          <Send className="w-6 h-6 text-white" />
-          <span className="text-white/70 text-xs">Send</span>
+          <Send className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <span className="text-white/70 text-[10px] sm:text-xs">Send</span>
         </button>
 
         {/* More */}
         <button 
-          className="flex flex-col items-center gap-1"
+          className="flex flex-col items-center gap-0.5 sm:gap-1 p-1"
           onClick={() => toast.info("More options coming soon")}
         >
-          <MoreHorizontal className="w-6 h-6 text-white" />
-          <span className="text-white/70 text-xs">More</span>
+          <MoreHorizontal className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <span className="text-white/70 text-[10px] sm:text-xs">More</span>
         </button>
       </div>
 
