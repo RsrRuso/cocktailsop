@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { X, Heart, Brain, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -82,8 +81,8 @@ export default function StoryViewer() {
   const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [recentViewers, setRecentViewers] = useState<Profile[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [mediaLoaded, setMediaLoaded] = useState(true); // Always true for instant display
+  const [isLoading, setIsLoading] = useState(true);
+  const [mediaLoaded, setMediaLoaded] = useState(false);
   
   // Refs
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -149,39 +148,59 @@ export default function StoryViewer() {
     fetchUser();
   }, []);
 
-  // USE REACT QUERY FOR INSTANT CACHED DATA
-  const { data: storiesData } = useQuery({
-    queryKey: ['stories', userId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("stories")
-        .select("id, user_id, media_urls, media_types, created_at, expires_at, view_count, like_count, comment_count, music_data, text_overlays, trim_data, filters")
-        .eq("user_id", userId)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: true });
-      return data || [];
-    },
-    enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
+  // Fetch stories and profile - optimized with parallel fetches
+  useEffect(() => {
+    if (!userId) return;
 
-  const { data: profileData } = useQuery({
-    queryKey: ['profile', userId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url, username, professional_title")
-        .eq("id", userId)
-        .single();
-      return data;
-    },
-    enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
-  });
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Parallel fetch for faster loading
+        const [profileResult, storiesResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id, full_name, avatar_url, username, professional_title")
+            .eq("id", userId)
+            .single(),
+          supabase
+            .from("stories")
+            .select("id, user_id, media_urls, media_types, created_at, expires_at, view_count, like_count, comment_count, music_data, text_overlays, trim_data, filters")
+            .eq("user_id", userId)
+            .gt("expires_at", new Date().toISOString())
+            .order("created_at", { ascending: true })
+        ]);
+
+        if (profileResult.data) setProfile(profileResult.data);
+
+        if (storiesResult.data && storiesResult.data.length > 0) {
+          setStories(storiesResult.data);
+          // Preload first story media
+          if (storiesResult.data[0]?.media_urls?.[0]) {
+            preloadMedia(storiesResult.data[0].media_urls[0], storiesResult.data[0].media_types?.[0] || "image");
+          }
+          // Prefetch recent viewers async
+          if (currentUserId) {
+            trackView(storiesResult.data[0].id);
+            fetchRecentViewers(storiesResult.data[0].id);
+          }
+        } else {
+          toast.error("No active stories");
+          navigate("/home");
+        }
+      } catch (error) {
+        console.error("Error loading stories:", error);
+        toast.error("Failed to load stories");
+        navigate("/home");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userId, currentUserId, navigate]);
 
   // Preload media helper
-  const preloadMedia = useCallback((url: string, type: string) => {
+  const preloadMedia = (url: string, type: string) => {
     if (type.startsWith("video")) {
       const video = document.createElement("video");
       video.preload = "metadata";
@@ -190,7 +209,17 @@ export default function StoryViewer() {
       const img = new Image();
       img.src = url;
     }
-  }, []);
+  };
+
+  // Preload next media
+  useEffect(() => {
+    if (allMediaItems.length > currentMediaIndex + 1) {
+      const nextMedia = allMediaItems[currentMediaIndex + 1];
+      if (nextMedia?.url) {
+        preloadMedia(nextMedia.url, nextMedia.type || "image");
+      }
+    }
+  }, [currentMediaIndex, allMediaItems]);
 
   // Fetch recent viewers
   const fetchRecentViewers = useCallback(async (storyId: string) => {
@@ -229,37 +258,6 @@ export default function StoryViewer() {
     }
   }, [currentUserId]);
 
-  // Sync query data to state INSTANTLY
-  useEffect(() => {
-    if (profileData) setProfile(profileData);
-  }, [profileData]);
-
-  useEffect(() => {
-    if (storiesData && storiesData.length > 0) {
-      setStories(storiesData);
-      setIsLoading(false);
-      
-      // Track view in background (non-blocking)
-      if (currentUserId && storiesData[0]) {
-        trackView(storiesData[0].id);
-        fetchRecentViewers(storiesData[0].id);
-      }
-    } else if (storiesData && storiesData.length === 0) {
-      toast.error("No active stories");
-      navigate("/home");
-    }
-  }, [storiesData, currentUserId, navigate, trackView, fetchRecentViewers]);
-
-  // Preload next media
-  useEffect(() => {
-    if (allMediaItems.length > currentMediaIndex + 1) {
-      const nextMedia = allMediaItems[currentMediaIndex + 1];
-      if (nextMedia?.url) {
-        preloadMedia(nextMedia.url, nextMedia.type || "image");
-      }
-    }
-  }, [currentMediaIndex, allMediaItems, preloadMedia]);
-
   // Calculate story duration
   const getStoryDuration = useCallback(() => {
     if (musicData) {
@@ -270,9 +268,9 @@ export default function StoryViewer() {
     return isVideo ? 15000 : 5000;
   }, [musicData, isVideo]);
 
-  // Auto-progress timer - INSTANT, no media loading check
+  // Auto-progress timer
   useEffect(() => {
-    if (!currentStory || isPaused || showComments) return;
+    if (!currentStory || isPaused || showComments || !mediaLoaded) return;
 
     const duration = getStoryDuration();
     const interval = 50;
@@ -281,15 +279,7 @@ export default function StoryViewer() {
     progressIntervalRef.current = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
-          // Navigate to next inline instead of calling goToNext
-          setCurrentMediaIndex(idx => {
-            if (idx < totalMediaCount - 1) {
-              return idx + 1;
-            } else {
-              navigate("/home");
-              return idx;
-            }
-          });
+          goToNext();
           return 0;
         }
         return prev + increment;
@@ -299,7 +289,7 @@ export default function StoryViewer() {
     return () => {
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
-  }, [currentMediaIndex, isPaused, showComments, currentStory, getStoryDuration, totalMediaCount, navigate]);
+  }, [currentMediaIndex, isPaused, showComments, allMediaItems, musicData, mediaLoaded]);
 
   // Video sync
   useEffect(() => {
@@ -373,7 +363,10 @@ export default function StoryViewer() {
     return () => audio.removeEventListener('timeupdate', handleTimeUpdate);
   }, [musicData]);
 
-  // No longer reset media loaded - keep instant transitions
+  // Reset media loaded state on media change
+  useEffect(() => {
+    setMediaLoaded(false);
+  }, [currentMediaIndex]);
 
   // Navigation
   const goToNext = useCallback(() => {

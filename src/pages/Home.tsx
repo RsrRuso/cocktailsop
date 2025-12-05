@@ -189,7 +189,7 @@ const Home = () => {
     };
   }, [user?.id, fetchLikedPosts, fetchLikedReels, refreshFeed]);
 
-  // Merge posts and reels into unified feed - with cache for instant loading
+  // Merge posts and reels into unified feed
   const fetchStories = useCallback(async () => {
     try {
       // Check if current user has an active story
@@ -207,7 +207,7 @@ const Home = () => {
       // Fetch stories WITHOUT profile join
       const { data } = await supabase
         .from("stories")
-        .select("id, user_id, media_urls, media_types, created_at, expires_at")
+        .select("id, user_id, media_urls, media_types")
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
         .limit(10);
@@ -218,7 +218,7 @@ const Home = () => {
       const userIds = [...new Set(data.map(s => s.user_id))];
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url, date_of_birth, full_name, professional_title')
+        .select('id, username, avatar_url, date_of_birth')
         .in('id', userIds);
 
       // Map profiles to stories
@@ -228,22 +228,6 @@ const Home = () => {
       }));
 
       setStories(storiesWithProfiles);
-      
-      // Preload first media of each story for instant viewing
-      storiesWithProfiles.forEach(story => {
-        const firstMedia = story.media_urls?.[0];
-        const firstType = story.media_types?.[0];
-        if (firstMedia) {
-          if (firstType?.startsWith('video')) {
-            const video = document.createElement('video');
-            video.preload = 'metadata';
-            video.src = firstMedia;
-          } else {
-            const img = new Image();
-            img.src = firstMedia;
-          }
-        }
-      });
 
       // Fetch viewed stories for current user
       if (user?.id) {
@@ -414,24 +398,7 @@ const Home = () => {
                     <UserStatusIndicator userId={story.user_id} size="sm" />
                     
                     <button 
-                      onClick={() => {
-                        // Preload all media for this user's stories before navigating
-                        const userStories = stories.filter(s => s.user_id === story.user_id);
-                        userStories.forEach(s => {
-                          s.media_urls?.forEach((url, idx) => {
-                            const type = s.media_types?.[idx] || 'image';
-                            if (type?.startsWith('video')) {
-                              const video = document.createElement('video');
-                              video.preload = 'metadata';
-                              video.src = url;
-                            } else {
-                              const img = new Image();
-                              img.src = url;
-                            }
-                          });
-                        });
-                        navigate(`/story/${story.user_id}`);
-                      }}
+                      onClick={() => navigate(`/story/${story.user_id}`)}
                       className="relative group cursor-pointer"
                     >
                       {/* White glow for new/unviewed stories - constant until viewed */}

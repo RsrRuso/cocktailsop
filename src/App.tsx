@@ -17,28 +17,25 @@ import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAutomationProcessor } from "@/hooks/useAutomationProcessor";
 
-// Eager load critical routes for INSTANT navigation
+// Eager load ONLY index/landing/auth (no user data)
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import PasswordReset from "./pages/PasswordReset";
-import Home from "./pages/Home";
-import Profile from "./pages/Profile";
-import Messages from "./pages/Messages";
-import Notifications from "./pages/Notifications";
-import Reels from "./pages/Reels";
-import StoryViewer from "./pages/StoryViewer";
-import Explore from "./pages/Explore";
 
-// Lazy load less frequently accessed routes
+// Lazy load ALL other routes including Home for code splitting
+const Home = lazy(() => import("./pages/Home"));
+const Profile = lazy(() => import("./pages/Profile"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
 const EditProfile = lazy(() => import("./pages/EditProfile"));
 const EditPost = lazy(() => import("./pages/EditPost"));
 const EditReel = lazy(() => import("./pages/EditReel"));
 const PostDetail = lazy(() => import("./pages/PostDetail"));
 const Thunder = lazy(() => import("./pages/Thunder"));
+const Messages = lazy(() => import("./pages/Messages"));
 const MessageThread = lazy(() => import("./pages/MessageThread"));
 const Email = lazy(() => import("./pages/Email"));
+const Notifications = lazy(() => import("./pages/Notifications"));
 const Tools = lazy(() => import("./pages/Tools"));
 const BusinessHub = lazy(() => import("./pages/BusinessHub"));
 const OpsTools = lazy(() => import("./pages/OpsTools"));
@@ -77,12 +74,15 @@ const CRMLeads = lazy(() => import("./pages/CRMLeads"));
 const CRMContacts = lazy(() => import("./pages/CRMContacts"));
 const CRMDeals = lazy(() => import("./pages/CRMDeals"));
 const CRMActivities = lazy(() => import("./pages/CRMActivities"));
+const Explore = lazy(() => import("./pages/Explore"));
 const Create = lazy(() => import("./pages/Create"));
 const CreatePost = lazy(() => import("./pages/CreatePost"));
 const CreateStory = lazy(() => import("./pages/CreateStory"));
 const CreateReel = lazy(() => import("./pages/CreateReel"));
 const StoryOptions = lazy(() => import("./pages/StoryOptions"));
+const Reels = lazy(() => import("./pages/Reels"));
 const Reposted = lazy(() => import("./pages/Reposted"));
+const StoryViewer = lazy(() => import("./pages/StoryViewer"));
 const UpdateMusicLibrary = lazy(() => import("./pages/UpdateMusicLibrary"));
 const Music = lazy(() => import("./pages/Music"));
 const Introduction = lazy(() => import("./pages/Introduction"));
@@ -144,9 +144,14 @@ const BreakevenReport = lazy(() => import("@/pages/reports/BreakevenReport"));
 const DailyOpsReport = lazy(() => import("@/pages/reports/DailyOpsReport"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Minimal loader for lazy routes - almost invisible for fast loads
 const PageLoader = () => (
-  <div className="min-h-screen bg-background" />
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="space-y-4 w-full max-w-md px-4">
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-64 w-full" />
+      <Skeleton className="h-12 w-full" />
+    </div>
+  </div>
 );
 
 // Wrapper component inside Router to use routing hooks
@@ -178,11 +183,6 @@ const AppContent = () => {
           <Route path="/password-reset" element={<PasswordReset />} />
           <Route path="/home" element={<Home />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/story/:userId" element={<StoryViewer />} />
-          <Route path="/reels" element={<Reels />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/notifications" element={<Notifications />} />
           <Route path="/user/:userId" element={<UserProfile />} />
           <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/edit-post/:id" element={<EditPost />} />
@@ -190,8 +190,10 @@ const AppContent = () => {
           <Route path="/post/:id" element={<PostDetail />} />
           <Route path="/event/:id" element={<EventDetail />} />
           <Route path="/thunder" element={<Thunder />} />
+          <Route path="/messages" element={<Messages />} />
           <Route path="/messages/:conversationId" element={<MessageThread />} />
           <Route path="/email" element={<Email />} />
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/business-hub" element={<BusinessHub />} />
           <Route path="/ops-tools" element={<OpsTools />} />
@@ -250,11 +252,14 @@ const AppContent = () => {
           <Route path="/crm/contacts" element={<CRMContacts />} />
           <Route path="/crm/deals" element={<CRMDeals />} />
           <Route path="/crm/activities" element={<CRMActivities />} />
+          <Route path="/explore" element={<Explore />} />
           <Route path="/create" element={<Create />} />
           <Route path="/create/post" element={<CreatePost />} />
           <Route path="/create/story" element={<CreateStory />} />
           <Route path="/create/reel" element={<CreateReel />} />
           <Route path="/story-options" element={<StoryOptions />} />
+          <Route path="/story/:userId" element={<StoryViewer />} />
+          <Route path="/reels" element={<Reels />} />
           <Route path="/reposted" element={<Reposted />} />
           <Route path="/update-music-library" element={<UpdateMusicLibrary />} />
           <Route path="/automations" element={<Automations />} />
