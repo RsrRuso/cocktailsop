@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { X, Heart, Brain, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles } from "lucide-react";
@@ -95,19 +95,20 @@ export default function StoryViewer() {
   const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Flatten all media items from all stories
-  const allMediaItems = stories.flatMap((story, storyIdx) => 
-    (story.media_urls || []).map((url, mediaIdx) => ({
-      storyId: story.id,
-      storyIndex: storyIdx,
-      url,
-      type: story.media_types?.[mediaIdx] || 'image',
-      musicData: Array.isArray(story.music_data) ? story.music_data[mediaIdx] : story.music_data,
-      textOverlays: Array.isArray(story.text_overlays) ? story.text_overlays[mediaIdx] : story.text_overlays,
-      trimData: Array.isArray(story.trim_data) ? story.trim_data[mediaIdx] : story.trim_data,
-      filter: Array.isArray(story.filters) ? story.filters[mediaIdx] : story.filters,
-    }))
-  );
+  // Flatten all media items from all stories - memoized for stable reference
+  const allMediaItems = useMemo(() => 
+    stories.flatMap((story, storyIdx) => 
+      (story.media_urls || []).map((url, mediaIdx) => ({
+        storyId: story.id,
+        storyIndex: storyIdx,
+        url,
+        type: story.media_types?.[mediaIdx] || 'image',
+        musicData: Array.isArray(story.music_data) ? story.music_data[mediaIdx] : story.music_data,
+        textOverlays: Array.isArray(story.text_overlays) ? story.text_overlays[mediaIdx] : story.text_overlays,
+        trimData: Array.isArray(story.trim_data) ? story.trim_data[mediaIdx] : story.trim_data,
+        filter: Array.isArray(story.filters) ? story.filters[mediaIdx] : story.filters,
+      }))
+    ), [stories]);
   
   const totalMediaCount = allMediaItems.length;
   const currentMedia = allMediaItems[currentMediaIndex];
@@ -369,27 +370,33 @@ export default function StoryViewer() {
 
   // Navigation
   const goToNext = useCallback(() => {
-    if (currentMediaIndex < totalMediaCount - 1) {
-      const nextMedia = allMediaItems[currentMediaIndex + 1];
-      setCurrentMediaIndex(currentMediaIndex + 1);
-      setProgress(0);
-      if (currentUserId && nextMedia) {
-        trackView(nextMedia.storyId);
-        fetchRecentViewers(nextMedia.storyId);
+    setCurrentMediaIndex(prev => {
+      if (prev < totalMediaCount - 1) {
+        const nextMedia = allMediaItems[prev + 1];
+        setProgress(0);
+        if (currentUserId && nextMedia) {
+          trackView(nextMedia.storyId);
+          fetchRecentViewers(nextMedia.storyId);
+        }
+        return prev + 1;
+      } else {
+        navigate("/home");
+        return prev;
       }
-    } else {
-      navigate("/home");
-    }
-  }, [currentMediaIndex, totalMediaCount, allMediaItems, currentUserId, navigate, trackView, fetchRecentViewers]);
+    });
+  }, [totalMediaCount, allMediaItems, currentUserId, navigate, trackView, fetchRecentViewers]);
 
   const goToPrevious = useCallback(() => {
-    if (currentMediaIndex > 0) {
-      setCurrentMediaIndex(currentMediaIndex - 1);
-      setProgress(0);
-    } else {
-      navigate("/home");
-    }
-  }, [currentMediaIndex, navigate]);
+    setCurrentMediaIndex(prev => {
+      if (prev > 0) {
+        setProgress(0);
+        return prev - 1;
+      } else {
+        navigate("/home");
+        return prev;
+      }
+    });
+  }, [navigate]);
 
   // Like with animation
   const handleLike = useCallback(async (x: number, y: number) => {
