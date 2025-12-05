@@ -410,7 +410,7 @@ const Home = () => {
                       )}
                       
                       {/* Live Preview Content */}
-                      <div className={`w-[84px] h-[84px] rounded-full overflow-hidden relative shadow-lg ${!isViewed ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-background' : ''}`}>
+                      <div className={`w-[84px] h-[84px] rounded-full overflow-hidden relative shadow-lg ${!isViewed ? 'ring-2 ring-white/80' : ''}`}>
                         {previewMedia ? (
                           <>
                             {isVideo ? (
