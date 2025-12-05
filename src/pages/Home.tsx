@@ -383,98 +383,92 @@ const Home = () => {
             <span className="text-xs text-muted-foreground">Your Story</span>
           </div>
 
-          {/* Other Stories */}
+          {/* Other Stories - Live Preview */}
           {stories.map((story) => {
             const isViewed = viewedStories.has(story.id);
             const hasBirthday = isBirthday(story.profiles.date_of_birth);
+            const previewMedia = story.media_urls?.[0];
+            const previewType = story.media_types?.[0];
+            const isVideo = previewType?.startsWith('video');
             
             return (
               <div key={story.id} className="flex flex-col items-center gap-2 min-w-[88px]">
                 <BirthdayFireworks isBirthday={hasBirthday}>
                   <button 
-                    onClick={() => {
-                      // Preload story images before navigation for instant display
-                      navigate(`/story/${story.user_id}`);
-                    }}
+                    onClick={() => navigate(`/story/${story.user_id}`)}
                     className="relative group cursor-pointer"
                   >
-                    {hasBirthday ? (
-                      // Birthday story - golden celebration squircle
-                      <>
+                    {/* Glow effect based on state */}
+                    <div 
+                      className={`absolute -inset-1 blur-md transition-all duration-300 ${
+                        hasBirthday 
+                          ? 'bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 animate-pulse' 
+                          : isViewed 
+                            ? 'bg-muted-foreground/30 opacity-50' 
+                            : 'bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 animate-pulse'
+                      } group-hover:opacity-100`}
+                      style={{ borderRadius: '32%' }}
+                    />
+                    
+                    {/* Border container */}
+                    <div 
+                      className={`relative p-[3px] shadow-xl ${
+                        hasBirthday 
+                          ? 'bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 shadow-pink-500/50' 
+                          : isViewed 
+                            ? 'bg-muted-foreground/50 shadow-lg' 
+                            : 'bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 shadow-orange-500/50'
+                      }`}
+                      style={{ borderRadius: '30%' }}
+                    >
+                      <div className="bg-background p-[2px]" style={{ borderRadius: '28%' }}>
+                        {/* Live Preview Content */}
                         <div 
-                          className="absolute -inset-1 bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 opacity-75 blur-md group-hover:opacity-100 transition-all duration-300 animate-pulse"
-                          style={{ borderRadius: '32%' }}
-                        ></div>
-                        <div 
-                          className="relative bg-gradient-to-br from-yellow-300 via-pink-400 to-purple-500 p-[3px] shadow-xl shadow-pink-500/50"
-                          style={{ borderRadius: '30%' }}
+                          className="w-[74px] h-[74px] overflow-hidden relative"
+                          style={{ borderRadius: '26%' }}
                         >
-                          <div 
-                            className="bg-background p-[2px]"
-                            style={{ borderRadius: '28%' }}
-                          >
-                            <Avatar 
-                              className="w-[74px] h-[74px]"
-                              style={{ borderRadius: '26%' }}
-                            >
+                          {previewMedia ? (
+                            isVideo ? (
+                              <video
+                                src={previewMedia}
+                                className="w-full h-full object-cover"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                style={{ borderRadius: '26%' }}
+                              />
+                            ) : (
+                              <img
+                                src={previewMedia}
+                                alt={story.profiles.username}
+                                className="w-full h-full object-cover"
+                                style={{ borderRadius: '26%' }}
+                              />
+                            )
+                          ) : (
+                            <Avatar className="w-full h-full" style={{ borderRadius: '26%' }}>
                               <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" style={{ borderRadius: '26%' }} />
                               <AvatarFallback style={{ borderRadius: '26%' }}>{story.profiles.username[0]}</AvatarFallback>
                             </Avatar>
-                          </div>
+                          )}
+                          
+                          {/* Small avatar overlay at bottom-left */}
+                          {previewMedia && (
+                            <div className="absolute bottom-1 left-1 w-6 h-6 rounded-full border-2 border-background overflow-hidden shadow-lg">
+                              <Avatar className="w-full h-full">
+                                <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" />
+                                <AvatarFallback className="text-[8px]">{story.profiles.username[0]}</AvatarFallback>
+                              </Avatar>
+                            </div>
+                          )}
                         </div>
-                        {/* Birthday badge */}
-                        <div className="absolute -top-1 -right-1 text-2xl animate-bounce z-10">🎂</div>
-                      </>
-                    ) : isViewed ? (
-                      // Viewed story - muted squircle
-                      <>
-                        <div 
-                          className="absolute -inset-1 bg-muted-foreground/30 opacity-50 blur-md group-hover:opacity-75 transition-all duration-300"
-                          style={{ borderRadius: '32%' }}
-                        ></div>
-                        <div 
-                          className="relative bg-muted-foreground/50 p-[3px] shadow-lg"
-                          style={{ borderRadius: '30%' }}
-                        >
-                          <div 
-                            className="bg-background p-[2px]"
-                            style={{ borderRadius: '28%' }}
-                          >
-                            <Avatar 
-                              className="w-[74px] h-[74px]"
-                              style={{ borderRadius: '26%' }}
-                            >
-                              <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" style={{ borderRadius: '26%' }} />
-                              <AvatarFallback style={{ borderRadius: '26%' }}>{story.profiles.username[0]}</AvatarFallback>
-                            </Avatar>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      // Unviewed story - vibrant gradient squircle
-                      <>
-                        <div 
-                          className="absolute -inset-1 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 opacity-75 blur-md group-hover:opacity-100 transition-all duration-300 animate-pulse"
-                          style={{ borderRadius: '32%' }}
-                        ></div>
-                        <div 
-                          className="relative bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-[3px] shadow-xl shadow-orange-500/50"
-                          style={{ borderRadius: '30%' }}
-                        >
-                          <div 
-                            className="bg-background p-[2px]"
-                            style={{ borderRadius: '28%' }}
-                          >
-                            <Avatar 
-                              className="w-[74px] h-[74px]"
-                              style={{ borderRadius: '26%' }}
-                            >
-                              <AvatarImage src={story.profiles.avatar_url || undefined} className="object-cover" style={{ borderRadius: '26%' }} />
-                              <AvatarFallback style={{ borderRadius: '26%' }}>{story.profiles.username[0]}</AvatarFallback>
-                            </Avatar>
-                          </div>
-                        </div>
-                      </>
+                      </div>
+                    </div>
+                    
+                    {/* Birthday badge */}
+                    {hasBirthday && (
+                      <div className="absolute -top-1 -right-1 text-2xl animate-bounce z-10">🎂</div>
                     )}
                   </button>
                 </BirthdayFireworks>
