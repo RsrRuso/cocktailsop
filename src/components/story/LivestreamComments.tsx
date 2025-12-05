@@ -353,7 +353,7 @@ export const LivestreamComments = ({
   const reactionEmojis = ["❤️", "😂", "😮", "😢", "😍", "🙏", "👍", "🔥"];
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 flex flex-col pointer-events-none pb-safe">
+    <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col pointer-events-none max-h-[50%]">
       {/* Flying hearts */}
       <AnimatePresence>
         {flyingHearts.map((heart) => (
@@ -390,7 +390,7 @@ export const LivestreamComments = ({
         {/* Comments flowing up */}
         <div 
           ref={commentsContainerRef}
-          className="max-h-52 overflow-y-auto px-4 pb-2 pointer-events-auto scrollbar-hide"
+          className="max-h-36 sm:max-h-44 overflow-y-auto px-3 pb-2 pointer-events-auto scrollbar-hide"
           onTouchStart={() => onPauseChange?.(true)}
           onTouchEnd={() => onPauseChange?.(false)}
           onMouseEnter={() => onPauseChange?.(true)}
@@ -499,7 +499,7 @@ export const LivestreamComments = ({
       {/* Input area */}
       <form 
         onSubmit={handleSubmit}
-        className="px-4 pb-4 pt-2 pointer-events-auto"
+        className="px-3 pb-3 pt-1 pointer-events-auto"
       >
         {replyingTo && (
           <div className="flex items-center justify-between mb-2 px-2">
@@ -514,7 +514,7 @@ export const LivestreamComments = ({
             </button>
           </div>
         )}
-        <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md rounded-full px-4 py-2.5 border border-white/20">
+        <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-full px-3 py-2 border border-white/20">
           <Input
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}

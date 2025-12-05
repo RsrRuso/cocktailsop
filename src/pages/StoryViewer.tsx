@@ -8,7 +8,6 @@ import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
 import { LivestreamComments } from "@/components/story/LivestreamComments";
 import { StoryInsights } from "@/components/story/StoryInsights";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sheet,
@@ -81,7 +80,6 @@ export default function StoryViewer() {
   const [showInsights, setShowInsights] = useState(false);
   const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
   const [isMuted, setIsMuted] = useState(false);
-  const [replyText, setReplyText] = useState("");
   const [recentViewers, setRecentViewers] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [mediaLoaded, setMediaLoaded] = useState(false);
@@ -515,23 +513,6 @@ export default function StoryViewer() {
     }
   }, [isPaused, goToPrevious, goToNext, handleLike]);
 
-  // Send reply
-  const handleSendReply = useCallback(async () => {
-    if (!replyText.trim() || !currentStory || !currentUserId) return;
-    
-    try {
-      await supabase.from("story_comments").insert({
-        story_id: currentStory.id,
-        user_id: currentUserId,
-        content: replyText.trim(),
-      });
-      setReplyText("");
-      toast.success("Reply sent!");
-    } catch (error) {
-      toast.error("Failed to send reply");
-    }
-  }, [replyText, currentStory, currentUserId]);
-
   // Get time ago
   const getTimeAgo = useCallback(() => {
     if (!currentStory) return "";
@@ -753,18 +734,11 @@ export default function StoryViewer() {
               ))}
             </div>
           )}
-        </div>
-      </div>
 
-      {/* Reply Input - Mobile optimized */}
-      <div className="px-3 sm:px-4 py-2 sm:py-3 bg-black shrink-0">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Input
-            value={replyText}
-            onChange={(e) => setReplyText(e.target.value)}
-            placeholder="Say something..."
-            className="flex-1 bg-transparent border-0 border-b border-white/20 rounded-none text-white text-sm placeholder:text-white/40 focus-visible:ring-0 focus-visible:border-white/40 h-9 sm:h-10"
-            onKeyDown={(e) => e.key === 'Enter' && handleSendReply()}
+          {/* Livestream Comments Overlay - Inside story card */}
+          <LivestreamComments 
+            contentId={currentStory.id} 
+            onPauseChange={(paused) => setIsPaused(paused)}
           />
         </div>
       </div>
@@ -829,12 +803,6 @@ export default function StoryViewer() {
           <span className="text-white/70 text-[10px] sm:text-xs">More</span>
         </button>
       </div>
-
-      {/* Livestream Comments Overlay */}
-      <LivestreamComments 
-        contentId={currentStory.id} 
-        onPauseChange={(paused) => setIsPaused(paused)}
-      />
 
       {/* Story Insights */}
       <Sheet open={showInsights} onOpenChange={setShowInsights}>
