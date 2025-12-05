@@ -7,6 +7,7 @@ interface StatusRingProps {
   emoji?: string;
   onAddClick?: () => void;
   showAddButton?: boolean;
+  isNew?: boolean;
   className?: string;
 }
 
@@ -17,10 +18,16 @@ const StatusRing = ({
   emoji,
   onAddClick,
   showAddButton = false,
+  isNew = false,
   className = "" 
 }: StatusRingProps) => {
   return (
     <div className={`relative inline-block ${className}`}>
+      {/* New story white glow effect */}
+      {isNew && (
+        <div className="absolute -inset-1 rounded-full bg-white/40 animate-pulse blur-sm" />
+      )}
+      
       {hasStatus && statusText && (
         <div className="absolute -top-9 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-[100px]">
           <div className="relative">
@@ -45,7 +52,9 @@ const StatusRing = ({
         </div>
       )}
       
-      {children}
+      <div className="relative">
+        {children}
+      </div>
       
       {showAddButton && (
         <button

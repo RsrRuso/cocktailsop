@@ -394,12 +394,17 @@ const Home = () => {
               <div key={story.id} className="flex flex-col items-center gap-2 min-w-[90px] pt-5">
                 <BirthdayFireworks isBirthday={hasBirthday}>
                   <div className="relative">
+                    {/* White glow for new/unviewed stories */}
+                    {!isViewed && (
+                      <div className="absolute -inset-1 rounded-full bg-white/50 blur-md animate-pulse z-0" />
+                    )}
+                    
                     {/* User Status Indicator */}
                     <UserStatusIndicator userId={story.user_id} size="sm" />
                     
                     <button 
                       onClick={() => navigate(`/story/${story.user_id}`)}
-                      className="relative group cursor-pointer"
+                      className={`relative group cursor-pointer ${!isViewed ? 'ring-2 ring-white/60 ring-offset-2 ring-offset-background rounded-full' : ''}`}
                     >
                       {/* Live Preview Content */}
                       <div className="w-[84px] h-[84px] rounded-full overflow-hidden relative shadow-lg">
