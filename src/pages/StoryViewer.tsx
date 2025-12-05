@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { X, Heart, Brain, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -148,61 +149,39 @@ export default function StoryViewer() {
     fetchUser();
   }, []);
 
-  // Fetch stories and profile - optimized for INSTANT loading
-  useEffect(() => {
-    if (!userId) return;
+  // USE REACT QUERY FOR INSTANT CACHED DATA
+  const { data: storiesData } = useQuery({
+    queryKey: ['stories', userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("stories")
+        .select("id, user_id, media_urls, media_types, created_at, expires_at, view_count, like_count, comment_count, music_data, text_overlays, trim_data, filters")
+        .eq("user_id", userId)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: true });
+      return data || [];
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 
-    const fetchData = async () => {
-      try {
-        // Parallel fetch for faster loading - no loading state delay
-        const [profileResult, storiesResult] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("id, full_name, avatar_url, username, professional_title")
-            .eq("id", userId)
-            .single(),
-          supabase
-            .from("stories")
-            .select("id, user_id, media_urls, media_types, created_at, expires_at, view_count, like_count, comment_count, music_data, text_overlays, trim_data, filters")
-            .eq("user_id", userId)
-            .gt("expires_at", new Date().toISOString())
-            .order("created_at", { ascending: true })
-        ]);
-
-        if (profileResult.data) setProfile(profileResult.data);
-
-        if (storiesResult.data && storiesResult.data.length > 0) {
-          setStories(storiesResult.data);
-          setIsLoading(false);
-          
-          // Preload ALL media for instant transitions
-          storiesResult.data.forEach(story => {
-            story.media_urls?.forEach((url: string, idx: number) => {
-              preloadMedia(url, story.media_types?.[idx] || "image");
-            });
-          });
-          
-          // Track view in background (non-blocking)
-          if (currentUserId) {
-            trackView(storiesResult.data[0].id);
-            fetchRecentViewers(storiesResult.data[0].id);
-          }
-        } else {
-          toast.error("No active stories");
-          navigate("/home");
-        }
-      } catch (error) {
-        console.error("Error loading stories:", error);
-        toast.error("Failed to load stories");
-        navigate("/home");
-      }
-    };
-
-    fetchData();
-  }, [userId, currentUserId, navigate]);
+  const { data: profileData } = useQuery({
+    queryKey: ['profile', userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, username, professional_title")
+        .eq("id", userId)
+        .single();
+      return data;
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Preload media helper
-  const preloadMedia = (url: string, type: string) => {
+  const preloadMedia = useCallback((url: string, type: string) => {
     if (type.startsWith("video")) {
       const video = document.createElement("video");
       video.preload = "metadata";
@@ -211,17 +190,7 @@ export default function StoryViewer() {
       const img = new Image();
       img.src = url;
     }
-  };
-
-  // Preload next media
-  useEffect(() => {
-    if (allMediaItems.length > currentMediaIndex + 1) {
-      const nextMedia = allMediaItems[currentMediaIndex + 1];
-      if (nextMedia?.url) {
-        preloadMedia(nextMedia.url, nextMedia.type || "image");
-      }
-    }
-  }, [currentMediaIndex, allMediaItems]);
+  }, []);
 
   // Fetch recent viewers
   const fetchRecentViewers = useCallback(async (storyId: string) => {
@@ -259,6 +228,37 @@ export default function StoryViewer() {
       console.error("Error tracking view:", error);
     }
   }, [currentUserId]);
+
+  // Sync query data to state INSTANTLY
+  useEffect(() => {
+    if (profileData) setProfile(profileData);
+  }, [profileData]);
+
+  useEffect(() => {
+    if (storiesData && storiesData.length > 0) {
+      setStories(storiesData);
+      setIsLoading(false);
+      
+      // Track view in background (non-blocking)
+      if (currentUserId && storiesData[0]) {
+        trackView(storiesData[0].id);
+        fetchRecentViewers(storiesData[0].id);
+      }
+    } else if (storiesData && storiesData.length === 0) {
+      toast.error("No active stories");
+      navigate("/home");
+    }
+  }, [storiesData, currentUserId, navigate, trackView, fetchRecentViewers]);
+
+  // Preload next media
+  useEffect(() => {
+    if (allMediaItems.length > currentMediaIndex + 1) {
+      const nextMedia = allMediaItems[currentMediaIndex + 1];
+      if (nextMedia?.url) {
+        preloadMedia(nextMedia.url, nextMedia.type || "image");
+      }
+    }
+  }, [currentMediaIndex, allMediaItems, preloadMedia]);
 
   // Calculate story duration
   const getStoryDuration = useCallback(() => {
