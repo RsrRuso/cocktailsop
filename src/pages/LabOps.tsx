@@ -5,6 +5,7 @@ import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import LabOpsAnalytics from "@/components/lab-ops/LabOpsAnalytics";
 import LabOpsOnboarding from "@/components/lab-ops/LabOpsOnboarding";
+import LiveOpsDashboard from "@/components/lab-ops/LiveOpsDashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -493,6 +494,10 @@ export default function LabOps() {
                   <Users className="h-5 w-5" />
                   <span className="text-xs font-medium">Staff</span>
                 </TabsTrigger>
+                <TabsTrigger value="live" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
+                  <Activity className="h-5 w-5" />
+                  <span className="text-xs font-medium">Live</span>
+                </TabsTrigger>
                 <TabsTrigger value="reports" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
                   <BarChart3 className="h-5 w-5" />
                   <span className="text-xs font-medium">Stats</span>
@@ -530,6 +535,10 @@ export default function LabOps() {
 
             <TabsContent value="staff">
               <StaffModule outletId={selectedOutlet.id} />
+            </TabsContent>
+
+            <TabsContent value="live">
+              <LiveOpsDashboard outletId={selectedOutlet.id} outletName={selectedOutlet.name} />
             </TabsContent>
 
             <TabsContent value="reports">
