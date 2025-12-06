@@ -1085,28 +1085,20 @@ function POSModule({ outletId }: { outletId: string }) {
           />
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Category Filter */}
-          <ScrollArea className="w-full">
-            <div className="flex gap-2 pb-2">
-              <Button
-                size="sm"
-                variant={selectedCategory === "all" ? "default" : "outline"}
-                onClick={() => setSelectedCategory("all")}
-              >
-                All
-              </Button>
+          {/* Category Filter - Dropdown */}
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-full h-12 text-base">
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border z-50">
+              <SelectItem value="all" className="text-base py-3">All Categories</SelectItem>
               {categories.map((cat) => (
-                <Button
-                  key={cat.id}
-                  size="sm"
-                  variant={selectedCategory === cat.id ? "default" : "outline"}
-                  onClick={() => setSelectedCategory(cat.id)}
-                >
+                <SelectItem key={cat.id} value={cat.id} className="text-base py-3">
                   {cat.name}
-                </Button>
+                </SelectItem>
               ))}
-            </div>
-          </ScrollArea>
+            </SelectContent>
+          </Select>
 
           {filteredMenuItems.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center py-8">
