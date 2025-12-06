@@ -318,7 +318,27 @@ export default function LabOps() {
               className="h-9 px-2 sm:px-3 bg-primary"
             >
               <Smartphone className="h-4 w-4" />
-              <span className="hidden sm:inline ml-1">Staff Access</span>
+              <span className="hidden sm:inline ml-1">Staff POS</span>
+            </Button>
+            
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => window.location.href = '/bar-kds'}
+              className="h-9 px-2 sm:px-3 border-amber-500 text-amber-600 hover:bg-amber-500/10"
+            >
+              <Wine className="h-4 w-4" />
+              <span className="hidden sm:inline ml-1">Bar</span>
+            </Button>
+            
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => window.location.href = '/kitchen-kds'}
+              className="h-9 px-2 sm:px-3 border-orange-500 text-orange-600 hover:bg-orange-500/10"
+            >
+              <ChefHat className="h-4 w-4" />
+              <span className="hidden sm:inline ml-1">Kitchen</span>
             </Button>
             
             <Button
