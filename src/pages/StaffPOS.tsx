@@ -934,33 +934,42 @@ export default function StaffPOS() {
                 </div>
               </div>
 
-              {/* Categories - Horizontal scrolling like top nav */}
-              <div className="relative border-b">
-                <div className="overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
-                  <div className="inline-flex gap-1.5 p-2 pr-8">
-                    <Button
-                      variant={!selectedCategory ? "default" : "outline"}
-                      size="sm"
-                      className="flex-none whitespace-nowrap overflow-visible"
-                      onClick={() => setSelectedCategory(null)}
+              {/* Categories - Mobile-friendly horizontal scroll */}
+              <div className="border-b">
+                <div 
+                  className="flex gap-2 p-2 overflow-x-scroll"
+                  style={{ 
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none'
+                  }}
+                >
+                  <button
+                    className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
+                      !selectedCategory 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-muted text-foreground'
+                    }`}
+                    onClick={() => setSelectedCategory(null)}
+                  >
+                    All
+                  </button>
+                  {categories.map(cat => (
+                    <button
+                      key={cat.id}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
+                        selectedCategory === cat.id 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted text-foreground'
+                      }`}
+                      onClick={() => setSelectedCategory(cat.id)}
                     >
-                      All
-                    </Button>
-                    {categories.map(cat => (
-                      <Button
-                        key={cat.id}
-                        variant={selectedCategory === cat.id ? "default" : "outline"}
-                        size="sm"
-                        className="flex-none whitespace-nowrap overflow-visible"
-                        onClick={() => setSelectedCategory(cat.id)}
-                      >
-                        {cat.name}
-                      </Button>
-                    ))}
-                  </div>
+                      {cat.name}
+                    </button>
+                  ))}
+                  {/* Spacer to ensure last item is fully visible */}
+                  <div className="w-4 flex-shrink-0" />
                 </div>
-                {/* Fade indicator showing more categories */}
-                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent pointer-events-none" />
               </div>
 
               {/* Menu Items */}
