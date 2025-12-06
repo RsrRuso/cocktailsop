@@ -12,7 +12,7 @@ import {
   LogOut, ShoppingCart, Send, Plus, Minus, Trash2, 
   ChefHat, Wine, Clock, CheckCircle, Users, Search,
   Loader2, UtensilsCrossed, Bell, CreditCard, Receipt,
-  DollarSign, ListOrdered, RefreshCw, ArrowLeft
+  DollarSign, ListOrdered, RefreshCw, ArrowLeft, Archive, Calendar
 } from "lucide-react";
 
 interface StaffMember {
@@ -80,9 +80,12 @@ export default function StaffPOS() {
   
   // Open Orders State
   const [openOrders, setOpenOrders] = useState<any[]>([]);
+  const [closedOrders, setClosedOrders] = useState<any[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [closingOrder, setClosingOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [ordersTab, setOrdersTab] = useState<"open" | "archive">("open");
+  const [archiveDate, setArchiveDate] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     fetchOutlets();
@@ -177,6 +180,27 @@ export default function StaffPOS() {
       .order("created_at", { ascending: false });
     
     setOpenOrders(data || []);
+  };
+
+  const fetchClosedOrders = async (outletId: string, date: string) => {
+    const startOfDay = `${date}T00:00:00.000Z`;
+    const endOfDay = `${date}T23:59:59.999Z`;
+    
+    const { data } = await supabase
+      .from("lab_ops_orders")
+      .select(`
+        *,
+        lab_ops_tables(name),
+        lab_ops_order_items(id, qty, unit_price, lab_ops_menu_items(name)),
+        lab_ops_payments(payment_method, amount)
+      `)
+      .eq("outlet_id", outletId)
+      .eq("status", "closed")
+      .gte("closed_at", startOfDay)
+      .lte("closed_at", endOfDay)
+      .order("closed_at", { ascending: false });
+    
+    setClosedOrders(data || []);
   };
 
   const closeOrder = async (order: any) => {
@@ -497,7 +521,7 @@ export default function StaffPOS() {
           <div className="flex items-center gap-3">
             <ListOrdered className="w-5 h-5 text-primary" />
             <div>
-              <p className="font-semibold">Open Orders</p>
+              <p className="font-semibold">Orders</p>
               <p className="text-xs text-muted-foreground">{outlet.name}</p>
             </div>
           </div>
@@ -511,7 +535,52 @@ export default function StaffPOS() {
           </div>
         </div>
 
-        {/* Order List or Detail */}
+        {/* Tabs: Open / Archive */}
+        <div className="flex border-b">
+          <button
+            className={`flex-1 py-3 text-center font-medium text-sm transition-colors ${
+              ordersTab === "open" 
+                ? "border-b-2 border-primary text-primary" 
+                : "text-muted-foreground"
+            }`}
+            onClick={() => setOrdersTab("open")}
+          >
+            <ListOrdered className="w-4 h-4 inline mr-1" />
+            Open ({openOrders.length})
+          </button>
+          <button
+            className={`flex-1 py-3 text-center font-medium text-sm transition-colors ${
+              ordersTab === "archive" 
+                ? "border-b-2 border-primary text-primary" 
+                : "text-muted-foreground"
+            }`}
+            onClick={() => {
+              setOrdersTab("archive");
+              fetchClosedOrders(outlet.id, archiveDate);
+            }}
+          >
+            <Archive className="w-4 h-4 inline mr-1" />
+            Archive
+          </button>
+        </div>
+
+        {/* Archive Date Filter */}
+        {ordersTab === "archive" && (
+          <div className="p-3 border-b flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <Input
+              type="date"
+              value={archiveDate}
+              onChange={(e) => {
+                setArchiveDate(e.target.value);
+                fetchClosedOrders(outlet.id, e.target.value);
+              }}
+              className="flex-1"
+            />
+          </div>
+        )}
+
+        {/* Order Detail View */}
         {selectedOrder ? (
           <div className="p-3 space-y-4">
             <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(null)}>
@@ -527,7 +596,7 @@ export default function StaffPOS() {
                       {selectedOrder.covers} covers • {new Date(selectedOrder.created_at).toLocaleTimeString()}
                     </p>
                   </div>
-                  <Badge variant={selectedOrder.status === "sent" ? "default" : "secondary"}>
+                  <Badge variant={selectedOrder.status === "closed" ? "secondary" : selectedOrder.status === "sent" ? "default" : "outline"}>
                     {selectedOrder.status}
                   </Badge>
                 </div>
@@ -550,82 +619,143 @@ export default function StaffPOS() {
                   </div>
                 </div>
 
-                {/* Payment Method */}
-                <div className="grid grid-cols-3 gap-2">
-                  {["cash", "card", "other"].map(method => (
-                    <Button
-                      key={method}
-                      variant={paymentMethod === method ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setPaymentMethod(method)}
-                      className="capitalize"
-                    >
-                      {method === "cash" && <DollarSign className="w-4 h-4 mr-1" />}
-                      {method === "card" && <CreditCard className="w-4 h-4 mr-1" />}
-                      {method === "other" && <Receipt className="w-4 h-4 mr-1" />}
-                      {method}
-                    </Button>
-                  ))}
-                </div>
+                {/* Show payment info for closed orders */}
+                {selectedOrder.status === "closed" && selectedOrder.lab_ops_payments?.[0] && (
+                  <div className="bg-muted/50 rounded-lg p-3 text-sm">
+                    <p className="text-muted-foreground">Paid via <span className="font-medium capitalize">{selectedOrder.lab_ops_payments[0].payment_method}</span></p>
+                    <p className="text-muted-foreground">Closed at {new Date(selectedOrder.closed_at).toLocaleString()}</p>
+                  </div>
+                )}
 
-                {/* Close Order Button */}
-                <Button 
-                  className="w-full h-12" 
-                  onClick={() => closeOrder(selectedOrder)}
-                  disabled={closingOrder}
-                >
-                  {closingOrder ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                  )}
-                  Close Order & Record Sale
-                </Button>
+                {/* Payment Method - only for open orders */}
+                {selectedOrder.status !== "closed" && (
+                  <>
+                    <div className="grid grid-cols-3 gap-2">
+                      {["cash", "card", "other"].map(method => (
+                        <Button
+                          key={method}
+                          variant={paymentMethod === method ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setPaymentMethod(method)}
+                          className="capitalize"
+                        >
+                          {method === "cash" && <DollarSign className="w-4 h-4 mr-1" />}
+                          {method === "card" && <CreditCard className="w-4 h-4 mr-1" />}
+                          {method === "other" && <Receipt className="w-4 h-4 mr-1" />}
+                          {method}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Close Order Button */}
+                    <Button 
+                      className="w-full h-12" 
+                      onClick={() => closeOrder(selectedOrder)}
+                      disabled={closingOrder}
+                    >
+                      {closingOrder ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                      )}
+                      Close Order & Record Sale
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
         ) : (
           <div className="p-3 space-y-3">
-            {openOrders.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Receipt className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No open orders</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-3"
-                  onClick={() => fetchOpenOrders(outlet.id)}
-                >
-                  <RefreshCw className="w-4 h-4 mr-1" /> Refresh
-                </Button>
-              </div>
-            ) : (
-              openOrders.map(order => (
-                <Card 
-                  key={order.id} 
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => setSelectedOrder(order)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">{order.lab_ops_tables?.name || "Table"}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {order.lab_ops_order_items?.length || 0} items • {order.covers} covers
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold">
-                          ${order.lab_ops_order_items?.reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0).toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(order.created_at).toLocaleTimeString()}
-                        </p>
-                      </div>
+            {/* Open Orders Tab */}
+            {ordersTab === "open" && (
+              <>
+                {openOrders.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Receipt className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No open orders</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-3"
+                      onClick={() => fetchOpenOrders(outlet.id)}
+                    >
+                      <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+                    </Button>
+                  </div>
+                ) : (
+                  openOrders.map(order => (
+                    <Card 
+                      key={order.id} 
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => setSelectedOrder(order)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-semibold">{order.lab_ops_tables?.name || "Table"}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {order.lab_ops_order_items?.length || 0} items • {order.covers} covers
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">
+                              ${order.lab_ops_order_items?.reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(order.created_at).toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </>
+            )}
+
+            {/* Archive Tab */}
+            {ordersTab === "archive" && (
+              <>
+                {closedOrders.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Archive className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No closed orders for this date</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-muted/50 rounded-lg p-3 mb-3">
+                      <p className="text-sm font-medium">
+                        {closedOrders.length} orders • Total: ${closedOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0).toFixed(2)}
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
+                    {closedOrders.map(order => (
+                      <Card 
+                        key={order.id} 
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => setSelectedOrder(order)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="font-semibold">{order.lab_ops_tables?.name || "Table"}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {order.lab_ops_order_items?.length || 0} items • {order.lab_ops_payments?.[0]?.payment_method || "paid"}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold">${(order.total_amount || 0).toFixed(2)}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(order.closed_at).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </>
+                )}
+              </>
             )}
           </div>
         )}
