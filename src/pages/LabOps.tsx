@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import LabOpsAnalytics from "@/components/lab-ops/LabOpsAnalytics";
+import LabOpsOnboarding from "@/components/lab-ops/LabOpsOnboarding";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,7 +26,7 @@ import {
   Download, RefreshCw, Check, X, ArrowRight, Calendar, Truck,
   Archive, Search, Filter, MoreHorizontal, Copy, Printer, Hash,
   PlusCircle, MinusCircle, UserPlus, Shield, Activity, History,
-  Database, Loader2, Sparkles
+  Database, Loader2, Sparkles, HelpCircle, GripVertical
 } from "lucide-react";
 
 interface Outlet {
@@ -47,6 +48,7 @@ export default function LabOps() {
   const [newOutletAddress, setNewOutletAddress] = useState("");
   const [newOutletType, setNewOutletType] = useState("restaurant");
   const [loadingDemo, setLoadingDemo] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const loadDemoData = async () => {
     if (!user || !selectedOutlet) return;
@@ -293,6 +295,7 @@ export default function LabOps() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
+      <LabOpsOnboarding open={showOnboarding} onOpenChange={setShowOnboarding} />
       
       <main className="container mx-auto px-3 sm:px-4 pt-20 sm:pt-24 pb-4 max-w-7xl">
         {/* Header - Mobile Optimized with proper spacing from TopNav */}
@@ -308,6 +311,16 @@ export default function LabOps() {
           </div>
           
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowOnboarding(true)}
+              className="h-9 px-2 sm:px-3"
+            >
+              <HelpCircle className="h-4 w-4" />
+              <span className="hidden sm:inline ml-1">Guide</span>
+            </Button>
+            
             {selectedOutlet && (
               <Button 
                 size="sm" 
@@ -1402,6 +1415,8 @@ function MenuModule({ outletId }: { outletId: string }) {
   const [showAddModifier, setShowAddModifier] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("items");
+  const [draggedItem, setDraggedItem] = useState<any>(null);
+  const [draggedCategory, setDraggedCategory] = useState<any>(null);
   
   // Form states
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -1539,6 +1554,87 @@ function MenuModule({ outletId }: { outletId: string }) {
     await supabase.from("lab_ops_categories").delete().eq("id", id);
     fetchCategories();
     toast({ title: "Category deleted" });
+  };
+
+  // Drag and drop for menu items
+  const handleItemDragStart = (e: React.DragEvent, item: any) => {
+    setDraggedItem(item);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleItemDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleItemDrop = async (e: React.DragEvent, targetItem: any) => {
+    e.preventDefault();
+    if (!draggedItem || draggedItem.id === targetItem.id) return;
+
+    const newItems = [...menuItems];
+    const draggedIndex = newItems.findIndex(i => i.id === draggedItem.id);
+    const targetIndex = newItems.findIndex(i => i.id === targetItem.id);
+    
+    // Reorder items
+    const [removed] = newItems.splice(draggedIndex, 1);
+    newItems.splice(targetIndex, 0, removed);
+
+    // Update sort_order for all items
+    const updates = newItems.map((item, index) => ({
+      id: item.id,
+      sort_order: index,
+    }));
+
+    setMenuItems(newItems);
+    setDraggedItem(null);
+
+    // Update in database
+    for (const update of updates) {
+      await supabase
+        .from("lab_ops_menu_items")
+        .update({ sort_order: update.sort_order })
+        .eq("id", update.id);
+    }
+    toast({ title: "Menu order updated" });
+  };
+
+  // Drag and drop for categories
+  const handleCategoryDragStart = (e: React.DragEvent, cat: any) => {
+    setDraggedCategory(cat);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleCategoryDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleCategoryDrop = async (e: React.DragEvent, targetCat: any) => {
+    e.preventDefault();
+    if (!draggedCategory || draggedCategory.id === targetCat.id) return;
+
+    const newCats = [...categories];
+    const draggedIndex = newCats.findIndex(c => c.id === draggedCategory.id);
+    const targetIndex = newCats.findIndex(c => c.id === targetCat.id);
+    
+    const [removed] = newCats.splice(draggedIndex, 1);
+    newCats.splice(targetIndex, 0, removed);
+
+    const updates = newCats.map((cat, index) => ({
+      id: cat.id,
+      sort_order: index,
+    }));
+
+    setCategories(newCats);
+    setDraggedCategory(null);
+
+    for (const update of updates) {
+      await supabase
+        .from("lab_ops_categories")
+        .update({ sort_order: update.sort_order })
+        .eq("id", update.id);
+    }
+    toast({ title: "Category order updated" });
   };
 
   return (
