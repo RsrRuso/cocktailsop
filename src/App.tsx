@@ -144,6 +144,8 @@ const BreakevenReport = lazy(() => import("@/pages/reports/BreakevenReport"));
 const DailyOpsReport = lazy(() => import("@/pages/reports/DailyOpsReport"));
 const LabOps = lazy(() => import("@/pages/LabOps"));
 const StaffPOS = lazy(() => import("@/pages/StaffPOS"));
+const BarKDS = lazy(() => import("@/pages/BarKDS"));
+const KitchenKDS = lazy(() => import("@/pages/KitchenKDS"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -302,6 +304,8 @@ const AppContent = () => {
           <Route path="/matrix-ai" element={<MatrixAI />} />
           <Route path="/lab-ops" element={<LabOps />} />
           <Route path="/staff-pos" element={<StaffPOS />} />
+          <Route path="/bar-kds" element={<BarKDS />} />
+          <Route path="/kitchen-kds" element={<KitchenKDS />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
                 </Routes>
