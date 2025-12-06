@@ -560,51 +560,55 @@ export default function LabOps() {
           </Card>
         ) : selectedOutlet && (
           <Tabs defaultValue="pos" className="space-y-4">
-            {/* Mobile-friendly horizontal scrolling tabs */}
-            <ScrollArea className="w-full">
-              <TabsList className="inline-flex h-auto p-1 gap-1 bg-muted/50 rounded-xl w-max min-w-full sm:min-w-0">
-                <TabsTrigger value="pos" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
-                  <Smartphone className="h-5 w-5" />
-                  <span className="text-xs font-medium">POS</span>
-                </TabsTrigger>
-                <TabsTrigger value="kds" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
-                  <ChefHat className="h-5 w-5" />
-                  <span className="text-xs font-medium">KDS</span>
-                </TabsTrigger>
-                <TabsTrigger value="menu" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
-                  <UtensilsCrossed className="h-5 w-5" />
-                  <span className="text-xs font-medium">Menu</span>
-                </TabsTrigger>
-                <TabsTrigger value="inventory" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
-                  <Package className="h-5 w-5" />
-                  <span className="text-xs font-medium">Stock</span>
-                </TabsTrigger>
-                <TabsTrigger value="purchasing" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
-                  <Truck className="h-5 w-5" />
-                  <span className="text-xs font-medium">Orders</span>
-                </TabsTrigger>
-                <TabsTrigger value="recipes" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
-                  <Wine className="h-5 w-5" />
-                  <span className="text-xs font-medium">Recipe</span>
-                </TabsTrigger>
-                <TabsTrigger value="staff" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
-                  <Users className="h-5 w-5" />
-                  <span className="text-xs font-medium">Staff</span>
-                </TabsTrigger>
-                <TabsTrigger value="live" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
-                  <Activity className="h-5 w-5" />
-                  <span className="text-xs font-medium">Live</span>
-                </TabsTrigger>
-                <TabsTrigger value="reports" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
-                  <BarChart3 className="h-5 w-5" />
-                  <span className="text-xs font-medium">Stats</span>
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
-                  <Settings className="h-5 w-5" />
-                  <span className="text-xs font-medium">Setup</span>
-                </TabsTrigger>
-              </TabsList>
-            </ScrollArea>
+            {/* Mobile-friendly horizontal scrolling tabs with visible scroll indicator */}
+            <div className="relative">
+              <div className="overflow-x-auto scrollbar-hide -mx-3 px-3" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <TabsList className="inline-flex h-auto p-1 gap-1 bg-muted/50 rounded-xl min-w-max">
+                  <TabsTrigger value="pos" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <Smartphone className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">POS</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="kds" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <ChefHat className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">KDS</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="menu" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <UtensilsCrossed className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Menu</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="inventory" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <Package className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Stock</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="purchasing" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <Truck className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Orders</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="recipes" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <Wine className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Recipe</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="staff" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <Users className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Staff</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="live" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <Activity className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Live</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="reports" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Stats</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="flex-col gap-1 py-2 px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[60px]">
+                    <Settings className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Setup</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              {/* Fade indicator showing more tabs */}
+              <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
+            </div>
 
             <TabsContent value="pos">
               <POSModule outletId={selectedOutlet.id} />
