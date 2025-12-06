@@ -684,40 +684,132 @@ export default function TableManagement({ outletId }: { outletId: string }) {
                 </DialogContent>
               </Dialog>
             </CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                {/* Canvas Area */}
-                <div className="flex-1">
+            <CardContent className="p-0">
+              <div className="flex">
+                {/* Canvas Area - Full Width */}
+                <div className="flex-1 p-4">
                   <div 
                     ref={canvasRef}
-                    className="relative w-full h-[500px] bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20 overflow-hidden"
-                    onDragOver={(e) => e.preventDefault()}
+                    className="relative w-full h-[70vh] min-h-[600px] bg-gradient-to-br from-muted/20 to-muted/40 rounded-xl border-2 border-muted-foreground/30 overflow-hidden shadow-inner"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.add("ring-2", "ring-primary/50");
+                    }}
+                    onDragLeave={(e) => {
+                      e.currentTarget.classList.remove("ring-2", "ring-primary/50");
+                    }}
                     onDrop={(e) => {
                       e.preventDefault();
+                      e.currentTarget.classList.remove("ring-2", "ring-primary/50");
                       const tableId = e.dataTransfer.getData("tableId");
                       if (tableId && canvasRef.current) {
                         const rect = canvasRef.current.getBoundingClientRect();
                         const x = e.clientX - rect.left - 40;
                         const y = e.clientY - rect.top - 40;
-                        handleTableDrag(tableId, Math.max(0, x), Math.max(0, y));
+                        const clampedX = Math.max(0, Math.min(x, rect.width - 80));
+                        const clampedY = Math.max(0, Math.min(y, rect.height - 80));
+                        handleTableDrag(tableId, clampedX, clampedY);
                         const table = tables.find(t => t.id === tableId);
                         if (table) {
-                          saveTablePosition({ ...table, position_x: Math.max(0, x), position_y: Math.max(0, y) });
+                          saveTablePosition({ ...table, position_x: clampedX, position_y: clampedY });
                         }
                       }
                     }}
                   >
+                    {/* Grid Background */}
                     <div className="absolute inset-0" style={{ 
-                      backgroundImage: 'radial-gradient(circle, hsl(var(--muted-foreground) / 0.2) 1px, transparent 1px)',
-                      backgroundSize: '20px 20px'
+                      backgroundImage: `
+                        linear-gradient(to right, hsl(var(--muted-foreground) / 0.08) 1px, transparent 1px),
+                        linear-gradient(to bottom, hsl(var(--muted-foreground) / 0.08) 1px, transparent 1px)
+                      `,
+                      backgroundSize: '40px 40px'
                     }}>
+                      {/* Tables */}
                       {floorPlanTables.map((table) => {
-                        const x = table.position_x ?? 50;
-                        const y = table.position_y ?? 50;
-                        const width = table.width || (table.shape === "rectangle" ? 120 : table.shape === "bar" ? 40 : 80);
-                        const height = table.height || (table.shape === "rectangle" ? 60 : table.shape === "bar" ? 80 : 80);
+                        const x = table.position_x ?? (50 + Math.random() * 200);
+                        const y = table.position_y ?? (50 + Math.random() * 200);
+                        const baseSize = 70;
+                        const width = table.width || (table.shape === "rectangle" ? baseSize * 1.6 : table.shape === "bar" ? baseSize * 0.5 : baseSize);
+                        const height = table.height || (table.shape === "rectangle" ? baseSize * 0.8 : table.shape === "bar" ? baseSize * 1.2 : baseSize);
                         
                         const allocationColors: Record<string, string> = {
+                          indoor: "from-blue-500 to-blue-600",
+                          outdoor: "from-green-500 to-green-600",
+                          patio: "from-amber-500 to-amber-600",
+                          terrace: "from-orange-500 to-orange-600",
+                          rooftop: "from-purple-500 to-purple-600",
+                          private: "from-pink-500 to-pink-600"
+                        };
+                        const gradientColor = allocationColors[table.allocation || "indoor"] || "from-primary to-primary/80";
+                        const isSelected = selectedTableForMove === table.id;
+                        
+                        return (
+                          <div
+                            key={table.id}
+                            className={`absolute cursor-grab active:cursor-grabbing transition-all duration-150 bg-gradient-to-br ${gradientColor} ${
+                              isSelected 
+                                ? "ring-4 ring-white ring-offset-2 ring-offset-background scale-110 z-20 shadow-2xl" 
+                                : "hover:scale-105 hover:shadow-xl z-10"
+                            } ${table.status === "seated" ? "opacity-70" : ""}`}
+                            style={{
+                              left: x,
+                              top: y,
+                              width,
+                              height,
+                              borderRadius: table.shape === "round" ? "50%" : table.shape === "booth" ? "16px" : "8px",
+                              boxShadow: isSelected 
+                                ? "0 20px 40px rgba(0,0,0,0.3)" 
+                                : "0 4px 12px rgba(0,0,0,0.15)"
+                            }}
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData("tableId", table.id);
+                              e.dataTransfer.effectAllowed = "move";
+                              setSelectedTableForMove(table.id);
+                              // Create drag image
+                              const ghost = e.currentTarget.cloneNode(true) as HTMLElement;
+                              ghost.style.opacity = "0.8";
+                              ghost.style.transform = "scale(1.1)";
+                              document.body.appendChild(ghost);
+                              e.dataTransfer.setDragImage(ghost, width / 2, height / 2);
+                              setTimeout(() => document.body.removeChild(ghost), 0);
+                            }}
+                            onDragEnd={() => setSelectedTableForMove(null)}
+                            onClick={() => setSelectedTableForMove(isSelected ? null : table.id)}
+                          >
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-white font-bold drop-shadow-md">
+                              <span className="text-sm">{table.name}</span>
+                              <span className="text-xs opacity-80">{table.capacity}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Empty State */}
+                    {floorPlanTables.length === 0 && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                        <LayoutGrid className="h-16 w-16 opacity-30 mb-4" />
+                        <p className="text-lg font-medium">No tables yet</p>
+                        <p className="text-sm">Add tables from the Tables tab first</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Footer */}
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-2">
+                        <span className="text-lg">🖱️</span> Drag to move
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span className="text-lg">👆</span> Click to edit
+                      </span>
+                    </div>
+                    {/* Allocation Legend */}
+                    <div className="flex flex-wrap gap-3">
+                      {ALLOCATIONS.map(alloc => {
+                        const colors: Record<string, string> = {
                           indoor: "bg-blue-500",
                           outdoor: "bg-green-500",
                           patio: "bg-amber-500",
@@ -725,61 +817,14 @@ export default function TableManagement({ outletId }: { outletId: string }) {
                           rooftop: "bg-purple-500",
                           private: "bg-pink-500"
                         };
-                        const bgColor = allocationColors[table.allocation || "indoor"] || "bg-primary";
-                        
                         return (
-                          <div
-                            key={table.id}
-                            className={`absolute cursor-grab active:cursor-grabbing transition-shadow hover:shadow-lg ${
-                              selectedTableForMove === table.id ? "ring-2 ring-primary ring-offset-2" : ""
-                            } ${table.status === "seated" ? "opacity-60" : ""} ${bgColor}`}
-                            style={{
-                              left: x,
-                              top: y,
-                              width,
-                              height,
-                              borderRadius: table.shape === "round" ? "50%" : table.shape === "booth" ? "12px" : "6px",
-                              boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
-                            }}
-                            draggable
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData("tableId", table.id);
-                              setSelectedTableForMove(table.id);
-                            }}
-                            onDragEnd={() => setSelectedTableForMove(null)}
-                            onClick={() => setSelectedTableForMove(selectedTableForMove === table.id ? null : table.id)}
-                          >
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-xs font-bold drop-shadow">
-                              <span>{table.name}</span>
-                              <span className="opacity-80 text-[10px]">{table.capacity} seats</span>
-                            </div>
+                          <div key={alloc.value} className="flex items-center gap-1.5">
+                            <div className={`w-3 h-3 rounded-full ${colors[alloc.value] || "bg-gray-500"}`} />
+                            <span className="text-xs text-muted-foreground">{alloc.label}</span>
                           </div>
                         );
                       })}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                    <span>🖱️ Drag tables to position</span>
-                    <span>👆 Click to select</span>
-                  </div>
-                  {/* Allocation Legend */}
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {ALLOCATIONS.map(alloc => {
-                      const colors: Record<string, string> = {
-                        indoor: "bg-blue-500",
-                        outdoor: "bg-green-500",
-                        patio: "bg-amber-500",
-                        terrace: "bg-orange-500",
-                        rooftop: "bg-purple-500",
-                        private: "bg-pink-500"
-                      };
-                      return (
-                        <div key={alloc.value} className="flex items-center gap-1.5">
-                          <div className={`w-3 h-3 rounded ${colors[alloc.value] || "bg-gray-500"}`} />
-                          <span className="text-xs text-muted-foreground">{alloc.label}</span>
-                        </div>
-                      );
-                    })}
                   </div>
                 </div>
                 
