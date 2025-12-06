@@ -1214,9 +1214,9 @@ function POSModule({ outletId }: { outletId: string }) {
         </Card>
       </div>
 
-      {/* Modifier Dialog */}
+      {/* Modifier Dialog - Mobile Optimized */}
       <Dialog open={showModifiers} onOpenChange={setShowModifiers}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Modifiers</DialogTitle>
           </DialogHeader>
@@ -1251,9 +1251,9 @@ function POSModule({ outletId }: { outletId: string }) {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Dialog */}
+      {/* Payment Dialog - Mobile Optimized */}
       <Dialog open={showPayment} onOpenChange={setShowPayment}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Process Payment</DialogTitle>
           </DialogHeader>
@@ -1799,13 +1799,13 @@ function MenuModule({ outletId }: { outletId: string }) {
         {/* Menu Items Tab */}
         <TabsContent value="items" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Menu Items</CardTitle>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+              <CardTitle className="text-lg">Menu Items</CardTitle>
               <Dialog open={showAddItem} onOpenChange={setShowAddItem}>
                 <DialogTrigger asChild>
                   <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add Menu Item</DialogTitle>
                   </DialogHeader>
@@ -1876,13 +1876,13 @@ function MenuModule({ outletId }: { outletId: string }) {
         {/* Categories Tab */}
         <TabsContent value="categories" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Categories</CardTitle>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+              <CardTitle className="text-lg">Categories</CardTitle>
               <Dialog open={showAddCategory} onOpenChange={setShowAddCategory}>
                 <DialogTrigger asChild>
                   <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Category</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add Category</DialogTitle>
                   </DialogHeader>
@@ -1936,13 +1936,13 @@ function MenuModule({ outletId }: { outletId: string }) {
         {/* Modifiers Tab */}
         <TabsContent value="modifiers" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Modifiers</CardTitle>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+              <CardTitle className="text-lg">Modifiers</CardTitle>
               <Dialog open={showAddModifier} onOpenChange={setShowAddModifier}>
                 <DialogTrigger asChild>
                   <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Modifier</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add Modifier</DialogTitle>
                   </DialogHeader>
@@ -2228,14 +2228,14 @@ function InventoryModule({ outletId }: { outletId: string }) {
         {/* Items Tab */}
         <TabsContent value="items" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Inventory Items</CardTitle>
-              <div className="flex gap-2">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+              <CardTitle className="text-lg">Inventory Items</CardTitle>
+              <div className="flex gap-2 flex-wrap">
                 <Dialog open={showAddItem} onOpenChange={setShowAddItem}>
                   <DialogTrigger asChild>
                     <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Item</Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Add Inventory Item</DialogTitle>
                     </DialogHeader>
@@ -2347,8 +2347,8 @@ function InventoryModule({ outletId }: { outletId: string }) {
         {/* Stock Takes Tab */}
         <TabsContent value="stocktakes" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Stock Takes</CardTitle>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+              <CardTitle className="text-lg">Stock Takes</CardTitle>
               <Button size="sm" onClick={startStockTake}>
                 <Plus className="h-4 w-4 mr-1" />Start Stock Take
               </Button>
@@ -2380,7 +2380,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
 
       {/* Add Stock Dialog */}
       <Dialog open={showAddStock} onOpenChange={setShowAddStock}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Stock: {selectedItem?.name}</DialogTitle>
           </DialogHeader>
@@ -2619,15 +2619,15 @@ function PurchasingModule({ outletId }: { outletId: string }) {
         {/* Purchase Orders Tab */}
         <TabsContent value="orders" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Purchase Orders</CardTitle>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+              <CardTitle className="text-lg">Purchase Orders</CardTitle>
               <Dialog open={showCreatePO} onOpenChange={setShowCreatePO}>
                 <DialogTrigger asChild>
                   <Button size="sm" disabled={suppliers.length === 0}>
                     <Plus className="h-4 w-4 mr-1" />New PO
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Create Purchase Order</DialogTitle>
                   </DialogHeader>
@@ -2742,13 +2742,13 @@ function PurchasingModule({ outletId }: { outletId: string }) {
         {/* Suppliers Tab */}
         <TabsContent value="suppliers" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Suppliers</CardTitle>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+              <CardTitle className="text-lg">Suppliers</CardTitle>
               <Dialog open={showAddSupplier} onOpenChange={setShowAddSupplier}>
                 <DialogTrigger asChild>
                   <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Supplier</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add Supplier</DialogTitle>
                   </DialogHeader>
@@ -2916,10 +2916,10 @@ function RecipesModule({ outletId }: { outletId: string }) {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
           <div>
-            <CardTitle>Recipes & Costing</CardTitle>
-            <CardDescription>Manage recipes and calculate food costs</CardDescription>
+            <CardTitle className="text-lg">Recipes & Costing</CardTitle>
+            <CardDescription className="text-sm">Manage recipes and calculate food costs</CardDescription>
           </div>
           <Dialog open={showAddRecipe} onOpenChange={setShowAddRecipe}>
             <DialogTrigger asChild>
@@ -2927,7 +2927,7 @@ function RecipesModule({ outletId }: { outletId: string }) {
                 <Plus className="h-4 w-4 mr-1" />Add Recipe
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Recipe</DialogTitle>
               </DialogHeader>
@@ -3173,12 +3173,12 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
         <div>
-          <CardTitle>Staff Management</CardTitle>
-          <CardDescription>Manage your team members and their roles</CardDescription>
+          <CardTitle className="text-lg">Staff Management</CardTitle>
+          <CardDescription className="text-sm">Manage your team members</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button 
             size="sm" 
             variant="outline"
@@ -3191,7 +3191,7 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
             <DialogTrigger asChild>
               <Button size="sm"><UserPlus className="h-4 w-4 mr-1" />Add Staff</Button>
             </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add Staff Member</DialogTitle>
             </DialogHeader>
@@ -3289,7 +3289,7 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
 
       {/* Edit Staff Dialog */}
       <Dialog open={!!editingStaff} onOpenChange={(open) => !open && setEditingStaff(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Staff Member</DialogTitle>
           </DialogHeader>
@@ -3729,13 +3729,13 @@ function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => 
         {/* Tables Tab */}
         <TabsContent value="tables" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Tables</CardTitle>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+              <CardTitle className="text-lg">Tables</CardTitle>
               <Dialog open={showAddTable} onOpenChange={setShowAddTable}>
                 <DialogTrigger asChild>
                   <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Table</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add Table</DialogTitle>
                   </DialogHeader>
@@ -3778,13 +3778,13 @@ function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => 
         {/* Stations Tab */}
         <TabsContent value="stations" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Kitchen/Bar Stations</CardTitle>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+              <CardTitle className="text-lg">Kitchen/Bar Stations</CardTitle>
               <Dialog open={showAddStation} onOpenChange={setShowAddStation}>
                 <DialogTrigger asChild>
                   <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Station</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add Station</DialogTitle>
                   </DialogHeader>
@@ -3836,13 +3836,13 @@ function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => 
         {/* Locations Tab */}
         <TabsContent value="locations" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Storage Locations</CardTitle>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+              <CardTitle className="text-lg">Storage Locations</CardTitle>
               <Dialog open={showAddLocation} onOpenChange={setShowAddLocation}>
                 <DialogTrigger asChild>
                   <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Location</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add Location</DialogTitle>
                   </DialogHeader>
@@ -3893,13 +3893,13 @@ function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => 
         {/* Void Reasons Tab */}
         <TabsContent value="voidreasons" className="mt-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Void Reasons</CardTitle>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
+              <CardTitle className="text-lg">Void Reasons</CardTitle>
               <Dialog open={showAddVoidReason} onOpenChange={setShowAddVoidReason}>
                 <DialogTrigger asChild>
                   <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Reason</Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add Void Reason</DialogTitle>
                   </DialogHeader>
