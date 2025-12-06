@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import StaffPinLogin from "@/components/lab-ops/StaffPinLogin";
+import TeamPresenceIndicator from "@/components/lab-ops/TeamPresenceIndicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,12 @@ import {
   Loader2, UtensilsCrossed, Bell, CreditCard, Receipt,
   DollarSign, ListOrdered, RefreshCw, ArrowLeft, Archive, Calendar
 } from "lucide-react";
+
+interface OnlineTeamMember {
+  id: string;
+  name: string;
+  role: string;
+}
 
 interface StaffMember {
   id: string;
@@ -86,6 +93,10 @@ export default function StaffPOS() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [ordersTab, setOrdersTab] = useState<"open" | "archive">("open");
   const [archiveDate, setArchiveDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  // Team presence state
+  const [onlineTeam, setOnlineTeam] = useState<OnlineTeamMember[]>([]);
+  const presenceChannelRef = useRef<any>(null);
 
   useEffect(() => {
     fetchOutlets();
@@ -121,6 +132,61 @@ export default function StaffPOS() {
       fetchKDSItems(selectedOutlet.id, loggedInStaff.role);
       setActiveTab("kds");
     }
+    
+    // Set up team presence tracking
+    setupPresenceTracking(selectedOutlet.id, loggedInStaff);
+  };
+  
+  const setupPresenceTracking = (outletId: string, staffMember: StaffMember) => {
+    // Clean up previous channel if exists
+    if (presenceChannelRef.current) {
+      supabase.removeChannel(presenceChannelRef.current);
+    }
+    
+    const channel = supabase.channel(`lab-ops-outlet-${outletId}`, {
+      config: { presence: { key: staffMember.id } }
+    });
+    
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const presenceState = channel.presenceState();
+        const members: OnlineTeamMember[] = [];
+        
+        Object.values(presenceState).forEach((presences: any) => {
+          presences.forEach((presence: any) => {
+            if (presence.id !== staffMember.id) {
+              members.push({
+                id: presence.id,
+                name: presence.name,
+                role: presence.role
+              });
+            }
+          });
+        });
+        
+        setOnlineTeam(members);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            id: staffMember.id,
+            name: staffMember.full_name,
+            role: staffMember.role,
+            online_at: new Date().toISOString()
+          });
+        }
+      });
+    
+    presenceChannelRef.current = channel;
+  };
+  
+  // Cleanup presence on logout
+  const cleanupPresence = () => {
+    if (presenceChannelRef.current) {
+      supabase.removeChannel(presenceChannelRef.current);
+      presenceChannelRef.current = null;
+    }
+    setOnlineTeam([]);
   };
 
   const fetchTables = async (outletId: string) => {
@@ -263,6 +329,7 @@ export default function StaffPOS() {
   };
 
   const handleLogout = () => {
+    cleanupPresence();
     setStaff(null);
     setOutlet(null);
     setSelectedTable(null);
@@ -429,6 +496,11 @@ export default function StaffPOS() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <TeamPresenceIndicator 
+              onlineTeam={onlineTeam} 
+              outletName={outlet.name}
+              currentStaffName={staff.full_name}
+            />
             {(staff.role === "waiter" || staff.role === "manager") && (
               <Button variant="outline" size="sm" onClick={() => setActiveTab("pos")}>
                 <ShoppingCart className="w-4 h-4 mr-1" /> POS
@@ -525,6 +597,11 @@ export default function StaffPOS() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <TeamPresenceIndicator 
+              onlineTeam={onlineTeam} 
+              outletName={outlet.name}
+              currentStaffName={staff.full_name}
+            />
             <Button variant="outline" size="sm" onClick={() => setActiveTab("pos")}>
               <ShoppingCart className="w-4 h-4 mr-1" /> POS
             </Button>
@@ -775,6 +852,11 @@ export default function StaffPOS() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <TeamPresenceIndicator 
+            onlineTeam={onlineTeam} 
+            outletName={outlet.name}
+            currentStaffName={staff.full_name}
+          />
           <Button variant="outline" size="sm" onClick={() => { setActiveTab("orders"); fetchOpenOrders(outlet.id); }}>
             <Receipt className="w-4 h-4 mr-1" /> Orders
           </Button>
