@@ -506,21 +506,30 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
         </div>
       </div>
 
-      {/* Analytics Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <ScrollArea className="w-full">
-          <TabsList className="inline-flex h-auto p-1 gap-1 bg-muted/50 rounded-lg w-max">
-            <TabsTrigger value="overview" className="text-xs px-3 py-2">Overview</TabsTrigger>
-            <TabsTrigger value="transactions" className="text-xs px-3 py-2 bg-primary/10">Member Report</TabsTrigger>
-            <TabsTrigger value="sales" className="text-xs px-3 py-2">Sales</TabsTrigger>
-            <TabsTrigger value="menu" className="text-xs px-3 py-2">Menu Mix</TabsTrigger>
-            <TabsTrigger value="packages" className="text-xs px-3 py-2">Packages</TabsTrigger>
-            <TabsTrigger value="variance" className="text-xs px-3 py-2">Variance</TabsTrigger>
-            <TabsTrigger value="staff" className="text-xs px-3 py-2">Staff</TabsTrigger>
-            <TabsTrigger value="feedback" className="text-xs px-3 py-2">Feedback</TabsTrigger>
-            <TabsTrigger value="imports" className="text-xs px-3 py-2">Imports</TabsTrigger>
-          </TabsList>
-        </ScrollArea>
+      {/* Analytics Report Selector */}
+      <div className="flex items-center gap-2">
+        <Select value={activeTab} onValueChange={setActiveTab}>
+          <SelectTrigger className="w-48 h-10 bg-card">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Select Report" />
+          </SelectTrigger>
+          <SelectContent className="bg-card z-50">
+            <SelectItem value="overview">Overview</SelectItem>
+            <SelectItem value="transactions">Member Report</SelectItem>
+            <SelectItem value="sales">Sales</SelectItem>
+            <SelectItem value="menu">Menu Mix</SelectItem>
+            <SelectItem value="packages">Packages</SelectItem>
+            <SelectItem value="variance">Variance</SelectItem>
+            <SelectItem value="staff">Staff</SelectItem>
+            <SelectItem value="feedback">Feedback</SelectItem>
+            <SelectItem value="imports">Imports</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Analytics Content */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="hidden">
+        <TabsList></TabsList>
 
         {/* OVERVIEW TAB */}
         <TabsContent value="overview" className="mt-4 space-y-4">
