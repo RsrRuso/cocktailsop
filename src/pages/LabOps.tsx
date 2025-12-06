@@ -650,9 +650,35 @@ function POSModule({ outletId }: { outletId: string }) {
   };
 
   const addItemToOrder = async (menuItem: any, modifierIds: string[] = [], note: string = "") => {
-    if (!currentOrder) {
-      await createOrder();
-      return;
+    let orderId = currentOrder?.id;
+    
+    // If no current order, create one first
+    if (!orderId) {
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: newOrder, error: orderError } = await supabase
+        .from("lab_ops_orders")
+        .insert({
+          outlet_id: outletId,
+          table_id: selectedTable.id,
+          order_type: "dine-in",
+          status: "open",
+          staff_id: userData?.user?.id,
+        })
+        .select()
+        .single();
+
+      if (orderError || !newOrder) {
+        toast({ title: "Failed to create order", variant: "destructive" });
+        return;
+      }
+
+      orderId = newOrder.id;
+      setCurrentOrder(newOrder);
+      await supabase
+        .from("lab_ops_tables")
+        .update({ status: "seated" })
+        .eq("id", selectedTable.id);
+      fetchTables();
     }
 
     const modifierPrice = modifierIds.reduce((sum, id) => {
@@ -663,7 +689,7 @@ function POSModule({ outletId }: { outletId: string }) {
     const { data, error } = await supabase
       .from("lab_ops_order_items")
       .insert({
-        order_id: currentOrder.id,
+        order_id: orderId,
         menu_item_id: menuItem.id,
         unit_price: menuItem.base_price + modifierPrice,
         qty: 1,
@@ -675,8 +701,10 @@ function POSModule({ outletId }: { outletId: string }) {
       .single();
 
     if (!error && data) {
-      setOrderItems([...orderItems, data]);
-      updateOrderTotals([...orderItems, data]);
+      const newItems = [...orderItems, data];
+      setOrderItems(newItems);
+      updateOrderTotals(newItems);
+      toast({ title: `Added ${menuItem.name}` });
     }
   };
 
