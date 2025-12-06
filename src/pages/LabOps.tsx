@@ -1479,35 +1479,36 @@ function KDSModule({ outletId }: { outletId: string }) {
 
   return (
     <div className="space-y-4">
-      {/* Controls */}
-      <div className="flex items-center justify-between">
-        <ScrollArea className="flex-1">
-          <div className="flex gap-2 pb-2">
+      {/* Controls - horizontally scrollable */}
+      <div className="overflow-x-auto scrollbar-hide -mx-3 px-3" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex items-center gap-2 min-w-max pb-2">
+          <Button
+            variant={selectedStation === "all" ? "default" : "outline"}
+            onClick={() => setSelectedStation("all")}
+            className="shrink-0"
+          >
+            All Stations
+          </Button>
+          {stations.map((station) => (
             <Button
-              variant={selectedStation === "all" ? "default" : "outline"}
-              onClick={() => setSelectedStation("all")}
+              key={station.id}
+              variant={selectedStation === station.id ? "default" : "outline"}
+              onClick={() => setSelectedStation(station.id)}
+              className="shrink-0"
             >
-              All Stations
+              {station.name}
             </Button>
-            {stations.map((station) => (
-              <Button
-                key={station.id}
-                variant={selectedStation === station.id ? "default" : "outline"}
-                onClick={() => setSelectedStation(station.id)}
-              >
-                {station.name}
-              </Button>
-            ))}
-          </div>
-        </ScrollArea>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setShowCompleted(!showCompleted)}
-        >
-          <History className="h-4 w-4 mr-1" />
-          {showCompleted ? "Hide" : "Show"} Completed
-        </Button>
+          ))}
+          <Button 
+            variant={showCompleted ? "default" : "outline"}
+            size="default" 
+            onClick={() => setShowCompleted(!showCompleted)}
+            className="shrink-0 bg-pink-500 hover:bg-pink-600 text-white border-pink-500"
+          >
+            <History className="h-4 w-4 mr-1" />
+            {showCompleted ? "Hide" : "Show"} Completed
+          </Button>
+        </div>
       </div>
 
       {/* Completed Items */}
