@@ -936,11 +936,11 @@ export default function StaffPOS() {
 
               {/* Categories - Horizontal scrolling */}
               <div className="border-b overflow-x-auto scrollbar-thin scrollbar-thumb-muted">
-                <div className="flex gap-1.5 p-2 min-w-max">
+                <div className="flex gap-1.5 p-2 pr-4">
                   <Button
                     variant={!selectedCategory ? "default" : "outline"}
                     size="sm"
-                    className="shrink-0 whitespace-nowrap"
+                    className="shrink-0"
                     onClick={() => setSelectedCategory(null)}
                   >
                     All
@@ -950,7 +950,7 @@ export default function StaffPOS() {
                       key={cat.id}
                       variant={selectedCategory === cat.id ? "default" : "outline"}
                       size="sm"
-                      className="shrink-0 whitespace-nowrap"
+                      className="shrink-0"
                       onClick={() => setSelectedCategory(cat.id)}
                     >
                       {cat.name}
