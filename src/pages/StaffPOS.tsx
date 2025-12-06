@@ -146,7 +146,8 @@ export default function StaffPOS() {
       supabase.removeChannel(presenceChannelRef.current);
     }
     
-    const channel = supabase.channel(`lab-ops-outlet-${outletId}`, {
+    // Use same channel name as LabOps main page so all workspace members see each other
+    const channel = supabase.channel(`lab-ops-presence:${outletId}`, {
       config: { presence: { key: staffMember.id } }
     });
     

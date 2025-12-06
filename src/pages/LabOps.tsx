@@ -77,9 +77,11 @@ export default function LabOps() {
         const users: { id: string; name: string; username?: string; email?: string; role: string }[] = [];
         Object.values(state).forEach((presences: any) => {
           presences.forEach((presence: any) => {
-            if (presence.user_id !== user.id) {
+            // Check both id and user_id for compatibility with StaffPOS
+            const presenceUserId = presence.id || presence.user_id;
+            if (presenceUserId && presenceUserId !== user.id) {
               users.push({
-                id: presence.user_id,
+                id: presenceUserId,
                 name: presence.name || 'Team Member',
                 username: presence.username,
                 email: presence.email,
@@ -101,7 +103,9 @@ export default function LabOps() {
           
           setCurrentUserProfile(profile);
           
+          // Track presence with consistent structure matching StaffPOS
           await channel.track({
+            id: user.id,
             user_id: user.id,
             name: profile?.full_name || profile?.username || user.email?.split('@')[0] || 'User',
             username: profile?.username,
