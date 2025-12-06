@@ -695,12 +695,18 @@ function POSModule({ outletId }: { outletId: string }) {
         qty: 1,
         status: "pending",
         note: note || null,
-        modifier_ids: modifierIds.length > 0 ? modifierIds : null,
+        modifiers: modifierIds.length > 0 ? modifierIds : null,
       })
       .select("*, lab_ops_menu_items(name)")
       .single();
 
-    if (!error && data) {
+    if (error) {
+      console.error("Error adding item:", error);
+      toast({ title: "Failed to add item", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    if (data) {
       const newItems = [...orderItems, data];
       setOrderItems(newItems);
       updateOrderTotals(newItems);
@@ -1228,8 +1234,9 @@ function KDSModule({ outletId }: { outletId: string }) {
       .select(`
         *,
         lab_ops_menu_items(name, lab_ops_menu_item_stations(station_id)),
-        lab_ops_orders(table_id, covers, lab_ops_tables(name))
+        lab_ops_orders!inner(table_id, covers, outlet_id, lab_ops_tables(name))
       `)
+      .eq("lab_ops_orders.outlet_id", outletId)
       .in("status", ["sent", "in_progress"])
       .order("sent_at", { ascending: true });
     setOrderItems(data || []);
@@ -1242,8 +1249,9 @@ function KDSModule({ outletId }: { outletId: string }) {
       .select(`
         *,
         lab_ops_menu_items(name),
-        lab_ops_orders(table_id, lab_ops_tables(name))
+        lab_ops_orders!inner(table_id, outlet_id, lab_ops_tables(name))
       `)
+      .eq("lab_ops_orders.outlet_id", outletId)
       .eq("status", "ready")
       .gte("ready_at", today)
       .order("ready_at", { ascending: false })
