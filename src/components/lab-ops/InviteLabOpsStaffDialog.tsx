@@ -19,6 +19,17 @@ interface Profile {
   avatar_url: string | null;
 }
 
+interface SelectedUserData {
+  role: string;
+  pin: string;
+}
+
+interface AddedStaffInfo {
+  name: string;
+  pin: string;
+  role: string;
+}
+
 interface InviteLabOpsStaffDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -40,8 +51,10 @@ export default function InviteLabOpsStaffDialog({
   const [existingStaffIds, setExistingStaffIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedUsers, setSelectedUsers] = useState<Map<string, string>>(new Map());
+  const [selectedUsers, setSelectedUsers] = useState<Map<string, SelectedUserData>>(new Map());
   const [inviting, setInviting] = useState(false);
+  const [addedStaff, setAddedStaff] = useState<AddedStaffInfo[]>([]);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
     if (open && user) {
@@ -104,13 +117,15 @@ export default function InviteLabOpsStaffDialog({
     }
   };
 
+  const generatePin = () => Math.floor(1000 + Math.random() * 9000).toString();
+
   const toggleUserSelection = (userId: string, defaultRole: string = 'bartender') => {
     setSelectedUsers(prev => {
       const newMap = new Map(prev);
       if (newMap.has(userId)) {
         newMap.delete(userId);
       } else {
-        newMap.set(userId, defaultRole);
+        newMap.set(userId, { role: defaultRole, pin: generatePin() });
       }
       return newMap;
     });
@@ -119,9 +134,25 @@ export default function InviteLabOpsStaffDialog({
   const updateUserRole = (userId: string, role: string) => {
     setSelectedUsers(prev => {
       const newMap = new Map(prev);
-      newMap.set(userId, role);
+      const existing = newMap.get(userId);
+      if (existing) {
+        newMap.set(userId, { ...existing, role });
+      }
       return newMap;
     });
+  };
+
+  const updateUserPin = (userId: string, pin: string) => {
+    if (pin.length <= 4 && /^\d*$/.test(pin)) {
+      setSelectedUsers(prev => {
+        const newMap = new Map(prev);
+        const existing = newMap.get(userId);
+        if (existing) {
+          newMap.set(userId, { ...existing, pin });
+        }
+        return newMap;
+      });
+    }
   };
 
   const inviteSelectedUsers = async () => {
@@ -131,15 +162,20 @@ export default function InviteLabOpsStaffDialog({
     type StaffRole = 'admin' | 'bartender' | 'kitchen' | 'manager' | 'supervisor' | 'waiter';
 
     try {
-      const staffToAdd = Array.from(selectedUsers.entries()).map(([userId, role]) => ({
-        outlet_id: outletId,
-        user_id: userId,
-        full_name: [...followers, ...following].find(p => p.id === userId)?.full_name || 
-                   [...followers, ...following].find(p => p.id === userId)?.username || 'Staff',
-        role: role as StaffRole,
-        pin_code: Math.floor(1000 + Math.random() * 9000).toString(),
-        is_active: true
-      }));
+      const staffInfo: AddedStaffInfo[] = [];
+      const staffToAdd = Array.from(selectedUsers.entries()).map(([userId, data]) => {
+        const profile = [...followers, ...following].find(p => p.id === userId);
+        const name = profile?.full_name || profile?.username || 'Staff';
+        staffInfo.push({ name, pin: data.pin, role: data.role });
+        return {
+          outlet_id: outletId,
+          user_id: userId,
+          full_name: name,
+          role: data.role as StaffRole,
+          pin_code: data.pin,
+          is_active: true
+        };
+      });
 
       const { error } = await supabase
         .from('lab_ops_staff')
@@ -147,14 +183,10 @@ export default function InviteLabOpsStaffDialog({
 
       if (error) throw error;
 
-      toast({
-        title: "Staff invited!",
-        description: `${selectedUsers.size} team member(s) added to ${outletName}`
-      });
-
+      setAddedStaff(staffInfo);
+      setShowConfirmation(true);
       setSelectedUsers(new Map());
       onStaffAdded();
-      onOpenChange(false);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -164,6 +196,12 @@ export default function InviteLabOpsStaffDialog({
     } finally {
       setInviting(false);
     }
+  };
+
+  const handleClose = () => {
+    setShowConfirmation(false);
+    setAddedStaff([]);
+    onOpenChange(false);
   };
 
   const filterProfiles = (profiles: Profile[]) => {
@@ -178,7 +216,7 @@ export default function InviteLabOpsStaffDialog({
   const renderUserItem = (profile: Profile) => {
     const isExisting = existingStaffIds.has(profile.id);
     const isSelected = selectedUsers.has(profile.id);
-    const selectedRole = selectedUsers.get(profile.id);
+    const selectedData = selectedUsers.get(profile.id);
 
     return (
       <div
@@ -233,31 +271,92 @@ export default function InviteLabOpsStaffDialog({
           )}
         </div>
 
-        {/* Role selector row - only when selected */}
-        {isSelected && !isExisting && (
-          <div className="mt-3 pt-3 border-t border-border/50">
-            <label className="text-xs text-muted-foreground mb-1.5 block">Assign Role</label>
-            <Select value={selectedRole} onValueChange={(val) => updateUserRole(profile.id, val)}>
-              <SelectTrigger className="h-11 w-full text-base">
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="supervisor">Supervisor</SelectItem>
-                <SelectItem value="bartender">Bartender</SelectItem>
-                <SelectItem value="waiter">Server</SelectItem>
-                <SelectItem value="kitchen">Kitchen</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Role & PIN selector row - only when selected */}
+        {isSelected && !isExisting && selectedData && (
+          <div className="mt-3 pt-3 border-t border-border/50 space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1.5 block">Assign Role</label>
+              <Select value={selectedData.role} onValueChange={(val) => updateUserRole(profile.id, val)}>
+                <SelectTrigger className="h-11 w-full text-base">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="supervisor">Supervisor</SelectItem>
+                  <SelectItem value="bartender">Bartender</SelectItem>
+                  <SelectItem value="waiter">Server</SelectItem>
+                  <SelectItem value="kitchen">Kitchen</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1.5 block">4-Digit PIN Code</label>
+              <Input
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                value={selectedData.pin}
+                onChange={(e) => updateUserPin(profile.id, e.target.value)}
+                placeholder="1234"
+                className="h-11 text-center text-xl font-mono tracking-widest"
+              />
+            </div>
           </div>
         )}
       </div>
     );
   };
 
+  // Confirmation screen showing PINs
+  if (showConfirmation) {
+    return (
+      <Drawer open={open} onOpenChange={handleClose}>
+        <DrawerContent className="max-h-[90vh]">
+          <div className="mx-auto w-full max-w-lg">
+            <DrawerHeader className="pb-2">
+              <DrawerTitle className="flex items-center gap-2 text-lg text-primary">
+                <Check className="h-5 w-5" />
+                Staff Added Successfully!
+              </DrawerTitle>
+            </DrawerHeader>
+
+            <div className="px-4 pb-4">
+              <p className="text-sm text-muted-foreground mb-4">
+                Share these PIN codes with your staff members for POS access:
+              </p>
+              
+              <div className="space-y-3">
+                {addedStaff.map((staff, idx) => (
+                  <div key={idx} className="bg-muted/30 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold">{staff.name}</p>
+                        <p className="text-sm text-muted-foreground capitalize">{staff.role}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">PIN Code</p>
+                        <p className="text-2xl font-mono font-bold text-primary tracking-widest">
+                          {staff.pin}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Button onClick={handleClose} className="w-full h-12 mt-6">
+                Done
+              </Button>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={handleClose}>
       <DrawerContent className="max-h-[90vh]">
         <div className="mx-auto w-full max-w-lg">
           <DrawerHeader className="pb-2">
