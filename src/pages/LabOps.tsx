@@ -3245,24 +3245,24 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
         ) : (
           <div className="space-y-2">
             {staff.map((member) => (
-              <div key={member.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${member.is_active ? "bg-primary/10" : "bg-muted"}`}>
+              <div key={member.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${member.is_active ? "bg-primary/10" : "bg-muted"}`}>
                     <Users className={`h-5 w-5 ${member.is_active ? "text-primary" : "text-muted-foreground"}`} />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{member.name}</p>
-                      <Badge variant={member.is_active ? "default" : "secondary"}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium truncate">{member.full_name || 'Unknown'}</p>
+                      <Badge variant={member.is_active ? "default" : "secondary"} className="shrink-0">
                         {member.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {roleLabels[member.role] || member.role} {member.email && `• ${member.email}`}
+                    <p className="text-sm text-muted-foreground truncate">
+                      {member.role ? member.role.charAt(0).toUpperCase() + member.role.slice(1) : 'Staff'}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 shrink-0">
                   <Switch checked={member.is_active} onCheckedChange={() => toggleStaffStatus(member)} />
                   <Button size="icon" variant="ghost" onClick={() => setEditingStaff(member)}>
                     <Edit className="h-4 w-4" />
@@ -3287,7 +3287,7 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
             <div className="space-y-4 py-4">
               <div>
                 <Label>Name</Label>
-                <Input value={editingStaff.name} onChange={(e) => setEditingStaff({ ...editingStaff, name: e.target.value })} />
+                <Input value={editingStaff.full_name || ''} onChange={(e) => setEditingStaff({ ...editingStaff, full_name: e.target.value })} />
               </div>
               <div>
                 <Label>Email</Label>
