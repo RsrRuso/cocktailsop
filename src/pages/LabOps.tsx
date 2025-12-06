@@ -368,69 +368,147 @@ export default function LabOps() {
       <LabOpsOnboarding open={showOnboarding} onOpenChange={setShowOnboarding} />
       
       <main className="container mx-auto px-3 sm:px-4 pt-20 sm:pt-24 pb-4 max-w-7xl">
-        {/* Header - Mobile Optimized with proper spacing from TopNav */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shrink-0">
-              <ChefHat className="h-5 w-5 sm:h-7 sm:w-7 text-primary-foreground" />
+        {/* Header - Mobile Optimized */}
+        <div className="space-y-3 mb-6">
+          {/* Title row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shrink-0">
+                <ChefHat className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-lg font-bold text-foreground">LAB Ops</h1>
+                <p className="text-muted-foreground text-xs">Restaurant & Bar Management</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h1 className="text-lg sm:text-2xl font-bold text-foreground">LAB Ops</h1>
-              <p className="text-muted-foreground text-xs">Restaurant & Bar Management</p>
+            
+            {/* Outlet selector + Add button */}
+            <div className="flex items-center gap-2">
+              {outlets.length > 0 && (
+                <Select
+                  value={selectedOutlet?.id}
+                  onValueChange={(value) => {
+                    const outlet = outlets.find(o => o.id === value);
+                    if (outlet) setSelectedOutlet(outlet);
+                  }}
+                >
+                  <SelectTrigger className="w-28 sm:w-40 h-9 rounded-lg text-xs">
+                    <Store className="h-3.5 w-3.5 mr-1 shrink-0" />
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {outlets.map((outlet) => (
+                      <SelectItem key={outlet.id} value={outlet.id}>
+                        {outlet.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              <Dialog open={showCreateOutlet} onOpenChange={setShowCreateOutlet}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="h-9 w-9 rounded-lg p-0">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Create New Outlet</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div>
+                      <Label>Outlet Name</Label>
+                      <Input
+                        value={newOutletName}
+                        onChange={(e) => setNewOutletName(e.target.value)}
+                        placeholder="e.g., Main Restaurant"
+                        className="h-12"
+                      />
+                    </div>
+                    <div>
+                      <Label>Address</Label>
+                      <Input
+                        value={newOutletAddress}
+                        onChange={(e) => setNewOutletAddress(e.target.value)}
+                        placeholder="123 Main Street"
+                        className="h-12"
+                      />
+                    </div>
+                    <div>
+                      <Label>Type</Label>
+                      <Select value={newOutletType} onValueChange={setNewOutletType}>
+                        <SelectTrigger className="h-12">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="restaurant">Restaurant</SelectItem>
+                          <SelectItem value="bar">Bar</SelectItem>
+                          <SelectItem value="cafe">Cafe</SelectItem>
+                          <SelectItem value="hotel">Hotel</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={createOutlet} className="w-full h-12" disabled={!newOutletName.trim()}>
+                      Create Outlet
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           
-          {/* Mobile-optimized scrollable action buttons */}
-          <div className="relative">
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 pr-6 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+          {/* Action buttons row - horizontally scrollable on mobile */}
+          <div className="overflow-x-auto scrollbar-hide -mx-3 px-3" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex items-center gap-2 min-w-max pb-1">
               <Button
                 size="sm"
                 variant="default"
                 onClick={() => window.location.href = '/staff-pos'}
-                className="h-10 px-3 rounded-full bg-primary shrink-0 active:scale-95 transition-transform"
+                className="h-9 px-3 rounded-lg bg-primary shrink-0 active:scale-95 transition-transform text-xs"
               >
-                <Smartphone className="h-4 w-4" />
-                <span className="ml-1.5 text-xs font-medium">POS</span>
+                <Smartphone className="h-3.5 w-3.5 mr-1.5" />
+                POS
               </Button>
               
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => window.location.href = '/staff-install'}
-                className="h-10 px-3 rounded-full border-green-500/50 text-green-500 hover:bg-green-500/10 shrink-0 active:scale-95 transition-transform"
+                className="h-9 px-3 rounded-lg border-green-500/50 text-green-500 hover:bg-green-500/10 shrink-0 active:scale-95 transition-transform text-xs"
               >
-                <Download className="h-4 w-4" />
-                <span className="ml-1.5 text-xs font-medium">Install</span>
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+                Install
               </Button>
               
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => window.location.href = '/bar-kds'}
-                className="h-10 px-3 rounded-full border-amber-500/50 text-amber-500 hover:bg-amber-500/10 shrink-0 active:scale-95 transition-transform"
+                className="h-9 px-3 rounded-lg border-amber-500/50 text-amber-500 hover:bg-amber-500/10 shrink-0 active:scale-95 transition-transform text-xs"
               >
-                <Wine className="h-4 w-4" />
-                <span className="ml-1.5 text-xs font-medium">Bar</span>
+                <Wine className="h-3.5 w-3.5 mr-1.5" />
+                Bar
               </Button>
               
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => window.location.href = '/kitchen-kds'}
-                className="h-10 px-3 rounded-full border-orange-500/50 text-orange-500 hover:bg-orange-500/10 shrink-0 active:scale-95 transition-transform"
+                className="h-9 px-3 rounded-lg border-orange-500/50 text-orange-500 hover:bg-orange-500/10 shrink-0 active:scale-95 transition-transform text-xs"
               >
-                <ChefHat className="h-4 w-4" />
-                <span className="ml-1.5 text-xs font-medium">Kitchen</span>
+                <ChefHat className="h-3.5 w-3.5 mr-1.5" />
+                Kitchen
               </Button>
               
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => setShowOnboarding(true)}
-                className="h-10 px-3 rounded-full shrink-0 active:scale-95 transition-transform"
+                className="h-9 px-3 rounded-lg shrink-0 active:scale-95 transition-transform text-xs"
               >
-                <HelpCircle className="h-4 w-4" />
-                <span className="ml-1.5 text-xs font-medium">Guide</span>
+                <HelpCircle className="h-3.5 w-3.5 mr-1.5" />
+                Guide
               </Button>
               
               {selectedOutlet && (
@@ -439,106 +517,27 @@ export default function LabOps() {
                   variant="outline" 
                   onClick={loadDemoData} 
                   disabled={loadingDemo}
-                  className="h-10 px-3 rounded-full border-primary/50 text-primary hover:bg-primary/10 shrink-0 active:scale-95 transition-transform"
+                  className="h-9 px-3 rounded-lg border-primary/50 text-primary hover:bg-primary/10 shrink-0 active:scale-95 transition-transform text-xs"
                 >
                   {loadingDemo ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                   ) : (
-                    <Sparkles className="h-4 w-4" />
+                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                   )}
-                  <span className="ml-1.5 text-xs font-medium">Demo</span>
+                  Demo
                 </Button>
               )}
               
               {selectedOutlet && (
-                <div className="shrink-0">
-                  <TeamPresenceIndicator
-                    onlineTeam={onlineTeam}
-                    outletName={selectedOutlet.name}
-                    currentStaffName={currentUserProfile?.full_name || user?.email?.split('@')[0] || 'You'}
-                    currentStaffUsername={currentUserProfile?.username}
-                    currentStaffEmail={user?.email}
-                  />
-                </div>
+                <TeamPresenceIndicator
+                  onlineTeam={onlineTeam}
+                  outletName={selectedOutlet.name}
+                  currentStaffName={currentUserProfile?.full_name || user?.email?.split('@')[0] || 'You'}
+                  currentStaffUsername={currentUserProfile?.username}
+                  currentStaffEmail={user?.email}
+                />
               )}
             </div>
-            {/* Scroll fade indicator */}
-            <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
-          </div>
-          
-          {/* Outlet selector row */}
-          <div className="flex items-center gap-2">
-            {outlets.length > 0 && (
-              <Select
-                value={selectedOutlet?.id}
-                onValueChange={(value) => {
-                  const outlet = outlets.find(o => o.id === value);
-                  if (outlet) setSelectedOutlet(outlet);
-                }}
-              >
-                <SelectTrigger className="w-36 sm:w-44 h-10 rounded-full">
-                  <Store className="h-4 w-4 mr-1.5 shrink-0" />
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {outlets.map((outlet) => (
-                    <SelectItem key={outlet.id} value={outlet.id}>
-                      {outlet.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            
-            <Dialog open={showCreateOutlet} onOpenChange={setShowCreateOutlet}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="h-10 w-10 rounded-full p-0">
-                  <Plus className="h-5 w-5" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-[95vw] sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Create New Outlet</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <Label>Outlet Name</Label>
-                    <Input
-                      value={newOutletName}
-                      onChange={(e) => setNewOutletName(e.target.value)}
-                      placeholder="e.g., Main Restaurant"
-                      className="h-12"
-                    />
-                  </div>
-                  <div>
-                    <Label>Address</Label>
-                    <Input
-                      value={newOutletAddress}
-                      onChange={(e) => setNewOutletAddress(e.target.value)}
-                      placeholder="123 Main Street"
-                      className="h-12"
-                    />
-                  </div>
-                  <div>
-                    <Label>Type</Label>
-                    <Select value={newOutletType} onValueChange={setNewOutletType}>
-                      <SelectTrigger className="h-12">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        <SelectItem value="restaurant">Restaurant</SelectItem>
-                        <SelectItem value="bar">Bar</SelectItem>
-                        <SelectItem value="cafe">Cafe</SelectItem>
-                        <SelectItem value="hotel">Hotel</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button onClick={createOutlet} className="w-full h-12" disabled={!newOutletName.trim()}>
-                    Create Outlet
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
           </div>
         </div>
 
