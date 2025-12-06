@@ -293,32 +293,34 @@ export default function LabOps() {
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
       
-      <main className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <ChefHat className="h-7 w-7 text-primary" />
-              LAB Ops
-            </h1>
-            <p className="text-muted-foreground text-sm">Restaurant & Bar Management System</p>
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-7xl">
+        {/* Header - Mobile Optimized */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
+              <ChefHat className="h-7 w-7 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">LAB Ops</h1>
+              <p className="text-muted-foreground text-xs sm:text-sm">Restaurant & Bar Management</p>
+            </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {selectedOutlet && (
               <Button 
                 size="sm" 
                 variant="outline" 
                 onClick={loadDemoData} 
                 disabled={loadingDemo}
-                className="border-primary/50 text-primary hover:bg-primary/10"
+                className="border-primary/50 text-primary hover:bg-primary/10 h-10 px-3"
               >
                 {loadingDemo ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Sparkles className="h-4 w-4 mr-1" />
+                  <Sparkles className="h-4 w-4" />
                 )}
-                Load Demo Data
+                <span className="hidden sm:inline ml-2">Load Demo</span>
               </Button>
             )}
             
@@ -330,11 +332,11 @@ export default function LabOps() {
                   if (outlet) setSelectedOutlet(outlet);
                 }}
               >
-                <SelectTrigger className="w-48">
-                  <Store className="h-4 w-4 mr-2" />
+                <SelectTrigger className="w-36 sm:w-48 h-10">
+                  <Store className="h-4 w-4 mr-2 shrink-0" />
                   <SelectValue placeholder="Select outlet" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover">
                   {outlets.map((outlet) => (
                     <SelectItem key={outlet.id} value={outlet.id}>
                       {outlet.name}
@@ -346,12 +348,12 @@ export default function LabOps() {
             
             <Dialog open={showCreateOutlet} onOpenChange={setShowCreateOutlet}>
               <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-1" />
-                  New Outlet
+                <Button size="sm" className="h-10">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-1">New Outlet</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-[95vw] sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Create New Outlet</DialogTitle>
                 </DialogHeader>
@@ -362,6 +364,7 @@ export default function LabOps() {
                       value={newOutletName}
                       onChange={(e) => setNewOutletName(e.target.value)}
                       placeholder="e.g., Main Restaurant"
+                      className="h-12"
                     />
                   </div>
                   <div>
@@ -370,15 +373,16 @@ export default function LabOps() {
                       value={newOutletAddress}
                       onChange={(e) => setNewOutletAddress(e.target.value)}
                       placeholder="123 Main Street"
+                      className="h-12"
                     />
                   </div>
                   <div>
                     <Label>Type</Label>
                     <Select value={newOutletType} onValueChange={setNewOutletType}>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-12">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-popover">
                         <SelectItem value="restaurant">Restaurant</SelectItem>
                         <SelectItem value="bar">Bar</SelectItem>
                         <SelectItem value="cafe">Cafe</SelectItem>
@@ -386,7 +390,7 @@ export default function LabOps() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={createOutlet} className="w-full" disabled={!newOutletName.trim()}>
+                  <Button onClick={createOutlet} className="w-full h-12" disabled={!newOutletName.trim()}>
                     Create Outlet
                   </Button>
                 </div>
@@ -398,58 +402,63 @@ export default function LabOps() {
         {/* No outlets state */}
         {outlets.length === 0 ? (
           <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <Store className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No Outlets Yet</h3>
-              <p className="text-muted-foreground text-center mb-6 max-w-md">
+            <CardContent className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
+              <div className="h-20 w-20 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+                <Store className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold mb-2 text-center">No Outlets Yet</h3>
+              <p className="text-muted-foreground text-center text-sm mb-6 max-w-md">
                 Create your first outlet to start managing orders, inventory, and staff.
               </p>
-              <Button onClick={() => setShowCreateOutlet(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button onClick={() => setShowCreateOutlet(true)} size="lg" className="h-12">
+                <Plus className="h-5 w-5 mr-2" />
                 Create Your First Outlet
               </Button>
             </CardContent>
           </Card>
         ) : selectedOutlet && (
-          <Tabs defaultValue="pos" className="space-y-6">
-            <TabsList className="grid grid-cols-4 lg:grid-cols-9 gap-1 h-auto p-1">
-              <TabsTrigger value="pos" className="text-xs py-2">
-                <Smartphone className="h-4 w-4 mr-1" />
-                POS
-              </TabsTrigger>
-              <TabsTrigger value="kds" className="text-xs py-2">
-                <ChefHat className="h-4 w-4 mr-1" />
-                KDS
-              </TabsTrigger>
-              <TabsTrigger value="menu" className="text-xs py-2">
-                <UtensilsCrossed className="h-4 w-4 mr-1" />
-                Menu
-              </TabsTrigger>
-              <TabsTrigger value="inventory" className="text-xs py-2">
-                <Package className="h-4 w-4 mr-1" />
-                Inventory
-              </TabsTrigger>
-              <TabsTrigger value="purchasing" className="text-xs py-2">
-                <ShoppingCart className="h-4 w-4 mr-1" />
-                Purchasing
-              </TabsTrigger>
-              <TabsTrigger value="recipes" className="text-xs py-2">
-                <Wine className="h-4 w-4 mr-1" />
-                Recipes
-              </TabsTrigger>
-              <TabsTrigger value="staff" className="text-xs py-2">
-                <Users className="h-4 w-4 mr-1" />
-                Staff
-              </TabsTrigger>
-              <TabsTrigger value="reports" className="text-xs py-2">
-                <BarChart3 className="h-4 w-4 mr-1" />
-                Reports
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="text-xs py-2">
-                <Settings className="h-4 w-4 mr-1" />
-                Settings
-              </TabsTrigger>
-            </TabsList>
+          <Tabs defaultValue="pos" className="space-y-4">
+            {/* Mobile-friendly horizontal scrolling tabs */}
+            <ScrollArea className="w-full">
+              <TabsList className="inline-flex h-auto p-1 gap-1 bg-muted/50 rounded-xl w-max min-w-full sm:min-w-0">
+                <TabsTrigger value="pos" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
+                  <Smartphone className="h-5 w-5" />
+                  <span className="text-xs font-medium">POS</span>
+                </TabsTrigger>
+                <TabsTrigger value="kds" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
+                  <ChefHat className="h-5 w-5" />
+                  <span className="text-xs font-medium">KDS</span>
+                </TabsTrigger>
+                <TabsTrigger value="menu" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
+                  <UtensilsCrossed className="h-5 w-5" />
+                  <span className="text-xs font-medium">Menu</span>
+                </TabsTrigger>
+                <TabsTrigger value="inventory" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
+                  <Package className="h-5 w-5" />
+                  <span className="text-xs font-medium">Stock</span>
+                </TabsTrigger>
+                <TabsTrigger value="purchasing" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
+                  <Truck className="h-5 w-5" />
+                  <span className="text-xs font-medium">Orders</span>
+                </TabsTrigger>
+                <TabsTrigger value="recipes" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
+                  <Wine className="h-5 w-5" />
+                  <span className="text-xs font-medium">Recipe</span>
+                </TabsTrigger>
+                <TabsTrigger value="staff" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
+                  <Users className="h-5 w-5" />
+                  <span className="text-xs font-medium">Staff</span>
+                </TabsTrigger>
+                <TabsTrigger value="reports" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
+                  <BarChart3 className="h-5 w-5" />
+                  <span className="text-xs font-medium">Stats</span>
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="flex-col sm:flex-row gap-1 py-2.5 px-3 sm:px-4 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm min-w-[70px]">
+                  <Settings className="h-5 w-5" />
+                  <span className="text-xs font-medium">Setup</span>
+                </TabsTrigger>
+              </TabsList>
+            </ScrollArea>
 
             <TabsContent value="pos">
               <POSModule outletId={selectedOutlet.id} />
@@ -793,61 +802,73 @@ function POSModule({ outletId }: { outletId: string }) {
   const total = Math.max(0, subtotal - discountAmount);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      {/* Tables */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Store className="h-5 w-5" />
-            Tables
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {tables.length === 0 ? (
-            <p className="text-muted-foreground text-sm text-center py-8">
-              No tables configured. Add tables in Settings.
-            </p>
-          ) : (
-            <div className="grid grid-cols-3 gap-2">
-              {tables.map((table) => (
-                <Button
-                  key={table.id}
-                  variant={selectedTable?.id === table.id ? "default" : "outline"}
-                  className={`h-16 flex-col ${
-                    table.status === "seated" ? "border-amber-500 bg-amber-500/10" :
-                    table.status === "bill_requested" ? "border-red-500 bg-red-500/10" :
-                    ""
-                  }`}
-                  onClick={() => selectTable(table)}
-                >
-                  <span className="font-semibold">{table.name}</span>
-                  <span className="text-xs opacity-70">{table.capacity} pax</span>
-                </Button>
-              ))}
-            </div>
-          )}
-          
-          {/* Quick Actions */}
-          <div className="mt-4 pt-4 border-t space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Open Orders</p>
-            {orders.slice(0, 5).map((order) => (
-              <Button
-                key={order.id}
-                variant="ghost"
-                size="sm"
-                className="w-full justify-between"
-                onClick={() => selectTable(tables.find(t => t.id === order.table_id))}
-              >
-                <span>{order.lab_ops_tables?.name}</span>
-                <Badge variant="outline">{order.status}</Badge>
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-4">
+      {/* Mobile-first layout with stacked cards on small screens */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Tables - Collapsible on mobile when table is selected */}
+        <Card className={`${selectedTable ? 'hidden md:block' : ''}`}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Store className="h-5 w-5 text-primary" />
+              Tables
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {tables.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="h-12 w-12 mx-auto rounded-xl bg-muted/50 flex items-center justify-center mb-3">
+                  <Store className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground text-sm">No tables configured</p>
+                <p className="text-xs text-muted-foreground mt-1">Add tables in Settings</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 sm:grid-cols-3 gap-2">
+                {tables.map((table) => (
+                  <Button
+                    key={table.id}
+                    variant={selectedTable?.id === table.id ? "default" : "outline"}
+                    className={`h-14 sm:h-16 flex-col p-1 ${
+                      table.status === "seated" ? "border-amber-500 bg-amber-500/10 hover:bg-amber-500/20" :
+                      table.status === "bill_requested" ? "border-red-500 bg-red-500/10 hover:bg-red-500/20" :
+                      ""
+                    }`}
+                    onClick={() => selectTable(table)}
+                  >
+                    <span className="font-semibold text-xs sm:text-sm truncate w-full text-center">{table.name}</span>
+                    <span className="text-[10px] sm:text-xs opacity-70">{table.capacity}p</span>
+                  </Button>
+                ))}
+              </div>
+            )}
+            
+            {/* Open Orders */}
+            {orders.length > 0 && (
+              <div className="mt-4 pt-4 border-t space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Open Orders ({orders.length})</p>
+                <ScrollArea className="h-32">
+                  {orders.map((order) => (
+                    <Button
+                      key={order.id}
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-between h-10 mb-1"
+                      onClick={() => selectTable(tables.find(t => t.id === order.table_id))}
+                    >
+                      <span className="font-medium">{order.lab_ops_tables?.name}</span>
+                      <Badge variant={order.status === "sent" ? "default" : "outline"} className="text-xs">
+                        {order.status}
+                      </Badge>
+                    </Button>
+                  ))}
+                </ScrollArea>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Menu Items */}
-      <Card>
+        {/* Menu Items */}
+        <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <UtensilsCrossed className="h-5 w-5" />
@@ -1014,7 +1035,8 @@ function POSModule({ outletId }: { outletId: string }) {
             </>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </div>
 
       {/* Modifier Dialog */}
       <Dialog open={showModifiers} onOpenChange={setShowModifiers}>
