@@ -937,11 +937,11 @@ export default function StaffPOS() {
               {/* Categories - Horizontal scrolling like top nav */}
               <div className="relative border-b">
                 <div className="overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
-                  <div className="flex gap-1.5 p-2 min-w-max">
+                  <div className="inline-flex gap-1.5 p-2 pr-8">
                     <Button
                       variant={!selectedCategory ? "default" : "outline"}
                       size="sm"
-                      className="shrink-0"
+                      className="flex-none whitespace-nowrap overflow-visible"
                       onClick={() => setSelectedCategory(null)}
                     >
                       All
@@ -951,7 +951,7 @@ export default function StaffPOS() {
                         key={cat.id}
                         variant={selectedCategory === cat.id ? "default" : "outline"}
                         size="sm"
-                        className="shrink-0"
+                        className="flex-none whitespace-nowrap overflow-visible"
                         onClick={() => setSelectedCategory(cat.id)}
                       >
                         {cat.name}
@@ -960,7 +960,7 @@ export default function StaffPOS() {
                   </div>
                 </div>
                 {/* Fade indicator showing more categories */}
-                <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent pointer-events-none" />
               </div>
 
               {/* Menu Items */}
