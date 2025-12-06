@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Search, UserPlus, Users, UserCheck, Loader2, Check } from "lucide-react";
+import { Search, UserPlus, Users, UserCheck, Loader2, Check, X } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -181,38 +181,61 @@ export default function InviteLabOpsStaffDialog({
     return (
       <div
         key={profile.id}
-        className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+        className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 rounded-lg transition-colors ${
           isExisting 
             ? 'opacity-50 cursor-not-allowed bg-muted/30' 
             : isSelected 
               ? 'bg-primary/10 border border-primary/30' 
-              : 'hover:bg-muted/50 cursor-pointer'
+              : 'hover:bg-muted/50'
         }`}
-        onClick={() => !isExisting && toggleUserSelection(profile.id)}
       >
-        <Avatar className="h-10 w-10">
-          <AvatarImage src={profile.avatar_url || ''} />
-          <AvatarFallback className="bg-primary/20 text-primary">
-            {(profile.full_name || profile.username || '?')[0].toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        {/* Top row: Avatar + Name + Select action */}
+        <div 
+          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+          onClick={() => !isExisting && toggleUserSelection(profile.id)}
+        >
+          <Avatar className="h-10 w-10 shrink-0">
+            <AvatarImage src={profile.avatar_url || ''} />
+            <AvatarFallback className="bg-primary/20 text-primary">
+              {(profile.full_name || profile.username || '?')[0].toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
 
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm truncate">
-            {profile.full_name || profile.username}
-          </p>
-          <p className="text-xs text-muted-foreground truncate">
-            @{profile.username}
-          </p>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm truncate">
+              {profile.full_name || profile.username}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              @{profile.username}
+            </p>
+          </div>
+
+          {isExisting ? (
+            <Badge variant="secondary" className="text-xs shrink-0">Already Staff</Badge>
+          ) : !isSelected ? (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="shrink-0 h-8 px-3"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleUserSelection(profile.id);
+              }}
+            >
+              <UserPlus className="h-3 w-3 mr-1" />
+              Add
+            </Button>
+          ) : (
+            <Check className="h-5 w-5 text-primary shrink-0" />
+          )}
         </div>
 
-        {isExisting ? (
-          <Badge variant="secondary" className="text-xs">Already Staff</Badge>
-        ) : isSelected ? (
-          <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+        {/* Bottom row: Role selector when selected */}
+        {isSelected && !isExisting && (
+          <div className="flex items-center gap-2 pl-13 sm:pl-0" onClick={e => e.stopPropagation()}>
             <Select value={selectedRole} onValueChange={(val) => updateUserRole(profile.id, val)}>
-              <SelectTrigger className="h-8 w-28 text-xs">
-                <SelectValue />
+              <SelectTrigger className="h-9 w-full sm:w-32 text-sm">
+                <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent className="bg-popover">
                 <SelectItem value="manager">Manager</SelectItem>
@@ -223,10 +246,15 @@ export default function InviteLabOpsStaffDialog({
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
-            <Check className="h-5 w-5 text-primary" />
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="h-9 w-9 shrink-0 text-destructive"
+              onClick={() => toggleUserSelection(profile.id)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-        ) : (
-          <UserPlus className="h-4 w-4 text-muted-foreground" />
         )}
       </div>
     );
