@@ -1567,7 +1567,7 @@ function MenuModule({ outletId }: { outletId: string }) {
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleItemDrop = async (e: React.DragEvent, targetItem: any) => {
+  const handleItemDrop = (e: React.DragEvent, targetItem: any) => {
     e.preventDefault();
     if (!draggedItem || draggedItem.id === targetItem.id) return;
 
@@ -1579,22 +1579,8 @@ function MenuModule({ outletId }: { outletId: string }) {
     const [removed] = newItems.splice(draggedIndex, 1);
     newItems.splice(targetIndex, 0, removed);
 
-    // Update sort_order for all items
-    const updates = newItems.map((item, index) => ({
-      id: item.id,
-      sort_order: index,
-    }));
-
     setMenuItems(newItems);
     setDraggedItem(null);
-
-    // Update in database
-    for (const update of updates) {
-      await supabase
-        .from("lab_ops_menu_items")
-        .update({ sort_order: update.sort_order })
-        .eq("id", update.id);
-    }
     toast({ title: "Menu order updated" });
   };
 
