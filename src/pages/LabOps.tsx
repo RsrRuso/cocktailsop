@@ -381,83 +381,89 @@ export default function LabOps() {
           </div>
           
           {/* Mobile-optimized scrollable action buttons */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-thin scrollbar-thumb-muted">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => window.location.href = '/staff-pos'}
-              className="h-10 px-3 rounded-full bg-primary shrink-0 active:scale-95 transition-transform"
-            >
-              <Smartphone className="h-4 w-4" />
-              <span className="ml-1.5 text-xs font-medium">POS</span>
-            </Button>
-            
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => window.location.href = '/staff-install'}
-              className="h-10 px-3 rounded-full border-green-500/50 text-green-500 hover:bg-green-500/10 shrink-0 active:scale-95 transition-transform"
-            >
-              <Download className="h-4 w-4" />
-              <span className="ml-1.5 text-xs font-medium">Install</span>
-            </Button>
-            
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => window.location.href = '/bar-kds'}
-              className="h-10 px-3 rounded-full border-amber-500/50 text-amber-500 hover:bg-amber-500/10 shrink-0 active:scale-95 transition-transform"
-            >
-              <Wine className="h-4 w-4" />
-              <span className="ml-1.5 text-xs font-medium">Bar</span>
-            </Button>
-            
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => window.location.href = '/kitchen-kds'}
-              className="h-10 px-3 rounded-full border-orange-500/50 text-orange-500 hover:bg-orange-500/10 shrink-0 active:scale-95 transition-transform"
-            >
-              <ChefHat className="h-4 w-4" />
-              <span className="ml-1.5 text-xs font-medium">Kitchen</span>
-            </Button>
-            
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowOnboarding(true)}
-              className="h-10 px-3 rounded-full shrink-0 active:scale-95 transition-transform"
-            >
-              <HelpCircle className="h-4 w-4" />
-              <span className="ml-1.5 text-xs font-medium">Guide</span>
-            </Button>
-            
-            {selectedOutlet && (
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={loadDemoData} 
-                disabled={loadingDemo}
-                className="h-10 px-3 rounded-full border-primary/50 text-primary hover:bg-primary/10 shrink-0 active:scale-95 transition-transform"
+          <div className="relative">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 pr-6 scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => window.location.href = '/staff-pos'}
+                className="h-10 px-3 rounded-full bg-primary shrink-0 active:scale-95 transition-transform"
               >
-                {loadingDemo ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                <span className="ml-1.5 text-xs font-medium">Demo</span>
+                <Smartphone className="h-4 w-4" />
+                <span className="ml-1.5 text-xs font-medium">POS</span>
               </Button>
-            )}
-            
-            {selectedOutlet && (
-              <TeamPresenceIndicator
-                onlineTeam={onlineTeam}
-                outletName={selectedOutlet.name}
-                currentStaffName={currentUserProfile?.full_name || user?.email?.split('@')[0] || 'You'}
-                currentStaffUsername={currentUserProfile?.username}
-                currentStaffEmail={user?.email}
-              />
-            )}
+              
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => window.location.href = '/staff-install'}
+                className="h-10 px-3 rounded-full border-green-500/50 text-green-500 hover:bg-green-500/10 shrink-0 active:scale-95 transition-transform"
+              >
+                <Download className="h-4 w-4" />
+                <span className="ml-1.5 text-xs font-medium">Install</span>
+              </Button>
+              
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => window.location.href = '/bar-kds'}
+                className="h-10 px-3 rounded-full border-amber-500/50 text-amber-500 hover:bg-amber-500/10 shrink-0 active:scale-95 transition-transform"
+              >
+                <Wine className="h-4 w-4" />
+                <span className="ml-1.5 text-xs font-medium">Bar</span>
+              </Button>
+              
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => window.location.href = '/kitchen-kds'}
+                className="h-10 px-3 rounded-full border-orange-500/50 text-orange-500 hover:bg-orange-500/10 shrink-0 active:scale-95 transition-transform"
+              >
+                <ChefHat className="h-4 w-4" />
+                <span className="ml-1.5 text-xs font-medium">Kitchen</span>
+              </Button>
+              
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowOnboarding(true)}
+                className="h-10 px-3 rounded-full shrink-0 active:scale-95 transition-transform"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <span className="ml-1.5 text-xs font-medium">Guide</span>
+              </Button>
+              
+              {selectedOutlet && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={loadDemoData} 
+                  disabled={loadingDemo}
+                  className="h-10 px-3 rounded-full border-primary/50 text-primary hover:bg-primary/10 shrink-0 active:scale-95 transition-transform"
+                >
+                  {loadingDemo ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  <span className="ml-1.5 text-xs font-medium">Demo</span>
+                </Button>
+              )}
+              
+              {selectedOutlet && (
+                <div className="shrink-0">
+                  <TeamPresenceIndicator
+                    onlineTeam={onlineTeam}
+                    outletName={selectedOutlet.name}
+                    currentStaffName={currentUserProfile?.full_name || user?.email?.split('@')[0] || 'You'}
+                    currentStaffUsername={currentUserProfile?.username}
+                    currentStaffEmail={user?.email}
+                  />
+                </div>
+              )}
+            </div>
+            {/* Scroll fade indicator */}
+            <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
           </div>
           
           {/* Outlet selector row */}
