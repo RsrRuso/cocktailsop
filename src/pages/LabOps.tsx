@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import LabOpsAnalytics from "@/components/lab-ops/LabOpsAnalytics";
 import LabOpsOnboarding from "@/components/lab-ops/LabOpsOnboarding";
 import LiveOpsDashboard from "@/components/lab-ops/LiveOpsDashboard";
+import TeamPresenceIndicator from "@/components/lab-ops/TeamPresenceIndicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,6 +52,58 @@ export default function LabOps() {
   const [newOutletType, setNewOutletType] = useState("restaurant");
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onlineTeam, setOnlineTeam] = useState<{ id: string; name: string; role: string }[]>([]);
+  const presenceChannelRef = useRef<RealtimeChannel | null>(null);
+
+  // Setup presence tracking for the selected outlet
+  useEffect(() => {
+    if (!selectedOutlet || !user) return;
+
+    const channelName = `lab-ops-presence:${selectedOutlet.id}`;
+    
+    // Cleanup previous channel
+    if (presenceChannelRef.current) {
+      supabase.removeChannel(presenceChannelRef.current);
+    }
+
+    const channel = supabase.channel(channelName);
+    presenceChannelRef.current = channel;
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const users: { id: string; name: string; role: string }[] = [];
+        Object.values(state).forEach((presences: any) => {
+          presences.forEach((presence: any) => {
+            if (presence.user_id !== user.id) {
+              users.push({
+                id: presence.user_id,
+                name: presence.name || 'Team Member',
+                role: presence.role || 'staff'
+              });
+            }
+          });
+        });
+        setOnlineTeam(users);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            user_id: user.id,
+            name: user.email?.split('@')[0] || 'User',
+            role: 'manager',
+            online_at: new Date().toISOString()
+          });
+        }
+      });
+
+    return () => {
+      if (presenceChannelRef.current) {
+        supabase.removeChannel(presenceChannelRef.current);
+        presenceChannelRef.current = null;
+      }
+    };
+  }, [selectedOutlet?.id, user]);
 
   const loadDemoData = async () => {
     if (!user || !selectedOutlet) return;
@@ -367,6 +421,14 @@ export default function LabOps() {
                 )}
                 <span className="hidden sm:inline ml-1">Demo</span>
               </Button>
+            )}
+            
+            {selectedOutlet && (
+              <TeamPresenceIndicator
+                onlineTeam={onlineTeam}
+                outletName={selectedOutlet.name}
+                currentStaffName={user?.email?.split('@')[0] || 'You'}
+              />
             )}
             
             {outlets.length > 0 && (
