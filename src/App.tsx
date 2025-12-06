@@ -143,6 +143,7 @@ const RevenueByCategory = lazy(() => import("@/pages/reports/RevenueByCategory")
 const BreakevenReport = lazy(() => import("@/pages/reports/BreakevenReport"));
 const DailyOpsReport = lazy(() => import("@/pages/reports/DailyOpsReport"));
 const LabOps = lazy(() => import("@/pages/LabOps"));
+const StaffPOS = lazy(() => import("@/pages/StaffPOS"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -300,6 +301,7 @@ const AppContent = () => {
           <Route path="/install" element={<Install />} />
           <Route path="/matrix-ai" element={<MatrixAI />} />
           <Route path="/lab-ops" element={<LabOps />} />
+          <Route path="/staff-pos" element={<StaffPOS />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
                 </Routes>
