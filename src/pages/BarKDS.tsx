@@ -40,9 +40,11 @@ interface Order {
 
 export default function BarKDS() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedOutlet, setSelectedOutlet] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'new' | 'completed'>('new');
 
   useEffect(() => {
     const outletId = localStorage.getItem('lab_ops_outlet_id');
@@ -98,7 +100,8 @@ export default function BarKDS() {
 
   const fetchOrders = async (outletId: string) => {
     try {
-      const { data: ordersData, error } = await supabase
+      // Fetch active orders
+      const { data: activeOrdersData, error: activeError } = await supabase
         .from("lab_ops_orders")
         .select(`
           id, table_id, status, created_at,
@@ -108,11 +111,27 @@ export default function BarKDS() {
         .in("status", ["open", "in_progress", "sent"])
         .order("created_at", { ascending: true });
 
-      if (error) throw error;
+      if (activeError) throw activeError;
 
-      const ordersWithItems: Order[] = [];
-      
-      for (const order of ordersData || []) {
+      // Fetch recently completed orders (last 30 mins)
+      const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { data: completedOrdersData, error: completedError } = await supabase
+        .from("lab_ops_orders")
+        .select(`
+          id, table_id, status, created_at,
+          table:lab_ops_tables(name)
+        `)
+        .eq("outlet_id", outletId)
+        .in("status", ["ready", "closed"])
+        .gte("updated_at", thirtyMinsAgo)
+        .order("updated_at", { ascending: false })
+        .limit(20);
+
+      if (completedError) throw completedError;
+
+      // Process active orders
+      const activeWithItems: Order[] = [];
+      for (const order of activeOrdersData || []) {
         const { data: items } = await supabase
           .from("lab_ops_order_items")
           .select(`
@@ -130,7 +149,7 @@ export default function BarKDS() {
         );
 
         if (barItems.length > 0) {
-          ordersWithItems.push({
+          activeWithItems.push({
             id: order.id,
             table_id: order.table_id,
             status: order.status,
@@ -141,7 +160,39 @@ export default function BarKDS() {
         }
       }
 
-      setOrders(ordersWithItems);
+      // Process completed orders
+      const completedWithItems: Order[] = [];
+      for (const order of completedOrdersData || []) {
+        const { data: items } = await supabase
+          .from("lab_ops_order_items")
+          .select(`
+            id, order_id, menu_item_id, qty, unit_price, note, status,
+            menu_item:lab_ops_menu_items(
+              name,
+              category:lab_ops_categories(name)
+            )
+          `)
+          .eq("order_id", order.id);
+
+        const barCategories = ["Cocktails", "Wines", "Beers", "Spirits", "Soft Drinks"];
+        const barItems = (items || []).filter(item => 
+          barCategories.includes((item.menu_item as any)?.category?.name || "")
+        );
+
+        if (barItems.length > 0) {
+          completedWithItems.push({
+            id: order.id,
+            table_id: order.table_id,
+            status: order.status,
+            created_at: order.created_at,
+            table: order.table as any,
+            items: barItems as unknown as OrderItem[]
+          });
+        }
+      }
+
+      setOrders(activeWithItems);
+      setCompletedOrders(completedWithItems);
     } catch (error) {
       console.error("Error fetching orders:", error);
     } finally {
@@ -222,7 +273,9 @@ export default function BarKDS() {
             <Wine className="h-8 w-8 text-amber-300" />
             <div>
               <h1 className="text-2xl font-bold">Bar KDS</h1>
-              <p className="text-amber-200 text-sm">{orders.length} active orders</p>
+              <p className="text-amber-200 text-sm">
+                {orders.length} new • {completedOrders.length} completed
+              </p>
             </div>
           </div>
           
@@ -245,103 +298,180 @@ export default function BarKDS() {
             </Button>
           </div>
         </div>
+        
+        {/* Tab Buttons */}
+        <div className="flex gap-2 mt-4">
+          <Button
+            variant={activeTab === 'new' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('new')}
+            className={activeTab === 'new' 
+              ? 'bg-amber-600 hover:bg-amber-700' 
+              : 'text-white hover:bg-white/20'
+            }
+          >
+            New Orders ({orders.length})
+          </Button>
+          <Button
+            variant={activeTab === 'completed' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('completed')}
+            className={activeTab === 'completed' 
+              ? 'bg-green-600 hover:bg-green-700' 
+              : 'text-white hover:bg-white/20'
+            }
+          >
+            <Check className="h-4 w-4 mr-2" />
+            Completed ({completedOrders.length})
+          </Button>
+        </div>
       </div>
 
       {/* Orders Grid */}
       <div className="p-4">
-        {orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[60vh] text-gray-500">
-            <Wine className="h-16 w-16 mb-4 opacity-30" />
-            <p className="text-xl">No pending bar orders</p>
-          </div>
+        {activeTab === 'new' ? (
+          orders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[60vh] text-gray-500">
+              <Wine className="h-16 w-16 mb-4 opacity-30" />
+              <p className="text-xl">No pending bar orders</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {orders.map((order, index) => {
+                const ageMinutes = getOrderAge(order.created_at);
+                return (
+                  <Card 
+                    key={order.id} 
+                    className="bg-gray-900 border-gray-700 overflow-hidden"
+                  >
+                    <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg text-white flex items-center gap-2">
+                          #{index + 1}
+                          <Badge variant="outline" className="text-amber-400 border-amber-400">
+                            {order.table?.name || "Table"}
+                          </Badge>
+                        </CardTitle>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className={`w-2 h-2 rounded-full ${getAgeColor(ageMinutes)}`} />
+                          <span className="text-xs text-gray-400 flex items-center gap-1">
+                            <Timer className="h-3 w-3" />
+                            {ageMinutes}m ago
+                          </span>
+                          {ageMinutes >= 10 && (
+                            <AlertTriangle className="h-4 w-4 text-red-500" />
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-2">
+                      <ScrollArea className="h-48">
+                        <div className="space-y-2">
+                          {order.items.map((item) => (
+                            <div 
+                              key={item.id}
+                              className={`p-3 rounded-lg border ${
+                                item.status === 'ready' 
+                                  ? 'bg-green-900/30 border-green-700' 
+                                  : 'bg-gray-800 border-gray-700'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg font-bold text-amber-400">
+                                      {item.qty}×
+                                    </span>
+                                    <span className="text-white font-medium">
+                                      {item.menu_item?.name}
+                                    </span>
+                                  </div>
+                                  {item.note && (
+                                    <p className="text-xs text-gray-400 mt-1 italic">
+                                      {item.note}
+                                    </p>
+                                  )}
+                                </div>
+                                {item.status !== 'ready' && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => markItemComplete(item.id)}
+                                    className="text-green-400 hover:bg-green-900/50"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {item.status === 'ready' && (
+                                  <Badge className="bg-green-600">Ready</Badge>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                      
+                      <Button
+                        className="w-full mt-3 bg-amber-600 hover:bg-amber-700"
+                        onClick={() => markOrderComplete(order.id)}
+                      >
+                        <Check className="h-4 w-4 mr-2" />
+                        Complete All
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {orders.map((order, index) => {
-              const ageMinutes = getOrderAge(order.created_at);
-              return (
+          completedOrders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[60vh] text-gray-500">
+              <Check className="h-16 w-16 mb-4 opacity-30" />
+              <p className="text-xl">No recently completed orders</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {completedOrders.map((order, index) => (
                 <Card 
                   key={order.id} 
-                  className="bg-gray-900 border-gray-700 overflow-hidden"
+                  className="bg-green-950/50 border-green-800 overflow-hidden"
                 >
-                  <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg text-white flex items-center gap-2">
-                        #{index + 1}
-                        <Badge variant="outline" className="text-amber-400 border-amber-400">
-                          {order.table?.name || "Table"}
-                        </Badge>
-                      </CardTitle>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className={`w-2 h-2 rounded-full ${getAgeColor(ageMinutes)}`} />
-                        <span className="text-xs text-gray-400 flex items-center gap-1">
-                          <Timer className="h-3 w-3" />
-                          {ageMinutes}m ago
-                        </span>
-                        {ageMinutes >= 10 && (
-                          <AlertTriangle className="h-4 w-4 text-red-500" />
-                        )}
-                      </div>
-                    </div>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg text-white flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-400" />
+                      #{index + 1}
+                      <Badge variant="outline" className="text-green-400 border-green-400">
+                        {order.table?.name || "Table"}
+                      </Badge>
+                    </CardTitle>
+                    <p className="text-xs text-gray-400">
+                      Completed {getOrderAge(order.created_at)}m ago
+                    </p>
                   </CardHeader>
                   <CardContent className="pt-2">
-                    <ScrollArea className="h-48">
-                      <div className="space-y-2">
+                    <ScrollArea className="h-32">
+                      <div className="space-y-1">
                         {order.items.map((item) => (
                           <div 
                             key={item.id}
-                            className={`p-3 rounded-lg border ${
-                              item.status === 'ready' 
-                                ? 'bg-green-900/30 border-green-700' 
-                                : 'bg-gray-800 border-gray-700'
-                            }`}
+                            className="p-2 rounded bg-green-900/30 border border-green-800"
                           >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg font-bold text-amber-400">
-                                    {item.qty}×
-                                  </span>
-                                  <span className="text-white font-medium">
-                                    {item.menu_item?.name}
-                                  </span>
-                                </div>
-                                {item.note && (
-                                  <p className="text-xs text-gray-400 mt-1 italic">
-                                    {item.note}
-                                  </p>
-                                )}
-                              </div>
-                              {item.status !== 'ready' && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => markItemComplete(item.id)}
-                                  className="text-green-400 hover:bg-green-900/50"
-                                >
-                                  <Check className="h-4 w-4" />
-                                </Button>
-                              )}
-                              {item.status === 'ready' && (
-                                <Badge className="bg-green-600">Ready</Badge>
-                              )}
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-green-400">
+                                {item.qty}×
+                              </span>
+                              <span className="text-white text-sm">
+                                {item.menu_item?.name}
+                              </span>
                             </div>
                           </div>
                         ))}
                       </div>
                     </ScrollArea>
-                    
-                    <Button
-                      className="w-full mt-3 bg-amber-600 hover:bg-amber-700"
-                      onClick={() => markOrderComplete(order.id)}
-                    >
-                      <Check className="h-4 w-4 mr-2" />
-                      Complete All
-                    </Button>
                   </CardContent>
                 </Card>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )
         )}
       </div>
     </div>
