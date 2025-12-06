@@ -34,38 +34,45 @@ const createNotificationSound = async (): Promise<AudioBuffer> => {
 };
 
 export const playNotificationSound = async (volume: number = 0.9) => {
+  // Check if custom notification settings exist
   try {
-    // Try to use the WAV file first for a louder, more distinctive sound
+    const stored = localStorage.getItem('notification_sound_settings');
+    if (stored) {
+      const settings = JSON.parse(stored);
+      if (!settings.enabled) return;
+      
+      // Use custom sound settings
+      const { playSelectedNotificationSound } = await import('@/components/NotificationSoundPicker');
+      await playSelectedNotificationSound(volume);
+      return;
+    }
+  } catch {}
+  
+  // Fallback to default behavior
+  try {
     const audio = new Audio('/notification.wav');
     audio.volume = Math.min(Math.max(volume, 0), 1);
     await audio.play();
   } catch (error) {
-    // Fallback to generated sound if file fails
     try {
       const context = initAudioContext();
       
-      // Resume context if suspended (required for autoplay policies)
       if (context.state === 'suspended') {
         await context.resume();
       }
 
-      // Create or reuse the notification sound
       if (!notificationSound) {
         notificationSound = await createNotificationSound();
       }
 
-      // Create and configure audio nodes
       const source = context.createBufferSource();
       const gainNode = context.createGain();
       
       source.buffer = notificationSound;
       gainNode.gain.value = Math.min(Math.max(volume, 0), 1);
       
-      // Connect nodes
       source.connect(gainNode);
       gainNode.connect(context.destination);
-      
-      // Play the sound
       source.start(0);
     } catch (fallbackError) {
       // Could not play notification sound
