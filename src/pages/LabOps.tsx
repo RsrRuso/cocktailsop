@@ -53,7 +53,7 @@ export default function LabOps() {
   const [newOutletType, setNewOutletType] = useState("restaurant");
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onlineTeam, setOnlineTeam] = useState<{ id: string; name: string; role: string }[]>([]);
+  const [onlineTeam, setOnlineTeam] = useState<{ id: string; name: string; email?: string; role: string }[]>([]);
   const presenceChannelRef = useRef<RealtimeChannel | null>(null);
 
   // Setup presence tracking for the selected outlet
@@ -73,13 +73,14 @@ export default function LabOps() {
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
-        const users: { id: string; name: string; role: string }[] = [];
+        const users: { id: string; name: string; email?: string; role: string }[] = [];
         Object.values(state).forEach((presences: any) => {
           presences.forEach((presence: any) => {
             if (presence.user_id !== user.id) {
               users.push({
                 id: presence.user_id,
                 name: presence.name || 'Team Member',
+                email: presence.email,
                 role: presence.role || 'staff'
               });
             }
@@ -89,9 +90,17 @@ export default function LabOps() {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
+          // Get user profile for full name
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, username')
+            .eq('id', user.id)
+            .single();
+          
           await channel.track({
             user_id: user.id,
-            name: user.email?.split('@')[0] || 'User',
+            name: profile?.full_name || profile?.username || user.email?.split('@')[0] || 'User',
+            email: user.email,
             role: 'manager',
             online_at: new Date().toISOString()
           });
@@ -429,6 +438,7 @@ export default function LabOps() {
                 onlineTeam={onlineTeam}
                 outletName={selectedOutlet.name}
                 currentStaffName={user?.email?.split('@')[0] || 'You'}
+                currentStaffEmail={user?.email}
               />
             )}
             
@@ -3079,7 +3089,7 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
       .from("lab_ops_staff")
       .select("*")
       .eq("outlet_id", outletId)
-      .order("name");
+      .order("full_name");
     setStaff(data || []);
   };
 
