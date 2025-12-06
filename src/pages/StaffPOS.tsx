@@ -940,7 +940,7 @@ export default function StaffPOS() {
                   <Button
                     variant={!selectedCategory ? "default" : "outline"}
                     size="sm"
-                    className="shrink-0"
+                    className="shrink-0 whitespace-nowrap"
                     onClick={() => setSelectedCategory(null)}
                   >
                     All
@@ -950,7 +950,7 @@ export default function StaffPOS() {
                       key={cat.id}
                       variant={selectedCategory === cat.id ? "default" : "outline"}
                       size="sm"
-                      className="shrink-0"
+                      className="shrink-0 whitespace-nowrap"
                       onClick={() => setSelectedCategory(cat.id)}
                     >
                       {cat.name}
