@@ -393,7 +393,9 @@ function POSModule({ outletId }: { outletId: string }) {
   };
 
   const fetchModifiers = async () => {
-    const { data } = await supabase
+    // Use any to bypass complex type inference
+    const client: any = supabase;
+    const { data } = await client
       .from("lab_ops_modifiers")
       .select("*")
       .eq("outlet_id", outletId)
@@ -1633,7 +1635,6 @@ function InventoryModule({ outletId }: { outletId: string }) {
     const { data } = await supabase
       .from("lab_ops_stock_movements")
       .select("*, lab_ops_inventory_items(name)")
-      .eq("outlet_id", outletId)
       .order("created_at", { ascending: false })
       .limit(50);
     setMovements(data || []);
@@ -1704,7 +1705,7 @@ function InventoryModule({ outletId }: { outletId: string }) {
     await supabase.from("lab_ops_stock_movements").insert({
       inventory_item_id: selectedItem.id,
       to_location_id: stockLocation,
-      quantity: parseFloat(stockQty),
+      qty: parseFloat(stockQty),
       movement_type: "purchase" as const,
       notes: stockNotes || null,
       created_by: user?.id,
@@ -2659,10 +2660,11 @@ function StaffModule({ outletId }: { outletId: string }) {
 
   const createStaff = async () => {
     if (!staffName.trim()) return;
-    const { user } = await supabase.auth.getUser();
+    const { data: authData } = await supabase.auth.getUser();
 
     await supabase.from("lab_ops_staff").insert({
-      user_id: user?.user?.id || "",
+      outlet_id: outletId,
+      user_id: authData?.user?.id || "",
       full_name: staffName.trim(),
       role: staffRole as "manager" | "bartender" | "waiter" | "kitchen" | "admin" | "supervisor",
       pin_code: staffPin || null,
@@ -3187,6 +3189,7 @@ function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => 
     if (!newVoidReason.trim()) return;
 
     await supabase.from("lab_ops_void_reasons").insert({
+      outlet_id: outlet.id,
       code: newVoidReason.trim().toUpperCase().replace(/\s+/g, "_"),
       description: newVoidReason.trim(),
     });
