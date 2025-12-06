@@ -40,9 +40,11 @@ interface Order {
 
 export default function KitchenKDS() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedOutlet, setSelectedOutlet] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"new" | "completed">("new");
 
   useEffect(() => {
     const outletId = localStorage.getItem('lab_ops_outlet_id');
@@ -98,7 +100,8 @@ export default function KitchenKDS() {
 
   const fetchOrders = async (outletId: string) => {
     try {
-      const { data: ordersData, error } = await supabase
+      // Fetch active orders
+      const { data: activeOrdersData, error: activeError } = await supabase
         .from("lab_ops_orders")
         .select(`
           id, table_id, status, created_at,
@@ -108,11 +111,28 @@ export default function KitchenKDS() {
         .in("status", ["open", "in_progress", "sent"])
         .order("created_at", { ascending: true });
 
-      if (error) throw error;
+      if (activeError) throw activeError;
 
-      const ordersWithItems: Order[] = [];
-      
-      for (const order of ordersData || []) {
+      // Fetch completed orders (last 30 minutes)
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { data: completedOrdersData, error: completedError } = await supabase
+        .from("lab_ops_orders")
+        .select(`
+          id, table_id, status, created_at,
+          table:lab_ops_tables(name)
+        `)
+        .eq("outlet_id", outletId)
+        .eq("status", "closed")
+        .gte("created_at", thirtyMinutesAgo)
+        .order("created_at", { ascending: false });
+
+      if (completedError) throw completedError;
+
+      const kitchenCategories = ["Appetizers", "Main Courses", "Desserts", "Starters", "Salads", "Sides"];
+
+      // Process active orders
+      const activeOrdersWithItems: Order[] = [];
+      for (const order of activeOrdersData || []) {
         const { data: items } = await supabase
           .from("lab_ops_order_items")
           .select(`
@@ -124,13 +144,12 @@ export default function KitchenKDS() {
           `)
           .eq("order_id", order.id);
 
-        const kitchenCategories = ["Appetizers", "Main Courses", "Desserts", "Starters", "Salads", "Sides"];
         const kitchenItems = (items || []).filter(item => 
           kitchenCategories.includes((item.menu_item as any)?.category?.name || "")
         );
 
         if (kitchenItems.length > 0) {
-          ordersWithItems.push({
+          activeOrdersWithItems.push({
             id: order.id,
             table_id: order.table_id,
             status: order.status,
@@ -141,7 +160,38 @@ export default function KitchenKDS() {
         }
       }
 
-      setOrders(ordersWithItems);
+      // Process completed orders
+      const completedOrdersWithItems: Order[] = [];
+      for (const order of completedOrdersData || []) {
+        const { data: items } = await supabase
+          .from("lab_ops_order_items")
+          .select(`
+            id, order_id, menu_item_id, qty, unit_price, note, status,
+            menu_item:lab_ops_menu_items(
+              name,
+              category:lab_ops_categories(name)
+            )
+          `)
+          .eq("order_id", order.id);
+
+        const kitchenItems = (items || []).filter(item => 
+          kitchenCategories.includes((item.menu_item as any)?.category?.name || "")
+        );
+
+        if (kitchenItems.length > 0) {
+          completedOrdersWithItems.push({
+            id: order.id,
+            table_id: order.table_id,
+            status: order.status,
+            created_at: order.created_at,
+            table: order.table as any,
+            items: kitchenItems as unknown as OrderItem[]
+          });
+        }
+      }
+
+      setOrders(activeOrdersWithItems);
+      setCompletedOrders(completedOrdersWithItems);
     } catch (error) {
       console.error("Error fetching orders:", error);
     } finally {
@@ -219,6 +269,8 @@ export default function KitchenKDS() {
     );
   }
 
+  const displayOrders = activeTab === "new" ? orders : completedOrders;
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
@@ -259,48 +311,81 @@ export default function KitchenKDS() {
             </Button>
           </div>
         </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mt-4">
+          <Button
+            variant={activeTab === "new" ? "default" : "outline"}
+            onClick={() => setActiveTab("new")}
+            className={activeTab === "new" 
+              ? "bg-orange-600 hover:bg-orange-700 text-white" 
+              : "border-orange-500 text-orange-300 hover:bg-orange-900/50"
+            }
+          >
+            New Orders ({orders.length})
+          </Button>
+          <Button
+            variant={activeTab === "completed" ? "default" : "outline"}
+            onClick={() => setActiveTab("completed")}
+            className={activeTab === "completed" 
+              ? "bg-green-600 hover:bg-green-700 text-white" 
+              : "border-green-500 text-green-300 hover:bg-green-900/50"
+            }
+          >
+            <Check className="h-4 w-4 mr-2" />
+            Completed ({completedOrders.length})
+          </Button>
+        </div>
       </div>
 
       {/* Orders Grid */}
       <div className="p-4">
-        {orders.length === 0 ? (
+        {displayOrders.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[60vh] text-gray-500">
             <ChefHat className="h-16 w-16 mb-4 opacity-30" />
-            <p className="text-xl">No pending kitchen orders</p>
+            <p className="text-xl">
+              {activeTab === "new" ? "No pending kitchen orders" : "No recently completed orders"}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {orders.map((order, index) => {
+            {displayOrders.map((order, index) => {
               const ageMinutes = getOrderAge(order.created_at);
               const isPreparing = order.status === 'in_progress';
+              const isCompleted = order.status === 'completed';
               return (
                 <Card 
                   key={order.id} 
                   className={`overflow-hidden ${
-                    isPreparing 
-                      ? 'bg-orange-950 border-orange-600' 
-                      : 'bg-gray-900 border-gray-700'
+                    isCompleted
+                      ? 'bg-green-950 border-green-700'
+                      : isPreparing 
+                        ? 'bg-orange-950 border-orange-600' 
+                        : 'bg-gray-900 border-gray-700'
                   }`}
                 >
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg text-white flex items-center gap-2">
                         #{index + 1}
-                        <Badge variant="outline" className="text-orange-400 border-orange-400">
+                        <Badge variant="outline" className={isCompleted ? "text-green-400 border-green-400" : "text-orange-400 border-orange-400"}>
                           {order.table?.name || "Table"}
                         </Badge>
                         {isPreparing && (
                           <Flame className="h-4 w-4 text-orange-500 animate-pulse" />
                         )}
+                        {isCompleted && (
+                          <Check className="h-4 w-4 text-green-500" />
+                        )}
                       </CardTitle>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <div className={`w-2 h-2 rounded-full ${getAgeColor(ageMinutes)}`} />
+                      <div className={`w-2 h-2 rounded-full ${isCompleted ? 'bg-green-500' : getAgeColor(ageMinutes)}`} />
                       <span className="text-xs text-gray-400 flex items-center gap-1">
                         <Timer className="h-3 w-3" />
                         {ageMinutes}m ago
                       </span>
-                      {ageMinutes >= 20 && (
+                      {!isCompleted && ageMinutes >= 20 && (
                         <AlertTriangle className="h-4 w-4 text-red-500" />
                       )}
                     </div>
@@ -312,7 +397,7 @@ export default function KitchenKDS() {
                           <div 
                             key={item.id}
                             className={`p-3 rounded-lg border ${
-                              item.status === 'ready' 
+                              item.status === 'ready' || isCompleted
                                 ? 'bg-green-900/30 border-green-700' 
                                 : 'bg-gray-800 border-gray-700'
                             }`}
@@ -333,7 +418,7 @@ export default function KitchenKDS() {
                                   </p>
                                 )}
                               </div>
-                              {item.status !== 'ready' && (
+                              {!isCompleted && item.status !== 'ready' && (
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -343,7 +428,7 @@ export default function KitchenKDS() {
                                   <Check className="h-4 w-4" />
                                 </Button>
                               )}
-                              {item.status === 'ready' && (
+                              {(item.status === 'ready' || isCompleted) && (
                                 <Badge className="bg-green-600">Ready</Badge>
                               )}
                             </div>
@@ -352,24 +437,26 @@ export default function KitchenKDS() {
                       </div>
                     </ScrollArea>
                     
-                    <div className="flex gap-2 mt-3">
-                      {!isPreparing && (
+                    {!isCompleted && (
+                      <div className="flex gap-2 mt-3">
+                        {!isPreparing && (
+                          <Button
+                            className="flex-1 bg-orange-600 hover:bg-orange-700"
+                            onClick={() => startPreparing(order.id)}
+                          >
+                            <Flame className="h-4 w-4 mr-2" />
+                            Start
+                          </Button>
+                        )}
                         <Button
-                          className="flex-1 bg-orange-600 hover:bg-orange-700"
-                          onClick={() => startPreparing(order.id)}
+                          className={`${isPreparing ? 'w-full' : 'flex-1'} bg-green-600 hover:bg-green-700`}
+                          onClick={() => markOrderComplete(order.id)}
                         >
-                          <Flame className="h-4 w-4 mr-2" />
-                          Start
+                          <Check className="h-4 w-4 mr-2" />
+                          Complete
                         </Button>
-                      )}
-                      <Button
-                        className={`${isPreparing ? 'w-full' : 'flex-1'} bg-green-600 hover:bg-green-700`}
-                        onClick={() => markOrderComplete(order.id)}
-                      >
-                        <Check className="h-4 w-4 mr-2" />
-                        Complete
-                      </Button>
-                    </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );

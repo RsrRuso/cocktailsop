@@ -12,7 +12,7 @@ import {
   LogOut, ShoppingCart, Send, Plus, Minus, Trash2, 
   ChefHat, Wine, Clock, CheckCircle, Users, Search,
   Loader2, UtensilsCrossed, Bell, CreditCard, Receipt,
-  DollarSign, ListOrdered, RefreshCw
+  DollarSign, ListOrdered, RefreshCw, ArrowLeft
 } from "lucide-react";
 
 interface StaffMember {
@@ -360,7 +360,22 @@ export default function StaffPOS() {
   }
 
   if (!staff || !outlet) {
-    return <StaffPinLogin outlets={outlets} onLogin={handleStaffLogin} />;
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="sticky top-0 z-50 bg-card border-b p-3">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => window.location.href = '/lab-ops'}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to LAB Ops
+          </Button>
+        </div>
+        <StaffPinLogin outlets={outlets} onLogin={handleStaffLogin} />
+      </div>
+    );
   }
 
   // KDS View for bartenders and kitchen staff
