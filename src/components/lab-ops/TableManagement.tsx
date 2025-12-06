@@ -685,59 +685,216 @@ export default function TableManagement({ outletId }: { outletId: string }) {
               </Dialog>
             </CardHeader>
             <CardContent>
-              <div 
-                ref={canvasRef}
-                className="relative w-full h-[500px] bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20 overflow-auto"
-              >
-                <div className="absolute inset-0" style={{ 
-                  backgroundImage: 'radial-gradient(circle, hsl(var(--muted-foreground) / 0.2) 1px, transparent 1px)',
-                  backgroundSize: '20px 20px'
-                }}>
-                  {floorPlanTables.map((table) => {
-                    const x = table.position_x || Math.random() * 600;
-                    const y = table.position_y || Math.random() * 400;
-                    const width = table.width || (table.shape === "rectangle" ? 120 : 80);
-                    const height = table.height || (table.shape === "rectangle" ? 60 : 80);
-                    
-                    return (
-                      <div
-                        key={table.id}
-                        className={`absolute cursor-move transition-all ${
-                          selectedTableForMove === table.id ? "ring-2 ring-primary" : ""
-                        } ${table.status === "seated" ? "bg-amber-500" : "bg-primary"}`}
-                        style={{
-                          left: x,
-                          top: y,
-                          width,
-                          height,
-                          borderRadius: table.shape === "round" ? "50%" : table.shape === "booth" ? "8px" : "4px"
-                        }}
-                        draggable
-                        onDragStart={() => setSelectedTableForMove(table.id)}
-                        onDragEnd={(e) => {
-                          const rect = canvasRef.current?.getBoundingClientRect();
-                          if (rect) {
-                            const newX = e.clientX - rect.left - width / 2;
-                            const newY = e.clientY - rect.top - height / 2;
-                            handleTableDrag(table.id, Math.max(0, newX), Math.max(0, newY));
-                            const updatedTable = { ...table, position_x: Math.max(0, newX), position_y: Math.max(0, newY) };
-                            saveTablePosition(updatedTable);
-                          }
-                          setSelectedTableForMove(null);
-                        }}
-                      >
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-primary-foreground text-xs font-medium">
-                          <span>{table.name}</span>
-                          <span className="opacity-70">{table.capacity}</span>
+              <div className="flex gap-4">
+                {/* Canvas Area */}
+                <div className="flex-1">
+                  <div 
+                    ref={canvasRef}
+                    className="relative w-full h-[500px] bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20 overflow-hidden"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const tableId = e.dataTransfer.getData("tableId");
+                      if (tableId && canvasRef.current) {
+                        const rect = canvasRef.current.getBoundingClientRect();
+                        const x = e.clientX - rect.left - 40;
+                        const y = e.clientY - rect.top - 40;
+                        handleTableDrag(tableId, Math.max(0, x), Math.max(0, y));
+                        const table = tables.find(t => t.id === tableId);
+                        if (table) {
+                          saveTablePosition({ ...table, position_x: Math.max(0, x), position_y: Math.max(0, y) });
+                        }
+                      }
+                    }}
+                  >
+                    <div className="absolute inset-0" style={{ 
+                      backgroundImage: 'radial-gradient(circle, hsl(var(--muted-foreground) / 0.2) 1px, transparent 1px)',
+                      backgroundSize: '20px 20px'
+                    }}>
+                      {floorPlanTables.map((table) => {
+                        const x = table.position_x ?? 50;
+                        const y = table.position_y ?? 50;
+                        const width = table.width || (table.shape === "rectangle" ? 120 : table.shape === "bar" ? 40 : 80);
+                        const height = table.height || (table.shape === "rectangle" ? 60 : table.shape === "bar" ? 80 : 80);
+                        
+                        const allocationColors: Record<string, string> = {
+                          indoor: "bg-blue-500",
+                          outdoor: "bg-green-500",
+                          patio: "bg-amber-500",
+                          terrace: "bg-orange-500",
+                          rooftop: "bg-purple-500",
+                          private: "bg-pink-500"
+                        };
+                        const bgColor = allocationColors[table.allocation || "indoor"] || "bg-primary";
+                        
+                        return (
+                          <div
+                            key={table.id}
+                            className={`absolute cursor-grab active:cursor-grabbing transition-shadow hover:shadow-lg ${
+                              selectedTableForMove === table.id ? "ring-2 ring-primary ring-offset-2" : ""
+                            } ${table.status === "seated" ? "opacity-60" : ""} ${bgColor}`}
+                            style={{
+                              left: x,
+                              top: y,
+                              width,
+                              height,
+                              borderRadius: table.shape === "round" ? "50%" : table.shape === "booth" ? "12px" : "6px",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
+                            }}
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData("tableId", table.id);
+                              setSelectedTableForMove(table.id);
+                            }}
+                            onDragEnd={() => setSelectedTableForMove(null)}
+                            onClick={() => setSelectedTableForMove(selectedTableForMove === table.id ? null : table.id)}
+                          >
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-xs font-bold drop-shadow">
+                              <span>{table.name}</span>
+                              <span className="opacity-80 text-[10px]">{table.capacity} seats</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                    <span>🖱️ Drag tables to position</span>
+                    <span>👆 Click to select</span>
+                  </div>
+                  {/* Allocation Legend */}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {ALLOCATIONS.map(alloc => {
+                      const colors: Record<string, string> = {
+                        indoor: "bg-blue-500",
+                        outdoor: "bg-green-500",
+                        patio: "bg-amber-500",
+                        terrace: "bg-orange-500",
+                        rooftop: "bg-purple-500",
+                        private: "bg-pink-500"
+                      };
+                      return (
+                        <div key={alloc.value} className="flex items-center gap-1.5">
+                          <div className={`w-3 h-3 rounded ${colors[alloc.value] || "bg-gray-500"}`} />
+                          <span className="text-xs text-muted-foreground">{alloc.label}</span>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
+                
+                {/* Selected Table Panel */}
+                {selectedTableForMove && (
+                  <div className="w-64 shrink-0">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">Edit Table</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {(() => {
+                          const table = tables.find(t => t.id === selectedTableForMove);
+                          if (!table) return null;
+                          return (
+                            <>
+                              <div>
+                                <Label className="text-xs">Name</Label>
+                                <Input 
+                                  value={table.name}
+                                  onChange={(e) => {
+                                    setTables(prev => prev.map(t => 
+                                      t.id === table.id ? { ...t, name: e.target.value } : t
+                                    ));
+                                  }}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Capacity</Label>
+                                <Input 
+                                  type="number"
+                                  value={table.capacity || ""}
+                                  onChange={(e) => {
+                                    setTables(prev => prev.map(t => 
+                                      t.id === table.id ? { ...t, capacity: parseInt(e.target.value) || 0 } : t
+                                    ));
+                                  }}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Allocation</Label>
+                                <Select 
+                                  value={table.allocation || "indoor"} 
+                                  onValueChange={(v) => {
+                                    setTables(prev => prev.map(t => 
+                                      t.id === table.id ? { ...t, allocation: v } : t
+                                    ));
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {ALLOCATIONS.map(a => (
+                                      <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label className="text-xs">Shape</Label>
+                                <Select 
+                                  value={table.shape || "square"} 
+                                  onValueChange={(v) => {
+                                    setTables(prev => prev.map(t => 
+                                      t.id === table.id ? { ...t, shape: v } : t
+                                    ));
+                                  }}
+                                >
+                                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {SHAPES.map(s => (
+                                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex gap-2 pt-2">
+                                <Button 
+                                  size="sm" 
+                                  className="flex-1"
+                                  onClick={async () => {
+                                    await supabase
+                                      .from("lab_ops_tables")
+                                      .update({
+                                        name: table.name,
+                                        capacity: table.capacity,
+                                        allocation: table.allocation,
+                                        shape: table.shape,
+                                        position_x: table.position_x,
+                                        position_y: table.position_y
+                                      })
+                                      .eq("id", table.id);
+                                    toast({ title: "Table saved" });
+                                    setSelectedTableForMove(null);
+                                  }}
+                                >
+                                  <Save className="h-3 w-3 mr-1" />Save
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => setSelectedTableForMove(null)}
+                                >
+                                  Close
+                                </Button>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Drag tables to position them on the floor plan
-              </p>
             </CardContent>
           </Card>
         </TabsContent>
