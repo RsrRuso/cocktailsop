@@ -145,6 +145,7 @@ const DailyOpsReport = lazy(() => import("@/pages/reports/DailyOpsReport"));
 const LabOps = lazy(() => import("@/pages/LabOps"));
 const StaffPOS = lazy(() => import("@/pages/StaffPOS"));
 const StaffInstall = lazy(() => import("@/pages/StaffInstall"));
+const StaffQRAccess = lazy(() => import("@/pages/StaffQRAccess"));
 const BarKDS = lazy(() => import("@/pages/BarKDS"));
 const KitchenKDS = lazy(() => import("@/pages/KitchenKDS"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -306,6 +307,7 @@ const AppContent = () => {
           <Route path="/lab-ops" element={<LabOps />} />
           <Route path="/staff-pos" element={<StaffPOS />} />
           <Route path="/staff-install" element={<StaffInstall />} />
+          <Route path="/staff-qr-access" element={<StaffQRAccess />} />
           <Route path="/bar-kds" element={<BarKDS />} />
           <Route path="/kitchen-kds" element={<KitchenKDS />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

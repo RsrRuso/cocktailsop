@@ -30,7 +30,7 @@ import {
   Download, RefreshCw, Check, X, ArrowRight, Calendar, Truck,
   Archive, Search, Filter, MoreHorizontal, Copy, Printer, Hash,
   PlusCircle, MinusCircle, UserPlus, Shield, Activity, History,
-  Database, Loader2, Sparkles, HelpCircle, GripVertical
+  Database, Loader2, Sparkles, HelpCircle, GripVertical, QrCode
 } from "lucide-react";
 
 interface Outlet {
@@ -474,11 +474,11 @@ export default function LabOps() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => window.location.href = '/staff-install'}
+                onClick={() => window.location.href = '/staff-qr-access'}
                 className="h-9 px-3 rounded-lg border-green-500/50 text-green-500 hover:bg-green-500/10 shrink-0 active:scale-95 transition-transform text-xs"
               >
-                <Download className="h-3.5 w-3.5 mr-1.5" />
-                Install
+                <QrCode className="h-3.5 w-3.5 mr-1.5" />
+                Staff QR
               </Button>
               
               <Button
