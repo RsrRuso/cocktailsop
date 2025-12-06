@@ -388,6 +388,12 @@ export default function StaffPOS() {
     setOrderItems(orderItems.filter(o => o.menu_item_id !== itemId));
   };
 
+  const updateItemNote = (itemId: string, note: string) => {
+    setOrderItems(orderItems.map(o => 
+      o.menu_item_id === itemId ? { ...o, note } : o
+    ));
+  };
+
   const sendOrder = async () => {
     if (!selectedTable || orderItems.length === 0 || !outlet || !staff) return;
     
@@ -998,38 +1004,46 @@ export default function StaffPOS() {
                     </p>
                   ) : (
                     orderItems.map(item => (
-                      <div key={item.menu_item_id} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">${item.price.toFixed(2)} each</p>
+                      <div key={item.menu_item_id} className="p-2 bg-muted/50 rounded space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">${item.price.toFixed(2)} each</p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              className="h-7 w-7"
+                              onClick={() => updateQuantity(item.menu_item_id, -1)}
+                            >
+                              <Minus className="w-3 h-3" />
+                            </Button>
+                            <span className="w-6 text-center text-sm">{item.qty}</span>
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              className="h-7 w-7"
+                              onClick={() => updateQuantity(item.menu_item_id, 1)}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-destructive"
+                              onClick={() => removeItem(item.menu_item_id)}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-7 w-7"
-                            onClick={() => updateQuantity(item.menu_item_id, -1)}
-                          >
-                            <Minus className="w-3 h-3" />
-                          </Button>
-                          <span className="w-6 text-center text-sm">{item.qty}</span>
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            className="h-7 w-7"
-                            onClick={() => updateQuantity(item.menu_item_id, 1)}
-                          >
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 text-destructive"
-                            onClick={() => removeItem(item.menu_item_id)}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
+                        <Input
+                          placeholder="Add note (e.g., no onions, extra spicy...)"
+                          value={item.note || ""}
+                          onChange={(e) => updateItemNote(item.menu_item_id, e.target.value)}
+                          className="h-8 text-xs"
+                        />
                       </div>
                     ))
                   )}
