@@ -380,55 +380,56 @@ export default function LabOps() {
             </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Mobile-optimized scrollable action buttons */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-thin scrollbar-thumb-muted">
             <Button
               size="sm"
               variant="default"
               onClick={() => window.location.href = '/staff-pos'}
-              className="h-9 px-2 sm:px-3 bg-primary"
+              className="h-10 px-3 rounded-full bg-primary shrink-0 active:scale-95 transition-transform"
             >
               <Smartphone className="h-4 w-4" />
-              <span className="hidden sm:inline ml-1">Staff POS</span>
+              <span className="ml-1.5 text-xs font-medium">POS</span>
             </Button>
             
             <Button
               size="sm"
               variant="outline"
               onClick={() => window.location.href = '/staff-install'}
-              className="h-9 px-2 sm:px-3 border-green-500 text-green-600 hover:bg-green-500/10"
+              className="h-10 px-3 rounded-full border-green-500/50 text-green-500 hover:bg-green-500/10 shrink-0 active:scale-95 transition-transform"
             >
               <Download className="h-4 w-4" />
-              <span className="hidden sm:inline ml-1">Staff App</span>
+              <span className="ml-1.5 text-xs font-medium">Install</span>
             </Button>
             
             <Button
               size="sm"
               variant="outline"
               onClick={() => window.location.href = '/bar-kds'}
-              className="h-9 px-2 sm:px-3 border-amber-500 text-amber-600 hover:bg-amber-500/10"
+              className="h-10 px-3 rounded-full border-amber-500/50 text-amber-500 hover:bg-amber-500/10 shrink-0 active:scale-95 transition-transform"
             >
               <Wine className="h-4 w-4" />
-              <span className="hidden sm:inline ml-1">Bar</span>
+              <span className="ml-1.5 text-xs font-medium">Bar</span>
             </Button>
             
             <Button
               size="sm"
               variant="outline"
               onClick={() => window.location.href = '/kitchen-kds'}
-              className="h-9 px-2 sm:px-3 border-orange-500 text-orange-600 hover:bg-orange-500/10"
+              className="h-10 px-3 rounded-full border-orange-500/50 text-orange-500 hover:bg-orange-500/10 shrink-0 active:scale-95 transition-transform"
             >
               <ChefHat className="h-4 w-4" />
-              <span className="hidden sm:inline ml-1">Kitchen</span>
+              <span className="ml-1.5 text-xs font-medium">Kitchen</span>
             </Button>
             
             <Button
               size="sm"
               variant="outline"
               onClick={() => setShowOnboarding(true)}
-              className="h-9 px-2 sm:px-3"
+              className="h-10 px-3 rounded-full shrink-0 active:scale-95 transition-transform"
             >
               <HelpCircle className="h-4 w-4" />
-              <span className="hidden sm:inline ml-1">Guide</span>
+              <span className="ml-1.5 text-xs font-medium">Guide</span>
             </Button>
             
             {selectedOutlet && (
@@ -437,14 +438,14 @@ export default function LabOps() {
                 variant="outline" 
                 onClick={loadDemoData} 
                 disabled={loadingDemo}
-                className="border-primary/50 text-primary hover:bg-primary/10 h-9 px-2 sm:px-3"
+                className="h-10 px-3 rounded-full border-primary/50 text-primary hover:bg-primary/10 shrink-0 active:scale-95 transition-transform"
               >
                 {loadingDemo ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )}
-                <span className="hidden sm:inline ml-1">Demo</span>
+                <span className="ml-1.5 text-xs font-medium">Demo</span>
               </Button>
             )}
             
@@ -457,7 +458,10 @@ export default function LabOps() {
                 currentStaffEmail={user?.email}
               />
             )}
-            
+          </div>
+          
+          {/* Outlet selector row */}
+          <div className="flex items-center gap-2">
             {outlets.length > 0 && (
               <Select
                 value={selectedOutlet?.id}
@@ -466,8 +470,8 @@ export default function LabOps() {
                   if (outlet) setSelectedOutlet(outlet);
                 }}
               >
-                <SelectTrigger className="w-32 sm:w-44 h-9">
-                  <Store className="h-4 w-4 mr-1 shrink-0" />
+                <SelectTrigger className="w-36 sm:w-44 h-10 rounded-full">
+                  <Store className="h-4 w-4 mr-1.5 shrink-0" />
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
@@ -482,9 +486,8 @@ export default function LabOps() {
             
             <Dialog open={showCreateOutlet} onOpenChange={setShowCreateOutlet}>
               <DialogTrigger asChild>
-                <Button size="sm" className="h-9 px-2 sm:px-3">
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline ml-1">New</span>
+                <Button size="sm" className="h-10 w-10 rounded-full p-0">
+                  <Plus className="h-5 w-5" />
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-[95vw] sm:max-w-md">
