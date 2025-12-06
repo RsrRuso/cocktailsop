@@ -3182,13 +3182,20 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
   const updateStaff = async () => {
     if (!editingStaff) return;
 
+    const updateData: any = {
+      full_name: editingStaff.full_name,
+      role: editingStaff.role,
+      is_active: editingStaff.is_active,
+    };
+
+    // Only update PIN if a new one is provided
+    if (editingStaff.new_pin_code && editingStaff.new_pin_code.length === 4) {
+      updateData.pin_code = editingStaff.new_pin_code;
+    }
+
     await supabase
       .from("lab_ops_staff")
-      .update({
-        full_name: editingStaff.full_name,
-        role: editingStaff.role,
-        is_active: editingStaff.is_active,
-      })
+      .update(updateData)
       .eq("id", editingStaff.id);
 
     setEditingStaff(null);
@@ -3368,6 +3375,19 @@ function StaffModule({ outletId, outletName }: { outletId: string; outletName: s
                     <SelectItem value="barback">Barback</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Update PIN Code (4 digits)</Label>
+                <Input 
+                  type="password" 
+                  maxLength={4}
+                  value={editingStaff.new_pin_code || ""} 
+                  onChange={(e) => setEditingStaff({ ...editingStaff, new_pin_code: e.target.value.replace(/\D/g, "") })} 
+                  placeholder="Leave empty to keep current PIN"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {editingStaff.pin_code ? "Current PIN is set" : "No PIN set"}
+                </p>
               </div>
               <Button onClick={updateStaff} className="w-full">Save Changes</Button>
             </div>
