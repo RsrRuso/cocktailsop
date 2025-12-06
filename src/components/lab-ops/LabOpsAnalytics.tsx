@@ -18,6 +18,7 @@ import {
   Gift, ArrowUpRight, ArrowDownRight, Loader2, FileSpreadsheet,
   Presentation, Filter, RefreshCw, Plus, Trash2, Edit, Eye
 } from "lucide-react";
+import MemberTransactionsReport from "./MemberTransactionsReport";
 
 interface LabOpsAnalyticsProps {
   outletId: string;
@@ -510,6 +511,7 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
         <ScrollArea className="w-full">
           <TabsList className="inline-flex h-auto p-1 gap-1 bg-muted/50 rounded-lg w-max">
             <TabsTrigger value="overview" className="text-xs px-3 py-2">Overview</TabsTrigger>
+            <TabsTrigger value="transactions" className="text-xs px-3 py-2 bg-primary/10">Member Report</TabsTrigger>
             <TabsTrigger value="sales" className="text-xs px-3 py-2">Sales</TabsTrigger>
             <TabsTrigger value="menu" className="text-xs px-3 py-2">Menu Mix</TabsTrigger>
             <TabsTrigger value="packages" className="text-xs px-3 py-2">Packages</TabsTrigger>
@@ -1010,6 +1012,11 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* MEMBER TRANSACTIONS TAB */}
+        <TabsContent value="transactions" className="mt-4">
+          <MemberTransactionsReport outletId={outletId} />
         </TabsContent>
       </Tabs>
     </div>
