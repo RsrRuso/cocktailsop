@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { 
   LogOut, ShoppingCart, Send, Plus, Minus, Trash2, 
@@ -934,42 +935,24 @@ export default function StaffPOS() {
                 </div>
               </div>
 
-              {/* Categories - Mobile-friendly horizontal scroll */}
-              <div className="border-b">
-                <div 
-                  className="flex gap-2 p-2 overflow-x-scroll"
-                  style={{ 
-                    WebkitOverflowScrolling: 'touch',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
-                  }}
+              {/* Categories Dropdown */}
+              <div className="border-b p-2">
+                <Select 
+                  value={selectedCategory || "all"} 
+                  onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)}
                 >
-                  <button
-                    className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
-                      !selectedCategory 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted text-foreground'
-                    }`}
-                    onClick={() => setSelectedCategory(null)}
-                  >
-                    All
-                  </button>
-                  {categories.map(cat => (
-                    <button
-                      key={cat.id}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
-                        selectedCategory === cat.id 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'bg-muted text-foreground'
-                      }`}
-                      onClick={() => setSelectedCategory(cat.id)}
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
-                  {/* Spacer to ensure last item is fully visible */}
-                  <div className="w-4 flex-shrink-0" />
-                </div>
+                  <SelectTrigger className="w-full h-12 text-base bg-card">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border z-50">
+                    <SelectItem value="all" className="text-base py-3">All Categories</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id} className="text-base py-3">
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Menu Items */}
