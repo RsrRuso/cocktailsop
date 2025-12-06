@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Smile, Settings, Palette } from "lucide-react";
+import { ArrowLeft, Smile, Settings, Palette, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -14,6 +14,7 @@ import { ForwardMessageDialog } from "@/components/ForwardMessageDialog";
 import { GroupSettingsDialog } from "@/components/GroupSettingsDialog";
 import { SmartReplySuggestions } from "@/components/SmartReplySuggestions";
 import { ChatBackgroundPicker, Chat3DBackground, getStoredBackground, ChatBackground } from "@/components/ChatBackgroundPicker";
+import { NotificationSoundPicker } from "@/components/NotificationSoundPicker";
 
 const MessageThread = () => {
   const { conversationId } = useParams();
@@ -258,14 +259,23 @@ const MessageThread = () => {
                 </p>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowBackgroundPicker(true)}
-              className="glass rounded-full hover:bg-primary/20 shrink-0 z-10"
-            >
-              <Palette className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1 shrink-0 z-10">
+              <NotificationSoundPicker
+                trigger={
+                  <Button variant="ghost" size="icon" className="glass rounded-full hover:bg-primary/20">
+                    <Bell className="w-4 h-4" />
+                  </Button>
+                }
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowBackgroundPicker(true)}
+                className="glass rounded-full hover:bg-primary/20"
+              >
+                <Palette className="w-4 h-4" />
+              </Button>
+            </div>
           </>
         )}
       </div>
