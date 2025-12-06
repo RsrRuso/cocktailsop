@@ -394,6 +394,16 @@ export default function LabOps() {
             <Button
               size="sm"
               variant="outline"
+              onClick={() => window.location.href = '/staff-install'}
+              className="h-9 px-2 sm:px-3 border-green-500 text-green-600 hover:bg-green-500/10"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline ml-1">Staff App</span>
+            </Button>
+            
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => window.location.href = '/bar-kds'}
               className="h-9 px-2 sm:px-3 border-amber-500 text-amber-600 hover:bg-amber-500/10"
             >
