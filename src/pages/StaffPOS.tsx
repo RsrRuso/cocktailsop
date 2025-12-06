@@ -216,7 +216,6 @@ export default function StaffPOS() {
         order_id: order.id,
         amount: subtotal,
         payment_method: paymentMethod,
-        status: "completed",
       });
 
       if (paymentError) {
