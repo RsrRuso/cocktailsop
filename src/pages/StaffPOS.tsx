@@ -934,12 +934,13 @@ export default function StaffPOS() {
                 </div>
               </div>
 
-              {/* Categories */}
-              <ScrollArea className="whitespace-nowrap border-b">
-                <div className="flex gap-1 p-2">
+              {/* Categories - Horizontal scrolling */}
+              <div className="border-b overflow-x-auto scrollbar-thin scrollbar-thumb-muted">
+                <div className="flex gap-1.5 p-2 min-w-max">
                   <Button
                     variant={!selectedCategory ? "default" : "outline"}
                     size="sm"
+                    className="shrink-0"
                     onClick={() => setSelectedCategory(null)}
                   >
                     All
@@ -949,13 +950,14 @@ export default function StaffPOS() {
                       key={cat.id}
                       variant={selectedCategory === cat.id ? "default" : "outline"}
                       size="sm"
+                      className="shrink-0"
                       onClick={() => setSelectedCategory(cat.id)}
                     >
                       {cat.name}
                     </Button>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
 
               {/* Menu Items */}
               <ScrollArea className="flex-1">
