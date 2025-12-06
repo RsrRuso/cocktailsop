@@ -3613,21 +3613,19 @@ function ReportsModule({ outletId }: { outletId: string }) {
   );
 }
 
+import TableManagement from "@/components/lab-ops/TableManagement";
+
 // ====================== SETTINGS MODULE ======================
 function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => void }) {
-  const [tables, setTables] = useState<any[]>([]);
   const [stations, setStations] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [voidReasons, setVoidReasons] = useState<any[]>([]);
-  const [showAddTable, setShowAddTable] = useState(false);
   const [showAddStation, setShowAddStation] = useState(false);
   const [showAddLocation, setShowAddLocation] = useState(false);
   const [showAddVoidReason, setShowAddVoidReason] = useState(false);
   const [activeTab, setActiveTab] = useState("tables");
   
   // Form states
-  const [newTableName, setNewTableName] = useState("");
-  const [newTableCapacity, setNewTableCapacity] = useState("4");
   const [newStationName, setNewStationName] = useState("");
   const [newStationType, setNewStationType] = useState("BAR");
   const [newLocationName, setNewLocationName] = useState("");
@@ -3635,20 +3633,10 @@ function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => 
   const [newVoidReason, setNewVoidReason] = useState("");
 
   useEffect(() => {
-    fetchTables();
     fetchStations();
     fetchLocations();
     fetchVoidReasons();
   }, [outlet.id]);
-
-  const fetchTables = async () => {
-    const { data } = await supabase
-      .from("lab_ops_tables")
-      .select("*")
-      .eq("outlet_id", outlet.id)
-      .order("name");
-    setTables(data || []);
-  };
 
   const fetchStations = async () => {
     const { data } = await supabase
@@ -3674,22 +3662,6 @@ function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => 
       .eq("outlet_id", outlet.id)
       .order("name");
     setVoidReasons(data || []);
-  };
-
-  const createTable = async () => {
-    if (!newTableName.trim()) return;
-
-    await supabase.from("lab_ops_tables").insert({
-      outlet_id: outlet.id,
-      name: newTableName.trim(),
-      capacity: parseInt(newTableCapacity) || 4,
-    });
-
-    setNewTableName("");
-    setNewTableCapacity("4");
-    setShowAddTable(false);
-    fetchTables();
-    toast({ title: "Table created" });
   };
 
   const createStation = async () => {
@@ -3735,12 +3707,6 @@ function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => 
     setShowAddVoidReason(false);
     fetchVoidReasons();
     toast({ title: "Void reason created" });
-  };
-
-  const deleteTable = async (id: string) => {
-    await supabase.from("lab_ops_tables").delete().eq("id", id);
-    fetchTables();
-    toast({ title: "Table deleted" });
   };
 
   const deleteStation = async (id: string) => {
@@ -3794,53 +3760,9 @@ function SettingsModule({ outlet, onUpdate }: { outlet: Outlet; onUpdate: () => 
           <TabsTrigger value="voidreasons">Void Reasons</TabsTrigger>
         </TabsList>
 
-        {/* Tables Tab */}
+        {/* Tables Tab - Using new TableManagement component */}
         <TabsContent value="tables" className="mt-4">
-          <Card>
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
-              <CardTitle className="text-lg">Tables</CardTitle>
-              <Dialog open={showAddTable} onOpenChange={setShowAddTable}>
-                <DialogTrigger asChild>
-                  <Button size="sm"><Plus className="h-4 w-4 mr-1" />Add Table</Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Add Table</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div>
-                      <Label>Name</Label>
-                      <Input value={newTableName} onChange={(e) => setNewTableName(e.target.value)} placeholder="e.g., T1, Bar 1" />
-                    </div>
-                    <div>
-                      <Label>Capacity</Label>
-                      <Input type="number" value={newTableCapacity} onChange={(e) => setNewTableCapacity(e.target.value)} />
-                    </div>
-                    <Button onClick={createTable} className="w-full">Create Table</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </CardHeader>
-            <CardContent>
-              {tables.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No tables configured</p>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {tables.map((table) => (
-                    <div key={table.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                      <div>
-                        <p className="font-medium">{table.name}</p>
-                        <p className="text-xs text-muted-foreground">{table.capacity} seats</p>
-                      </div>
-                      <Button size="icon" variant="ghost" onClick={() => deleteTable(table.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <TableManagement outletId={outlet.id} />
         </TabsContent>
 
         {/* Stations Tab */}
