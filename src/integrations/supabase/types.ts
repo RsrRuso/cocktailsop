@@ -3184,6 +3184,1370 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_ops_audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          outlet_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          outlet_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          outlet_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_audit_logs_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_categories: {
+        Row: {
+          created_at: string | null
+          icon: string | null
+          id: string
+          name: string
+          outlet_id: string
+          parent_id: string | null
+          sort_order: number | null
+          type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          outlet_id: string
+          parent_id?: string | null
+          sort_order?: number | null
+          type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          outlet_id?: string
+          parent_id?: string | null
+          sort_order?: number | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_categories_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_goods_receipt_lines: {
+        Row: {
+          batch_no: string | null
+          created_at: string | null
+          expiry_date: string | null
+          final_unit_cost: number | null
+          goods_receipt_id: string
+          id: string
+          inventory_item_id: string
+          qty_received: number
+        }
+        Insert: {
+          batch_no?: string | null
+          created_at?: string | null
+          expiry_date?: string | null
+          final_unit_cost?: number | null
+          goods_receipt_id: string
+          id?: string
+          inventory_item_id: string
+          qty_received: number
+        }
+        Update: {
+          batch_no?: string | null
+          created_at?: string | null
+          expiry_date?: string | null
+          final_unit_cost?: number | null
+          goods_receipt_id?: string
+          id?: string
+          inventory_item_id?: string
+          qty_received?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_goods_receipt_lines_goods_receipt_id_fkey"
+            columns: ["goods_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_goods_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_goods_receipt_lines_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_goods_receipts: {
+        Row: {
+          created_at: string | null
+          id: string
+          location_id: string | null
+          notes: string | null
+          purchase_order_id: string
+          received_by: string | null
+          received_date: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          location_id?: string | null
+          notes?: string | null
+          purchase_order_id: string
+          received_by?: string | null
+          received_date?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          location_id?: string | null
+          notes?: string | null
+          purchase_order_id?: string
+          received_by?: string | null
+          received_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_goods_receipts_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_goods_receipts_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_inventory_item_costs: {
+        Row: {
+          created_at: string | null
+          effective_from: string | null
+          effective_to: string | null
+          id: string
+          inventory_item_id: string
+          supplier_id: string | null
+          unit_cost: number
+        }
+        Insert: {
+          created_at?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          inventory_item_id: string
+          supplier_id?: string | null
+          unit_cost: number
+        }
+        Update: {
+          created_at?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          inventory_item_id?: string
+          supplier_id?: string | null
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_inventory_item_costs_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_inventory_item_costs_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_inventory_items: {
+        Row: {
+          base_unit: string | null
+          category: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          outlet_id: string
+          par_level: number | null
+          sku: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_unit?: string | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          outlet_id: string
+          par_level?: number | null
+          sku?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_unit?: string | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          outlet_id?: string
+          par_level?: number | null
+          sku?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_inventory_items_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_locations: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          outlet_id: string
+          type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          outlet_id: string
+          type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          outlet_id?: string
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_locations_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_menu_item_modifiers: {
+        Row: {
+          id: string
+          is_required: boolean | null
+          menu_item_id: string
+          modifier_id: string
+        }
+        Insert: {
+          id?: string
+          is_required?: boolean | null
+          menu_item_id: string
+          modifier_id: string
+        }
+        Update: {
+          id?: string
+          is_required?: boolean | null
+          menu_item_id?: string
+          modifier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_menu_item_modifiers_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_menu_item_modifiers_modifier_id_fkey"
+            columns: ["modifier_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_modifiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_menu_item_stations: {
+        Row: {
+          id: string
+          menu_item_id: string
+          priority: number | null
+          station_id: string
+        }
+        Insert: {
+          id?: string
+          menu_item_id: string
+          priority?: number | null
+          station_id: string
+        }
+        Update: {
+          id?: string
+          menu_item_id?: string
+          priority?: number | null
+          station_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_menu_item_stations_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_menu_item_stations_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_menu_items: {
+        Row: {
+          base_price: number
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          is_recipe_based: boolean | null
+          name: string
+          outlet_id: string
+          tax_rate: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_price: number
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_recipe_based?: boolean | null
+          name: string
+          outlet_id: string
+          tax_rate?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_price?: number
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_recipe_based?: boolean | null
+          name?: string
+          outlet_id?: string
+          tax_rate?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_menu_items_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_modifiers: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          outlet_id: string
+          price_delta: number | null
+          type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          outlet_id: string
+          price_delta?: number | null
+          type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          outlet_id?: string
+          price_delta?: number | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_modifiers_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_order_items: {
+        Row: {
+          course: number | null
+          created_at: string | null
+          discount_amount: number | null
+          id: string
+          menu_item_id: string
+          modifiers: Json | null
+          note: string | null
+          order_id: string
+          qty: number | null
+          ready_at: string | null
+          sent_at: string | null
+          station_id: string | null
+          status:
+            | Database["public"]["Enums"]["lab_ops_order_item_status"]
+            | null
+          tax_amount: number | null
+          unit_price: number
+          updated_at: string | null
+        }
+        Insert: {
+          course?: number | null
+          created_at?: string | null
+          discount_amount?: number | null
+          id?: string
+          menu_item_id: string
+          modifiers?: Json | null
+          note?: string | null
+          order_id: string
+          qty?: number | null
+          ready_at?: string | null
+          sent_at?: string | null
+          station_id?: string | null
+          status?:
+            | Database["public"]["Enums"]["lab_ops_order_item_status"]
+            | null
+          tax_amount?: number | null
+          unit_price: number
+          updated_at?: string | null
+        }
+        Update: {
+          course?: number | null
+          created_at?: string | null
+          discount_amount?: number | null
+          id?: string
+          menu_item_id?: string
+          modifiers?: Json | null
+          note?: string | null
+          order_id?: string
+          qty?: number | null
+          ready_at?: string | null
+          sent_at?: string | null
+          station_id?: string | null
+          status?:
+            | Database["public"]["Enums"]["lab_ops_order_item_status"]
+            | null
+          tax_amount?: number | null
+          unit_price?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_order_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_order_items_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_orders: {
+        Row: {
+          closed_at: string | null
+          covers: number | null
+          created_at: string | null
+          discount_total: number | null
+          id: string
+          notes: string | null
+          opened_at: string | null
+          outlet_id: string
+          server_id: string | null
+          service_charge: number | null
+          status: Database["public"]["Enums"]["lab_ops_order_status"] | null
+          subtotal: number | null
+          table_id: string | null
+          tax_total: number | null
+          total_amount: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          covers?: number | null
+          created_at?: string | null
+          discount_total?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string | null
+          outlet_id: string
+          server_id?: string | null
+          service_charge?: number | null
+          status?: Database["public"]["Enums"]["lab_ops_order_status"] | null
+          subtotal?: number | null
+          table_id?: string | null
+          tax_total?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          covers?: number | null
+          created_at?: string | null
+          discount_total?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string | null
+          outlet_id?: string
+          server_id?: string | null
+          service_charge?: number | null
+          status?: Database["public"]["Enums"]["lab_ops_order_status"] | null
+          subtotal?: number | null
+          table_id?: string | null
+          tax_total?: number | null
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_orders_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_orders_server_id_fkey"
+            columns: ["server_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_orders_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_outlets: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          settings: Json | null
+          type: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          settings?: Json | null
+          type?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          settings?: Json | null
+          type?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      lab_ops_payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          order_id: string
+          payment_method: string
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          order_id: string
+          payment_method: string
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          order_id?: string
+          payment_method?: string
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_purchase_order_lines: {
+        Row: {
+          created_at: string | null
+          id: string
+          inventory_item_id: string
+          purchase_order_id: string
+          qty_ordered: number
+          qty_received: number | null
+          unit_cost: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          inventory_item_id: string
+          purchase_order_id: string
+          qty_ordered: number
+          qty_received?: number | null
+          unit_cost: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          inventory_item_id?: string
+          purchase_order_id?: string
+          qty_ordered?: number
+          qty_received?: number | null
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_purchase_order_lines_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_purchase_order_lines_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_purchase_orders: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          created_by: string | null
+          expected_delivery: string | null
+          id: string
+          notes: string | null
+          outlet_id: string
+          po_date: string | null
+          po_number: string | null
+          status: Database["public"]["Enums"]["lab_ops_po_status"] | null
+          supplier_id: string
+          total_amount: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expected_delivery?: string | null
+          id?: string
+          notes?: string | null
+          outlet_id: string
+          po_date?: string | null
+          po_number?: string | null
+          status?: Database["public"]["Enums"]["lab_ops_po_status"] | null
+          supplier_id: string
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expected_delivery?: string | null
+          id?: string
+          notes?: string | null
+          outlet_id?: string
+          po_date?: string | null
+          po_number?: string | null
+          status?: Database["public"]["Enums"]["lab_ops_po_status"] | null
+          supplier_id?: string
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_purchase_orders_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_recipe_ingredients: {
+        Row: {
+          created_at: string | null
+          id: string
+          inventory_item_id: string
+          qty: number
+          recipe_id: string
+          unit: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          inventory_item_id: string
+          qty: number
+          recipe_id: string
+          unit: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          inventory_item_id?: string
+          qty?: number
+          recipe_id?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_recipe_ingredients_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_recipe_ingredients_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_recipes: {
+        Row: {
+          created_at: string | null
+          id: string
+          instructions: string | null
+          is_active: boolean | null
+          menu_item_id: string
+          updated_at: string | null
+          version_number: number | null
+          yield_qty: number | null
+          yield_unit: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          instructions?: string | null
+          is_active?: boolean | null
+          menu_item_id: string
+          updated_at?: string | null
+          version_number?: number | null
+          yield_qty?: number | null
+          yield_unit?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          instructions?: string | null
+          is_active?: boolean | null
+          menu_item_id?: string
+          updated_at?: string | null
+          version_number?: number | null
+          yield_qty?: number | null
+          yield_unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_recipes_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_staff: {
+        Row: {
+          created_at: string | null
+          full_name: string
+          id: string
+          is_active: boolean | null
+          outlet_id: string
+          permissions: Json | null
+          pin_code: string | null
+          role: Database["public"]["Enums"]["lab_ops_role"] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          full_name: string
+          id?: string
+          is_active?: boolean | null
+          outlet_id: string
+          permissions?: Json | null
+          pin_code?: string | null
+          role?: Database["public"]["Enums"]["lab_ops_role"] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          is_active?: boolean | null
+          outlet_id?: string
+          permissions?: Json | null
+          pin_code?: string | null
+          role?: Database["public"]["Enums"]["lab_ops_role"] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_staff_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_stations: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          outlet_id: string
+          printer_config: Json | null
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          outlet_id: string
+          printer_config?: Json | null
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          outlet_id?: string
+          printer_config?: Json | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_stations_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_stock_levels: {
+        Row: {
+          id: string
+          inventory_item_id: string
+          location_id: string
+          quantity: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          inventory_item_id: string
+          location_id: string
+          quantity?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          inventory_item_id?: string
+          location_id?: string
+          quantity?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_stock_levels_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_stock_levels_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_stock_movements: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          from_location_id: string | null
+          id: string
+          inventory_item_id: string
+          movement_type: Database["public"]["Enums"]["lab_ops_movement_type"]
+          notes: string | null
+          qty: number
+          reference_id: string | null
+          reference_type: string | null
+          to_location_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          from_location_id?: string | null
+          id?: string
+          inventory_item_id: string
+          movement_type: Database["public"]["Enums"]["lab_ops_movement_type"]
+          notes?: string | null
+          qty: number
+          reference_id?: string | null
+          reference_type?: string | null
+          to_location_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          from_location_id?: string | null
+          id?: string
+          inventory_item_id?: string
+          movement_type?: Database["public"]["Enums"]["lab_ops_movement_type"]
+          notes?: string | null
+          qty?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          to_location_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_stock_movements_from_location_id_fkey"
+            columns: ["from_location_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_stock_movements_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_stock_movements_to_location_id_fkey"
+            columns: ["to_location_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_stock_take_lines: {
+        Row: {
+          counted_qty: number | null
+          created_at: string | null
+          id: string
+          inventory_item_id: string
+          stock_take_id: string
+          system_qty: number | null
+          variance_cost: number | null
+          variance_qty: number | null
+        }
+        Insert: {
+          counted_qty?: number | null
+          created_at?: string | null
+          id?: string
+          inventory_item_id: string
+          stock_take_id: string
+          system_qty?: number | null
+          variance_cost?: number | null
+          variance_qty?: number | null
+        }
+        Update: {
+          counted_qty?: number | null
+          created_at?: string | null
+          id?: string
+          inventory_item_id?: string
+          stock_take_id?: string
+          system_qty?: number | null
+          variance_cost?: number | null
+          variance_qty?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_stock_take_lines_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_stock_take_lines_stock_take_id_fkey"
+            columns: ["stock_take_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_stock_takes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_stock_takes: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          location_id: string | null
+          outlet_id: string
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          location_id?: string | null
+          outlet_id: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          location_id?: string | null
+          outlet_id?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_stock_takes_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_stock_takes_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_suppliers: {
+        Row: {
+          address: string | null
+          contact_name: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          lead_time_days: number | null
+          name: string
+          outlet_id: string
+          payment_terms: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_time_days?: number | null
+          name: string
+          outlet_id: string
+          payment_terms?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_time_days?: number | null
+          name?: string
+          outlet_id?: string
+          payment_terms?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_suppliers_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_tables: {
+        Row: {
+          capacity: number | null
+          created_at: string | null
+          id: string
+          name: string
+          outlet_id: string
+          position_x: number | null
+          position_y: number | null
+          status: Database["public"]["Enums"]["lab_ops_table_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string | null
+          id?: string
+          name: string
+          outlet_id: string
+          position_x?: number | null
+          position_y?: number | null
+          status?: Database["public"]["Enums"]["lab_ops_table_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          outlet_id?: string
+          position_x?: number | null
+          position_y?: number | null
+          status?: Database["public"]["Enums"]["lab_ops_table_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_tables_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_void_reasons: {
+        Row: {
+          code: string
+          description: string | null
+          id: string
+          outlet_id: string
+        }
+        Insert: {
+          code: string
+          description?: string | null
+          id?: string
+          outlet_id: string
+        }
+        Update: {
+          code?: string
+          description?: string | null
+          id?: string
+          outlet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_void_reasons_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_voids: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          order_item_id: string
+          reason_id: string | null
+          staff_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          order_item_id: string
+          reason_id?: string | null
+          staff_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          order_item_id?: string
+          reason_id?: string | null
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_voids_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_voids_reason_id_fkey"
+            columns: ["reason_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_void_reasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_voids_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       location_areas: {
         Row: {
           area_type: string
@@ -7189,6 +8553,10 @@ export type Database = {
         Returns: boolean
       }
       is_founder: { Args: { user_id: string }; Returns: boolean }
+      is_lab_ops_outlet_member: {
+        Args: { _outlet_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_mixologist_group_member: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
@@ -7232,6 +8600,46 @@ export type Database = {
         | "tall_fridge"
         | "chiller"
         | "super_freezer"
+      lab_ops_movement_type:
+        | "purchase"
+        | "sale"
+        | "wastage"
+        | "breakage"
+        | "transfer"
+        | "adjustment"
+      lab_ops_order_item_status:
+        | "pending"
+        | "sent"
+        | "in_progress"
+        | "ready"
+        | "served"
+        | "voided"
+      lab_ops_order_status:
+        | "open"
+        | "sent"
+        | "in_progress"
+        | "ready"
+        | "closed"
+        | "cancelled"
+      lab_ops_po_status:
+        | "draft"
+        | "issued"
+        | "partially_received"
+        | "closed"
+        | "cancelled"
+      lab_ops_role:
+        | "waiter"
+        | "bartender"
+        | "kitchen"
+        | "supervisor"
+        | "manager"
+        | "admin"
+      lab_ops_table_status:
+        | "free"
+        | "seated"
+        | "ordering"
+        | "bill_requested"
+        | "closed"
       professional_title:
         | "bartender"
         | "mixologist"
@@ -7393,6 +8801,52 @@ export const Constants = {
         "tall_fridge",
         "chiller",
         "super_freezer",
+      ],
+      lab_ops_movement_type: [
+        "purchase",
+        "sale",
+        "wastage",
+        "breakage",
+        "transfer",
+        "adjustment",
+      ],
+      lab_ops_order_item_status: [
+        "pending",
+        "sent",
+        "in_progress",
+        "ready",
+        "served",
+        "voided",
+      ],
+      lab_ops_order_status: [
+        "open",
+        "sent",
+        "in_progress",
+        "ready",
+        "closed",
+        "cancelled",
+      ],
+      lab_ops_po_status: [
+        "draft",
+        "issued",
+        "partially_received",
+        "closed",
+        "cancelled",
+      ],
+      lab_ops_role: [
+        "waiter",
+        "bartender",
+        "kitchen",
+        "supervisor",
+        "manager",
+        "admin",
+      ],
+      lab_ops_table_status: [
+        "free",
+        "seated",
+        "ordering",
+        "bill_requested",
+        "closed",
       ],
       professional_title: [
         "bartender",
