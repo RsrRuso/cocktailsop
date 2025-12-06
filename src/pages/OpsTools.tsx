@@ -412,6 +412,16 @@ const OpsTools = () => {
     ],
     management: [
       {
+        name: "LAB Ops",
+        description: "Complete POS, Inventory & Restaurant Management",
+        details: "Full restaurant management system with mobile POS ordering, KDS for kitchen/bar, purchasing, inventory control, recipes & costing, and real-time analytics.",
+        icon: Flame,
+        gradient: "from-amber-500 to-red-600",
+        premium: false,
+        path: "/lab-ops",
+        featured: true,
+      },
+      {
         name: "Recipe Vault",
         description: "Secure recipe storage and organization",
         details: "Your digital recipe book. Store specs, batch recipes, and production notes. Tag and categorize for quick access.",
@@ -738,8 +748,35 @@ const OpsTools = () => {
           </TabsContent>
 
           <TabsContent value="management" className="mt-6 space-y-4">
+            {/* Featured LAB Ops Card */}
+            {tools.management.filter((t: any) => t.featured).map((tool) => {
+              const Icon = tool.icon;
+              return (
+                <button
+                  key={tool.name}
+                  onClick={() => handleToolClick(tool.name, tool.premium, (tool as any).path)}
+                  className="w-full glass-hover rounded-2xl p-6 text-left space-y-4 relative overflow-hidden group transition-all duration-300 hover:scale-[1.01] border-2 border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-red-500/10"
+                >
+                  <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-red-600 text-xs font-bold text-white shadow-lg animate-pulse">
+                    FEATURED
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow-lg`}>
+                      <Icon className="w-8 h-8 text-white" strokeWidth={1.5} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-xl mb-1">{tool.name}</h3>
+                      <p className="text-sm text-muted-foreground leading-snug mb-2">{tool.description}</p>
+                      <p className="text-xs text-muted-foreground/70 leading-relaxed">{(tool as any).details}</p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+            
+            {/* Regular Management Tools */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tools.management.map((tool) => {
+              {tools.management.filter((t: any) => !t.featured).map((tool) => {
                 const Icon = tool.icon;
                 return (
                   <button
