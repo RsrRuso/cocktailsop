@@ -479,22 +479,7 @@ export default function StaffPOS() {
   }
 
   if (!staff || !outlet) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="sticky top-0 z-50 bg-card border-b p-3">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => window.location.href = '/lab-ops'}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to LAB Ops
-          </Button>
-        </div>
-        <StaffPinLogin outlets={outlets} onLogin={handleStaffLogin} />
-      </div>
-    );
+    return <StaffPinLogin outlets={outlets} onLogin={handleStaffLogin} />;
   }
 
   // KDS View for bartenders and kitchen staff
