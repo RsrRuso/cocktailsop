@@ -944,7 +944,6 @@ function POSModule({ outletId }: { outletId: string }) {
         order_id: currentOrder.id,
         amount: total,
         payment_method: paymentMethod,
-        status: "completed",
       });
       
       if (paymentError) {
