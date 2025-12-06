@@ -425,9 +425,11 @@ export default function KitchenKDS() {
                                   </span>
                                 </div>
                                 {item.note && (
-                                  <p className="text-xs text-gray-400 mt-1 italic">
-                                    ⚠️ {item.note}
-                                  </p>
+                                  <div className="mt-2 p-2 bg-yellow-900/50 border border-yellow-600 rounded">
+                                    <p className="text-sm text-yellow-200 font-medium">
+                                      📝 {item.note}
+                                    </p>
+                                  </div>
                                 )}
                               </div>
                               {!isCompleted && item.status !== 'ready' && (
