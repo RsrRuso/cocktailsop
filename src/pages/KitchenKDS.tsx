@@ -130,8 +130,10 @@ export default function KitchenKDS() {
 
       const kitchenCategories = ["Appetizers", "Main Courses", "Desserts", "Starters", "Salads", "Sides"];
 
-      // Process active orders
+      // Process all orders and separate based on item status
       const activeOrdersWithItems: Order[] = [];
+      const readyOrders: Order[] = [];
+      
       for (const order of activeOrdersData || []) {
         const { data: items } = await supabase
           .from("lab_ops_order_items")
@@ -149,18 +151,27 @@ export default function KitchenKDS() {
         );
 
         if (kitchenItems.length > 0) {
-          activeOrdersWithItems.push({
+          const orderData: Order = {
             id: order.id,
             table_id: order.table_id,
             status: order.status,
             created_at: order.created_at,
             table: order.table as any,
             items: kitchenItems as unknown as OrderItem[]
-          });
+          };
+
+          // Check if ALL kitchen items are ready
+          const allItemsReady = kitchenItems.every(item => item.status === 'ready');
+          
+          if (allItemsReady) {
+            readyOrders.push(orderData);
+          } else {
+            activeOrdersWithItems.push(orderData);
+          }
         }
       }
 
-      // Process completed orders
+      // Process closed orders from DB
       const completedOrdersWithItems: Order[] = [];
       for (const order of completedOrdersData || []) {
         const { data: items } = await supabase
@@ -191,7 +202,8 @@ export default function KitchenKDS() {
       }
 
       setOrders(activeOrdersWithItems);
-      setCompletedOrders(completedOrdersWithItems);
+      // Combine ready orders with completed orders
+      setCompletedOrders([...readyOrders, ...completedOrdersWithItems]);
     } catch (error) {
       console.error("Error fetching orders:", error);
     } finally {

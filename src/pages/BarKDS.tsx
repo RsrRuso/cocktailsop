@@ -129,8 +129,12 @@ export default function BarKDS() {
 
       if (completedError) throw completedError;
 
-      // Process active orders
+      const barCategories = ["Cocktails", "Wines", "Beers", "Spirits", "Soft Drinks"];
+
+      // Process all orders and separate based on item status
       const activeWithItems: Order[] = [];
+      const readyOrders: Order[] = [];
+      
       for (const order of activeOrdersData || []) {
         const { data: items } = await supabase
           .from("lab_ops_order_items")
@@ -143,24 +147,32 @@ export default function BarKDS() {
           `)
           .eq("order_id", order.id);
 
-        const barCategories = ["Cocktails", "Wines", "Beers", "Spirits", "Soft Drinks"];
         const barItems = (items || []).filter(item => 
           barCategories.includes((item.menu_item as any)?.category?.name || "")
         );
 
         if (barItems.length > 0) {
-          activeWithItems.push({
+          const orderData: Order = {
             id: order.id,
             table_id: order.table_id,
             status: order.status,
             created_at: order.created_at,
             table: order.table as any,
             items: barItems as unknown as OrderItem[]
-          });
+          };
+
+          // Check if ALL bar items are ready
+          const allItemsReady = barItems.every(item => item.status === 'ready');
+          
+          if (allItemsReady) {
+            readyOrders.push(orderData);
+          } else {
+            activeWithItems.push(orderData);
+          }
         }
       }
 
-      // Process completed orders
+      // Process closed/ready orders from DB
       const completedWithItems: Order[] = [];
       for (const order of completedOrdersData || []) {
         const { data: items } = await supabase
@@ -174,7 +186,6 @@ export default function BarKDS() {
           `)
           .eq("order_id", order.id);
 
-        const barCategories = ["Cocktails", "Wines", "Beers", "Spirits", "Soft Drinks"];
         const barItems = (items || []).filter(item => 
           barCategories.includes((item.menu_item as any)?.category?.name || "")
         );
@@ -192,7 +203,8 @@ export default function BarKDS() {
       }
 
       setOrders(activeWithItems);
-      setCompletedOrders(completedWithItems);
+      // Combine ready orders with completed orders
+      setCompletedOrders([...readyOrders, ...completedWithItems]);
     } catch (error) {
       console.error("Error fetching orders:", error);
     } finally {
