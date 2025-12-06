@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Tabs component removed - using conditional rendering with Select dropdown
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -527,12 +527,9 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
         </Select>
       </div>
 
-      {/* Analytics Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="hidden">
-        <TabsList></TabsList>
-
-        {/* OVERVIEW TAB */}
-        <TabsContent value="overview" className="mt-4 space-y-4">
+      {/* Analytics Content - Conditional Rendering */}
+      {activeTab === "overview" && (
+        <div className="mt-4 space-y-4">
           {/* KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
@@ -677,10 +674,11 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* SALES TAB */}
-        <TabsContent value="sales" className="mt-4 space-y-4">
+      {activeTab === "sales" && (
+        <div className="mt-4 space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-4">
@@ -731,10 +729,11 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
               </ScrollArea>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* MENU MIX TAB */}
-        <TabsContent value="menu" className="mt-4 space-y-4">
+      {activeTab === "menu" && (
+        <div className="mt-4 space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Menu Engineering Matrix</CardTitle>
@@ -781,10 +780,11 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
               </ScrollArea>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* PACKAGES TAB */}
-        <TabsContent value="packages" className="mt-4 space-y-4">
+      {activeTab === "packages" && (
+        <div className="mt-4 space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-4">
@@ -847,10 +847,11 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* VARIANCE TAB */}
-        <TabsContent value="variance" className="mt-4 space-y-4">
+      {activeTab === "variance" && (
+        <div className="mt-4 space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Bar Variance Analysis</CardTitle>
@@ -888,10 +889,11 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* STAFF TAB */}
-        <TabsContent value="staff" className="mt-4 space-y-4">
+      {activeTab === "staff" && (
+        <div className="mt-4 space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Staff Performance</CardTitle>
@@ -923,10 +925,11 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* FEEDBACK TAB */}
-        <TabsContent value="feedback" className="mt-4 space-y-4">
+      {activeTab === "feedback" && (
+        <div className="mt-4 space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             {['overall', 'food', 'beverage', 'service', 'ambience'].map((type) => {
               const avg = guestFeedback.length > 0
@@ -977,10 +980,11 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* IMPORTS TAB */}
-        <TabsContent value="imports" className="mt-4 space-y-4">
+      {activeTab === "imports" && (
+        <div className="mt-4 space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Data Import History</CardTitle>
@@ -1021,13 +1025,14 @@ export default function LabOpsAnalytics({ outletId }: LabOpsAnalyticsProps) {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* MEMBER TRANSACTIONS TAB */}
-        <TabsContent value="transactions" className="mt-4">
+      {activeTab === "transactions" && (
+        <div className="mt-4">
           <MemberTransactionsReport outletId={outletId} />
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   );
 }
