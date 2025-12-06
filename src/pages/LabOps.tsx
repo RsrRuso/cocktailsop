@@ -8,6 +8,7 @@ import LabOpsAnalytics from "@/components/lab-ops/LabOpsAnalytics";
 import LabOpsOnboarding from "@/components/lab-ops/LabOpsOnboarding";
 import LiveOpsDashboard from "@/components/lab-ops/LiveOpsDashboard";
 import TeamPresenceIndicator from "@/components/lab-ops/TeamPresenceIndicator";
+import InviteLabOpsStaffDialog from "@/components/lab-ops/InviteLabOpsStaffDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -596,7 +597,7 @@ export default function LabOps() {
             </TabsContent>
 
             <TabsContent value="staff">
-              <StaffModule outletId={selectedOutlet.id} />
+              <StaffModule outletId={selectedOutlet.id} outletName={selectedOutlet.name} />
             </TabsContent>
 
             <TabsContent value="live">
@@ -3056,9 +3057,10 @@ function RecipesModule({ outletId }: { outletId: string }) {
 }
 
 // ====================== STAFF MODULE ======================
-function StaffModule({ outletId }: { outletId: string }) {
+function StaffModule({ outletId, outletName }: { outletId: string; outletName: string }) {
   const [staff, setStaff] = useState<any[]>([]);
   const [showAddStaff, setShowAddStaff] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [editingStaff, setEditingStaff] = useState<any>(null);
   
   // Form states
@@ -3150,10 +3152,19 @@ function StaffModule({ outletId }: { outletId: string }) {
           <CardTitle>Staff Management</CardTitle>
           <CardDescription>Manage your team members and their roles</CardDescription>
         </div>
-        <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
-          <DialogTrigger asChild>
-            <Button size="sm"><UserPlus className="h-4 w-4 mr-1" />Add Staff</Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => setShowInviteDialog(true)}
+          >
+            <Users className="h-4 w-4 mr-1" />
+            Invite
+          </Button>
+          <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
+            <DialogTrigger asChild>
+              <Button size="sm"><UserPlus className="h-4 w-4 mr-1" />Add Staff</Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Staff Member</DialogTitle>
@@ -3199,6 +3210,15 @@ function StaffModule({ outletId }: { outletId: string }) {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
+
+        <InviteLabOpsStaffDialog
+          open={showInviteDialog}
+          onOpenChange={setShowInviteDialog}
+          outletId={outletId}
+          outletName={outletName}
+          onStaffAdded={fetchStaff}
+        />
       </CardHeader>
       <CardContent>
         {staff.length === 0 ? (
