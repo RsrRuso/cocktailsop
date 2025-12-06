@@ -19,6 +19,8 @@ import {
 interface OnlineTeamMember {
   id: string;
   name: string;
+  username?: string;
+  email?: string;
   role: string;
 }
 
@@ -96,6 +98,7 @@ export default function StaffPOS() {
   
   // Team presence state
   const [onlineTeam, setOnlineTeam] = useState<OnlineTeamMember[]>([]);
+  const [currentStaffUsername, setCurrentStaffUsername] = useState<string | undefined>();
   const presenceChannelRef = useRef<any>(null);
 
   useEffect(() => {
@@ -158,6 +161,8 @@ export default function StaffPOS() {
               members.push({
                 id: presence.id,
                 name: presence.name,
+                username: presence.username,
+                email: presence.email,
                 role: presence.role
               });
             }
@@ -168,9 +173,19 @@ export default function StaffPOS() {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
+          // Fetch platform profile for username
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', staffMember.id)
+            .maybeSingle();
+          
+          setCurrentStaffUsername(profile?.username);
+          
           await channel.track({
             id: staffMember.id,
             name: staffMember.full_name,
+            username: profile?.username,
             role: staffMember.role,
             online_at: new Date().toISOString()
           });
@@ -500,6 +515,7 @@ export default function StaffPOS() {
               onlineTeam={onlineTeam} 
               outletName={outlet.name}
               currentStaffName={staff.full_name}
+              currentStaffUsername={currentStaffUsername}
             />
             {(staff.role === "waiter" || staff.role === "manager") && (
               <Button variant="outline" size="sm" onClick={() => setActiveTab("pos")}>
@@ -601,6 +617,7 @@ export default function StaffPOS() {
               onlineTeam={onlineTeam} 
               outletName={outlet.name}
               currentStaffName={staff.full_name}
+              currentStaffUsername={currentStaffUsername}
             />
             <Button variant="outline" size="sm" onClick={() => setActiveTab("pos")}>
               <ShoppingCart className="w-4 h-4 mr-1" /> POS
@@ -856,6 +873,7 @@ export default function StaffPOS() {
             onlineTeam={onlineTeam} 
             outletName={outlet.name}
             currentStaffName={staff.full_name}
+            currentStaffUsername={currentStaffUsername}
           />
           <Button variant="outline" size="sm" onClick={() => { setActiveTab("orders"); fetchOpenOrders(outlet.id); }}>
             <Receipt className="w-4 h-4 mr-1" /> Orders

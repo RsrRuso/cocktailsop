@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 interface OnlineTeamMember {
   id: string;
   name: string;
+  username?: string;
   email?: string;
   role: string;
 }
@@ -13,6 +14,7 @@ interface TeamPresenceIndicatorProps {
   onlineTeam: OnlineTeamMember[];
   outletName: string;
   currentStaffName: string;
+  currentStaffUsername?: string;
   currentStaffEmail?: string;
 }
 
@@ -20,6 +22,7 @@ export default function TeamPresenceIndicator({
   onlineTeam, 
   outletName,
   currentStaffName,
+  currentStaffUsername,
   currentStaffEmail
 }: TeamPresenceIndicatorProps) {
   const totalOnline = onlineTeam.length + 1; // +1 for current user
@@ -56,6 +59,9 @@ export default function TeamPresenceIndicator({
               <Circle className="w-2.5 h-2.5 fill-green-500 text-green-500 absolute -bottom-0.5 -right-0.5" />
             </div>
             <div className="flex-1 min-w-0">
+              {currentStaffUsername && (
+                <p className="font-bold text-sm text-primary truncate">@{currentStaffUsername}</p>
+              )}
               <p className="font-semibold text-sm truncate">{currentStaffName}</p>
               {currentStaffEmail && (
                 <p className="text-xs text-muted-foreground truncate">{currentStaffEmail}</p>
@@ -78,6 +84,9 @@ export default function TeamPresenceIndicator({
                     <Circle className="w-2.5 h-2.5 fill-green-500 text-green-500 absolute -bottom-0.5 -right-0.5" />
                   </div>
                   <div className="flex-1 min-w-0">
+                    {member.username && (
+                      <p className="font-bold text-sm text-primary truncate">@{member.username}</p>
+                    )}
                     <p className="font-medium text-sm truncate">{member.name}</p>
                     {member.email && (
                       <p className="text-xs text-muted-foreground truncate">{member.email}</p>

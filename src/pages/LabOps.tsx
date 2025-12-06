@@ -53,7 +53,8 @@ export default function LabOps() {
   const [newOutletType, setNewOutletType] = useState("restaurant");
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onlineTeam, setOnlineTeam] = useState<{ id: string; name: string; email?: string; role: string }[]>([]);
+  const [onlineTeam, setOnlineTeam] = useState<{ id: string; name: string; username?: string; email?: string; role: string }[]>([]);
+  const [currentUserProfile, setCurrentUserProfile] = useState<{ full_name?: string; username?: string } | null>(null);
   const presenceChannelRef = useRef<RealtimeChannel | null>(null);
 
   // Setup presence tracking for the selected outlet
@@ -73,13 +74,14 @@ export default function LabOps() {
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
-        const users: { id: string; name: string; email?: string; role: string }[] = [];
+        const users: { id: string; name: string; username?: string; email?: string; role: string }[] = [];
         Object.values(state).forEach((presences: any) => {
           presences.forEach((presence: any) => {
             if (presence.user_id !== user.id) {
               users.push({
                 id: presence.user_id,
                 name: presence.name || 'Team Member',
+                username: presence.username,
                 email: presence.email,
                 role: presence.role || 'staff'
               });
@@ -90,16 +92,19 @@ export default function LabOps() {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          // Get user profile for full name
+          // Get user profile for full name and username
           const { data: profile } = await supabase
             .from('profiles')
             .select('full_name, username')
             .eq('id', user.id)
             .single();
           
+          setCurrentUserProfile(profile);
+          
           await channel.track({
             user_id: user.id,
             name: profile?.full_name || profile?.username || user.email?.split('@')[0] || 'User',
+            username: profile?.username,
             email: user.email,
             role: 'manager',
             online_at: new Date().toISOString()
@@ -437,7 +442,8 @@ export default function LabOps() {
               <TeamPresenceIndicator
                 onlineTeam={onlineTeam}
                 outletName={selectedOutlet.name}
-                currentStaffName={user?.email?.split('@')[0] || 'You'}
+                currentStaffName={currentUserProfile?.full_name || user?.email?.split('@')[0] || 'You'}
+                currentStaffUsername={currentUserProfile?.username}
                 currentStaffEmail={user?.email}
               />
             )}
