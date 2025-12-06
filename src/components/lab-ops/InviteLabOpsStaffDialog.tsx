@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,13 +40,17 @@ export default function InviteLabOpsStaffDialog({
   const [existingStaffIds, setExistingStaffIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedUsers, setSelectedUsers] = useState<Map<string, string>>(new Map()); // userId -> role
+  const [selectedUsers, setSelectedUsers] = useState<Map<string, string>>(new Map());
   const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
     if (open && user) {
       fetchConnections();
       fetchExistingStaff();
+    }
+    if (!open) {
+      setSelectedUsers(new Map());
+      setSearchQuery("");
     }
   }, [open, user]);
 
@@ -55,7 +59,6 @@ export default function InviteLabOpsStaffDialog({
     setIsLoading(true);
 
     try {
-      // Fetch followers
       const { data: followersData } = await supabase
         .from('follows')
         .select('follower_id')
@@ -70,7 +73,6 @@ export default function InviteLabOpsStaffDialog({
         setFollowers(followerProfiles || []);
       }
 
-      // Fetch following
       const { data: followingData } = await supabase
         .from('follows')
         .select('following_id')
@@ -181,60 +183,62 @@ export default function InviteLabOpsStaffDialog({
     return (
       <div
         key={profile.id}
-        className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 rounded-lg transition-colors ${
+        className={`p-3 rounded-lg transition-colors mb-2 ${
           isExisting 
-            ? 'opacity-50 cursor-not-allowed bg-muted/30' 
+            ? 'opacity-50 bg-muted/30' 
             : isSelected 
               ? 'bg-primary/10 border border-primary/30' 
-              : 'hover:bg-muted/50'
+              : 'bg-muted/30'
         }`}
       >
-        {/* Top row: Avatar + Name + Select action */}
-        <div 
-          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-          onClick={() => !isExisting && toggleUserSelection(profile.id)}
-        >
-          <Avatar className="h-10 w-10 shrink-0">
+        {/* User info row */}
+        <div className="flex items-center gap-3">
+          <Avatar className="h-12 w-12 shrink-0">
             <AvatarImage src={profile.avatar_url || ''} />
-            <AvatarFallback className="bg-primary/20 text-primary">
+            <AvatarFallback className="bg-primary/20 text-primary text-lg">
               {(profile.full_name || profile.username || '?')[0].toUpperCase()}
             </AvatarFallback>
           </Avatar>
 
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm truncate">
+            <p className="font-semibold text-base truncate">
               {profile.full_name || profile.username}
             </p>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-sm text-muted-foreground truncate">
               @{profile.username}
             </p>
           </div>
 
           {isExisting ? (
-            <Badge variant="secondary" className="text-xs shrink-0">Already Staff</Badge>
+            <Badge variant="secondary" className="shrink-0">Already Staff</Badge>
           ) : !isSelected ? (
             <Button 
-              size="sm" 
-              variant="outline" 
-              className="shrink-0 h-8 px-3"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleUserSelection(profile.id);
-              }}
+              size="default"
+              variant="default" 
+              className="shrink-0 h-10 px-4"
+              onClick={() => toggleUserSelection(profile.id)}
             >
-              <UserPlus className="h-3 w-3 mr-1" />
+              <UserPlus className="h-4 w-4 mr-2" />
               Add
             </Button>
           ) : (
-            <Check className="h-5 w-5 text-primary shrink-0" />
+            <Button 
+              size="icon"
+              variant="ghost" 
+              className="shrink-0 h-10 w-10 text-destructive"
+              onClick={() => toggleUserSelection(profile.id)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
           )}
         </div>
 
-        {/* Bottom row: Role selector when selected */}
+        {/* Role selector row - only when selected */}
         {isSelected && !isExisting && (
-          <div className="flex items-center gap-2 pl-13 sm:pl-0" onClick={e => e.stopPropagation()}>
+          <div className="mt-3 pt-3 border-t border-border/50">
+            <label className="text-xs text-muted-foreground mb-1.5 block">Assign Role</label>
             <Select value={selectedRole} onValueChange={(val) => updateUserRole(profile.id, val)}>
-              <SelectTrigger className="h-9 w-full sm:w-32 text-sm">
+              <SelectTrigger className="h-11 w-full text-base">
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent className="bg-popover">
@@ -246,14 +250,6 @@ export default function InviteLabOpsStaffDialog({
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="h-9 w-9 shrink-0 text-destructive"
-              onClick={() => toggleUserSelection(profile.id)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
         )}
       </div>
@@ -261,91 +257,99 @@ export default function InviteLabOpsStaffDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Invite Staff to {outletName}
-          </DialogTitle>
-        </DialogHeader>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="max-h-[90vh]">
+        <div className="mx-auto w-full max-w-lg">
+          <DrawerHeader className="pb-2">
+            <DrawerTitle className="flex items-center gap-2 text-lg">
+              <Users className="h-5 w-5" />
+              Invite Staff to {outletName}
+            </DrawerTitle>
+          </DrawerHeader>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search connections..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-
-        <Tabs defaultValue="followers" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid grid-cols-2">
-            <TabsTrigger value="followers" className="gap-1">
-              <Users className="h-4 w-4" />
-              Followers ({followers.length})
-            </TabsTrigger>
-            <TabsTrigger value="following" className="gap-1">
-              <UserCheck className="h-4 w-4" />
-              Following ({following.length})
-            </TabsTrigger>
-          </TabsList>
-
-          {isLoading ? (
-            <div className="flex-1 flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="px-4 pb-4 flex flex-col gap-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search connections..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-11 text-base"
+              />
             </div>
-          ) : (
-            <>
-              <TabsContent value="followers" className="flex-1 min-h-0 mt-2">
-                <ScrollArea className="h-[300px]">
-                  <div className="space-y-1 pr-3">
-                    {filterProfiles(followers).length === 0 ? (
-                      <p className="text-center text-muted-foreground text-sm py-8">
-                        No followers found
-                      </p>
-                    ) : (
-                      filterProfiles(followers).map(renderUserItem)
-                    )}
-                  </div>
-                </ScrollArea>
-              </TabsContent>
 
-              <TabsContent value="following" className="flex-1 min-h-0 mt-2">
-                <ScrollArea className="h-[300px]">
-                  <div className="space-y-1 pr-3">
-                    {filterProfiles(following).length === 0 ? (
-                      <p className="text-center text-muted-foreground text-sm py-8">
-                        No following found
-                      </p>
-                    ) : (
-                      filterProfiles(following).map(renderUserItem)
-                    )}
-                  </div>
-                </ScrollArea>
-              </TabsContent>
-            </>
-          )}
-        </Tabs>
+            {/* Tabs */}
+            <Tabs defaultValue="followers" className="flex-1">
+              <TabsList className="grid grid-cols-2 h-11">
+                <TabsTrigger value="followers" className="gap-2 text-sm h-full">
+                  <Users className="h-4 w-4" />
+                  Followers ({followers.length})
+                </TabsTrigger>
+                <TabsTrigger value="following" className="gap-2 text-sm h-full">
+                  <UserCheck className="h-4 w-4" />
+                  Following ({following.length})
+                </TabsTrigger>
+              </TabsList>
 
-        {selectedUsers.size > 0 && (
-          <div className="pt-3 border-t">
-            <Button 
-              onClick={inviteSelectedUsers} 
-              className="w-full gap-2"
-              disabled={inviting}
-            >
-              {inviting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
               ) : (
-                <UserPlus className="h-4 w-4" />
+                <>
+                  <TabsContent value="followers" className="mt-3">
+                    <ScrollArea className="h-[40vh]">
+                      <div className="pr-2">
+                        {filterProfiles(followers).length === 0 ? (
+                          <p className="text-center text-muted-foreground py-12">
+                            No followers found
+                          </p>
+                        ) : (
+                          filterProfiles(followers).map(renderUserItem)
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </TabsContent>
+
+                  <TabsContent value="following" className="mt-3">
+                    <ScrollArea className="h-[40vh]">
+                      <div className="pr-2">
+                        {filterProfiles(following).length === 0 ? (
+                          <p className="text-center text-muted-foreground py-12">
+                            No following found
+                          </p>
+                        ) : (
+                          filterProfiles(following).map(renderUserItem)
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </TabsContent>
+                </>
               )}
-              Add {selectedUsers.size} Staff Member{selectedUsers.size > 1 ? 's' : ''}
-            </Button>
+            </Tabs>
+
+            {/* Add button - fixed at bottom */}
+            <div className="pt-2 border-t pb-safe">
+              <Button 
+                onClick={inviteSelectedUsers} 
+                className="w-full h-12 text-base gap-2"
+                disabled={inviting || selectedUsers.size === 0}
+              >
+                {inviting ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <UserPlus className="h-5 w-5" />
+                )}
+                {selectedUsers.size > 0 
+                  ? `Add ${selectedUsers.size} Staff Member${selectedUsers.size > 1 ? 's' : ''}`
+                  : 'Select members to add'
+                }
+              </Button>
+            </div>
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
