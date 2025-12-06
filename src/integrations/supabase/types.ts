@@ -3515,6 +3515,53 @@ export type Database = {
           },
         ]
       }
+      lab_ops_floor_plans: {
+        Row: {
+          background_image: string | null
+          canvas_height: number | null
+          canvas_width: number | null
+          created_at: string | null
+          floor_number: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          outlet_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          background_image?: string | null
+          canvas_height?: number | null
+          canvas_width?: number | null
+          created_at?: string | null
+          floor_number?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          outlet_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          background_image?: string | null
+          canvas_height?: number | null
+          canvas_width?: number | null
+          created_at?: string | null
+          floor_number?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          outlet_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_floor_plans_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_ops_goods_receipt_lines: {
         Row: {
           batch_no: string | null
@@ -5411,43 +5458,121 @@ export type Database = {
       }
       lab_ops_tables: {
         Row: {
+          allocation: string | null
           capacity: number | null
           created_at: string | null
+          floor_plan_id: string | null
+          height: number | null
           id: string
+          is_reservable: boolean | null
+          min_covers: number | null
           name: string
+          notes: string | null
           outlet_id: string
           position_x: number | null
           position_y: number | null
+          shape: string | null
+          standing_capacity: number | null
           status: Database["public"]["Enums"]["lab_ops_table_status"] | null
+          table_number: number | null
           updated_at: string | null
+          width: number | null
         }
         Insert: {
+          allocation?: string | null
           capacity?: number | null
           created_at?: string | null
+          floor_plan_id?: string | null
+          height?: number | null
           id?: string
+          is_reservable?: boolean | null
+          min_covers?: number | null
           name: string
+          notes?: string | null
           outlet_id: string
           position_x?: number | null
           position_y?: number | null
+          shape?: string | null
+          standing_capacity?: number | null
           status?: Database["public"]["Enums"]["lab_ops_table_status"] | null
+          table_number?: number | null
           updated_at?: string | null
+          width?: number | null
         }
         Update: {
+          allocation?: string | null
           capacity?: number | null
           created_at?: string | null
+          floor_plan_id?: string | null
+          height?: number | null
           id?: string
+          is_reservable?: boolean | null
+          min_covers?: number | null
           name?: string
+          notes?: string | null
           outlet_id?: string
           position_x?: number | null
           position_y?: number | null
+          shape?: string | null
+          standing_capacity?: number | null
           status?: Database["public"]["Enums"]["lab_ops_table_status"] | null
+          table_number?: number | null
           updated_at?: string | null
+          width?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lab_ops_tables_floor_plan_id_fkey"
+            columns: ["floor_plan_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_floor_plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lab_ops_tables_outlet_id_fkey"
             columns: ["outlet_id"]
             isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_venue_capacity: {
+        Row: {
+          created_at: string | null
+          id: string
+          max_occupancy: number | null
+          notes: string | null
+          outlet_id: string
+          total_seated_capacity: number | null
+          total_standing_capacity: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          max_occupancy?: number | null
+          notes?: string | null
+          outlet_id: string
+          total_seated_capacity?: number | null
+          total_standing_capacity?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          max_occupancy?: number | null
+          notes?: string | null
+          outlet_id?: string
+          total_seated_capacity?: number | null
+          total_standing_capacity?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_venue_capacity_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: true
             referencedRelation: "lab_ops_outlets"
             referencedColumns: ["id"]
           },
