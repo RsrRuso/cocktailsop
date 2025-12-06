@@ -934,29 +934,33 @@ export default function StaffPOS() {
                 </div>
               </div>
 
-              {/* Categories - Horizontal scrolling */}
-              <div className="border-b overflow-x-auto scrollbar-thin scrollbar-thumb-muted">
-                <div className="flex gap-1.5 p-2 pr-4">
-                  <Button
-                    variant={!selectedCategory ? "default" : "outline"}
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => setSelectedCategory(null)}
-                  >
-                    All
-                  </Button>
-                  {categories.map(cat => (
+              {/* Categories - Horizontal scrolling like top nav */}
+              <div className="relative border-b">
+                <div className="overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+                  <div className="flex gap-1.5 p-2 min-w-max">
                     <Button
-                      key={cat.id}
-                      variant={selectedCategory === cat.id ? "default" : "outline"}
+                      variant={!selectedCategory ? "default" : "outline"}
                       size="sm"
                       className="shrink-0"
-                      onClick={() => setSelectedCategory(cat.id)}
+                      onClick={() => setSelectedCategory(null)}
                     >
-                      {cat.name}
+                      All
                     </Button>
-                  ))}
+                    {categories.map(cat => (
+                      <Button
+                        key={cat.id}
+                        variant={selectedCategory === cat.id ? "default" : "outline"}
+                        size="sm"
+                        className="shrink-0"
+                        onClick={() => setSelectedCategory(cat.id)}
+                      >
+                        {cat.name}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
+                {/* Fade indicator showing more categories */}
+                <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none" />
               </div>
 
               {/* Menu Items */}
