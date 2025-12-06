@@ -768,7 +768,7 @@ function KDSModule({ outletId }: { outletId: string }) {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {Object.entries(groupedByTable).map(([tableName, items]) => (
+          {Object.entries(groupedByTable).map(([tableName, items]: [string, any[]]) => (
             <Card key={tableName} className="border-2">
               <CardHeader className="pb-2 bg-muted/50">
                 <div className="flex items-center justify-between">
