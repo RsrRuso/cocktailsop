@@ -188,15 +188,20 @@ export default function StaffPOS() {
       const subtotal = orderItems.reduce((sum: number, item: any) => sum + (item.unit_price * item.qty), 0);
       
       // Create payment record
-      await supabase.from("lab_ops_payments").insert({
+      const { error: paymentError } = await supabase.from("lab_ops_payments").insert({
         order_id: order.id,
         amount: subtotal,
         payment_method: paymentMethod,
         status: "completed",
       });
 
+      if (paymentError) {
+        console.error("Payment insert error:", paymentError);
+        throw new Error(`Payment failed: ${paymentError.message}`);
+      }
+
       // Close order - this makes it appear in stats
-      await supabase
+      const { error: orderError } = await supabase
         .from("lab_ops_orders")
         .update({ 
           status: "closed", 
@@ -205,12 +210,21 @@ export default function StaffPOS() {
         })
         .eq("id", order.id);
 
+      if (orderError) {
+        console.error("Order update error:", orderError);
+        throw new Error(`Order close failed: ${orderError.message}`);
+      }
+
       // Free table
       if (order.table_id) {
-        await supabase
+        const { error: tableError } = await supabase
           .from("lab_ops_tables")
           .update({ status: "free" })
           .eq("id", order.table_id);
+          
+        if (tableError) {
+          console.error("Table update error:", tableError);
+        }
       }
 
       toast({ title: "Order closed!", description: `$${subtotal.toFixed(2)} recorded in sales` });
