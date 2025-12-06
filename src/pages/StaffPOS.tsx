@@ -11,7 +11,8 @@ import { toast } from "@/hooks/use-toast";
 import { 
   LogOut, ShoppingCart, Send, Plus, Minus, Trash2, 
   ChefHat, Wine, Clock, CheckCircle, Users, Search,
-  Loader2, UtensilsCrossed, Bell
+  Loader2, UtensilsCrossed, Bell, CreditCard, Receipt,
+  DollarSign, ListOrdered, RefreshCw
 } from "lucide-react";
 
 interface StaffMember {
@@ -75,7 +76,13 @@ export default function StaffPOS() {
 
   // KDS State (for bartender/kitchen roles)
   const [kdsItems, setKdsItems] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"pos" | "kds">("pos");
+  const [activeTab, setActiveTab] = useState<"pos" | "kds" | "orders">("pos");
+  
+  // Open Orders State
+  const [openOrders, setOpenOrders] = useState<any[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [closingOrder, setClosingOrder] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("cash");
 
   useEffect(() => {
     fetchOutlets();
@@ -157,11 +164,73 @@ export default function StaffPOS() {
     setKdsItems(data || []);
   };
 
+  const fetchOpenOrders = async (outletId: string) => {
+    const { data } = await supabase
+      .from("lab_ops_orders")
+      .select(`
+        *,
+        lab_ops_tables(name),
+        lab_ops_order_items(id, qty, unit_price, lab_ops_menu_items(name))
+      `)
+      .eq("outlet_id", outletId)
+      .in("status", ["open", "sent"])
+      .order("created_at", { ascending: false });
+    
+    setOpenOrders(data || []);
+  };
+
+  const closeOrder = async (order: any) => {
+    if (!outlet || !staff) return;
+    
+    setClosingOrder(true);
+    try {
+      const orderItems = order.lab_ops_order_items || [];
+      const subtotal = orderItems.reduce((sum: number, item: any) => sum + (item.unit_price * item.qty), 0);
+      
+      // Create payment record
+      await supabase.from("lab_ops_payments").insert({
+        order_id: order.id,
+        amount: subtotal,
+        payment_method: paymentMethod,
+        status: "completed",
+      });
+
+      // Close order - this makes it appear in stats
+      await supabase
+        .from("lab_ops_orders")
+        .update({ 
+          status: "closed", 
+          closed_at: new Date().toISOString(),
+          total_amount: subtotal,
+        })
+        .eq("id", order.id);
+
+      // Free table
+      if (order.table_id) {
+        await supabase
+          .from("lab_ops_tables")
+          .update({ status: "free" })
+          .eq("id", order.table_id);
+      }
+
+      toast({ title: "Order closed!", description: `$${subtotal.toFixed(2)} recorded in sales` });
+      setSelectedOrder(null);
+      fetchOpenOrders(outlet.id);
+      fetchTables(outlet.id);
+    } catch (error: any) {
+      console.error("Error closing order:", error);
+      toast({ title: "Failed to close order", description: error.message, variant: "destructive" });
+    } finally {
+      setClosingOrder(false);
+    }
+  };
+
   const handleLogout = () => {
     setStaff(null);
     setOutlet(null);
     setSelectedTable(null);
     setOrderItems([]);
+    setSelectedOrder(null);
     setActiveTab("pos");
   };
 
@@ -200,17 +269,20 @@ export default function StaffPOS() {
     
     setSendingOrder(true);
     try {
+      // Calculate totals
+      const subtotal = orderItems.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      
       // Create order
       const { data: order, error: orderError } = await supabase
         .from("lab_ops_orders")
         .insert({
           outlet_id: outlet.id,
           table_id: selectedTable.id,
-          staff_id: staff.id,
+          server_id: staff.id,
           covers,
           status: "open",
-          subtotal: orderItems.reduce((sum, i) => sum + (i.price * i.qty), 0),
-          total: orderItems.reduce((sum, i) => sum + (i.price * i.qty), 0),
+          subtotal,
+          total_amount: subtotal, // Will be updated when order is closed with discounts/tax
         })
         .select()
         .single();
@@ -387,6 +459,151 @@ export default function StaffPOS() {
     );
   }
 
+  // Open Orders View (for closing/payment)
+  if (activeTab === "orders") {
+    return (
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <div className="sticky top-0 z-50 bg-card border-b p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ListOrdered className="w-5 h-5 text-primary" />
+            <div>
+              <p className="font-semibold">Open Orders</p>
+              <p className="text-xs text-muted-foreground">{outlet.name}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setActiveTab("pos")}>
+              <ShoppingCart className="w-4 h-4 mr-1" /> POS
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleLogout}>
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Order List or Detail */}
+        {selectedOrder ? (
+          <div className="p-3 space-y-4">
+            <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(null)}>
+              ← Back to Orders
+            </Button>
+            
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>{selectedOrder.lab_ops_tables?.name || "Table"}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedOrder.covers} covers • {new Date(selectedOrder.created_at).toLocaleTimeString()}
+                    </p>
+                  </div>
+                  <Badge variant={selectedOrder.status === "sent" ? "default" : "secondary"}>
+                    {selectedOrder.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Items */}
+                <div className="space-y-2">
+                  {selectedOrder.lab_ops_order_items?.map((item: any) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span>{item.qty}x {item.lab_ops_menu_items?.name || "Item"}</span>
+                      <span className="font-medium">${(item.unit_price * item.qty).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="border-t pt-3">
+                  <div className="flex justify-between text-lg font-semibold">
+                    <span>Total</span>
+                    <span>${selectedOrder.lab_ops_order_items?.reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0).toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Payment Method */}
+                <div className="grid grid-cols-3 gap-2">
+                  {["cash", "card", "other"].map(method => (
+                    <Button
+                      key={method}
+                      variant={paymentMethod === method ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPaymentMethod(method)}
+                      className="capitalize"
+                    >
+                      {method === "cash" && <DollarSign className="w-4 h-4 mr-1" />}
+                      {method === "card" && <CreditCard className="w-4 h-4 mr-1" />}
+                      {method === "other" && <Receipt className="w-4 h-4 mr-1" />}
+                      {method}
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Close Order Button */}
+                <Button 
+                  className="w-full h-12" 
+                  onClick={() => closeOrder(selectedOrder)}
+                  disabled={closingOrder}
+                >
+                  {closingOrder ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                  )}
+                  Close Order & Record Sale
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="p-3 space-y-3">
+            {openOrders.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Receipt className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No open orders</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3"
+                  onClick={() => fetchOpenOrders(outlet.id)}
+                >
+                  <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+                </Button>
+              </div>
+            ) : (
+              openOrders.map(order => (
+                <Card 
+                  key={order.id} 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => setSelectedOrder(order)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold">{order.lab_ops_tables?.name || "Table"}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {order.lab_ops_order_items?.length || 0} items • {order.covers} covers
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          ${order.lab_ops_order_items?.reduce((sum: number, i: any) => sum + (i.unit_price * i.qty), 0).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(order.created_at).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // POS View for waiters and managers
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -400,6 +617,9 @@ export default function StaffPOS() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => { setActiveTab("orders"); fetchOpenOrders(outlet.id); }}>
+            <Receipt className="w-4 h-4 mr-1" /> Orders
+          </Button>
           {(staff.role === "bartender" || staff.role === "kitchen" || staff.role === "manager") && (
             <Button variant="outline" size="sm" onClick={() => { setActiveTab("kds"); fetchKDSItems(outlet.id, staff.role); }}>
               <ChefHat className="w-4 h-4 mr-1" /> KDS
