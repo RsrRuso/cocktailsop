@@ -33,8 +33,8 @@ const Explore = () => {
     const { data } = await supabase
       .from("profiles")
       .select("id, username, full_name, avatar_url, professional_title, follower_count")
-      .order("follower_count", { ascending: false })
-      .limit(10);
+      .order("created_at", { ascending: false })
+      .limit(50);
 
     if (data) setProfiles(data);
   };
