@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
+import LabOpsAnalytics from "@/components/lab-ops/LabOpsAnalytics";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -293,9 +294,9 @@ export default function LabOps() {
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
       
-      <main className="container mx-auto px-3 sm:px-4 pt-16 sm:pt-20 pb-4 max-w-7xl">
+      <main className="container mx-auto px-3 sm:px-4 pt-20 sm:pt-24 pb-4 max-w-7xl">
         {/* Header - Mobile Optimized with proper spacing from TopNav */}
-        <div className="flex flex-col gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shrink-0">
               <ChefHat className="h-5 w-5 sm:h-7 sm:w-7 text-primary-foreground" />
@@ -306,7 +307,7 @@ export default function LabOps() {
             </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2">
             {selectedOutlet && (
               <Button 
                 size="sm" 
@@ -489,7 +490,7 @@ export default function LabOps() {
             </TabsContent>
 
             <TabsContent value="reports">
-              <ReportsModule outletId={selectedOutlet.id} />
+              <LabOpsAnalytics outletId={selectedOutlet.id} />
             </TabsContent>
 
             <TabsContent value="settings">
