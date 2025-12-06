@@ -23,7 +23,8 @@ import {
   Edit, Eye, Send, CreditCard, Percent, Calculator, Receipt,
   Download, RefreshCw, Check, X, ArrowRight, Calendar, Truck,
   Archive, Search, Filter, MoreHorizontal, Copy, Printer, Hash,
-  PlusCircle, MinusCircle, UserPlus, Shield, Activity, History
+  PlusCircle, MinusCircle, UserPlus, Shield, Activity, History,
+  Database, Loader2, Sparkles
 } from "lucide-react";
 
 interface Outlet {
@@ -44,6 +45,169 @@ export default function LabOps() {
   const [newOutletName, setNewOutletName] = useState("");
   const [newOutletAddress, setNewOutletAddress] = useState("");
   const [newOutletType, setNewOutletType] = useState("restaurant");
+  const [loadingDemo, setLoadingDemo] = useState(false);
+
+  const loadDemoData = async () => {
+    if (!user || !selectedOutlet) return;
+    setLoadingDemo(true);
+    
+    try {
+      const outletId = selectedOutlet.id;
+      
+      // 1. Create Demo Categories
+      const categories = [
+        { outlet_id: outletId, name: "Cocktails", sort_order: 1 },
+        { outlet_id: outletId, name: "Wines", sort_order: 2 },
+        { outlet_id: outletId, name: "Beers", sort_order: 3 },
+        { outlet_id: outletId, name: "Spirits", sort_order: 4 },
+        { outlet_id: outletId, name: "Appetizers", sort_order: 5 },
+        { outlet_id: outletId, name: "Main Courses", sort_order: 6 },
+        { outlet_id: outletId, name: "Desserts", sort_order: 7 },
+        { outlet_id: outletId, name: "Soft Drinks", sort_order: 8 },
+      ];
+      const { data: catData } = await supabase.from("lab_ops_categories").insert(categories).select();
+      
+      // 2. Create Demo Menu Items
+      const getCatId = (name: string) => catData?.find(c => c.name === name)?.id;
+      const menuItems = [
+        { outlet_id: outletId, category_id: getCatId("Cocktails"), name: "Old Fashioned", base_price: 14 },
+        { outlet_id: outletId, category_id: getCatId("Cocktails"), name: "Margarita", base_price: 12 },
+        { outlet_id: outletId, category_id: getCatId("Cocktails"), name: "Mojito", base_price: 13 },
+        { outlet_id: outletId, category_id: getCatId("Cocktails"), name: "Espresso Martini", base_price: 15 },
+        { outlet_id: outletId, category_id: getCatId("Cocktails"), name: "Negroni", base_price: 14 },
+        { outlet_id: outletId, category_id: getCatId("Wines"), name: "House Red", base_price: 9 },
+        { outlet_id: outletId, category_id: getCatId("Wines"), name: "House White", base_price: 9 },
+        { outlet_id: outletId, category_id: getCatId("Wines"), name: "Champagne Glass", base_price: 18 },
+        { outlet_id: outletId, category_id: getCatId("Beers"), name: "Draft Lager", base_price: 7 },
+        { outlet_id: outletId, category_id: getCatId("Beers"), name: "IPA", base_price: 8 },
+        { outlet_id: outletId, category_id: getCatId("Beers"), name: "Stout", base_price: 8 },
+        { outlet_id: outletId, category_id: getCatId("Appetizers"), name: "Bruschetta", base_price: 10 },
+        { outlet_id: outletId, category_id: getCatId("Appetizers"), name: "Calamari", base_price: 14 },
+        { outlet_id: outletId, category_id: getCatId("Appetizers"), name: "Oysters (6pc)", base_price: 24 },
+        { outlet_id: outletId, category_id: getCatId("Main Courses"), name: "Grilled Salmon", base_price: 28 },
+        { outlet_id: outletId, category_id: getCatId("Main Courses"), name: "Ribeye Steak", base_price: 42 },
+        { outlet_id: outletId, category_id: getCatId("Main Courses"), name: "Pasta Carbonara", base_price: 22 },
+        { outlet_id: outletId, category_id: getCatId("Desserts"), name: "Tiramisu", base_price: 12 },
+        { outlet_id: outletId, category_id: getCatId("Desserts"), name: "Chocolate Fondant", base_price: 14 },
+        { outlet_id: outletId, category_id: getCatId("Soft Drinks"), name: "Coca-Cola", base_price: 4 },
+        { outlet_id: outletId, category_id: getCatId("Soft Drinks"), name: "Fresh OJ", base_price: 6 },
+      ];
+      await supabase.from("lab_ops_menu_items").insert(menuItems);
+      
+      // 3. Create Demo Tables
+      const tables = [
+        { outlet_id: outletId, name: "Table 1", capacity: 2 },
+        { outlet_id: outletId, name: "Table 2", capacity: 2 },
+        { outlet_id: outletId, name: "Table 3", capacity: 4 },
+        { outlet_id: outletId, name: "Table 4", capacity: 4 },
+        { outlet_id: outletId, name: "Table 5", capacity: 6 },
+        { outlet_id: outletId, name: "Bar Seat 1", capacity: 1 },
+        { outlet_id: outletId, name: "Bar Seat 2", capacity: 1 },
+        { outlet_id: outletId, name: "VIP Booth", capacity: 8 },
+      ];
+      await supabase.from("lab_ops_tables").insert(tables);
+      
+      // 4. Create Demo Inventory Items
+      const invItems = [
+        { outlet_id: outletId, name: "Bourbon Whiskey", sku: "BRB001", base_unit: "ml", par_level: 3000 },
+        { outlet_id: outletId, name: "Vodka Premium", sku: "VOD001", base_unit: "ml", par_level: 5000 },
+        { outlet_id: outletId, name: "Tequila Blanco", sku: "TEQ001", base_unit: "ml", par_level: 2000 },
+        { outlet_id: outletId, name: "Gin London Dry", sku: "GIN001", base_unit: "ml", par_level: 3000 },
+        { outlet_id: outletId, name: "Rum White", sku: "RUM001", base_unit: "ml", par_level: 2000 },
+        { outlet_id: outletId, name: "Campari", sku: "CAM001", base_unit: "ml", par_level: 1500 },
+        { outlet_id: outletId, name: "Sweet Vermouth", sku: "VER001", base_unit: "ml", par_level: 1000 },
+        { outlet_id: outletId, name: "Triple Sec", sku: "TRI001", base_unit: "ml", par_level: 1500 },
+        { outlet_id: outletId, name: "Coffee Liqueur", sku: "COF001", base_unit: "ml", par_level: 1500 },
+        { outlet_id: outletId, name: "Fresh Lime Juice", sku: "LIM001", base_unit: "ml", par_level: 2000 },
+        { outlet_id: outletId, name: "Simple Syrup", sku: "SYR001", base_unit: "ml", par_level: 3000 },
+        { outlet_id: outletId, name: "Fresh Mint", sku: "MNT001", base_unit: "bunch", par_level: 10 },
+        { outlet_id: outletId, name: "Angostura Bitters", sku: "BIT001", base_unit: "ml", par_level: 500 },
+        { outlet_id: outletId, name: "Salmon Fillet", sku: "SAL001", base_unit: "kg", par_level: 5 },
+        { outlet_id: outletId, name: "Ribeye Steak", sku: "RIB001", base_unit: "kg", par_level: 8 },
+        { outlet_id: outletId, name: "Pasta Spaghetti", sku: "PAS001", base_unit: "kg", par_level: 10 },
+        { outlet_id: outletId, name: "Parmesan Cheese", sku: "PAR001", base_unit: "kg", par_level: 3 },
+        { outlet_id: outletId, name: "Heavy Cream", sku: "CRM001", base_unit: "ltr", par_level: 5 },
+        { outlet_id: outletId, name: "Espresso Coffee", sku: "ESP001", base_unit: "kg", par_level: 2 },
+      ];
+      const { data: invData } = await supabase.from("lab_ops_inventory_items").insert(invItems).select();
+      
+      // 5. Create Demo Suppliers
+      const suppliers = [
+        { outlet_id: outletId, name: "Premium Spirits Co", contact_name: "John Smith", email: "john@premiumspirits.com", phone: "+1-555-0101" },
+        { outlet_id: outletId, name: "Fresh Produce Direct", contact_name: "Sarah Johnson", email: "sarah@freshproduce.com", phone: "+1-555-0102" },
+        { outlet_id: outletId, name: "Quality Meats Ltd", contact_name: "Mike Brown", email: "mike@qualitymeats.com", phone: "+1-555-0103" },
+        { outlet_id: outletId, name: "Wine Imports Inc", contact_name: "Lisa Davis", email: "lisa@wineimports.com", phone: "+1-555-0104" },
+        { outlet_id: outletId, name: "Dairy Fresh Co", contact_name: "Tom Wilson", email: "tom@dairyfresh.com", phone: "+1-555-0105" },
+      ];
+      await supabase.from("lab_ops_suppliers").insert(suppliers);
+      
+      // 6. Create Demo Modifiers
+      const modifiers = [
+        { outlet_id: outletId, name: "Extra Shot", price: 2, modifier_type: "add_on" },
+        { outlet_id: outletId, name: "Less Ice", price: 0, modifier_type: "preparation" },
+        { outlet_id: outletId, name: "No Ice", price: 0, modifier_type: "preparation" },
+        { outlet_id: outletId, name: "Double", price: 6, modifier_type: "size" },
+        { outlet_id: outletId, name: "Gluten Free", price: 3, modifier_type: "dietary" },
+        { outlet_id: outletId, name: "Vegan", price: 0, modifier_type: "dietary" },
+        { outlet_id: outletId, name: "Extra Sauce", price: 1, modifier_type: "add_on" },
+        { outlet_id: outletId, name: "Medium Rare", price: 0, modifier_type: "preparation" },
+        { outlet_id: outletId, name: "Well Done", price: 0, modifier_type: "preparation" },
+      ];
+      await supabase.from("lab_ops_modifiers").insert(modifiers);
+      
+      // 7. Create Demo Staff
+      const { data: authData } = await supabase.auth.getUser();
+      const staffMembers = [
+        { outlet_id: outletId, user_id: authData?.user?.id || "", full_name: "Alex Manager", role: "manager" as const, pin_code: "1234" },
+        { outlet_id: outletId, user_id: authData?.user?.id || "", full_name: "Sam Bartender", role: "bartender" as const, pin_code: "2345" },
+        { outlet_id: outletId, user_id: authData?.user?.id || "", full_name: "Jordan Waiter", role: "waiter" as const, pin_code: "3456" },
+        { outlet_id: outletId, user_id: authData?.user?.id || "", full_name: "Casey Chef", role: "kitchen" as const, pin_code: "4567" },
+      ];
+      await supabase.from("lab_ops_staff").insert(staffMembers);
+      
+      // 8. Create Demo Void Reasons
+      const voidReasons = [
+        { outlet_id: outletId, code: "CUSTOMER_CHANGED_MIND", description: "Customer changed their mind" },
+        { outlet_id: outletId, code: "WRONG_ORDER", description: "Wrong order entered" },
+        { outlet_id: outletId, code: "QUALITY_ISSUE", description: "Quality issue with item" },
+        { outlet_id: outletId, code: "SYSTEM_ERROR", description: "System or POS error" },
+        { outlet_id: outletId, code: "COMP", description: "Complimentary item" },
+      ];
+      await supabase.from("lab_ops_void_reasons").insert(voidReasons);
+      
+      // 9. Create Demo Recipes
+      const recipes = [
+        { outlet_id: outletId, name: "Old Fashioned", menu_item_id: null, portion_cost: 3.50, selling_price: 14, instructions: "Muddle sugar and bitters, add bourbon, stir with ice, strain, garnish with orange peel" },
+        { outlet_id: outletId, name: "Margarita", menu_item_id: null, portion_cost: 2.80, selling_price: 12, instructions: "Shake tequila, triple sec, lime juice with ice, strain into salt-rimmed glass" },
+        { outlet_id: outletId, name: "Negroni", menu_item_id: null, portion_cost: 4.20, selling_price: 14, instructions: "Stir gin, campari, sweet vermouth with ice, strain into rocks glass, garnish with orange" },
+      ];
+      const { data: recipeData } = await supabase.from("lab_ops_recipes").insert(recipes).select();
+      
+      // 10. Add Recipe Ingredients
+      if (recipeData && invData) {
+        const getInvId = (name: string) => invData.find(i => i.name === name)?.id;
+        const recipeIngredients = [
+          { recipe_id: recipeData[0]?.id, inventory_item_id: getInvId("Bourbon Whiskey"), qty: 60, unit: "ml" },
+          { recipe_id: recipeData[0]?.id, inventory_item_id: getInvId("Simple Syrup"), qty: 10, unit: "ml" },
+          { recipe_id: recipeData[0]?.id, inventory_item_id: getInvId("Angostura Bitters"), qty: 2, unit: "dash" },
+          { recipe_id: recipeData[1]?.id, inventory_item_id: getInvId("Tequila Blanco"), qty: 50, unit: "ml" },
+          { recipe_id: recipeData[1]?.id, inventory_item_id: getInvId("Triple Sec"), qty: 25, unit: "ml" },
+          { recipe_id: recipeData[1]?.id, inventory_item_id: getInvId("Fresh Lime Juice"), qty: 25, unit: "ml" },
+          { recipe_id: recipeData[2]?.id, inventory_item_id: getInvId("Gin London Dry"), qty: 30, unit: "ml" },
+          { recipe_id: recipeData[2]?.id, inventory_item_id: getInvId("Campari"), qty: 30, unit: "ml" },
+          { recipe_id: recipeData[2]?.id, inventory_item_id: getInvId("Sweet Vermouth"), qty: 30, unit: "ml" },
+        ].filter(ri => ri.recipe_id && ri.inventory_item_id);
+        await supabase.from("lab_ops_recipe_ingredients").insert(recipeIngredients);
+      }
+      
+      toast({ title: "Demo data loaded!", description: "Categories, menu items, inventory, suppliers, staff, and recipes created." });
+    } catch (error: any) {
+      console.error("Demo data error:", error);
+      toast({ title: "Error loading demo data", description: error.message, variant: "destructive" });
+    } finally {
+      setLoadingDemo(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -141,6 +305,23 @@ export default function LabOps() {
           </div>
           
           <div className="flex items-center gap-3">
+            {selectedOutlet && (
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={loadDemoData} 
+                disabled={loadingDemo}
+                className="border-primary/50 text-primary hover:bg-primary/10"
+              >
+                {loadingDemo ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-1" />
+                )}
+                Load Demo Data
+              </Button>
+            )}
+            
             {outlets.length > 0 && (
               <Select
                 value={selectedOutlet?.id}
