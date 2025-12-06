@@ -125,6 +125,8 @@ export default function TableManagement({ outletId }: { outletId: string }) {
 
   // Floor plan designer state
   const [selectedTableForMove, setSelectedTableForMove] = useState<string | null>(null);
+  const [draggingTable, setDraggingTable] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -690,40 +692,68 @@ export default function TableManagement({ outletId }: { outletId: string }) {
                 <div className="flex-1 p-4">
                   <div 
                     ref={canvasRef}
-                    className="relative w-full h-[70vh] min-h-[600px] bg-gradient-to-br from-muted/20 to-muted/40 rounded-xl border-2 border-muted-foreground/30 overflow-hidden shadow-inner"
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.add("ring-2", "ring-primary/50");
+                    className={`relative w-full h-[70vh] min-h-[600px] bg-gradient-to-br from-muted/20 to-muted/40 rounded-xl border-2 overflow-hidden shadow-inner transition-all duration-150 ${
+                      draggingTable ? "border-primary/50 ring-2 ring-primary/30" : "border-muted-foreground/30"
+                    }`}
+                    onMouseMove={(e) => {
+                      if (!draggingTable || !canvasRef.current) return;
+                      const rect = canvasRef.current.getBoundingClientRect();
+                      const x = e.clientX - rect.left - dragOffset.x;
+                      const y = e.clientY - rect.top - dragOffset.y;
+                      const clampedX = Math.max(0, Math.min(x, rect.width - 80));
+                      const clampedY = Math.max(0, Math.min(y, rect.height - 80));
+                      handleTableDrag(draggingTable, clampedX, clampedY);
                     }}
-                    onDragLeave={(e) => {
-                      e.currentTarget.classList.remove("ring-2", "ring-primary/50");
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.remove("ring-2", "ring-primary/50");
-                      const tableId = e.dataTransfer.getData("tableId");
-                      if (tableId && canvasRef.current) {
-                        const rect = canvasRef.current.getBoundingClientRect();
-                        const x = e.clientX - rect.left - 40;
-                        const y = e.clientY - rect.top - 40;
-                        const clampedX = Math.max(0, Math.min(x, rect.width - 80));
-                        const clampedY = Math.max(0, Math.min(y, rect.height - 80));
-                        handleTableDrag(tableId, clampedX, clampedY);
-                        const table = tables.find(t => t.id === tableId);
+                    onMouseUp={() => {
+                      if (draggingTable) {
+                        const table = tables.find(t => t.id === draggingTable);
                         if (table) {
-                          saveTablePosition({ ...table, position_x: clampedX, position_y: clampedY });
+                          saveTablePosition(table);
                         }
+                        setDraggingTable(null);
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (draggingTable) {
+                        const table = tables.find(t => t.id === draggingTable);
+                        if (table) {
+                          saveTablePosition(table);
+                        }
+                        setDraggingTable(null);
+                      }
+                    }}
+                    onTouchMove={(e) => {
+                      if (!draggingTable || !canvasRef.current) return;
+                      e.preventDefault();
+                      const touch = e.touches[0];
+                      const rect = canvasRef.current.getBoundingClientRect();
+                      const x = touch.clientX - rect.left - dragOffset.x;
+                      const y = touch.clientY - rect.top - dragOffset.y;
+                      const clampedX = Math.max(0, Math.min(x, rect.width - 80));
+                      const clampedY = Math.max(0, Math.min(y, rect.height - 80));
+                      handleTableDrag(draggingTable, clampedX, clampedY);
+                    }}
+                    onTouchEnd={() => {
+                      if (draggingTable) {
+                        const table = tables.find(t => t.id === draggingTable);
+                        if (table) {
+                          saveTablePosition(table);
+                        }
+                        setDraggingTable(null);
                       }
                     }}
                   >
                     {/* Grid Background */}
-                    <div className="absolute inset-0" style={{ 
-                      backgroundImage: `
-                        linear-gradient(to right, hsl(var(--muted-foreground) / 0.08) 1px, transparent 1px),
-                        linear-gradient(to bottom, hsl(var(--muted-foreground) / 0.08) 1px, transparent 1px)
-                      `,
-                      backgroundSize: '40px 40px'
-                    }}>
+                    <div 
+                      className="absolute inset-0 select-none" 
+                      style={{ 
+                        backgroundImage: `
+                          linear-gradient(to right, hsl(var(--muted-foreground) / 0.08) 1px, transparent 1px),
+                          linear-gradient(to bottom, hsl(var(--muted-foreground) / 0.08) 1px, transparent 1px)
+                        `,
+                        backgroundSize: '40px 40px'
+                      }}
+                    >
                       {/* Tables */}
                       {floorPlanTables.map((table) => {
                         const x = table.position_x ?? (50 + Math.random() * 200);
@@ -742,14 +772,17 @@ export default function TableManagement({ outletId }: { outletId: string }) {
                         };
                         const gradientColor = allocationColors[table.allocation || "indoor"] || "from-primary to-primary/80";
                         const isSelected = selectedTableForMove === table.id;
+                        const isDragging = draggingTable === table.id;
                         
                         return (
                           <div
                             key={table.id}
-                            className={`absolute cursor-grab active:cursor-grabbing transition-all duration-150 bg-gradient-to-br ${gradientColor} ${
-                              isSelected 
-                                ? "ring-4 ring-white ring-offset-2 ring-offset-background scale-110 z-20 shadow-2xl" 
-                                : "hover:scale-105 hover:shadow-xl z-10"
+                            className={`absolute select-none touch-none bg-gradient-to-br ${gradientColor} ${
+                              isDragging 
+                                ? "cursor-grabbing scale-110 z-30 shadow-2xl ring-4 ring-white/80" 
+                                : isSelected 
+                                  ? "cursor-grab ring-4 ring-white ring-offset-2 ring-offset-background scale-105 z-20 shadow-2xl" 
+                                  : "cursor-grab hover:scale-105 hover:shadow-xl z-10"
                             } ${table.status === "seated" ? "opacity-70" : ""}`}
                             style={{
                               left: x,
@@ -757,27 +790,41 @@ export default function TableManagement({ outletId }: { outletId: string }) {
                               width,
                               height,
                               borderRadius: table.shape === "round" ? "50%" : table.shape === "booth" ? "16px" : "8px",
-                              boxShadow: isSelected 
-                                ? "0 20px 40px rgba(0,0,0,0.3)" 
-                                : "0 4px 12px rgba(0,0,0,0.15)"
+                              boxShadow: isDragging 
+                                ? "0 25px 50px rgba(0,0,0,0.4)" 
+                                : isSelected 
+                                  ? "0 20px 40px rgba(0,0,0,0.3)" 
+                                  : "0 4px 12px rgba(0,0,0,0.15)",
+                              transition: isDragging ? "none" : "transform 0.15s ease-out, box-shadow 0.15s ease-out"
                             }}
-                            draggable
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData("tableId", table.id);
-                              e.dataTransfer.effectAllowed = "move";
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setDragOffset({
+                                x: e.clientX - rect.left,
+                                y: e.clientY - rect.top
+                              });
+                              setDraggingTable(table.id);
                               setSelectedTableForMove(table.id);
-                              // Create drag image
-                              const ghost = e.currentTarget.cloneNode(true) as HTMLElement;
-                              ghost.style.opacity = "0.8";
-                              ghost.style.transform = "scale(1.1)";
-                              document.body.appendChild(ghost);
-                              e.dataTransfer.setDragImage(ghost, width / 2, height / 2);
-                              setTimeout(() => document.body.removeChild(ghost), 0);
                             }}
-                            onDragEnd={() => setSelectedTableForMove(null)}
-                            onClick={() => setSelectedTableForMove(isSelected ? null : table.id)}
+                            onTouchStart={(e) => {
+                              const touch = e.touches[0];
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setDragOffset({
+                                x: touch.clientX - rect.left,
+                                y: touch.clientY - rect.top
+                              });
+                              setDraggingTable(table.id);
+                              setSelectedTableForMove(table.id);
+                            }}
+                            onClick={(e) => {
+                              if (!isDragging) {
+                                e.stopPropagation();
+                                setSelectedTableForMove(isSelected ? null : table.id);
+                              }
+                            }}
                           >
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-white font-bold drop-shadow-md">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-white font-bold drop-shadow-md pointer-events-none">
                               <span className="text-sm">{table.name}</span>
                               <span className="text-xs opacity-80">{table.capacity}</span>
                             </div>
