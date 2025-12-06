@@ -131,10 +131,13 @@ export default function StaffPOS() {
       fetchMenuItems(selectedOutlet.id),
     ]);
 
-    // If bartender or kitchen, also load KDS items
+    // If bartender or kitchen, also load KDS items (but bartenders can still access POS)
     if (loggedInStaff.role === "bartender" || loggedInStaff.role === "kitchen") {
       fetchKDSItems(selectedOutlet.id, loggedInStaff.role);
-      setActiveTab("kds");
+      // Only kitchen staff goes directly to KDS, bartenders can access tables/POS
+      if (loggedInStaff.role === "kitchen") {
+        setActiveTab("kds");
+      }
     }
     
     // Set up team presence tracking
@@ -504,9 +507,14 @@ export default function StaffPOS() {
               currentStaffName={staff.full_name}
               currentStaffUsername={currentStaffUsername}
             />
-            {(staff.role === "waiter" || staff.role === "manager") && (
+            {(staff.role === "waiter" || staff.role === "manager" || staff.role === "bartender") && (
               <Button variant="outline" size="sm" onClick={() => setActiveTab("pos")}>
                 <ShoppingCart className="w-4 h-4 mr-1" /> POS
+              </Button>
+            )}
+            {(staff.role === "bartender" || staff.role === "manager") && (
+              <Button variant="outline" size="sm" onClick={() => { setActiveTab("orders"); fetchOpenOrders(outlet!.id); }}>
+                <Receipt className="w-4 h-4 mr-1" /> Orders
               </Button>
             )}
             <Button variant="ghost" size="icon" onClick={handleLogout}>
