@@ -313,6 +313,16 @@ export default function LabOps() {
           <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
+              variant="default"
+              onClick={() => window.location.href = '/staff-pos'}
+              className="h-9 px-2 sm:px-3 bg-primary"
+            >
+              <Smartphone className="h-4 w-4" />
+              <span className="hidden sm:inline ml-1">Staff Access</span>
+            </Button>
+            
+            <Button
+              size="sm"
               variant="outline"
               onClick={() => setShowOnboarding(true)}
               className="h-9 px-2 sm:px-3"
