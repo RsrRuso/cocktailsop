@@ -1755,3 +1755,12 @@ All colors MUST be HSL.
     transform: translateY(-50%) translateX(10px);
   }
 }
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
