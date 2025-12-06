@@ -131,18 +131,29 @@ export default function LabOps() {
     try {
       const outletId = selectedOutlet.id;
       
-      // 1. Create Demo Categories
-      const categories = [
-        { outlet_id: outletId, name: "Cocktails", sort_order: 1 },
-        { outlet_id: outletId, name: "Wines", sort_order: 2 },
-        { outlet_id: outletId, name: "Beers", sort_order: 3 },
-        { outlet_id: outletId, name: "Spirits", sort_order: 4 },
-        { outlet_id: outletId, name: "Appetizers", sort_order: 5 },
-        { outlet_id: outletId, name: "Main Courses", sort_order: 6 },
-        { outlet_id: outletId, name: "Desserts", sort_order: 7 },
-        { outlet_id: outletId, name: "Soft Drinks", sort_order: 8 },
-      ];
-      const { data: catData } = await supabase.from("lab_ops_categories").insert(categories).select();
+      // 1. Check if demo data already exists (prevent duplicates)
+      const { data: existingCats } = await supabase
+        .from("lab_ops_categories")
+        .select("id, name")
+        .eq("outlet_id", outletId);
+      
+      let catData = existingCats;
+      
+      // Only create categories if none exist
+      if (!existingCats || existingCats.length === 0) {
+        const categories = [
+          { outlet_id: outletId, name: "Cocktails", sort_order: 1 },
+          { outlet_id: outletId, name: "Wines", sort_order: 2 },
+          { outlet_id: outletId, name: "Beers", sort_order: 3 },
+          { outlet_id: outletId, name: "Spirits", sort_order: 4 },
+          { outlet_id: outletId, name: "Appetizers", sort_order: 5 },
+          { outlet_id: outletId, name: "Main Courses", sort_order: 6 },
+          { outlet_id: outletId, name: "Desserts", sort_order: 7 },
+          { outlet_id: outletId, name: "Soft Drinks", sort_order: 8 },
+        ];
+        const { data } = await supabase.from("lab_ops_categories").insert(categories).select();
+        catData = data;
+      }
       
       // 2. Create Demo Menu Items
       const getCatId = (name: string) => catData?.find(c => c.name === name)?.id;
