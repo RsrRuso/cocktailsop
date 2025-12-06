@@ -217,6 +217,20 @@ export default function BarKDS() {
     audio.play().catch(() => {});
   };
 
+  const startItem = async (itemId: string) => {
+    try {
+      await supabase
+        .from("lab_ops_order_items")
+        .update({ status: "in_progress" })
+        .eq("id", itemId);
+
+      toast({ title: "Started preparing item" });
+      if (selectedOutlet) fetchOrders(selectedOutlet);
+    } catch (error) {
+      console.error("Error updating item:", error);
+    }
+  };
+
   const markItemComplete = async (itemId: string) => {
     try {
       await supabase
@@ -383,6 +397,8 @@ export default function BarKDS() {
                               className={`p-3 rounded-lg border ${
                                 item.status === 'ready' 
                                   ? 'bg-green-900/30 border-green-700' 
+                                  : item.status === 'in_progress'
+                                  ? 'bg-amber-900/30 border-amber-700'
                                   : 'bg-gray-800 border-gray-700'
                               }`}
                             >
@@ -402,19 +418,34 @@ export default function BarKDS() {
                                     </p>
                                   )}
                                 </div>
-                                {item.status !== 'ready' && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => markItemComplete(item.id)}
-                                    className="text-green-400 hover:bg-green-900/50"
-                                  >
-                                    <Check className="h-4 w-4" />
-                                  </Button>
-                                )}
-                                {item.status === 'ready' && (
-                                  <Badge className="bg-green-600">Ready</Badge>
-                                )}
+                                <div className="flex gap-1">
+                                  {item.status === 'sent' && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => startItem(item.id)}
+                                      className="text-amber-400 hover:bg-amber-900/50"
+                                    >
+                                      Start
+                                    </Button>
+                                  )}
+                                  {(item.status === 'sent' || item.status === 'in_progress') && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => markItemComplete(item.id)}
+                                      className="text-green-400 hover:bg-green-900/50"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {item.status === 'in_progress' && (
+                                    <Badge className="bg-amber-600">Making</Badge>
+                                  )}
+                                  {item.status === 'ready' && (
+                                    <Badge className="bg-green-600">Ready</Badge>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ))}
