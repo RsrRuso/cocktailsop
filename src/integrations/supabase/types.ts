@@ -3225,6 +3225,78 @@ export type Database = {
           },
         ]
       }
+      lab_ops_bar_variance: {
+        Row: {
+          actual_consumption: number | null
+          closing_stock: number | null
+          created_at: string | null
+          id: string
+          ingredient_master_id: string | null
+          opening_stock: number | null
+          outlet_id: string | null
+          period_end: string
+          period_start: string
+          purchases: number | null
+          theoretical_consumption: number | null
+          transfers_in: number | null
+          transfers_out: number | null
+          variance_cost: number | null
+          variance_percent: number | null
+          variance_qty: number | null
+        }
+        Insert: {
+          actual_consumption?: number | null
+          closing_stock?: number | null
+          created_at?: string | null
+          id?: string
+          ingredient_master_id?: string | null
+          opening_stock?: number | null
+          outlet_id?: string | null
+          period_end: string
+          period_start: string
+          purchases?: number | null
+          theoretical_consumption?: number | null
+          transfers_in?: number | null
+          transfers_out?: number | null
+          variance_cost?: number | null
+          variance_percent?: number | null
+          variance_qty?: number | null
+        }
+        Update: {
+          actual_consumption?: number | null
+          closing_stock?: number | null
+          created_at?: string | null
+          id?: string
+          ingredient_master_id?: string | null
+          opening_stock?: number | null
+          outlet_id?: string | null
+          period_end?: string
+          period_start?: string
+          purchases?: number | null
+          theoretical_consumption?: number | null
+          transfers_in?: number | null
+          transfers_out?: number | null
+          variance_cost?: number | null
+          variance_percent?: number | null
+          variance_qty?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_bar_variance_ingredient_master_id_fkey"
+            columns: ["ingredient_master_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_ingredients_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_bar_variance_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_ops_categories: {
         Row: {
           created_at: string | null
@@ -3269,6 +3341,176 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "lab_ops_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_complimentary_log: {
+        Row: {
+          approved_by: string | null
+          check_id: string | null
+          comp_date: string
+          cost_value: number | null
+          created_at: string | null
+          id: string
+          menu_item_id: string | null
+          outlet_id: string | null
+          qty: number
+          reason: string | null
+        }
+        Insert: {
+          approved_by?: string | null
+          check_id?: string | null
+          comp_date?: string
+          cost_value?: number | null
+          created_at?: string | null
+          id?: string
+          menu_item_id?: string | null
+          outlet_id?: string | null
+          qty?: number
+          reason?: string | null
+        }
+        Update: {
+          approved_by?: string | null
+          check_id?: string | null
+          comp_date?: string
+          cost_value?: number | null
+          created_at?: string | null
+          id?: string
+          menu_item_id?: string | null
+          outlet_id?: string | null
+          qty?: number
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_complimentary_log_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_complimentary_log_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_complimentary_log_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_daily_sales_summary: {
+        Row: {
+          avg_check: number | null
+          beverage_revenue: number | null
+          comp_total: number | null
+          created_at: string | null
+          discount_total: number | null
+          food_revenue: number | null
+          id: string
+          outlet_id: string | null
+          package_revenue: number | null
+          sales_date: string
+          total_covers: number | null
+          total_orders: number | null
+          total_revenue: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_check?: number | null
+          beverage_revenue?: number | null
+          comp_total?: number | null
+          created_at?: string | null
+          discount_total?: number | null
+          food_revenue?: number | null
+          id?: string
+          outlet_id?: string | null
+          package_revenue?: number | null
+          sales_date: string
+          total_covers?: number | null
+          total_orders?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_check?: number | null
+          beverage_revenue?: number | null
+          comp_total?: number | null
+          created_at?: string | null
+          discount_total?: number | null
+          food_revenue?: number | null
+          id?: string
+          outlet_id?: string | null
+          package_revenue?: number | null
+          sales_date?: string
+          total_covers?: number | null
+          total_orders?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_daily_sales_summary_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_data_imports: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_log: Json | null
+          file_name: string | null
+          id: string
+          import_type: string
+          imported_by: string | null
+          outlet_id: string | null
+          records_failed: number | null
+          records_imported: number | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_log?: Json | null
+          file_name?: string | null
+          id?: string
+          import_type: string
+          imported_by?: string | null
+          outlet_id?: string | null
+          records_failed?: number | null
+          records_imported?: number | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_log?: Json | null
+          file_name?: string | null
+          id?: string
+          import_type?: string
+          imported_by?: string | null
+          outlet_id?: string | null
+          records_failed?: number | null
+          records_imported?: number | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_data_imports_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
             referencedColumns: ["id"]
           },
         ]
@@ -3366,6 +3608,193 @@ export type Database = {
           },
         ]
       }
+      lab_ops_guest_feedback: {
+        Row: {
+          created_at: string | null
+          feedback_date: string
+          free_text: string | null
+          id: string
+          outlet_id: string | null
+          rating_ambience: number | null
+          rating_beverage: number | null
+          rating_food: number | null
+          rating_overall: number | null
+          rating_service: number | null
+          source: string | null
+          staff_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          feedback_date?: string
+          free_text?: string | null
+          id?: string
+          outlet_id?: string | null
+          rating_ambience?: number | null
+          rating_beverage?: number | null
+          rating_food?: number | null
+          rating_overall?: number | null
+          rating_service?: number | null
+          source?: string | null
+          staff_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          feedback_date?: string
+          free_text?: string | null
+          id?: string
+          outlet_id?: string | null
+          rating_ambience?: number | null
+          rating_beverage?: number | null
+          rating_food?: number | null
+          rating_overall?: number | null
+          rating_service?: number | null
+          source?: string | null
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_guest_feedback_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_guest_feedback_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_ingredients_master: {
+        Row: {
+          base_unit_ml: number | null
+          category: string | null
+          created_at: string | null
+          id: string
+          ingredient_id: string
+          ingredient_name: string
+          is_bar_stock: boolean | null
+          outlet_id: string | null
+          standard_cost: number | null
+          sub_category: string | null
+          supplier_id: string | null
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_unit_ml?: number | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          ingredient_id: string
+          ingredient_name: string
+          is_bar_stock?: boolean | null
+          outlet_id?: string | null
+          standard_cost?: number | null
+          sub_category?: string | null
+          supplier_id?: string | null
+          unit?: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_unit_ml?: number | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          ingredient_id?: string
+          ingredient_name?: string
+          is_bar_stock?: boolean | null
+          outlet_id?: string | null
+          standard_cost?: number | null
+          sub_category?: string | null
+          supplier_id?: string | null
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_ingredients_master_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_ingredients_master_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_inventory_counts: {
+        Row: {
+          count_datetime: string
+          count_id: string
+          count_type: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          ingredient_master_id: string | null
+          location: string | null
+          notes: string | null
+          outlet_id: string | null
+          qty_on_hand: number
+        }
+        Insert: {
+          count_datetime?: string
+          count_id: string
+          count_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          ingredient_master_id?: string | null
+          location?: string | null
+          notes?: string | null
+          outlet_id?: string | null
+          qty_on_hand?: number
+        }
+        Update: {
+          count_datetime?: string
+          count_id?: string
+          count_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          ingredient_master_id?: string | null
+          location?: string | null
+          notes?: string | null
+          outlet_id?: string | null
+          qty_on_hand?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_inventory_counts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_inventory_counts_ingredient_master_id_fkey"
+            columns: ["ingredient_master_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_ingredients_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_inventory_counts_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_ops_inventory_item_costs: {
         Row: {
           created_at: string | null
@@ -3451,6 +3880,140 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "lab_ops_inventory_items_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_inventory_movements: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          ingredient_master_id: string | null
+          movement_datetime: string
+          movement_id: string
+          movement_type: string
+          notes: string | null
+          outlet_id: string | null
+          qty: number
+          supplier_id: string | null
+          unit_cost: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          ingredient_master_id?: string | null
+          movement_datetime?: string
+          movement_id: string
+          movement_type: string
+          notes?: string | null
+          outlet_id?: string | null
+          qty: number
+          supplier_id?: string | null
+          unit_cost?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          ingredient_master_id?: string | null
+          movement_datetime?: string
+          movement_id?: string
+          movement_type?: string
+          notes?: string | null
+          outlet_id?: string | null
+          qty?: number
+          supplier_id?: string | null
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_inventory_movements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_inventory_movements_ingredient_master_id_fkey"
+            columns: ["ingredient_master_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_ingredients_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_inventory_movements_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_inventory_movements_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_item_performance: {
+        Row: {
+          cost: number | null
+          created_at: string | null
+          id: string
+          menu_item_id: string | null
+          outlet_id: string | null
+          period_end: string
+          period_start: string
+          popularity_rank: number | null
+          profit: number | null
+          profit_margin: number | null
+          qty_sold: number | null
+          revenue: number | null
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string | null
+          id?: string
+          menu_item_id?: string | null
+          outlet_id?: string | null
+          period_end: string
+          period_start: string
+          popularity_rank?: number | null
+          profit?: number | null
+          profit_margin?: number | null
+          qty_sold?: number | null
+          revenue?: number | null
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string | null
+          id?: string
+          menu_item_id?: string | null
+          outlet_id?: string | null
+          period_end?: string
+          period_start?: string
+          popularity_rank?: number | null
+          profit?: number | null
+          profit_margin?: number | null
+          qty_sold?: number | null
+          revenue?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_item_performance_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_item_performance_outlet_id_fkey"
             columns: ["outlet_id"]
             isOneToOne: false
             referencedRelation: "lab_ops_outlets"
@@ -3567,13 +4130,18 @@ export type Database = {
           base_price: number
           category_id: string | null
           created_at: string | null
+          default_serving_ml: number | null
           description: string | null
           id: string
           image_url: string | null
           is_active: boolean | null
+          is_bar_item: boolean | null
+          is_package: boolean | null
           is_recipe_based: boolean | null
+          item_type: string | null
           name: string
           outlet_id: string
+          sub_category: string | null
           tax_rate: number | null
           updated_at: string | null
         }
@@ -3581,13 +4149,18 @@ export type Database = {
           base_price: number
           category_id?: string | null
           created_at?: string | null
+          default_serving_ml?: number | null
           description?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_bar_item?: boolean | null
+          is_package?: boolean | null
           is_recipe_based?: boolean | null
+          item_type?: string | null
           name: string
           outlet_id: string
+          sub_category?: string | null
           tax_rate?: number | null
           updated_at?: string | null
         }
@@ -3595,13 +4168,18 @@ export type Database = {
           base_price?: number
           category_id?: string | null
           created_at?: string | null
+          default_serving_ml?: number | null
           description?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_bar_item?: boolean | null
+          is_package?: boolean | null
           is_recipe_based?: boolean | null
+          item_type?: string | null
           name?: string
           outlet_id?: string
+          sub_category?: string | null
           tax_rate?: number | null
           updated_at?: string | null
         }
@@ -3827,7 +4405,9 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          location: string | null
           name: string
+          seating_capacity: number | null
           settings: Json | null
           type: string | null
           updated_at: string | null
@@ -3838,7 +4418,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          location?: string | null
           name: string
+          seating_capacity?: number | null
           settings?: Json | null
           type?: string | null
           updated_at?: string | null
@@ -3849,13 +4431,107 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          location?: string | null
           name?: string
+          seating_capacity?: number | null
           settings?: Json | null
           type?: string | null
           updated_at?: string | null
           user_id?: string
         }
         Relationships: []
+      }
+      lab_ops_package_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          max_qty_per_guest: number | null
+          menu_item_id: string | null
+          package_session_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          max_qty_per_guest?: number | null
+          menu_item_id?: string | null
+          package_session_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          max_qty_per_guest?: number | null
+          menu_item_id?: string | null
+          package_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_package_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_package_items_package_session_id_fkey"
+            columns: ["package_session_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_package_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_package_sessions: {
+        Row: {
+          created_at: string | null
+          end_datetime: string | null
+          guest_count: number | null
+          id: string
+          outlet_id: string | null
+          package_name: string
+          package_price_per_guest: number | null
+          package_type: string | null
+          start_datetime: string
+          status: string | null
+          total_package_revenue: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_datetime?: string | null
+          guest_count?: number | null
+          id?: string
+          outlet_id?: string | null
+          package_name: string
+          package_price_per_guest?: number | null
+          package_type?: string | null
+          start_datetime: string
+          status?: string | null
+          total_package_revenue?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_datetime?: string | null
+          guest_count?: number | null
+          id?: string
+          outlet_id?: string | null
+          package_name?: string
+          package_price_per_guest?: number | null
+          package_type?: string | null
+          start_datetime?: string
+          status?: string | null
+          total_package_revenue?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_package_sessions_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lab_ops_payments: {
         Row: {
@@ -3888,6 +4564,64 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "lab_ops_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_price_changes: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          effective_date: string
+          id: string
+          menu_item_id: string | null
+          new_price: number
+          old_price: number
+          outlet_id: string | null
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          effective_date?: string
+          id?: string
+          menu_item_id?: string | null
+          new_price: number
+          old_price: number
+          outlet_id?: string | null
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          effective_date?: string
+          id?: string
+          menu_item_id?: string | null
+          new_price?: number
+          old_price?: number
+          outlet_id?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_price_changes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_price_changes_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_price_changes_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
             referencedColumns: ["id"]
           },
         ]
@@ -4003,6 +4737,61 @@ export type Database = {
           },
         ]
       }
+      lab_ops_recipe_costing: {
+        Row: {
+          created_at: string | null
+          id: string
+          ingredient_master_id: string | null
+          menu_item_id: string | null
+          outlet_id: string | null
+          qty_per_serving: number
+          unit: string
+          waste_factor: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ingredient_master_id?: string | null
+          menu_item_id?: string | null
+          outlet_id?: string | null
+          qty_per_serving?: number
+          unit?: string
+          waste_factor?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ingredient_master_id?: string | null
+          menu_item_id?: string | null
+          outlet_id?: string | null
+          qty_per_serving?: number
+          unit?: string
+          waste_factor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_recipe_costing_ingredient_master_id_fkey"
+            columns: ["ingredient_master_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_ingredients_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_recipe_costing_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_recipe_costing_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_ops_recipe_ingredients: {
         Row: {
           created_at: string | null
@@ -4089,6 +4878,89 @@ export type Database = {
           },
         ]
       }
+      lab_ops_sales_transactions: {
+        Row: {
+          check_id: string | null
+          created_at: string | null
+          discount_amount: number | null
+          gross_amount: number
+          id: string
+          is_complimentary: boolean | null
+          menu_item_id: string | null
+          net_amount: number
+          outlet_id: string | null
+          package_session_id: string | null
+          qty: number
+          staff_id: string | null
+          table_id: string | null
+          txn_datetime: string
+          txn_id: string
+        }
+        Insert: {
+          check_id?: string | null
+          created_at?: string | null
+          discount_amount?: number | null
+          gross_amount?: number
+          id?: string
+          is_complimentary?: boolean | null
+          menu_item_id?: string | null
+          net_amount?: number
+          outlet_id?: string | null
+          package_session_id?: string | null
+          qty?: number
+          staff_id?: string | null
+          table_id?: string | null
+          txn_datetime?: string
+          txn_id: string
+        }
+        Update: {
+          check_id?: string | null
+          created_at?: string | null
+          discount_amount?: number | null
+          gross_amount?: number
+          id?: string
+          is_complimentary?: boolean | null
+          menu_item_id?: string | null
+          net_amount?: number
+          outlet_id?: string | null
+          package_session_id?: string | null
+          qty?: number
+          staff_id?: string | null
+          table_id?: string | null
+          txn_datetime?: string
+          txn_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_sales_transactions_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_sales_transactions_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_sales_transactions_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_sales_transactions_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_ops_staff: {
         Row: {
           created_at: string | null
@@ -4132,6 +5004,117 @@ export type Database = {
             columns: ["outlet_id"]
             isOneToOne: false
             referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_staff_performance: {
+        Row: {
+          avg_check: number | null
+          created_at: string | null
+          feedback_avg: number | null
+          hours_worked: number | null
+          id: string
+          orders_handled: number | null
+          outlet_id: string | null
+          period_end: string
+          period_start: string
+          revenue_generated: number | null
+          staff_id: string | null
+          tips_collected: number | null
+        }
+        Insert: {
+          avg_check?: number | null
+          created_at?: string | null
+          feedback_avg?: number | null
+          hours_worked?: number | null
+          id?: string
+          orders_handled?: number | null
+          outlet_id?: string | null
+          period_end: string
+          period_start: string
+          revenue_generated?: number | null
+          staff_id?: string | null
+          tips_collected?: number | null
+        }
+        Update: {
+          avg_check?: number | null
+          created_at?: string | null
+          feedback_avg?: number | null
+          hours_worked?: number | null
+          id?: string
+          orders_handled?: number | null
+          outlet_id?: string | null
+          period_end?: string
+          period_start?: string
+          revenue_generated?: number | null
+          staff_id?: string | null
+          tips_collected?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_staff_performance_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_staff_performance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_ops_staff_shifts: {
+        Row: {
+          created_at: string | null
+          hours_worked: number | null
+          id: string
+          outlet_id: string | null
+          role_for_shift: string | null
+          shift_date: string
+          staff_id: string | null
+          time_in: string | null
+          time_out: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          hours_worked?: number | null
+          id?: string
+          outlet_id?: string | null
+          role_for_shift?: string | null
+          shift_date: string
+          staff_id?: string | null
+          time_in?: string | null
+          time_out?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          hours_worked?: number | null
+          id?: string
+          outlet_id?: string | null
+          role_for_shift?: string | null
+          shift_date?: string
+          staff_id?: string | null
+          time_in?: string | null
+          time_out?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_ops_staff_shifts_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_ops_staff_shifts_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_staff"
             referencedColumns: ["id"]
           },
         ]

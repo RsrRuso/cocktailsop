@@ -293,34 +293,34 @@ export default function LabOps() {
     <div className="min-h-screen bg-background pb-20">
       <TopNav />
       
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-7xl">
-        {/* Header - Mobile Optimized */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+      <main className="container mx-auto px-3 sm:px-4 pt-16 sm:pt-20 pb-4 max-w-7xl">
+        {/* Header - Mobile Optimized with proper spacing from TopNav */}
+        <div className="flex flex-col gap-3 mb-4">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
-              <ChefHat className="h-7 w-7 text-primary-foreground" />
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shrink-0">
+              <ChefHat className="h-5 w-5 sm:h-7 sm:w-7 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">LAB Ops</h1>
-              <p className="text-muted-foreground text-xs sm:text-sm">Restaurant & Bar Management</p>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold text-foreground">LAB Ops</h1>
+              <p className="text-muted-foreground text-xs">Restaurant & Bar Management</p>
             </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {selectedOutlet && (
               <Button 
                 size="sm" 
                 variant="outline" 
                 onClick={loadDemoData} 
                 disabled={loadingDemo}
-                className="border-primary/50 text-primary hover:bg-primary/10 h-10 px-3"
+                className="border-primary/50 text-primary hover:bg-primary/10 h-9 px-2 sm:px-3"
               >
                 {loadingDemo ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )}
-                <span className="hidden sm:inline ml-2">Load Demo</span>
+                <span className="hidden sm:inline ml-1">Demo</span>
               </Button>
             )}
             
@@ -332,9 +332,9 @@ export default function LabOps() {
                   if (outlet) setSelectedOutlet(outlet);
                 }}
               >
-                <SelectTrigger className="w-36 sm:w-48 h-10">
-                  <Store className="h-4 w-4 mr-2 shrink-0" />
-                  <SelectValue placeholder="Select outlet" />
+                <SelectTrigger className="w-32 sm:w-44 h-9">
+                  <Store className="h-4 w-4 mr-1 shrink-0" />
+                  <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
                   {outlets.map((outlet) => (
@@ -348,9 +348,9 @@ export default function LabOps() {
             
             <Dialog open={showCreateOutlet} onOpenChange={setShowCreateOutlet}>
               <DialogTrigger asChild>
-                <Button size="sm" className="h-10">
+                <Button size="sm" className="h-9 px-2 sm:px-3">
                   <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline ml-1">New Outlet</span>
+                  <span className="hidden sm:inline ml-1">New</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-[95vw] sm:max-w-md">
