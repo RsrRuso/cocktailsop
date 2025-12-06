@@ -938,39 +938,68 @@ function POSModule({ outletId }: { outletId: string }) {
     const discountAmount = discountType === "percent" ? subtotal * (discount / 100) : discount;
     const total = Math.max(0, subtotal - discountAmount);
 
-    // Create payment record
-    await supabase.from("lab_ops_payments").insert({
-      order_id: currentOrder.id,
-      amount: total,
-      payment_method: paymentMethod,
-      status: "completed",
-    });
+    try {
+      // Create payment record
+      const { error: paymentError } = await supabase.from("lab_ops_payments").insert({
+        order_id: currentOrder.id,
+        amount: total,
+        payment_method: paymentMethod,
+        status: "completed",
+      });
+      
+      if (paymentError) {
+        console.error("Payment insert error:", paymentError);
+        toast({ title: "Payment failed", description: paymentError.message, variant: "destructive" });
+        return;
+      }
 
-    // Close order
-    await supabase
-      .from("lab_ops_orders")
-      .update({ 
-        status: "closed", 
-        closed_at: new Date().toISOString(),
-        total_amount: total,
-        discount_amount: discountAmount,
-      })
-      .eq("id", currentOrder.id);
+      // Close order - update status to 'closed'
+      const { error: orderError } = await supabase
+        .from("lab_ops_orders")
+        .update({ 
+          status: "closed", 
+          closed_at: new Date().toISOString(),
+          total_amount: total,
+          discount_total: discountAmount,
+        })
+        .eq("id", currentOrder.id);
+      
+      if (orderError) {
+        console.error("Order close error:", orderError);
+        toast({ title: "Failed to close order", description: orderError.message, variant: "destructive" });
+        return;
+      }
 
-    // Free table
-    await supabase
-      .from("lab_ops_tables")
-      .update({ status: "free" })
-      .eq("id", selectedTable.id);
+      // Free table if we have a selected table
+      if (selectedTable?.id) {
+        const { error: tableError } = await supabase
+          .from("lab_ops_tables")
+          .update({ status: "free" })
+          .eq("id", selectedTable.id);
+        
+        if (tableError) {
+          console.error("Table update error:", tableError);
+        }
+      } else if (currentOrder.table_id) {
+        // Fallback: use table_id from the order
+        await supabase
+          .from("lab_ops_tables")
+          .update({ status: "free" })
+          .eq("id", currentOrder.table_id);
+      }
 
-    toast({ title: "Payment processed successfully" });
-    setShowPayment(false);
-    setDiscount(0);
-    setCurrentOrder(null);
-    setOrderItems([]);
-    setSelectedTable(null);
-    fetchTables();
-    fetchOpenOrders();
+      toast({ title: "Payment complete! Tab closed successfully." });
+      setShowPayment(false);
+      setDiscount(0);
+      setCurrentOrder(null);
+      setOrderItems([]);
+      setSelectedTable(null);
+      fetchTables();
+      fetchOpenOrders();
+    } catch (err) {
+      console.error("Payment processing error:", err);
+      toast({ title: "Payment error", description: "An unexpected error occurred", variant: "destructive" });
+    }
   };
 
   const voidOrder = async () => {
