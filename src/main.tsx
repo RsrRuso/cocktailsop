@@ -11,5 +11,8 @@ initPerformanceBoost();
 const savedTheme = localStorage.getItem('theme') || 'dark';
 document.documentElement.classList.add(savedTheme);
 
-// Providers are in App.tsx - no duplicate wrapping
-createRoot(document.getElementById("root")!).render(<App />);
+// Mount the app
+const container = document.getElementById("root");
+if (container) {
+  createRoot(container).render(<App />);
+}
