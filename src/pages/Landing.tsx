@@ -65,17 +65,8 @@ const Landing = () => {
         {/* Hero Section */}
         <main className="flex-1 flex items-center justify-center px-6 py-12">
           <div className="max-w-5xl w-full space-y-8 text-center">
-            {/* Founder Badge - Highlighted */}
-            <div className="inline-flex items-center gap-3 glass px-6 py-4 rounded-2xl glow-gold border border-yellow-500/30">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center text-white font-bold text-lg">
-                RM
-              </div>
-              <div className="text-left">
-                <div className="text-lg font-bold text-gradient-gold">Ruslani Melkoniani</div>
-                <div className="text-sm text-muted-foreground">CEO & Founder of SpecVerse</div>
-                <div className="text-xs text-primary">@Russo_str</div>
-              </div>
-            </div>
+            {/* Founder info - hidden visually, accessible for screen readers & SEO */}
+            <span className="sr-only">Founded by Ruslani Melkoniani (Russo_str), CEO & Founder of SpecVerse and creator of CocktailSOP.com</span>
 
             {/* Verified Badge */}
             <div className="inline-flex items-center gap-2 glass px-6 py-3 rounded-full glow-primary">
@@ -175,19 +166,8 @@ const Landing = () => {
           </div>
         </main>
 
-        {/* Footer with Founder Credit */}
-        <footer className="px-6 py-8 text-center space-y-4">
-          <div className="glass rounded-2xl p-6 max-w-2xl mx-auto glow-gold border border-yellow-500/20">
-            <p className="text-lg font-semibold text-gradient-gold mb-2">
-              Created by Ruslani Melkoniani
-            </p>
-            <p className="text-sm text-muted-foreground">
-              CEO & Founder of SpecVerse • <span className="text-primary">@Russo_str</span>
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              Also creator of <a href="https://cocktailsop.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">CocktailSOP.com</a>
-            </p>
-          </div>
+        {/* Footer */}
+        <footer className="px-6 py-8 text-center">
           <p className="text-sm text-muted-foreground">© 2024 SpecVerse. All rights reserved.</p>
         </footer>
       </div>
