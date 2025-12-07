@@ -22,24 +22,44 @@ const CertificateView = () => {
   const { certificateId } = useParams();
   const navigate = useNavigate();
 
-  const { data: certificate, isLoading } = useQuery({
+  const { data: certificate, isLoading, error } = useQuery({
     queryKey: ['certificate', certificateId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get the certificate
+      const { data: cert, error: certError } = await supabase
         .from('exam_certificates')
         .select(`
           *,
           exam_categories(*),
-          exam_badge_levels(*),
-          profiles:user_id(username, full_name, avatar_url)
+          exam_badge_levels(*)
         `)
         .eq('id', certificateId)
         .single();
-      if (error) throw error;
-      return data;
+      
+      if (certError) {
+        console.error('Certificate fetch error:', certError);
+        throw certError;
+      }
+      
+      // Then get the profile separately
+      let profile = null;
+      if (cert?.user_id) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('username, full_name, avatar_url')
+          .eq('id', cert.user_id)
+          .single();
+        profile = profileData;
+      }
+      
+      return { ...cert, profiles: profile };
     },
-    enabled: !!certificateId
+    enabled: !!certificateId,
+    retry: 1
   });
+
+  // Debug logging
+  console.log('Certificate ID:', certificateId, 'Loading:', isLoading, 'Error:', error, 'Data:', certificate);
 
   const getBadgeGradient = (name: string) => {
     const gradients: Record<string, string> = {
