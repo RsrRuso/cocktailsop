@@ -363,7 +363,7 @@ const ExamSession = () => {
               {examResults.badge && (
                 <div className="p-4 rounded-lg bg-gradient-to-r from-primary/20 to-purple-500/20">
                   <Badge className="text-lg py-1 px-4">
-                    {examResults.badge.level_name} Badge Earned!
+                    {examResults.badge.name} Badge Earned!
                   </Badge>
                 </div>
               )}
