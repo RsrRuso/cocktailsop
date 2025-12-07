@@ -151,6 +151,9 @@ const StaffInstall = lazy(() => import("@/pages/StaffInstall"));
 const StaffQRAccess = lazy(() => import("@/pages/StaffQRAccess"));
 const BarKDS = lazy(() => import("@/pages/BarKDS"));
 const KitchenKDS = lazy(() => import("@/pages/KitchenKDS"));
+const ExamCenter = lazy(() => import("@/pages/ExamCenter"));
+const ExamSession = lazy(() => import("@/pages/ExamSession"));
+const CertificateView = lazy(() => import("@/pages/CertificateView"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
