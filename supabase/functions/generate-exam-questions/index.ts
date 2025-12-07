@@ -18,8 +18,11 @@ serve(async (req) => {
       throw new Error('Missing required fields: content and categoryName');
     }
 
-    console.log(`Generating ${questionCount} questions for category: ${categoryName}`);
+    console.log(`=== GENERATING EXAM QUESTIONS ===`);
+    console.log(`Category: ${categoryName}`);
+    console.log(`Question count: ${questionCount}`);
     console.log(`Content length: ${content.length} characters`);
+    console.log(`Content preview: ${content.substring(0, 300)}...`);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -27,50 +30,52 @@ serve(async (req) => {
       throw new Error('AI service not configured');
     }
 
-    // Generate a unique seed for randomization
-    const seed = Date.now() + Math.random() * 1000000;
-    
-    const systemPrompt = `You are an expert exam question generator specializing in the HOSPITALITY and BEVERAGE INDUSTRY.
-Your task is to create professional, industry-specific exam questions based STRICTLY on the provided study material.
+    const systemPrompt = `You are an expert exam question generator for the HOSPITALITY and BEVERAGE INDUSTRY.
 
-CRITICAL REQUIREMENTS:
-1. ALL questions MUST be directly derived from the provided study material content
-2. Do NOT invent information - only use facts from the material
-3. Each question MUST be unique and test knowledge from the material
-4. Use randomization seed ${seed} to vary question styles and focus areas
-5. Mix question types: multiple_choice (60%), true_false (30%), fill_blank (10%)
-6. Include detailed explanations referencing the study material
+YOUR TASK: Create exam questions based EXCLUSIVELY on the study material provided by the user.
 
-QUESTION TYPES:
-- multiple_choice: 4 options, one correct answer
-- true_false: True or False statement
-- fill_blank: Short answer requiring specific term/phrase from material
+CRITICAL RULES:
+1. EVERY question MUST be derived from SPECIFIC facts, ingredients, measurements, techniques, or steps mentioned in the study material
+2. NEVER generate generic questions - each question must reference specific details from the content
+3. Questions should test knowledge of: specific ingredients and quantities, preparation steps, techniques, temperatures, equipment, garnishes, glassware
+4. Include the actual values/terms from the material in questions and answers
 
-OUTPUT FORMAT (JSON array only, no markdown):
+QUESTION TYPES (generate a mix):
+- multiple_choice: 4 specific options based on material, one correct
+- true_false: Statements using exact details from material
+- fill_blank: Fill in specific measurements, ingredients, or techniques
+
+OUTPUT: Return ONLY a JSON array with this exact structure:
 [
   {
-    "question_text": "Clear question based on study material",
+    "question_text": "Question referencing specific content detail",
     "question_type": "multiple_choice",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correct_answer": "The correct answer text",
+    "options": ["Specific option A", "Specific option B", "Specific option C", "Specific option D"],
+    "correct_answer": "The exact correct answer",
     "points": 10,
-    "explanation": "Explanation referencing the study material"
+    "explanation": "Explanation citing the specific content"
   }
 ]
 
-For true_false questions, options should be ["True", "False"] and correct_answer should be "True" or "False".
-For fill_blank questions, options can be null and correct_answer is the expected short answer.`;
+EXAMPLES of GOOD questions based on cocktail content:
+- "What is the brewing temperature for the tea extraction?" (tests specific temp: 99°C)
+- "How many grams of tropical dried tea are used?" (tests specific amount: 4g)
+- "What spirit is the base of this cocktail?" (tests base spirit)
+- "True or False: The extraction drips into a frozen pot to chill to approximately 5°C" (tests technique)`;
 
-    const userPrompt = `Based STRICTLY on this study material about "${categoryName}", generate exactly ${questionCount} unique exam questions.
+    const userPrompt = `STUDY MATERIAL FOR "${categoryName}":
 
-STUDY MATERIAL:
+---BEGIN CONTENT---
 ${content}
+---END CONTENT---
 
-IMPORTANT: Every question must be answerable from the material above. Do not create questions about topics not covered in the material. Use seed ${seed} for randomization.
+Based on the SPECIFIC details in this content, generate exactly ${questionCount} exam questions.
 
-Generate ${questionCount} questions now as a JSON array:`;
+Each question MUST reference actual facts from the content above - specific ingredients, measurements, techniques, temperatures, steps, or equipment mentioned.
 
-    console.log('Calling Lovable AI...');
+Return ONLY the JSON array, no other text:`;
+
+    console.log('Calling Lovable AI with content-focused prompt...');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -84,7 +89,7 @@ Generate ${questionCount} questions now as a JSON array:`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.7,
+        temperature: 0.3,
         max_tokens: 8000
       })
     });
@@ -112,7 +117,8 @@ Generate ${questionCount} questions now as a JSON array:`;
     const aiResult = await response.json();
     const aiContent = aiResult.choices?.[0]?.message?.content || '';
     
-    console.log('AI response received, parsing...');
+    console.log('AI response received');
+    console.log('Response preview:', aiContent.substring(0, 500));
 
     // Parse the JSON response
     let questions = [];
@@ -134,28 +140,33 @@ Generate ${questionCount} questions now as a JSON array:`;
       if (jsonMatch) {
         questions = JSON.parse(jsonMatch[0]);
       } else {
-        // Try parsing the whole content as JSON
         questions = JSON.parse(cleanContent);
       }
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
-      console.error('Raw response:', aiContent.substring(0, 500));
-      throw new Error('Failed to parse generated questions');
+      console.error('Raw response:', aiContent);
+      throw new Error('Failed to parse generated questions. Please try again.');
+    }
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      console.error('No questions in parsed response');
+      throw new Error('AI did not generate any questions. Please try again.');
     }
 
     // Validate and clean questions
     questions = questions.map((q: any, index: number) => ({
-      question_text: q.question_text || `Question ${index + 1} about ${categoryName}`,
+      question_text: q.question_text || `Question ${index + 1}`,
       question_type: q.question_type || 'multiple_choice',
       options: Array.isArray(q.options) ? q.options : 
                q.question_type === 'true_false' ? ['True', 'False'] :
                ['Option A', 'Option B', 'Option C', 'Option D'],
       correct_answer: q.correct_answer || (q.options?.[0] || 'Answer'),
       points: q.points || 10,
-      explanation: q.explanation || 'See study material for details.'
+      explanation: q.explanation || 'Refer to the study material for details.'
     }));
 
-    console.log(`Successfully generated ${questions.length} questions from study material`);
+    console.log(`Successfully generated ${questions.length} content-based questions`);
+    console.log('Sample question:', questions[0]?.question_text);
 
     return new Response(
       JSON.stringify({ questions }),
