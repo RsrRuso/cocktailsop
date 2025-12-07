@@ -397,9 +397,110 @@ const ExamSession = () => {
   }
 
   // Results screen
+  const [showAnswerReview, setShowAnswerReview] = useState(false);
+
   if (showResults && examResults) {
     const passed = examResults.score >= 60;
     
+    // Answer Review Screen
+    if (showAnswerReview) {
+      return (
+        <div className="min-h-screen bg-background pb-20">
+          <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b p-4">
+            <div className="max-w-2xl mx-auto flex items-center justify-between">
+              <Button variant="ghost" size="sm" onClick={() => setShowAnswerReview(false)}>
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back to Results
+              </Button>
+              <h2 className="font-semibold">Answer Review</h2>
+              <div className="w-20" />
+            </div>
+          </div>
+          
+          <div className="max-w-2xl mx-auto p-4 space-y-4">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-green-500">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="font-medium">{examResults.correct} Correct</span>
+                </div>
+                <div className="flex items-center gap-2 text-red-500">
+                  <XCircle className="h-5 w-5" />
+                  <span className="font-medium">{examResults.total - examResults.correct} Wrong</span>
+                </div>
+              </div>
+              <Badge variant={passed ? "default" : "destructive"}>
+                {examResults.score}%
+              </Badge>
+            </div>
+            
+            {examResults.details?.map((detail: any, index: number) => (
+              <motion.div
+                key={detail.question.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <Card className={`overflow-hidden border-l-4 ${
+                  detail.isCorrect ? 'border-l-green-500' : 'border-l-red-500'
+                }`}>
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">Q{index + 1}</span>
+                        {detail.isCorrect ? (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-red-500" />
+                        )}
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {detail.points}/{detail.question.points} pts
+                      </Badge>
+                    </div>
+                    
+                    <p className="font-medium text-sm">{detail.question.question_text}</p>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className={`p-2 rounded ${
+                        detail.isCorrect ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'
+                      }`}>
+                        <p className="text-xs text-muted-foreground mb-1">Your Answer:</p>
+                        <p className={detail.isCorrect ? 'text-green-600' : 'text-red-600'}>
+                          {Array.isArray(detail.userAnswer) 
+                            ? detail.userAnswer.join(', ') 
+                            : detail.userAnswer || 'Not answered'}
+                        </p>
+                      </div>
+                      
+                      {!detail.isCorrect && (
+                        <div className="p-2 rounded bg-green-500/10 border border-green-500/30">
+                          <p className="text-xs text-muted-foreground mb-1">Correct Answer:</p>
+                          <p className="text-green-600">
+                            {Array.isArray(detail.question.correct_answer) 
+                              ? detail.question.correct_answer.join(', ') 
+                              : detail.question.correct_answer}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {detail.question.explanation && (
+                        <div className="p-2 rounded bg-blue-500/10 border border-blue-500/30">
+                          <p className="text-xs text-muted-foreground mb-1">Explanation:</p>
+                          <p className="text-blue-600 text-xs">{detail.question.explanation}</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
+    // Results Summary Screen
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <motion.div
@@ -447,8 +548,18 @@ const ExamSession = () => {
               </div>
 
               <div className="space-y-3">
+                {/* View Answer Review Button */}
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setShowAnswerReview(true)}
+                >
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  View Answer Report
+                </Button>
+                
                 {passed && sessionId && (
-                  <Button className="w-full" onClick={async () => {
+                  <Button className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700" onClick={async () => {
                     // Get the certificate for this session
                     const { data: cert } = await supabase
                       .from('exam_certificates')
