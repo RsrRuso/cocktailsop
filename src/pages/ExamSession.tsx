@@ -600,6 +600,21 @@ const ExamSession = () => {
     );
   }
 
+  // Loading state when questions haven't loaded yet
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center p-8">
+          <div className="h-12 w-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+          <h3 className="text-lg font-semibold">Loading Questions...</h3>
+          <p className="text-sm text-muted-foreground mt-2">
+            Preparing your exam questions
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
   // Main exam interface
   return (
     <div className="min-h-screen bg-background">
