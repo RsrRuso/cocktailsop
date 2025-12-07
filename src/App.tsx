@@ -143,6 +143,7 @@ const RevenueByCategory = lazy(() => import("@/pages/reports/RevenueByCategory")
 const BreakevenReport = lazy(() => import("@/pages/reports/BreakevenReport"));
 const DailyOpsReport = lazy(() => import("@/pages/reports/DailyOpsReport"));
 const LabOps = lazy(() => import("@/pages/LabOps"));
+const Livestream = lazy(() => import("@/pages/Livestream"));
 const StaffPOS = lazy(() => import("@/pages/StaffPOS"));
 const StaffInstall = lazy(() => import("@/pages/StaffInstall"));
 const StaffQRAccess = lazy(() => import("@/pages/StaffQRAccess"));
@@ -305,6 +306,8 @@ const AppContent = () => {
           <Route path="/install" element={<Install />} />
           <Route path="/matrix-ai" element={<MatrixAI />} />
           <Route path="/lab-ops" element={<LabOps />} />
+          <Route path="/live" element={<Livestream />} />
+          <Route path="/live/:id" element={<Livestream />} />
           <Route path="/staff-pos" element={<StaffPOS />} />
           <Route path="/staff-install" element={<StaffInstall />} />
           <Route path="/staff-qr-access" element={<StaffQRAccess />} />
