@@ -18,12 +18,11 @@ import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAutomationProcessor } from "@/hooks/useAutomationProcessor";
 
-// Eager load ONLY index/landing/auth (no user data) and ExamSession
+// Eager load ONLY index/landing/auth (no user data)
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import PasswordReset from "./pages/PasswordReset";
-import ExamSession from "./pages/ExamSession";
 
 // Lazy load ALL other routes including Home for code splitting
 const Home = lazy(() => import("./pages/Home"));
@@ -154,6 +153,7 @@ const StaffQRAccess = lazy(() => import("@/pages/StaffQRAccess"));
 const BarKDS = lazy(() => import("@/pages/BarKDS"));
 const KitchenKDS = lazy(() => import("@/pages/KitchenKDS"));
 const ExamCenter = lazy(() => import("@/pages/ExamCenter"));
+const ExamSession = lazy(() => import("@/pages/ExamSession"));
 const CertificateView = lazy(() => import("@/pages/CertificateView"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
