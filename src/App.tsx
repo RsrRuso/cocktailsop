@@ -65,6 +65,7 @@ const YieldCalculator = lazy(() => import("./pages/YieldCalculator"));
 const SalesReport = lazy(() => import("./pages/SalesReport"));
 const InventoryValuationReport = lazy(() => import("./pages/InventoryValuationReport"));
 const GMCommandGuide = lazy(() => import("./pages/GMCommandGuide"));
+const GMCommandDashboard = lazy(() => import("./pages/GMCommandDashboard"));
 const VarianceReport = lazy(() => import("./pages/VarianceReport"));
 const RecipeVault = lazy(() => import("./pages/RecipeVault"));
 const CocktailSpecs = lazy(() => import("./pages/CocktailSpecs"));
@@ -315,6 +316,7 @@ const AppContent = () => {
           <Route path="/bar-kds" element={<BarKDS />} />
           <Route path="/kitchen-kds" element={<KitchenKDS />} />
           <Route path="/gm-command-guide" element={<GMCommandGuide />} />
+          <Route path="/gm-command" element={<GMCommandDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
                 </Routes>
