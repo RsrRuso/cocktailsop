@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,18 +6,12 @@ import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import ShareDialog from "@/components/ShareDialog";
-import CommentsDialog from "@/components/CommentsDialog";
-import LikesDialog from "@/components/LikesDialog";
-
+import { Skeleton } from "@/components/ui/skeleton";
 import { FeedItem } from "@/components/FeedItem";
 import { useFeedData } from "@/hooks/useFeedData";
 import { useOptimisticLike } from "@/hooks/useOptimisticLike";
-import { useManagerRole } from "@/hooks/useManagerRole";
 import { EventsTicker } from "@/components/EventsTicker";
 import BirthdayFireworks from "@/components/BirthdayFireworks";
-import MusicStatusBubble from "@/components/MusicStatusBubble";
-import StatusRing from "@/components/StatusRing";
 import UserStatusIndicator from "@/components/UserStatusIndicator";
 import { useUserStatus } from "@/hooks/useUserStatus";
 import {
@@ -26,6 +20,45 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+// Lazy load dialogs for faster initial render
+const ShareDialog = lazy(() => import("@/components/ShareDialog"));
+const CommentsDialog = lazy(() => import("@/components/CommentsDialog"));
+const LikesDialog = lazy(() => import("@/components/LikesDialog"));
+
+// Story skeleton for instant UI
+const StorySkeleton = () => (
+  <div className="flex gap-4 px-4 py-3">
+    {[...Array(5)].map((_, i) => (
+      <div key={i} className="flex flex-col items-center gap-2">
+        <Skeleton className="w-[84px] h-[84px] rounded-full" />
+        <Skeleton className="w-12 h-3" />
+      </div>
+    ))}
+  </div>
+);
+
+// Feed skeleton for instant UI
+const FeedSkeleton = () => (
+  <div className="space-y-4 px-4">
+    {[...Array(3)].map((_, i) => (
+      <div key={i} className="bg-card rounded-xl p-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <Skeleton className="w-10 h-10 rounded-full" />
+          <div className="space-y-1">
+            <Skeleton className="w-24 h-4" />
+            <Skeleton className="w-16 h-3" />
+          </div>
+        </div>
+        <Skeleton className="w-full h-48 rounded-lg" />
+        <div className="flex gap-4">
+          <Skeleton className="w-16 h-6" />
+          <Skeleton className="w-16 h-6" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 interface Story {
   id: string;
@@ -117,7 +150,6 @@ const Home = () => {
   const [showLikes, setShowLikes] = useState(false);
   const [selectedLikesPostId, setSelectedLikesPostId] = useState("");
   const [isReelLikes, setIsReelLikes] = useState(false);
-  const { isManager } = useManagerRole();
   const [showTopNav, setShowTopNav] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [hasActiveStory, setHasActiveStory] = useState(false);
@@ -354,6 +386,18 @@ const Home = () => {
     });
   }, []);
 
+  // Show skeletons immediately while data loads
+  if (isLoading && stories.length === 0) {
+    return (
+      <div className="min-h-screen pb-20 pt-16">
+        <TopNav isVisible={showTopNav} />
+        <StorySkeleton />
+        <FeedSkeleton />
+        <BottomNav />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen pb-20 pt-16">
       <TopNav isVisible={showTopNav} />
@@ -558,29 +602,35 @@ const Home = () => {
         )}
       </div>
 
-      <ShareDialog
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        postId={selectedPostId}
-        postContent={selectedPostContent}
-        postType={selectedPostType}
-        mediaUrls={selectedMediaUrls}
-      />
+      <Suspense fallback={null}>
+        <ShareDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          postId={selectedPostId}
+          postContent={selectedPostContent}
+          postType={selectedPostType}
+          mediaUrls={selectedMediaUrls}
+        />
+      </Suspense>
       
-      <CommentsDialog
-        open={commentsDialogOpen}
-        onOpenChange={setCommentsDialogOpen}
-        postId={selectedPostId}
-        isReel={selectedPostType === 'reel'}
-        onCommentChange={refreshFeed}
-      />
+      <Suspense fallback={null}>
+        <CommentsDialog
+          open={commentsDialogOpen}
+          onOpenChange={setCommentsDialogOpen}
+          postId={selectedPostId}
+          isReel={selectedPostType === 'reel'}
+          onCommentChange={refreshFeed}
+        />
+      </Suspense>
 
-      <LikesDialog
-        open={showLikes}
-        onOpenChange={setShowLikes}
-        postId={selectedLikesPostId}
-        isReel={isReelLikes}
-      />
+      <Suspense fallback={null}>
+        <LikesDialog
+          open={showLikes}
+          onOpenChange={setShowLikes}
+          postId={selectedLikesPostId}
+          isReel={isReelLikes}
+        />
+      </Suspense>
 
 
       <BottomNav />
