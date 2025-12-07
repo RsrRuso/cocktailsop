@@ -337,51 +337,51 @@ const ExamSession = () => {
   const currentQuestion = questions?.[currentIndex];
   const progress = questions ? ((currentIndex + 1) / questions.length) * 100 : 0;
 
-  // Pre-exam screen
+  // Pre-exam screen - Mobile Optimized
   if (!isStarted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full"
+          className="w-full max-w-sm"
         >
           <Card className="text-center">
-            <CardHeader>
-              <CardTitle className="text-2xl">{category?.name}</CardTitle>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl sm:text-2xl">{category?.name}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <p className="text-muted-foreground">{category?.description}</p>
+            <CardContent className="space-y-4 pt-0">
+              <p className="text-sm text-muted-foreground line-clamp-3">{category?.description}</p>
               
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="p-3 rounded-lg bg-muted">
-                  <BookOpen className="h-5 w-5 mx-auto mb-1 text-primary" />
-                  <p className="font-medium">10</p>
-                  <p className="text-xs text-muted-foreground">AI-Generated Questions</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2.5 rounded-lg bg-muted">
+                  <BookOpen className="h-4 w-4 mx-auto mb-1 text-primary" />
+                  <p className="text-sm font-medium">10</p>
+                  <p className="text-[10px] text-muted-foreground">Questions</p>
                 </div>
-                <div className="p-3 rounded-lg bg-muted">
-                  <HelpCircle className="h-5 w-5 mx-auto mb-1 text-primary" />
-                  <p className="font-medium">Unique</p>
-                  <p className="text-xs text-muted-foreground">Fresh Every Time</p>
+                <div className="p-2.5 rounded-lg bg-muted">
+                  <HelpCircle className="h-4 w-4 mx-auto mb-1 text-primary" />
+                  <p className="text-sm font-medium">Unique</p>
+                  <p className="text-[10px] text-muted-foreground">Fresh Set</p>
                 </div>
-                <div className="p-3 rounded-lg bg-muted">
-                <Clock className="h-5 w-5 mx-auto mb-1 text-primary" />
-                  <p className="font-medium">30 min</p>
-                  <p className="text-xs text-muted-foreground">Time Limit</p>
+                <div className="p-2.5 rounded-lg bg-muted">
+                  <Clock className="h-4 w-4 mx-auto mb-1 text-primary" />
+                  <p className="text-sm font-medium">30 min</p>
+                  <p className="text-[10px] text-muted-foreground">Time Limit</p>
                 </div>
-                <div className="p-3 rounded-lg bg-muted">
-                  <CheckCircle className="h-5 w-5 mx-auto mb-1 text-green-500" />
-                  <p className="font-medium">60%</p>
-                  <p className="text-xs text-muted-foreground">Pass Score</p>
+                <div className="p-2.5 rounded-lg bg-muted">
+                  <CheckCircle className="h-4 w-4 mx-auto mb-1 text-green-500" />
+                  <p className="text-sm font-medium">60%</p>
+                  <p className="text-[10px] text-muted-foreground">To Pass</p>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <Button className="w-full" size="lg" onClick={startExam} disabled={isGenerating}>
+              <div className="space-y-2 pt-2">
+                <Button className="w-full h-12" onClick={startExam} disabled={isGenerating}>
                   {isGenerating ? (
                     <>
-                      <div className="h-5 w-5 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Generating Questions...
+                      <div className="h-4 w-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Generating...
                     </>
                   ) : (
                     <>
@@ -390,9 +390,9 @@ const ExamSession = () => {
                     </>
                   )}
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => navigate('/exam-center')}>
-                  <ChevronLeft className="h-4 w-4 mr-2" />
-                  Back to Categories
+                <Button variant="outline" className="w-full h-10" onClick={() => navigate('/exam-center')}>
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Back
                 </Button>
               </div>
             </CardContent>
@@ -402,38 +402,38 @@ const ExamSession = () => {
     );
   }
 
-  // Results screen
+  // Results screen - Mobile Optimized
   if (showResults && examResults) {
     const passed = examResults.score >= 60;
     
-    // Answer Review Screen
+    // Answer Review Screen - Mobile Optimized
     if (showAnswerReview) {
       return (
-        <div className="min-h-screen bg-background pb-20">
-          <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b p-4">
-            <div className="max-w-2xl mx-auto flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={() => setShowAnswerReview(false)}>
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Back to Results
+        <div className="min-h-screen bg-background pb-24">
+          <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b px-3 py-2">
+            <div className="flex items-center justify-between">
+              <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setShowAnswerReview(false)}>
+                <ChevronLeft className="h-4 w-4" />
+                <span className="ml-1 text-sm">Back</span>
               </Button>
-              <h2 className="font-semibold">Answer Review</h2>
-              <div className="w-20" />
+              <h2 className="text-sm font-semibold">Answer Review</h2>
+              <div className="w-16" />
             </div>
           </div>
           
-          <div className="max-w-2xl mx-auto p-4 space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-green-500">
-                  <CheckCircle className="h-5 w-5" />
-                  <span className="font-medium">{examResults.correct} Correct</span>
+          <div className="px-3 py-3 space-y-3 max-w-lg mx-auto">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 text-green-500">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">{examResults.correct}</span>
                 </div>
-                <div className="flex items-center gap-2 text-red-500">
-                  <XCircle className="h-5 w-5" />
-                  <span className="font-medium">{examResults.total - examResults.correct} Wrong</span>
+                <div className="flex items-center gap-1.5 text-red-500">
+                  <XCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">{examResults.total - examResults.correct}</span>
                 </div>
               </div>
-              <Badge variant={passed ? "default" : "destructive"}>
+              <Badge variant={passed ? "default" : "destructive"} className="text-xs">
                 {examResults.score}%
               </Badge>
             </div>
@@ -443,34 +443,34 @@ const ExamSession = () => {
                 key={detail.question.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                transition={{ delay: index * 0.03 }}
               >
                 <Card className={`overflow-hidden border-l-4 ${
                   detail.isCorrect ? 'border-l-green-500' : 'border-l-red-500'
                 }`}>
-                  <CardContent className="p-4 space-y-3">
+                  <CardContent className="p-3 space-y-2">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-muted-foreground">Q{index + 1}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-medium text-muted-foreground">Q{index + 1}</span>
                         {detail.isCorrect ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <CheckCircle className="h-4 w-4 text-green-500" />
                         ) : (
-                          <XCircle className="h-5 w-5 text-red-500" />
+                          <XCircle className="h-4 w-4 text-red-500" />
                         )}
                       </div>
-                      <Badge variant="outline" className="text-xs">
-                        {detail.points}/{detail.question.points} pts
+                      <Badge variant="outline" className="text-[10px] h-5">
+                        {detail.points}/{detail.question.points}
                       </Badge>
                     </div>
                     
-                    <p className="font-medium text-sm">{detail.question.question_text}</p>
+                    <p className="font-medium text-xs leading-relaxed">{detail.question.question_text}</p>
                     
-                    <div className="space-y-2 text-sm">
+                    <div className="space-y-1.5 text-xs">
                       <div className={`p-2 rounded ${
                         detail.isCorrect ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'
                       }`}>
-                        <p className="text-xs text-muted-foreground mb-1">Your Answer:</p>
-                        <p className={detail.isCorrect ? 'text-green-600' : 'text-red-600'}>
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Your Answer:</p>
+                        <p className={`text-xs ${detail.isCorrect ? 'text-green-600' : 'text-red-600'}`}>
                           {Array.isArray(detail.userAnswer) 
                             ? detail.userAnswer.join(', ') 
                             : detail.userAnswer || 'Not answered'}
@@ -479,8 +479,8 @@ const ExamSession = () => {
                       
                       {!detail.isCorrect && (
                         <div className="p-2 rounded bg-green-500/10 border border-green-500/30">
-                          <p className="text-xs text-muted-foreground mb-1">Correct Answer:</p>
-                          <p className="text-green-600">
+                          <p className="text-[10px] text-muted-foreground mb-0.5">Correct:</p>
+                          <p className="text-xs text-green-600">
                             {Array.isArray(detail.question.correct_answer) 
                               ? detail.question.correct_answer.join(', ') 
                               : detail.question.correct_answer}
@@ -490,8 +490,8 @@ const ExamSession = () => {
                       
                       {detail.question.explanation && (
                         <div className="p-2 rounded bg-blue-500/10 border border-blue-500/30">
-                          <p className="text-xs text-muted-foreground mb-1">Explanation:</p>
-                          <p className="text-blue-600 text-xs">{detail.question.explanation}</p>
+                          <p className="text-[10px] text-muted-foreground mb-0.5">Explanation:</p>
+                          <p className="text-[10px] text-blue-600">{detail.question.explanation}</p>
                         </div>
                       )}
                     </div>
@@ -504,58 +504,57 @@ const ExamSession = () => {
       );
     }
     
-    // Results Summary Screen
+    // Results Summary Screen - Mobile Optimized
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-lg w-full"
+          className="w-full max-w-sm"
         >
           <Card className="text-center overflow-hidden">
-            <div className={`p-6 ${passed ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-orange-500'}`}>
+            <div className={`p-4 sm:p-6 ${passed ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-orange-500'}`}>
               {passed ? (
-                <CheckCircle className="h-16 w-16 mx-auto text-white mb-2" />
+                <CheckCircle className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-white mb-2" />
               ) : (
-                <XCircle className="h-16 w-16 mx-auto text-white mb-2" />
+                <XCircle className="h-12 w-12 sm:h-16 sm:w-16 mx-auto text-white mb-2" />
               )}
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
                 {passed ? 'Congratulations!' : 'Keep Practicing!'}
               </h2>
             </div>
             
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-4 space-y-4">
               <div className="text-center">
-                <p className="text-5xl font-bold text-primary mb-2">{examResults.score}%</p>
-                <p className="text-muted-foreground">
+                <p className="text-4xl sm:text-5xl font-bold text-primary mb-1">{examResults.score}%</p>
+                <p className="text-sm text-muted-foreground">
                   {examResults.correct} of {examResults.total} correct
                 </p>
               </div>
 
               {examResults.badge && (
-                <div className="p-4 rounded-lg bg-gradient-to-r from-primary/20 to-purple-500/20">
-                  <Badge className="text-lg py-1 px-4">
-                    {examResults.badge.name} Badge Earned!
+                <div className="p-3 rounded-lg bg-gradient-to-r from-primary/20 to-purple-500/20">
+                  <Badge className="text-sm py-0.5 px-3">
+                    {examResults.badge.name} Earned!
                   </Badge>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="p-3 rounded-lg bg-muted">
-                  <p className="font-medium">{formatTime(examResults.timeTaken)}</p>
-                  <p className="text-xs text-muted-foreground">Time Taken</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2.5 rounded-lg bg-muted">
+                  <p className="text-sm font-medium">{formatTime(examResults.timeTaken)}</p>
+                  <p className="text-[10px] text-muted-foreground">Time Taken</p>
                 </div>
-                <div className="p-3 rounded-lg bg-muted">
-                  <p className="font-medium">{examResults.earnedPoints}/{examResults.totalPoints}</p>
-                  <p className="text-xs text-muted-foreground">Points Earned</p>
+                <div className="p-2.5 rounded-lg bg-muted">
+                  <p className="text-sm font-medium">{examResults.earnedPoints}/{examResults.totalPoints}</p>
+                  <p className="text-[10px] text-muted-foreground">Points</p>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {/* View Answer Review Button */}
+              <div className="space-y-2">
                 <Button 
                   variant="outline" 
-                  className="w-full"
+                  className="w-full h-10"
                   onClick={() => setShowAnswerReview(true)}
                 >
                   <BookOpen className="h-4 w-4 mr-2" />
@@ -563,8 +562,7 @@ const ExamSession = () => {
                 </Button>
                 
                 {passed && sessionId && (
-                  <Button className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700" onClick={async () => {
-                    // Get the certificate for this session
+                  <Button className="w-full h-10 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700" onClick={async () => {
                     const { data: cert } = await supabase
                       .from('exam_certificates')
                       .select('id')
@@ -577,12 +575,12 @@ const ExamSession = () => {
                     }
                   }}>
                     <Award className="h-4 w-4 mr-2" />
-                    View & Download Certificate
+                    View Certificate
                   </Button>
                 )}
                 <Button 
                   variant={passed ? "outline" : "default"} 
-                  className="w-full"
+                  className="w-full h-10"
                   onClick={() => {
                     setIsStarted(false);
                     setShowResults(false);
@@ -593,8 +591,8 @@ const ExamSession = () => {
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Try Again
                 </Button>
-                <Button variant="ghost" className="w-full" onClick={() => navigate('/exam-center')}>
-                  Back to Exam Center
+                <Button variant="ghost" className="w-full h-9 text-sm" onClick={() => navigate('/exam-center')}>
+                  Back to Exams
                 </Button>
               </div>
             </CardContent>
@@ -604,46 +602,47 @@ const ExamSession = () => {
     );
   }
 
-  // Loading state when questions haven't loaded yet
+  // Loading state - Mobile Optimized
   if (!questions || questions.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center p-8">
-          <div className="h-12 w-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
-          <h3 className="text-lg font-semibold">Loading Questions...</h3>
-          <p className="text-sm text-muted-foreground mt-2">
-            Preparing your exam questions
+        <Card className="w-full max-w-xs text-center p-6">
+          <div className="h-10 w-10 border-3 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-3" />
+          <h3 className="text-base font-semibold">Loading...</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Preparing questions
           </p>
         </Card>
       </div>
     );
   }
 
-  // Main exam interface
+  // Main exam interface - Mobile Optimized
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
+    <div className="min-h-screen bg-background pb-4">
+      {/* Header - Mobile Optimized */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-        <div className="container max-w-4xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="font-medium">
+        <div className="px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-sm font-medium whitespace-nowrap">
                 {currentIndex + 1}/{questions?.length}
               </span>
-              <Progress value={progress} className="w-32 h-2" />
+              <Progress value={progress} className="flex-1 h-1.5 max-w-24" />
             </div>
             
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-sm ${
               timeRemaining < 60 ? 'bg-red-500/20 text-red-500' : 'bg-muted'
             }`}>
-              <Clock className="h-4 w-4" />
+              <Clock className="h-3.5 w-3.5" />
               <span className="font-mono font-bold">{formatTime(timeRemaining)}</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button 
                 variant="ghost" 
                 size="icon"
+                className="h-8 w-8"
                 onClick={() => setIsPaused(!isPaused)}
               >
                 {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
@@ -651,6 +650,7 @@ const ExamSession = () => {
               <Button 
                 variant="destructive" 
                 size="sm"
+                className="h-8 px-3 text-xs"
                 onClick={() => setShowSubmitDialog(true)}
               >
                 Submit
@@ -660,8 +660,8 @@ const ExamSession = () => {
         </div>
       </div>
 
-      {/* Question Content */}
-      <div className="container max-w-4xl mx-auto px-4 py-6">
+      {/* Question Content - Mobile Optimized */}
+      <div className="px-3 py-4 max-w-lg mx-auto">
         <AnimatePresence mode="wait">
           {currentQuestion && (
             <motion.div
@@ -669,30 +669,30 @@ const ExamSession = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
+              className="space-y-4"
             >
               <Card>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="outline" className="text-[10px] h-5">
                         {currentQuestion.question_type === 'video_practical' ? 'Practical' : 'Theory'}
                       </Badge>
-                      <Badge variant="secondary">{currentQuestion.points} pts</Badge>
+                      <Badge variant="secondary" className="text-[10px] h-5">{currentQuestion.points} pts</Badge>
                     </div>
                     {currentQuestion.time_limit_seconds && (
-                      <Badge variant="outline">
-                        <Clock className="h-3 w-3 mr-1" />
+                      <Badge variant="outline" className="text-[10px] h-5">
+                        <Clock className="h-2.5 w-2.5 mr-0.5" />
                         {currentQuestion.time_limit_seconds}s
                       </Badge>
                     )}
                   </div>
-                  <CardTitle className="text-xl mt-4">
+                  <CardTitle className="text-base sm:text-lg mt-3 leading-relaxed">
                     {currentQuestion.question_text}
                   </CardTitle>
                 </CardHeader>
                 
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4 pt-0">
                   {/* Video/Image */}
                   {currentQuestion.video_url && (
                     <div className="aspect-video rounded-lg overflow-hidden bg-black">
@@ -707,21 +707,21 @@ const ExamSession = () => {
                     <img 
                       src={currentQuestion.image_url} 
                       alt="Question" 
-                      className="rounded-lg max-h-64 mx-auto"
+                      className="rounded-lg max-h-48 mx-auto"
                     />
                   )}
 
-                  {/* Answer Options */}
+                  {/* Answer Options - Mobile Optimized */}
                   {currentQuestion.question_type === 'multiple_choice' && (
                     <RadioGroup
                       value={answers[currentQuestion.id]?.answer || ''}
                       onValueChange={(value) => handleAnswer(currentQuestion.id, value)}
-                      className="space-y-3"
+                      className="space-y-2"
                     >
                       {currentQuestion.options?.map((option, idx) => (
                         <div 
                           key={idx}
-                          className={`flex items-center space-x-3 p-4 rounded-lg border transition-colors cursor-pointer ${
+                          className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors cursor-pointer active:scale-[0.98] ${
                             answers[currentQuestion.id]?.answer === option 
                               ? 'border-primary bg-primary/5' 
                               : 'hover:bg-muted'
@@ -729,7 +729,7 @@ const ExamSession = () => {
                           onClick={() => handleAnswer(currentQuestion.id, option)}
                         >
                           <RadioGroupItem value={option} id={`option-${idx}`} />
-                          <Label htmlFor={`option-${idx}`} className="flex-1 cursor-pointer">
+                          <Label htmlFor={`option-${idx}`} className="flex-1 cursor-pointer text-sm">
                             {option}
                           </Label>
                         </div>
@@ -741,12 +741,12 @@ const ExamSession = () => {
                     <RadioGroup
                       value={answers[currentQuestion.id]?.answer || ''}
                       onValueChange={(value) => handleAnswer(currentQuestion.id, value)}
-                      className="grid grid-cols-2 gap-4"
+                      className="grid grid-cols-2 gap-3"
                     >
                       {['True', 'False'].map((value) => (
                         <div
                           key={value}
-                          className={`flex items-center justify-center p-6 rounded-lg border transition-colors cursor-pointer ${
+                          className={`flex items-center justify-center p-4 rounded-lg border transition-colors cursor-pointer active:scale-[0.98] ${
                             answers[currentQuestion.id]?.answer === value
                               ? 'border-primary bg-primary/5'
                               : 'hover:bg-muted'
@@ -754,7 +754,7 @@ const ExamSession = () => {
                           onClick={() => handleAnswer(currentQuestion.id, value)}
                         >
                           <RadioGroupItem value={value} id={value} className="sr-only" />
-                          <Label htmlFor={value} className="text-lg font-medium cursor-pointer">
+                          <Label htmlFor={value} className="text-base font-medium cursor-pointer">
                             {value}
                           </Label>
                         </div>
@@ -763,7 +763,7 @@ const ExamSession = () => {
                   )}
 
                   {currentQuestion.question_type === 'multiple_select' && (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {currentQuestion.options?.map((option, idx) => {
                         const selectedAnswers = (answers[currentQuestion.id]?.answer as string[]) || [];
                         const isChecked = selectedAnswers.includes(option);
@@ -771,7 +771,7 @@ const ExamSession = () => {
                         return (
                           <div
                             key={idx}
-                            className={`flex items-center space-x-3 p-4 rounded-lg border transition-colors cursor-pointer ${
+                            className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors cursor-pointer active:scale-[0.98] ${
                               isChecked ? 'border-primary bg-primary/5' : 'hover:bg-muted'
                             }`}
                             onClick={() => {
@@ -782,7 +782,7 @@ const ExamSession = () => {
                             }}
                           >
                             <Checkbox checked={isChecked} />
-                            <span className="flex-1">{option}</span>
+                            <span className="flex-1 text-sm">{option}</span>
                           </div>
                         );
                       })}
@@ -791,45 +791,47 @@ const ExamSession = () => {
 
                   {currentQuestion.question_type === 'short_answer' && (
                     <Textarea
-                      placeholder="Type your answer here..."
+                      placeholder="Type your answer..."
                       value={answers[currentQuestion.id]?.answer || ''}
                       onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
-                      className="min-h-32"
+                      className="min-h-24 text-sm"
                     />
                   )}
 
                   {currentQuestion.question_type === 'video_practical' && (
-                    <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        Watch the video and answer the question based on what you observe.
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        Watch the video and answer based on what you observe.
                       </p>
                       <Textarea
-                        placeholder="Describe what you observed and your answer..."
+                        placeholder="Describe what you observed..."
                         value={answers[currentQuestion.id]?.answer || ''}
                         onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
-                        className="min-h-32"
+                        className="min-h-24 text-sm"
                       />
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Navigation */}
-              <div className="flex items-center justify-between">
+              {/* Navigation - Mobile Optimized */}
+              <div className="flex items-center justify-between gap-2">
                 <Button
                   variant="outline"
+                  size="sm"
+                  className="h-10 px-3"
                   onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
                   disabled={currentIndex === 0}
                 >
-                  <ChevronLeft className="h-4 w-4 mr-2" />
-                  Previous
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-1">Prev</span>
                 </Button>
 
-                <div className="flex gap-1">
+                <div className="flex gap-1 flex-wrap justify-center max-w-[180px]">
                   {questions?.map((_, idx) => (
                     <button
                       key={idx}
-                      className={`w-3 h-3 rounded-full transition-colors ${
+                      className={`w-2.5 h-2.5 rounded-full transition-colors ${
                         idx === currentIndex
                           ? 'bg-primary'
                           : answers[questions[idx].id]
@@ -842,16 +844,18 @@ const ExamSession = () => {
                 </div>
 
                 {currentIndex === (questions?.length || 0) - 1 ? (
-                  <Button onClick={() => setShowSubmitDialog(true)}>
-                    <Send className="h-4 w-4 mr-2" />
-                    Submit
+                  <Button size="sm" className="h-10 px-3" onClick={() => setShowSubmitDialog(true)}>
+                    <Send className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-1">Submit</span>
                   </Button>
                 ) : (
                   <Button
+                    size="sm"
+                    className="h-10 px-3"
                     onClick={() => setCurrentIndex(prev => Math.min((questions?.length || 1) - 1, prev + 1))}
                   >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-2" />
+                    <span className="hidden sm:inline mr-1">Next</span>
+                    <ChevronRight className="h-4 w-4" />
                   </Button>
                 )}
               </div>

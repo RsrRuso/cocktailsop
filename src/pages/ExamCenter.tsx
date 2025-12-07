@@ -109,74 +109,74 @@ const ExamCenter = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       <TopNav />
       
-      <div className="container max-w-4xl mx-auto px-4 py-6 pt-20">
-        {/* Header */}
+      <div className="px-4 py-4 pt-16 sm:pt-20 max-w-2xl mx-auto">
+        {/* Header - Mobile Optimized */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="text-center mb-6"
         >
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <GraduationCap className="h-10 w-10 text-primary" />
-            <h1 className="text-3xl font-bold">SpecVerse Exams</h1>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <GraduationCap className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
+            <h1 className="text-2xl sm:text-3xl font-bold">Exams</h1>
           </div>
-          <p className="text-muted-foreground">
-            Test your knowledge, earn badges, and get certified
+          <p className="text-sm text-muted-foreground">
+            Test your knowledge & get certified
           </p>
           
           {/* Material Upload Button */}
-          <div className="mt-4">
+          <div className="mt-3">
             <MaterialUploadDialog onQuestionsGenerated={refetchCategories} />
           </div>
         </motion.div>
 
-        {/* Quick Stats */}
+        {/* Quick Stats - Mobile Optimized */}
         {user && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="grid grid-cols-3 gap-4 mb-8"
+            className="grid grid-cols-3 gap-2 sm:gap-4 mb-6"
           >
             <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
-              <CardContent className="p-4 text-center">
-                <Trophy className="h-6 w-6 mx-auto mb-2 text-primary" />
-                <p className="text-2xl font-bold">{certificates?.length || 0}</p>
-                <p className="text-xs text-muted-foreground">Certificates</p>
+              <CardContent className="p-3 text-center">
+                <Trophy className="h-5 w-5 mx-auto mb-1 text-primary" />
+                <p className="text-xl font-bold">{certificates?.length || 0}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Certs</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-500/5">
-              <CardContent className="p-4 text-center">
-                <Star className="h-6 w-6 mx-auto mb-2 text-yellow-500" />
-                <p className="text-2xl font-bold">
+              <CardContent className="p-3 text-center">
+                <Star className="h-5 w-5 mx-auto mb-1 text-yellow-500" />
+                <p className="text-xl font-bold">
                   {performance?.reduce((sum, p) => sum + (p.best_score || 0), 0) || 0}
                 </p>
-                <p className="text-xs text-muted-foreground">Total Points</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Points</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5">
-              <CardContent className="p-4 text-center">
-                <CheckCircle className="h-6 w-6 mx-auto mb-2 text-green-500" />
-                <p className="text-2xl font-bold">{performance?.length || 0}</p>
-                <p className="text-xs text-muted-foreground">Completed</p>
+              <CardContent className="p-3 text-center">
+                <CheckCircle className="h-5 w-5 mx-auto mb-1 text-green-500" />
+                <p className="text-xl font-bold">{performance?.length || 0}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Done</p>
               </CardContent>
             </Card>
           </motion.div>
         )}
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="badges">Badges</TabsTrigger>
-            <TabsTrigger value="certificates">My Certs</TabsTrigger>
+        {/* Tabs - Mobile Optimized */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3 h-10">
+            <TabsTrigger value="categories" className="text-xs sm:text-sm">Exams</TabsTrigger>
+            <TabsTrigger value="badges" className="text-xs sm:text-sm">Badges</TabsTrigger>
+            <TabsTrigger value="certificates" className="text-xs sm:text-sm">My Certs</TabsTrigger>
           </TabsList>
 
-          {/* Categories Tab */}
-          <TabsContent value="categories" className="space-y-4">
+          {/* Categories Tab - Mobile Optimized */}
+          <TabsContent value="categories" className="space-y-3">
             {categories?.map((category, index) => {
               const Icon = getCategoryIcon(category.icon || 'cocktail');
               const userPerformance = performance?.find(p => p.category_id === category.id);
@@ -186,36 +186,33 @@ const ExamCenter = () => {
                   key={category.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer"
+                  <Card 
+                    className="hover:shadow-lg transition-shadow cursor-pointer active:scale-[0.98]"
                     onClick={() => navigate(`/exam/${category.id}`)}
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 rounded-xl bg-primary/10">
-                          <Icon className="h-8 w-8 text-primary" />
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 sm:p-3 rounded-xl bg-primary/10 shrink-0">
+                          <Icon className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-semibold">{category.name}</h3>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <h3 className="text-base sm:text-lg font-semibold truncate">{category.name}</h3>
                             {userPerformance && (
-                              <Badge variant="outline" className="text-xs">
-                                Best: {userPerformance.best_score}%
+                              <Badge variant="outline" className="text-[10px] sm:text-xs shrink-0">
+                                {userPerformance.best_score}%
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-3">
+                          <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-2">
                             {category.description}
                           </p>
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-3 text-[10px] sm:text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <BookOpen className="h-3 w-3" />
                               Theory
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Video className="h-3 w-3" />
-                              Practical
                             </span>
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
@@ -223,14 +220,13 @@ const ExamCenter = () => {
                             </span>
                           </div>
                           {userPerformance && (
-                            <div className="mt-3">
-                              <Progress value={userPerformance.best_score || 0} className="h-2" />
+                            <div className="mt-2">
+                              <Progress value={userPerformance.best_score || 0} className="h-1.5" />
                             </div>
                           )}
                         </div>
-                        <Button size="sm" className="shrink-0">
-                          <Play className="h-4 w-4 mr-1" />
-                          Start
+                        <Button size="sm" className="shrink-0 h-9 px-3">
+                          <Play className="h-4 w-4" />
                         </Button>
                       </div>
                     </CardContent>
@@ -240,27 +236,27 @@ const ExamCenter = () => {
             })}
           </TabsContent>
 
-          {/* Badges Tab */}
-          <TabsContent value="badges" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Badges Tab - Mobile Optimized */}
+          <TabsContent value="badges" className="space-y-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
               {badgeLevels?.map((badge, index) => (
                 <motion.div
                   key={badge.id}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: index * 0.05 }}
                 >
                   <Card className="relative overflow-hidden">
                     <div className={`absolute top-0 left-0 w-full h-1 ${getBadgeColor(badge.name)}`} />
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className={`p-4 rounded-full ${getBadgeColor(badge.name)}`}>
-                          <Award className="h-8 w-8" />
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex flex-col items-center text-center gap-2">
+                        <div className={`p-2 sm:p-3 rounded-full ${getBadgeColor(badge.name)}`}>
+                          <Award className="h-5 w-5 sm:h-6 sm:w-6" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-bold">{badge.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Score {badge.min_score}% - {badge.max_score}%
+                          <h3 className="text-sm sm:text-base font-bold">{badge.name}</h3>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">
+                            {badge.min_score}% - {badge.max_score}%
                           </p>
                         </div>
                       </div>
@@ -271,29 +267,29 @@ const ExamCenter = () => {
             </div>
           </TabsContent>
 
-          {/* Certificates Tab */}
-          <TabsContent value="certificates" className="space-y-4">
+          {/* Certificates Tab - Mobile Optimized */}
+          <TabsContent value="certificates" className="space-y-3">
             {!user ? (
               <Card>
-                <CardContent className="p-8 text-center">
-                  <Lock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    Sign in to view your certificates
+                <CardContent className="p-6 text-center">
+                  <Lock className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Sign in to view certificates
                   </p>
-                  <Button className="mt-4" onClick={() => navigate('/auth')}>
+                  <Button className="mt-3" size="sm" onClick={() => navigate('/auth')}>
                     Sign In
                   </Button>
                 </CardContent>
               </Card>
             ) : certificates?.length === 0 ? (
               <Card>
-                <CardContent className="p-8 text-center">
-                  <GraduationCap className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground mb-4">
-                    No certificates yet. Complete exams to earn certificates!
+                <CardContent className="p-6 text-center">
+                  <GraduationCap className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mb-3">
+                    No certificates yet
                   </p>
-                  <Button onClick={() => setActiveTab('categories')}>
-                    Browse Exams
+                  <Button size="sm" onClick={() => setActiveTab('categories')}>
+                    Take an Exam
                   </Button>
                 </CardContent>
               </Card>
@@ -303,30 +299,33 @@ const ExamCenter = () => {
                   key={cert.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-full ${getBadgeColor(cert.exam_badge_levels?.name || '')}`}>
-                          <Award className="h-6 w-6" />
+                  <Card className="hover:shadow-lg transition-shadow active:scale-[0.98]">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-full shrink-0 ${getBadgeColor(cert.exam_badge_levels?.name || '')}`}>
+                          <Award className="h-5 w-5" />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold">{cert.exam_categories?.name}</h3>
-                            <Badge className={getBadgeColor(cert.exam_badge_levels?.name || '')}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm font-semibold truncate">{cert.exam_categories?.name}</h3>
+                            <Badge className={`text-[10px] ${getBadgeColor(cert.exam_badge_levels?.name || '')}`}>
                               {cert.exam_badge_levels?.name}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            Score: {cert.score}% • {new Date(cert.issued_at).toLocaleDateString()}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Certificate #{cert.certificate_number}
+                          <p className="text-xs text-muted-foreground">
+                            {cert.score}% • {new Date(cert.issued_at).toLocaleDateString()}
                           </p>
                         </div>
-                        <Button variant="outline" size="sm"
-                          onClick={() => navigate(`/certificate/${cert.id}`)}
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="shrink-0 h-8 px-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/certificate/${cert.id}`);
+                          }}
                         >
                           View
                         </Button>
@@ -339,27 +338,27 @@ const ExamCenter = () => {
           </TabsContent>
         </Tabs>
 
-        {/* AI Study Assistant Promo */}
+        {/* AI Study Assistant Promo - Mobile Optimized */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mt-8"
+          transition={{ delay: 0.3 }}
+          className="mt-6"
         >
           <Card className="bg-gradient-to-r from-primary/20 to-purple-500/20 border-primary/30">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-primary/20">
-                  <Sparkles className="h-8 w-8 text-primary" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-primary/20 shrink-0">
+                  <Sparkles className="h-6 w-6 text-primary" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold">MATRIX AI Study Assistant</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Get personalized study recommendations and instant answers
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold">MATRIX AI Assistant</h3>
+                  <p className="text-xs text-muted-foreground truncate">
+                    Study recommendations & help
                   </p>
                 </div>
-                <Button onClick={() => navigate('/matrix-ai')}>
-                  Open MATRIX
+                <Button size="sm" className="shrink-0" onClick={() => navigate('/matrix-ai')}>
+                  Open
                 </Button>
               </div>
             </CardContent>
