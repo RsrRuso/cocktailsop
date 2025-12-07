@@ -412,6 +412,16 @@ const OpsTools = () => {
     ],
     management: [
       {
+        name: "GM-Command Suite",
+        description: "One-Click Executive Intelligence Dashboard",
+        details: "AI-powered leadership dashboard with financial command panel, inventory automation, staff performance engine, approval workflows, risk radar, and opportunity finder.",
+        icon: Sparkles,
+        gradient: "from-violet-600 to-purple-500",
+        premium: false,
+        path: "/gm-command-guide",
+        featured: true,
+      },
+      {
         name: "LAB Ops",
         description: "Complete POS, Inventory & Restaurant Management",
         details: "Full restaurant management system with mobile POS ordering, KDS for kitchen/bar, purchasing, inventory control, recipes & costing, and real-time analytics.",
