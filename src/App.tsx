@@ -318,6 +318,9 @@ const AppContent = () => {
           <Route path="/staff-qr-access" element={<StaffQRAccess />} />
           <Route path="/bar-kds" element={<BarKDS />} />
           <Route path="/kitchen-kds" element={<KitchenKDS />} />
+          <Route path="/exam-center" element={<ExamCenter />} />
+          <Route path="/exam/:categoryId" element={<ExamSession />} />
+          <Route path="/certificate/:certificateId" element={<CertificateView />} />
           <Route path="/gm-command-guide" element={<GMCommandGuide />} />
           <Route path="/gm-command" element={<GMCommandDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
