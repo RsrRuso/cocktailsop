@@ -21,112 +21,141 @@ serve(async (req) => {
     console.log(`Generating ${questionCount} questions for category: ${categoryName}`);
     console.log(`Content length: ${content.length} characters`);
 
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY not configured');
+      throw new Error('AI service not configured');
+    }
+
     // Generate a unique seed for randomization
     const seed = Date.now() + Math.random() * 1000000;
     
     const systemPrompt = `You are an expert exam question generator specializing in the HOSPITALITY and BEVERAGE INDUSTRY.
-Your task is to create professional, industry-specific exam questions for bartenders, sommeliers, mixologists, and hospitality professionals.
+Your task is to create professional, industry-specific exam questions based STRICTLY on the provided study material.
 
 CRITICAL REQUIREMENTS:
-1. ALL questions MUST be directly related to: cocktails, spirits, wine, beer, bar operations, hospitality service, mixology techniques, beverage knowledge, customer service, food & beverage pairing
-2. Each question MUST be unique and test real industry knowledge
-3. Use randomization seed ${seed} to vary question styles, difficulty, and focus areas
-4. Mix question types: multiple_choice, true_false, fill_blank
-5. Include detailed explanations referencing industry standards and best practices
-6. Questions should test practical skills bartenders/hospitality pros need daily
+1. ALL questions MUST be directly derived from the provided study material content
+2. Do NOT invent information - only use facts from the material
+3. Each question MUST be unique and test knowledge from the material
+4. Use randomization seed ${seed} to vary question styles and focus areas
+5. Mix question types: multiple_choice (60%), true_false (30%), fill_blank (10%)
+6. Include detailed explanations referencing the study material
 
-TOPICS TO COVER (choose based on category "${categoryName}"):
-- Classic cocktail recipes and techniques (Old Fashioned, Negroni, Martini, etc.)
-- Spirit categories: whiskey, vodka, gin, rum, tequila, brandy, liqueurs
-- Wine regions, grape varieties, tasting notes, food pairings
-- Beer styles, brewing methods, serving temperatures
-- Bar tools and equipment (jiggers, shakers, strainers, muddlers)
-- Mixology techniques (stirring, shaking, layering, muddling, flaming)
-- Garnish preparation and presentation
-- Customer service and responsible alcohol service
-- Health & safety, hygiene standards
-- Inventory management and pour costs
+QUESTION TYPES:
+- multiple_choice: 4 options, one correct answer
+- true_false: True or False statement
+- fill_blank: Short answer requiring specific term/phrase from material
 
-OUTPUT FORMAT (JSON array):
+OUTPUT FORMAT (JSON array only, no markdown):
 [
   {
-    "question_text": "Clear, professional industry question",
-    "question_type": "multiple_choice" | "true_false" | "fill_blank",
-    "options": ["Option A", "Option B", "Option C", "Option D"] (for multiple_choice),
+    "question_text": "Clear question based on study material",
+    "question_type": "multiple_choice",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
     "correct_answer": "The correct answer text",
     "points": 10,
-    "explanation": "Industry-standard explanation with professional context"
+    "explanation": "Explanation referencing the study material"
   }
 ]
 
-Ensure variety in:
-- Question difficulty (easy 30%, medium 50%, hard 20%)
-- Specific topics from the hospitality/beverage industry
-- Real-world application scenarios bartenders face`;
+For true_false questions, options should be ["True", "False"] and correct_answer should be "True" or "False".
+For fill_blank questions, options can be null and correct_answer is the expected short answer.`;
 
-    const userPrompt = `Based on this study material about "${categoryName}" in the HOSPITALITY/BEVERAGE INDUSTRY, generate exactly ${questionCount} unique professional exam questions.
+    const userPrompt = `Based STRICTLY on this study material about "${categoryName}", generate exactly ${questionCount} unique exam questions.
 
 STUDY MATERIAL:
 ${content}
 
-Generate ${questionCount} diverse, industry-specific questions. Focus on practical bartending, mixology, wine service, and hospitality knowledge. Use seed ${seed} for randomization. Questions must be relevant to real bar/restaurant work.`;
+IMPORTANT: Every question must be answerable from the material above. Do not create questions about topics not covered in the material. Use seed ${seed} for randomization.
 
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+Generate ${questionCount} questions now as a JSON array:`;
+
+    console.log('Calling Lovable AI...');
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY') || ''}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 8000,
-        temperature: 0.8,
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
-        ]
+        ],
+        temperature: 0.7,
+        max_tokens: 8000
       })
     });
 
     if (!response.ok) {
-      // Fallback to generating sample questions if API fails
-      console.log('API call failed, generating fallback questions');
-      const fallbackQuestions = generateFallbackQuestions(categoryName, questionCount, seed);
-      return new Response(
-        JSON.stringify({ questions: fallbackQuestions }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      const errorText = await response.text();
+      console.error('AI gateway error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'AI credits exhausted. Please add credits to continue.' }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      throw new Error(`AI service error: ${response.status}`);
     }
 
     const aiResult = await response.json();
     const aiContent = aiResult.choices?.[0]?.message?.content || '';
+    
+    console.log('AI response received, parsing...');
 
     // Parse the JSON response
     let questions = [];
     try {
+      // Clean the response - remove markdown code blocks if present
+      let cleanContent = aiContent.trim();
+      if (cleanContent.startsWith('```json')) {
+        cleanContent = cleanContent.slice(7);
+      } else if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.slice(3);
+      }
+      if (cleanContent.endsWith('```')) {
+        cleanContent = cleanContent.slice(0, -3);
+      }
+      cleanContent = cleanContent.trim();
+      
       // Extract JSON array from the response
-      const jsonMatch = aiContent.match(/\[[\s\S]*\]/);
+      const jsonMatch = cleanContent.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         questions = JSON.parse(jsonMatch[0]);
+      } else {
+        // Try parsing the whole content as JSON
+        questions = JSON.parse(cleanContent);
       }
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
-      // Generate fallback questions
-      questions = generateFallbackQuestions(categoryName, questionCount, seed);
+      console.error('Raw response:', aiContent.substring(0, 500));
+      throw new Error('Failed to parse generated questions');
     }
 
     // Validate and clean questions
     questions = questions.map((q: any, index: number) => ({
       question_text: q.question_text || `Question ${index + 1} about ${categoryName}`,
       question_type: q.question_type || 'multiple_choice',
-      options: Array.isArray(q.options) ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'],
+      options: Array.isArray(q.options) ? q.options : 
+               q.question_type === 'true_false' ? ['True', 'False'] :
+               ['Option A', 'Option B', 'Option C', 'Option D'],
       correct_answer: q.correct_answer || (q.options?.[0] || 'Answer'),
       points: q.points || 10,
       explanation: q.explanation || 'See study material for details.'
     }));
 
-    console.log(`Successfully generated ${questions.length} questions`);
+    console.log(`Successfully generated ${questions.length} questions from study material`);
 
     return new Response(
       JSON.stringify({ questions }),
@@ -142,45 +171,3 @@ Generate ${questionCount} diverse, industry-specific questions. Focus on practic
     );
   }
 });
-
-function generateFallbackQuestions(categoryName: string, count: number, seed: number) {
-  const templates = [
-    {
-      question_text: `What is a key characteristic of ${categoryName}?`,
-      question_type: 'multiple_choice',
-      options: ['Quality standards', 'Production methods', 'Historical significance', 'Modern applications'],
-      correct_answer: 'Quality standards',
-      points: 10,
-      explanation: 'Understanding quality standards is fundamental to this topic.'
-    },
-    {
-      question_text: `True or False: ${categoryName} has evolved significantly over the past century.`,
-      question_type: 'true_false',
-      options: ['True', 'False'],
-      correct_answer: 'True',
-      points: 10,
-      explanation: 'Most aspects of the hospitality industry have evolved considerably.'
-    },
-    {
-      question_text: `Which best describes the importance of ${categoryName} in professional settings?`,
-      question_type: 'multiple_choice',
-      options: ['Customer satisfaction', 'Cost reduction', 'Speed of service', 'Staff training'],
-      correct_answer: 'Customer satisfaction',
-      points: 10,
-      explanation: 'Customer satisfaction is typically the primary goal.'
-    }
-  ];
-
-  const questions = [];
-  for (let i = 0; i < count; i++) {
-    const template = templates[i % templates.length];
-    const variation = Math.floor((seed + i) % 100);
-    questions.push({
-      ...template,
-      question_text: `[Q${i + 1}] ${template.question_text} (Var: ${variation})`,
-      points: [5, 10, 15, 20][i % 4]
-    });
-  }
-  
-  return questions;
-}
