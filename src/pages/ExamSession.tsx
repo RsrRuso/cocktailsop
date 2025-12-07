@@ -130,37 +130,67 @@ const ExamSession = () => {
     setIsGenerating(true);
     
     try {
-      // Generate fresh AI questions each time
-      const { data: funcData, error: funcError } = await supabase.functions.invoke('generate-exam-questions', {
-        body: {
-          content: category.description || `Comprehensive examination on ${category.name}. Test knowledge of key concepts, best practices, techniques, and industry standards.`,
-          categoryName: category.name,
-          questionCount: 10,
-          categoryId: categoryId
-        }
-      });
+      // First, try to fetch stored questions from database
+      const { data: storedQuestions, error: fetchError } = await supabase
+        .from('exam_questions')
+        .select('*')
+        .eq('category_id', categoryId)
+        .eq('is_active', true)
+        .order('sort_order');
 
-      if (funcError) throw funcError;
+      let examQuestions: Question[] = [];
 
-      const generatedQuestions: Question[] = (funcData.questions || []).map((q: any, idx: number) => ({
-        id: `gen-${Date.now()}-${idx}`,
-        question_text: q.question_text,
-        question_type: q.question_type === 'true_false' ? 'true_false' : 
-                       q.question_type === 'fill_blank' ? 'short_answer' : 'multiple_choice',
-        options: q.options || null,
-        correct_answer: q.correct_answer,
-        points: q.points || 10,
-        video_url: null,
-        image_url: null,
-        explanation: q.explanation || null,
-        time_limit_seconds: null
-      }));
+      if (storedQuestions && storedQuestions.length >= 5) {
+        // Use stored questions - shuffle and pick random subset
+        const shuffled = [...storedQuestions].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, Math.min(10, shuffled.length));
+        
+        examQuestions = selected.map((q: any) => ({
+          id: q.id,
+          question_text: q.question_text,
+          question_type: q.question_type === 'true_false' ? 'true_false' : 
+                         q.question_type === 'fill_blank' ? 'short_answer' : 'multiple_choice',
+          options: q.options || null,
+          correct_answer: q.correct_answer,
+          points: q.points || 10,
+          video_url: q.question_media_url || null,
+          image_url: null,
+          explanation: q.explanation || null,
+          time_limit_seconds: q.time_limit_seconds || null
+        }));
+      } else {
+        // Fall back to AI generation if no stored questions
+        const { data: funcData, error: funcError } = await supabase.functions.invoke('generate-exam-questions', {
+          body: {
+            content: category.description || `Comprehensive examination on ${category.name}. Test knowledge of key concepts, best practices, techniques, and industry standards.`,
+            categoryName: category.name,
+            questionCount: 10,
+            categoryId: categoryId
+          }
+        });
 
-      if (generatedQuestions.length === 0) {
-        throw new Error('No questions generated');
+        if (funcError) throw funcError;
+
+        examQuestions = (funcData.questions || []).map((q: any, idx: number) => ({
+          id: `gen-${Date.now()}-${idx}`,
+          question_text: q.question_text,
+          question_type: q.question_type === 'true_false' ? 'true_false' : 
+                         q.question_type === 'fill_blank' ? 'short_answer' : 'multiple_choice',
+          options: q.options || null,
+          correct_answer: q.correct_answer,
+          points: q.points || 10,
+          video_url: null,
+          image_url: null,
+          explanation: q.explanation || null,
+          time_limit_seconds: null
+        }));
       }
 
-      setQuestions(generatedQuestions);
+      if (examQuestions.length === 0) {
+        throw new Error('No questions available for this exam');
+      }
+
+      setQuestions(examQuestions);
 
       // Create exam session
       const { data, error } = await supabase
@@ -179,8 +209,8 @@ const ExamSession = () => {
       setTimeRemaining(30 * 60);
       setIsStarted(true);
     } catch (err: any) {
-      console.error('Failed to generate exam:', err);
-      toast.error(err.message || 'Failed to generate exam questions');
+      console.error('Failed to start exam:', err);
+      toast.error(err.message || 'Failed to load exam questions');
     } finally {
       setIsGenerating(false);
     }
