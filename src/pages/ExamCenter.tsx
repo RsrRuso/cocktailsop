@@ -22,15 +22,17 @@ import {
   Video,
   CheckCircle,
   Lock,
-  Sparkles
+  Sparkles,
+  Upload
 } from "lucide-react";
+import MaterialUploadDialog from "@/components/exam/MaterialUploadDialog";
 
 const ExamCenter = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("categories");
 
-  const { data: categories } = useQuery({
+  const { data: categories, refetch: refetchCategories } = useQuery({
     queryKey: ['exam-categories'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -124,6 +126,11 @@ const ExamCenter = () => {
           <p className="text-muted-foreground">
             Test your knowledge, earn badges, and get certified
           </p>
+          
+          {/* Material Upload Button */}
+          <div className="mt-4">
+            <MaterialUploadDialog onQuestionsGenerated={refetchCategories} />
+          </div>
         </motion.div>
 
         {/* Quick Stats */}
