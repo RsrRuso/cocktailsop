@@ -74,4 +74,7 @@ export default defineConfig(({ mode }) => ({
     minify: 'esbuild',
     target: 'esnext',
   },
+  optimizeDeps: {
+    force: true,
+  },
 }));
