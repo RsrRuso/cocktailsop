@@ -25,25 +25,17 @@ interface Reel {
   profiles: any;
 }
 
-// Cache for feed data
+// Cache for feed data - persisted across navigations
 let feedCache: { posts: Post[]; reels: Reel[]; timestamp: number; region: string | null } | null = null;
-const CACHE_TIME = 60000; // 1 minute
+const CACHE_TIME = 120000; // 2 minutes for faster perceived loads
 
 export const useFeedData = (selectedRegion: string | null) => {
-  const [posts, setPosts] = useState<Post[]>(() => {
-    // Initialize from cache if valid
-    if (feedCache && Date.now() - feedCache.timestamp < CACHE_TIME && feedCache.region === selectedRegion) {
-      return feedCache.posts;
-    }
-    return [];
-  });
-  const [reels, setReels] = useState<Reel[]>(() => {
-    if (feedCache && Date.now() - feedCache.timestamp < CACHE_TIME && feedCache.region === selectedRegion) {
-      return feedCache.reels;
-    }
-    return [];
-  });
-  const [isLoading, setIsLoading] = useState(true);
+  // Initialize from cache immediately for instant display
+  const cachedData = feedCache && Date.now() - feedCache.timestamp < CACHE_TIME && feedCache.region === selectedRegion;
+  
+  const [posts, setPosts] = useState<Post[]>(() => cachedData ? feedCache!.posts : []);
+  const [reels, setReels] = useState<Reel[]>(() => cachedData ? feedCache!.reels : []);
+  const [isLoading, setIsLoading] = useState(!cachedData); // Not loading if we have cache
 
   const fetchPosts = useCallback(async () => {
     try {
