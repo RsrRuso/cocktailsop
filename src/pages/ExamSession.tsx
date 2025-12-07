@@ -238,8 +238,13 @@ const ExamSession = () => {
       const userAnswer = answers[q.id]?.answer;
       let isCorrect = false;
 
-      if (q.question_type === 'multiple_choice' || q.question_type === 'true_false') {
+      if (q.question_type === 'multiple_choice') {
         isCorrect = userAnswer === q.correct_answer;
+      } else if (q.question_type === 'true_false') {
+        // Handle true/false - compare as strings to handle both boolean and string formats
+        const userAnswerStr = String(userAnswer).toLowerCase();
+        const correctAnswerStr = String(q.correct_answer).toLowerCase();
+        isCorrect = userAnswerStr === correctAnswerStr;
       } else if (q.question_type === 'multiple_select') {
         const correctSet = new Set(q.correct_answer as string[]);
         const userSet = new Set(userAnswer as string[] || []);
@@ -734,13 +739,13 @@ const ExamSession = () => {
 
                   {currentQuestion.question_type === 'true_false' && (
                     <RadioGroup
-                      value={answers[currentQuestion.id]?.answer?.toString() || ''}
-                      onValueChange={(value) => handleAnswer(currentQuestion.id, value === 'true')}
+                      value={answers[currentQuestion.id]?.answer || ''}
+                      onValueChange={(value) => handleAnswer(currentQuestion.id, value)}
                       className="grid grid-cols-2 gap-4"
                     >
-                      {[true, false].map((value) => (
+                      {['True', 'False'].map((value) => (
                         <div
-                          key={value.toString()}
+                          key={value}
                           className={`flex items-center justify-center p-6 rounded-lg border transition-colors cursor-pointer ${
                             answers[currentQuestion.id]?.answer === value
                               ? 'border-primary bg-primary/5'
@@ -748,9 +753,9 @@ const ExamSession = () => {
                           }`}
                           onClick={() => handleAnswer(currentQuestion.id, value)}
                         >
-                          <RadioGroupItem value={value.toString()} id={value.toString()} className="sr-only" />
-                          <Label htmlFor={value.toString()} className="text-lg font-medium cursor-pointer">
-                            {value ? 'True' : 'False'}
+                          <RadioGroupItem value={value} id={value} className="sr-only" />
+                          <Label htmlFor={value} className="text-lg font-medium cursor-pointer">
+                            {value}
                           </Label>
                         </div>
                       ))}
