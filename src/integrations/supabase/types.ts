@@ -2188,6 +2188,417 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_answers: {
+        Row: {
+          ai_feedback: string | null
+          created_at: string | null
+          id: string
+          is_correct: boolean | null
+          points_earned: number | null
+          question_id: string
+          selected_answer: string | null
+          selected_options: Json | null
+          session_id: string
+          time_taken_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          ai_feedback?: string | null
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          points_earned?: number | null
+          question_id: string
+          selected_answer?: string | null
+          selected_options?: Json | null
+          session_id: string
+          time_taken_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          ai_feedback?: string | null
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          points_earned?: number | null
+          question_id?: string
+          selected_answer?: string | null
+          selected_options?: Json | null
+          session_id?: string
+          time_taken_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "exam_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_answers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "exam_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_badge_levels: {
+        Row: {
+          benefits: string[] | null
+          color: string | null
+          created_at: string | null
+          icon: string | null
+          id: string
+          max_score: number
+          min_score: number
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          benefits?: string[] | null
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          max_score: number
+          min_score: number
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          benefits?: string[] | null
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          max_score?: number
+          min_score?: number
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      exam_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      exam_certificates: {
+        Row: {
+          badge_level_id: string | null
+          category_id: string | null
+          certificate_number: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_verified: boolean | null
+          issued_at: string | null
+          metadata: Json | null
+          pdf_url: string | null
+          percentage: number
+          score: number
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          badge_level_id?: string | null
+          category_id?: string | null
+          certificate_number?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          issued_at?: string | null
+          metadata?: Json | null
+          pdf_url?: string | null
+          percentage: number
+          score: number
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          badge_level_id?: string | null
+          category_id?: string | null
+          certificate_number?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          issued_at?: string | null
+          metadata?: Json | null
+          pdf_url?: string | null
+          percentage?: number
+          score?: number
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_certificates_badge_level_id_fkey"
+            columns: ["badge_level_id"]
+            isOneToOne: false
+            referencedRelation: "exam_badge_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_certificates_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "exam_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_certificates_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "exam_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_performance: {
+        Row: {
+          average_score: number | null
+          best_score: number | null
+          category_id: string | null
+          correct_answers: number | null
+          created_at: string | null
+          current_badge_level_id: string | null
+          id: string
+          improvement_plan: Json | null
+          last_exam_date: string | null
+          strength_areas: Json | null
+          total_exams_taken: number | null
+          total_questions_answered: number | null
+          updated_at: string | null
+          user_id: string
+          weakness_areas: Json | null
+        }
+        Insert: {
+          average_score?: number | null
+          best_score?: number | null
+          category_id?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          current_badge_level_id?: string | null
+          id?: string
+          improvement_plan?: Json | null
+          last_exam_date?: string | null
+          strength_areas?: Json | null
+          total_exams_taken?: number | null
+          total_questions_answered?: number | null
+          updated_at?: string | null
+          user_id: string
+          weakness_areas?: Json | null
+        }
+        Update: {
+          average_score?: number | null
+          best_score?: number | null
+          category_id?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          current_badge_level_id?: string | null
+          id?: string
+          improvement_plan?: Json | null
+          last_exam_date?: string | null
+          strength_areas?: Json | null
+          total_exams_taken?: number | null
+          total_questions_answered?: number | null
+          updated_at?: string | null
+          user_id?: string
+          weakness_areas?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_performance_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "exam_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_performance_current_badge_level_id_fkey"
+            columns: ["current_badge_level_id"]
+            isOneToOne: false
+            referencedRelation: "exam_badge_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_questions: {
+        Row: {
+          category_id: string | null
+          correct_answer: string | null
+          created_at: string | null
+          created_by: string | null
+          difficulty: string | null
+          explanation: string | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          options: Json | null
+          points: number | null
+          question_media_url: string | null
+          question_text: string
+          question_type: string
+          tags: string[] | null
+          time_limit_seconds: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          correct_answer?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          difficulty?: string | null
+          explanation?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          options?: Json | null
+          points?: number | null
+          question_media_url?: string | null
+          question_text: string
+          question_type?: string
+          tags?: string[] | null
+          time_limit_seconds?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          correct_answer?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          difficulty?: string | null
+          explanation?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          options?: Json | null
+          points?: number | null
+          question_media_url?: string | null
+          question_text?: string
+          question_type?: string
+          tags?: string[] | null
+          time_limit_seconds?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_questions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "exam_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_sessions: {
+        Row: {
+          ai_analysis: Json | null
+          answered_questions: number | null
+          badge_level_id: string | null
+          category_id: string | null
+          correct_answers: number | null
+          created_at: string | null
+          exam_type: string
+          id: string
+          max_possible_score: number | null
+          metadata: Json | null
+          percentage_score: number | null
+          status: string | null
+          time_ended: string | null
+          time_spent_seconds: number | null
+          time_started: string | null
+          total_questions: number | null
+          total_score: number | null
+          user_id: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          answered_questions?: number | null
+          badge_level_id?: string | null
+          category_id?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          exam_type?: string
+          id?: string
+          max_possible_score?: number | null
+          metadata?: Json | null
+          percentage_score?: number | null
+          status?: string | null
+          time_ended?: string | null
+          time_spent_seconds?: number | null
+          time_started?: string | null
+          total_questions?: number | null
+          total_score?: number | null
+          user_id: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          answered_questions?: number | null
+          badge_level_id?: string | null
+          category_id?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          exam_type?: string
+          id?: string
+          max_possible_score?: number | null
+          metadata?: Json | null
+          percentage_score?: number | null
+          status?: string | null
+          time_ended?: string | null
+          time_spent_seconds?: number | null
+          time_started?: string | null
+          total_questions?: number | null
+          total_score?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_sessions_badge_level_id_fkey"
+            columns: ["badge_level_id"]
+            isOneToOne: false
+            referencedRelation: "exam_badge_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_sessions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "exam_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fifo_activity_log: {
         Row: {
           action_type: string
@@ -10110,6 +10521,7 @@ export type Database = {
         Args: { p_payload: Json; p_trigger_type: string; p_user_id: string }
         Returns: undefined
       }
+      generate_certificate_number: { Args: never; Returns: string }
       generate_order_number: { Args: never; Returns: string }
       get_member_workload: {
         Args: { member_team_id: string; member_user_id: string }
