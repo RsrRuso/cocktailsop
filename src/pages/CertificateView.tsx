@@ -17,7 +17,7 @@ import {
   Star
 } from "lucide-react";
 import { toast } from "sonner";
-import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
 
 const CertificateView = () => {
   const { certificateId } = useParams();
@@ -79,24 +79,264 @@ const CertificateView = () => {
     return accents[name] || 'border-primary shadow-primary/30';
   };
 
-  const handleDownload = async () => {
-    const element = document.getElementById('certificate-card');
-    if (!element) return;
+  const getBadgeColors = (name: string) => {
+    const colors: Record<string, { primary: number[], secondary: number[] }> = {
+      'Bronze': { primary: [180, 83, 9], secondary: [245, 158, 11] },
+      'Silver': { primary: [148, 163, 184], secondary: [226, 232, 240] },
+      'Gold': { primary: [234, 179, 8], secondary: [253, 224, 71] },
+      'Platinum': { primary: [203, 213, 225], secondary: [241, 245, 249] },
+      'Diamond': { primary: [34, 211, 238], secondary: [168, 85, 247] }
+    };
+    return colors[name] || { primary: [59, 130, 246], secondary: [168, 85, 247] };
+  };
 
+  const generatePDF = () => {
+    if (!certificate) return;
+
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const profile = certificate.profiles as any;
+    const badgeLevel = certificate.exam_badge_levels;
+    const category = certificate.exam_categories;
+    const badgeColors = getBadgeColors(badgeLevel?.name || '');
+
+    // Dark premium background
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+    // Subtle pattern overlay
+    doc.setFillColor(30, 41, 59);
+    for (let x = 0; x < pageWidth; x += 8) {
+      for (let y = 0; y < pageHeight; y += 8) {
+        doc.circle(x, y, 0.3, 'F');
+      }
+    }
+
+    // Gradient border frame
+    doc.setDrawColor(badgeColors.primary[0], badgeColors.primary[1], badgeColors.primary[2]);
+    doc.setLineWidth(3);
+    doc.roundedRect(8, 8, pageWidth - 16, pageHeight - 16, 4, 4);
+    
+    // Inner decorative frame
+    doc.setDrawColor(badgeColors.secondary[0], badgeColors.secondary[1], badgeColors.secondary[2]);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(12, 12, pageWidth - 24, pageHeight - 24, 3, 3);
+
+    // Corner flourishes
+    const drawCornerFlourish = (x: number, y: number, rotation: number) => {
+      doc.setDrawColor(badgeColors.primary[0], badgeColors.primary[1], badgeColors.primary[2]);
+      doc.setLineWidth(1);
+      const size = 15;
+      
+      doc.saveGraphicsState();
+      if (rotation === 0) {
+        doc.line(x, y + size, x, y);
+        doc.line(x, y, x + size, y);
+      } else if (rotation === 90) {
+        doc.line(x - size, y, x, y);
+        doc.line(x, y, x, y + size);
+      } else if (rotation === 180) {
+        doc.line(x, y - size, x, y);
+        doc.line(x, y, x - size, y);
+      } else if (rotation === 270) {
+        doc.line(x + size, y, x, y);
+        doc.line(x, y, x, y - size);
+      }
+      doc.restoreGraphicsState();
+    };
+
+    drawCornerFlourish(18, 18, 0);
+    drawCornerFlourish(pageWidth - 18, 18, 90);
+    drawCornerFlourish(pageWidth - 18, pageHeight - 18, 180);
+    drawCornerFlourish(18, pageHeight - 18, 270);
+
+    // Top ribbon with gradient effect
+    doc.setFillColor(badgeColors.primary[0], badgeColors.primary[1], badgeColors.primary[2]);
+    doc.roundedRect(pageWidth / 2 - 80, 15, 160, 28, 2, 2, 'F');
+
+    // Certificate title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(255, 255, 255);
+    doc.text('CERTIFICATE OF EXCELLENCE', pageWidth / 2, 32, { align: 'center' });
+
+    // SpecVerse branding
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(255, 255, 255);
+    doc.text('SPECVERSE PROFESSIONAL CERTIFICATION', pageWidth / 2, 39, { align: 'center' });
+
+    // Award icon placeholder (decorative circle)
+    doc.setFillColor(badgeColors.secondary[0], badgeColors.secondary[1], badgeColors.secondary[2]);
+    doc.circle(pageWidth / 2, 58, 8, 'F');
+    doc.setFillColor(15, 23, 42);
+    doc.circle(pageWidth / 2, 58, 6, 'F');
+    doc.setTextColor(badgeColors.primary[0], badgeColors.primary[1], badgeColors.primary[2]);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('★', pageWidth / 2, 60, { align: 'center' });
+
+    // "This is to certify that"
+    doc.setFont('times', 'italic');
+    doc.setFontSize(12);
+    doc.setTextColor(148, 163, 184);
+    doc.text('This is to certify that', pageWidth / 2, 75, { align: 'center' });
+
+    // Recipient name - large and prominent
+    const recipientName = profile?.full_name || profile?.username || 'SpecVerse Professional';
+    doc.setFont('times', 'bold');
+    doc.setFontSize(32);
+    doc.setTextColor(255, 255, 255);
+    doc.text(recipientName, pageWidth / 2, 90, { align: 'center' });
+
+    // Decorative line under name
+    doc.setDrawColor(badgeColors.primary[0], badgeColors.primary[1], badgeColors.primary[2]);
+    doc.setLineWidth(0.8);
+    const nameWidth = doc.getTextWidth(recipientName);
+    doc.line(pageWidth / 2 - nameWidth / 2 - 10, 94, pageWidth / 2 + nameWidth / 2 + 10, 94);
+
+    // Achievement description
+    doc.setFont('times', 'italic');
+    doc.setFontSize(11);
+    doc.setTextColor(148, 163, 184);
+    doc.text('has successfully demonstrated outstanding proficiency in', pageWidth / 2, 105, { align: 'center' });
+
+    // Category name
+    doc.setFont('times', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(255, 255, 255);
+    doc.text(category?.name || 'Professional Excellence', pageWidth / 2, 118, { align: 'center' });
+
+    // Badge level with decorative box
+    const badgeName = `${badgeLevel?.name || 'Professional'} Achievement`;
+    doc.setFillColor(badgeColors.primary[0], badgeColors.primary[1], badgeColors.primary[2]);
+    const badgeWidth = 70;
+    doc.roundedRect(pageWidth / 2 - badgeWidth / 2, 124, badgeWidth, 10, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text(badgeName.toUpperCase(), pageWidth / 2, 131, { align: 'center' });
+
+    // Score display - elegant circle
+    doc.setFillColor(30, 41, 59);
+    doc.circle(pageWidth / 2, 152, 15, 'F');
+    doc.setDrawColor(badgeColors.primary[0], badgeColors.primary[1], badgeColors.primary[2]);
+    doc.setLineWidth(2);
+    doc.circle(pageWidth / 2, 152, 15, 'S');
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`${certificate.score}%`, pageWidth / 2, 154, { align: 'center' });
+    doc.setFontSize(6);
+    doc.setTextColor(148, 163, 184);
+    doc.text('SCORE', pageWidth / 2, 160, { align: 'center' });
+
+    // Date issued
+    const issuedDate = new Date(certificate.issued_at).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Issued: ${issuedDate}`, pageWidth / 2, 175, { align: 'center' });
+
+    // Signature section
+    const signatureY = 188;
+    const leftSigX = 60;
+    const centerX = pageWidth / 2;
+    const rightSigX = pageWidth - 60;
+
+    // Left signature - SpecVerse
+    doc.setDrawColor(badgeColors.primary[0], badgeColors.primary[1], badgeColors.primary[2]);
+    doc.setLineWidth(0.3);
+    
+    // Digital signature style curve
+    doc.setFont('times', 'italic');
+    doc.setFontSize(18);
+    doc.setTextColor(badgeColors.primary[0], badgeColors.primary[1], badgeColors.primary[2]);
+    doc.text('SV', leftSigX, signatureY - 2, { align: 'center' });
+    
+    // Signature flourish
+    doc.setLineWidth(0.5);
+    doc.line(leftSigX - 25, signatureY + 2, leftSigX + 25, signatureY + 2);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.text('SpecVerse', leftSigX, signatureY + 8, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Platform Authority', leftSigX, signatureY + 12, { align: 'center' });
+
+    // Center seal
+    doc.setFillColor(badgeColors.primary[0], badgeColors.primary[1], badgeColors.primary[2]);
+    doc.circle(centerX, signatureY, 12, 'S');
+    doc.setLineWidth(0.3);
+    doc.circle(centerX, signatureY, 10, 'S');
+    
+    doc.setFillColor(16, 185, 129);
+    doc.circle(centerX, signatureY - 2, 3, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(5);
+    doc.setTextColor(16, 185, 129);
+    doc.text('CERTIFIED', centerX, signatureY + 5, { align: 'center' });
+
+    // Right signature - Exam Board
+    doc.setFont('times', 'italic');
+    doc.setFontSize(12);
+    doc.setTextColor(badgeColors.primary[0], badgeColors.primary[1], badgeColors.primary[2]);
+    doc.text('Exam Board', rightSigX, signatureY - 2, { align: 'center' });
+    
+    doc.setLineWidth(0.5);
+    doc.line(rightSigX - 25, signatureY + 2, rightSigX + 25, signatureY + 2);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.text('Examination Board', rightSigX, signatureY + 8, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Standards Authority', rightSigX, signatureY + 12, { align: 'center' });
+
+    // Certificate ID at bottom
+    doc.setFillColor(30, 41, 59);
+    const idBoxWidth = 90;
+    doc.roundedRect(pageWidth / 2 - idBoxWidth / 2, pageHeight - 22, idBoxWidth, 8, 1, 1, 'F');
+    doc.setFont('courier', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text(certificate.certificate_number || 'SV-CERT-XXXX', pageWidth / 2, pageHeight - 17, { align: 'center' });
+
+    // Verification text
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(5);
+    doc.setTextColor(71, 85, 105);
+    doc.text('This certificate is digitally signed and verified. Validate at specverse.app/verify', pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+    // Download the PDF
+    const fileName = `SpecVerse-Certificate-${category?.name?.replace(/\s+/g, '-')}-${certificate.certificate_number}.pdf`;
+    doc.save(fileName);
+    toast.success("Certificate downloaded as PDF!");
+  };
+
+  const handleDownload = () => {
     try {
-      toast.info("Preparing certificate...");
-      const dataUrl = await toPng(element, { 
-        quality: 1,
-        pixelRatio: 3,
-        backgroundColor: '#0f172a'
-      });
-      const link = document.createElement('a');
-      link.download = `SpecVerse-Certificate-${certificate?.exam_categories?.name?.replace(/\s+/g, '-')}-${certificate?.certificate_number}.png`;
-      link.href = dataUrl;
-      link.click();
-      toast.success("Certificate downloaded!");
+      toast.info("Generating PDF certificate...");
+      generatePDF();
     } catch (error) {
-      toast.error("Failed to download certificate");
+      console.error('PDF generation error:', error);
+      toast.error("Failed to generate certificate");
     }
   };
 
@@ -189,12 +429,12 @@ const CertificateView = () => {
               onClick={handleDownload}
             >
               <Download className="h-4 w-4 mr-2" />
-              Download
+              Download PDF
             </Button>
           </div>
         </div>
 
-        {/* Certificate Card */}
+        {/* Certificate Card Preview */}
         <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -205,7 +445,6 @@ const CertificateView = () => {
           <div className={`relative overflow-hidden rounded-3xl border-2 ${getBadgeAccent(badgeLevel?.name || '')} shadow-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900`}>
             {/* Decorative Elements */}
             <div className="absolute inset-0 overflow-hidden">
-              {/* Geometric patterns */}
               <div className="absolute top-0 left-0 w-full h-full opacity-[0.03]">
                 <div className="absolute inset-0" style={{
                   backgroundImage: `radial-gradient(circle at 25px 25px, white 1px, transparent 1px)`,
