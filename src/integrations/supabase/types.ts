@@ -2469,6 +2469,7 @@ export type Database = {
           question_media_url: string | null
           question_text: string
           question_type: string
+          sort_order: number | null
           tags: string[] | null
           time_limit_seconds: number | null
           updated_at: string | null
@@ -2488,6 +2489,7 @@ export type Database = {
           question_media_url?: string | null
           question_text: string
           question_type?: string
+          sort_order?: number | null
           tags?: string[] | null
           time_limit_seconds?: number | null
           updated_at?: string | null
@@ -2507,6 +2509,7 @@ export type Database = {
           question_media_url?: string | null
           question_text?: string
           question_type?: string
+          sort_order?: number | null
           tags?: string[] | null
           time_limit_seconds?: number | null
           updated_at?: string | null
