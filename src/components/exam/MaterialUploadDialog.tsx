@@ -1,11 +1,12 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,8 +17,7 @@ import {
   Sparkles, 
   CheckCircle,
   X,
-  File,
-  BookOpen
+  Edit3
 } from "lucide-react";
 
 interface MaterialUploadDialogProps {
@@ -29,6 +29,8 @@ const MaterialUploadDialog = ({ onQuestionsGenerated }: MaterialUploadDialogProp
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [manualContent, setManualContent] = useState("");
+  const [useManualInput, setUseManualInput] = useState(false);
   const [categoryName, setCategoryName] = useState("");
   const [questionCount, setQuestionCount] = useState(10);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -39,45 +41,40 @@ const MaterialUploadDialog = ({ onQuestionsGenerated }: MaterialUploadDialogProp
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       setFile(acceptedFiles[0]);
+      setUseManualInput(false);
     }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/pdf': ['.pdf'],
       'text/plain': ['.txt'],
-      'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
       'text/markdown': ['.md']
     },
     maxFiles: 1,
-    maxSize: 10 * 1024 * 1024 // 10MB
+    maxSize: 10 * 1024 * 1024
   });
 
   const extractTextFromFile = async (file: File): Promise<string> => {
-    if (file.type === 'text/plain' || file.type === 'text/markdown') {
-      return await file.text();
-    }
-    
-    // For PDF and other files, we'll read as text or use basic extraction
-    // In production, you'd use a proper PDF parser
-    const reader = new FileReader();
-    return new Promise((resolve, reject) => {
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        resolve(text || '');
-      };
-      reader.onerror = reject;
-      reader.readAsText(file);
-    });
+    return await file.text();
   };
 
   const handleGenerate = async () => {
-    if (!file || !categoryName.trim() || !user) {
+    const content = useManualInput ? manualContent : (file ? await extractTextFromFile(file) : "");
+    
+    if ((!file && !useManualInput) || (!manualContent.trim() && useManualInput) || !categoryName.trim() || !user) {
       toast({
         title: "Missing information",
-        description: "Please upload a file and enter a category name",
+        description: "Please provide content and enter a category name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (content.length < 50) {
+      toast({
+        title: "Content too short",
+        description: "Please provide more content (at least 50 characters)",
         variant: "destructive"
       });
       return;
@@ -85,16 +82,9 @@ const MaterialUploadDialog = ({ onQuestionsGenerated }: MaterialUploadDialogProp
 
     setIsGenerating(true);
     setProgress(10);
-    setStage("Reading file...");
+    setStage("Processing content...");
 
-    try {
-      // Extract text from file
-      const fileContent = await extractTextFromFile(file);
-      
-      if (!fileContent || fileContent.length < 100) {
-        throw new Error("File content is too short or couldn't be read");
-      }
-
+      try {
       setProgress(20);
       setStage("Creating exam category...");
 
@@ -134,7 +124,7 @@ const MaterialUploadDialog = ({ onQuestionsGenerated }: MaterialUploadDialogProp
         'generate-exam-questions',
         {
           body: {
-            content: fileContent.substring(0, 15000), // Limit content size
+            content: content.substring(0, 15000), // Limit content size
             categoryName,
             questionCount,
             categoryId
@@ -199,6 +189,8 @@ const MaterialUploadDialog = ({ onQuestionsGenerated }: MaterialUploadDialogProp
 
   const resetForm = () => {
     setFile(null);
+    setManualContent("");
+    setUseManualInput(false);
     setCategoryName("");
     setQuestionCount(10);
     setProgress(0);
@@ -220,53 +212,94 @@ const MaterialUploadDialog = ({ onQuestionsGenerated }: MaterialUploadDialogProp
             <Sparkles className="h-5 w-5 text-primary" />
             AI Exam Generator
           </DialogTitle>
+          <DialogDescription>
+            Upload study material or paste content to generate unique exam questions
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* File Upload Zone */}
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-              isDragActive 
-                ? 'border-primary bg-primary/10' 
-                : file 
-                  ? 'border-green-500 bg-green-500/10' 
-                  : 'border-muted-foreground/30 hover:border-primary/50'
-            }`}
-          >
-            <input {...getInputProps()} />
-            
-            {file ? (
-              <div className="flex items-center justify-center gap-3">
-                <FileText className="h-10 w-10 text-green-500" />
-                <div className="text-left">
-                  <p className="font-medium">{file.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {(file.size / 1024).toFixed(1)} KB
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="ml-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFile(null);
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-                <p className="font-medium">Drop your study material here</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  PDF, TXT, DOC, DOCX, or MD (max 10MB)
-                </p>
-              </>
-            )}
+          {/* Toggle between file upload and manual input */}
+          <div className="flex gap-2">
+            <Button
+              variant={!useManualInput ? "default" : "outline"}
+              size="sm"
+              onClick={() => setUseManualInput(false)}
+              className="flex-1"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Upload File
+            </Button>
+            <Button
+              variant={useManualInput ? "default" : "outline"}
+              size="sm"
+              onClick={() => setUseManualInput(true)}
+              className="flex-1"
+            >
+              <Edit3 className="h-4 w-4 mr-2" />
+              Paste Content
+            </Button>
           </div>
+
+          {/* File Upload Zone or Manual Input */}
+          {!useManualInput ? (
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                isDragActive 
+                  ? 'border-primary bg-primary/10' 
+                  : file 
+                    ? 'border-green-500 bg-green-500/10' 
+                    : 'border-muted-foreground/30 hover:border-primary/50'
+              }`}
+            >
+              <input {...getInputProps()} />
+              
+              {file ? (
+                <div className="flex items-center justify-center gap-3">
+                  <FileText className="h-10 w-10 text-green-500" />
+                  <div className="text-left">
+                    <p className="font-medium">{file.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="ml-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFile(null);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                  <p className="font-medium">Drop your study material here</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    TXT or MD files (max 10MB)
+                  </p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label>Study Content</Label>
+              <Textarea
+                placeholder="Paste your study material here... (e.g., cocktail recipes, wine regions info, spirits knowledge)"
+                value={manualContent}
+                onChange={(e) => setManualContent(e.target.value)}
+                disabled={isGenerating}
+                className="min-h-[150px] resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                {manualContent.length} characters
+              </p>
+            </div>
+          )}
 
           {/* Category Name */}
           <div className="space-y-2">
@@ -336,7 +369,7 @@ const MaterialUploadDialog = ({ onQuestionsGenerated }: MaterialUploadDialogProp
           {/* Generate Button */}
           <Button
             onClick={handleGenerate}
-            disabled={!file || !categoryName.trim() || isGenerating}
+            disabled={((!file && !useManualInput) || (useManualInput && !manualContent.trim())) || !categoryName.trim() || isGenerating}
             className="w-full gap-2"
             size="lg"
           >
