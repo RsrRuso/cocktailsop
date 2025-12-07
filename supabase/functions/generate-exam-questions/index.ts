@@ -24,41 +24,52 @@ serve(async (req) => {
     // Generate a unique seed for randomization
     const seed = Date.now() + Math.random() * 1000000;
     
-    const systemPrompt = `You are an expert exam question generator for the hospitality and beverage industry. 
-Your task is to create unique, high-quality exam questions based on the provided study material.
+    const systemPrompt = `You are an expert exam question generator specializing in the HOSPITALITY and BEVERAGE INDUSTRY.
+Your task is to create professional, industry-specific exam questions for bartenders, sommeliers, mixologists, and hospitality professionals.
 
 CRITICAL REQUIREMENTS:
-1. Each question MUST be unique and different from others
-2. Use randomization seed ${seed} to vary question styles, difficulty, and focus areas
-3. Mix question types: multiple_choice, true_false, fill_blank
-4. Include detailed explanations for each correct answer
-5. Questions should test different cognitive levels (recall, understanding, application)
-6. Make questions practical and relevant to real-world scenarios
+1. ALL questions MUST be directly related to: cocktails, spirits, wine, beer, bar operations, hospitality service, mixology techniques, beverage knowledge, customer service, food & beverage pairing
+2. Each question MUST be unique and test real industry knowledge
+3. Use randomization seed ${seed} to vary question styles, difficulty, and focus areas
+4. Mix question types: multiple_choice, true_false, fill_blank
+5. Include detailed explanations referencing industry standards and best practices
+6. Questions should test practical skills bartenders/hospitality pros need daily
+
+TOPICS TO COVER (choose based on category "${categoryName}"):
+- Classic cocktail recipes and techniques (Old Fashioned, Negroni, Martini, etc.)
+- Spirit categories: whiskey, vodka, gin, rum, tequila, brandy, liqueurs
+- Wine regions, grape varieties, tasting notes, food pairings
+- Beer styles, brewing methods, serving temperatures
+- Bar tools and equipment (jiggers, shakers, strainers, muddlers)
+- Mixology techniques (stirring, shaking, layering, muddling, flaming)
+- Garnish preparation and presentation
+- Customer service and responsible alcohol service
+- Health & safety, hygiene standards
+- Inventory management and pour costs
 
 OUTPUT FORMAT (JSON array):
 [
   {
-    "question_text": "Clear, well-formed question",
+    "question_text": "Clear, professional industry question",
     "question_type": "multiple_choice" | "true_false" | "fill_blank",
     "options": ["Option A", "Option B", "Option C", "Option D"] (for multiple_choice),
     "correct_answer": "The correct answer text",
     "points": 10,
-    "explanation": "Why this answer is correct and educational context"
+    "explanation": "Industry-standard explanation with professional context"
   }
 ]
 
 Ensure variety in:
 - Question difficulty (easy 30%, medium 50%, hard 20%)
-- Topics covered from the material
-- Question phrasing and style
-- Real-world application scenarios`;
+- Specific topics from the hospitality/beverage industry
+- Real-world application scenarios bartenders face`;
 
-    const userPrompt = `Based on this study material about "${categoryName}", generate exactly ${questionCount} unique exam questions.
+    const userPrompt = `Based on this study material about "${categoryName}" in the HOSPITALITY/BEVERAGE INDUSTRY, generate exactly ${questionCount} unique professional exam questions.
 
 STUDY MATERIAL:
 ${content}
 
-Generate ${questionCount} diverse, unique questions following the JSON format. Make each question different and cover various aspects of the material. Use seed ${seed} for randomization.`;
+Generate ${questionCount} diverse, industry-specific questions. Focus on practical bartending, mixology, wine service, and hospitality knowledge. Use seed ${seed} for randomization. Questions must be relevant to real bar/restaurant work.`;
 
     // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

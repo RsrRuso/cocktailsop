@@ -104,7 +104,7 @@ const MaterialUploadDialog = ({ onQuestionsGenerated }: MaterialUploadDialogProp
           .from('exam_categories')
           .insert({
             name: categoryName,
-            description: `Generated from ${file.name}`,
+            description: useManualInput ? `Generated from pasted content` : `Generated from ${file?.name || 'uploaded file'}`,
             icon: 'cocktail',
             is_active: true,
             sort_order: 99
