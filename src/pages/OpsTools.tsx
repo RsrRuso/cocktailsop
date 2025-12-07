@@ -503,6 +503,16 @@ const OpsTools = () => {
         path: "/cocktail-sop",
       },
       {
+        name: "Exam Center",
+        description: "Test knowledge and earn certifications",
+        details: "Complete exams on cocktails, spirits, wine, and service. Earn Bronze to Diamond badges and shareable certificates for your profile.",
+        icon: GraduationCap,
+        gradient: "from-amber-500 to-yellow-600",
+        premium: false,
+        path: "/exam-center",
+        featured: true,
+      },
+      {
         name: "Training Log",
         description: "Track staff training and certifications",
         details: "Monitor employee training progress, certification renewals, and skill development. Ensure compliance and maintain competency records.",
