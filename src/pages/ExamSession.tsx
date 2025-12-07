@@ -36,7 +36,8 @@ import {
   Send,
   BookOpen,
   Video,
-  HelpCircle
+  HelpCircle,
+  Award
 } from "lucide-react";
 
 interface Question {
@@ -446,9 +447,22 @@ const ExamSession = () => {
               </div>
 
               <div className="space-y-3">
-                {passed && (
-                  <Button className="w-full" onClick={() => navigate('/exam-center')}>
-                    View Certificate
+                {passed && sessionId && (
+                  <Button className="w-full" onClick={async () => {
+                    // Get the certificate for this session
+                    const { data: cert } = await supabase
+                      .from('exam_certificates')
+                      .select('id')
+                      .eq('session_id', sessionId)
+                      .single();
+                    if (cert) {
+                      navigate(`/certificate/${cert.id}`);
+                    } else {
+                      navigate('/exam-center');
+                    }
+                  }}>
+                    <Award className="h-4 w-4 mr-2" />
+                    View & Download Certificate
                   </Button>
                 )}
                 <Button 

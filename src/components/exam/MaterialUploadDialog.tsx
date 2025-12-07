@@ -190,14 +190,17 @@ const MaterialUploadDialog = ({ onQuestionsGenerated }: MaterialUploadDialogProp
       setGeneratedCount(questions.length);
 
       toast({
-        title: "Questions generated!",
-        description: `Created ${questions.length} unique questions from your material`
+        title: "Exam created successfully!",
+        description: `Created "${categoryName}" with ${questions.length} questions. Ready to take!`
       });
 
+      // Close dialog and navigate to exam center to see the new category
       setTimeout(() => {
         setOpen(false);
         resetForm();
         onQuestionsGenerated?.();
+        // Navigate to exam center with success indicator
+        window.location.href = '/exam-center';
       }, 1500);
 
     } catch (error: any) {
