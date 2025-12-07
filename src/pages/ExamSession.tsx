@@ -74,6 +74,7 @@ const ExamSession = () => {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [examResults, setExamResults] = useState<any>(null);
+  const [showAnswerReview, setShowAnswerReview] = useState(false);
 
   const { data: category } = useQuery({
     queryKey: ['exam-category', categoryId],
@@ -397,8 +398,6 @@ const ExamSession = () => {
   }
 
   // Results screen
-  const [showAnswerReview, setShowAnswerReview] = useState(false);
-
   if (showResults && examResults) {
     const passed = examResults.score >= 60;
     
