@@ -16,7 +16,7 @@ import {
   GraduationCap
 } from "lucide-react";
 import { toast } from "sonner";
-import html2canvas from "html-to-image";
+import { toPng } from "html-to-image";
 
 const CertificateView = () => {
   const { certificateId } = useParams();
@@ -57,7 +57,7 @@ const CertificateView = () => {
     if (!element) return;
 
     try {
-      const dataUrl = await html2canvas.toPng(element, { quality: 1 });
+      const dataUrl = await toPng(element, { quality: 1 });
       const link = document.createElement('a');
       link.download = `certificate-${certificate?.certificate_number}.png`;
       link.href = dataUrl;
