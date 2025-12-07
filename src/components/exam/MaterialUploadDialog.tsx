@@ -394,7 +394,11 @@ const MaterialUploadDialog = ({ onQuestionsGenerated }: MaterialUploadDialogProp
           {/* Generate Button */}
           <Button
             onClick={handleGenerate}
-            disabled={((!file && !useManualInput) || (useManualInput && !manualContent.trim())) || !categoryName.trim() || isGenerating}
+            disabled={
+              isGenerating || 
+              !categoryName.trim() ||
+              (useManualInput ? !manualContent.trim() : !file)
+            }
             className="w-full gap-2"
             size="lg"
           >
