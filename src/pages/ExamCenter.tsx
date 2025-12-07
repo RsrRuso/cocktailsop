@@ -263,14 +263,6 @@ const ExamCenter = () => {
               ))}
             </div>
           </TabsContent>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </TabsContent>
 
           {/* Certificates Tab */}
           <TabsContent value="certificates" className="space-y-4">

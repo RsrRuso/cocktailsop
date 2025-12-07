@@ -254,7 +254,8 @@ const ExamSession = () => {
         category_id: categoryId,
         session_id: sessionId,
         badge_level_id: badge.id,
-        score: results.score
+        score: results.score,
+        percentage: results.score
       }]);
     }
 
