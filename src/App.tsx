@@ -64,6 +64,7 @@ const StockAudit = lazy(() => import("./pages/StockAudit"));
 const YieldCalculator = lazy(() => import("./pages/YieldCalculator"));
 const SalesReport = lazy(() => import("./pages/SalesReport"));
 const InventoryValuationReport = lazy(() => import("./pages/InventoryValuationReport"));
+const GMCommandGuide = lazy(() => import("./pages/GMCommandGuide"));
 const VarianceReport = lazy(() => import("./pages/VarianceReport"));
 const RecipeVault = lazy(() => import("./pages/RecipeVault"));
 const CocktailSpecs = lazy(() => import("./pages/CocktailSpecs"));
@@ -313,6 +314,7 @@ const AppContent = () => {
           <Route path="/staff-qr-access" element={<StaffQRAccess />} />
           <Route path="/bar-kds" element={<BarKDS />} />
           <Route path="/kitchen-kds" element={<KitchenKDS />} />
+          <Route path="/gm-command-guide" element={<GMCommandGuide />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
                 </Routes>
