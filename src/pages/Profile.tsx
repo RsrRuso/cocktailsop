@@ -99,6 +99,7 @@ const Profile = () => {
     certifications, 
     recognitions,
     competitions,
+    examCertificates,
     stories, 
     userRoles, 
     refetchAll 
@@ -832,6 +833,63 @@ const Profile = () => {
                 );
               })()}
             </div>
+
+            {/* Exam Certificates & Achievements */}
+            {examCertificates.length > 0 && (
+              <div className="glass rounded-xl p-4 space-y-4 border border-border/50">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-lg flex items-center gap-2">
+                    <Award className="w-5 h-5 text-amber-500" />
+                    Exam Certificates
+                  </h4>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => navigate('/exam-center')}
+                    className="text-xs"
+                  >
+                    Take Exam
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {examCertificates.map((cert: any) => {
+                    const getBadgeColor = (level: string) => {
+                      const colors: Record<string, string> = {
+                        'Bronze': 'bg-amber-700 text-white',
+                        'Silver': 'bg-slate-400 text-white',
+                        'Gold': 'bg-yellow-500 text-black',
+                        'Platinum': 'bg-gradient-to-r from-slate-300 to-slate-500 text-white',
+                        'Diamond': 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white'
+                      };
+                      return colors[level] || 'bg-muted';
+                    };
+                    
+                    return (
+                      <div 
+                        key={cert.id}
+                        className="flex items-center gap-3 p-3 rounded-lg glass border border-border/50 hover:border-primary/50 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/certificate/${cert.id}`)}
+                      >
+                        <div className={`p-2 rounded-full shrink-0 ${getBadgeColor(cert.exam_badge_levels?.name || '')}`}>
+                          <Award className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium truncate">{cert.exam_categories?.name}</span>
+                            <Badge className={`text-[10px] ${getBadgeColor(cert.exam_badge_levels?.name || '')}`}>
+                              {cert.exam_badge_levels?.name}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Score: {cert.score}% • {new Date(cert.issued_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Work Experience Timeline */}
             <div className="glass rounded-xl p-4 space-y-4 border border-border/50">

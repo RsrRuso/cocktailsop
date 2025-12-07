@@ -78,6 +78,7 @@ const UserProfile = () => {
   const [certifications, setCertifications] = useState<any[]>([]);
   const [recognitions, setRecognitions] = useState<any[]>([]);
   const [competitions, setCompetitions] = useState<any[]>([]);
+  const [examCertificates, setExamCertificates] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const { data: birthdayData } = useUserBirthday(userId || null);
 
@@ -100,12 +101,25 @@ const UserProfile = () => {
         fetchCertifications(),
         fetchRecognitions(),
         fetchCompetitions(),
+        fetchExamCertificates(),
       ]).then(() => {
         // Track view after data loads to avoid blocking
         trackProfileView();
       });
     }
   }, [userId]);
+
+  const fetchExamCertificates = async () => {
+    if (!userId) return;
+    
+    const { data } = await supabase
+      .from('exam_certificates')
+      .select('*, exam_categories(*), exam_badge_levels(*)')
+      .eq('user_id', userId)
+      .order('issued_at', { ascending: false });
+    
+    if (data) setExamCertificates(data);
+  };
 
   const trackProfileView = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -661,6 +675,53 @@ const UserProfile = () => {
                 </div>
               </div>
             </div>
+
+            {/* Exam Certificates */}
+            {examCertificates.length > 0 && (
+              <div className="glass rounded-xl p-4 space-y-4 border border-border/50">
+                <h4 className="font-semibold text-lg flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-500" />
+                  Exam Certificates
+                </h4>
+                <div className="space-y-2">
+                  {examCertificates.map((cert: any) => {
+                    const getBadgeCertColor = (level: string) => {
+                      const colors: Record<string, string> = {
+                        'Bronze': 'bg-amber-700 text-white',
+                        'Silver': 'bg-slate-400 text-white',
+                        'Gold': 'bg-yellow-500 text-black',
+                        'Platinum': 'bg-gradient-to-r from-slate-300 to-slate-500 text-white',
+                        'Diamond': 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white'
+                      };
+                      return colors[level] || 'bg-muted';
+                    };
+                    
+                    return (
+                      <div 
+                        key={cert.id}
+                        className="flex items-center gap-3 p-3 rounded-lg glass border border-border/50 hover:border-primary/50 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/certificate/${cert.id}`)}
+                      >
+                        <div className={`p-2 rounded-full shrink-0 ${getBadgeCertColor(cert.exam_badge_levels?.name || '')}`}>
+                          <Award className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium truncate">{cert.exam_categories?.name}</span>
+                            <Badge className={`text-[10px] ${getBadgeCertColor(cert.exam_badge_levels?.name || '')}`}>
+                              {cert.exam_badge_levels?.name}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Score: {cert.score}% • {new Date(cert.issued_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Work Experience Timeline */}
             <div className="glass rounded-xl p-4 space-y-4 border border-border/50">

@@ -172,6 +172,25 @@ export const useOptimizedProfileData = (userId: string | null) => {
     refetchOnMount: false,
   });
 
+  const examCertificates = useQuery({
+    queryKey: ['exam-certificates', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      
+      const { data } = await supabase
+        .from('exam_certificates')
+        .select('*, exam_categories(*), exam_badge_levels(*)')
+        .eq('user_id', userId)
+        .order('issued_at', { ascending: false });
+
+      return data || [];
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false,
+  });
+
   const stories = useQuery({
     queryKey: ['stories', userId],
     queryFn: async () => {
@@ -222,6 +241,7 @@ export const useOptimizedProfileData = (userId: string | null) => {
     certifications: certifications.data || [],
     recognitions: recognitions.data || [],
     competitions: competitions.data || [],
+    examCertificates: examCertificates.data || [],
     stories: stories.data || [],
     userRoles: userRoles.data || { isFounder: false, isVerified: false },
     isLoading: profile.isLoading,
@@ -233,6 +253,7 @@ export const useOptimizedProfileData = (userId: string | null) => {
       certifications.refetch();
       recognitions.refetch();
       competitions.refetch();
+      examCertificates.refetch();
       stories.refetch();
       userRoles.refetch();
     },
