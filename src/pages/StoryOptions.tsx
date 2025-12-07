@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import CreateStatusDialog from "@/components/CreateStatusDialog";
 import MusicStatusDialog from "@/components/MusicStatusDialog";
+import LivestreamStartDialog from "@/components/LivestreamStartDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -26,6 +27,7 @@ const StoryOptions = () => {
   const navigate = useNavigate();
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [showMusicStatusDialog, setShowMusicStatusDialog] = useState(false);
+  const [showLivestreamDialog, setShowLivestreamDialog] = useState(false);
   const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [optimalTime, setOptimalTime] = useState<string>("");
@@ -88,9 +90,7 @@ const StoryOptions = () => {
   };
 
   const handleLiveStream = () => {
-    toast.info("Live Stream feature coming soon!", {
-      description: "AI-powered live streaming with real-time captions"
-    });
+    setShowLivestreamDialog(true);
   };
 
   const storyOptions = [
@@ -136,7 +136,7 @@ const StoryOptions = () => {
       shadowColor: "shadow-red-500/50",
       aiFeatures: ["Live Captions", "AI Moderation", "Smart Comments"],
       action: handleLiveStream,
-      badge: "Coming Soon"
+      badge: "NEW"
     }
   ];
 
@@ -354,6 +354,11 @@ const StoryOptions = () => {
       <MusicStatusDialog
         open={showMusicStatusDialog}
         onOpenChange={setShowMusicStatusDialog}
+      />
+
+      <LivestreamStartDialog
+        open={showLivestreamDialog}
+        onOpenChange={setShowLivestreamDialog}
       />
 
       <BottomNav />
