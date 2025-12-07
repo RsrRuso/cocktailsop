@@ -60,12 +60,37 @@ const MaterialUploadDialog = ({ onQuestionsGenerated }: MaterialUploadDialogProp
   };
 
   const handleGenerate = async () => {
-    const content = useManualInput ? manualContent : (file ? await extractTextFromFile(file) : "");
+    // Get content based on input mode
+    let content = "";
+    if (useManualInput) {
+      content = manualContent.trim();
+    } else if (file) {
+      content = await extractTextFromFile(file);
+    }
     
-    if ((!file && !useManualInput) || (!manualContent.trim() && useManualInput) || !categoryName.trim() || !user) {
+    // Validate required fields
+    if (!content) {
       toast({
-        title: "Missing information",
-        description: "Please provide content and enter a category name",
+        title: "Missing content",
+        description: "Please paste or upload study material",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!categoryName.trim()) {
+      toast({
+        title: "Missing category",
+        description: "Please enter an exam category name",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Not logged in",
+        description: "Please log in to generate questions",
         variant: "destructive"
       });
       return;
