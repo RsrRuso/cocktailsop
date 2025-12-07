@@ -1,10 +1,65 @@
-import { useState, useEffect } from "react";
-import { Search, TrendingUp } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { Search, TrendingUp, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+
+// Memoized Post Grid Item
+const PostGridItem = memo(({ post, onClick }: { post: any; onClick: () => void }) => (
+  <div
+    className="relative aspect-square cursor-pointer rounded-lg overflow-hidden bg-muted"
+    onClick={onClick}
+  >
+    {post.media_urls?.[0] ? (
+      <img
+        src={post.media_urls[0]}
+        alt=""
+        className="w-full h-full object-cover"
+        loading="lazy"
+        decoding="async"
+      />
+    ) : (
+      <div className="w-full h-full bg-gradient-to-br from-primary/60 to-accent/60 flex items-center justify-center p-2">
+        <p className="text-[10px] text-white line-clamp-3 text-center">{post.content}</p>
+      </div>
+    )}
+    {/* Simple overlay on hover - CSS only */}
+    <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-3 text-white text-xs font-medium">
+      <span>❤️ {post.like_count || 0}</span>
+      <span>💬 {post.comment_count || 0}</span>
+    </div>
+  </div>
+));
+
+PostGridItem.displayName = 'PostGridItem';
+
+// Memoized Profile Item
+const ProfileItem = memo(({ profile, onClick }: { profile: any; onClick: () => void }) => (
+  <div
+    className="rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.99]"
+    onClick={onClick}
+  >
+    {profile.avatar_url ? (
+      <img src={profile.avatar_url} alt="" className="w-11 h-11 rounded-full object-cover" loading="lazy" />
+    ) : (
+      <div className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
+        {profile.username?.[0]?.toUpperCase()}
+      </div>
+    )}
+    <div className="flex-1 min-w-0">
+      <p className="font-medium text-sm truncate">{profile.full_name || profile.username}</p>
+      <p className="text-xs text-muted-foreground truncate">@{profile.username}</p>
+    </div>
+    <div className="text-right shrink-0">
+      <p className="text-xs font-medium">{profile.follower_count || 0}</p>
+      <p className="text-[10px] text-muted-foreground">followers</p>
+    </div>
+  </div>
+));
+
+ProfileItem.displayName = 'ProfileItem';
 
 const Explore = () => {
   const navigate = useNavigate();
@@ -15,53 +70,58 @@ const Explore = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch posts only when they're needed (in background)
-    Promise.all([fetchExplorePosts(), fetchProfiles()]).finally(() => setIsLoading(false));
+    const fetchData = async () => {
+      const [postsRes, profilesRes] = await Promise.all([
+        supabase
+          .from("posts")
+          .select("id, content, media_urls, like_count, comment_count")
+          .order("like_count", { ascending: false })
+          .limit(24),
+        supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url, follower_count")
+          .order("follower_count", { ascending: false })
+          .limit(30)
+      ]);
+      
+      if (postsRes.data) setPosts(postsRes.data);
+      if (profilesRes.data) setProfiles(profilesRes.data);
+      setIsLoading(false);
+    };
+    fetchData();
   }, []);
 
-  const fetchExplorePosts = async () => {
-    const { data } = await supabase
-      .from("posts")
-      .select("id, content, media_urls, like_count, comment_count, view_count, profiles(id, username, avatar_url, full_name)")
-      .order("like_count", { ascending: false })
-      .limit(18);
+  const filteredPosts = useMemo(() => {
+    if (!searchQuery) return posts;
+    const q = searchQuery.toLowerCase();
+    return posts.filter(post => post.content?.toLowerCase().includes(q));
+  }, [posts, searchQuery]);
 
-    if (data) setPosts(data);
-  };
+  const filteredProfiles = useMemo(() => {
+    if (!searchQuery) return profiles;
+    const q = searchQuery.toLowerCase();
+    return profiles.filter(p => 
+      p.username?.toLowerCase().includes(q) || 
+      p.full_name?.toLowerCase().includes(q)
+    );
+  }, [profiles, searchQuery]);
 
-  const fetchProfiles = async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, username, full_name, avatar_url, professional_title, follower_count")
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (data) setProfiles(data);
-  };
-
-  const filteredPosts = posts.filter(post => 
-    post.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.profiles?.username?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredProfiles = profiles.filter(profile =>
-    profile.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    profile.professional_title?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handlePostClick = useCallback((id: string) => navigate(`/post/${id}`), [navigate]);
+  const handleProfileClick = useCallback((id: string) => navigate(`/user/${id}`), [navigate]);
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-16">
       <TopNav />
 
-      <div className="px-4 py-6 space-y-6">
-        {/* Search Bar */}
+      <div className="px-3 py-4 space-y-4 max-w-2xl mx-auto">
+        {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search posts, people, regions..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 glass border-primary/20 h-12 rounded-2xl"
+            className="pl-9 h-10 rounded-xl bg-muted/50 border-0"
           />
         </div>
 
@@ -69,125 +129,63 @@ const Explore = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab("top")}
-            className={`flex-1 py-2 px-4 rounded-xl font-medium transition-all ${
-              activeTab === "top"
-                ? "glass glow-primary text-primary"
-                : "glass-hover text-muted-foreground"
+            className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-colors ${
+              activeTab === "top" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"
             }`}
           >
-            <TrendingUp className="w-4 h-4 inline mr-2" />
+            <TrendingUp className="w-4 h-4 inline mr-1.5" />
             Top
           </button>
           <button
             onClick={() => setActiveTab("accounts")}
-            className={`flex-1 py-2 px-4 rounded-xl font-medium transition-all ${
-              activeTab === "accounts"
-                ? "glass glow-primary text-primary"
-                : "glass-hover text-muted-foreground"
+            className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-colors ${
+              activeTab === "accounts" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"
             }`}
           >
+            <Users className="w-4 h-4 inline mr-1.5" />
             Accounts
           </button>
         </div>
 
-        {/* Content Grid */}
+        {/* Content */}
         {activeTab === "top" && (
-          <div className="grid grid-cols-3 gap-1">
+          <div className="grid grid-cols-3 gap-0.5">
             {isLoading ? (
-              // Loading skeletons
               Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="aspect-square bg-muted rounded-lg animate-pulse" />
+                <div key={i} className="aspect-square bg-muted animate-pulse" />
               ))
+            ) : filteredPosts.length === 0 ? (
+              <div className="col-span-3 text-center py-12 text-muted-foreground text-sm">
+                No posts found
+              </div>
             ) : (
               filteredPosts.map((post) => (
-              <div
-                key={post.id}
-                className="relative aspect-square glass-hover cursor-pointer rounded-lg overflow-hidden group"
-                onClick={() => navigate(`/post/${post.id}`)}
-              >
-                {post.media_urls?.[0] ? (
-                  <img
-                    src={post.media_urls[0]}
-                    alt=""
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-pink-600 to-orange-500 flex items-center justify-center p-4">
-                    <p className="text-xs text-white line-clamp-4">{post.content}</p>
-                  </div>
-                )}
-                
-                {/* Overlay with author info and engagement */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-3">
-                  <div className="flex items-center gap-2">
-                    {post.profiles?.avatar_url ? (
-                      <img 
-                        src={post.profiles.avatar_url} 
-                        alt={post.profiles.username}
-                        className="w-6 h-6 rounded-full border-2 border-white"
-                      />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-white text-xs font-bold border-2 border-white">
-                        {post.profiles?.username?.[0]?.toUpperCase()}
-                      </div>
-                    )}
-                    <span className="text-white text-xs font-semibold drop-shadow-lg">
-                      @{post.profiles?.username}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-white text-xs font-semibold">
-                    <span className="flex items-center gap-1">
-                      ❤️ {post.like_count}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      💬 {post.comment_count}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))
+                <PostGridItem key={post.id} post={post} onClick={() => handlePostClick(post.id)} />
+              ))
             )}
           </div>
         )}
 
         {activeTab === "accounts" && (
-          <div className="space-y-3">
+          <div className="space-y-0.5">
             {isLoading ? (
-              // Loading skeletons
               Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="glass rounded-2xl p-4 flex items-center gap-4 animate-pulse">
-                  <div className="w-14 h-14 rounded-full bg-muted" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-32 bg-muted rounded" />
+                <div key={i} className="p-3 flex items-center gap-3 animate-pulse">
+                  <div className="w-11 h-11 rounded-full bg-muted" />
+                  <div className="flex-1 space-y-1.5">
                     <div className="h-3 w-24 bg-muted rounded" />
+                    <div className="h-2.5 w-16 bg-muted rounded" />
                   </div>
                 </div>
               ))
+            ) : filteredProfiles.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">
+                No accounts found
+              </div>
             ) : (
               filteredProfiles.map((profile) => (
-              <div
-                key={profile.id}
-                className="glass-hover rounded-2xl p-4 flex items-center gap-4 cursor-pointer"
-                onClick={() => navigate(`/user/${profile.id}`)}
-              >
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-600 to-orange-500 flex items-center justify-center text-white font-bold text-xl">
-                  {profile.username?.[0]?.toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-normal text-sm">{profile.full_name}</h3>
-                  <p className="text-sm text-muted-foreground">@{profile.username}</p>
-                  <p className="text-xs text-primary capitalize mt-1">
-                    {profile.professional_title?.replace(/_/g, " ")}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold">{profile.follower_count}</p>
-                  <p className="text-xs text-muted-foreground">followers</p>
-                </div>
-              </div>
-            ))
+                <ProfileItem key={profile.id} profile={profile} onClick={() => handleProfileClick(profile.id)} />
+              ))
             )}
           </div>
         )}
