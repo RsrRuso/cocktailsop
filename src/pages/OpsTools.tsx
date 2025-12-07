@@ -418,7 +418,7 @@ const OpsTools = () => {
         icon: Sparkles,
         gradient: "from-violet-600 to-purple-500",
         premium: false,
-        path: "/gm-command-guide",
+        path: "/gm-command",
         featured: true,
       },
       {

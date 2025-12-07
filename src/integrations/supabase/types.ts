@@ -2607,6 +2607,381 @@ export type Database = {
           },
         ]
       }
+      gm_approval_requests: {
+        Row: {
+          ai_recommendation: string | null
+          amount: number | null
+          approved_at: string | null
+          approved_by: string | null
+          category: string
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          id: string
+          outlet_id: string | null
+          payback_months: number | null
+          priority: string | null
+          rejection_reason: string | null
+          requested_by: string
+          risk_score: string | null
+          roi_percentage: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_recommendation?: string | null
+          amount?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          category: string
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          id?: string
+          outlet_id?: string | null
+          payback_months?: number | null
+          priority?: string | null
+          rejection_reason?: string | null
+          requested_by: string
+          risk_score?: string | null
+          roi_percentage?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_recommendation?: string | null
+          amount?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          id?: string
+          outlet_id?: string | null
+          payback_months?: number | null
+          priority?: string | null
+          rejection_reason?: string | null
+          requested_by?: string
+          risk_score?: string | null
+          roi_percentage?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gm_approval_requests_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gm_financial_metrics: {
+        Row: {
+          average_check: number | null
+          beverage_cost_percentage: number | null
+          covers: number | null
+          created_at: string | null
+          food_cost_percentage: number | null
+          gp_percentage: number | null
+          gross_profit: number | null
+          id: string
+          labor_cost_percentage: number | null
+          outlet_id: string | null
+          period_end: string
+          period_start: string
+          total_cost: number | null
+          total_revenue: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          average_check?: number | null
+          beverage_cost_percentage?: number | null
+          covers?: number | null
+          created_at?: string | null
+          food_cost_percentage?: number | null
+          gp_percentage?: number | null
+          gross_profit?: number | null
+          id?: string
+          labor_cost_percentage?: number | null
+          outlet_id?: string | null
+          period_end: string
+          period_start: string
+          total_cost?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          average_check?: number | null
+          beverage_cost_percentage?: number | null
+          covers?: number | null
+          created_at?: string | null
+          food_cost_percentage?: number | null
+          gp_percentage?: number | null
+          gross_profit?: number | null
+          id?: string
+          labor_cost_percentage?: number | null
+          outlet_id?: string | null
+          period_end?: string
+          period_start?: string
+          total_cost?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gm_financial_metrics_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gm_inventory_predictions: {
+        Row: {
+          ai_suggestion: string | null
+          created_at: string | null
+          current_stock: number | null
+          excess_stock_warning: boolean | null
+          id: string
+          item_name: string
+          outlet_id: string | null
+          predicted_shortage_date: string | null
+          reorder_recommendation: string | null
+          user_id: string
+          waste_risk_value: number | null
+        }
+        Insert: {
+          ai_suggestion?: string | null
+          created_at?: string | null
+          current_stock?: number | null
+          excess_stock_warning?: boolean | null
+          id?: string
+          item_name: string
+          outlet_id?: string | null
+          predicted_shortage_date?: string | null
+          reorder_recommendation?: string | null
+          user_id: string
+          waste_risk_value?: number | null
+        }
+        Update: {
+          ai_suggestion?: string | null
+          created_at?: string | null
+          current_stock?: number | null
+          excess_stock_warning?: boolean | null
+          id?: string
+          item_name?: string
+          outlet_id?: string | null
+          predicted_shortage_date?: string | null
+          reorder_recommendation?: string | null
+          user_id?: string
+          waste_risk_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gm_inventory_predictions_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gm_opportunities: {
+        Row: {
+          ai_analysis: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          implementation_effort: string | null
+          opportunity_type: string
+          outlet_id: string | null
+          projected_revenue_increase: number | null
+          projected_savings: number | null
+          status: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          ai_analysis?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          implementation_effort?: string | null
+          opportunity_type: string
+          outlet_id?: string | null
+          projected_revenue_increase?: number | null
+          projected_savings?: number | null
+          status?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          ai_analysis?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          implementation_effort?: string | null
+          opportunity_type?: string
+          outlet_id?: string | null
+          projected_revenue_increase?: number | null
+          projected_savings?: number | null
+          status?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gm_opportunities_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gm_risk_alerts: {
+        Row: {
+          affected_item: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          outlet_id: string | null
+          potential_cost_impact: number | null
+          recommended_action: string | null
+          resolved_at: string | null
+          risk_type: string
+          severity: string | null
+          status: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          affected_item?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          outlet_id?: string | null
+          potential_cost_impact?: number | null
+          recommended_action?: string | null
+          resolved_at?: string | null
+          risk_type: string
+          severity?: string | null
+          status?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          affected_item?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          outlet_id?: string | null
+          potential_cost_impact?: number | null
+          recommended_action?: string | null
+          resolved_at?: string | null
+          risk_type?: string
+          severity?: string | null
+          status?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gm_risk_alerts_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gm_staff_performance: {
+        Row: {
+          ai_development_plan: string | null
+          badges: Json | null
+          complaints_score: number | null
+          created_at: string | null
+          guest_impact_rating: number | null
+          id: string
+          outlet_id: string | null
+          overall_value_score: number | null
+          period_end: string
+          period_start: string
+          revenue_contribution: number | null
+          sales_conversion_rate: number | null
+          speed_of_execution: number | null
+          staff_member_id: string
+          strengths: string[] | null
+          training_completion_percentage: number | null
+          upselling_success_rate: number | null
+          user_id: string
+          weaknesses: string[] | null
+        }
+        Insert: {
+          ai_development_plan?: string | null
+          badges?: Json | null
+          complaints_score?: number | null
+          created_at?: string | null
+          guest_impact_rating?: number | null
+          id?: string
+          outlet_id?: string | null
+          overall_value_score?: number | null
+          period_end: string
+          period_start: string
+          revenue_contribution?: number | null
+          sales_conversion_rate?: number | null
+          speed_of_execution?: number | null
+          staff_member_id: string
+          strengths?: string[] | null
+          training_completion_percentage?: number | null
+          upselling_success_rate?: number | null
+          user_id: string
+          weaknesses?: string[] | null
+        }
+        Update: {
+          ai_development_plan?: string | null
+          badges?: Json | null
+          complaints_score?: number | null
+          created_at?: string | null
+          guest_impact_rating?: number | null
+          id?: string
+          outlet_id?: string | null
+          overall_value_score?: number | null
+          period_end?: string
+          period_start?: string
+          revenue_contribution?: number | null
+          sales_conversion_rate?: number | null
+          speed_of_execution?: number | null
+          staff_member_id?: string
+          strengths?: string[] | null
+          training_completion_percentage?: number | null
+          upselling_success_rate?: number | null
+          user_id?: string
+          weaknesses?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gm_staff_performance_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "lab_ops_outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_members: {
         Row: {
           conversation_id: string
