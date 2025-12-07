@@ -49,7 +49,7 @@ const CertificateView = () => {
       'Platinum': 'from-slate-300 via-white to-slate-400',
       'Diamond': 'from-cyan-400 via-blue-300 to-purple-400'
     };
-    return gradients[level] || 'from-primary to-purple-500';
+    return gradients[name] || 'from-primary to-purple-500';
   };
 
   const handleDownload = async () => {
@@ -75,7 +75,7 @@ const CertificateView = () => {
       try {
         await navigator.share({
           title: `SpecVerse Certificate - ${certificate?.exam_categories?.name}`,
-          text: `I earned a ${certificate?.exam_badge_levels?.level_name} badge in ${certificate?.exam_categories?.name}!`,
+          text: `I earned a ${certificate?.exam_badge_levels?.name} badge in ${certificate?.exam_categories?.name}!`,
           url: shareUrl
         });
       } catch (error) {
