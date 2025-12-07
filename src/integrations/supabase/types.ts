@@ -5656,6 +5656,121 @@ export type Database = {
           },
         ]
       }
+      livestream_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_pinned: boolean | null
+          livestream_id: string
+          reactions: Json | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean | null
+          livestream_id: string
+          reactions?: Json | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean | null
+          livestream_id?: string
+          reactions?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "livestream_comments_livestream_id_fkey"
+            columns: ["livestream_id"]
+            isOneToOne: false
+            referencedRelation: "livestreams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      livestream_viewers: {
+        Row: {
+          id: string
+          joined_at: string
+          left_at: string | null
+          livestream_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          livestream_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          livestream_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "livestream_viewers_livestream_id_fkey"
+            columns: ["livestream_id"]
+            isOneToOne: false
+            referencedRelation: "livestreams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      livestreams: {
+        Row: {
+          created_at: string
+          description: string | null
+          ended_at: string | null
+          id: string
+          peak_viewers: number | null
+          started_at: string | null
+          status: string
+          thumbnail_url: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+          viewer_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          ended_at?: string | null
+          id?: string
+          peak_viewers?: number | null
+          started_at?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          viewer_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          ended_at?: string | null
+          id?: string
+          peak_viewers?: number | null
+          started_at?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          viewer_count?: number | null
+        }
+        Relationships: []
+      }
       location_areas: {
         Row: {
           area_type: string
