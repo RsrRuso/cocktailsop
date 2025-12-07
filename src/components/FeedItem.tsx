@@ -1,14 +1,20 @@
-import { memo, useState, useCallback } from "react";
+import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit, Volume2, VolumeX, Eye } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { EnhancedCommentsDialog } from "@/components/engagement";
+import { Heart, MessageCircle, Send, MoreVertical, Trash2, Edit, Volume2, VolumeX, Eye, Brain, Sparkles } from "lucide-react";
+import OptimizedAvatar from "@/components/OptimizedAvatar";
+import { getProfessionalBadge } from "@/lib/profileUtils";
+import { LazyImage } from "@/components/LazyImage";
+import { LazyVideo } from "@/components/LazyVideo";
+import { useViewTracking } from "@/hooks/useViewTracking";
+import { EngagementInsightsDialog, EnhancedLikesDialog, EnhancedCommentsDialog } from "@/components/engagement";
+import UserStatusIndicator from "@/components/UserStatusIndicator";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 interface FeedItemProps {
   item: any;
@@ -26,58 +32,6 @@ interface FeedItemProps {
   getBadgeColor: (level: string) => string;
 }
 
-// Lightweight media component
-const MediaItem = memo(({ url, itemId, isReel, isMuted, onToggleMute, onFullscreen }: {
-  url: string;
-  itemId: string;
-  isReel: boolean;
-  isMuted: boolean;
-  onToggleMute: () => void;
-  onFullscreen: () => void;
-}) => {
-  const isAudio = url.includes('.mp3') || url.includes('.wav') || url.includes('audio');
-  const isVideo = isReel || url.includes('.mp4') || url.includes('video');
-
-  if (isAudio) {
-    return (
-      <div className="bg-muted/50 p-4">
-        <audio src={url} controls className="w-full h-10" />
-      </div>
-    );
-  }
-
-  if (isVideo) {
-    return (
-      <div className="relative" onClick={isReel ? onFullscreen : undefined}>
-        <video
-          src={url}
-          className="w-full max-h-[70vh] object-cover bg-black"
-          autoPlay
-          loop
-          muted={!isMuted}
-          playsInline
-        />
-        <button
-          onClick={(e) => { e.stopPropagation(); onToggleMute(); }}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center"
-        >
-          {isMuted ? <Volume2 className="w-4 h-4 text-white" /> : <VolumeX className="w-4 h-4 text-white" />}
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={url}
-      alt=""
-      className="w-full max-h-[70vh] object-cover"
-      loading="lazy"
-    />
-  );
-});
-MediaItem.displayName = 'MediaItem';
-
 export const FeedItem = memo(({
   item,
   currentUserId,
@@ -90,104 +44,211 @@ export const FeedItem = memo(({
   onShare,
   onToggleMute,
   onFullscreen,
+  onViewLikes,
   getBadgeColor
 }: FeedItemProps) => {
   const navigate = useNavigate();
+  const professionalBadge = getProfessionalBadge(item.profiles?.professional_title || null);
+  const BadgeIcon = professionalBadge.icon;
+  const [showInsights, setShowInsights] = useState(false);
+  const [showLikes, setShowLikes] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const isOwner = currentUserId === item.user_id;
 
-  const handleProfileClick = useCallback(() => {
-    navigate(`/user/${item.user_id}`);
-  }, [navigate, item.user_id]);
+  // Track post views
+  useViewTracking('post', item.id, currentUserId, true);
 
   return (
-    <article className="bg-card">
-      {/* Header */}
-      <div className="flex items-center gap-3 p-3">
-        <button onClick={handleProfileClick} className="shrink-0">
-          <Avatar className={`w-10 h-10 ring-2 ring-offset-1 ring-offset-background ${item.profiles?.badge_level ? `ring-${getBadgeColor(item.profiles.badge_level).split(' ')[0].replace('from-', '')}` : 'ring-muted'}`}>
-            <AvatarImage src={item.profiles?.avatar_url} />
-            <AvatarFallback className="text-xs">{item.profiles?.username?.[0] || '?'}</AvatarFallback>
-          </Avatar>
-        </button>
-
-        <button onClick={handleProfileClick} className="flex-1 text-left min-w-0">
-          <p className="font-medium text-sm truncate">{item.profiles?.full_name || item.profiles?.username}</p>
-          {item.profiles?.professional_title && (
-            <p className="text-xs text-muted-foreground truncate">
-              {item.profiles.professional_title.replace(/_/g, " ")}
-            </p>
-          )}
-        </button>
-
-        {isOwner && (
+    <div className="relative w-full">
+      {/* Top Header Section */}
+      <div className="relative px-3 py-4 bg-transparent backdrop-blur-xl border-b border-white/10">
+        <div className="flex items-center gap-3">
+            <div 
+              className="relative cursor-pointer pt-6"
+              onClick={() => navigate(`/user/${item.user_id}`)}
+            >
+              {/* User Status on Avatar */}
+              <UserStatusIndicator userId={item.user_id} size="sm" />
+              
+              <OptimizedAvatar
+                src={item.profiles?.avatar_url}
+                alt={item.profiles?.username || 'User'}
+                fallback={item.profiles?.username?.[0] || '?'}
+                userId={item.user_id}
+                className={`relative w-12 h-12 ring-2 ring-primary/20 group-hover/avatar:ring-primary/50 transition-all duration-300 group-hover/avatar:scale-105 bg-gradient-to-br ${item.profiles ? getBadgeColor(item.profiles.badge_level) : 'from-gray-400 to-gray-200'}`}
+              />
+            </div>
+            
+            <div 
+              className="flex-1 cursor-pointer"
+              onClick={() => navigate(`/user/${item.user_id}`)}
+            >
+              <div className="flex items-center gap-2">
+                <p className="font-normal text-base bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                  {item.profiles?.full_name || item.profiles?.username || 'Unknown User'}
+                </p>
+                {item.profiles?.badge_level && (
+                  <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${getBadgeColor(item.profiles.badge_level)} flex items-center justify-center text-[10px] font-black text-white shadow-lg ring-2 ring-white/40 transition-all duration-300`}>
+                    {item.profiles.badge_level[0].toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+                  {item.profiles?.professional_title?.replace(/_/g, " ") || ''}
+                </p>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Brain className="w-3 h-3 text-purple-400" />
+                  <span>AI</span>
+                </div>
+              </div>
+            </div>
+        
+        {currentUserId && item.user_id === currentUserId && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-1.5 rounded-full hover:bg-muted/50 transition-colors">
-                <MoreVertical className="w-4 h-4 text-muted-foreground" />
+              <button className="p-2 rounded-xl bg-transparent backdrop-blur-xl border border-white/20 hover:border-white/30 hover:bg-white/5 transition-all">
+                <MoreVertical className="w-5 h-5" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36">
+            <DropdownMenuContent align="end" className="bg-transparent backdrop-blur-xl border border-white/30">
               {item.type === 'post' && (
-                <DropdownMenuItem onClick={onEdit} className="text-sm">
-                  <Edit className="w-3.5 h-3.5 mr-2" /> Edit
+                <DropdownMenuItem onClick={onEdit}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Post
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={onDelete} className="text-sm text-destructive">
-                <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+              <DropdownMenuItem 
+                onClick={onDelete}
+                className="text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-      </div>
-
-      {/* Content */}
-      {item.content && (
-        <p className="px-3 pb-2 text-sm">{item.content}</p>
-      )}
-
-      {/* Media */}
-      {item.media_urls?.length > 0 && (
-        <div className="bg-black">
-          {item.media_urls.map((url: string, idx: number) => (
-            <MediaItem
-              key={idx}
-              url={url}
-              itemId={item.id}
-              isReel={item.type === 'reel'}
-              isMuted={mutedVideos.has(item.id + url)}
-              onToggleMute={() => onToggleMute(item.id + url)}
-              onFullscreen={onFullscreen}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Actions */}
-      <div className="flex items-center gap-4 px-3 py-2.5">
-        <button onClick={onLike} className="flex items-center gap-1.5 group">
-          <Heart className={`w-5 h-5 transition-transform group-active:scale-90 ${isLiked ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
-          <span className="text-xs text-muted-foreground">{item.like_count || 0}</span>
-        </button>
-
-        <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 group">
-          <MessageCircle className="w-5 h-5 text-muted-foreground transition-transform group-active:scale-90" />
-          <span className="text-xs text-muted-foreground">{item.comment_count || 0}</span>
-        </button>
-
-        <button onClick={onShare} className="group">
-          <Send className="w-5 h-5 text-muted-foreground transition-transform group-active:scale-90" />
-        </button>
-
-        <div className="flex-1" />
-
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Eye className="w-4 h-4" />
-          <span>{item.view_count || 0}</span>
         </div>
       </div>
 
-      {/* Comments Dialog */}
+      {/* Content - Full Width */}
+      <div className="relative w-full">
+        {'content' in item && item.content && (
+          <p className="text-sm px-3 py-3 text-white bg-black/50">{item.content}</p>
+        )}
+
+        {/* Media - Full Screen */}
+        {item.media_urls && item.media_urls.length > 0 && (
+          <div className="w-full">
+            {item.media_urls.map((url: string, idx: number) => (
+              <div key={idx} className="relative w-full">
+                {url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('audio') ? (
+                  <div className="bg-black p-4">
+                    <audio src={url} controls className="w-full" />
+                  </div>
+                ) : item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
+                  <div 
+                    className="relative w-full cursor-pointer"
+                    onClick={item.type === 'reel' ? onFullscreen : undefined}
+                  >
+                    <LazyVideo
+                      src={url}
+                      muted={!mutedVideos.has(item.id + url)}
+                      className="w-full h-auto object-cover"
+                    />
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleMute(item.id + url);
+                      }}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
+                    >
+                      {mutedVideos.has(item.id + url) ? (
+                        <Volume2 className="w-4 h-4 text-white" />
+                      ) : (
+                        <VolumeX className="w-4 h-4 text-white" />
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <LazyImage
+                    src={url}
+                    alt="Post media"
+                    className="w-full h-auto object-cover"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Action Bar - Glassy Transparent with Contours */}
+      <div className="relative px-2 sm:px-3 py-2 sm:py-3 bg-transparent backdrop-blur-xl border-t border-white/10">
+        <div className="flex items-center justify-between gap-1 sm:gap-2">
+            {/* Like Button */}
+            <button
+                onClick={onLike}
+                className={`relative flex items-center gap-1 text-xs sm:text-sm font-light transition-all duration-300 ${
+                  isLiked 
+                    ? 'text-red-500 hover:scale-110' 
+                    : 'text-muted-foreground hover:text-primary hover:scale-105'
+                }`}
+              >
+                <Heart className={`w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300 ${isLiked ? 'fill-current scale-110' : ''}`} strokeWidth={1.5} />
+                <span 
+                  className="min-w-[16px] cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowLikes(true);
+                  }}
+                >
+                  {item.like_count || 0}
+                </span>
+              </button>
+
+            {/* Comment Button */}
+            <button
+                onClick={() => setShowComments(true)}
+                className="relative flex items-center gap-1 text-xs sm:text-sm font-light text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-105"
+              >
+                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
+                <span className="min-w-[16px]">{item.comment_count || 0}</span>
+              </button>
+
+            {/* Share Button */}
+            <button
+                onClick={onShare}
+                className="relative flex items-center gap-1 text-xs sm:text-sm font-light text-muted-foreground hover:text-green-500 transition-all duration-300 hover:scale-105"
+              >
+                <Send className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
+              </button>
+            
+            {/* AI Insights Button */}
+            <button
+                onClick={() => setShowInsights(true)}
+                className="relative flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-[10px] sm:text-xs font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent hover:scale-105 transition-all duration-300"
+              >
+                <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-pink-400 animate-pulse transition-colors" />
+                <span className="whitespace-nowrap">AI</span>
+              </button>
+            
+            {/* Views Counter */}
+            <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold text-muted-foreground">
+              <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span>{item.view_count || 0}</span>
+            </div>
+          </div>
+        </div>
+
+      {/* Enhanced Dialogs with AI */}
+      <EnhancedLikesDialog
+        open={showLikes}
+        onOpenChange={setShowLikes}
+        contentType={item.type}
+        contentId={item.id}
+      />
+
       <EnhancedCommentsDialog
         open={showComments}
         onOpenChange={setShowComments}
@@ -195,7 +256,22 @@ export const FeedItem = memo(({
         contentId={item.id}
         onCommentChange={onComment}
       />
-    </article>
+
+      <EngagementInsightsDialog
+        open={showInsights}
+        onOpenChange={setShowInsights}
+        contentId={item.id}
+        contentType={item.type}
+        content={item.content || item.caption || ''}
+        engagement={{
+          likes: item.like_count || 0,
+          comments: item.comment_count || 0,
+          shares: 0,
+          views: item.view_count || 0,
+        }}
+        createdAt={item.created_at}
+      />
+    </div>
   );
 });
 
