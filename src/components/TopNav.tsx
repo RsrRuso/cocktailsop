@@ -438,6 +438,16 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               <DropdownMenuItem
                 onClick={() => { 
                   lightTap(); 
+                  navigate("/exam-center"); 
+                }}
+                className="cursor-pointer"
+              >
+                <GraduationCap className="w-4 h-4 mr-2" />
+                Exam Center
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => { 
+                  lightTap(); 
                   navigate("/introduction"); 
                 }}
                 className="cursor-pointer"
