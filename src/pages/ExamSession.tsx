@@ -88,20 +88,8 @@ const ExamSession = () => {
     enabled: !!categoryId
   });
 
-  const { data: questions } = useQuery({
-    queryKey: ['exam-questions', categoryId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('exam_questions')
-        .select('*')
-        .eq('category_id', categoryId)
-        .eq('is_active', true)
-        .order('sort_order') as { data: Question[] | null, error: any };
-      if (error) throw error;
-      return data as Question[];
-    },
-    enabled: !!categoryId
-  });
+  const [questions, setQuestions] = useState<Question[] | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const { data: badgeLevels } = useQuery({
     queryKey: ['exam-badge-levels'],
@@ -139,24 +127,63 @@ const ExamSession = () => {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('exam_sessions')
-      .insert({
-        user_id: user.id,
-        category_id: categoryId,
-        status: 'in_progress'
-      })
-      .select()
-      .single();
+    setIsGenerating(true);
+    
+    try {
+      // Generate fresh AI questions each time
+      const { data: funcData, error: funcError } = await supabase.functions.invoke('generate-exam-questions', {
+        body: {
+          content: category.description || `Comprehensive examination on ${category.name}. Test knowledge of key concepts, best practices, techniques, and industry standards.`,
+          categoryName: category.name,
+          questionCount: 10,
+          categoryId: categoryId
+        }
+      });
 
-    if (error) {
-      toast.error("Failed to start exam");
-      return;
+      if (funcError) throw funcError;
+
+      const generatedQuestions: Question[] = (funcData.questions || []).map((q: any, idx: number) => ({
+        id: `gen-${Date.now()}-${idx}`,
+        question_text: q.question_text,
+        question_type: q.question_type === 'true_false' ? 'true_false' : 
+                       q.question_type === 'fill_blank' ? 'short_answer' : 'multiple_choice',
+        options: q.options || null,
+        correct_answer: q.correct_answer,
+        points: q.points || 10,
+        video_url: null,
+        image_url: null,
+        explanation: q.explanation || null,
+        time_limit_seconds: null
+      }));
+
+      if (generatedQuestions.length === 0) {
+        throw new Error('No questions generated');
+      }
+
+      setQuestions(generatedQuestions);
+
+      // Create exam session
+      const { data, error } = await supabase
+        .from('exam_sessions')
+        .insert({
+          user_id: user.id,
+          category_id: categoryId,
+          status: 'in_progress'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setSessionId(data.id);
+      setTimeRemaining(30 * 60);
+      setIsStarted(true);
+    } catch (err: any) {
+      console.error('Failed to generate exam:', err);
+      toast.error(err.message || 'Failed to generate exam questions');
+    } finally {
+      setIsGenerating(false);
     }
-
-    setSessionId(data.id);
-    setTimeRemaining(30 * 60);
-    setIsStarted(true);
   };
 
   const handleAnswer = useCallback((questionId: string, answer: any) => {
@@ -292,13 +319,13 @@ const ExamSession = () => {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="p-3 rounded-lg bg-muted">
                   <BookOpen className="h-5 w-5 mx-auto mb-1 text-primary" />
-                  <p className="font-medium">{questions?.filter(q => q.question_type !== 'video_practical').length || 0}</p>
-                  <p className="text-xs text-muted-foreground">Theory Questions</p>
+                  <p className="font-medium">10</p>
+                  <p className="text-xs text-muted-foreground">AI-Generated Questions</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted">
-                  <Video className="h-5 w-5 mx-auto mb-1 text-primary" />
-                  <p className="font-medium">{questions?.filter(q => q.question_type === 'video_practical').length || 0}</p>
-                  <p className="text-xs text-muted-foreground">Practical Videos</p>
+                  <HelpCircle className="h-5 w-5 mx-auto mb-1 text-primary" />
+                  <p className="font-medium">Unique</p>
+                  <p className="text-xs text-muted-foreground">Fresh Every Time</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted">
                 <Clock className="h-5 w-5 mx-auto mb-1 text-primary" />
@@ -313,9 +340,18 @@ const ExamSession = () => {
               </div>
 
               <div className="space-y-3">
-                <Button className="w-full" size="lg" onClick={startExam}>
-                  <Play className="h-5 w-5 mr-2" />
-                  Start Exam
+                <Button className="w-full" size="lg" onClick={startExam} disabled={isGenerating}>
+                  {isGenerating ? (
+                    <>
+                      <div className="h-5 w-5 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Generating Questions...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-5 w-5 mr-2" />
+                      Start Exam
+                    </>
+                  )}
                 </Button>
                 <Button variant="outline" className="w-full" onClick={() => navigate('/exam-center')}>
                   <ChevronLeft className="h-4 w-4 mr-2" />
