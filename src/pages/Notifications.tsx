@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
-import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, Calendar, CalendarCheck, Settings, Package, FlaskConical, ClipboardList, Trash2, Users } from "lucide-react";
+import { Bell, CheckCheck, Heart, MessageCircle, UserPlus, Eye, Send, UserMinus, Image, Video, Music, MessageSquare, UserCheck, Calendar, CalendarCheck, Settings, Package, FlaskConical, ClipboardList, Trash2, Users, Award } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useInAppNotificationContext } from "@/contexts/InAppNotificationContext";
@@ -249,6 +249,8 @@ const Notifications = () => {
         return <ClipboardList className="w-5 h-5 text-green-500" />;
       case 'member_added':
         return <Users className="w-5 h-5 text-cyan-500" />;
+      case 'certificate_earned':
+        return <Award className="w-5 h-5 text-amber-500" />;
       default:
         return <Bell className="w-5 h-5 text-primary" />;
     }
@@ -285,6 +287,13 @@ const Notifications = () => {
     } else if (notification.type === 'member_added') {
       // Member added → open batch calculator groups tab
       navigate('/batch-calculator');
+    } else if (notification.type === 'certificate_earned') {
+      // Certificate earned → navigate to the user's profile to see their achievement
+      if (notification.reference_user_id) {
+        navigate(`/user/${notification.reference_user_id}`);
+      } else {
+        navigate('/exam-center');
+      }
     } else if (notification.type === 'follow' || notification.type === 'unfollow') {
       // For follow/unfollow notifications, navigate to the user's profile
       if (notification.reference_user_id) {
