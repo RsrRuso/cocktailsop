@@ -14,7 +14,9 @@ import {
   Loader2,
   CloudUpload,
   Headphones,
-  Volume2
+  Volume2,
+  Video,
+  FileVideo
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +30,8 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
+import { useFFmpeg } from "@/hooks/useFFmpeg";
+import { toast } from "sonner";
 
 interface AdvancedMusicUploadDialogProps {
   open: boolean;
@@ -58,8 +62,10 @@ export function AdvancedMusicUploadDialog({
   onUpload,
   uploading = false 
 }: AdvancedMusicUploadDialogProps) {
-  const [step, setStep] = useState<'upload' | 'details' | 'success'>('upload');
+  const [step, setStep] = useState<'upload' | 'extracting' | 'details' | 'success'>('upload');
   const [file, setFile] = useState<File | null>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [isVideoSource, setIsVideoSource] = useState(false);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("other");
   const [tags, setTags] = useState<string[]>([]);
@@ -71,6 +77,8 @@ export function AdvancedMusicUploadDialog({
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  const { extractAudio, loading: ffmpegLoading, progress: ffmpegProgress, load: loadFFmpeg } = useFFmpeg();
 
   useEffect(() => {
     if (!open) {
@@ -78,6 +86,8 @@ export function AdvancedMusicUploadDialog({
       setTimeout(() => {
         setStep('upload');
         setFile(null);
+        setAudioFile(null);
+        setIsVideoSource(false);
         setTitle("");
         setCategory("other");
         setTags([]);
@@ -91,6 +101,9 @@ export function AdvancedMusicUploadDialog({
       }, 300);
     }
   }, [open]);
+
+  const isVideoFile = (f: File) => f.type.startsWith('video/');
+  const isAudioFile = (f: File) => f.type.startsWith('audio/');
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -106,35 +119,72 @@ export function AdvancedMusicUploadDialog({
     e.preventDefault();
     setIsDragging(false);
     const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type.startsWith('audio/')) {
+    if (droppedFile && (isAudioFile(droppedFile) || isVideoFile(droppedFile))) {
       handleFileSelect(droppedFile);
     }
   }, []);
 
-  const handleFileSelect = (selectedFile: File) => {
+  const handleFileSelect = async (selectedFile: File) => {
     setFile(selectedFile);
     // Auto-fill title from filename
     const nameWithoutExt = selectedFile.name.replace(/\.[^/.]+$/, "");
     setTitle(nameWithoutExt);
     
-    // Get audio duration
-    const audio = new Audio(URL.createObjectURL(selectedFile));
-    audio.onloadedmetadata = () => {
-      setAudioDuration(audio.duration);
-    };
-    
-    setStep('details');
+    if (isVideoFile(selectedFile)) {
+      // Extract audio from video
+      setIsVideoSource(true);
+      setStep('extracting');
+      
+      try {
+        await loadFFmpeg();
+        const videoUrl = URL.createObjectURL(selectedFile);
+        const audioUrl = await extractAudio(videoUrl);
+        
+        // Convert blob URL to File
+        const audioBlob = await fetch(audioUrl).then(r => r.blob());
+        const extractedAudioFile = new File([audioBlob], `${nameWithoutExt}.mp3`, { type: 'audio/mp3' });
+        setAudioFile(extractedAudioFile);
+        
+        // Get audio duration
+        const audio = new Audio(audioUrl);
+        audio.onloadedmetadata = () => {
+          setAudioDuration(audio.duration);
+        };
+        
+        toast.success("Audio extracted from video!");
+        setStep('details');
+      } catch (error) {
+        console.error("Failed to extract audio:", error);
+        toast.error("Failed to extract audio from video");
+        setStep('upload');
+        setFile(null);
+        setIsVideoSource(false);
+      }
+    } else {
+      // Direct audio file
+      setIsVideoSource(false);
+      setAudioFile(selectedFile);
+      
+      // Get audio duration
+      const audio = new Audio(URL.createObjectURL(selectedFile));
+      audio.onloadedmetadata = () => {
+        setAudioDuration(audio.duration);
+      };
+      
+      setStep('details');
+    }
   };
 
   const handlePlayPause = () => {
-    if (!file) return;
+    const fileToPlay = audioFile || file;
+    if (!fileToPlay) return;
     
     if (isPlaying) {
       audioRef.current?.pause();
       setIsPlaying(false);
     } else {
       if (!audioRef.current) {
-        audioRef.current = new Audio(URL.createObjectURL(file));
+        audioRef.current = new Audio(URL.createObjectURL(fileToPlay));
         audioRef.current.onended = () => setIsPlaying(false);
       }
       audioRef.current.play();
@@ -155,7 +205,8 @@ export function AdvancedMusicUploadDialog({
   };
 
   const handleSubmit = async () => {
-    if (!file || !title.trim()) return;
+    const fileToUpload = audioFile || file;
+    if (!fileToUpload || !title.trim()) return;
     
     // Simulate progress
     const progressInterval = setInterval(() => {
@@ -173,7 +224,7 @@ export function AdvancedMusicUploadDialog({
         title: title.trim(),
         category,
         tags,
-        file
+        file: fileToUpload
       });
       setUploadProgress(100);
       setStep('success');
@@ -243,20 +294,24 @@ export function AdvancedMusicUploadDialog({
                       animate={isDragging ? { scale: 1.1, rotate: 10 } : { scale: 1, rotate: 0 }}
                       className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center"
                     >
-                      <FileAudio className="w-10 h-10 text-primary" />
+                      <div className="flex items-center gap-1">
+                        <FileAudio className="w-8 h-8 text-primary" />
+                        <span className="text-primary text-lg">/</span>
+                        <FileVideo className="w-8 h-8 text-primary" />
+                      </div>
                     </motion.div>
                     
                     <div className="text-center">
                       <h3 className="text-lg font-semibold text-foreground mb-1">
-                        {isDragging ? "Drop it here!" : "Drag & Drop Audio"}
+                        {isDragging ? "Drop it here!" : "Drag & Drop Audio or Video"}
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        or tap to browse your files
+                        Videos will have audio extracted automatically
                       </p>
                     </div>
 
                     <div className="flex flex-wrap justify-center gap-2">
-                      {['MP3', 'WAV', 'M4A', 'OGG'].map(format => (
+                      {['MP3', 'WAV', 'M4A', 'MP4', 'MOV', 'WEBM'].map(format => (
                         <Badge key={format} variant="secondary" className="text-xs">
                           {format}
                         </Badge>
@@ -267,7 +322,7 @@ export function AdvancedMusicUploadDialog({
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="audio/*"
+                    accept="audio/*,video/*"
                     onChange={(e) => {
                       const selectedFile = e.target.files?.[0];
                       if (selectedFile) handleFileSelect(selectedFile);
@@ -298,6 +353,39 @@ export function AdvancedMusicUploadDialog({
               </motion.div>
             )}
 
+            {/* Step: Extracting Audio */}
+            {step === 'extracting' && (
+              <motion.div
+                key="extracting"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="flex flex-col items-center justify-center py-16 space-y-6"
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center"
+                >
+                  <Video className="w-10 h-10 text-primary" />
+                </motion.div>
+                
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-semibold text-foreground">Extracting Audio...</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Processing video to extract audio track
+                  </p>
+                </div>
+
+                <div className="w-full max-w-xs space-y-2">
+                  <Progress value={ffmpegProgress.progress || 10} className="h-2" />
+                  <p className="text-xs text-center text-muted-foreground">
+                    {ffmpegProgress.message || "Loading audio processor..."}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
             {/* Step 2: Details */}
             {step === 'details' && (
               <motion.div
@@ -308,8 +396,14 @@ export function AdvancedMusicUploadDialog({
                 className="space-y-6"
               >
                 {/* File Preview */}
-                {file && (
+                {(audioFile || file) && (
                   <div className="relative rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 p-4 border border-primary/20">
+                    {isVideoSource && (
+                      <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Video className="w-3 h-3" />
+                        Audio Extracted
+                      </div>
+                    )}
                     <div className="flex items-center gap-4">
                       <button
                         onClick={handlePlayPause}
@@ -323,9 +417,11 @@ export function AdvancedMusicUploadDialog({
                       </button>
                       
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">{file.name}</p>
+                        <p className="font-medium text-foreground truncate">
+                          {isVideoSource ? `${title}.mp3` : file?.name}
+                        </p>
                         <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                          <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                          {audioFile && <span>{(audioFile.size / 1024 / 1024).toFixed(2)} MB</span>}
                           {audioDuration && (
                             <>
                               <span>•</span>
@@ -343,6 +439,8 @@ export function AdvancedMusicUploadDialog({
                         size="icon"
                         onClick={() => {
                           setFile(null);
+                          setAudioFile(null);
+                          setIsVideoSource(false);
                           setStep('upload');
                           if (audioRef.current) {
                             audioRef.current.pause();
