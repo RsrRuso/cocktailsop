@@ -609,18 +609,18 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
           </DropdownMenu>
 
           {/* Right section - Only Notifications and Messages */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-2">
             {/* Notifications */}
             <button
               onClick={() => {
                 lightTap();
                 navigate("/notifications");
               }}
-              className="glass-hover p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl relative"
+              className="flex items-center justify-center w-12 h-12 transition-all text-muted-foreground hover:text-foreground relative"
             >
-              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Bell className="w-7 h-7" />
               {unreadNotificationsCount > 0 && (
-                <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white">
+                <div className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
                   {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                 </div>
               )}
@@ -632,12 +632,12 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 lightTap();
                 navigate("/messages");
               }}
-              className="glass-hover p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl relative"
+              className="flex items-center justify-center w-12 h-12 transition-all text-muted-foreground hover:text-foreground relative"
               title="Neuron"
             >
-              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Send className="w-7 h-7" />
               {unreadMessagesCount > 0 && (
-                <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white">
+                <div className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
                   {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
                 </div>
               )}
