@@ -1,7 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { BadgeCheck, Diamond, Award, Star, TrendingUp, Medal } from "lucide-react";
+import { BadgeCheck, Diamond, Award, TrendingUp } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import BadgeLevelIcon from "./BadgeLevelIcon";
 
 interface BadgeInfoDialogProps {
   open: boolean;
@@ -27,54 +28,44 @@ const BadgeInfoDialog = ({
   const badgeLevelInfo = {
     bronze: {
       name: 'Bronze',
-      icon: Medal,
       color: 'from-amber-700 to-amber-900',
-      textColor: 'text-amber-700',
-      iconStyle: 'medal',
+      textColor: 'text-orange-400',
       requirements: '0-100 followers',
       perks: ['Basic profile features', 'Post and share content']
     },
     silver: {
       name: 'Silver',
-      icon: Medal,
       color: 'from-gray-400 to-gray-600',
-      textColor: 'text-gray-600',
-      iconStyle: 'medal',
+      textColor: 'text-gray-400',
       requirements: '100-500 followers',
       perks: ['Enhanced visibility', 'Priority in search', 'Custom profile themes']
     },
     gold: {
       name: 'Gold',
-      icon: Star,
       color: 'from-yellow-400 to-yellow-600',
-      textColor: 'text-yellow-600',
-      iconStyle: 'star',
+      textColor: 'text-yellow-400',
       requirements: '500-2,000 followers',
       perks: ['Featured content', 'Analytics dashboard', 'Early feature access']
     },
     platinum: {
       name: 'Platinum',
-      icon: Star,
       color: 'from-blue-400 via-blue-500 to-purple-600',
-      textColor: 'text-purple-600',
-      bgStyle: 'bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600',
-      iconStyle: 'platinum-star',
+      textColor: 'text-blue-400',
       requirements: '2,000-10,000 followers',
       perks: ['Premium badge', 'Monetization options', 'Verified tick eligibility']
     },
     diamond: {
       name: 'Diamond',
-      icon: Diamond,
       color: 'from-cyan-400 to-cyan-600',
-      textColor: 'text-cyan-500',
-      iconStyle: 'diamond',
+      textColor: 'text-cyan-400',
       requirements: '10,000+ followers',
       perks: ['Elite status', 'Direct support line', 'Exclusive events access']
     }
   };
 
   const currentBadge = badgeLevelInfo[badgeLevel];
-  const BadgeIcon = currentBadge.icon;
+  const levels: Array<'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond'> = 
+    ['bronze', 'silver', 'gold', 'platinum', 'diamond'];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,221 +81,171 @@ const BadgeInfoDialog = ({
 
         <ScrollArea className="h-full max-h-[calc(85vh-80px)] px-6 pb-6">
           <div className="space-y-6 pr-4">
-          {/* Founder Badge Section */}
-          {isFounder && (
-            <div className="relative p-6 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10 border-2 border-cyan-400/30">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="relative">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 blur-xl opacity-50" />
-                  <Diamond className="w-12 h-12 text-cyan-400 relative" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-                    Founder Status
-                  </h3>
-                  <p className="text-sm text-muted-foreground">Elite Member</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm">
-                  {isOwnProfile 
-                    ? "You are a founding member of this platform with exclusive lifetime benefits."
-                    : `${username} is a founding member with exclusive privileges.`}
-                </p>
-                <div className="flex flex-wrap gap-2 mt-3">
-                  <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
-                    Lifetime Access
-                  </Badge>
-                  <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                    Priority Support
-                  </Badge>
-                  <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
-                    All Features
-                  </Badge>
-                </div>
+            {/* Badge Level Progression - Visual Icons */}
+            <div className="p-4 rounded-2xl bg-[#0c1929] border border-border/30">
+              <div className="flex justify-between items-end gap-1">
+                {levels.map((level) => (
+                  <BadgeLevelIcon 
+                    key={level}
+                    level={level}
+                    size="sm"
+                    isActive={level === badgeLevel}
+                    showLabel={true}
+                  />
+                ))}
               </div>
             </div>
-          )}
 
-          {/* Verified Badge Section */}
-          {isVerified && !isFounder && (
-            <div className="relative p-6 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border-2 border-primary/30">
+            {/* Current Level Details */}
+            <div className={`relative p-6 rounded-2xl bg-gradient-to-br ${currentBadge.color}/10 border-2 border-current/20`}>
               <div className="flex items-center gap-4 mb-4">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent blur-md opacity-50" />
-                  <BadgeCheck className="w-12 h-12 text-primary relative" strokeWidth={2.5} />
-                </div>
+                <BadgeLevelIcon level={badgeLevel} size="lg" showLabel={false} isActive={true} />
                 <div>
-                  <h3 className="text-xl font-bold">Verified User</h3>
-                  <p className="text-sm text-muted-foreground">Authenticated Member</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm">
-                  {isOwnProfile 
-                    ? "Your account has been verified for authenticity."
-                    : `${username}'s account is verified.`}
-                </p>
-                <div className="flex flex-wrap gap-2 mt-3">
-                  <Badge variant="secondary">Enhanced Trust</Badge>
-                  <Badge variant="secondary">Venue Access</Badge>
-                  <Badge variant="secondary">Professional Features</Badge>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Professional Badge Section */}
-          {professionalScore !== undefined && (
-            <div className="relative p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-orange-500/10 border-2 border-purple-400/30">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="relative">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-purple-400 via-pink-500 to-orange-400 blur-xl opacity-50" />
-                  <Award className="w-12 h-12 text-purple-400 relative" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent">
-                    Professional Badge
+                  <h3 className={`text-xl font-bold ${currentBadge.textColor}`}>
+                    {currentBadge.name} Level
                   </h3>
-                  <p className="text-sm text-muted-foreground">Score: {professionalScore}/100</p>
+                  <p className="text-sm text-muted-foreground">{currentBadge.requirements}</p>
                 </div>
               </div>
+              
               <div className="space-y-3">
-                <p className="text-sm font-semibold">How is the Professional Score calculated?</p>
-                <div className="text-xs text-muted-foreground space-y-2">
-                  <div>
-                    <p className="font-medium text-foreground">Base Score (up to 45 points):</p>
-                    <p className="ml-2">Based on your professional title. Default is 75 × 60% = 45 points.</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Status Bonuses (up to +18 points):</p>
-                    <ul className="ml-2 space-y-0.5">
-                      <li>• Founder: +10 points</li>
-                      <li>• Verified: +8 points</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Badge Level Bonus (up to +15 points):</p>
-                    <ul className="ml-2 space-y-0.5">
-                      <li>• Bronze: +3 | Silver: +6 | Gold: +9</li>
-                      <li>• Platinum: +12 | Diamond: +15</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Engagement Score (up to +10 points):</p>
-                    <p className="ml-2">Average engagement from your posts and reels.</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Activity Bonus (up to +8 points):</p>
-                    <p className="ml-2">Active content creation (posts, reels, stories).</p>
-                  </div>
-                  <p className="font-medium text-foreground pt-2">Total: Maximum 100 points</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Level Badge Section */}
-          <div className={`relative p-6 rounded-2xl bg-gradient-to-br ${currentBadge.color}/10 border-2 border-current/20`}>
-            <div className="flex items-center gap-4 mb-4">
-              {badgeLevel === 'platinum' ? (
-                <div className="relative">
-                  <div className="absolute -inset-1 bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 blur-md opacity-75" />
-                  <div className="relative w-16 h-16 bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl">
-                    <Star className="w-9 h-9 text-white" strokeWidth={2.5} fill="none" />
-                  </div>
-                </div>
-              ) : badgeLevel === 'gold' ? (
-                <div className="relative">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600">
-                    <Star className="w-8 h-8 text-yellow-900" strokeWidth={2.5} fill="currentColor" />
-                  </div>
-                </div>
-              ) : badgeLevel === 'diamond' ? (
-                <div className="relative">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-400 to-cyan-600">
-                    <Diamond className="w-8 h-8 text-cyan-900" strokeWidth={2} fill="none" />
-                  </div>
-                </div>
-              ) : (
-                <div className={`p-3 rounded-xl bg-gradient-to-br ${currentBadge.color}`}>
-                  <BadgeIcon className="w-8 h-8 text-white" strokeWidth={2} />
-                </div>
-              )}
-              <div>
-                <h3 className={`text-xl font-bold ${currentBadge.textColor}`}>
-                  {currentBadge.name} Level
-                </h3>
-                <p className="text-sm text-muted-foreground">{currentBadge.requirements}</p>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm font-semibold mb-2">
-                  {isOwnProfile ? 'Your Perks:' : 'Level Benefits:'}
-                </p>
-                <ul className="space-y-1.5">
-                  {currentBadge.perks.map((perk, index) => (
-                    <li key={index} className="flex items-center gap-2 text-sm">
-                      <TrendingUp className="w-4 h-4 text-primary" />
-                      <span>{perk}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {isOwnProfile && badgeLevel !== 'diamond' && (
-                <div className="pt-3 border-t border-border/50">
-                  <p className="text-xs text-muted-foreground">
-                    💡 Keep growing your network to unlock the next level!
+                <div>
+                  <p className="text-sm font-semibold mb-2">
+                    {isOwnProfile ? 'Your Perks:' : 'Level Benefits:'}
                   </p>
+                  <ul className="space-y-1.5">
+                    {currentBadge.perks.map((perk, index) => (
+                      <li key={index} className="flex items-center gap-2 text-sm">
+                        <TrendingUp className="w-4 h-4 text-primary" />
+                        <span>{perk}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              )}
-            </div>
-          </div>
 
-          {/* Badge Progression */}
-          {isOwnProfile && (
-            <div className="p-4 rounded-xl bg-muted/30">
-              <h4 className="font-semibold mb-3 text-sm">Badge Levels</h4>
-              <div className="grid grid-cols-5 gap-2">
-                {Object.entries(badgeLevelInfo).map(([level, info]) => {
-                  const Icon = info.icon;
-                  const isCurrentLevel = level === badgeLevel;
-                  const isPlatinum = level === 'platinum';
-                  const isGold = level === 'gold';
-                  const isDiamond = level === 'diamond';
-                  
-                  return (
-                    <div 
-                      key={level}
-                      className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all ${
-                        isCurrentLevel 
-                          ? 'bg-primary/20 scale-110' 
-                          : 'opacity-50 hover:opacity-70'
-                      }`}
-                    >
-                      {isPlatinum ? (
-                        <div className="relative w-6 h-6 bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 rounded-md flex items-center justify-center">
-                          <Star className="w-3.5 h-3.5 text-white" strokeWidth={2.5} fill="none" />
-                        </div>
-                      ) : isGold ? (
-                        <div className="w-6 h-6 flex items-center justify-center">
-                          <Star className="w-5 h-5 text-yellow-500" strokeWidth={2.5} fill="currentColor" />
-                        </div>
-                      ) : isDiamond ? (
-                        <Diamond className="w-6 h-6 text-cyan-400" strokeWidth={2} fill="none" />
-                      ) : (
-                        <Icon className={`w-6 h-6 ${info.textColor}`} strokeWidth={2} />
-                      )}
-                      <span className="text-[10px] font-medium">{info.name}</span>
-                    </div>
-                  );
-                })}
+                {isOwnProfile && badgeLevel !== 'diamond' && (
+                  <div className="pt-3 border-t border-border/50">
+                    <p className="text-xs text-muted-foreground">
+                      💡 Keep growing your network to unlock the next level!
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+
+            {/* Founder Badge Section */}
+            {isFounder && (
+              <div className="relative p-6 rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10 border-2 border-cyan-400/30">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="relative">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 blur-xl opacity-50" />
+                    <Diamond className="w-12 h-12 text-cyan-400 relative" strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+                      Founder Status
+                    </h3>
+                    <p className="text-sm text-muted-foreground">Elite Member</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm">
+                    {isOwnProfile 
+                      ? "You are a founding member of this platform with exclusive lifetime benefits."
+                      : `${username} is a founding member with exclusive privileges.`}
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
+                      Lifetime Access
+                    </Badge>
+                    <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+                      Priority Support
+                    </Badge>
+                    <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
+                      All Features
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Verified Badge Section */}
+            {isVerified && !isFounder && (
+              <div className="relative p-6 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border-2 border-primary/30">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent blur-md opacity-50" />
+                    <BadgeCheck className="w-12 h-12 text-primary relative" strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Verified User</h3>
+                    <p className="text-sm text-muted-foreground">Authenticated Member</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm">
+                    {isOwnProfile 
+                      ? "Your account has been verified for authenticity."
+                      : `${username}'s account is verified.`}
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <Badge variant="secondary">Enhanced Trust</Badge>
+                    <Badge variant="secondary">Venue Access</Badge>
+                    <Badge variant="secondary">Professional Features</Badge>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Professional Badge Section */}
+            {professionalScore !== undefined && (
+              <div className="relative p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-orange-500/10 border-2 border-purple-400/30">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="relative">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-purple-400 via-pink-500 to-orange-400 blur-xl opacity-50" />
+                    <Award className="w-12 h-12 text-purple-400 relative" strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent">
+                      Professional Badge
+                    </h3>
+                    <p className="text-sm text-muted-foreground">Score: {professionalScore}/100</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold">How is the Professional Score calculated?</p>
+                  <div className="text-xs text-muted-foreground space-y-2">
+                    <div>
+                      <p className="font-medium text-foreground">Base Score (up to 45 points):</p>
+                      <p className="ml-2">Based on your professional title. Default is 75 × 60% = 45 points.</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Status Bonuses (up to +18 points):</p>
+                      <ul className="ml-2 space-y-0.5">
+                        <li>• Founder: +10 points</li>
+                        <li>• Verified: +8 points</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Badge Level Bonus (up to +15 points):</p>
+                      <ul className="ml-2 space-y-0.5">
+                        <li>• Bronze: +3 | Silver: +6 | Gold: +9</li>
+                        <li>• Platinum: +12 | Diamond: +15</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Engagement Score (up to +10 points):</p>
+                      <p className="ml-2">Average engagement from your posts and reels.</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Activity Bonus (up to +8 points):</p>
+                      <p className="ml-2">Active content creation (posts, reels, stories).</p>
+                    </div>
+                    <p className="font-medium text-foreground pt-2">Total: Maximum 100 points</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </ScrollArea>
       </DialogContent>
