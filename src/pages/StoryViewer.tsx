@@ -501,11 +501,32 @@ export default function StoryViewer() {
   // Smooth swipe handler using framer-motion drag
   const handleDragEnd = useCallback((event: any, info: PanInfo) => {
     setIsDragging(false);
-    const threshold = 50;
-    const velocity = 0.5;
+    const threshold = 40;
+    const velocityThreshold = 0.3;
     
-    // Horizontal swipe for navigation
-    if (Math.abs(info.offset.x) > threshold || Math.abs(info.velocity.x) > velocity) {
+    const absX = Math.abs(info.offset.x);
+    const absY = Math.abs(info.offset.y);
+    const velX = Math.abs(info.velocity.x);
+    const velY = Math.abs(info.velocity.y);
+    
+    // Determine if swipe is more vertical or horizontal
+    const isVerticalSwipe = absY > absX || velY > velX;
+    
+    if (isVerticalSwipe && (absY > threshold || velY > velocityThreshold)) {
+      // Vertical swipe
+      if (info.offset.y < -threshold && currentUserId === userId) {
+        // Swipe UP - show viewers panel
+        setShowViewersPanel(true);
+        if (currentStory) {
+          fetchAllViewers(currentStory.id);
+          fetchAllLikers(currentStory.id);
+        }
+      } else if (info.offset.y > threshold && !showViewersPanel) {
+        // Swipe DOWN - close story
+        navigate("/home");
+      }
+    } else if (!isVerticalSwipe && (absX > threshold || velX > velocityThreshold)) {
+      // Horizontal swipe for navigation
       if (info.offset.x > 0) {
         setSwipeDirection('right');
         setTimeout(() => {
@@ -518,22 +539,6 @@ export default function StoryViewer() {
           goToNext();
           setSwipeDirection(null);
         }, 150);
-      }
-      return;
-    }
-    
-    // Vertical swipe for viewers panel (up) or close (down)
-    if (Math.abs(info.offset.y) > threshold) {
-      if (info.offset.y < 0 && currentUserId === userId) {
-        // Swipe up - show viewers
-        setShowViewersPanel(true);
-        if (currentStory) {
-          fetchAllViewers(currentStory.id);
-          fetchAllLikers(currentStory.id);
-        }
-      } else if (info.offset.y > 0 && !showViewersPanel) {
-        // Swipe down - close
-        navigate("/home");
       }
     }
   }, [goToPrevious, goToNext, currentUserId, userId, currentStory, showViewersPanel, navigate, fetchAllViewers, fetchAllLikers]);
