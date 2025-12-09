@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Upload, Camera, X, CheckCircle2, Zap, Music2, Image as ImageIcon, Layers, Settings, ChevronDown } from "lucide-react";
+import { ArrowLeft, Upload, Camera, X, CheckCircle2, Zap, Music2, Image as ImageIcon, Layers, Settings, ChevronDown, Users, Globe } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
@@ -91,7 +91,7 @@ const CreateStory = () => {
     toast.success("Edits saved!");
   };
 
-  const handleCreateStory = async () => {
+  const handleCreateStory = async (visibility: 'public' | 'close_friends' = 'public') => {
     if (selectedMedia.length === 0) {
       toast.error("Please select media for your story");
       return;
@@ -252,10 +252,11 @@ const CreateStory = () => {
             text_overlays: textOverlaysArray,
             trim_data: trimDataArray,
             expires_at: expiresAt,
+            visibility: visibility,
           });
 
         toast.dismiss("story-upload");
-        toast.success(`Story created!`);
+        toast.success(visibility === 'close_friends' ? "Shared with Close Friends!" : "Story created!");
       }
 
       navigate("/home");
@@ -502,20 +503,42 @@ const CreateStory = () => {
               </div>
             )}
 
-            <Button
-              onClick={handleCreateStory}
-              disabled={uploadState.isUploading || previewUrls.length === 0}
-              className="w-full glow-primary h-14"
-            >
-              {uploadState.isUploading ? (
-                <>
-                  <Zap className="w-4 h-4 mr-2 animate-pulse" />
-                  Uploading...
-                </>
-              ) : (
-                `Share Story (${previewUrls.length})`
-              )}
-            </Button>
+            {/* Direct share buttons - no confirmation needed */}
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                onClick={() => handleCreateStory('close_friends')}
+                disabled={uploadState.isUploading || previewUrls.length === 0}
+                variant="outline"
+                className="h-14 flex flex-col items-center justify-center gap-1 border-green-500/30 hover:bg-green-500/10"
+              >
+                {uploadState.isUploading ? (
+                  <Zap className="w-5 h-5 animate-pulse text-green-500" />
+                ) : (
+                  <>
+                    <Users className="w-5 h-5 text-green-500" />
+                    <span className="text-xs">Close Friends</span>
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                onClick={() => handleCreateStory('public')}
+                disabled={uploadState.isUploading || previewUrls.length === 0}
+                className="h-14 flex flex-col items-center justify-center gap-1 glow-primary"
+              >
+                {uploadState.isUploading ? (
+                  <>
+                    <Zap className="w-5 h-5 animate-pulse" />
+                    <span className="text-xs">Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-5 h-5" />
+                    <span className="text-xs">Your Story</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
           <div className="flex items-center justify-center gap-2 text-xs text-center text-muted-foreground mt-2">
             <Zap className="w-3 h-3 text-primary" />
