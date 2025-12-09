@@ -161,8 +161,22 @@ const Home = () => {
 
   // Use cached user ID for hooks
   const { posts, reels, isLoading, refreshFeed, setPosts, setReels } = useFeedData(selectedRegion);
-  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', user?.id);
-  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', user?.id);
+  
+  // Optimistic like count updaters
+  const handlePostLikeChange = useCallback((postId: string, delta: number) => {
+    setPosts(prev => prev.map(p => 
+      p.id === postId ? { ...p, like_count: Math.max(0, (p.like_count || 0) + delta) } : p
+    ));
+  }, [setPosts]);
+  
+  const handleReelLikeChange = useCallback((reelId: string, delta: number) => {
+    setReels(prev => prev.map(r => 
+      r.id === reelId ? { ...r, like_count: Math.max(0, (r.like_count || 0) + delta) } : r
+    ));
+  }, [setReels]);
+  
+  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', user?.id, handlePostLikeChange);
+  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', user?.id, handleReelLikeChange);
   
   // Get current user's status (including music status)
   const { data: currentUserStatus } = useUserStatus(user?.id);

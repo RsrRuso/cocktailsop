@@ -4,7 +4,8 @@ import { toast } from 'sonner';
 
 export const useOptimisticLike = (
   itemType: 'post' | 'reel',
-  currentUserId: string | undefined
+  currentUserId: string | undefined,
+  onLikeChange?: (itemId: string, delta: number) => void
 ) => {
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
   const processingRef = useRef<Set<string>>(new Set());
@@ -59,7 +60,7 @@ export const useOptimisticLike = (
       // Mark as processing
       processingRef.current.add(itemId);
 
-      // Optimistic UI update for liked state only - DB trigger handles count
+      // Optimistic UI update for liked state
       setLikedItems((prev) => {
         const newSet = new Set(prev);
         if (isLiked) {
@@ -70,6 +71,11 @@ export const useOptimisticLike = (
         likedItemsRef.current = newSet;
         return newSet;
       });
+
+      // Optimistic count update - tell parent to update count
+      if (onLikeChange) {
+        onLikeChange(itemId, isLiked ? -1 : 1);
+      }
 
       try {
         if (itemType === 'post') {
@@ -116,11 +122,16 @@ export const useOptimisticLike = (
           likedItemsRef.current = newSet;
           return newSet;
         });
+
+        // Revert count on error
+        if (onLikeChange) {
+          onLikeChange(itemId, isLiked ? 1 : -1);
+        }
       } finally {
         processingRef.current.delete(itemId);
       }
     },
-    [currentUserId, itemType] // Removed likedItems from deps - using ref instead
+    [currentUserId, itemType, onLikeChange]
   );
 
   return { likedItems, fetchLikedItems, toggleLike };
