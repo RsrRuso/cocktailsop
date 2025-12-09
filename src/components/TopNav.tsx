@@ -294,39 +294,6 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               <DropdownMenuItem
                 onClick={() => { 
                   lightTap(); 
-                  navigate("/explore"); 
-                }}
-                className="cursor-pointer"
-              >
-                <Compass className="w-4 h-4 mr-2" />
-                Explore
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/reels"); 
-                }}
-                className="cursor-pointer"
-              >
-                <Film className="w-4 h-4 mr-2" />
-                Reels
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/live-map"); 
-                }}
-                className="cursor-pointer"
-              >
-                <Map className="w-4 h-4 mr-2" />
-                Live Map
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem
-                onClick={() => { 
-                  lightTap(); 
                   navigate("/music-box"); 
                 }}
                 className="cursor-pointer"
