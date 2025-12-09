@@ -54,8 +54,8 @@ export const FeedItem = memo(({
   const [showLikes, setShowLikes] = useState(false);
   const [showComments, setShowComments] = useState(false);
 
-  // Track post views
-  useViewTracking('post', item.id, currentUserId, true);
+  // Track views based on content type
+  useViewTracking(item.type === 'reel' ? 'reel' : 'post', item.id, currentUserId, true);
 
   return (
     <div className="relative w-full">

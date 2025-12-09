@@ -215,15 +215,18 @@ const Home = () => {
       fetchLikedReels();
     }
 
-    // Subscribe to count changes - FORCE refresh to bypass cache
+    // Subscribe to count changes - only refresh on INSERT/DELETE (new posts/reels)
+    // UPDATE events (like_count changes) don't need full refresh since we use optimistic updates
     const postsChannel = supabase
-      .channel('posts-comments')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => refreshFeed(true))
+      .channel('posts-feed')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => refreshFeed(true))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' }, () => refreshFeed(true))
       .subscribe();
 
     const reelsChannel = supabase
-      .channel('reels-comments')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reels' }, () => refreshFeed(true))
+      .channel('reels-feed')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reels' }, () => refreshFeed(true))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'reels' }, () => refreshFeed(true))
       .subscribe();
 
     // Listen for region changes from TopNav
