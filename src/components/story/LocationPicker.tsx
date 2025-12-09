@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Search, Navigation, Building2, Coffee, Utensils, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface Location {
+export interface Location {
   id: string;
   name: string;
   address: string;
   category: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
 }
 
 interface LocationPickerProps {
