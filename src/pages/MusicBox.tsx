@@ -9,9 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { 
   Music, 
@@ -28,6 +25,7 @@ import {
   Volume2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { AdvancedMusicUploadDialog } from "@/components/music-box/AdvancedMusicUploadDialog";
 
 interface MusicTrack {
   id: string;
@@ -50,15 +48,6 @@ interface MusicTrack {
   } | null;
 }
 
-const CATEGORIES = [
-  { value: 'beat', label: 'Beat' },
-  { value: 'ambient', label: 'Ambient' },
-  { value: 'jingle', label: 'Jingle' },
-  { value: 'voice', label: 'Voice' },
-  { value: 'sfx', label: 'Sound Effects' },
-  { value: 'other', label: 'Other' },
-];
-
 export default function MusicBox() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -71,12 +60,6 @@ export default function MusicBox() {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Upload form state
-  const [uploadTitle, setUploadTitle] = useState("");
-  const [uploadCategory, setUploadCategory] = useState("other");
-  const [uploadTags, setUploadTags] = useState("");
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchTracks();
@@ -148,25 +131,25 @@ export default function MusicBox() {
     }
   };
 
-  const handleUpload = async () => {
-    if (!user || !uploadFile || !uploadTitle.trim()) {
-      toast.error("Please fill in all required fields");
+  const handleUpload = async (data: { title: string; category: string; tags: string[]; file: File }) => {
+    if (!user) {
+      toast.error("Please sign in to upload");
       return;
     }
 
     setUploading(true);
     try {
       // Upload file to storage
-      const fileExt = uploadFile.name.split(".").pop();
+      const fileExt = data.file.name.split(".").pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from("music")
-        .upload(`original/${fileName}`, uploadFile);
+        .upload(`original/${fileName}`, data.file);
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from("music")
         .getPublicUrl(`original/${fileName}`);
 
@@ -174,13 +157,13 @@ export default function MusicBox() {
       const { error: insertError } = await supabase
         .from("music_tracks")
         .insert({
-          title: uploadTitle.trim(),
+          title: data.title,
           uploaded_by: user.id,
-          original_url: publicUrl,
-          category: uploadCategory,
-          tags: uploadTags.split(",").map(t => t.trim()).filter(Boolean),
+          original_url: urlData.publicUrl,
+          category: data.category,
+          tags: data.tags,
           status: "pending",
-          file_size_bytes: uploadFile.size,
+          file_size_bytes: data.file.size,
           format: fileExt,
         });
 
@@ -188,14 +171,11 @@ export default function MusicBox() {
 
       toast.success("Track uploaded! It will be reviewed soon.");
       setShowUploadDialog(false);
-      setUploadTitle("");
-      setUploadCategory("other");
-      setUploadTags("");
-      setUploadFile(null);
       fetchMyTracks();
     } catch (error: any) {
       console.error("Upload error:", error);
       toast.error(error.message || "Failed to upload track");
+      throw error;
     } finally {
       setUploading(false);
     }
@@ -487,89 +467,13 @@ export default function MusicBox() {
         </Tabs>
       </main>
 
-      {/* Upload Dialog */}
-      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5 text-primary" />
-              Upload Sound
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Title *</Label>
-              <Input
-                placeholder="Give your sound a name"
-                value={uploadTitle}
-                onChange={(e) => setUploadTitle(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={uploadCategory} onValueChange={setUploadCategory}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map(cat => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Tags (comma separated)</Label>
-              <Input
-                placeholder="chill, lofi, ambient"
-                value={uploadTags}
-                onChange={(e) => setUploadTags(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Audio File *</Label>
-              <Input
-                type="file"
-                accept="audio/*"
-                onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-              />
-              {uploadFile && (
-                <p className="text-sm text-muted-foreground">
-                  {uploadFile.name} ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
-                </p>
-              )}
-            </div>
-
-            <Button 
-              className="w-full" 
-              onClick={handleUpload}
-              disabled={uploading || !uploadFile || !uploadTitle.trim()}
-            >
-              {uploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Sound
-                </>
-              )}
-            </Button>
-
-            <p className="text-xs text-muted-foreground text-center">
-              Your upload will be reviewed before publishing.
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Advanced Upload Dialog */}
+      <AdvancedMusicUploadDialog
+        open={showUploadDialog}
+        onOpenChange={setShowUploadDialog}
+        onUpload={handleUpload}
+        uploading={uploading}
+      />
 
       <BottomNav />
     </div>
