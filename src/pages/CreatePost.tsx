@@ -5,10 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Send, Image as ImageIcon, X, Crop, Music } from "lucide-react";
+import { ArrowLeft, Send, Image as ImageIcon, X, Crop, Music, Music2 } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import ImageCropDialog from "@/components/ImageCropDialog";
+import MusicSelector from "@/components/music-box/MusicSelector";
 
 interface MediaFile {
   file: File;
@@ -25,6 +26,8 @@ const CreatePost = () => {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [currentCropIndex, setCurrentCropIndex] = useState<number | null>(null);
+  const [showMusicSelector, setShowMusicSelector] = useState(false);
+  const [selectedMusic, setSelectedMusic] = useState<{ id: string; title: string; artist: string; preview_url: string } | null>(null);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (mediaFiles.length + acceptedFiles.length > 10) {
@@ -152,6 +155,8 @@ const CreatePost = () => {
         user_id: user.id,
         content: content,
         media_urls: uploadedUrls,
+        music_track_id: selectedMusic?.id || null,
+        music_url: selectedMusic?.preview_url || null,
       });
 
       if (error) throw error;
@@ -194,6 +199,20 @@ const CreatePost = () => {
         </div>
 
         <div className="glass rounded-2xl p-6 space-y-6">
+          {/* Music Selection Button */}
+          <Button
+            variant="outline"
+            className="w-full glass-hover justify-start gap-3"
+            onClick={() => setShowMusicSelector(true)}
+          >
+            <Music2 className="w-5 h-5 text-primary" />
+            {selectedMusic ? (
+              <span className="truncate">{selectedMusic.title} - {selectedMusic.artist}</span>
+            ) : (
+              <span className="text-muted-foreground">Add music from Music Box</span>
+            )}
+          </Button>
+
           <Textarea
             placeholder="What's on your mind?"
             value={content}
@@ -310,6 +329,22 @@ const CreatePost = () => {
         onOpenChange={setCropDialogOpen}
         imageSrc={currentCropIndex !== null && mediaFiles[currentCropIndex]?.type === 'image' ? mediaFiles[currentCropIndex]?.preview : ""}
         onCropComplete={handleCropComplete}
+      />
+
+      {/* Music Selector Dialog */}
+      <MusicSelector
+        open={showMusicSelector}
+        onOpenChange={setShowMusicSelector}
+        onSelect={(track) => {
+          setSelectedMusic({
+            id: track.id,
+            title: track.title,
+            artist: track.profiles?.username || 'Unknown',
+            preview_url: track.preview_url || track.original_url
+          });
+          setShowMusicSelector(false);
+          toast.success(`Added: ${track.title}`);
+        }}
       />
     </div>
   );
