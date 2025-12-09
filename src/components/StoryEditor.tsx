@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Type, Music2, Sparkles, Download, Pen, Smile, MoreHorizontal, ArrowRight, Upload, Disc3, Brain, Play, Pause, Volume2, VolumeX, MapPin, AtSign, Wand2, Save, Sliders, Scissors } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import MusicSelectionDialog from "./MusicSelectionDialog";
+import MusicSelector from "./music-box/MusicSelector";
 import { SmartStoryFeatures } from "./story/SmartStoryFeatures";
 import { LocationPicker } from "./story/LocationPicker";
 import { PeopleMentionPicker } from "./story/PeopleMentionPicker";
@@ -833,19 +833,20 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
       </div>
 
       {/* Dialogs */}
-      <MusicSelectionDialog
+      <MusicSelector
         open={showMusicDialog}
         onOpenChange={setShowMusicDialog}
+        selectedTrack={null}
         onSelect={(track) => {
-          const audioUrl = track.preview_audio;
+          const audioUrl = track.preview_url || track.original_url;
           
-          if (audioUrl && audioUrl.startsWith('http')) {
+          if (audioUrl) {
             setSelectedMusic(audioUrl);
             setSelectedMusicFile(null);
-            setMusicName(`${track.title} - ${track.artist}`);
+            setMusicName(track.title);
             setTrimStart(0);
-            setTrimEnd(45);
-            toast.success(`Added: ${track.title} by ${track.artist}`);
+            setTrimEnd(Math.min(track.duration_sec || 45, 45));
+            toast.success(`Added: ${track.title}`);
           } else {
             toast.error("This track doesn't have a playable preview. Try another track!");
           }
