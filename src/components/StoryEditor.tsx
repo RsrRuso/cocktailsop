@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Type, Music2, Sparkles, Download, Pen, Smile, MoreHorizontal, ArrowRight, Upload, Disc3, Brain, Play, Pause, Volume2, VolumeX, MapPin, AtSign, Wand2, Save, Sliders } from "lucide-react";
+import { X, Type, Music2, Sparkles, Download, Pen, Smile, MoreHorizontal, ArrowRight, Upload, Disc3, Brain, Play, Pause, Volume2, VolumeX, MapPin, AtSign, Wand2, Save, Sliders, Scissors } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import MusicSelectionDialog from "./MusicSelectionDialog";
 import { SmartStoryFeatures } from "./story/SmartStoryFeatures";
@@ -10,6 +10,7 @@ import { PeopleMentionPicker } from "./story/PeopleMentionPicker";
 import { StickerPicker } from "./story/StickerPicker";
 import { FiltersPicker } from "./story/FiltersPicker";
 import { DrawingCanvas } from "./story/DrawingCanvas";
+import { AdvancedVideoTrimmer } from "./story/AdvancedVideoTrimmer";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -102,17 +103,41 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
   const [musicCurrentTime, setMusicCurrentTime] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(45);
+  const [musicTrimStart, setMusicTrimStart] = useState(0);
+  const [musicTrimEnd, setMusicTrimEnd] = useState(45);
   const [musicName, setMusicName] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [taggedPeople, setTaggedPeople] = useState<TaggedPerson[]>([]);
   const [currentFilter, setCurrentFilter] = useState("none");
   const [filterCss, setFilterCss] = useState("none");
   const [drawingPaths, setDrawingPaths] = useState<any[]>([]);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [videoTrimStart, setVideoTrimStart] = useState(0);
+  const [videoTrimEnd, setVideoTrimEnd] = useState(60);
+  const [showAdvancedTrimmer, setShowAdvancedTrimmer] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const musicFileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Get video duration on load
+  useEffect(() => {
+    if (isVideo && videoRef.current) {
+      const handleVideoMetadata = () => {
+        if (videoRef.current) {
+          const duration = videoRef.current.duration;
+          setVideoDuration(duration);
+          setVideoTrimEnd(Math.min(duration, 60));
+        }
+      };
+      
+      videoRef.current.addEventListener('loadedmetadata', handleVideoMetadata);
+      return () => {
+        videoRef.current?.removeEventListener('loadedmetadata', handleVideoMetadata);
+      };
+    }
+  }, [isVideo]);
 
   // Handle audio playback
   useEffect(() => {
@@ -660,6 +685,21 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
             </div>
           </button>
 
+          {/* Advanced Trim Tool (Video only) */}
+          {isVideo && (
+            <button
+              onClick={() => setShowAdvancedTrimmer(true)}
+              className="flex flex-col items-center gap-0.5"
+            >
+              <div className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                showAdvancedTrimmer ? "bg-white text-black" : "bg-white/20 text-white"
+              )}>
+                <Scissors className="w-5 h-5" />
+              </div>
+            </button>
+          )}
+
           {/* Draw Tool */}
           <button
             onClick={() => setShowDrawing(true)}
@@ -876,6 +916,44 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Advanced Video Trimmer */}
+      {isVideo && (
+        <Sheet open={showAdvancedTrimmer} onOpenChange={setShowAdvancedTrimmer}>
+          <SheetContent side="bottom" className="h-[85vh] p-0 overflow-hidden bg-black/95">
+            <SheetHeader className="px-6 pt-6 pb-4">
+              <SheetTitle className="flex items-center gap-2 text-white">
+                <Scissors className="w-5 h-5 text-primary" />
+                Advanced Video Trimmer
+              </SheetTitle>
+              <SheetDescription className="text-white/60">
+                Trim video and sync with music
+              </SheetDescription>
+            </SheetHeader>
+            <div className="px-4 pb-8">
+              <AdvancedVideoTrimmer
+                videoUrl={mediaUrl}
+                musicUrl={selectedMusic || undefined}
+                musicName={musicName}
+                duration={videoDuration || 60}
+                trimStart={videoTrimStart}
+                trimEnd={videoTrimEnd}
+                musicTrimStart={musicTrimStart}
+                musicTrimEnd={musicTrimEnd}
+                onTrimChange={(start, end) => {
+                  setVideoTrimStart(start);
+                  setVideoTrimEnd(end);
+                }}
+                onMusicTrimChange={(start, end) => {
+                  setMusicTrimStart(start);
+                  setMusicTrimEnd(end);
+                }}
+                maxDuration={60}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 };

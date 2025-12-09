@@ -634,69 +634,38 @@ export default function StoryViewer() {
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col safe-area-inset">
-      {/* Top Header - Mobile optimized */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-black shrink-0">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <OptimizedAvatar
-            src={profile.avatar_url}
-            alt={profile.full_name || "User"}
-            className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-primary shrink-0"
-          />
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <span className="text-white font-semibold text-xs sm:text-sm truncate">
-                {currentUserId === userId ? "Your story" : profile.full_name || profile.username}
-              </span>
-              <BadgeCheck className="w-3 h-3 sm:w-4 sm:h-4 text-primary fill-primary shrink-0" />
-              <span className="text-white/50 text-xs sm:text-sm shrink-0">{getTimeAgo()}</span>
-            </div>
-            <span className="text-primary text-[10px] sm:text-xs flex items-center gap-1">
-              <span>🎬</span> Watch full reel &gt;
-            </span>
-          </div>
-        </div>
-        <button
-          onClick={() => navigate("/home")}
-          className="p-1.5 sm:p-2 hover:bg-white/10 rounded-full transition-colors shrink-0"
-        >
-          <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-        </button>
-      </div>
-
-      {/* Story Container - Fullscreen */}
-      <div className="flex-1 flex items-center justify-center overflow-hidden min-h-0">
+      {/* Story Container - Fullscreen, header is now part of overlay */}
+      <div className="flex-1 relative overflow-hidden">
         <div className="w-full h-full relative overflow-hidden">
-          {/* Progress bars */}
+          {/* Progress bars - at very top */}
           <ProgressBars totalItems={totalMediaCount} currentIndex={currentMediaIndex} progress={progress} />
 
-          {/* User info overlay */}
-          <div className="absolute top-5 sm:top-6 left-2 right-2 sm:left-3 sm:right-3 z-30 flex items-center justify-between">
+          {/* User info overlay - merged header */}
+          <div className="absolute top-4 left-2 right-2 sm:left-3 sm:right-3 z-30 flex items-center justify-between">
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
               <OptimizedAvatar
                 src={profile.avatar_url}
                 alt={profile.full_name || "User"}
-                className="w-7 h-7 sm:w-8 sm:h-8 border border-white/50 shrink-0"
+                className="w-8 h-8 sm:w-10 sm:h-10 border-2 border-primary shrink-0"
               />
               <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-1">
-                  <span className="text-white font-semibold text-xs sm:text-sm drop-shadow-lg truncate">
-                    {profile.username || profile.full_name}
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  <span className="text-white font-semibold text-xs sm:text-sm truncate drop-shadow-lg">
+                    {currentUserId === userId ? "Your story" : profile.full_name || profile.username}
                   </span>
-                  <span className="bg-primary/90 text-primary-foreground text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded font-semibold shrink-0">
-                    P
-                  </span>
+                  <BadgeCheck className="w-3 h-3 sm:w-4 sm:h-4 text-primary fill-primary shrink-0" />
+                  <span className="text-white/70 text-xs sm:text-sm shrink-0 drop-shadow-lg">{getTimeAgo()}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-primary text-[10px] sm:text-xs drop-shadow-lg truncate">
-                    {profile.professional_title || "founder of specverse"}
-                  </span>
-                  <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-primary shrink-0" />
-                  <span className="text-white/70 text-[8px] sm:text-[10px] shrink-0">AI</span>
-                </div>
+                <span className="text-primary text-[10px] sm:text-xs flex items-center gap-1 drop-shadow-lg">
+                  <span>🎬</span> Watch full reel &gt;
+                </span>
               </div>
             </div>
-            <button className="p-1 sm:p-1.5 hover:bg-white/10 rounded-full shrink-0">
-              <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <button
+              onClick={() => navigate("/home")}
+              className="p-1.5 sm:p-2 bg-black/30 backdrop-blur-sm hover:bg-black/50 rounded-full transition-colors shrink-0"
+            >
+              <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </button>
           </div>
 
@@ -707,7 +676,7 @@ export default function StoryViewer() {
                 e.stopPropagation();
                 setIsMuted(!isMuted);
               }}
-              className="absolute top-5 sm:top-6 right-2 sm:right-3 z-30 p-1.5 sm:p-2 bg-black/50 backdrop-blur-sm rounded-full"
+              className="absolute top-14 sm:top-16 right-2 sm:right-3 z-30 p-1.5 sm:p-2 bg-black/30 backdrop-blur-sm rounded-full"
             >
               {isMuted ? (
                 <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
