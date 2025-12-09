@@ -140,6 +140,32 @@ const Profile = () => {
     );
   }, [queryClient, user?.id]);
   
+  // Optimistic save count updaters
+  const handlePostSaveChange = useCallback((postId: string, delta: number) => {
+    queryClient.setQueryData(['posts', user?.id], (old: any[]) => 
+      old?.map(p => p.id === postId ? { ...p, save_count: Math.max(0, (p.save_count || 0) + delta) } : p) || []
+    );
+  }, [queryClient, user?.id]);
+  
+  const handleReelSaveChange = useCallback((reelId: string, delta: number) => {
+    queryClient.setQueryData(['reels', user?.id], (old: any[]) => 
+      old?.map(r => r.id === reelId ? { ...r, save_count: Math.max(0, (r.save_count || 0) + delta) } : r) || []
+    );
+  }, [queryClient, user?.id]);
+  
+  // Optimistic repost count updaters
+  const handlePostRepostChange = useCallback((postId: string, delta: number) => {
+    queryClient.setQueryData(['posts', user?.id], (old: any[]) => 
+      old?.map(p => p.id === postId ? { ...p, repost_count: Math.max(0, (p.repost_count || 0) + delta) } : p) || []
+    );
+  }, [queryClient, user?.id]);
+  
+  const handleReelRepostChange = useCallback((reelId: string, delta: number) => {
+    queryClient.setQueryData(['reels', user?.id], (old: any[]) => 
+      old?.map(r => r.id === reelId ? { ...r, repost_count: Math.max(0, (r.repost_count || 0) + delta) } : r) || []
+    );
+  }, [queryClient, user?.id]);
+  
   // Optimistic like hooks for instant updates
   const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', user?.id, handlePostLikeChange);
   const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', user?.id, handleReelLikeChange);
@@ -544,6 +570,8 @@ const Profile = () => {
                       onFullscreen={() => navigate('/reels', { state: { scrollToReelId: item.id } })}
                       onViewLikes={() => {}}
                       getBadgeColor={getBadgeColor}
+                      onSaveChange={(delta) => item.type === 'post' ? handlePostSaveChange(item.id, delta) : handleReelSaveChange(item.id, delta)}
+                      onRepostChange={(delta) => item.type === 'post' ? handlePostRepostChange(item.id, delta) : handleReelRepostChange(item.id, delta)}
                     />
                   ))}
               </div>

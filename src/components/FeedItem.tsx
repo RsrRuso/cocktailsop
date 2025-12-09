@@ -32,6 +32,8 @@ interface FeedItemProps {
   onFullscreen: () => void;
   onViewLikes: () => void;
   getBadgeColor: (level: string) => string;
+  onSaveChange?: (delta: number) => void;
+  onRepostChange?: (delta: number) => void;
 }
 
 export const FeedItem = memo(({
@@ -47,7 +49,9 @@ export const FeedItem = memo(({
   onToggleMute,
   onFullscreen,
   onViewLikes,
-  getBadgeColor
+  getBadgeColor,
+  onSaveChange,
+  onRepostChange
 }: FeedItemProps) => {
   const navigate = useNavigate();
   const [showInsights, setShowInsights] = useState(false);
@@ -108,37 +112,42 @@ export const FeedItem = memo(({
       return;
     }
     
+    const wasReposted = isReposted;
+    
+    // Optimistic UI update
+    setIsReposted(!wasReposted);
+    onRepostChange?.(wasReposted ? -1 : 1);
+    
     try {
       if (item.type === 'post') {
-        if (isReposted) {
-          await supabase.from('post_reposts').delete().eq('post_id', item.id).eq('user_id', currentUserId);
-          setIsReposted(false);
+        if (wasReposted) {
+          const { error } = await supabase.from('post_reposts').delete().eq('post_id', item.id).eq('user_id', currentUserId);
+          if (error) throw error;
           toast.success("Repost removed");
         } else {
-          await supabase.from('post_reposts').insert({ post_id: item.id, user_id: currentUserId });
-          setIsReposted(true);
+          const { error } = await supabase.from('post_reposts').insert({ post_id: item.id, user_id: currentUserId });
+          if (error && error.code !== '23505') throw error;
           toast.success("Reposted to your profile");
         }
       } else {
-        if (isReposted) {
-          await supabase.from('reel_reposts').delete().eq('reel_id', item.id).eq('user_id', currentUserId);
-          setIsReposted(false);
+        if (wasReposted) {
+          const { error } = await supabase.from('reel_reposts').delete().eq('reel_id', item.id).eq('user_id', currentUserId);
+          if (error) throw error;
           toast.success("Repost removed");
         } else {
-          await supabase.from('reel_reposts').insert({ reel_id: item.id, user_id: currentUserId });
-          setIsReposted(true);
+          const { error } = await supabase.from('reel_reposts').insert({ reel_id: item.id, user_id: currentUserId });
+          if (error && error.code !== '23505') throw error;
           toast.success("Reposted to your profile");
         }
       }
     } catch (error: any) {
-      if (error?.code === '23505') {
-        toast.info("Already reposted");
-      } else {
-        console.error("Repost error:", error);
-        toast.error("Failed to repost");
-      }
+      // Revert on error
+      setIsReposted(wasReposted);
+      onRepostChange?.(wasReposted ? 1 : -1);
+      console.error("Repost error:", error);
+      toast.error("Failed to repost");
     }
-  }, [currentUserId, item.id, item.type, isReposted]);
+  }, [currentUserId, item.id, item.type, isReposted, onRepostChange]);
 
   // Handle save/bookmark
   const handleSave = useCallback(async () => {
@@ -147,37 +156,42 @@ export const FeedItem = memo(({
       return;
     }
     
+    const wasSaved = isSaved;
+    
+    // Optimistic UI update
+    setIsSaved(!wasSaved);
+    onSaveChange?.(wasSaved ? -1 : 1);
+    
     try {
       if (item.type === 'post') {
-        if (isSaved) {
-          await supabase.from('post_saves').delete().eq('post_id', item.id).eq('user_id', currentUserId);
-          setIsSaved(false);
+        if (wasSaved) {
+          const { error } = await supabase.from('post_saves').delete().eq('post_id', item.id).eq('user_id', currentUserId);
+          if (error) throw error;
           toast.success("Removed from saved");
         } else {
-          await supabase.from('post_saves').insert({ post_id: item.id, user_id: currentUserId });
-          setIsSaved(true);
+          const { error } = await supabase.from('post_saves').insert({ post_id: item.id, user_id: currentUserId });
+          if (error && error.code !== '23505') throw error;
           toast.success("Saved to collection");
         }
       } else {
-        if (isSaved) {
-          await supabase.from('reel_saves').delete().eq('reel_id', item.id).eq('user_id', currentUserId);
-          setIsSaved(false);
+        if (wasSaved) {
+          const { error } = await supabase.from('reel_saves').delete().eq('reel_id', item.id).eq('user_id', currentUserId);
+          if (error) throw error;
           toast.success("Removed from saved");
         } else {
-          await supabase.from('reel_saves').insert({ reel_id: item.id, user_id: currentUserId });
-          setIsSaved(true);
+          const { error } = await supabase.from('reel_saves').insert({ reel_id: item.id, user_id: currentUserId });
+          if (error && error.code !== '23505') throw error;
           toast.success("Saved to collection");
         }
       }
     } catch (error: any) {
-      if (error?.code === '23505') {
-        toast.info("Already saved");
-      } else {
-        console.error("Save error:", error);
-        toast.error("Failed to save");
-      }
+      // Revert on error
+      setIsSaved(wasSaved);
+      onSaveChange?.(wasSaved ? 1 : -1);
+      console.error("Save error:", error);
+      toast.error("Failed to save");
     }
-  }, [currentUserId, item.id, item.type, isSaved]);
+  }, [currentUserId, item.id, item.type, isSaved, onSaveChange]);
 
   return (
     <div className="relative w-full bg-background">
