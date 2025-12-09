@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { X, Heart, Brain, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { X, Heart, Brain, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles, Eye, ChevronUp, MessageCircle } from "lucide-react";
+import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { toast } from "sonner";
 import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
 import { LivestreamComments } from "@/components/story/LivestreamComments";
 import { StoryInsights } from "@/components/story/StoryInsights";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
   SheetContent,
@@ -78,9 +79,12 @@ export default function StoryViewer() {
   const [isPaused, setIsPaused] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
+  const [showViewersPanel, setShowViewersPanel] = useState(false);
   const [flyingHearts, setFlyingHearts] = useState<FlyingHeart[]>([]);
   const [isMuted, setIsMuted] = useState(false);
   const [recentViewers, setRecentViewers] = useState<Profile[]>([]);
+  const [allViewers, setAllViewers] = useState<Profile[]>([]);
+  const [allLikers, setAllLikers] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [mediaLoaded, setMediaLoaded] = useState(true); // Start as true for instant display
   
@@ -225,13 +229,39 @@ export default function StoryViewer() {
   const fetchRecentViewers = useCallback(async (storyId: string) => {
     const { data } = await supabase
       .from("story_views")
-      .select("user_id, profiles!inner(id, avatar_url, full_name)")
+      .select("user_id, profiles!inner(id, avatar_url, full_name, username)")
       .eq("story_id", storyId)
       .order("viewed_at", { ascending: false })
       .limit(3);
     
     if (data) {
       setRecentViewers(data.map((v: any) => v.profiles));
+    }
+  }, []);
+
+  // Fetch all viewers for the panel
+  const fetchAllViewers = useCallback(async (storyId: string) => {
+    const { data } = await supabase
+      .from("story_views")
+      .select("user_id, viewed_at, profiles!inner(id, avatar_url, full_name, username)")
+      .eq("story_id", storyId)
+      .order("viewed_at", { ascending: false });
+    
+    if (data) {
+      setAllViewers(data.map((v: any) => v.profiles));
+    }
+  }, []);
+
+  // Fetch all likers
+  const fetchAllLikers = useCallback(async (storyId: string) => {
+    const { data } = await supabase
+      .from("story_likes")
+      .select("user_id, created_at, profiles!inner(id, avatar_url, full_name, username)")
+      .eq("story_id", storyId)
+      .order("created_at", { ascending: false });
+    
+    if (data) {
+      setAllLikers(data.map((l: any) => l.profiles));
     }
   }, []);
 
@@ -463,8 +493,16 @@ export default function StoryViewer() {
         if (deltaX > 0) goToPrevious();
         else goToNext();
       } else {
-        if (deltaY < 0) setShowComments(true);
-        else if (deltaY > 50 && !showComments) navigate("/home");
+        // Swipe UP to open viewers panel
+        if (deltaY < -50) {
+          setShowViewersPanel(true);
+          if (currentStory) {
+            fetchAllViewers(currentStory.id);
+            fetchAllLikers(currentStory.id);
+          }
+        }
+        // Swipe DOWN to close or go home
+        else if (deltaY > 50 && !showComments && !showViewersPanel) navigate("/home");
       }
       return;
     }
@@ -824,6 +862,147 @@ export default function StoryViewer() {
           <span className="text-white/80 text-xs">More</span>
         </button>
       </div>
+
+      {/* Swipe Up Indicator */}
+      {currentUserId === userId && !showViewersPanel && (
+        <motion.div 
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 pointer-events-none"
+          animate={{ y: [0, -5, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          <ChevronUp className="w-5 h-5 text-white/60" />
+          <span className="text-white/60 text-xs">Swipe up for viewers</span>
+        </motion.div>
+      )}
+
+      {/* Viewers & Likers Panel - Instagram style bottom sheet */}
+      <AnimatePresence>
+        {showViewersPanel && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50 z-40"
+              onClick={() => setShowViewersPanel(false)}
+            />
+            
+            {/* Bottom Sheet */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={0.2}
+              onDragEnd={(_, info: PanInfo) => {
+                if (info.offset.y > 100) setShowViewersPanel(false);
+              }}
+              className="absolute bottom-0 left-0 right-0 bg-background rounded-t-3xl z-50 max-h-[70vh] overflow-hidden"
+            >
+              {/* Handle bar */}
+              <div className="flex justify-center pt-3 pb-2">
+                <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
+              </div>
+              
+              {/* Header */}
+              <div className="px-4 pb-3 border-b border-border">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Story Activity</h3>
+                  <button 
+                    onClick={() => setShowViewersPanel(false)}
+                    className="p-1 hover:bg-muted rounded-full"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Eye className="w-4 h-4" />
+                    {allViewers.length} views
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Heart className="w-4 h-4 text-red-500" />
+                    {allLikers.length} likes
+                  </span>
+                </div>
+              </div>
+              
+              {/* Content */}
+              <ScrollArea className="h-[calc(70vh-100px)]">
+                {/* Likers Section */}
+                {allLikers.length > 0 && (
+                  <div className="px-4 py-3">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                      <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+                      Liked by
+                    </h4>
+                    <div className="space-y-3">
+                      {allLikers.map((liker) => (
+                        <div key={liker.id} className="flex items-center gap-3">
+                          <OptimizedAvatar
+                            src={liker.avatar_url}
+                            alt={liker.full_name || "User"}
+                            className="w-10 h-10"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">
+                              {liker.full_name || liker.username}
+                            </p>
+                            {liker.username && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                @{liker.username}
+                              </p>
+                            )}
+                          </div>
+                          <Heart className="w-4 h-4 text-red-500 fill-red-500 shrink-0" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Viewers Section */}
+                <div className="px-4 py-3">
+                  <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                    <Eye className="w-4 h-4" />
+                    Viewers
+                  </h4>
+                  {allViewers.length > 0 ? (
+                    <div className="space-y-3">
+                      {allViewers.map((viewer) => (
+                        <div key={viewer.id} className="flex items-center gap-3">
+                          <OptimizedAvatar
+                            src={viewer.avatar_url}
+                            alt={viewer.full_name || "User"}
+                            className="w-10 h-10"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">
+                              {viewer.full_name || viewer.username}
+                            </p>
+                            {viewer.username && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                @{viewer.username}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No viewers yet
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Story Insights */}
       <Sheet open={showInsights} onOpenChange={setShowInsights}>
