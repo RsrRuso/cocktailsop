@@ -135,11 +135,11 @@ export const FeedItem = memo(({
         <p className="text-sm px-3 py-2 text-foreground">{item.content}</p>
       )}
 
-      {/* Media - Instagram Square Aspect Ratio */}
+      {/* Media - Instagram 4:5 Aspect Ratio for Feed */}
       {item.media_urls && item.media_urls.length > 0 && (
         <div className="w-full">
           {item.media_urls.map((url: string, idx: number) => (
-            <div key={idx} className="relative w-full aspect-square bg-black">
+            <div key={idx} className={`relative w-full bg-black ${item.type === 'reel' ? 'aspect-[4/5]' : 'aspect-[4/5]'}`}>
               {url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('audio') ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-black p-4">
                   <audio src={url} controls className="w-full" />
