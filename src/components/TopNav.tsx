@@ -272,9 +272,9 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 onClick={lightTap}
                 className="flex items-center gap-1 hover:opacity-80 transition-opacity"
               >
-                <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary via-purple-500 to-cyan-400 bg-clip-text text-transparent italic">
-                  SpecVerse
-                </span>
+              <span className="text-xl sm:text-2xl font-bold text-foreground italic">
+                SpecVerse
+              </span>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
