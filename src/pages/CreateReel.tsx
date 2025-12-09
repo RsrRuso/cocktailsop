@@ -5,10 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap } from "lucide-react";
+import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2 } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
+import MusicSelector from "@/components/music-box/MusicSelector";
 
 const CreateReel = () => {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ const CreateReel = () => {
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showMusicSelector, setShowMusicSelector] = useState(false);
+  const [selectedMusic, setSelectedMusic] = useState<{ id: string; title: string; artist: string; preview_url: string } | null>(null);
   const { uploadState, uploadSingle } = usePowerfulUpload();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -96,6 +99,8 @@ const CreateReel = () => {
         video_url: result.publicUrl,
         caption: caption || "",
         thumbnail_url: result.publicUrl,
+        music_track_id: selectedMusic?.id || null,
+        music_url: selectedMusic?.preview_url || null,
       });
 
       // Ignore duplicate key errors (already uploaded)
@@ -173,6 +178,20 @@ const CreateReel = () => {
                   <X className="w-5 h-5 text-white" />
                 </button>
               </div>
+
+              {/* Music Selection */}
+              <Button
+                variant="outline"
+                className="w-full glass-hover justify-start gap-3"
+                onClick={() => setShowMusicSelector(true)}
+              >
+                <Music2 className="w-5 h-5 text-primary" />
+                {selectedMusic ? (
+                  <span className="truncate">{selectedMusic.title} - {selectedMusic.artist}</span>
+                ) : (
+                  <span className="text-muted-foreground">Add music from Music Box</span>
+                )}
+              </Button>
 
               <Textarea
                 placeholder="Write a caption..."
@@ -261,6 +280,22 @@ const CreateReel = () => {
           )}
         </div>
       </div>
+
+      {/* Music Selector Dialog */}
+      <MusicSelector
+        open={showMusicSelector}
+        onOpenChange={setShowMusicSelector}
+        onSelect={(track) => {
+          setSelectedMusic({
+            id: track.id,
+            title: track.title,
+            artist: track.profiles?.username || 'Unknown',
+            preview_url: track.preview_url || track.original_url
+          });
+          setShowMusicSelector(false);
+          toast.success(`Added: ${track.title}`);
+        }}
+      />
     </div>
   );
 };

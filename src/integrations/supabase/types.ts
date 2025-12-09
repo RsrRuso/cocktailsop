@@ -8063,6 +8063,7 @@ export type Database = {
           id: string
           like_count: number | null
           media_urls: string[] | null
+          music_track_id: string | null
           updated_at: string | null
           user_id: string
           view_count: number | null
@@ -8074,6 +8075,7 @@ export type Database = {
           id?: string
           like_count?: number | null
           media_urls?: string[] | null
+          music_track_id?: string | null
           updated_at?: string | null
           user_id: string
           view_count?: number | null
@@ -8085,11 +8087,19 @@ export type Database = {
           id?: string
           like_count?: number | null
           media_urls?: string[] | null
+          music_track_id?: string | null
           updated_at?: string | null
           user_id?: string
           view_count?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_music_track_id_fkey"
+            columns: ["music_track_id"]
+            isOneToOne: false
+            referencedRelation: "music_tracks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_user_id_fkey"
             columns: ["user_id"]
@@ -8579,6 +8589,7 @@ export type Database = {
           created_at: string | null
           id: string
           like_count: number | null
+          music_track_id: string | null
           thumbnail_url: string | null
           user_id: string
           video_url: string
@@ -8590,6 +8601,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           like_count?: number | null
+          music_track_id?: string | null
           thumbnail_url?: string | null
           user_id: string
           video_url: string
@@ -8601,12 +8613,20 @@ export type Database = {
           created_at?: string | null
           id?: string
           like_count?: number | null
+          music_track_id?: string | null
           thumbnail_url?: string | null
           user_id?: string
           video_url?: string
           view_count?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "reels_music_track_id_fkey"
+            columns: ["music_track_id"]
+            isOneToOne: false
+            referencedRelation: "music_tracks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reels_user_id_fkey"
             columns: ["user_id"]
@@ -9173,6 +9193,7 @@ export type Database = {
           media_types: string[]
           media_urls: string[]
           music_data: Json | null
+          music_track_id: string | null
           text_overlays: Json | null
           trim_data: Json | null
           user_id: string
@@ -9188,6 +9209,7 @@ export type Database = {
           media_types?: string[]
           media_urls?: string[]
           music_data?: Json | null
+          music_track_id?: string | null
           text_overlays?: Json | null
           trim_data?: Json | null
           user_id: string
@@ -9203,12 +9225,20 @@ export type Database = {
           media_types?: string[]
           media_urls?: string[]
           music_data?: Json | null
+          music_track_id?: string | null
           text_overlays?: Json | null
           trim_data?: Json | null
           user_id?: string
           view_count?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "stories_music_track_id_fkey"
+            columns: ["music_track_id"]
+            isOneToOne: false
+            referencedRelation: "music_tracks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stories_user_id_fkey"
             columns: ["user_id"]
@@ -10757,6 +10787,7 @@ export type Database = {
       }
       notify_friends_birthday: { Args: never; Returns: undefined }
       recalculate_follow_counts: { Args: never; Returns: undefined }
+      refresh_music_popularity: { Args: never; Returns: undefined }
       update_business_analytics: { Args: never; Returns: undefined }
       update_expired_events: { Args: never; Returns: undefined }
     }
