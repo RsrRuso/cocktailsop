@@ -1,10 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Type, Music2, Sparkles, Download, Pen, Smile, MoreHorizontal, ArrowRight, Upload, Disc3, Brain, Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { X, Type, Music2, Sparkles, Download, Pen, Smile, MoreHorizontal, ArrowRight, Upload, Disc3, Brain, Play, Pause, Volume2, VolumeX, MapPin, AtSign, Wand2, Save, Sliders } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import MusicSelectionDialog from "./MusicSelectionDialog";
 import { SmartStoryFeatures } from "./story/SmartStoryFeatures";
+import { LocationPicker } from "./story/LocationPicker";
+import { PeopleMentionPicker } from "./story/PeopleMentionPicker";
+import { StickerPicker } from "./story/StickerPicker";
+import { FiltersPicker } from "./story/FiltersPicker";
+import { DrawingCanvas } from "./story/DrawingCanvas";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +32,29 @@ interface TextOverlay {
   size: number;
 }
 
+interface Sticker {
+  id: string;
+  emoji: string;
+  x: number;
+  y: number;
+  size: number;
+}
+
+interface Location {
+  id: string;
+  name: string;
+  address: string;
+  category: string;
+  icon?: React.ReactNode;
+}
+
+interface TaggedPerson {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
 interface StoryEditorProps {
   media: File;
   mediaUrl: string;
@@ -39,6 +67,9 @@ interface StoryEditorProps {
     trimEnd?: number;
     caption?: string;
     shareOption?: "story" | "close-friends";
+    location?: Location;
+    taggedPeople?: TaggedPerson[];
+    stickers?: Sticker[];
   }) => void;
   onCancel: () => void;
 }
@@ -47,13 +78,19 @@ const textColors = ["#FFFFFF", "#000000", "#FF5733", "#33FF57", "#3357FF", "#F33
 
 export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: StoryEditorProps) => {
   const { user } = useAuth();
-  const [activeTool, setActiveTool] = useState<"text" | "stickers" | "audio" | "effects" | "draw" | null>(null);
+  const [activeTool, setActiveTool] = useState<"text" | "stickers" | "audio" | "effects" | "draw" | "filters" | null>(null);
   const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
+  const [stickers, setStickers] = useState<Sticker[]>([]);
   const [currentText, setCurrentText] = useState("");
   const [currentColor, setCurrentColor] = useState("#FFFFFF");
   const [caption, setCaption] = useState("");
   const [showMusicDialog, setShowMusicDialog] = useState(false);
   const [showSmartFeatures, setShowSmartFeatures] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showPeoplePicker, setShowPeoplePicker] = useState(false);
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [showDrawing, setShowDrawing] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<string | null>(null);
   const [selectedMusicFile, setSelectedMusicFile] = useState<File | null>(null);
   const [uploadingMusic, setUploadingMusic] = useState(false);
@@ -64,8 +101,14 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
   const [musicDuration, setMusicDuration] = useState(0);
   const [musicCurrentTime, setMusicCurrentTime] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
-  const [trimEnd, setTrimEnd] = useState(45); // Max 45 seconds
+  const [trimEnd, setTrimEnd] = useState(45);
   const [musicName, setMusicName] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [taggedPeople, setTaggedPeople] = useState<TaggedPerson[]>([]);
+  const [currentFilter, setCurrentFilter] = useState("none");
+  const [filterCss, setFilterCss] = useState("none");
+  const [drawingPaths, setDrawingPaths] = useState<any[]>([]);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const musicFileInputRef = useRef<HTMLInputElement>(null);
@@ -107,9 +150,7 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
     if (audioRef.current) {
       const duration = audioRef.current.duration;
       setMusicDuration(duration);
-      // Set trim end to min of duration or 45 seconds
       setTrimEnd(Math.min(duration, 45));
-      // Start playback from trim start
       audioRef.current.currentTime = trimStart;
     }
   };
@@ -129,18 +170,6 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
       setMusicCurrentTime(trimStart);
     }
   }, [musicCurrentTime, trimStart, trimEnd]);
-
-  const handleTrimChange = (values: number[]) => {
-    const [start, end] = values;
-    const maxDuration = 45;
-    const actualEnd = Math.min(end, start + maxDuration, musicDuration);
-    setTrimStart(start);
-    setTrimEnd(actualEnd);
-    if (audioRef.current && audioRef.current.currentTime < start) {
-      audioRef.current.currentTime = start;
-      setMusicCurrentTime(start);
-    }
-  };
 
   const getTrimDuration = () => {
     return Math.min(trimEnd - trimStart, 45);
@@ -174,17 +203,31 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
     setTextOverlays(textOverlays.filter(t => t.id !== id));
   };
 
+  const addSticker = (sticker: { emoji: string }) => {
+    const newSticker: Sticker = {
+      id: Date.now().toString(),
+      emoji: sticker.emoji,
+      x: 50 + Math.random() * 20 - 10,
+      y: 50 + Math.random() * 20 - 10,
+      size: 48,
+    };
+    setStickers([...stickers, newSticker]);
+    toast.success("Sticker added!");
+  };
+
+  const removeSticker = (id: string) => {
+    setStickers(stickers.filter(s => s.id !== id));
+  };
+
   const handleMusicFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('audio/')) {
       toast.error("Please select a valid audio file");
       return;
     }
 
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       toast.error("Audio file must be less than 10MB");
       return;
@@ -198,7 +241,6 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
         return;
       }
 
-      // Upload to Supabase storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
@@ -208,7 +250,6 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('music')
         .getPublicUrl(fileName);
@@ -236,13 +277,31 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
     onSave({
       musicTrackId: selectedMusic || undefined,
       textOverlays,
-      filter: "",
+      filter: filterCss,
       trimStart: selectedMusic ? trimStart : undefined,
       trimEnd: selectedMusic ? trimEnd : undefined,
       caption,
       shareOption,
+      location: selectedLocation || undefined,
+      taggedPeople: taggedPeople.length > 0 ? taggedPeople : undefined,
+      stickers: stickers.length > 0 ? stickers : undefined,
     });
   };
+
+  // Drawing mode
+  if (showDrawing) {
+    return (
+      <DrawingCanvas
+        width={1080}
+        height={1920}
+        onSave={(paths) => {
+          setDrawingPaths(paths);
+          setShowDrawing(false);
+        }}
+        onClose={() => setShowDrawing(false)}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
@@ -257,15 +316,25 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
           <X className="w-6 h-6" />
         </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowSmartFeatures(true)}
-          className="text-white hover:bg-white/10 gap-2 bg-white/5 backdrop-blur-sm"
-        >
-          <Brain className="w-4 h-4" />
-          AI Tools
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => toast.info("Saved to drafts")}
+            className="text-white hover:bg-white/10 gap-1 bg-white/5 backdrop-blur-sm"
+          >
+            <Save className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSmartFeatures(true)}
+            className="text-white hover:bg-white/10 gap-1 bg-white/5 backdrop-blur-sm"
+          >
+            <Brain className="w-4 h-4" />
+            AI
+          </Button>
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -277,6 +346,7 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
               ref={videoRef}
               src={mediaUrl}
               className="w-full h-full object-cover"
+              style={{ filter: filterCss }}
               loop
               muted
               autoPlay
@@ -287,7 +357,32 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
               src={mediaUrl}
               alt="Story"
               className="w-full h-full object-cover"
+              style={{ filter: filterCss }}
             />
+          )}
+          
+          {/* Location Badge */}
+          {selectedLocation && (
+            <div className="absolute top-20 left-4 bg-white/20 backdrop-blur-xl rounded-full px-3 py-1.5 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-white" />
+              <span className="text-white text-sm font-medium">{selectedLocation.name}</span>
+              <button onClick={() => setSelectedLocation(null)}>
+                <X className="w-3 h-3 text-white/70" />
+              </button>
+            </div>
+          )}
+
+          {/* Tagged People Badge */}
+          {taggedPeople.length > 0 && (
+            <div className="absolute top-20 right-4 bg-white/20 backdrop-blur-xl rounded-full px-3 py-1.5 flex items-center gap-2">
+              <AtSign className="w-4 h-4 text-white" />
+              <span className="text-white text-sm font-medium">
+                {taggedPeople.length} {taggedPeople.length === 1 ? 'person' : 'people'}
+              </span>
+              <button onClick={() => setTaggedPeople([])}>
+                <X className="w-3 h-3 text-white/70" />
+              </button>
+            </div>
           )}
           
           {/* Text Overlays */}
@@ -312,14 +407,41 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
                 >
                   {overlay.text}
                 </p>
+                <button
+                  onClick={() => removeTextOverlay(overlay.id)}
+                  className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
               </div>
+            </div>
+          ))}
+
+          {/* Stickers */}
+          {stickers.map((sticker) => (
+            <div
+              key={sticker.id}
+              className="absolute cursor-move group"
+              style={{
+                left: `${sticker.x}%`,
+                top: `${sticker.y}%`,
+                transform: "translate(-50%, -50%)",
+                fontSize: `${sticker.size}px`,
+              }}
+            >
+              <span>{sticker.emoji}</span>
+              <button
+                onClick={() => removeSticker(sticker.id)}
+                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="w-3 h-3 text-white" />
+              </button>
             </div>
           ))}
           
           {/* Music Player - Instagram Style */}
           {selectedMusic && (
             <>
-              {/* Hidden Audio Element */}
               <audio
                 ref={audioRef}
                 src={selectedMusic}
@@ -333,7 +455,6 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
                 }}
               />
               
-              {/* Music Controls Overlay - Compact Mobile */}
               <div className="absolute top-16 left-2 right-16 bg-black/70 backdrop-blur-xl rounded-xl p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <button
@@ -382,7 +503,6 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
                   </div>
                 </div>
                 
-                {/* Playback Progress - Compact */}
                 <div className="flex items-center gap-2">
                   <span className="text-white/60 text-[10px] w-8">{formatTime(musicCurrentTime - trimStart)}</span>
                   <Slider
@@ -396,7 +516,6 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
                   <span className="text-white/60 text-[10px] w-8">{formatTime(getTrimDuration())}</span>
                 </div>
 
-                {/* Trim Controls - Compact */}
                 {musicDuration > 0 && (
                   <div className="space-y-1 pt-1 border-t border-white/10">
                     <div className="flex items-center justify-between">
@@ -439,8 +558,9 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
           )}
         </div>
 
-        {/* Right Side Toolbar - Mobile Optimized */}
+        {/* Right Side Toolbar - Instagram Style */}
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-3">
+          {/* Text Tool */}
           <button
             onClick={() => setActiveTool(activeTool === "text" ? null : "text")}
             className="flex flex-col items-center gap-0.5"
@@ -453,6 +573,20 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
             </div>
           </button>
 
+          {/* Stickers Tool */}
+          <button
+            onClick={() => setShowStickerPicker(true)}
+            className="flex flex-col items-center gap-0.5"
+          >
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+              stickers.length > 0 ? "bg-white text-black" : "bg-white/20 text-white"
+            )}>
+              <Smile className="w-5 h-5" />
+            </div>
+          </button>
+
+          {/* Music Tool */}
           <div className="flex flex-col items-center gap-0.5">
             <button
               onClick={() => setShowMusicDialog(true)}
@@ -477,7 +611,6 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
                 <Upload className="w-5 h-5" />
               )}
             </button>
-            <span className="text-white text-[10px]">Audio</span>
             
             <input
               ref={musicFileInputRef}
@@ -488,16 +621,66 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
             />
           </div>
 
+          {/* Filters Tool */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex flex-col items-center gap-0.5"
+          >
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+              currentFilter !== "none" ? "bg-white text-black" : "bg-white/20 text-white"
+            )}>
+              <Sliders className="w-5 h-5" />
+            </div>
+          </button>
+
+          {/* Location Tool */}
+          <button
+            onClick={() => setShowLocationPicker(true)}
+            className="flex flex-col items-center gap-0.5"
+          >
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+              selectedLocation ? "bg-white text-black" : "bg-white/20 text-white"
+            )}>
+              <MapPin className="w-5 h-5" />
+            </div>
+          </button>
+
+          {/* Tag People Tool */}
+          <button
+            onClick={() => setShowPeoplePicker(true)}
+            className="flex flex-col items-center gap-0.5"
+          >
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+              taggedPeople.length > 0 ? "bg-white text-black" : "bg-white/20 text-white"
+            )}>
+              <AtSign className="w-5 h-5" />
+            </div>
+          </button>
+
+          {/* Draw Tool */}
+          <button
+            onClick={() => setShowDrawing(true)}
+            className="flex flex-col items-center gap-0.5"
+          >
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+              <Pen className="w-5 h-5" />
+            </div>
+          </button>
+
+          {/* AI Tools */}
           <button
             onClick={() => setShowSmartFeatures(true)}
             className="flex flex-col items-center gap-0.5"
           >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg">
-              <Brain className="w-5 h-5" />
+              <Wand2 className="w-5 h-5" />
             </div>
-            <span className="text-white text-[10px]">AI</span>
           </button>
 
+          {/* Effects */}
           <button
             onClick={() => toast.info("Effects coming soon!")}
             className="flex flex-col items-center gap-0.5"
@@ -506,17 +689,22 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
               <Sparkles className="w-5 h-5" />
             </div>
           </button>
-
-          <button
-            onClick={() => toast.info("Draw coming soon!")}
-            className="flex flex-col items-center gap-0.5"
-          >
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
-              <Pen className="w-5 h-5" />
-            </div>
-          </button>
         </div>
       </div>
+
+      {/* Filters Panel */}
+      {showFilters && (
+        <div className="absolute bottom-32 left-0 right-0 bg-black/90 backdrop-blur-xl">
+          <FiltersPicker
+            currentFilter={currentFilter}
+            onSelect={(filter) => {
+              setCurrentFilter(filter.id);
+              setFilterCss(filter.css);
+            }}
+            mediaUrl={mediaUrl}
+          />
+        </div>
+      )}
 
       {/* Text Input Panel */}
       {activeTool === "text" && (
@@ -556,7 +744,7 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
         </div>
       )}
 
-      {/* Bottom Section - Caption & Share - Mobile Optimized */}
+      {/* Bottom Section - Caption & Share */}
       <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-3 pt-12">
         <Input
           value={caption}
@@ -592,7 +780,7 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
             <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
               <Sparkles className="w-2.5 h-2.5 text-white" />
             </div>
-            <span className="text-white text-sm font-medium">Close</span>
+            <span className="text-white text-sm font-medium">Close Friends</span>
           </button>
 
           <button
@@ -604,11 +792,11 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
         </div>
       </div>
 
+      {/* Dialogs */}
       <MusicSelectionDialog
         open={showMusicDialog}
         onOpenChange={setShowMusicDialog}
         onSelect={(track) => {
-          // Only use preview_audio - the actual audio file URL
           const audioUrl = track.preview_audio;
           
           if (audioUrl && audioUrl.startsWith('http')) {
@@ -619,9 +807,39 @@ export const StoryEditor = ({ media, mediaUrl, isVideo, onSave, onCancel }: Stor
             setTrimEnd(45);
             toast.success(`Added: ${track.title} by ${track.artist}`);
           } else {
-            toast.error("This track doesn't have a playable preview. Try another track with 🎵 icon!");
+            toast.error("This track doesn't have a playable preview. Try another track!");
           }
           setShowMusicDialog(false);
+        }}
+      />
+
+      <LocationPicker
+        open={showLocationPicker}
+        onOpenChange={setShowLocationPicker}
+        onSelect={(location) => {
+          setSelectedLocation(location);
+          toast.success(`Location added: ${location.name}`);
+        }}
+        currentLocation={selectedLocation}
+      />
+
+      <PeopleMentionPicker
+        open={showPeoplePicker}
+        onOpenChange={setShowPeoplePicker}
+        onSelect={(people) => {
+          setTaggedPeople(people);
+          if (people.length > 0) {
+            toast.success(`Tagged ${people.length} ${people.length === 1 ? 'person' : 'people'}`);
+          }
+        }}
+        selectedPeople={taggedPeople}
+      />
+
+      <StickerPicker
+        open={showStickerPicker}
+        onOpenChange={setShowStickerPicker}
+        onSelect={(sticker) => {
+          addSticker(sticker);
         }}
       />
 
