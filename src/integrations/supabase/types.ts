@@ -7302,6 +7302,47 @@ export type Database = {
         }
         Relationships: []
       }
+      music_popularity: {
+        Row: {
+          id: string
+          last_updated: string
+          like_count: number | null
+          save_count: number | null
+          share_count: number | null
+          track_id: string
+          usage_count: number | null
+          usage_score: number | null
+        }
+        Insert: {
+          id?: string
+          last_updated?: string
+          like_count?: number | null
+          save_count?: number | null
+          share_count?: number | null
+          track_id: string
+          usage_count?: number | null
+          usage_score?: number | null
+        }
+        Update: {
+          id?: string
+          last_updated?: string
+          like_count?: number | null
+          save_count?: number | null
+          share_count?: number | null
+          track_id?: string
+          usage_count?: number | null
+          usage_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "music_popularity_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: true
+            referencedRelation: "music_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       music_share_comments: {
         Row: {
           content: string
@@ -7404,6 +7445,133 @@ export type Database = {
           },
           {
             foreignKeyName: "music_shares_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_secure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      music_tracks: {
+        Row: {
+          bpm: number | null
+          category: string | null
+          created_at: string
+          duration_sec: number | null
+          file_size_bytes: number | null
+          format: string | null
+          id: string
+          original_url: string | null
+          preview_url: string | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          uploaded_by: string
+          waveform_data: Json | null
+        }
+        Insert: {
+          bpm?: number | null
+          category?: string | null
+          created_at?: string
+          duration_sec?: number | null
+          file_size_bytes?: number | null
+          format?: string | null
+          id?: string
+          original_url?: string | null
+          preview_url?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          uploaded_by: string
+          waveform_data?: Json | null
+        }
+        Update: {
+          bpm?: number | null
+          category?: string | null
+          created_at?: string
+          duration_sec?: number | null
+          file_size_bytes?: number | null
+          format?: string | null
+          id?: string
+          original_url?: string | null
+          preview_url?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          uploaded_by?: string
+          waveform_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "music_tracks_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "music_tracks_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_secure"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      music_usage: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string
+          id: string
+          track_id: string
+          trim_end_sec: number | null
+          trim_start_sec: number | null
+          user_id: string
+          volume: number | null
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string
+          id?: string
+          track_id: string
+          trim_end_sec?: number | null
+          trim_start_sec?: number | null
+          user_id: string
+          volume?: number | null
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          track_id?: string
+          trim_end_sec?: number | null
+          trim_start_sec?: number | null
+          user_id?: string
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "music_usage_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "music_tracks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "music_usage_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "music_usage_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_secure"
