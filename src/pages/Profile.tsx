@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOptimizedProfileData } from "@/hooks/useOptimizedProfile";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useRegionalRanking } from "@/hooks/useRegionalRanking";
 import { useCareerMetrics } from "@/hooks/useCareerMetrics";
@@ -123,9 +124,25 @@ const Profile = () => {
   const [showAddRecognition, setShowAddRecognition] = useState(false);
   const { data: userStatus, refetch: refetchStatus } = useUserStatus(user?.id || null);
   
+  // Query client for optimistic updates
+  const queryClient = useQueryClient();
+  
+  // Optimistic like count updaters
+  const handlePostLikeChange = useCallback((postId: string, delta: number) => {
+    queryClient.setQueryData(['posts', user?.id], (old: any[]) => 
+      old?.map(p => p.id === postId ? { ...p, like_count: Math.max(0, (p.like_count || 0) + delta) } : p) || []
+    );
+  }, [queryClient, user?.id]);
+  
+  const handleReelLikeChange = useCallback((reelId: string, delta: number) => {
+    queryClient.setQueryData(['reels', user?.id], (old: any[]) => 
+      old?.map(r => r.id === reelId ? { ...r, like_count: Math.max(0, (r.like_count || 0) + delta) } : r) || []
+    );
+  }, [queryClient, user?.id]);
+  
   // Optimistic like hooks for instant updates
-  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', user?.id);
-  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', user?.id);
+  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', user?.id, handlePostLikeChange);
+  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', user?.id, handleReelLikeChange);
   
   // Calculate birthday from profile data directly (no extra request)
   const birthdayData = useMemo(() => {
