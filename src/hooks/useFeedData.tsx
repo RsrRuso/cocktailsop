@@ -9,6 +9,8 @@ interface Post {
   like_count: number;
   comment_count: number;
   view_count: number;
+  repost_count: number;
+  save_count: number;
   created_at: string;
   profiles: any;
 }
@@ -21,6 +23,8 @@ interface Reel {
   like_count: number;
   comment_count: number;
   view_count: number;
+  repost_count: number;
+  save_count: number;
   created_at: string;
   profiles: any;
 }
@@ -42,7 +46,7 @@ export const useFeedData = (selectedRegion: string | null) => {
       // Fetch posts WITHOUT expensive profile joins
       const { data: postsData, error } = await supabase
         .from("posts")
-        .select("id, user_id, content, media_urls, like_count, comment_count, view_count, created_at")
+        .select("id, user_id, content, media_urls, like_count, comment_count, view_count, repost_count, save_count, created_at")
         .order("created_at", { ascending: false })
         .limit(10);
 
@@ -80,7 +84,7 @@ export const useFeedData = (selectedRegion: string | null) => {
       // Fetch reels WITHOUT expensive profile joins
       const { data: reelsData, error } = await supabase
         .from("reels")
-        .select("id, user_id, video_url, caption, like_count, comment_count, view_count, created_at")
+        .select("id, user_id, video_url, caption, like_count, comment_count, view_count, repost_count, save_count, created_at")
         .order("created_at", { ascending: false })
         .limit(10);
 

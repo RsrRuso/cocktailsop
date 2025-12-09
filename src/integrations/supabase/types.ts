@@ -8026,6 +8026,64 @@ export type Database = {
           },
         ]
       }
+      post_reposts: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reposts_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_saves: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_saves_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_views: {
         Row: {
           id: string
@@ -8064,6 +8122,8 @@ export type Database = {
           like_count: number | null
           media_urls: string[] | null
           music_track_id: string | null
+          repost_count: number | null
+          save_count: number | null
           updated_at: string | null
           user_id: string
           view_count: number | null
@@ -8076,6 +8136,8 @@ export type Database = {
           like_count?: number | null
           media_urls?: string[] | null
           music_track_id?: string | null
+          repost_count?: number | null
+          save_count?: number | null
           updated_at?: string | null
           user_id: string
           view_count?: number | null
@@ -8088,6 +8150,8 @@ export type Database = {
           like_count?: number | null
           media_urls?: string[] | null
           music_track_id?: string | null
+          repost_count?: number | null
+          save_count?: number | null
           updated_at?: string | null
           user_id?: string
           view_count?: number | null
@@ -8553,6 +8617,64 @@ export type Database = {
           },
         ]
       }
+      reel_reposts: {
+        Row: {
+          created_at: string
+          id: string
+          reel_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reel_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reel_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reel_reposts_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "reels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reel_saves: {
+        Row: {
+          created_at: string
+          id: string
+          reel_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reel_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reel_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reel_saves_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "reels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reel_views: {
         Row: {
           id: string
@@ -8590,6 +8712,8 @@ export type Database = {
           id: string
           like_count: number | null
           music_track_id: string | null
+          repost_count: number | null
+          save_count: number | null
           thumbnail_url: string | null
           user_id: string
           video_url: string
@@ -8602,6 +8726,8 @@ export type Database = {
           id?: string
           like_count?: number | null
           music_track_id?: string | null
+          repost_count?: number | null
+          save_count?: number | null
           thumbnail_url?: string | null
           user_id: string
           video_url: string
@@ -8614,6 +8740,8 @@ export type Database = {
           id?: string
           like_count?: number | null
           music_track_id?: string | null
+          repost_count?: number | null
+          save_count?: number | null
           thumbnail_url?: string | null
           user_id?: string
           video_url?: string

@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from "react";
+import { memo, useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Trash2, Edit, Volume2, VolumeX, Eye, Sparkles, Repeat2 } from "lucide-react";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -6,6 +6,8 @@ import { LazyImage } from "@/components/LazyImage";
 import { LazyVideo } from "@/components/LazyVideo";
 import { useViewTracking } from "@/hooks/useViewTracking";
 import { EngagementInsightsDialog, EnhancedLikesDialog, EnhancedCommentsDialog } from "@/components/engagement";
+import { RepostsDialog } from "@/components/engagement/RepostsDialog";
+import { SavesDialog } from "@/components/engagement/SavesDialog";
 import UserStatusIndicator from "@/components/UserStatusIndicator";
 import {
   DropdownMenu,
@@ -13,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface FeedItemProps {
@@ -50,6 +53,8 @@ export const FeedItem = memo(({
   const [showInsights, setShowInsights] = useState(false);
   const [showLikes, setShowLikes] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showReposts, setShowReposts] = useState(false);
+  const [showSaves, setShowSaves] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isReposted, setIsReposted] = useState(false);
   const [doubleTapLike, setDoubleTapLike] = useState(false);
@@ -57,6 +62,31 @@ export const FeedItem = memo(({
 
   // Track views based on content type
   useViewTracking(item.type === 'reel' ? 'reel' : 'post', item.id, currentUserId, true);
+
+  // Fetch initial repost/save state
+  useEffect(() => {
+    if (!currentUserId) return;
+    
+    const checkStatus = async () => {
+      if (item.type === 'post') {
+        const [repostRes, saveRes] = await Promise.all([
+          supabase.from('post_reposts').select('id').eq('post_id', item.id).eq('user_id', currentUserId).maybeSingle(),
+          supabase.from('post_saves').select('id').eq('post_id', item.id).eq('user_id', currentUserId).maybeSingle()
+        ]);
+        setIsReposted(!!repostRes.data);
+        setIsSaved(!!saveRes.data);
+      } else {
+        const [repostRes, saveRes] = await Promise.all([
+          supabase.from('reel_reposts').select('id').eq('reel_id', item.id).eq('user_id', currentUserId).maybeSingle(),
+          supabase.from('reel_saves').select('id').eq('reel_id', item.id).eq('user_id', currentUserId).maybeSingle()
+        ]);
+        setIsReposted(!!repostRes.data);
+        setIsSaved(!!saveRes.data);
+      }
+    };
+    
+    checkStatus();
+  }, [currentUserId, item.id, item.type]);
 
   // Handle double tap to like (Instagram style)
   const handleDoubleTap = useCallback(() => {
@@ -71,25 +101,83 @@ export const FeedItem = memo(({
     setLastTap(now);
   }, [lastTap, isLiked, onLike]);
 
-  // Handle repost (local state for now)
-  const handleRepost = useCallback(() => {
+  // Handle repost
+  const handleRepost = useCallback(async () => {
     if (!currentUserId) {
       toast.error("Please login to repost");
       return;
     }
-    setIsReposted(!isReposted);
-    toast.success(isReposted ? "Repost removed" : "Reposted to your profile");
-  }, [currentUserId, isReposted]);
+    
+    try {
+      if (item.type === 'post') {
+        if (isReposted) {
+          await supabase.from('post_reposts').delete().eq('post_id', item.id).eq('user_id', currentUserId);
+          setIsReposted(false);
+          toast.success("Repost removed");
+        } else {
+          await supabase.from('post_reposts').insert({ post_id: item.id, user_id: currentUserId });
+          setIsReposted(true);
+          toast.success("Reposted to your profile");
+        }
+      } else {
+        if (isReposted) {
+          await supabase.from('reel_reposts').delete().eq('reel_id', item.id).eq('user_id', currentUserId);
+          setIsReposted(false);
+          toast.success("Repost removed");
+        } else {
+          await supabase.from('reel_reposts').insert({ reel_id: item.id, user_id: currentUserId });
+          setIsReposted(true);
+          toast.success("Reposted to your profile");
+        }
+      }
+    } catch (error: any) {
+      if (error?.code === '23505') {
+        toast.info("Already reposted");
+      } else {
+        console.error("Repost error:", error);
+        toast.error("Failed to repost");
+      }
+    }
+  }, [currentUserId, item.id, item.type, isReposted]);
 
-  // Handle save/bookmark (local state for now)
-  const handleSave = useCallback(() => {
+  // Handle save/bookmark
+  const handleSave = useCallback(async () => {
     if (!currentUserId) {
       toast.error("Please login to save");
       return;
     }
-    setIsSaved(!isSaved);
-    toast.success(isSaved ? "Removed from saved" : "Saved to collection");
-  }, [currentUserId, isSaved]);
+    
+    try {
+      if (item.type === 'post') {
+        if (isSaved) {
+          await supabase.from('post_saves').delete().eq('post_id', item.id).eq('user_id', currentUserId);
+          setIsSaved(false);
+          toast.success("Removed from saved");
+        } else {
+          await supabase.from('post_saves').insert({ post_id: item.id, user_id: currentUserId });
+          setIsSaved(true);
+          toast.success("Saved to collection");
+        }
+      } else {
+        if (isSaved) {
+          await supabase.from('reel_saves').delete().eq('reel_id', item.id).eq('user_id', currentUserId);
+          setIsSaved(false);
+          toast.success("Removed from saved");
+        } else {
+          await supabase.from('reel_saves').insert({ reel_id: item.id, user_id: currentUserId });
+          setIsSaved(true);
+          toast.success("Saved to collection");
+        }
+      }
+    } catch (error: any) {
+      if (error?.code === '23505') {
+        toast.info("Already saved");
+      } else {
+        console.error("Save error:", error);
+        toast.error("Failed to save");
+      }
+    }
+  }, [currentUserId, item.id, item.type, isSaved]);
 
   return (
     <div className="relative w-full bg-background">
@@ -272,13 +360,33 @@ export const FeedItem = memo(({
           </div>
         </div>
 
-        {/* Likes Count */}
-        <button 
-          onClick={() => setShowLikes(true)}
-          className="mt-2 text-sm font-semibold text-foreground hover:opacity-70 transition-opacity"
-        >
-          {(item.like_count || 0).toLocaleString()} likes
-        </button>
+        {/* Engagement Stats */}
+        <div className="flex items-center gap-3 mt-2 text-sm">
+          <button 
+            onClick={() => setShowLikes(true)}
+            className="font-semibold text-foreground hover:opacity-70 transition-opacity"
+          >
+            {(item.like_count || 0).toLocaleString()} likes
+          </button>
+          
+          {(item.repost_count || 0) > 0 && (
+            <button 
+              onClick={() => setShowReposts(true)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {item.repost_count} reposts
+            </button>
+          )}
+          
+          {(item.save_count || 0) > 0 && (
+            <button 
+              onClick={() => setShowSaves(true)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {item.save_count} saves
+            </button>
+          )}
+        </div>
 
         {/* Caption */}
         {'content' in item && item.content && (
@@ -326,6 +434,20 @@ export const FeedItem = memo(({
         onCommentChange={onComment}
       />
 
+      <RepostsDialog
+        open={showReposts}
+        onOpenChange={setShowReposts}
+        contentType={item.type}
+        contentId={item.id}
+      />
+
+      <SavesDialog
+        open={showSaves}
+        onOpenChange={setShowSaves}
+        contentType={item.type}
+        contentId={item.id}
+      />
+
       <EngagementInsightsDialog
         open={showInsights}
         onOpenChange={setShowInsights}
@@ -335,7 +457,7 @@ export const FeedItem = memo(({
         engagement={{
           likes: item.like_count || 0,
           comments: item.comment_count || 0,
-          shares: 0,
+          shares: item.repost_count || 0,
           views: item.view_count || 0,
         }}
         createdAt={item.created_at}
