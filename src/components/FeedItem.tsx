@@ -130,116 +130,109 @@ export const FeedItem = memo(({
         </div>
       </div>
 
-      {/* Content - Full Width */}
-      <div className="relative w-full">
-        {'content' in item && item.content && (
-          <p className="text-sm px-3 py-3 text-white bg-black/50">{item.content}</p>
-        )}
+      {/* Content Caption */}
+      {'content' in item && item.content && (
+        <p className="text-sm px-3 py-2 text-foreground">{item.content}</p>
+      )}
 
-        {/* Media - Full Screen */}
-        {item.media_urls && item.media_urls.length > 0 && (
-          <div className="w-full">
-            {item.media_urls.map((url: string, idx: number) => (
-              <div key={idx} className="relative w-full">
-                {url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('audio') ? (
-                  <div className="bg-black p-4">
-                    <audio src={url} controls className="w-full" />
-                  </div>
-                ) : item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
-                  <div 
-                    className="relative w-full cursor-pointer"
-                    onClick={item.type === 'reel' ? onFullscreen : undefined}
-                  >
-                    <LazyVideo
-                      src={url}
-                      muted={!mutedVideos.has(item.id + url)}
-                      className="w-full h-auto object-cover"
-                    />
-                    
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleMute(item.id + url);
-                      }}
-                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all z-10"
-                    >
-                      {mutedVideos.has(item.id + url) ? (
-                        <Volume2 className="w-4 h-4 text-white" />
-                      ) : (
-                        <VolumeX className="w-4 h-4 text-white" />
-                      )}
-                    </button>
-                  </div>
-                ) : (
-                  <LazyImage
-                    src={url}
-                    alt="Post media"
-                    className="w-full h-auto object-cover"
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Action Bar - Glassy Transparent with Contours */}
-      <div className="relative px-2 sm:px-3 py-2 sm:py-3 bg-transparent backdrop-blur-xl border-t border-white/10">
-        <div className="flex items-center justify-between gap-1 sm:gap-2">
-            {/* Like Button */}
-            <button
-                onClick={onLike}
-                className={`relative flex items-center gap-1 text-xs sm:text-sm font-light transition-all duration-300 ${
-                  isLiked 
-                    ? 'text-red-500 hover:scale-110' 
-                    : 'text-muted-foreground hover:text-primary hover:scale-105'
-                }`}
-              >
-                <Heart className={`w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300 ${isLiked ? 'fill-current scale-110' : ''}`} strokeWidth={1.5} />
-                <span 
-                  className="min-w-[16px] cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowLikes(true);
-                  }}
+      {/* Media - Instagram Square Aspect Ratio */}
+      {item.media_urls && item.media_urls.length > 0 && (
+        <div className="w-full">
+          {item.media_urls.map((url: string, idx: number) => (
+            <div key={idx} className="relative w-full aspect-square bg-black">
+              {url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg') || url.includes('audio') ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black p-4">
+                  <audio src={url} controls className="w-full" />
+                </div>
+              ) : item.type === 'reel' || url.includes('.mp4') || url.includes('video') ? (
+                <div 
+                  className="relative w-full h-full cursor-pointer"
+                  onClick={item.type === 'reel' ? onFullscreen : undefined}
                 >
-                  {item.like_count || 0}
-                </span>
-              </button>
-
-            {/* Comment Button */}
-            <button
-                onClick={() => setShowComments(true)}
-                className="relative flex items-center gap-1 text-xs sm:text-sm font-light text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-105"
-              >
-                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
-                <span className="min-w-[16px]">{item.comment_count || 0}</span>
-              </button>
-
-            {/* Share Button */}
-            <button
-                onClick={onShare}
-                className="relative flex items-center gap-1 text-xs sm:text-sm font-light text-muted-foreground hover:text-green-500 transition-all duration-300 hover:scale-105"
-              >
-                <Send className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.5} />
-              </button>
-            
-            {/* AI Insights Button */}
-            <button
-                onClick={() => setShowInsights(true)}
-                className="relative flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-[10px] sm:text-xs font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent hover:scale-105 transition-all duration-300"
-              >
-                <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-pink-400 animate-pulse transition-colors" />
-                <span className="whitespace-nowrap">AI</span>
-              </button>
-            
-            {/* Views Counter */}
-            <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold text-muted-foreground">
-              <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>{item.view_count || 0}</span>
+                  <LazyVideo
+                    src={url}
+                    muted={!mutedVideos.has(item.id + url)}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleMute(item.id + url);
+                    }}
+                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-all z-10"
+                  >
+                    {mutedVideos.has(item.id + url) ? (
+                      <Volume2 className="w-5 h-5 text-white" />
+                    ) : (
+                      <VolumeX className="w-5 h-5 text-white" />
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <LazyImage
+                  src={url}
+                  alt="Post media"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )}
             </div>
-          </div>
+          ))}
         </div>
+      )}
+
+      {/* Bottom Action Bar - Instagram Style */}
+      <div className="px-3 py-3">
+        <div className="flex items-center gap-4">
+          {/* Like Button */}
+          <button
+            onClick={onLike}
+            className="active:scale-90 transition-transform"
+          >
+            <Heart className={`w-7 h-7 ${isLiked ? 'fill-red-500 text-red-500' : 'text-foreground'}`} strokeWidth={1.5} />
+          </button>
+
+          {/* Comment Button */}
+          <button
+            onClick={() => setShowComments(true)}
+            className="active:scale-90 transition-transform"
+          >
+            <MessageCircle className="w-7 h-7 text-foreground" strokeWidth={1.5} />
+          </button>
+
+          {/* Share Button */}
+          <button
+            onClick={onShare}
+            className="active:scale-90 transition-transform"
+          >
+            <Send className="w-7 h-7 text-foreground" strokeWidth={1.5} />
+          </button>
+
+          <div className="flex-1" />
+
+          {/* AI Insights Button */}
+          <button
+            onClick={() => setShowInsights(true)}
+            className="active:scale-90 transition-transform"
+          >
+            <Sparkles className="w-6 h-6 text-pink-400" />
+          </button>
+        </div>
+
+        {/* Likes Count */}
+        <button 
+          onClick={() => setShowLikes(true)}
+          className="mt-2 text-sm font-semibold text-foreground"
+        >
+          {item.like_count || 0} likes
+        </button>
+
+        {/* Views */}
+        <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+          <Eye className="w-4 h-4" />
+          <span>{item.view_count || 0} views</span>
+        </div>
+      </div>
 
       {/* Enhanced Dialogs with AI */}
       <EnhancedLikesDialog
