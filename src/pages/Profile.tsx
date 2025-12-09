@@ -35,6 +35,7 @@ import { ExperienceTimeline } from "@/components/ExperienceTimeline";
 import BirthdayConfetti from "@/components/BirthdayConfetti";
 import BirthdayBadge from "@/components/BirthdayBadge";
 import { FeedItem } from "@/components/FeedItem";
+import { SavedRepostedContent } from "@/components/SavedRepostedContent";
 
 interface Profile {
   id: string;
@@ -535,8 +536,9 @@ const Profile = () => {
 
         {/* Content Tabs */}
         <Tabs defaultValue="feed" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 glass">
+          <TabsList className="grid w-full grid-cols-4 glass">
             <TabsTrigger value="feed">Feed</TabsTrigger>
+            <TabsTrigger value="saved">Saved</TabsTrigger>
             <TabsTrigger value="stories">Stories</TabsTrigger>
             <TabsTrigger value="growth">Growth</TabsTrigger>
           </TabsList>
@@ -576,6 +578,10 @@ const Profile = () => {
                   ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="saved" className="mt-4">
+            <SavedRepostedContent userId={user.id} />
           </TabsContent>
 
           <TabsContent value="stories" className="mt-4">
