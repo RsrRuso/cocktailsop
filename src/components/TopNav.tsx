@@ -288,13 +288,14 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
-            {/* Music Navigation */}
+            {/* Music Box Navigation */}
             <button
               onClick={() => {
                 lightTap();
-                navigate("/music");
+                navigate("/music-box");
               }}
               className="glass-hover p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl"
+              title="Music Box"
             >
               <Music className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
