@@ -656,9 +656,6 @@ export default function StoryViewer() {
                   <BadgeCheck className="w-3 h-3 sm:w-4 sm:h-4 text-primary fill-primary shrink-0" />
                   <span className="text-white/70 text-xs sm:text-sm shrink-0 drop-shadow-lg">{getTimeAgo()}</span>
                 </div>
-                <span className="text-primary text-[10px] sm:text-xs flex items-center gap-1 drop-shadow-lg">
-                  <span>🎬</span> Watch full reel &gt;
-                </span>
               </div>
             </div>
             <button
@@ -690,9 +687,9 @@ export default function StoryViewer() {
           <motion.div
             ref={containerRef}
             className="w-full h-full flex items-center justify-center relative select-none cursor-grab active:cursor-grabbing"
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.15}
+            drag
+            dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+            dragElastic={0.2}
             onDragStart={() => setIsDragging(true)}
             onDragEnd={handleDragEnd}
             onClick={handleTap}
@@ -705,7 +702,7 @@ export default function StoryViewer() {
               opacity: swipeDirection ? 0.7 : 1,
             }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            style={{ touchAction: "pan-y" }}
+            style={{ touchAction: "none" }}
           >
             {/* Loading skeleton while media loads */}
             {!mediaLoaded && (
@@ -886,15 +883,14 @@ export default function StoryViewer() {
         </button>
       </div>
 
-      {/* Swipe Up Indicator */}
+      {/* Swipe Up Indicator - Icon only */}
       {currentUserId === userId && !showViewersPanel && (
         <motion.div 
-          className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 pointer-events-none"
-          animate={{ y: [0, -5, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 1.2, repeat: Infinity }}
         >
-          <ChevronUp className="w-5 h-5 text-white/60" />
-          <span className="text-white/60 text-xs">Swipe up for viewers</span>
+          <ChevronUp className="w-6 h-6 text-white/70" />
         </motion.div>
       )}
 
