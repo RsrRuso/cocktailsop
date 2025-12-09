@@ -137,8 +137,10 @@ export const useFeedData = (selectedRegion: string | null) => {
   }, [fetchPosts, fetchReels, selectedRegion]);
 
   useEffect(() => {
+    // Only fetch once on mount, not when refreshFeed changes
     refreshFeed();
-  }, [refreshFeed]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRegion]);
 
   return { posts, reels, isLoading, refreshFeed, setPosts, setReels };
 };
