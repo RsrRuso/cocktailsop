@@ -314,13 +314,13 @@ const CreateStory = () => {
           </Card>
 
           <Card 
-            onClick={() => toast.info("Music coming soon!")}
+            onClick={() => navigate("/music-box")}
             className="bg-white/10 border-white/20 backdrop-blur-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-white/15 transition-all"
           >
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
               <Music2 className="w-8 h-8 text-white" />
             </div>
-            <span className="text-white font-medium">Music</span>
+            <span className="text-white font-medium">Music Box</span>
           </Card>
 
           <Card 
