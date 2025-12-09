@@ -88,6 +88,8 @@ const Reposted = lazy(() => import("./pages/Reposted"));
 const StoryViewer = lazy(() => import("./pages/StoryViewer"));
 const UpdateMusicLibrary = lazy(() => import("./pages/UpdateMusicLibrary"));
 const Music = lazy(() => import("./pages/Music"));
+const MusicBox = lazy(() => import("./pages/MusicBox"));
+const MusicBoxAdmin = lazy(() => import("./pages/MusicBoxAdmin"));
 const Introduction = lazy(() => import("./pages/Introduction"));
 const Chat = lazy(() => import("./pages/Chat"));
 const Calendar = lazy(() => import("./pages/Calendar"));
@@ -324,6 +326,8 @@ const AppContent = () => {
           <Route path="/certificate/:certificateId" element={<CertificateView />} />
           <Route path="/gm-command-guide" element={<GMCommandGuide />} />
           <Route path="/gm-command" element={<GMCommandDashboard />} />
+          <Route path="/music-box" element={<MusicBox />} />
+          <Route path="/music-box-admin" element={<MusicBoxAdmin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
                 </Routes>
