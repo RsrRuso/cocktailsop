@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { X, Heart, Brain, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles, Eye, ChevronUp, MessageCircle } from "lucide-react";
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { X, Heart, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles, Eye, ChevronUp, MessageCircle, Music, Edit3, Brain } from "lucide-react";
+import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { toast } from "sonner";
 import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
 import { LivestreamComments } from "@/components/story/LivestreamComments";
@@ -32,6 +32,9 @@ interface Story {
   music_data: any;
   text_overlays: any;
   trim_data: any;
+  caption?: string;
+  location?: any;
+  tagged_people?: any;
 }
 
 interface Profile {
@@ -66,6 +69,51 @@ const ProgressBars = memo(({ totalItems, currentIndex, progress }: { totalItems:
 
 ProgressBars.displayName = "ProgressBars";
 
+// Individual story engagement display
+const StoryEngagementBadge = memo(({ likeCount, viewCount }: { likeCount: number, viewCount: number }) => (
+  <div className="absolute bottom-20 left-3 z-30 flex items-center gap-3 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1.5">
+    <div className="flex items-center gap-1">
+      <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+      <span className="text-white text-xs font-medium">{likeCount || 0}</span>
+    </div>
+    <div className="flex items-center gap-1">
+      <Eye className="w-4 h-4 text-white/80" />
+      <span className="text-white text-xs font-medium">{viewCount || 0}</span>
+    </div>
+  </div>
+));
+
+StoryEngagementBadge.displayName = "StoryEngagementBadge";
+
+// Music display component
+const MusicDisplay = memo(({ musicData }: { musicData: any }) => {
+  if (!musicData?.name) return null;
+  
+  return (
+    <motion.div 
+      className="absolute bottom-20 right-3 z-30 flex items-center gap-2 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1.5 max-w-[180px]"
+      initial={{ x: 20, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ delay: 0.3 }}
+    >
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+      >
+        <Music className="w-4 h-4 text-primary shrink-0" />
+      </motion.div>
+      <div className="min-w-0">
+        <p className="text-white text-xs font-medium truncate">{musicData.name}</p>
+        {musicData.artist && (
+          <p className="text-white/60 text-[10px] truncate">{musicData.artist}</p>
+        )}
+      </div>
+    </motion.div>
+  );
+});
+
+MusicDisplay.displayName = "MusicDisplay";
+
 export default function StoryViewer() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -86,7 +134,9 @@ export default function StoryViewer() {
   const [allViewers, setAllViewers] = useState<Profile[]>([]);
   const [allLikers, setAllLikers] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [mediaLoaded, setMediaLoaded] = useState(true); // Start as true for instant display
+  const [mediaLoaded, setMediaLoaded] = useState(true);
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   // Refs
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -94,9 +144,6 @@ export default function StoryViewer() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const heartCounterRef = useRef(0);
   const lastTapRef = useRef(0);
-  const singleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Flatten all media items from all stories - memoized for stable reference
@@ -111,6 +158,8 @@ export default function StoryViewer() {
         textOverlays: Array.isArray(story.text_overlays) ? story.text_overlays[mediaIdx] : story.text_overlays,
         trimData: Array.isArray(story.trim_data) ? story.trim_data[mediaIdx] : story.trim_data,
         filter: Array.isArray(story.filters) ? story.filters[mediaIdx] : story.filters,
+        likeCount: stories[storyIdx].like_count,
+        viewCount: stories[storyIdx].view_count,
       }))
     ), [stories]);
   
@@ -125,7 +174,7 @@ export default function StoryViewer() {
   const getMusicData = useCallback(() => {
     if (!currentMedia?.musicData) return null;
     const musicData = currentMedia.musicData;
-    if (!musicData?.url) return null;
+    if (!musicData?.url && !musicData?.name) return null;
     return musicData;
   }, [currentMedia?.musicData]);
   
@@ -137,8 +186,6 @@ export default function StoryViewer() {
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
-      if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
-      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
   }, []);
@@ -451,126 +498,99 @@ export default function StoryViewer() {
     }
   }, [currentStory, currentUserId, isLiked, toggleLike]);
 
-  // Touch handlers
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    touchStartRef.current = {
-      x: touch.clientX,
-      y: touch.clientY,
-      time: Date.now(),
-    };
+  // Smooth swipe handler using framer-motion drag
+  const handleDragEnd = useCallback((event: any, info: PanInfo) => {
+    setIsDragging(false);
+    const threshold = 50;
+    const velocity = 0.5;
+    
+    // Horizontal swipe for navigation
+    if (Math.abs(info.offset.x) > threshold || Math.abs(info.velocity.x) > velocity) {
+      if (info.offset.x > 0) {
+        setSwipeDirection('right');
+        setTimeout(() => {
+          goToPrevious();
+          setSwipeDirection(null);
+        }, 150);
+      } else {
+        setSwipeDirection('left');
+        setTimeout(() => {
+          goToNext();
+          setSwipeDirection(null);
+        }, 150);
+      }
+      return;
+    }
+    
+    // Vertical swipe for viewers panel (up) or close (down)
+    if (Math.abs(info.offset.y) > threshold) {
+      if (info.offset.y < 0 && currentUserId === userId) {
+        // Swipe up - show viewers
+        setShowViewersPanel(true);
+        if (currentStory) {
+          fetchAllViewers(currentStory.id);
+          fetchAllLikers(currentStory.id);
+        }
+      } else if (info.offset.y > 0 && !showViewersPanel) {
+        // Swipe down - close
+        navigate("/home");
+      }
+    }
+  }, [goToPrevious, goToNext, currentUserId, userId, currentStory, showViewersPanel, navigate, fetchAllViewers, fetchAllLikers]);
 
-    longPressTimerRef.current = setTimeout(() => {
+  // Tap handlers for left/right navigation and double-tap like
+  const handleTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    if (isDragging) return;
+    
+    const clientX = 'touches' in e ? e.changedTouches?.[0]?.clientX : e.clientX;
+    const clientY = 'touches' in e ? e.changedTouches?.[0]?.clientY : e.clientY;
+    
+    if (!clientX || !clientY) return;
+    
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const now = Date.now();
+    const tapZone = rect.width / 3; // Divide into 3 zones
+    const tapX = clientX - rect.left;
+    
+    // Double tap detection for like
+    if (now - lastTapRef.current < 300) {
+      handleLike(clientX, clientY);
+      lastTapRef.current = 0;
+      return;
+    }
+    
+    lastTapRef.current = now;
+    
+    // Single tap after 300ms delay - navigate based on tap position
+    setTimeout(() => {
+      if (Date.now() - lastTapRef.current >= 290) {
+        if (tapX < tapZone) {
+          // Left third - go back
+          goToPrevious();
+        } else if (tapX > rect.width - tapZone) {
+          // Right third - go forward
+          goToNext();
+        }
+        // Middle third - no action (or could pause)
+      }
+    }, 300);
+  }, [isDragging, handleLike, goToPrevious, goToNext]);
+
+  // Long press to pause
+  const handlePressStart = useCallback(() => {
+    const timer = setTimeout(() => {
       setIsPaused(true);
     }, 200);
+    return () => clearTimeout(timer);
   }, []);
 
-  const handleTouchMove = useCallback(() => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-  }, []);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-
+  const handlePressEnd = useCallback(() => {
     if (isPaused) {
       setIsPaused(false);
-      return;
     }
-
-    const touch = e.changedTouches[0];
-    const deltaX = touch.clientX - touchStartRef.current.x;
-    const deltaY = touch.clientY - touchStartRef.current.y;
-    const deltaTime = Date.now() - touchStartRef.current.time;
-
-    if (deltaTime < 300 && (Math.abs(deltaX) > 30 || Math.abs(deltaY) > 30)) {
-      if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        if (deltaX > 0) goToPrevious();
-        else goToNext();
-      } else {
-        // Swipe UP to open viewers panel
-        if (deltaY < -50) {
-          setShowViewersPanel(true);
-          if (currentStory) {
-            fetchAllViewers(currentStory.id);
-            fetchAllLikers(currentStory.id);
-          }
-        }
-        // Swipe DOWN to close or go home
-        else if (deltaY > 50 && !showComments && !showViewersPanel) navigate("/home");
-      }
-      return;
-    }
-
-    if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
-      const now = Date.now();
-      
-      if (now - lastTapRef.current < 300) {
-        if (singleTapTimerRef.current) {
-          clearTimeout(singleTapTimerRef.current);
-          singleTapTimerRef.current = null;
-        }
-        handleLike(touch.clientX, touch.clientY);
-        lastTapRef.current = 0;
-      } else {
-        lastTapRef.current = now;
-        singleTapTimerRef.current = setTimeout(() => {
-          if (Date.now() - lastTapRef.current >= 300) {
-            const rect = containerRef.current?.getBoundingClientRect();
-            if (rect) {
-              const isLeftSide = touch.clientX - rect.left < rect.width / 2;
-              if (isLeftSide) goToPrevious();
-              else goToNext();
-            }
-          }
-        }, 300);
-      }
-    }
-  }, [isPaused, goToPrevious, goToNext, showComments, navigate, handleLike]);
-
-  const handleMouseDown = useCallback(() => {
-    longPressTimerRef.current = setTimeout(() => setIsPaused(true), 200);
-  }, []);
-
-  const handleMouseUp = useCallback((e: React.MouseEvent) => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-
-    if (isPaused) {
-      setIsPaused(false);
-      return;
-    }
-
-    const now = Date.now();
-    const rect = containerRef.current?.getBoundingClientRect();
-    
-    if (!rect) return;
-
-    if (now - lastTapRef.current < 300) {
-      if (singleTapTimerRef.current) {
-        clearTimeout(singleTapTimerRef.current);
-        singleTapTimerRef.current = null;
-      }
-      handleLike(e.clientX, e.clientY);
-      lastTapRef.current = 0;
-    } else {
-      lastTapRef.current = now;
-      singleTapTimerRef.current = setTimeout(() => {
-        if (Date.now() - lastTapRef.current >= 300) {
-          const isLeftSide = e.clientX - rect.left < rect.width / 2;
-          if (isLeftSide) goToPrevious();
-          else goToNext();
-        }
-      }, 300);
-    }
-  }, [isPaused, goToPrevious, goToNext, handleLike]);
+  }, [isPaused]);
 
   // Get time ago
   const getTimeAgo = useCallback(() => {
@@ -697,16 +717,26 @@ export default function StoryViewer() {
             </button>
           )}
 
-          {/* Story content */}
-          <div
+          {/* Story content with smooth swipe */}
+          <motion.div
             ref={containerRef}
-            className="w-full h-full flex items-center justify-center relative select-none"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            style={{ touchAction: "none" }}
+            className="w-full h-full flex items-center justify-center relative select-none cursor-grab active:cursor-grabbing"
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.15}
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={handleDragEnd}
+            onClick={handleTap}
+            onMouseDown={handlePressStart}
+            onMouseUp={handlePressEnd}
+            onTouchStart={handlePressStart}
+            onTouchEnd={handlePressEnd}
+            animate={{
+              x: swipeDirection === 'left' ? -50 : swipeDirection === 'right' ? 50 : 0,
+              opacity: swipeDirection ? 0.7 : 1,
+            }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            style={{ touchAction: "pan-y" }}
           >
             {/* Loading skeleton while media loads */}
             {!mediaLoaded && (
@@ -715,26 +745,37 @@ export default function StoryViewer() {
               </div>
             )}
             
-            {isVideo ? (
-              <video
-                ref={videoRef}
-                src={mediaUrl}
-                className="w-full h-full object-cover"
-                autoPlay
-                playsInline
-                muted={isMuted}
-                preload="auto"
-                onLoadedData={() => setMediaLoaded(true)}
-              />
-            ) : (
-              <img 
-                src={mediaUrl} 
-                alt="Story" 
-                className="w-full h-full object-cover"
-                loading="eager"
-                onLoad={() => setMediaLoaded(true)}
-              />
-            )}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentMediaIndex}
+                initial={{ opacity: 0, scale: 1.02 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.15 }}
+                className="w-full h-full"
+              >
+                {isVideo ? (
+                  <video
+                    ref={videoRef}
+                    src={mediaUrl}
+                    className="w-full h-full object-cover"
+                    autoPlay
+                    playsInline
+                    muted={isMuted}
+                    preload="auto"
+                    onLoadedData={() => setMediaLoaded(true)}
+                  />
+                ) : (
+                  <img 
+                    src={mediaUrl} 
+                    alt="Story" 
+                    className="w-full h-full object-cover"
+                    loading="eager"
+                    onLoad={() => setMediaLoaded(true)}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
             
             {musicData?.url && !musicData.url.startsWith('spotify:') && (
               <audio ref={audioRef} src={musicData.url} loop={false} preload="auto" />
@@ -770,7 +811,20 @@ export default function StoryViewer() {
                 </div>
               </div>
             )}
-          </div>
+
+            {/* Navigation hint areas */}
+            <div className="absolute inset-y-0 left-0 w-1/3 z-20" />
+            <div className="absolute inset-y-0 right-0 w-1/3 z-20" />
+          </motion.div>
+
+          {/* Individual story engagement badge */}
+          <StoryEngagementBadge 
+            likeCount={currentMedia?.likeCount || 0} 
+            viewCount={currentMedia?.viewCount || 0} 
+          />
+
+          {/* Music display */}
+          <MusicDisplay musicData={musicData} />
 
           {/* Text overlays */}
           {currentStory.text_overlays && Array.isArray(currentStory.text_overlays) && (
