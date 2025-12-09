@@ -773,15 +773,6 @@ export default function StoryViewer() {
               ))}
             </AnimatePresence>
 
-            {/* Paused indicator */}
-            {isPaused && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="flex gap-2">
-                  <div className="w-1 h-10 sm:h-12 bg-white/80 rounded-full" />
-                  <div className="w-1 h-10 sm:h-12 bg-white/80 rounded-full" />
-                </div>
-              </div>
-            )}
 
             {/* Navigation hint areas */}
             <div className="absolute inset-y-0 left-0 w-1/3 z-20" />
