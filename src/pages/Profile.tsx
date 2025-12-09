@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOptimizedProfileData } from "@/hooks/useOptimizedProfile";
 import { Loader2 } from "lucide-react";
 import { useRegionalRanking } from "@/hooks/useRegionalRanking";
+import { useCareerMetrics } from "@/hooks/useCareerMetrics";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import MusicTicker from "@/components/MusicTicker";
@@ -29,7 +30,6 @@ import { AddCertificationDialog } from "@/components/AddCertificationDialog";
 import { AddRecognitionDialog } from "@/components/AddRecognitionDialog";
 import { AddCompetitionDialog } from "@/components/AddCompetitionDialog";
 import { ExperienceTimeline } from "@/components/ExperienceTimeline";
-import { calculateCareerScore } from "@/lib/careerMetrics";
 import BirthdayConfetti from "@/components/BirthdayConfetti";
 import BirthdayBadge from "@/components/BirthdayBadge";
 
@@ -132,18 +132,13 @@ const Profile = () => {
     return { isBirthday };
   }, [profile?.date_of_birth, authProfile?.date_of_birth]);
 
-  // Calculate career score (memoized)
-  const careerMetrics = useMemo(() => {
-    if (!experiences || !certifications || !recognitions || !competitions) {
-      return { rawScore: 0, metrics: {} };
-    }
-    return calculateCareerScore(experiences, certifications, recognitions, competitions);
-  }, [experiences, certifications, recognitions, competitions]);
+  // Use the live career metrics hook with realtime updates
+  const { metrics: liveCareerMetrics, refetch: refetchCareerMetrics } = useCareerMetrics(user?.id || null);
 
   // Fetch regional ranking with caching and deduplication
   const { data: regionalData } = useRegionalRanking(
     profile?.region || null,
-    careerMetrics.rawScore
+    liveCareerMetrics.rawScore
   );
 
   useEffect(() => {
@@ -157,21 +152,6 @@ const Profile = () => {
       setCoverUrl(profile.cover_url);
     }
   }, [profile]);
-
-  // Update career score in database (debounced to prevent excessive writes)
-  useEffect(() => {
-    const updateCareerScore = async () => {
-      if (!profile || !user?.id || careerMetrics.rawScore === 0) return;
-
-      await supabase
-        .from('profiles')
-        .update({ career_score: careerMetrics.rawScore })
-        .eq('id', user.id);
-    };
-
-    const timeoutId = setTimeout(updateCareerScore, 1000); // Debounce 1 second
-    return () => clearTimeout(timeoutId);
-  }, [careerMetrics.rawScore, profile, user?.id]);
 
   const fetchStories = async () => {
     if (!user?.id) return;
@@ -735,15 +715,7 @@ const Profile = () => {
               </div>
               
               {(() => {
-  const metrics = calculateCareerScore(
-    experiences,
-    certifications,
-    recognitions,
-    competitions,
-    regionalData?.maxScore,
-    regionalData?.userRank,
-    regionalData?.totalUsers
-  );
+                const metrics = liveCareerMetrics;
                 return (
                   <>
                     {/* Score and Badge */}
@@ -941,36 +913,37 @@ const Profile = () => {
       <CareerMetricsDialog
         open={metricsDialogOpen}
         onOpenChange={setMetricsDialogOpen}
-        metrics={calculateCareerScore(
-          experiences, 
-          certifications, 
-          recognitions,
-          competitions,
-          regionalData?.maxScore,
-          regionalData?.userRank,
-          regionalData?.totalUsers
-        )}
+        metrics={liveCareerMetrics}
       />
 
       <AddExperienceDialog
         open={showAddExperience}
         onOpenChange={setShowAddExperience}
         userId={user?.id || ""}
-        onSuccess={() => refetchAll()}
+        onSuccess={() => {
+          refetchAll();
+          refetchCareerMetrics();
+        }}
       />
 
       <AddCertificationDialog
         open={showAddCertification}
         onOpenChange={setShowAddCertification}
         userId={user?.id || ""}
-        onSuccess={() => refetchAll()}
+        onSuccess={() => {
+          refetchAll();
+          refetchCareerMetrics();
+        }}
       />
 
       <AddRecognitionDialog
         open={showAddRecognition}
         onOpenChange={setShowAddRecognition}
         userId={user?.id || ""}
-        onSuccess={() => refetchAll()}
+        onSuccess={() => {
+          refetchAll();
+          refetchCareerMetrics();
+        }}
       />
 
       <CreateStatusDialog

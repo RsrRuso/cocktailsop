@@ -18,7 +18,7 @@ import CareerMetricsDialog from "@/components/CareerMetricsDialog";
 import AvatarClickMenu from "@/components/AvatarClickMenu";
 import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore } from "@/lib/profileUtils";
 import { ExperienceTimeline } from "@/components/ExperienceTimeline";
-import { calculateCareerScore } from "@/lib/careerMetrics";
+import { useCareerMetrics } from "@/hooks/useCareerMetrics";
 import BirthdayConfetti from "@/components/BirthdayConfetti";
 import BirthdayBadge from "@/components/BirthdayBadge";
 import { useUserBirthday } from "@/hooks/useUserBirthday";
@@ -81,6 +81,9 @@ const UserProfile = () => {
   const [examCertificates, setExamCertificates] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const { data: birthdayData } = useUserBirthday(userId || null);
+  
+  // Use live career metrics hook
+  const { metrics: liveCareerMetrics } = useCareerMetrics(userId || null);
 
   useEffect(() => {
     const initUser = async () => {
@@ -773,7 +776,7 @@ const UserProfile = () => {
       <CareerMetricsDialog
         open={metricsDialogOpen}
         onOpenChange={setMetricsDialogOpen}
-        metrics={calculateCareerScore(experiences, certifications, recognitions, competitions)}
+        metrics={liveCareerMetrics}
       />
     </div>
   );
