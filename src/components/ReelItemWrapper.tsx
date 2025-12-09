@@ -124,19 +124,19 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
         )}
       </button>
 
-      {/* Right Side Action Buttons */}
-      <div className="absolute right-2 bottom-20 flex flex-col gap-5 z-20">
+      {/* Right Side Action Buttons - Instagram Style */}
+      <div className="absolute right-3 bottom-24 flex flex-col gap-6 z-20">
         {/* Like Button */}
         <button 
           onClick={(e) => {
             e.stopPropagation();
             handleLikeReel(reel.id);
           }}
-          className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+          className="flex flex-col items-center gap-1 active:scale-90 transition-transform"
         >
-          <Heart className={`w-6 h-6 drop-shadow-lg ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} strokeWidth={1.5} />
+          <Heart className={`w-7 h-7 drop-shadow-lg ${likedReels.has(reel.id) ? 'fill-red-500 text-red-500' : 'text-white'}`} strokeWidth={2} />
           <span 
-            className="text-white text-xs font-light drop-shadow-lg cursor-pointer"
+            className="text-white text-xs font-semibold drop-shadow-lg cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               setSelectedReelForLikes(reel.id);
@@ -154,10 +154,10 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
             setSelectedReelForComments(reel.id);
             setShowComments(true);
           }}
-          className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+          className="flex flex-col items-center gap-1 active:scale-90 transition-transform"
         >
-          <MessageCircle className="w-6 h-6 text-white drop-shadow-lg" strokeWidth={1.5} />
-          <span className="text-white text-xs font-light drop-shadow-lg">{reel.comment_count || 0}</span>
+          <MessageCircle className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={2} />
+          <span className="text-white text-xs font-semibold drop-shadow-lg">{reel.comment_count || 0}</span>
         </button>
 
         {/* Share Button */}
@@ -169,17 +169,17 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
             setSelectedReelVideo(reel.video_url);
             setShowShare(true);
           }}
-          className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+          className="flex flex-col items-center gap-1 active:scale-90 transition-transform"
         >
-          <Send className="w-6 h-6 text-white drop-shadow-lg" strokeWidth={1.5} />
+          <Send className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={2} />
         </button>
 
         {/* Bookmark Button */}
         <button 
           onClick={(e) => e.stopPropagation()}
-          className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+          className="flex flex-col items-center gap-1 active:scale-90 transition-transform"
         >
-          <Bookmark className="w-6 h-6 text-white drop-shadow-lg" strokeWidth={1.5} />
+          <Bookmark className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={2} />
         </button>
 
         {/* Three Dots Menu - Only for own reels */}
@@ -188,9 +188,9 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
             <DropdownMenuTrigger asChild>
               <button 
                 onClick={(e) => e.stopPropagation()}
-                className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+                className="flex flex-col items-center gap-1 active:scale-90 transition-transform"
               >
-                <MoreVertical className="w-7 h-7 text-white drop-shadow-lg" />
+                <MoreVertical className="w-7 h-7 text-white drop-shadow-lg" strokeWidth={2} />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-md">
