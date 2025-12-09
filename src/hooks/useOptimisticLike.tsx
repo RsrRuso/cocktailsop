@@ -8,6 +8,10 @@ export const useOptimisticLike = (
 ) => {
   const [likedItems, setLikedItems] = useState<Set<string>>(new Set());
   const processingRef = useRef<Set<string>>(new Set());
+  const likedItemsRef = useRef<Set<string>>(new Set());
+
+  // Keep ref in sync with state
+  likedItemsRef.current = likedItems;
 
   const fetchLikedItems = useCallback(async () => {
     if (!currentUserId) return;
@@ -19,7 +23,9 @@ export const useOptimisticLike = (
         .eq('user_id', currentUserId);
 
       if (data) {
-        setLikedItems(new Set(data.map((item) => item.post_id)));
+        const newSet = new Set(data.map((item) => item.post_id));
+        setLikedItems(newSet);
+        likedItemsRef.current = newSet;
       }
     } else {
       const { data } = await supabase
@@ -28,7 +34,9 @@ export const useOptimisticLike = (
         .eq('user_id', currentUserId);
 
       if (data) {
-        setLikedItems(new Set(data.map((item) => item.reel_id)));
+        const newSet = new Set(data.map((item) => item.reel_id));
+        setLikedItems(newSet);
+        likedItemsRef.current = newSet;
       }
     }
   }, [currentUserId, itemType]);
@@ -40,12 +48,13 @@ export const useOptimisticLike = (
         return;
       }
 
-      // Prevent duplicate requests
+      // Prevent duplicate requests using ref (not state, to avoid race conditions)
       if (processingRef.current.has(itemId)) {
         return;
       }
 
-      const isLiked = likedItems.has(itemId);
+      // Use ref for immediate check (avoids stale closure)
+      const isLiked = likedItemsRef.current.has(itemId);
 
       // Mark as processing
       processingRef.current.add(itemId);
@@ -58,6 +67,7 @@ export const useOptimisticLike = (
         } else {
           newSet.add(itemId);
         }
+        likedItemsRef.current = newSet;
         return newSet;
       });
 
@@ -103,13 +113,14 @@ export const useOptimisticLike = (
           } else {
             newSet.delete(itemId);
           }
+          likedItemsRef.current = newSet;
           return newSet;
         });
       } finally {
         processingRef.current.delete(itemId);
       }
     },
-    [currentUserId, itemType, likedItems]
+    [currentUserId, itemType] // Removed likedItems from deps - using ref instead
   );
 
   return { likedItems, fetchLikedItems, toggleLike };
