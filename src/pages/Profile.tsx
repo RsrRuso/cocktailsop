@@ -1,10 +1,11 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOptimizedProfileData } from "@/hooks/useOptimizedProfile";
 import { Loader2 } from "lucide-react";
 import { useRegionalRanking } from "@/hooks/useRegionalRanking";
 import { useCareerMetrics } from "@/hooks/useCareerMetrics";
+import { useOptimisticLike } from "@/hooks/useOptimisticLike";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import MusicTicker from "@/components/MusicTicker";
@@ -32,6 +33,7 @@ import { AddCompetitionDialog } from "@/components/AddCompetitionDialog";
 import { ExperienceTimeline } from "@/components/ExperienceTimeline";
 import BirthdayConfetti from "@/components/BirthdayConfetti";
 import BirthdayBadge from "@/components/BirthdayBadge";
+import { FeedItem } from "@/components/FeedItem";
 
 interface Profile {
   id: string;
@@ -121,6 +123,10 @@ const Profile = () => {
   const [showAddRecognition, setShowAddRecognition] = useState(false);
   const { data: userStatus, refetch: refetchStatus } = useUserStatus(user?.id || null);
   
+  // Optimistic like hooks for instant updates
+  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', user?.id);
+  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', user?.id);
+  
   // Calculate birthday from profile data directly (no extra request)
   const birthdayData = useMemo(() => {
     const dob = profile?.date_of_birth || authProfile?.date_of_birth;
@@ -140,6 +146,76 @@ const Profile = () => {
     profile?.region || null,
     liveCareerMetrics.rawScore
   );
+  
+  // Subscribe to realtime updates for posts and reels
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    fetchLikedPosts();
+    fetchLikedReels();
+    
+    // Subscribe to posts changes
+    const postsChannel = supabase
+      .channel('profile-posts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts', filter: `user_id=eq.${user.id}` }, () => refetchAll())
+      .subscribe();
+    
+    // Subscribe to reels changes  
+    const reelsChannel = supabase
+      .channel('profile-reels')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reels', filter: `user_id=eq.${user.id}` }, () => refetchAll())
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(postsChannel);
+      supabase.removeChannel(reelsChannel);
+    };
+  }, [user?.id, fetchLikedPosts, fetchLikedReels, refetchAll]);
+  
+  // Handlers for feed items
+  const handleLikePost = useCallback((postId: string) => {
+    togglePostLike(postId);
+  }, [togglePostLike]);
+
+  const handleLikeReel = useCallback((reelId: string) => {
+    toggleReelLike(reelId);
+  }, [toggleReelLike]);
+
+  const handleDeletePost = useCallback(async (postId: string) => {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+    try {
+      const { error } = await supabase.from("posts").delete().eq("id", postId);
+      if (error) throw error;
+      toast.success("Post deleted");
+      refetchAll();
+    } catch (error) {
+      toast.error("Failed to delete post");
+    }
+  }, [refetchAll]);
+
+  const handleDeleteReel = useCallback(async (reelId: string) => {
+    if (!window.confirm("Are you sure you want to delete this reel?")) return;
+    try {
+      const { error } = await supabase.from("reels").delete().eq("id", reelId);
+      if (error) throw error;
+      toast.success("Reel deleted");
+      refetchAll();
+    } catch (error) {
+      toast.error("Failed to delete reel");
+    }
+  }, [refetchAll]);
+
+  const handleToggleMute = useCallback((videoId: string) => {
+    setMutedVideos(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(videoId)) {
+        newSet.delete(videoId);
+      } else {
+        newSet.add(videoId);
+      }
+      return newSet;
+    });
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -423,7 +499,8 @@ const Profile = () => {
           </TabsList>
 
           <TabsContent value="feed" className="mt-4">
-            {[...posts.map(p => ({ ...p, type: 'post' })), ...reels.map(r => ({ ...r, type: 'reel' }))]
+            {[...posts.map(p => ({ ...p, type: 'post' as const, profiles: { ...safeProfile } })), 
+              ...reels.map(r => ({ ...r, type: 'reel' as const, content: r.caption, media_urls: [r.video_url], profiles: { ...safeProfile } }))]
               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
               .length === 0 ? (
               <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
@@ -431,84 +508,26 @@ const Profile = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {[...posts.map(p => ({ ...p, type: 'post' })), ...reels.map(r => ({ ...r, type: 'reel' }))]
+                {[...posts.map(p => ({ ...p, type: 'post' as const, profiles: { ...safeProfile } })), 
+                  ...reels.map(r => ({ ...r, type: 'reel' as const, content: r.caption, media_urls: [r.video_url], profiles: { ...safeProfile } }))]
                   .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                   .map((item: any) => (
-                    item.type === 'post' ? (
-                      <div key={`post-${item.id}`} className="glass rounded-xl p-4 space-y-3 border border-border/50">
-                        {item.content && <p className="text-sm">{item.content}</p>}
-                        {item.media_urls && item.media_urls.length > 0 && (
-                          <div className={`grid gap-2 ${item.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                            {item.media_urls.map((url, idx) => (
-                              <img key={idx} src={url} alt="Post" className="w-full rounded-lg object-cover" />
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Heart className="w-4 h-4" /> {item.like_count || 0}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MessageCircle className="w-4 h-4" /> {item.comment_count || 0}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div 
-                        key={`reel-${item.id}`} 
-                        className="overflow-hidden cursor-pointer"
-                        onClick={() => navigate('/reels', { 
-                          state: { 
-                            scrollToReelId: item.id,
-                            reelData: item 
-                          } 
-                        })}
-                      >
-                        <video
-                          src={item.video_url}
-                          className="w-full aspect-[9/16] object-cover"
-                          muted
-                          playsInline
-                          loop
-                          autoPlay
-                        />
-                        <div className="p-4 space-y-2">
-                          {item.caption && <p className="text-sm">{item.caption}</p>}
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Play className="w-4 h-4" strokeWidth={1.5} /> {item.view_count || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Heart className="w-4 h-4" strokeWidth={1.5} /> {item.like_count || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MessageCircle className="w-4 h-4" strokeWidth={1.5} /> {item.comment_count || 0}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMutedVideos(prev => {
-                                  const newSet = new Set(prev);
-                                  if (newSet.has(item.id)) {
-                                    newSet.delete(item.id);
-                                  } else {
-                                    newSet.add(item.id);
-                                  }
-                                  return newSet;
-                                });
-                              }}
-                              className="ml-auto"
-                            >
-                              {mutedVideos.has(item.id) ? (
-                                <Volume2 className="w-4 h-4" />
-                              ) : (
-                                <VolumeX className="w-4 h-4" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )
+                    <FeedItem
+                      key={`${item.type}-${item.id}`}
+                      item={item}
+                      currentUserId={user?.id}
+                      isLiked={item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)}
+                      mutedVideos={mutedVideos}
+                      onLike={() => item.type === 'post' ? handleLikePost(item.id) : handleLikeReel(item.id)}
+                      onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
+                      onEdit={() => navigate(item.type === 'post' ? `/post/${item.id}/edit` : `/reel/${item.id}/edit`)}
+                      onComment={() => refetchAll()}
+                      onShare={() => {}}
+                      onToggleMute={handleToggleMute}
+                      onFullscreen={() => navigate('/reels', { state: { scrollToReelId: item.id } })}
+                      onViewLikes={() => {}}
+                      getBadgeColor={getBadgeColor}
+                    />
                   ))}
               </div>
             )}
