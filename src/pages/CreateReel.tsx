@@ -5,12 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2 } from "lucide-react";
+import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
 import { useAutoMusicExtraction } from "@/hooks/useAutoMusicExtraction";
 import MusicSelector from "@/components/music-box/MusicSelector";
+import { compressVideo, needsCompression, getFileSizeMB, CompressionProgress } from "@/lib/videoCompression";
 
 const CreateReel = () => {
   const navigate = useNavigate();
@@ -18,6 +19,8 @@ const CreateReel = () => {
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressionProgress, setCompressionProgress] = useState<CompressionProgress | null>(null);
   const [showMusicSelector, setShowMusicSelector] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<{ id: string; title: string; artist: string; preview_url: string } | null>(null);
   const { uploadState, uploadSingle } = usePowerfulUpload();
@@ -70,7 +73,7 @@ const CreateReel = () => {
 
   const handleCreateReel = async () => {
     // Prevent double submission
-    if (isSubmitting || uploadState.isUploading) {
+    if (isSubmitting || uploadState.isUploading || isCompressing) {
       return;
     }
 
@@ -88,8 +91,35 @@ const CreateReel = () => {
         return;
       }
 
+      let videoToUpload = selectedVideo;
+
+      // Compress video if needed (over 50MB)
+      if (needsCompression(selectedVideo)) {
+        const originalSize = getFileSizeMB(selectedVideo);
+        toast.info(`Compressing ${originalSize.toFixed(1)}MB video...`);
+        setIsCompressing(true);
+        
+        try {
+          videoToUpload = await compressVideo(selectedVideo, 45, (progress) => {
+            setCompressionProgress(progress);
+          });
+          
+          const newSize = getFileSizeMB(videoToUpload);
+          toast.success(`Compressed to ${newSize.toFixed(1)}MB`);
+        } catch (compressError) {
+          console.error('Compression failed:', compressError);
+          toast.error("Compression failed. Please try a smaller video.");
+          setIsCompressing(false);
+          setIsSubmitting(false);
+          return;
+        }
+        
+        setIsCompressing(false);
+        setCompressionProgress(null);
+      }
+
       // Upload using powerful upload system
-      const result = await uploadSingle('reels', user.id, selectedVideo);
+      const result = await uploadSingle('reels', user.id, videoToUpload);
       
       if (result.error) {
         throw result.error;
@@ -148,14 +178,19 @@ const CreateReel = () => {
           <h1 className="text-xl font-bold">Create Reel</h1>
           <Button
             onClick={handleCreateReel}
-            disabled={isSubmitting || uploadState.isUploading || !previewUrl}
+            disabled={isSubmitting || uploadState.isUploading || isCompressing || !previewUrl}
             className="glow-primary"
             size="sm"
           >
-            {isSubmitting || uploadState.isUploading ? (
+            {isCompressing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Compressing
+              </>
+            ) : isSubmitting || uploadState.isUploading ? (
               <>
                 <Zap className="w-4 h-4 mr-2 animate-pulse" />
-                {isSubmitting ? 'Saving...' : 'Uploading'}
+                {uploadState.isUploading ? 'Uploading' : 'Saving...'}
               </>
             ) : (
               <>
@@ -209,6 +244,30 @@ const CreateReel = () => {
                 disabled={uploadState.isUploading}
               />
 
+              {/* Compression Progress */}
+              {isCompressing && compressionProgress && (
+                <div className="glass rounded-xl p-6 space-y-4 border border-orange-500/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+                      <div>
+                        <p className="font-semibold text-sm">Compressing Video</p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {compressionProgress.stage}...
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
+                        {Math.round(compressionProgress.progress)}%
+                      </p>
+                    </div>
+                  </div>
+                  <Progress value={compressionProgress.progress} className="h-3" />
+                </div>
+              )}
+
+              {/* Upload Progress */}
               {uploadState.isUploading && (
                 <div className="glass rounded-xl p-6 space-y-4 border border-primary/20">
                   <div className="flex items-center justify-between">
