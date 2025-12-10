@@ -145,16 +145,51 @@ export const EnhancedCommentsDialog = ({
     e?.preventDefault();
     if (!newComment.trim() || !user) return;
 
+    const commentContent = newComment.trim();
+    const parentId = replyingTo;
+    
+    // Clear input immediately for instant feedback
+    setNewComment('');
+    setReplyingTo(null);
     setSubmitting(true);
+    
+    // Optimistic update - add comment immediately to UI
+    const optimisticComment: Comment = {
+      id: `temp-${Date.now()}`,
+      user_id: user.id,
+      content: commentContent,
+      created_at: new Date().toISOString(),
+      parent_comment_id: parentId || null,
+      profiles: {
+        username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
+        avatar_url: user.user_metadata?.avatar_url || null,
+        full_name: user.user_metadata?.full_name || 'User',
+      },
+      replies: [],
+    };
+
+    if (parentId) {
+      // Add reply to parent
+      setComments(prev => prev.map(c => {
+        if (c.id === parentId) {
+          return { ...c, replies: [...(c.replies || []), optimisticComment] };
+        }
+        return c;
+      }));
+    } else {
+      // Add as new root comment
+      setComments(prev => [...prev, optimisticComment]);
+    }
+
     try {
       const insertData: any = {
         [config.tables.idColumn]: contentId,
         user_id: user.id,
-        content: newComment.trim(),
+        content: commentContent,
       };
 
-      if (replyingTo) {
-        insertData.parent_comment_id = replyingTo;
+      if (parentId) {
+        insertData.parent_comment_id = parentId;
       }
 
       const { error } = await supabase
@@ -162,12 +197,14 @@ export const EnhancedCommentsDialog = ({
         .insert(insertData);
 
       if (error) throw error;
-
-      setNewComment('');
-      setReplyingTo(null);
+      
+      // Realtime will update with the real comment
+      onCommentChange?.();
     } catch (err) {
       console.error('Error submitting comment:', err);
       toast.error('Failed to post comment');
+      // Remove optimistic comment on error
+      loadComments();
     } finally {
       setSubmitting(false);
     }
@@ -289,17 +326,39 @@ export const EnhancedCommentsDialog = ({
   const renderComment = (comment: Comment, depth: number = 0, index: number = 0) => {
     const isOwner = user && comment.user_id === user.id;
     const isEditing = editingId === comment.id;
+    const isNew = comment.id.startsWith('temp-') || (Date.now() - new Date(comment.created_at).getTime()) < 3000;
 
     return (
       <motion.div
         key={comment.id}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, x: -10 }}
-        transition={{ delay: index * 0.03, duration: 0.2 }}
-        className={depth > 0 ? 'ml-6 sm:ml-8 mt-2 border-l-2 border-purple-500/20 pl-2 sm:pl-3' : 'mb-2'}
+        initial={{ opacity: 0, x: 50, scale: 0.95 }}
+        animate={{ 
+          opacity: 1, 
+          x: 0, 
+          scale: 1,
+          boxShadow: isNew ? '0 0 20px rgba(168, 85, 247, 0.4)' : 'none'
+        }}
+        exit={{ opacity: 0, x: -30, scale: 0.9 }}
+        transition={{ 
+          type: 'spring',
+          stiffness: 400,
+          damping: 25,
+          delay: index * 0.05 
+        }}
+        className={`${depth > 0 ? 'ml-6 sm:ml-8 mt-2 border-l-2 border-purple-500/30 pl-2 sm:pl-3' : 'mb-2'} ${isNew ? 'animate-pulse' : ''}`}
       >
-        <div className="group relative p-2.5 sm:p-3 rounded-xl bg-card/30 hover:bg-card/50 border border-border/50 hover:border-primary/30 transition-all duration-200">
+        <div className={`group relative p-2.5 sm:p-3 rounded-xl transition-all duration-300 ${
+          isNew 
+            ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-2 border-purple-500/50' 
+            : 'bg-card/30 hover:bg-card/50 border border-border/50 hover:border-primary/30'
+        }`}>
+          {isNew && (
+            <motion.div 
+              className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl"
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.5, repeat: 2 }}
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
           
           <div className="relative flex gap-2 sm:gap-3">
