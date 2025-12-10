@@ -520,14 +520,15 @@ export default function StoryViewer() {
       longPressTimerRef.current = null;
     }
     
-    // Resume if paused
-    if (isPaused) {
-      setIsPaused(false);
-      return;
-    }
-    
     const touch = e.changedTouches[0];
     const start = touchStartRef.current;
+    
+    // Resume if paused (but still process the tap after)
+    const wasPaused = isPaused;
+    if (wasPaused) {
+      setIsPaused(false);
+    }
+    
     if (!start) return;
     
     const deltaX = touch.clientX - start.x;
@@ -536,19 +537,27 @@ export default function StoryViewer() {
     const absX = Math.abs(deltaX);
     const absY = Math.abs(deltaY);
     
-    // Quick swipe detection (< 300ms, > 50px)
-    if (deltaTime < 300 && absX > 50 && absX > absY) {
+    // If was paused, only resume - don't navigate
+    if (wasPaused) {
+      touchStartRef.current = null;
+      return;
+    }
+    
+    // Quick swipe detection (< 400ms, > 40px) - more forgiving
+    if (deltaTime < 400 && absX > 40 && absX > absY) {
       if (deltaX > 0) {
         goToPrevious();
+        if ('vibrate' in navigator) navigator.vibrate(5);
       } else {
         goToNext();
+        if ('vibrate' in navigator) navigator.vibrate(5);
       }
       touchStartRef.current = null;
       return;
     }
     
     // Vertical swipe for viewers panel / close
-    if (deltaTime < 300 && absY > 80 && absY > absX) {
+    if (deltaTime < 400 && absY > 60 && absY > absX) {
       if (deltaY < 0 && currentUserId === userId) {
         setShowViewersPanel(true);
         if (currentStory) {
@@ -562,21 +571,26 @@ export default function StoryViewer() {
       return;
     }
     
-    // Tap detection - only if minimal movement
-    if (absX < 10 && absY < 10 && deltaTime < 200) {
+    // Tap detection - more forgiving thresholds (< 20px movement, < 300ms)
+    if (absX < 20 && absY < 20 && deltaTime < 300) {
       const now = Date.now();
       const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
+      if (!rect) {
+        touchStartRef.current = null;
+        return;
+      }
       
       const tapX = touch.clientX - rect.left;
       const tapY = touch.clientY - rect.top;
       
-      // Double tap detection - 300ms window
-      if (lastTapPosRef.current && now - lastTapTimeRef.current < 300) {
+      // Double tap detection - 400ms window, more forgiving position
+      if (lastTapPosRef.current && now - lastTapTimeRef.current < 400) {
         const dx = Math.abs(tapX - lastTapPosRef.current.x);
         const dy = Math.abs(tapY - lastTapPosRef.current.y);
-        if (dx < 50 && dy < 50) {
+        if (dx < 80 && dy < 80) {
+          // Double tap - LIKE!
           handleLike(touch.clientX, touch.clientY);
+          if ('vibrate' in navigator) navigator.vibrate([10, 50, 10]);
           lastTapTimeRef.current = 0;
           lastTapPosRef.current = null;
           touchStartRef.current = null;
@@ -584,19 +598,22 @@ export default function StoryViewer() {
         }
       }
       
+      // Store this tap for potential double-tap
       lastTapTimeRef.current = now;
       lastTapPosRef.current = { x: tapX, y: tapY };
       
-      // IMMEDIATE single tap navigation - NO delay
-      const leftZone = rect.width * 0.33;
-      const rightZone = rect.width * 0.67;
+      // Single tap navigation - use wider zones (left 30%, right 70%)
+      const leftZone = rect.width * 0.30;
+      const rightZone = rect.width * 0.70;
       
       if (tapX < leftZone) {
         goToPrevious();
+        if ('vibrate' in navigator) navigator.vibrate(5);
       } else if (tapX > rightZone) {
         goToNext();
+        if ('vibrate' in navigator) navigator.vibrate(5);
       }
-      // Center tap does nothing
+      // Center tap does nothing (allows for double-tap detection)
     }
     
     touchStartRef.current = null;
