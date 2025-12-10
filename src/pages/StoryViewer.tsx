@@ -139,6 +139,7 @@ export default function StoryViewer() {
   const [isLoading, setIsLoading] = useState(true);
   const [mediaLoaded, setMediaLoaded] = useState(true);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+  const [hasShownInitialHearts, setHasShownInitialHearts] = useState(false);
   
   // Refs
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -146,6 +147,7 @@ export default function StoryViewer() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const heartCounterRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const shownHeartsForStories = useRef<Set<string>>(new Set());
   
   // Flatten all media items from all stories - memoized for stable reference
   const allMediaItems = useMemo(() => 
@@ -541,6 +543,53 @@ export default function StoryViewer() {
       if ('vibrate' in navigator) navigator.vibrate([15, 30, 15]);
     }
   }, [currentStory, currentUserId, isLiked, toggleLike, heartColors]);
+
+  // Show hearts burst when story has likes from other users
+  const showLikesHeartsBurst = useCallback((likeCount: number, storyId: string) => {
+    if (likeCount <= 0 || shownHeartsForStories.current.has(storyId)) return;
+    
+    // Mark as shown
+    shownHeartsForStories.current.add(storyId);
+    
+    // Calculate hearts based on like count (min 5, max 20)
+    const heartsToShow = Math.min(20, Math.max(5, likeCount * 2));
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const newHearts: FlyingHeart[] = [];
+    
+    for (let i = 0; i < heartsToShow; i++) {
+      const id = heartCounterRef.current++;
+      // Spread hearts across the screen
+      const startX = rect.left + Math.random() * rect.width;
+      const startY = rect.top + rect.height * 0.6 + Math.random() * (rect.height * 0.3);
+      const color = heartColors[Math.floor(Math.random() * heartColors.length)];
+      const size = 16 + Math.random() * 20; // 16-36px
+      const delay = i * 60; // Staggered entrance
+      
+      newHearts.push({ id, x: startX, y: startY, color, size, delay });
+    }
+    
+    // Add hearts with slight delay for dramatic effect
+    setTimeout(() => {
+      setFlyingHearts(prev => [...prev, ...newHearts]);
+      
+      // Remove hearts after animation
+      setTimeout(() => {
+        setFlyingHearts(prev => prev.filter(h => !newHearts.find(nh => nh.id === h.id)));
+      }, 2500);
+    }, 500);
+  }, [heartColors]);
+
+  // Trigger hearts burst when story changes and has likes
+  useEffect(() => {
+    if (currentStory && currentMedia?.likeCount && currentMedia.likeCount > 0) {
+      showLikesHeartsBurst(currentMedia.likeCount, currentStory.id);
+    }
+  }, [currentStory?.id, currentMedia?.likeCount, showLikesHeartsBurst]);
 
   // Touch tracking refs for Instagram-style gestures
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
