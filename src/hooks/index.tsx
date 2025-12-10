@@ -1,3 +1,3 @@
 // Export all custom hooks from a single location
-export { useUnifiedEngagement } from './useUnifiedEngagement';
+export { useLike } from './useLike';
 export { useEngagementOptimization } from './useEngagementOptimization';

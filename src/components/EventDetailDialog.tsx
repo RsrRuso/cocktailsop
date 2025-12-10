@@ -16,7 +16,7 @@ import { scheduleEventReminder, addToCalendar } from '@/lib/eventReminders';
 import UnifiedLikesDialog from '@/components/unified/UnifiedLikesDialog';
 import UnifiedAttendeesDialog from '@/components/unified/UnifiedAttendeesDialog';
 import UnifiedAdvancedCommentsDialog from '@/components/unified/UnifiedAdvancedCommentsDialog';
-import { useUnifiedEngagement } from '@/hooks/useUnifiedEngagement';
+import { useLike } from '@/hooks/useLike';
 
 interface Event {
   id: string;
@@ -53,7 +53,7 @@ interface EventDetailDialogProps {
 
 export const EventDetailDialog = ({ event, open, onOpenChange, onEventUpdated }: EventDetailDialogProps) => {
   const { user } = useAuth();
-  const { likedItems, toggleLike } = useUnifiedEngagement('event', user?.id);
+  const { likedItems, toggleLike } = useLike('event', user?.id);
   const [isAttending, setIsAttending] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);

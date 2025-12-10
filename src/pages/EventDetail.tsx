@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import UnifiedCommentsDialog from "@/components/unified/UnifiedCommentsDialog";
 import UnifiedLikesDialog from "@/components/unified/UnifiedLikesDialog";
 import UnifiedAttendeesDialog from "@/components/unified/UnifiedAttendeesDialog";
-import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
+import { useLike } from "@/hooks/useLike";
 
 const EventDetail = () => {
   const { id } = useParams();
@@ -24,7 +24,7 @@ const EventDetail = () => {
   const [showAttendees, setShowAttendees] = useState(false);
   const [isAttending, setIsAttending] = useState(false);
   
-  const { likedItems, toggleLike } = useUnifiedEngagement('event', user?.id);
+  const { likedItems, toggleLike } = useLike('event', user?.id);
   const isLiked = id ? likedItems.has(id) : false;
 
   useEffect(() => {

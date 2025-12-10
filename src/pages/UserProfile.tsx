@@ -22,7 +22,7 @@ import BirthdayConfetti from "@/components/BirthdayConfetti";
 import BirthdayBadge from "@/components/BirthdayBadge";
 import { useUserBirthday } from "@/hooks/useUserBirthday";
 import { FeedItem } from "@/components/FeedItem";
-import { useOptimisticLike } from "@/hooks/useOptimisticLike";
+import { useLike } from "@/hooks/useLike";
 
 interface Profile {
   id: string;
@@ -80,8 +80,8 @@ const UserProfileFeed = ({
   setMutedVideos: React.Dispatch<React.SetStateAction<Set<string>>>;
   navigate: (path: string, options?: any) => void;
 }) => {
-  const { likedItems: likedPosts, toggleLike: togglePostLike } = useOptimisticLike('post', currentUserId || '');
-  const { likedItems: likedReels, toggleLike: toggleReelLike } = useOptimisticLike('reel', currentUserId || '');
+  const { likedItems: likedPosts, toggleLike: togglePostLike } = useLike('post', currentUserId);
+  const { likedItems: likedReels, toggleLike: toggleReelLike } = useLike('reel', currentUserId);
 
   const handleToggleMute = useCallback((videoId: string) => {
     setMutedVideos(prev => {

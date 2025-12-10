@@ -10,7 +10,7 @@ import ShareDialog from "@/components/ShareDialog";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "sonner";
-import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
+import { useLike } from "@/hooks/useLike";
 
 const PostDetail = () => {
   const { id } = useParams();
@@ -24,7 +24,7 @@ const PostDetail = () => {
   const [mutedVideos] = useState(new Set<string>());
   
   // Use unified engagement hook
-  const { likedItems, toggleLike } = useUnifiedEngagement('post', user?.id);
+  const { likedItems, toggleLike } = useLike('post', user?.id);
   const isLiked = id ? likedItems.has(id) : false;
 
   useEffect(() => {

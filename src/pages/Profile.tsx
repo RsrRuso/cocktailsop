@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useRegionalRanking } from "@/hooks/useRegionalRanking";
 import { useCareerMetrics } from "@/hooks/useCareerMetrics";
-import { useOptimisticLike } from "@/hooks/useOptimisticLike";
+import { useLike } from "@/hooks/useLike";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import MusicTicker from "@/components/MusicTicker";
@@ -168,8 +168,8 @@ const Profile = () => {
   }, [queryClient, user?.id]);
   
   // Optimistic like hooks for instant updates
-  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', user?.id, handlePostLikeChange);
-  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', user?.id, handleReelLikeChange);
+  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useLike('post', user?.id, handlePostLikeChange);
+  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useLike('reel', user?.id, handleReelLikeChange);
   
   // Calculate birthday from profile data directly (no extra request)
   const birthdayData = useMemo(() => {

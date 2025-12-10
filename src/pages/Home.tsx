@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeedItem } from "@/components/FeedItem";
 import { useFeedData } from "@/hooks/useFeedData";
-import { useOptimisticLike } from "@/hooks/useOptimisticLike";
+import { useLike } from "@/hooks/useLike";
 import { EventsTicker } from "@/components/EventsTicker";
 import BirthdayFireworks from "@/components/BirthdayFireworks";
 import UserStatusIndicator from "@/components/UserStatusIndicator";
@@ -198,8 +198,8 @@ const Home = () => {
     ));
   }, [setReels]);
   
-  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useOptimisticLike('post', user?.id, handlePostLikeChange);
-  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useOptimisticLike('reel', user?.id, handleReelLikeChange);
+  const { likedItems: likedPosts, toggleLike: togglePostLike, fetchLikedItems: fetchLikedPosts } = useLike('post', user?.id, handlePostLikeChange);
+  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useLike('reel', user?.id, handleReelLikeChange);
   
   // Get current user's status (including music status)
   const { data: currentUserStatus } = useUserStatus(user?.id);
