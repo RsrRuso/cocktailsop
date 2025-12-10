@@ -572,17 +572,22 @@ export default function StoryViewer() {
     const absX = Math.abs(deltaX);
     const absY = Math.abs(deltaY);
     
-    // Horizontal swipe detection (> 50px, faster than 300ms)
-    if (deltaTime < 300 && absX > 50 && absX > absY * 1.5) {
+    // Horizontal swipe detection (> 40px, faster than 400ms) - PRIORITY
+    if (deltaTime < 400 && absX > 40 && absX > absY * 1.2) {
+      // Clear any pending single tap
       if (singleTapTimerRef.current) {
         clearTimeout(singleTapTimerRef.current);
         singleTapTimerRef.current = null;
       }
       pendingTapRef.current = null;
+      lastTapTimeRef.current = 0;
+      lastTapPosRef.current = null;
       
       if (deltaX > 0) {
+        // Swipe right = previous
         goToPrevious();
       } else {
+        // Swipe left = next
         goToNext();
       }
       if ('vibrate' in navigator) navigator.vibrate(5);
@@ -597,6 +602,8 @@ export default function StoryViewer() {
         singleTapTimerRef.current = null;
       }
       pendingTapRef.current = null;
+      lastTapTimeRef.current = 0;
+      lastTapPosRef.current = null;
       
       if (deltaY < 0 && currentUserId === userId) {
         setShowViewersPanel(true);
@@ -613,7 +620,7 @@ export default function StoryViewer() {
     }
     
     // Tap detection (minimal movement)
-    if (absX < 15 && absY < 15 && deltaTime < 200) {
+    if (absX < 20 && absY < 20 && deltaTime < 300) {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) {
         touchStartRef.current = null;
@@ -621,43 +628,51 @@ export default function StoryViewer() {
       }
       
       const tapX = touch.clientX - rect.left;
+      const tapY = touch.clientY - rect.top;
       const centerX = touch.clientX;
       const centerY = touch.clientY;
-      
-      // Check for double tap
       const now = Date.now();
-      if (lastTapPosRef.current && now - lastTapTimeRef.current < 300) {
+      
+      // Check for double tap - MUST NOT navigate or close
+      if (lastTapPosRef.current && now - lastTapTimeRef.current < 350) {
         const dx = Math.abs(tapX - lastTapPosRef.current.x);
-        const dy = Math.abs((touch.clientY - rect.top) - lastTapPosRef.current.y);
-        if (dx < 60 && dy < 60) {
-          // Clear pending single tap
+        const dy = Math.abs(tapY - lastTapPosRef.current.y);
+        
+        if (dx < 80 && dy < 80) {
+          // Clear pending single tap immediately
           if (singleTapTimerRef.current) {
             clearTimeout(singleTapTimerRef.current);
             singleTapTimerRef.current = null;
           }
           pendingTapRef.current = null;
           
-          // Double tap - show big heart and like
+          // Double tap - like with hearts, DO NOT close or navigate
           handleLike(centerX, centerY);
           if ('vibrate' in navigator) navigator.vibrate([10, 30, 10]);
+          
+          // Reset tap tracking
           lastTapTimeRef.current = 0;
           lastTapPosRef.current = null;
           touchStartRef.current = null;
-          return;
+          return; // IMPORTANT: Return here to prevent any navigation
         }
       }
       
-      // Store tap position for double-tap detection
+      // Store tap for double-tap detection
       lastTapTimeRef.current = now;
-      lastTapPosRef.current = { x: tapX, y: touch.clientY - rect.top };
+      lastTapPosRef.current = { x: tapX, y: tapY };
       
-      // Instagram-style zones: left 25% = previous, right 75% = next (no dead zone)
-      const leftZone = rect.width * 0.25;
+      // Instagram-style zones: left 30% = previous, right 70% = next
+      const leftZone = rect.width * 0.30;
       
       // Store pending tap action
       pendingTapRef.current = { x: centerX, tapX };
       
-      // Execute navigation after short delay (to allow double-tap)
+      // Execute navigation after delay (to allow double-tap check)
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+      }
+      
       singleTapTimerRef.current = setTimeout(() => {
         if (pendingTapRef.current) {
           const { tapX: pendingTapX } = pendingTapRef.current;
@@ -669,7 +684,9 @@ export default function StoryViewer() {
           if ('vibrate' in navigator) navigator.vibrate(3);
           pendingTapRef.current = null;
         }
-      }, 250); // Short delay for double-tap window
+        lastTapTimeRef.current = 0;
+        lastTapPosRef.current = null;
+      }, 350); // Match double-tap window
     }
     
     touchStartRef.current = null;
