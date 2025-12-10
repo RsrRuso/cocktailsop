@@ -9420,6 +9420,7 @@ export type Database = {
           trim_data: Json | null
           user_id: string
           view_count: number | null
+          visibility: string | null
         }
         Insert: {
           comment_count?: number | null
@@ -9436,6 +9437,7 @@ export type Database = {
           trim_data?: Json | null
           user_id: string
           view_count?: number | null
+          visibility?: string | null
         }
         Update: {
           comment_count?: number | null
@@ -9452,6 +9454,7 @@ export type Database = {
           trim_data?: Json | null
           user_id?: string
           view_count?: number | null
+          visibility?: string | null
         }
         Relationships: [
           {
