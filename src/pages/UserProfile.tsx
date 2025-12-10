@@ -1,15 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useParams, useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import BottomNav from "@/components/BottomNav";
 import MusicTicker from "@/components/MusicTicker";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Star, Heart, MessageCircle, Volume2, VolumeX, Play, Award, TrendingUp, Target, CheckCircle, Briefcase } from "lucide-react";
+import { ArrowLeft, Star, Award, TrendingUp, Target, CheckCircle, Briefcase } from "lucide-react";
 import FollowersDialog from "@/components/FollowersDialog";
 import FollowingDialog from "@/components/FollowingDialog";
 import { VenueVerification } from "@/components/VenueVerification";
@@ -22,8 +21,11 @@ import { useCareerMetrics } from "@/hooks/useCareerMetrics";
 import BirthdayConfetti from "@/components/BirthdayConfetti";
 import BirthdayBadge from "@/components/BirthdayBadge";
 import { useUserBirthday } from "@/hooks/useUserBirthday";
+import { FeedItem } from "@/components/FeedItem";
+import { useOptimisticLike } from "@/hooks/useOptimisticLike";
 
 interface Profile {
+  id: string;
   username: string;
   full_name: string;
   bio: string | null;
@@ -59,6 +61,98 @@ interface Reel {
   view_count: number;
   created_at: string;
 }
+
+// UserProfileFeed component - uses FeedItem for consistent engagement logic
+const UserProfileFeed = ({ 
+  posts, 
+  reels, 
+  profile, 
+  currentUserId, 
+  mutedVideos, 
+  setMutedVideos,
+  navigate 
+}: { 
+  posts: Post[]; 
+  reels: Reel[]; 
+  profile: Profile;
+  currentUserId?: string;
+  mutedVideos: Set<string>;
+  setMutedVideos: React.Dispatch<React.SetStateAction<Set<string>>>;
+  navigate: (path: string, options?: any) => void;
+}) => {
+  const { likedItems: likedPosts, toggleLike: togglePostLike } = useOptimisticLike('post', currentUserId || '');
+  const { likedItems: likedReels, toggleLike: toggleReelLike } = useOptimisticLike('reel', currentUserId || '');
+
+  const handleToggleMute = useCallback((videoId: string) => {
+    setMutedVideos(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(videoId)) {
+        newSet.delete(videoId);
+      } else {
+        newSet.add(videoId);
+      }
+      return newSet;
+    });
+  }, [setMutedVideos]);
+
+  const feedItems = [...posts.map(p => ({ 
+    ...p, 
+    type: 'post' as const,
+    profiles: {
+      id: profile.id || '',
+      username: profile.username,
+      full_name: profile.full_name,
+      avatar_url: profile.avatar_url,
+      badge_level: profile.badge_level,
+      professional_title: profile.professional_title
+    }
+  })), ...reels.map(r => ({ 
+    ...r, 
+    type: 'reel' as const,
+    content: r.caption,
+    media_urls: [r.video_url],
+    profiles: {
+      id: profile.id || '',
+      username: profile.username,
+      full_name: profile.full_name,
+      avatar_url: profile.avatar_url,
+      badge_level: profile.badge_level,
+      professional_title: profile.professional_title
+    }
+  }))]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  if (feedItems.length === 0) {
+    return (
+      <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
+        <p>No posts or reels yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {feedItems.map((item) => (
+        <FeedItem
+          key={`${item.type}-${item.id}`}
+          item={item}
+          currentUserId={currentUserId || ''}
+          isLiked={item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)}
+          mutedVideos={mutedVideos}
+          onLike={() => item.type === 'post' ? togglePostLike(item.id) : toggleReelLike(item.id)}
+          onDelete={() => {}}
+          onEdit={() => {}}
+          onComment={() => {}}
+          onShare={() => {}}
+          onToggleMute={handleToggleMute}
+          onFullscreen={() => navigate('/reels', { state: { scrollToReelId: item.id, reelData: item } })}
+          onViewLikes={() => {}}
+          getBadgeColor={getBadgeColor}
+        />
+      ))}
+    </div>
+  );
+};
 
 const UserProfile = () => {
   const { userId } = useParams();
@@ -440,95 +534,15 @@ const UserProfile = () => {
           </TabsList>
 
           <TabsContent value="feed" className="mt-4">
-            {[...posts.map(p => ({ ...p, type: 'post' })), ...reels.map(r => ({ ...r, type: 'reel' }))]
-              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-              .length === 0 ? (
-              <div className="glass rounded-xl p-4 text-center text-muted-foreground border border-border/50">
-                <p>No posts or reels yet</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {[...posts.map(p => ({ ...p, type: 'post' })), ...reels.map(r => ({ ...r, type: 'reel' }))]
-                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                  .map((item: any) => (
-                    item.type === 'post' ? (
-                      <div key={`post-${item.id}`} className="glass rounded-xl p-4 space-y-3 border border-border/50">
-                        {item.content && <p className="text-sm">{item.content}</p>}
-                        {item.media_urls && item.media_urls.length > 0 && (
-                          <div className={`grid gap-2 ${item.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                            {item.media_urls.map((url, idx) => (
-                              <img key={idx} src={url} alt="Post" className="w-full rounded-lg object-cover" />
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Heart className="w-4 h-4" /> {item.like_count || 0}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MessageCircle className="w-4 h-4" /> {item.comment_count || 0}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div 
-                        key={`reel-${item.id}`} 
-                        className="overflow-hidden cursor-pointer"
-                        onClick={() => navigate('/reels', { 
-                          state: { 
-                            scrollToReelId: item.id,
-                            reelData: item 
-                          } 
-                        })}
-                      >
-                        <video
-                          src={item.video_url}
-                          className="w-full aspect-[9/16] object-cover"
-                          muted
-                          playsInline
-                          loop
-                          autoPlay
-                        />
-                        <div className="p-4 space-y-2">
-                          {item.caption && <p className="text-sm">{item.caption}</p>}
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Play className="w-4 h-4" strokeWidth={1.5} /> {item.view_count || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Heart className="w-4 h-4" strokeWidth={1.5} /> {item.like_count || 0}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MessageCircle className="w-4 h-4" strokeWidth={1.5} /> {item.comment_count || 0}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMutedVideos(prev => {
-                                  const newSet = new Set(prev);
-                                  if (newSet.has(item.id)) {
-                                    newSet.delete(item.id);
-                                  } else {
-                                    newSet.add(item.id);
-                                  }
-                                  return newSet;
-                                });
-                              }}
-                              className="ml-auto"
-                            >
-                              {mutedVideos.has(item.id) ? (
-                                <Volume2 className="w-4 h-4" />
-                              ) : (
-                                <VolumeX className="w-4 h-4" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  ))}
-              </div>
-            )}
+            <UserProfileFeed 
+              posts={posts} 
+              reels={reels} 
+              profile={profile}
+              currentUserId={currentUser?.id}
+              mutedVideos={mutedVideos}
+              setMutedVideos={setMutedVideos}
+              navigate={navigate}
+            />
           </TabsContent>
 
           <TabsContent value="growth" className="mt-4 space-y-4">
