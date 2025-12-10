@@ -3,11 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Send, Trash2, MessageCircle, Reply, MoreVertical, Brain, Sparkles, TrendingUp, Heart, Zap, Wand2 } from 'lucide-react';
+import { Send, Trash2, MessageCircle, Reply, MoreVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,16 +39,8 @@ export const EnhancedCommentsDialog = ({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [aiInsights, setAiInsights] = useState({
-    totalComments: 0,
-    engagementRate: 0,
-    topCommenter: null as Comment | null,
-  });
+  const [totalComments, setTotalComments] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const suggestionTimeoutRef = useRef<number | null>(null);
 
   const config = getEngagementConfig(contentType);
 
@@ -81,17 +69,8 @@ export const EnhancedCommentsDialog = ({
     }
   }, [open, contentId, contentType]);
 
-  // AI Analytics
   useEffect(() => {
-    const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0);
-    const engagementRate = totalComments > 0 ? Math.min(100, totalComments * 10) : 0;
-    const topCommenter = comments[0] || null;
-    
-    setAiInsights({
-      totalComments,
-      engagementRate,
-      topCommenter,
-    });
+    setTotalComments(comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0));
   }, [comments]);
 
   const loadComments = async () => {
@@ -241,87 +220,6 @@ export const EnhancedCommentsDialog = ({
     }
   };
 
-  const fetchAISuggestions = async (text: string, forceNew = false) => {
-    if (text.trim().length < 10) {
-      setAiSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
-    setLoadingSuggestions(true);
-    console.log('Fetching AI suggestions for:', text);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('ai-comment-rewrite', {
-        body: { 
-          text: text.trim(), 
-          context: `${contentType} comment`,
-          timestamp: Date.now()
-        }
-      });
-
-      console.log('AI response:', data, error);
-
-      if (error) {
-        console.error('AI suggestion error:', error);
-        throw error;
-      }
-      
-      if (data?.suggestions && Array.isArray(data.suggestions) && data.suggestions.length > 0) {
-        setAiSuggestions(data.suggestions);
-        setShowSuggestions(true);
-        console.log('AI suggestions set:', data.suggestions);
-      } else {
-        console.log('No suggestions returned');
-        setAiSuggestions([]);
-        setShowSuggestions(false);
-      }
-    } catch (err) {
-      console.error('Error fetching AI suggestions:', err);
-      setAiSuggestions([]);
-      setShowSuggestions(false);
-    } finally {
-      setLoadingSuggestions(false);
-    }
-  };
-
-  const handleTextChange = (text: string) => {
-    setNewComment(text);
-    
-    // Clear previous suggestions if text is too short
-    if (text.trim().length < 10) {
-      setAiSuggestions([]);
-      setShowSuggestions(false);
-      if (suggestionTimeoutRef.current) {
-        clearTimeout(suggestionTimeoutRef.current);
-      }
-      return;
-    }
-    
-    // Debounce AI suggestions
-    if (suggestionTimeoutRef.current) {
-      clearTimeout(suggestionTimeoutRef.current);
-    }
-
-    suggestionTimeoutRef.current = window.setTimeout(() => {
-      fetchAISuggestions(text, false);
-    }, 1500);
-  };
-
-  const applySuggestion = (suggestion: string) => {
-    setNewComment(suggestion);
-    setShowSuggestions(false);
-    textareaRef.current?.focus();
-  };
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (suggestionTimeoutRef.current) {
-        clearTimeout(suggestionTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const renderComment = (comment: Comment, depth: number = 0, index: number = 0) => {
     const isOwner = user && comment.user_id === user.id;
@@ -463,90 +361,44 @@ export const EnhancedCommentsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl h-[95vh] sm:h-[90vh] w-[98vw] sm:w-[95vw] md:w-full flex flex-col p-0 gap-0 bg-gradient-to-br from-background via-background to-purple-500/5 overflow-hidden">
-        <DialogHeader className="px-3 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 border-b border-border/50 bg-gradient-to-r from-purple-500/10 to-pink-500/10 shrink-0">
+      <DialogContent className="max-w-lg h-[80vh] sm:h-[75vh] w-[95vw] flex flex-col p-0 gap-0 bg-background/80 backdrop-blur-xl border border-border/30 shadow-2xl overflow-hidden">
+        <DialogHeader className="px-4 pt-4 pb-3 border-b border-border/30 shrink-0">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-lg opacity-50 animate-pulse"></div>
-                <div className="relative p-1 sm:p-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500">
-                  <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                </div>
-              </div>
-              <div>
-                <DialogTitle className="text-base sm:text-xl">AI-Powered Comments</DialogTitle>
-                <p className="text-[10px] sm:text-sm text-muted-foreground">{aiInsights.totalComments} conversations</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-primary" />
+              <DialogTitle className="text-lg font-semibold">Comments</DialogTitle>
+              <span className="text-xs text-muted-foreground">({totalComments})</span>
             </div>
-            <Badge variant="secondary" className="gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1">
-              <Brain className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-              <span className="hidden sm:inline">Live AI</span>
-            </Badge>
           </div>
         </DialogHeader>
 
-        {/* AI Insights - Compact */}
-        {comments.length > 0 && (
-          <div className="px-3 sm:px-6 py-1.5 sm:py-2 border-b border-border/50 shrink-0">
-            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto">
-              <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20 whitespace-nowrap">
-                <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-purple-500" />
-                <span className="text-[10px] sm:text-xs font-bold text-purple-500">{aiInsights.engagementRate.toFixed(0)}%</span>
-              </div>
-              {aiInsights.topCommenter && (
-                <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-blue-500/10 to-transparent border border-blue-500/20 whitespace-nowrap">
-                  <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-blue-500" />
-                  <span className="text-[10px] sm:text-xs font-medium text-blue-500">@{aiInsights.topCommenter.profiles.username}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
-        {/* Enhanced Scrollable Comments Area */}
-        <div className="relative flex-1 min-h-0 overflow-hidden">
-          {/* Top Gradient Fade */}
-          <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-background via-background/90 to-transparent z-10 pointer-events-none"></div>
-          
-          {/* Bottom Gradient Fade */}
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background via-background/90 to-transparent z-10 pointer-events-none"></div>
-
-          <div className="h-full w-full overflow-y-auto custom-scrollbar-advanced"  style={{ scrollBehavior: 'smooth' }}>
-            <div className="px-3 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6 space-y-2 sm:space-y-3">
-          {loading ? (
-            <div className="flex items-center justify-center py-8 sm:py-12">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                <div className="relative animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-purple-500 border-t-transparent"></div>
+        {/* Scrollable Comments Area */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="px-4 py-3 space-y-2">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
               </div>
-            </div>
-          ) : comments.length === 0 ? (
-            <div className="text-center py-12 sm:py-16">
-              <div className="relative mb-3 sm:mb-4 inline-block">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full blur-xl opacity-30"></div>
-                <MessageCircle className="relative w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground" />
+            ) : comments.length === 0 ? (
+              <div className="text-center py-12">
+                <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="font-medium mb-1 text-foreground">No comments yet</p>
+                <p className="text-sm text-muted-foreground">Be the first to comment!</p>
               </div>
-              <p className="font-medium mb-1 text-sm sm:text-base text-foreground">No comments yet</p>
-              <p className="text-xs sm:text-sm text-muted-foreground">Start the conversation!</p>
-            </div>
-          ) : (
-            <AnimatePresence mode="popLayout">
-              {comments.map((comment, idx) => renderComment(comment, 0, idx))}
-            </AnimatePresence>
-          )}
-            </div>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {comments.map((comment, idx) => renderComment(comment, 0, idx))}
+              </AnimatePresence>
+            )}
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="border-t border-border/50 p-3 sm:p-4 space-y-2 sm:space-y-3 shrink-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5">
+        <form onSubmit={handleSubmit} className="border-t border-border/30 p-3 shrink-0 bg-background/50">
           {replyingTo && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 text-sm text-muted-foreground bg-purple-500/10 px-3 py-2 rounded-lg border border-purple-500/20"
-            >
-              <Reply className="w-4 h-4 text-purple-500" />
-              Replying to comment
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg mb-2">
+              <Reply className="w-4 h-4" />
+              Replying...
               <Button
                 type="button"
                 variant="ghost"
@@ -555,121 +407,36 @@ export const EnhancedCommentsDialog = ({
                   setReplyingTo(null);
                   setNewComment('');
                 }}
-                className="h-6 ml-auto"
+                className="h-6 ml-auto text-xs"
               >
                 Cancel
               </Button>
-            </motion.div>
-          )}
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Textarea
-                ref={textareaRef}
-                placeholder="Write a comment..."
-                value={newComment}
-                onChange={(e) => handleTextChange(e.target.value)}
-                className="flex-1 min-h-[60px] sm:min-h-[80px] max-h-[120px] resize-none bg-background/50 pr-10 text-sm sm:text-base"
-                disabled={submitting}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.ctrlKey) {
-                    handleSubmit();
-                  }
-                }}
-              />
-              
-              {/* AI Indicator */}
-              {loadingSuggestions && (
-                <div className="absolute top-2 right-2">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  >
-                    <Wand2 className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
-                  </motion.div>
-                </div>
-              )}
-              
-              {/* AI Suggestions Popup */}
-              <AnimatePresence>
-                {showSuggestions && aiSuggestions.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute bottom-full mb-2 left-0 right-0 z-50 max-w-full"
-                  >
-                    <Card className="p-2 sm:p-3 space-y-2 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/30 backdrop-blur-xl shadow-2xl">
-                      <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
-                        <Brain className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
-                        <span className="text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-                          AI Suggestions
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => fetchAISuggestions(newComment, true)}
-                          disabled={loadingSuggestions}
-                          className="h-5 sm:h-6 px-1.5 sm:px-2 ml-auto"
-                        >
-                          <Wand2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
-                          <span className="text-[10px] sm:text-xs">New</span>
-                        </Button>
-                        <button
-                          type="button"
-                          onClick={() => setShowSuggestions(false)}
-                          className="text-xs text-muted-foreground hover:text-foreground"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      
-                      <div className="space-y-1 sm:space-y-1.5 max-h-[150px] sm:max-h-[200px] overflow-y-auto custom-scrollbar">
-                        {aiSuggestions.map((suggestion, idx) => (
-                          <motion.button
-                            key={`${idx}-${suggestion.slice(0, 20)}`}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: idx * 0.1 }}
-                            onClick={() => applySuggestion(suggestion)}
-                            type="button"
-                            className="w-full text-left p-2 sm:p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-primary/30 transition-all group"
-                          >
-                            <div className="flex items-start gap-1.5 sm:gap-2">
-                              <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-pink-500 mt-0.5 sm:mt-1 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                              <p className="text-[11px] sm:text-sm text-foreground/90 group-hover:text-foreground transition-colors leading-relaxed">
-                                {suggestion}
-                              </p>
-                            </div>
-                          </motion.button>
-                        ))}
-                      </div>
-                    </Card>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Textarea
+              ref={textareaRef}
+              placeholder="Add comment..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              className="flex-1 min-h-[44px] max-h-[100px] resize-none bg-muted/50 border-border/30 text-sm rounded-2xl px-4 py-2.5"
+              disabled={submitting}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
+            />
             <Button
               type="submit"
               disabled={!newComment.trim() || submitting}
               size="icon"
-              className="shrink-0 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              className="shrink-0 h-10 w-10 rounded-full bg-primary hover:bg-primary/90"
             >
-              {submitting ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                >
-                  <Send className="w-4 h-4" />
-                </motion.div>
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
+              <Send className="w-4 h-4" />
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Press <kbd className="px-1.5 py-0.5 text-xs bg-accent rounded">Ctrl</kbd> + <kbd className="px-1.5 py-0.5 text-xs bg-accent rounded">Enter</kbd> to send
-          </p>
         </form>
       </DialogContent>
     </Dialog>
