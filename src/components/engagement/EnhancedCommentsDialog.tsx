@@ -77,30 +77,58 @@ export const EnhancedCommentsDialog = ({
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      // Fetch comments without joining profiles (no FK relationship exists)
+      const { data: commentsData, error: commentsError } = await supabase
         .from(config.tables.comments as any)
-        .select(`
-          id,
-          user_id,
-          content,
-          created_at,
-          parent_comment_id,
-          reactions,
-          profiles (username, avatar_url, full_name)
-        `)
+        .select(`id, user_id, content, created_at, parent_comment_id, reactions`)
         .eq(config.tables.idColumn, contentId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (commentsError) throw commentsError;
+
+      if (!commentsData || commentsData.length === 0) {
+        setComments([]);
+        return;
+      }
+
+      // Get unique user IDs and fetch their profiles separately
+      const userIds = [...new Set(commentsData.map((c: any) => c.user_id))];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url, full_name')
+        .in('id', userIds);
+
+      // Create a map for quick profile lookup
+      const profilesMap = new Map<string, any>();
+      (profilesData || []).forEach((p: any) => {
+        profilesMap.set(p.id, p);
+      });
+
+      // Merge comments with profiles
+      const commentsWithProfiles = commentsData.map((comment: any) => {
+        const profile = profilesMap.get(comment.user_id) || {
+          username: 'user',
+          avatar_url: null,
+          full_name: 'User'
+        };
+        return {
+          ...comment,
+          profiles: {
+            username: profile.username || 'user',
+            avatar_url: profile.avatar_url,
+            full_name: profile.full_name || 'User'
+          }
+        };
+      });
 
       const commentMap = new Map<string, Comment>();
       const rootComments: Comment[] = [];
 
-      (data || []).forEach((comment: any) => {
+      commentsWithProfiles.forEach((comment: any) => {
         commentMap.set(comment.id, { ...comment, replies: [] });
       });
 
-      (data || []).forEach((comment: any) => {
+      commentsWithProfiles.forEach((comment: any) => {
         if (comment.parent_comment_id) {
           const parent = commentMap.get(comment.parent_comment_id);
           if (parent) {
