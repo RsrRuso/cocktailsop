@@ -49,6 +49,9 @@ interface FlyingHeart {
   id: number;
   x: number;
   y: number;
+  color: string;
+  size: number;
+  delay: number;
 }
 
 // Memoized progress bar component - now counts individual media items
@@ -473,7 +476,21 @@ export default function StoryViewer() {
     });
   }, [navigate]);
 
-  // Like with animation
+  // Heart colors for multi-colored animation - Instagram style
+  const heartColors = useMemo(() => [
+    '#FF3B5C', // Red
+    '#FF6B8A', // Pink
+    '#FFD700', // Gold
+    '#4FACFE', // Blue
+    '#FFFFFF', // White
+    '#FF1744', // Bright red
+    '#FF80AB', // Light pink
+    '#FFC107', // Amber gold
+    '#00E5FF', // Cyan blue
+    '#E040FB', // Purple pink
+  ], []);
+
+  // Like with animation - many multi-colored hearts
   const handleLike = useCallback(async (x: number, y: number) => {
     if (!currentStory || !currentUserId) return;
 
@@ -481,20 +498,31 @@ export default function StoryViewer() {
     await toggleLike(currentStory.id);
 
     if (!wasLiked) {
-      const heartsCount = 5;
+      // Create many hearts with different colors - Instagram style burst
+      const heartsCount = 15;
+      const newHearts: FlyingHeart[] = [];
+      
       for (let i = 0; i < heartsCount; i++) {
-        setTimeout(() => {
-          const id = heartCounterRef.current++;
-          const offsetX = (Math.random() - 0.5) * 60;
-          const offsetY = (Math.random() - 0.5) * 40;
-          setFlyingHearts((prev) => [...prev, { id, x: x + offsetX, y: y + offsetY }]);
-          setTimeout(() => {
-            setFlyingHearts((prev) => prev.filter((h) => h.id !== id));
-          }, 1200);
-        }, i * 80);
+        const id = heartCounterRef.current++;
+        const offsetX = (Math.random() - 0.5) * 120;
+        const offsetY = (Math.random() - 0.5) * 80;
+        const color = heartColors[Math.floor(Math.random() * heartColors.length)];
+        const size = 20 + Math.random() * 24; // 20-44px
+        const delay = i * 40; // Staggered
+        
+        newHearts.push({ id, x: x + offsetX, y: y + offsetY, color, size, delay });
       }
+      
+      setFlyingHearts(prev => [...prev, ...newHearts]);
+      
+      // Remove hearts after animation
+      setTimeout(() => {
+        setFlyingHearts(prev => prev.filter(h => !newHearts.find(nh => nh.id === h.id)));
+      }, 1800);
+      
+      if ('vibrate' in navigator) navigator.vibrate([15, 30, 15]);
     }
-  }, [currentStory, currentUserId, isLiked, toggleLike]);
+  }, [currentStory, currentUserId, isLiked, toggleLike, heartColors]);
 
   // Touch tracking refs for Instagram-style gestures
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -880,23 +908,42 @@ export default function StoryViewer() {
               )}
             </AnimatePresence>
 
-            {/* Floating hearts animation */}
+            {/* Floating hearts animation - multi-colored Instagram style */}
             <AnimatePresence>
               {flyingHearts.map((heart) => (
                 <motion.div
                   key={heart.id}
                   className="absolute pointer-events-none z-50"
-                  initial={{ left: heart.x - 16, top: heart.y - 16, scale: 0, opacity: 1 }}
+                  initial={{ 
+                    left: heart.x - heart.size / 2, 
+                    top: heart.y - heart.size / 2, 
+                    scale: 0, 
+                    opacity: 1,
+                    rotate: Math.random() * 40 - 20,
+                  }}
                   animate={{ 
-                    top: heart.y - 150,
-                    scale: [0, 1.2, 0.8],
-                    opacity: [1, 1, 0],
-                    x: [0, Math.random() * 40 - 20],
+                    top: heart.y - 200 - Math.random() * 100,
+                    scale: [0, 1.4, 1, 0.8],
+                    opacity: [1, 1, 0.9, 0],
+                    x: [0, (Math.random() - 0.5) * 80],
+                    rotate: Math.random() * 60 - 30,
                   }}
                   exit={{ opacity: 0, scale: 0 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  transition={{ 
+                    duration: 1.2, 
+                    ease: "easeOut",
+                    delay: heart.delay / 1000,
+                  }}
                 >
-                  <Heart className="w-6 h-6 text-red-500 fill-red-500 drop-shadow-lg" />
+                  <Heart 
+                    style={{ 
+                      width: heart.size, 
+                      height: heart.size, 
+                      color: heart.color,
+                      fill: heart.color,
+                      filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))',
+                    }} 
+                  />
                 </motion.div>
               ))}
             </AnimatePresence>
