@@ -113,15 +113,29 @@ const CreateReel = () => {
 
       toast.success("Reel uploaded successfully!");
 
-      // Auto-extract music in background (non-blocking)
-      if (selectedVideo && previewUrl && !selectedMusic) {
-        extractAndAnalyzeAudio(previewUrl, selectedVideo).then(result => {
+      // Auto-extract music BEFORE navigation (must complete before clearing state)
+      const videoForExtraction = selectedVideo;
+      const urlForExtraction = previewUrl;
+      
+      if (videoForExtraction && urlForExtraction && !selectedMusic) {
+        console.log("Starting music extraction...");
+        toast.info("Analyzing audio for music...", { duration: 3000 });
+        
+        try {
+          const result = await extractAndAnalyzeAudio(urlForExtraction, videoForExtraction);
+          console.log("Extraction result:", result);
+          
           if (result.isMusic) {
             toast.success(`Music detected and added to Music Box: ${result.title}`, {
-              icon: <Wand2 className="w-4 h-4" />
+              icon: <Wand2 className="w-4 h-4" />,
+              duration: 5000
             });
+          } else {
+            console.log("No music detected in video");
           }
-        }).catch(console.error);
+        } catch (extractError) {
+          console.error("Music extraction failed:", extractError);
+        }
       }
       
       // Reset form and navigate
