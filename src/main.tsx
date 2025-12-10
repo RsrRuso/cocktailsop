@@ -1,10 +1,7 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { initPerformanceBoost } from "./lib/performanceBoost";
-
-// Force rebuild v4
 
 // Initialize performance optimizations
 initPerformanceBoost();
@@ -16,9 +13,5 @@ document.documentElement.classList.add(savedTheme);
 // Mount the app
 const container = document.getElementById("root");
 if (container) {
-  createRoot(container).render(
-    <StrictMode>
-      <App />
-    </StrictMode>
-  );
+  createRoot(container).render(<App />);
 }

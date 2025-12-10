@@ -1,11 +1,9 @@
-// Force complete rebuild v5
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
@@ -69,23 +67,10 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "react": path.resolve(__dirname, "./node_modules/react"),
-      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
-    dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
   },
   build: {
     minify: 'esbuild',
     target: 'esnext',
-    commonjsOptions: {
-      include: [/node_modules/],
-    },
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'react/jsx-runtime', 'react-dom/client'],
-    force: true,
-    esbuildOptions: {
-      jsx: 'automatic',
-    },
   },
 }));
