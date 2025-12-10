@@ -8,57 +8,44 @@ interface ExtractionResult {
 }
 
 export function useAutoMusicExtraction() {
+  // Instant extraction - just save the video URL as audio source
   const extractAndAnalyzeAudio = useCallback(async (
     videoUrl: string,
-    videoFile: File
+    videoFileName: string
   ): Promise<ExtractionResult> => {
     try {
-      console.log('Starting instant music extraction for:', videoFile.name);
+      console.log('Instant music save for:', videoFileName);
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.error('No user found for music extraction');
         return { isMusic: false };
       }
 
-      // Generate title from video filename
-      const title = generateTitleFromFile(videoFile.name);
+      // Generate title from filename
+      const title = generateTitleFromFile(videoFileName);
       
-      // Get video duration quickly
-      const duration = await getVideoDuration(videoUrl);
-      
-      if (duration < 3) {
-        console.log('Video too short for music extraction:', duration);
-        return { isMusic: false };
-      }
-
-      // Insert directly into music_tracks - browser can play audio from video URL
-      // This is INSTANT - no FFmpeg processing needed
-      const { data, error: insertError } = await supabase.from('music_tracks').insert({
+      // Insert IMMEDIATELY - no duration check, no processing
+      // Browser can play audio from video URL directly
+      const { error: insertError } = await supabase.from('music_tracks').insert({
         uploaded_by: user.id,
         title: title,
         original_url: videoUrl,
-        preview_url: videoUrl, // Video URL works for audio playback too
-        duration_sec: Math.round(duration),
+        preview_url: videoUrl,
+        duration_sec: 30, // Default - can be updated later
         category: 'extracted',
-        tags: ['extracted', 'from-reel', 'auto-detected'],
-        status: 'approved' // Auto-approve for instant availability
-      }).select().single();
+        tags: ['extracted', 'from-reel'],
+        status: 'approved'
+      });
 
       if (insertError) {
-        console.error('Failed to save music track:', insertError);
+        console.error('Music track save failed:', insertError);
         return { isMusic: false };
       }
 
-      console.log('Music track saved instantly:', title, data?.id);
-      
-      return { 
-        isMusic: true, 
-        audioUrl: videoUrl,
-        title 
-      };
+      console.log('Music saved:', title);
+      return { isMusic: true, audioUrl: videoUrl, title };
     } catch (error) {
-      console.error('Music extraction error:', error);
+      console.error('Extraction error:', error);
       return { isMusic: false };
     }
   }, []);
@@ -70,35 +57,6 @@ export function useAutoMusicExtraction() {
   };
 }
 
-// Get video duration quickly
-function getVideoDuration(videoUrl: string): Promise<number> {
-  return new Promise((resolve) => {
-    const video = document.createElement('video');
-    video.preload = 'metadata';
-    
-    video.onloadedmetadata = () => {
-      resolve(video.duration);
-      video.src = ''; // Cleanup
-    };
-    
-    video.onerror = () => {
-      resolve(30); // Default to 30 seconds if can't determine
-      video.src = '';
-    };
-    
-    // Timeout after 2 seconds
-    setTimeout(() => {
-      if (!video.duration) {
-        resolve(30);
-        video.src = '';
-      }
-    }, 2000);
-    
-    video.src = videoUrl;
-  });
-}
-
-// Generate title from filename
 function generateTitleFromFile(filename: string): string {
   const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
   const cleanName = nameWithoutExt.replace(/[_-]/g, ' ');
