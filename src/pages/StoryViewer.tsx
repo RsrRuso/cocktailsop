@@ -498,11 +498,23 @@ export default function StoryViewer() {
     }
   }, [currentStory, currentUserId, isLiked, toggleLike]);
 
-  // Smooth swipe handler using framer-motion drag
+  // Track drag offset for smooth visual feedback
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Smooth swipe handler with Instagram-like physics
+  const handleDrag = useCallback((event: any, info: PanInfo) => {
+    setDragOffset({ x: info.offset.x, y: info.offset.y });
+  }, []);
+
   const handleDragEnd = useCallback((event: any, info: PanInfo) => {
     setIsDragging(false);
-    const threshold = 40;
-    const velocityThreshold = 0.3;
+    setDragOffset({ x: 0, y: 0 });
+    
+    // Lower threshold for more responsive feel
+    const threshold = 30;
+    const velocityThreshold = 200; // pixels per second
     
     const absX = Math.abs(info.offset.x);
     const absY = Math.abs(info.offset.y);
@@ -510,7 +522,7 @@ export default function StoryViewer() {
     const velY = Math.abs(info.velocity.y);
     
     // Determine if swipe is more vertical or horizontal
-    const isVerticalSwipe = absY > absX || velY > velX;
+    const isVerticalSwipe = absY > absX * 1.5 || velY > velX * 1.5;
     
     if (isVerticalSwipe && (absY > threshold || velY > velocityThreshold)) {
       // Vertical swipe
@@ -522,30 +534,32 @@ export default function StoryViewer() {
           fetchAllLikers(currentStory.id);
         }
       } else if (info.offset.y > threshold && !showViewersPanel) {
-        // Swipe DOWN - close story
+        // Swipe DOWN - close story with animation
         navigate("/home");
       }
     } else if (!isVerticalSwipe && (absX > threshold || velX > velocityThreshold)) {
-      // Horizontal swipe for navigation
-      if (info.offset.x > 0) {
+      // Horizontal swipe - immediate navigation with smooth animation
+      if (info.offset.x > 0 || info.velocity.x > velocityThreshold) {
         setSwipeDirection('right');
-        setTimeout(() => {
-          goToPrevious();
-          setSwipeDirection(null);
-        }, 150);
+        goToPrevious();
+        setTimeout(() => setSwipeDirection(null), 200);
       } else {
         setSwipeDirection('left');
-        setTimeout(() => {
-          goToNext();
-          setSwipeDirection(null);
-        }, 150);
+        goToNext();
+        setTimeout(() => setSwipeDirection(null), 200);
       }
     }
   }, [goToPrevious, goToNext, currentUserId, userId, currentStory, showViewersPanel, navigate, fetchAllViewers, fetchAllLikers]);
 
-  // Tap handlers for left/right navigation and double-tap like
+  // Optimized tap handlers - faster response, better zones
   const handleTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (isDragging) return;
+    
+    // Clear any pending tap timeout
+    if (tapTimeoutRef.current) {
+      clearTimeout(tapTimeoutRef.current);
+      tapTimeoutRef.current = null;
+    }
     
     const clientX = 'touches' in e ? e.changedTouches?.[0]?.clientX : e.clientX;
     const clientY = 'touches' in e ? e.changedTouches?.[0]?.clientY : e.clientY;
@@ -556,11 +570,10 @@ export default function StoryViewer() {
     if (!rect) return;
     
     const now = Date.now();
-    const tapZone = rect.width / 3; // Divide into 3 zones
     const tapX = clientX - rect.left;
     
-    // Double tap detection for like
-    if (now - lastTapRef.current < 300) {
+    // Double tap detection for like - 250ms for faster feel
+    if (now - lastTapRef.current < 250) {
       handleLike(clientX, clientY);
       lastTapRef.current = 0;
       return;
@@ -568,34 +581,53 @@ export default function StoryViewer() {
     
     lastTapRef.current = now;
     
-    // Single tap after 300ms delay - navigate based on tap position
-    setTimeout(() => {
-      if (Date.now() - lastTapRef.current >= 290) {
-        if (tapX < tapZone) {
-          // Left third - go back
+    // Use 40% zones on sides for navigation (larger touch targets)
+    const leftZone = rect.width * 0.4;
+    const rightZone = rect.width * 0.6;
+    
+    // Single tap with shorter delay for snappier feel
+    tapTimeoutRef.current = setTimeout(() => {
+      if (Date.now() - lastTapRef.current >= 240) {
+        if (tapX < leftZone) {
+          // Left zone - go back
           goToPrevious();
-        } else if (tapX > rect.width - tapZone) {
-          // Right third - go forward
+        } else if (tapX > rightZone) {
+          // Right zone - go forward
           goToNext();
         }
-        // Middle third - no action (or could pause)
+        // Center zone - no action
       }
-    }, 300);
+    }, 250);
   }, [isDragging, handleLike, goToPrevious, goToNext]);
 
-  // Long press to pause
-  const handlePressStart = useCallback(() => {
-    const timer = setTimeout(() => {
+  // Long press to pause - with haptic feedback
+  const handlePressStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    longPressTimerRef.current = setTimeout(() => {
       setIsPaused(true);
-    }, 200);
-    return () => clearTimeout(timer);
+      // Trigger haptic if available
+      if ('vibrate' in navigator) {
+        navigator.vibrate(10);
+      }
+    }, 150); // Faster pause trigger
   }, []);
 
   const handlePressEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
     if (isPaused) {
       setIsPaused(false);
     }
   }, [isPaused]);
+
+  // Cleanup timers
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+      if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
+    };
+  }, []);
 
   // Get time ago
   const getTimeAgo = useCallback(() => {
@@ -688,26 +720,39 @@ export default function StoryViewer() {
             </button>
           )}
 
-          {/* Story content with smooth swipe */}
+          {/* Story content with smooth touch gestures */}
           <motion.div
             ref={containerRef}
-            className="w-full h-full flex items-center justify-center relative select-none cursor-grab active:cursor-grabbing"
-            drag
-            dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-            dragElastic={0.2}
+            className="w-full h-full flex items-center justify-center relative select-none"
+            drag="x"
+            dragDirectionLock
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.15}
+            onDrag={handleDrag}
             onDragStart={() => setIsDragging(true)}
             onDragEnd={handleDragEnd}
             onClick={handleTap}
-            onMouseDown={handlePressStart}
-            onMouseUp={handlePressEnd}
             onTouchStart={handlePressStart}
             onTouchEnd={handlePressEnd}
+            onMouseDown={handlePressStart}
+            onMouseUp={handlePressEnd}
+            onMouseLeave={handlePressEnd}
             animate={{
-              x: swipeDirection === 'left' ? -50 : swipeDirection === 'right' ? 50 : 0,
-              opacity: swipeDirection ? 0.7 : 1,
+              x: swipeDirection === 'left' ? -100 : swipeDirection === 'right' ? 100 : 0,
+              scale: swipeDirection ? 0.95 : 1,
+              opacity: swipeDirection ? 0.5 : 1,
             }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            style={{ touchAction: "none" }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 400, 
+              damping: 35,
+              mass: 0.8
+            }}
+            style={{ 
+              touchAction: "pan-y pinch-zoom",
+              WebkitTouchCallout: "none",
+              WebkitUserSelect: "none",
+            }}
           >
             {/* Loading skeleton while media loads */}
             {!mediaLoaded && (
