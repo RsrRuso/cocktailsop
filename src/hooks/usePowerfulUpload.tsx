@@ -21,28 +21,51 @@ export const usePowerfulUpload = () => {
     async (bucket: string, userId: string, file: File): Promise<UploadResult> => {
       setUploadState({
         progress: 0,
-        stage: "Starting upload",
+        stage: "Preparing...",
         isUploading: true,
       });
 
       const result = await smartUpload(bucket, userId, file, {
         onProgress: (progress) => {
-          setUploadState((prev) => ({ ...prev, progress }));
+          setUploadState((prev) => ({ 
+            ...prev, 
+            progress,
+            isUploading: true, // Keep it uploading
+          }));
         },
         onStageChange: (stage) => {
-          setUploadState((prev) => ({ ...prev, stage }));
+          setUploadState((prev) => ({ 
+            ...prev, 
+            stage,
+            isUploading: true, // Keep it uploading
+          }));
         },
-      });
-
-      setUploadState({
-        progress: 100,
-        stage: result.error ? "Failed" : "Complete",
-        isUploading: false,
       });
 
       if (result.error) {
+        setUploadState({
+          progress: 0,
+          stage: "Failed",
+          isUploading: false,
+        });
         toast.error(`Upload failed: ${result.error.message}`);
       } else {
+        // Show complete state briefly
+        setUploadState({
+          progress: 100,
+          stage: "Complete!",
+          isUploading: true,
+        });
+        
+        // Hide after a short delay
+        setTimeout(() => {
+          setUploadState({
+            progress: 100,
+            stage: "Complete",
+            isUploading: false,
+          });
+        }, 500);
+        
         toast.success("Upload complete!");
       }
 

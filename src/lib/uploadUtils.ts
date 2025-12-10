@@ -70,54 +70,6 @@ export const compressImage = async (
   });
 };
 
-// Chunked upload for large files
-export const uploadLargeFile = async (
-  bucket: string,
-  path: string,
-  file: File,
-  options: UploadOptions = {}
-): Promise<UploadResult> => {
-  const {
-    onProgress = () => {},
-    onStageChange = () => {},
-    maxRetries = 3,
-    chunkSize = 5 * 1024 * 1024, // 5MB chunks
-  } = options;
-
-  const totalChunks = Math.ceil(file.size / chunkSize);
-  
-  if (totalChunks === 1) {
-    // File is small enough, do regular upload
-    return uploadWithRetry(bucket, path, file, options);
-  }
-
-  onStageChange("Preparing upload");
-  
-  try {
-    // For large files, we'll use the standard upload but with better progress tracking
-    // Supabase handles chunking internally
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(path, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (uploadError) throw uploadError;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(path);
-
-    onProgress(100);
-    onStageChange("Complete");
-
-    return { publicUrl, path };
-  } catch (error) {
-    return { publicUrl: "", path: "", error: error as Error };
-  }
-};
-
 // Upload with real progress tracking using XMLHttpRequest
 export const uploadWithProgress = async (
   bucket: string,
@@ -140,7 +92,8 @@ export const uploadWithProgress = async (
   const url = `${supabaseUrl}/storage/v1/object/${bucket}/${path}`;
 
   return new Promise((resolve) => {
-    onStageChange("Uploading");
+    onStageChange("Uploading 0%");
+    onProgress(0);
     
     const xhr = new XMLHttpRequest();
     
@@ -159,63 +112,95 @@ export const uploadWithProgress = async (
           .getPublicUrl(path);
         
         onProgress(100);
-        onStageChange("Complete");
+        onStageChange("Complete!");
         resolve({ publicUrl, path });
       } else {
+        console.error('Upload error:', xhr.status, xhr.responseText);
         resolve({ publicUrl: "", path: "", error: new Error(`Upload failed: ${xhr.status}`) });
       }
     });
     
-    xhr.addEventListener('error', () => {
-      resolve({ publicUrl: "", path: "", error: new Error("Upload failed") });
+    xhr.addEventListener('error', (e) => {
+      console.error('XHR error:', e);
+      resolve({ publicUrl: "", path: "", error: new Error("Upload failed - network error") });
     });
     
     xhr.open('POST', url);
     xhr.setRequestHeader('Authorization', `Bearer ${token || supabaseKey}`);
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
     xhr.setRequestHeader('x-upsert', 'false');
+    xhr.setRequestHeader('Cache-Control', '3600');
     xhr.send(file);
   });
 };
 
-// Upload with automatic retry
+// Upload for large files - uses XHR for progress
+export const uploadLargeFile = async (
+  bucket: string,
+  path: string,
+  file: File,
+  options: UploadOptions = {}
+): Promise<UploadResult> => {
+  options.onStageChange?.("Uploading large file...");
+  return uploadWithProgress(bucket, path, file, options);
+};
+
+// Fallback upload using standard Supabase SDK (no progress but reliable)
+export const uploadFallback = async (
+  bucket: string,
+  path: string,
+  file: File,
+  options: UploadOptions = {}
+): Promise<UploadResult> => {
+  const { onProgress = () => {}, onStageChange = () => {} } = options;
+  
+  onStageChange("Uploading...");
+  onProgress(50); // Show indeterminate progress
+  
+  try {
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(path);
+
+    onProgress(100);
+    onStageChange("Complete!");
+
+    return { publicUrl, path };
+  } catch (error) {
+    return { publicUrl: "", path: "", error: error as Error };
+  }
+};
+
+// Upload with automatic retry and fallback
 export const uploadWithRetry = async (
   bucket: string,
   path: string,
   file: File,
   options: UploadOptions = {}
 ): Promise<UploadResult> => {
-  const {
-    onProgress = () => {},
-    onStageChange = () => {},
-    maxRetries = 3,
-  } = options;
+  const { onProgress = () => {}, onStageChange = () => {} } = options;
 
-  let lastError: Error | null = null;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      onStageChange(attempt > 1 ? `Retrying (${attempt}/${maxRetries})` : "Uploading");
-      
-      // Use real progress tracking
-      const result = await uploadWithProgress(bucket, path, file, options);
-      
-      if (result.error) throw result.error;
-      
-      return result;
-    } catch (error) {
-      lastError = error as Error;
-      if (attempt < maxRetries) {
-        onStageChange(`Failed, retrying...`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-      }
-    }
+  // Try XHR upload with progress first
+  try {
+    onStageChange("Uploading");
+    const result = await uploadWithProgress(bucket, path, file, options);
+    if (!result.error) return result;
+    console.warn('XHR upload failed, trying fallback:', result.error);
+  } catch (error) {
+    console.warn('XHR upload error, trying fallback:', error);
   }
 
-  return {
-    publicUrl: "",
-    path: "",
-    error: lastError || new Error("Upload failed"),
-  };
+  // Fallback to standard Supabase upload
+  return uploadFallback(bucket, path, file, options);
 };
 
 // Smart upload - automatically chooses best method
