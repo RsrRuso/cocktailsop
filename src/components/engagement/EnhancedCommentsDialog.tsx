@@ -389,13 +389,13 @@ export const EnhancedCommentsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg h-[80vh] sm:h-[75vh] w-[95vw] flex flex-col p-0 gap-0 !bg-black/60 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden rounded-2xl">
-        <DialogHeader className="px-4 pt-4 pb-3 border-b border-white/10 shrink-0 bg-transparent">
+      <DialogContent className="max-w-lg h-[80vh] sm:h-[75vh] w-[95vw] flex flex-col p-0 gap-0 !bg-transparent border-0 shadow-none overflow-hidden">
+        <DialogHeader className="px-4 pt-4 pb-3 shrink-0 bg-transparent">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-primary" />
-              <DialogTitle className="text-lg font-semibold text-white">Comments</DialogTitle>
-              <span className="text-xs text-white/60">({totalComments})</span>
+              <DialogTitle className="text-lg font-semibold text-white drop-shadow-lg">Comments</DialogTitle>
+              <span className="text-xs text-white/80 drop-shadow-lg">({totalComments})</span>
             </div>
           </div>
         </DialogHeader>
@@ -410,9 +410,9 @@ export const EnhancedCommentsDialog = ({
               </div>
             ) : comments.length === 0 ? (
               <div className="text-center py-12">
-                <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                <p className="font-medium mb-1 text-foreground">No comments yet</p>
-                <p className="text-sm text-muted-foreground">Be the first to comment!</p>
+                <MessageCircle className="w-12 h-12 text-white/50 mx-auto mb-3 drop-shadow-lg" />
+                <p className="font-medium mb-1 text-white drop-shadow-lg">No comments yet</p>
+                <p className="text-sm text-white/70 drop-shadow-lg">Be the first to comment!</p>
               </div>
             ) : (
               <AnimatePresence mode="popLayout">
@@ -422,7 +422,7 @@ export const EnhancedCommentsDialog = ({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="border-t border-white/10 p-3 shrink-0 bg-black/30">
+        <form onSubmit={handleSubmit} className="p-3 shrink-0 bg-transparent">
           {replyingTo && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg mb-2">
               <Reply className="w-4 h-4" />
