@@ -447,7 +447,7 @@ export const EnhancedCommentsDialog = ({
               placeholder="Add comment..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              className="flex-1 min-h-[44px] max-h-[100px] resize-none bg-muted/50 border-border/30 text-sm rounded-2xl px-4 py-2.5"
+              className="flex-1 min-h-[44px] max-h-[100px] resize-none bg-black/40 backdrop-blur-lg border-0 text-sm text-white placeholder:text-white/50 rounded-2xl px-4 py-2.5"
               disabled={submitting}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
