@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Bookmark } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SavesDialogProps {
   open: boolean;
@@ -25,6 +27,7 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
   const [saves, setSaves] = useState<SaveUser[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open && contentId) {
@@ -84,6 +87,62 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
     }
   };
 
+  const renderSavesList = () => (
+    <>
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin" />
+        </div>
+      ) : saves.length === 0 ? (
+        <p className="text-center text-muted-foreground py-8 text-base">No saves yet</p>
+      ) : (
+        <div className="space-y-2">
+          {saves.map((save) => (
+            <div 
+              key={save.id}
+              className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 active:bg-muted cursor-pointer transition-colors"
+              onClick={() => {
+                navigate(`/user/${save.user_id}`);
+                onOpenChange(false);
+              }}
+            >
+              <Avatar className="w-12 h-12">
+                <AvatarImage src={save.avatar_url || undefined} />
+                <AvatarFallback className="text-base">{save.username?.[0] || '?'}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-base truncate">
+                  {save.full_name || save.username}
+                </p>
+                <p className="text-sm text-muted-foreground truncate">
+                  @{save.username}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader className="border-b border-border pb-3">
+            <DrawerTitle className="flex items-center justify-center gap-2 text-lg">
+              <Bookmark className="w-5 h-5 text-yellow-500" />
+              Saved By
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="overflow-y-auto flex-1 px-4 py-3 pb-safe">
+            {renderSavesList()}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm max-h-[70vh] overflow-y-auto">
@@ -93,40 +152,7 @@ export const SavesDialog = ({ open, onOpenChange, contentType, contentId }: Save
             Saved By
           </DialogTitle>
         </DialogHeader>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin" />
-          </div>
-        ) : saves.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">No saves yet</p>
-        ) : (
-          <div className="space-y-3">
-            {saves.map((save) => (
-              <div 
-                key={save.id}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                onClick={() => {
-                  navigate(`/user/${save.user_id}`);
-                  onOpenChange(false);
-                }}
-              >
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={save.avatar_url || undefined} />
-                  <AvatarFallback>{save.username?.[0] || '?'}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">
-                    {save.full_name || save.username}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    @{save.username}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {renderSavesList()}
       </DialogContent>
     </Dialog>
   );
