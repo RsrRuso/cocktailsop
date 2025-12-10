@@ -138,6 +138,7 @@ export default function StoryViewer() {
   const [allLikers, setAllLikers] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [mediaLoaded, setMediaLoaded] = useState(true);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   
   // Refs
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -446,8 +447,9 @@ export default function StoryViewer() {
     setMediaLoaded(true);
   }, [currentMediaIndex]);
 
-  // Navigation
+  // Navigation with smooth transitions
   const goToNext = useCallback(() => {
+    setSlideDirection('left');
     setCurrentMediaIndex(prev => {
       if (prev < totalMediaCount - 1) {
         const nextMedia = allMediaItems[prev + 1];
@@ -465,16 +467,32 @@ export default function StoryViewer() {
   }, [totalMediaCount, allMediaItems, currentUserId, navigate, trackView, fetchRecentViewers]);
 
   const goToPrevious = useCallback(() => {
+    setSlideDirection('right');
     setCurrentMediaIndex(prev => {
       if (prev > 0) {
         setProgress(0);
         return prev - 1;
       } else {
-        navigate("/home");
+        // At first story - just replay
+        setProgress(0);
         return prev;
       }
     });
-  }, [navigate]);
+  }, []);
+
+  // Replay current story (reset progress)
+  const replayCurrent = useCallback(() => {
+    setProgress(0);
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(console.error);
+    }
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(console.error);
+    }
+    if ('vibrate' in navigator) navigator.vibrate(3);
+  }, []);
 
   // Heart colors for multi-colored animation - Instagram style
   const heartColors = useMemo(() => [
@@ -662,7 +680,7 @@ export default function StoryViewer() {
       lastTapTimeRef.current = now;
       lastTapPosRef.current = { x: tapX, y: tapY };
       
-      // Instagram-style zones: left 30% = previous, right 70% = next
+      // Instagram-style zones: left 30% = replay, right 70% = next
       const leftZone = rect.width * 0.30;
       
       // Store pending tap action
@@ -677,11 +695,12 @@ export default function StoryViewer() {
         if (pendingTapRef.current) {
           const { tapX: pendingTapX } = pendingTapRef.current;
           if (pendingTapX < leftZone) {
-            goToPrevious();
+            // Left tap = replay current story
+            replayCurrent();
           } else {
+            // Right tap = go to next
             goToNext();
           }
-          if ('vibrate' in navigator) navigator.vibrate(3);
           pendingTapRef.current = null;
         }
         lastTapTimeRef.current = 0;
@@ -690,7 +709,7 @@ export default function StoryViewer() {
     }
     
     touchStartRef.current = null;
-  }, [isPaused, goToPrevious, goToNext, currentUserId, userId, currentStory, navigate, fetchAllViewers, fetchAllLikers, handleLike]);
+  }, [isPaused, goToPrevious, goToNext, replayCurrent, currentUserId, userId, currentStory, navigate, fetchAllViewers, fetchAllLikers, handleLike]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     // Cancel long press if finger moves
@@ -842,14 +861,29 @@ export default function StoryViewer() {
               )}
             </AnimatePresence>
             
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="popLayout" initial={false}>
               <motion.div
                 key={currentMediaIndex}
-                initial={{ opacity: 0, scale: 1.02 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.15 }}
+                initial={{ 
+                  x: slideDirection === 'left' ? '100%' : slideDirection === 'right' ? '-100%' : 0,
+                  opacity: 0.5,
+                }}
+                animate={{ 
+                  x: 0, 
+                  opacity: 1,
+                }}
+                exit={{ 
+                  x: slideDirection === 'left' ? '-100%' : slideDirection === 'right' ? '100%' : 0,
+                  opacity: 0.5,
+                }}
+                transition={{ 
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                  duration: 0.3,
+                }}
                 className="w-full h-full relative"
+                onAnimationComplete={() => setSlideDirection(null)}
               >
                 {isVideo ? (
                   <div className="w-full h-full relative">
