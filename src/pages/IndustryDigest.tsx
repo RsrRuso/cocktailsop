@@ -1,14 +1,29 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Newspaper, TrendingUp, RefreshCw, Calendar, Sparkles, Clock, ExternalLink, Globe } from "lucide-react";
+import { ArrowLeft, Newspaper, TrendingUp, RefreshCw, Calendar, Sparkles, Clock, ExternalLink, Globe, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+const REGIONS = [
+  { value: "global", label: "🌍 Global" },
+  { value: "middle-east", label: "🏜️ Middle East" },
+  { value: "europe", label: "🇪🇺 Europe" },
+  { value: "north-america", label: "🇺🇸 North America" },
+  { value: "asia-pacific", label: "🌏 Asia Pacific" },
+];
 
 interface Article {
   title: string;
@@ -25,7 +40,9 @@ interface Digest {
   headline: string;
   summary: string;
   articles: Article[];
+  award_articles?: Article[];
   trending_topics: string[];
+  region?: string;
   generated_at: string;
   is_real_news?: boolean;
 }
@@ -36,9 +53,13 @@ const categoryColors: Record<string, string> = {
   "Wine": "bg-rose-500/20 text-rose-400 border-rose-500/30",
   "Restaurants": "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
   "Hotels": "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  "Hospitality": "bg-teal-500/20 text-teal-400 border-teal-500/30",
   "Industry Trends": "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
   "Awards": "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  "Openings": "bg-pink-500/20 text-pink-400 border-pink-500/30",
+  "Michelin": "bg-red-500/20 text-red-400 border-red-500/30",
+  "F&B": "bg-orange-500/20 text-orange-400 border-orange-500/30",
+  "Food & Wine": "bg-pink-500/20 text-pink-400 border-pink-500/30",
+  "Openings": "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
 };
 
 const importanceStyles: Record<string, string> = {
@@ -52,19 +73,19 @@ export default function IndustryDigest() {
   const [digest, setDigest] = useState<Digest | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState("global");
 
-  const fetchDigest = async (isRefresh = false) => {
+  const fetchDigest = async (isRefresh = false, region = selectedRegion) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
 
     try {
-      // Check localStorage for cached digest
-      const cachedDigest = localStorage.getItem("industry_digest");
-      const cachedTime = localStorage.getItem("industry_digest_time");
+      const cacheKey = `industry_digest_${region}`;
+      const cachedDigest = localStorage.getItem(cacheKey);
+      const cachedTime = localStorage.getItem(`${cacheKey}_time`);
       
       if (!isRefresh && cachedDigest && cachedTime) {
         const cacheAge = Date.now() - parseInt(cachedTime);
-        // Use cache if less than 2 hours old for real news
         if (cacheAge < 2 * 60 * 60 * 1000) {
           setDigest(JSON.parse(cachedDigest));
           setLoading(false);
@@ -72,15 +93,16 @@ export default function IndustryDigest() {
         }
       }
 
-      const { data, error } = await supabase.functions.invoke("fetch-industry-news");
+      const { data, error } = await supabase.functions.invoke("fetch-industry-news", {
+        body: { region }
+      });
 
       if (error) throw error;
 
       if (data?.success && data?.digest) {
         setDigest(data.digest);
-        // Cache the result
-        localStorage.setItem("industry_digest", JSON.stringify(data.digest));
-        localStorage.setItem("industry_digest_time", Date.now().toString());
+        localStorage.setItem(cacheKey, JSON.stringify(data.digest));
+        localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
         if (isRefresh) {
           toast.success("News refreshed with latest stories");
         }
@@ -97,8 +119,13 @@ export default function IndustryDigest() {
   };
 
   useEffect(() => {
-    fetchDigest();
-  }, []);
+    fetchDigest(false, selectedRegion);
+  }, [selectedRegion]);
+
+  const handleRegionChange = (region: string) => {
+    setSelectedRegion(region);
+    setLoading(true);
+  };
 
   const formatPubDate = (dateStr?: string) => {
     if (!dateStr) return "";
@@ -154,14 +181,28 @@ export default function IndustryDigest() {
               <h1 className="text-lg font-bold">Industry Digest</h1>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => fetchDigest(true)}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={selectedRegion} onValueChange={handleRegionChange}>
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {REGIONS.map((region) => (
+                  <SelectItem key={region.value} value={region.value}>
+                    {region.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => fetchDigest(true, selectedRegion)}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -232,6 +273,64 @@ export default function IndustryDigest() {
                   </CardContent>
                 </Card>
               </motion.div>
+
+              {/* Awards & Michelin Section */}
+              {digest.award_articles && digest.award_articles.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="space-y-3"
+                >
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <Award className="w-4 h-4 text-yellow-500" />
+                    Awards & Michelin
+                  </h3>
+                  {digest.award_articles.map((article, i) => (
+                    <motion.div
+                      key={`award-${i}`}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + i * 0.05 }}
+                    >
+                      <Card 
+                        className="bg-gradient-to-r from-yellow-500/10 to-card/50 backdrop-blur border-l-4 border-l-yellow-500 cursor-pointer hover:bg-card/70 transition-colors"
+                        onClick={() => article.link && window.open(article.link, '_blank')}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <h4 className="font-semibold text-sm leading-tight flex-1">{article.title}</h4>
+                            {article.link && (
+                              <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-3">{article.summary}</p>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${categoryColors[article.category] || 'bg-yellow-500/20 text-yellow-400'}`}
+                              >
+                                {article.category}
+                              </Badge>
+                              {article.source && (
+                                <span className="text-xs text-muted-foreground">
+                                  {article.source}
+                                </span>
+                              )}
+                            </div>
+                            {article.pubDate && (
+                              <span className="text-xs text-muted-foreground">
+                                {formatPubDate(article.pubDate)}
+                              </span>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
 
               {/* Articles */}
               <motion.div
