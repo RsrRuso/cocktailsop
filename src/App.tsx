@@ -157,6 +157,7 @@ const KitchenKDS = lazy(() => import("@/pages/KitchenKDS"));
 const ExamCenter = lazy(() => import("@/pages/ExamCenter"));
 const ExamSession = lazy(() => import("@/pages/ExamSession"));
 const CertificateView = lazy(() => import("@/pages/CertificateView"));
+const IndustryDigest = lazy(() => import("@/pages/IndustryDigest"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -328,6 +329,7 @@ const AppContent = () => {
           <Route path="/gm-command" element={<GMCommandDashboard />} />
           <Route path="/music-box" element={<MusicBox />} />
           <Route path="/music-box-admin" element={<MusicBoxAdmin />} />
+          <Route path="/industry-digest" element={<IndustryDigest />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
                 </Routes>
