@@ -332,13 +332,14 @@ export default function StoryViewer() {
     }
   }, [currentUserId]);
 
-  // Calculate story duration
+  // Calculate story duration - Instagram uses 5s for images, video plays full
   const getStoryDuration = useCallback(() => {
     if (musicData) {
       const trimStart = musicData.trimStart || 0;
-      const trimEnd = musicData.trimEnd || 45;
+      const trimEnd = musicData.trimEnd || 30;
       return (trimEnd - trimStart) * 1000;
     }
+    // Instagram: 5s for images, 15s max for videos
     return isVideo ? 15000 : 5000;
   }, [musicData, isVideo]);
 
@@ -501,16 +502,20 @@ export default function StoryViewer() {
   const lastTapTimeRef = useRef(0);
   const lastTapPosRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Instagram-style tap handler - NO delays, immediate response
+  // Single tap timer for delayed navigation (to check for double tap)
+  const singleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingTapRef = useRef<{ x: number; tapX: number } | null>(null);
+
+  // Instagram-style tap handler - immediate feel with double-tap support
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
     touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
     
-    // Long press for pause - 200ms like Instagram
+    // Long press for pause - 150ms for snappy Instagram feel
     longPressTimerRef.current = setTimeout(() => {
       setIsPaused(true);
       if ('vibrate' in navigator) navigator.vibrate(10);
-    }, 200);
+    }, 150);
   }, []);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
@@ -523,10 +528,12 @@ export default function StoryViewer() {
     const touch = e.changedTouches[0];
     const start = touchStartRef.current;
     
-    // Resume if paused (but still process the tap after)
+    // Resume if paused - just resume, don't navigate
     const wasPaused = isPaused;
     if (wasPaused) {
       setIsPaused(false);
+      touchStartRef.current = null;
+      return;
     }
     
     if (!start) return;
@@ -537,27 +544,32 @@ export default function StoryViewer() {
     const absX = Math.abs(deltaX);
     const absY = Math.abs(deltaY);
     
-    // If was paused, only resume - don't navigate
-    if (wasPaused) {
-      touchStartRef.current = null;
-      return;
-    }
-    
-    // Quick swipe detection (< 400ms, > 40px) - more forgiving
-    if (deltaTime < 400 && absX > 40 && absX > absY) {
+    // Horizontal swipe detection (> 50px, faster than 300ms)
+    if (deltaTime < 300 && absX > 50 && absX > absY * 1.5) {
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = null;
+      }
+      pendingTapRef.current = null;
+      
       if (deltaX > 0) {
         goToPrevious();
-        if ('vibrate' in navigator) navigator.vibrate(5);
       } else {
         goToNext();
-        if ('vibrate' in navigator) navigator.vibrate(5);
       }
+      if ('vibrate' in navigator) navigator.vibrate(5);
       touchStartRef.current = null;
       return;
     }
     
-    // Vertical swipe for viewers panel / close
-    if (deltaTime < 400 && absY > 60 && absY > absX) {
+    // Vertical swipe for viewers panel (up) / close (down)
+    if (deltaTime < 300 && absY > 80 && absY > absX * 1.5) {
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = null;
+      }
+      pendingTapRef.current = null;
+      
       if (deltaY < 0 && currentUserId === userId) {
         setShowViewersPanel(true);
         if (currentStory) {
@@ -567,13 +579,13 @@ export default function StoryViewer() {
       } else if (deltaY > 0) {
         navigate("/home");
       }
+      if ('vibrate' in navigator) navigator.vibrate(5);
       touchStartRef.current = null;
       return;
     }
     
-    // Tap detection - more forgiving thresholds (< 20px movement, < 300ms)
-    if (absX < 20 && absY < 20 && deltaTime < 300) {
-      const now = Date.now();
+    // Tap detection (minimal movement)
+    if (absX < 15 && absY < 15 && deltaTime < 200) {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) {
         touchStartRef.current = null;
@@ -581,16 +593,25 @@ export default function StoryViewer() {
       }
       
       const tapX = touch.clientX - rect.left;
-      const tapY = touch.clientY - rect.top;
+      const centerX = touch.clientX;
+      const centerY = touch.clientY;
       
-      // Double tap detection - 400ms window, more forgiving position
-      if (lastTapPosRef.current && now - lastTapTimeRef.current < 400) {
+      // Check for double tap
+      const now = Date.now();
+      if (lastTapPosRef.current && now - lastTapTimeRef.current < 300) {
         const dx = Math.abs(tapX - lastTapPosRef.current.x);
-        const dy = Math.abs(tapY - lastTapPosRef.current.y);
-        if (dx < 80 && dy < 80) {
-          // Double tap - LIKE!
-          handleLike(touch.clientX, touch.clientY);
-          if ('vibrate' in navigator) navigator.vibrate([10, 50, 10]);
+        const dy = Math.abs((touch.clientY - rect.top) - lastTapPosRef.current.y);
+        if (dx < 60 && dy < 60) {
+          // Clear pending single tap
+          if (singleTapTimerRef.current) {
+            clearTimeout(singleTapTimerRef.current);
+            singleTapTimerRef.current = null;
+          }
+          pendingTapRef.current = null;
+          
+          // Double tap - show big heart and like
+          handleLike(centerX, centerY);
+          if ('vibrate' in navigator) navigator.vibrate([10, 30, 10]);
           lastTapTimeRef.current = 0;
           lastTapPosRef.current = null;
           touchStartRef.current = null;
@@ -598,22 +619,29 @@ export default function StoryViewer() {
         }
       }
       
-      // Store this tap for potential double-tap
+      // Store tap position for double-tap detection
       lastTapTimeRef.current = now;
-      lastTapPosRef.current = { x: tapX, y: tapY };
+      lastTapPosRef.current = { x: tapX, y: touch.clientY - rect.top };
       
-      // Single tap navigation - use wider zones (left 30%, right 70%)
-      const leftZone = rect.width * 0.30;
-      const rightZone = rect.width * 0.70;
+      // Instagram-style zones: left 25% = previous, right 75% = next (no dead zone)
+      const leftZone = rect.width * 0.25;
       
-      if (tapX < leftZone) {
-        goToPrevious();
-        if ('vibrate' in navigator) navigator.vibrate(5);
-      } else if (tapX > rightZone) {
-        goToNext();
-        if ('vibrate' in navigator) navigator.vibrate(5);
-      }
-      // Center tap does nothing (allows for double-tap detection)
+      // Store pending tap action
+      pendingTapRef.current = { x: centerX, tapX };
+      
+      // Execute navigation after short delay (to allow double-tap)
+      singleTapTimerRef.current = setTimeout(() => {
+        if (pendingTapRef.current) {
+          const { tapX: pendingTapX } = pendingTapRef.current;
+          if (pendingTapX < leftZone) {
+            goToPrevious();
+          } else {
+            goToNext();
+          }
+          if ('vibrate' in navigator) navigator.vibrate(3);
+          pendingTapRef.current = null;
+        }
+      }, 250); // Short delay for double-tap window
     }
     
     touchStartRef.current = null;
@@ -638,6 +666,7 @@ export default function StoryViewer() {
   useEffect(() => {
     return () => {
       if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+      if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
     };
   }, []);
 
@@ -753,6 +782,21 @@ export default function StoryViewer() {
               </div>
             )}
             
+            {/* Instagram-style paused indicator */}
+            <AnimatePresence>
+              {isPaused && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.1 }}
+                  className="absolute inset-0 flex items-center justify-center bg-black/20 z-20 pointer-events-none"
+                >
+                  <span className="text-white/80 text-sm font-medium tracking-wide">PAUSED</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentMediaIndex}
@@ -820,23 +864,39 @@ export default function StoryViewer() {
               <audio ref={audioRef} src={musicData.url} loop={false} preload="auto" />
             )}
 
-            {/* Flying hearts */}
+            {/* Instagram-style big center heart on double-tap */}
+            <AnimatePresence>
+              {flyingHearts.length > 0 && (
+                <motion.div
+                  key="center-heart"
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: [0, 1.3, 1], opacity: [0, 1, 1, 0] }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                >
+                  <Heart className="w-24 h-24 sm:w-32 sm:h-32 text-white fill-white drop-shadow-2xl" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Floating hearts animation */}
             <AnimatePresence>
               {flyingHearts.map((heart) => (
                 <motion.div
                   key={heart.id}
                   className="absolute pointer-events-none z-50"
-                  initial={{ left: heart.x - 24, top: heart.y - 24, scale: 0, opacity: 1 }}
+                  initial={{ left: heart.x - 16, top: heart.y - 16, scale: 0, opacity: 1 }}
                   animate={{ 
-                    top: heart.y - 200,
-                    scale: [0, 1.5, 1.2, 1],
-                    opacity: [1, 1, 1, 0],
-                    x: [0, Math.random() * 60 - 30, Math.random() * 40 - 20],
+                    top: heart.y - 150,
+                    scale: [0, 1.2, 0.8],
+                    opacity: [1, 1, 0],
+                    x: [0, Math.random() * 40 - 20],
                   }}
                   exit={{ opacity: 0, scale: 0 }}
-                  transition={{ duration: 1, ease: "easeOut" }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
                 >
-                  <Heart className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 fill-red-500 drop-shadow-lg" />
+                  <Heart className="w-6 h-6 text-red-500 fill-red-500 drop-shadow-lg" />
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -883,65 +943,85 @@ export default function StoryViewer() {
         </div>
       </div>
 
-      {/* Bottom Actions Bar - Transparent frameless */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-around px-4 py-4 bg-gradient-to-t from-black/60 to-transparent">
-        {/* Activity */}
-        <button 
-          className="flex flex-col items-center gap-1"
-          onClick={() => currentUserId === userId && setShowInsights(true)}
-        >
-          <div className="flex -space-x-2">
-            {recentViewers.length > 0 ? (
-              recentViewers.slice(0, 3).map((viewer, i) => (
-                <OptimizedAvatar
-                  key={i}
-                  src={viewer.avatar_url}
-                  alt={viewer.full_name || "Viewer"}
-                  className="w-6 h-6 border border-black/50"
-                />
-              ))
-            ) : (
-              <div className="w-6 h-6 rounded-full bg-white/20" />
-            )}
+      {/* Bottom Actions Bar - Instagram style with reply input */}
+      <div className="absolute bottom-0 left-0 right-0 px-3 pb-4 pt-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+        {/* Reply input row - Instagram style */}
+        {currentUserId !== userId && (
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex-1 flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2.5">
+              <input
+                type="text"
+                placeholder={`Reply to ${profile?.full_name || profile?.username}...`}
+                className="flex-1 bg-transparent text-white placeholder:text-white/50 text-sm outline-none"
+                onFocus={() => setIsPaused(true)}
+                onBlur={() => setIsPaused(false)}
+              />
+              <button className="p-1">
+                <Heart className={`w-5 h-5 ${isLiked ? 'text-red-500 fill-red-500' : 'text-white/70'}`} onClick={() => currentStory && handleLike(window.innerWidth / 2, window.innerHeight / 2)} />
+              </button>
+            </div>
+            <button 
+              className="p-2.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
+              onClick={() => toast.info("Share feature coming soon")}
+            >
+              <Send className="w-5 h-5 text-white" />
+            </button>
           </div>
-          <span className="text-white/80 text-xs">Activity</span>
-        </button>
+        )}
+        
+        {/* Owner actions row */}
+        {currentUserId === userId && (
+          <div className="flex items-center justify-around">
+            {/* Activity */}
+            <button 
+              className="flex flex-col items-center gap-1"
+              onClick={() => setShowInsights(true)}
+            >
+              <div className="flex -space-x-2">
+                {recentViewers.length > 0 ? (
+                  recentViewers.slice(0, 3).map((viewer, i) => (
+                    <OptimizedAvatar
+                      key={i}
+                      src={viewer.avatar_url}
+                      alt={viewer.full_name || "Viewer"}
+                      className="w-6 h-6 border border-black/50"
+                    />
+                  ))
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-white/20" />
+                )}
+              </div>
+              <span className="text-white/80 text-xs">Activity</span>
+            </button>
 
-        {/* Highlight */}
-        <button 
-          className="flex flex-col items-center gap-1"
-          onClick={() => toast.info("Highlight feature coming soon")}
-        >
-          <Heart className={`w-6 h-6 ${isLiked ? 'text-red-500 fill-red-500' : 'text-white/90'}`} />
-          <span className="text-white/80 text-xs">Highlight</span>
-        </button>
+            {/* Highlight */}
+            <button 
+              className="flex flex-col items-center gap-1"
+              onClick={() => toast.info("Highlight feature coming soon")}
+            >
+              <Heart className="w-6 h-6 text-white/90" />
+              <span className="text-white/80 text-xs">Highlight</span>
+            </button>
 
-        {/* Mention */}
-        <button 
-          className="flex flex-col items-center gap-1"
-          onClick={() => toast.info("Mention feature coming soon")}
-        >
-          <AtSign className="w-6 h-6 text-white/90" />
-          <span className="text-white/80 text-xs">Mention</span>
-        </button>
+            {/* Share */}
+            <button 
+              className="flex flex-col items-center gap-1"
+              onClick={() => toast.info("Share feature coming soon")}
+            >
+              <Send className="w-6 h-6 text-white/90" />
+              <span className="text-white/80 text-xs">Share</span>
+            </button>
 
-        {/* Send */}
-        <button 
-          className="flex flex-col items-center gap-1"
-          onClick={() => toast.info("Share feature coming soon")}
-        >
-          <Send className="w-6 h-6 text-white/90" />
-          <span className="text-white/80 text-xs">Send</span>
-        </button>
-
-        {/* More */}
-        <button 
-          className="flex flex-col items-center gap-1"
-          onClick={() => toast.info("More options coming soon")}
-        >
-          <MoreHorizontal className="w-6 h-6 text-white/90" />
-          <span className="text-white/80 text-xs">More</span>
-        </button>
+            {/* More */}
+            <button 
+              className="flex flex-col items-center gap-1"
+              onClick={() => toast.info("More options coming soon")}
+            >
+              <MoreHorizontal className="w-6 h-6 text-white/90" />
+              <span className="text-white/80 text-xs">More</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Swipe Up Indicator - Icon only */}
