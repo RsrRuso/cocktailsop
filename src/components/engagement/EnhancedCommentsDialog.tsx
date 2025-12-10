@@ -45,7 +45,8 @@ export const EnhancedCommentsDialog = ({
   const [submitting, setSubmitting] = useState(false);
   const [totalComments, setTotalComments] = useState(0);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
-  const [commentReactions, setCommentReactions] = useState<Record<string, string[]>>({});
+  const [userReactions, setUserReactions] = useState<Record<string, string>>({});
+  const [reactionCounts, setReactionCounts] = useState<Record<string, Record<string, number>>>({});
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -255,21 +256,77 @@ export const EnhancedCommentsDialog = ({
     }
   };
 
-  const handleReaction = useCallback((commentId: string, emoji: string) => {
+  const handleReaction = useCallback(async (commentId: string, emoji: string) => {
+    if (!user) return;
+    
     haptic.mediumTap();
-    setCommentReactions(prev => ({
-      ...prev,
-      [commentId]: [...(prev[commentId] || []), emoji]
-    }));
     setShowEmojiPicker(null);
-    toast.success(`Reacted with ${emoji}`);
-  }, [haptic]);
+    
+    const currentReaction = userReactions[commentId];
+    
+    // If same emoji, remove reaction (toggle off)
+    if (currentReaction === emoji) {
+      // Optimistic update - remove
+      setUserReactions(prev => {
+        const next = { ...prev };
+        delete next[commentId];
+        return next;
+      });
+      setReactionCounts(prev => ({
+        ...prev,
+        [commentId]: {
+          ...prev[commentId],
+          [emoji]: Math.max(0, (prev[commentId]?.[emoji] || 1) - 1)
+        }
+      }));
+      
+      // Delete from DB
+      try {
+        await supabase
+          .from('post_comment_reactions' as any)
+          .delete()
+          .eq('comment_id', commentId)
+          .eq('user_id', user.id);
+      } catch (err) {
+        console.error('Error removing reaction:', err);
+      }
+    } else {
+      // New reaction or changing reaction
+      // Optimistic update
+      setUserReactions(prev => ({ ...prev, [commentId]: emoji }));
+      setReactionCounts(prev => {
+        const counts = { ...prev[commentId] };
+        // Decrement old reaction if exists
+        if (currentReaction && counts[currentReaction]) {
+          counts[currentReaction] = Math.max(0, counts[currentReaction] - 1);
+        }
+        // Increment new reaction
+        counts[emoji] = (counts[emoji] || 0) + 1;
+        return { ...prev, [commentId]: counts };
+      });
+      
+      try {
+        // Upsert: insert or update on conflict
+        const { error } = await supabase
+          .from('post_comment_reactions' as any)
+          .upsert({
+            comment_id: commentId,
+            user_id: user.id,
+            reaction_type: emoji
+          }, { onConflict: 'comment_id,user_id' });
+        
+        if (error) throw error;
+      } catch (err) {
+        console.error('Error saving reaction:', err);
+      }
+    }
+  }, [haptic, user, userReactions]);
 
   const handleLongPressStart = useCallback((commentId: string) => {
     longPressTimer.current = setTimeout(() => {
       haptic.heavyTap();
       setShowEmojiPicker(commentId);
-    }, 400); // 400ms for long press
+    }, 1500); // 1.5 seconds like Instagram
   }, [haptic]);
 
   const handleLongPressEnd = useCallback(() => {
@@ -294,7 +351,8 @@ export const EnhancedCommentsDialog = ({
     const isOwner = user && comment.user_id === user.id;
     const isEditing = editingId === comment.id;
     const isNew = comment.id.startsWith('temp-') || (Date.now() - new Date(comment.created_at).getTime()) < 3000;
-    const reactions = commentReactions[comment.id] || [];
+    const myReaction = userReactions[comment.id];
+    const counts = reactionCounts[comment.id] || {};
     const showingEmojis = showEmojiPicker === comment.id;
 
     return (
@@ -368,11 +426,24 @@ export const EnhancedCommentsDialog = ({
               )}
               
               {/* Reactions display */}
-              {reactions.length > 0 && (
-                <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                  {reactions.map((emoji, idx) => (
-                    <span key={idx} className="text-sm">{emoji}</span>
-                  ))}
+              {(Object.keys(counts).length > 0 || myReaction) && (
+                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                  {Object.entries(counts)
+                    .filter(([_, count]) => count > 0)
+                    .map(([emoji, count]) => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReaction(comment.id, emoji)}
+                        className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs transition-all ${
+                          myReaction === emoji 
+                            ? 'bg-primary/30 border border-primary/50' 
+                            : 'bg-white/10 hover:bg-white/20'
+                        }`}
+                      >
+                        <span>{emoji}</span>
+                        <span className="text-white/70">{count}</span>
+                      </button>
+                    ))}
                 </div>
               )}
               
