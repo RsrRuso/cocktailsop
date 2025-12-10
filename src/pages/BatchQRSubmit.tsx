@@ -51,14 +51,58 @@ const BatchQRSubmit = () => {
 
       setQrData(qrCodeData);
 
-      // Load all available recipes for this user/group
-      const { data: recipesData, error: recipesError } = await supabase
+      // Load available recipes - try multiple approaches due to RLS
+      let recipesData: any[] = [];
+      
+      // First, try to load the specific recipe from the QR code's recipe_id
+      if (qrCodeData.recipe_id) {
+        const { data: linkedRecipe, error: linkedError } = await supabase
+          .from("batch_recipes")
+          .select("*")
+          .eq("id", qrCodeData.recipe_id)
+          .maybeSingle();
+        
+        if (linkedRecipe && !linkedError) {
+          recipesData.push(linkedRecipe);
+        }
+      }
+      
+      // Also try to load from recipe_data stored in QR code (fallback)
+      if (recipesData.length === 0 && qrCodeData.recipe_data) {
+        const recipeFromQR = qrCodeData.recipe_data as Record<string, any>;
+        if (recipeFromQR && typeof recipeFromQR === 'object' && recipeFromQR.recipe_name) {
+          // Use the recipe data embedded in QR code
+          recipesData.push({
+            id: qrCodeData.recipe_id,
+            recipe_name: recipeFromQR.recipe_name,
+            description: recipeFromQR.description || '',
+            ingredients: recipeFromQR.ingredients || [],
+            current_serves: recipeFromQR.current_serves || 1,
+          });
+        }
+      }
+      
+      // Try to load all accessible recipes as well
+      const { data: accessibleRecipes } = await supabase
         .from("batch_recipes")
-        .select("*")
-        .eq("user_id", qrCodeData.user_id);
-
-      if (recipesError) throw recipesError;
-      setRecipes(recipesData || []);
+        .select("*");
+      
+      if (accessibleRecipes && accessibleRecipes.length > 0) {
+        // Merge without duplicates
+        const existingIds = new Set(recipesData.map(r => r.id));
+        for (const recipe of accessibleRecipes) {
+          if (!existingIds.has(recipe.id)) {
+            recipesData.push(recipe);
+          }
+        }
+      }
+      
+      setRecipes(recipesData);
+      
+      // Auto-select if only one recipe
+      if (recipesData.length === 1) {
+        setSelectedRecipeId(recipesData[0].id);
+      }
 
       // Auto-fill producer name from current user profile
       const { data: { user } } = await supabase.auth.getUser();
@@ -67,7 +111,7 @@ const BatchQRSubmit = () => {
           .from("profiles")
           .select("full_name, username")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         if (profile) {
           setProducedByName(profile.full_name || profile.username || "");
