@@ -118,6 +118,65 @@ export const uploadLargeFile = async (
   }
 };
 
+// Upload with real progress tracking using XMLHttpRequest
+export const uploadWithProgress = async (
+  bucket: string,
+  path: string,
+  file: File,
+  options: UploadOptions = {}
+): Promise<UploadResult> => {
+  const {
+    onProgress = () => {},
+    onStageChange = () => {},
+  } = options;
+
+  // Get session for auth token
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  
+  const url = `${supabaseUrl}/storage/v1/object/${bucket}/${path}`;
+
+  return new Promise((resolve) => {
+    onStageChange("Uploading");
+    
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        onProgress(percent);
+        onStageChange(`Uploading ${percent}%`);
+      }
+    });
+    
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const { data: { publicUrl } } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(path);
+        
+        onProgress(100);
+        onStageChange("Complete");
+        resolve({ publicUrl, path });
+      } else {
+        resolve({ publicUrl: "", path: "", error: new Error(`Upload failed: ${xhr.status}`) });
+      }
+    });
+    
+    xhr.addEventListener('error', () => {
+      resolve({ publicUrl: "", path: "", error: new Error("Upload failed") });
+    });
+    
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Authorization', `Bearer ${token || supabaseKey}`);
+    xhr.setRequestHeader('x-upsert', 'false');
+    xhr.send(file);
+  });
+};
+
 // Upload with automatic retry
 export const uploadWithRetry = async (
   bucket: string,
@@ -137,30 +196,12 @@ export const uploadWithRetry = async (
     try {
       onStageChange(attempt > 1 ? `Retrying (${attempt}/${maxRetries})` : "Uploading");
       
-      // Simulate progress for better UX
-      const progressInterval = setInterval(() => {
-        onProgress(Math.min(90, Math.random() * 30 + 30));
-      }, 300);
-
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(path, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      clearInterval(progressInterval);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(path);
-
-      onProgress(100);
-      onStageChange("Complete");
-
-      return { publicUrl, path };
+      // Use real progress tracking
+      const result = await uploadWithProgress(bucket, path, file, options);
+      
+      if (result.error) throw result.error;
+      
+      return result;
     } catch (error) {
       lastError = error as Error;
       if (attempt < maxRetries) {
