@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,13 +9,16 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { ContentType, Comment, getEngagementConfig } from '@/types/engagement';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useHaptic } from '@/hooks/useHaptic';
+
+const REACTION_EMOJIS = ['❤️', '😂', '😮', '😢', '😍', '🙏', '👍', '🔥'];
 
 interface EnhancedCommentsDialogProps {
   open: boolean;
@@ -33,6 +36,7 @@ export const EnhancedCommentsDialog = ({
   onCommentChange
 }: EnhancedCommentsDialogProps) => {
   const { user } = useAuth();
+  const haptic = useHaptic();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
@@ -40,7 +44,10 @@ export const EnhancedCommentsDialog = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [totalComments, setTotalComments] = useState(0);
+  const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+  const [commentReactions, setCommentReactions] = useState<Record<string, string[]>>({});
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   const config = getEngagementConfig(contentType);
 
@@ -248,11 +255,47 @@ export const EnhancedCommentsDialog = ({
     }
   };
 
+  const handleReaction = useCallback((commentId: string, emoji: string) => {
+    haptic.mediumTap();
+    setCommentReactions(prev => ({
+      ...prev,
+      [commentId]: [...(prev[commentId] || []), emoji]
+    }));
+    setShowEmojiPicker(null);
+    toast.success(`Reacted with ${emoji}`);
+  }, [haptic]);
+
+  const handleLongPressStart = useCallback((commentId: string) => {
+    longPressTimer.current = setTimeout(() => {
+      haptic.heavyTap();
+      setShowEmojiPicker(commentId);
+    }, 400); // 400ms for long press
+  }, [haptic]);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleSwipe = useCallback((commentId: string, info: PanInfo, comment: Comment) => {
+    // Swipe left to reply (negative x)
+    if (info.offset.x < -80) {
+      haptic.lightTap();
+      setReplyingTo(commentId);
+      setNewComment(`@${comment.profiles.username} `);
+      textareaRef.current?.focus();
+    }
+  }, [haptic]);
+
 
   const renderComment = (comment: Comment, depth: number = 0, index: number = 0) => {
     const isOwner = user && comment.user_id === user.id;
     const isEditing = editingId === comment.id;
     const isNew = comment.id.startsWith('temp-') || (Date.now() - new Date(comment.created_at).getTime()) < 3000;
+    const reactions = commentReactions[comment.id] || [];
+    const showingEmojis = showEmojiPicker === comment.id;
 
     return (
       <motion.div
@@ -273,11 +316,27 @@ export const EnhancedCommentsDialog = ({
         }}
         className={`${depth > 0 ? 'ml-6 sm:ml-8 mt-2 border-l-2 border-purple-500/30 pl-2 sm:pl-3' : 'mb-2'} ${isNew ? 'animate-pulse' : ''}`}
       >
-        <div className={`group relative p-2.5 sm:p-3 rounded-xl transition-all duration-300 ${
-          isNew 
-            ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-2 border-purple-500/50' 
-            : 'bg-card/30 hover:bg-card/50 border border-border/50 hover:border-primary/30'
-        }`}>
+        <motion.div 
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.3}
+          onDragEnd={(_, info) => handleSwipe(comment.id, info, comment)}
+          onTouchStart={() => handleLongPressStart(comment.id)}
+          onTouchEnd={handleLongPressEnd}
+          onMouseDown={() => handleLongPressStart(comment.id)}
+          onMouseUp={handleLongPressEnd}
+          onMouseLeave={handleLongPressEnd}
+          className={`group relative p-2.5 sm:p-3 rounded-xl transition-all duration-300 cursor-grab active:cursor-grabbing ${
+            isNew 
+              ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-2 border-purple-500/50' 
+              : 'bg-black/30 backdrop-blur-sm hover:bg-black/40 border border-white/10 hover:border-primary/30'
+          }`}
+        >
+          {/* Swipe hint */}
+          <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-50 transition-opacity">
+            <Reply className="w-4 h-4 text-primary" />
+          </div>
+
           {isNew && (
             <motion.div 
               className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl"
@@ -285,7 +344,6 @@ export const EnhancedCommentsDialog = ({
               transition={{ duration: 1.5, repeat: 2 }}
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
           
           <div className="relative flex gap-2 sm:gap-3">
             <Avatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
@@ -296,12 +354,12 @@ export const EnhancedCommentsDialog = ({
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                <span className="font-normal text-[10px] sm:text-xs">{comment.profiles.full_name}</span>
-                <span className="text-[10px] sm:text-xs text-muted-foreground">
+                <span className="font-normal text-[10px] sm:text-xs text-white">{comment.profiles.full_name}</span>
+                <span className="text-[10px] sm:text-xs text-white/60">
                   @{comment.profiles.username}
                 </span>
-                <span className="text-[10px] sm:text-xs text-muted-foreground">•</span>
-                <span className="text-[10px] sm:text-xs text-muted-foreground">
+                <span className="text-[10px] sm:text-xs text-white/60">•</span>
+                <span className="text-[10px] sm:text-xs text-white/60">
                   {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                 </span>
               </div>
@@ -310,7 +368,7 @@ export const EnhancedCommentsDialog = ({
                 <div className="mt-2 space-y-2">
                   <Textarea
                     defaultValue={comment.content}
-                    className="min-h-[60px] bg-background/50"
+                    className="min-h-[60px] bg-black/50 border-white/20 text-white"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && e.ctrlKey) {
                         handleEdit(comment.id, e.currentTarget.value);
@@ -333,14 +391,23 @@ export const EnhancedCommentsDialog = ({
                   </div>
                 </div>
               ) : (
-                <p className="text-xs sm:text-sm mt-0.5 whitespace-pre-wrap break-words text-foreground/90 leading-relaxed">{comment.content}</p>
+                <p className="text-xs sm:text-sm mt-0.5 whitespace-pre-wrap break-words text-white/90 leading-relaxed">{comment.content}</p>
+              )}
+              
+              {/* Reactions display */}
+              {reactions.length > 0 && (
+                <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                  {reactions.map((emoji, idx) => (
+                    <span key={idx} className="text-sm">{emoji}</span>
+                  ))}
+                </div>
               )}
               
               <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 sm:h-7 text-[10px] sm:text-xs px-2 hover:bg-purple-500/10 hover:text-purple-500 transition-colors"
+                  className="h-6 sm:h-7 text-[10px] sm:text-xs px-2 text-white/70 hover:bg-purple-500/20 hover:text-purple-400 transition-colors"
                   onClick={() => {
                     setReplyingTo(comment.id);
                     setNewComment(`@${comment.profiles.username} `);
@@ -353,17 +420,17 @@ export const EnhancedCommentsDialog = ({
                 {isOwner && !isEditing && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-white/70 hover:text-white">
                         <MoreVertical className="w-3 h-3" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditingId(comment.id)}>
+                    <DropdownMenuContent align="end" className="bg-black/90 backdrop-blur-xl border-white/20">
+                      <DropdownMenuItem onClick={() => setEditingId(comment.id)} className="text-white hover:bg-white/10">
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => handleDelete(comment.id)}
-                        className="text-destructive"
+                        className="text-red-400 hover:bg-red-500/20"
                       >
                         <Trash2 className="w-3 h-3 mr-2" />
                         Delete
@@ -374,7 +441,29 @@ export const EnhancedCommentsDialog = ({
               </div>
             </div>
           </div>
-        </div>
+
+          {/* Emoji Picker on Long Press */}
+          <AnimatePresence>
+            {showingEmojis && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                className="absolute -top-12 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-xl rounded-full px-3 py-2 flex gap-1 border border-white/20 shadow-xl z-50"
+              >
+                {REACTION_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleReaction(comment.id, emoji)}
+                    className="text-xl hover:scale-125 transition-transform p-1"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
         
         <AnimatePresence>
           {comment.replies && comment.replies.length > 0 && (
