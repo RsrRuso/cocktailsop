@@ -35,17 +35,32 @@ const BatchQRSubmit = () => {
 
   const loadQRData = async () => {
     try {
-      // Verify QR code is valid
+      console.log("Loading QR data for ID:", qrId);
+      
+      if (!qrId) {
+        console.error("No QR ID provided");
+        toast.error("No QR code ID in URL");
+        return;
+      }
+
+      // Verify QR code is valid - this should work for anyone (RLS allows reading active QR codes)
       const { data: qrCodeData, error: qrError } = await supabase
         .from("batch_qr_codes")
-        .select("*")
+        .select("*, recipe_data")
         .eq("id", qrId)
+        .eq("is_active", true)
         .maybeSingle();
 
-      if (qrError) throw qrError;
+      console.log("QR Code query result:", { qrCodeData, qrError });
 
-      if (!qrCodeData || !(qrCodeData as any).is_active) {
-        toast.error("Invalid or inactive QR code");
+      if (qrError) {
+        console.error("QR Error:", qrError);
+        throw qrError;
+      }
+
+      if (!qrCodeData) {
+        console.error("QR code not found or inactive for ID:", qrId);
+        toast.error("QR code not found or inactive");
         return;
       }
 
@@ -54,24 +69,11 @@ const BatchQRSubmit = () => {
       // Load available recipes - try multiple approaches due to RLS
       let recipesData: any[] = [];
       
-      // First, try to load the specific recipe from the QR code's recipe_id
-      if (qrCodeData.recipe_id) {
-        const { data: linkedRecipe, error: linkedError } = await supabase
-          .from("batch_recipes")
-          .select("*")
-          .eq("id", qrCodeData.recipe_id)
-          .maybeSingle();
-        
-        if (linkedRecipe && !linkedError) {
-          recipesData.push(linkedRecipe);
-        }
-      }
-      
-      // Also try to load from recipe_data stored in QR code (fallback)
-      if (recipesData.length === 0 && qrCodeData.recipe_data) {
+      // First, use the recipe_data embedded in QR code (always available)
+      if (qrCodeData.recipe_data) {
         const recipeFromQR = qrCodeData.recipe_data as Record<string, any>;
+        console.log("Recipe from QR data:", recipeFromQR);
         if (recipeFromQR && typeof recipeFromQR === 'object' && recipeFromQR.recipe_name) {
-          // Use the recipe data embedded in QR code
           recipesData.push({
             id: qrCodeData.recipe_id,
             recipe_name: recipeFromQR.recipe_name,
@@ -82,7 +84,22 @@ const BatchQRSubmit = () => {
         }
       }
       
-      // Try to load all accessible recipes as well
+      // Try to load the specific recipe from database (might fail due to RLS but that's ok)
+      if (recipesData.length === 0 && qrCodeData.recipe_id) {
+        const { data: linkedRecipe, error: linkedError } = await supabase
+          .from("batch_recipes")
+          .select("*")
+          .eq("id", qrCodeData.recipe_id)
+          .maybeSingle();
+        
+        console.log("Linked recipe from DB:", { linkedRecipe, linkedError });
+        
+        if (linkedRecipe && !linkedError) {
+          recipesData.push(linkedRecipe);
+        }
+      }
+      
+      // Try to load all accessible recipes as well (for logged-in users)
       const { data: accessibleRecipes } = await supabase
         .from("batch_recipes")
         .select("*");
@@ -97,11 +114,18 @@ const BatchQRSubmit = () => {
         }
       }
       
+      console.log("Final recipes data:", recipesData);
       setRecipes(recipesData);
       
       // Auto-select if only one recipe
       if (recipesData.length === 1) {
         setSelectedRecipeId(recipesData[0].id);
+      } else if (recipesData.length > 0) {
+        // Auto-select the recipe that matches the QR code's recipe_id
+        const matchingRecipe = recipesData.find(r => r.id === qrCodeData.recipe_id);
+        if (matchingRecipe) {
+          setSelectedRecipeId(matchingRecipe.id);
+        }
       }
 
       // Auto-fill producer name from current user profile
@@ -247,8 +271,11 @@ const BatchQRSubmit = () => {
             <p className="text-muted-foreground text-sm mb-1">
               This QR code may have expired or been deleted.
             </p>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-muted-foreground text-xs mb-2">
               Please ask your team leader for a new QR code.
+            </p>
+            <p className="text-xs text-muted-foreground/50 font-mono break-all">
+              ID: {qrId}
             </p>
           </div>
           <Button onClick={() => navigate("/")} variant="outline" className="w-full">
