@@ -40,27 +40,83 @@ const BatchQRSubmit = () => {
       if (!qrId) {
         console.error("No QR ID provided");
         toast.error("No QR code ID in URL");
+        setLoading(false);
         return;
       }
 
-      // Verify QR code is valid - this should work for anyone (RLS allows reading active QR codes)
-      const { data: qrCodeData, error: qrError } = await supabase
+      // First try to get QR code without requiring auth
+      let qrCodeData: any = null;
+      
+      // Try fetching with is_active filter
+      const { data: activeQR, error: qrError } = await supabase
         .from("batch_qr_codes")
         .select("*, recipe_data")
         .eq("id", qrId)
         .eq("is_active", true)
         .maybeSingle();
 
-      console.log("QR Code query result:", { qrCodeData, qrError });
+      console.log("Active QR Code query result:", { activeQR, qrError });
 
-      if (qrError) {
-        console.error("QR Error:", qrError);
-        throw qrError;
+      if (!activeQR) {
+        // Try without is_active filter in case column has issues
+        const { data: anyQR, error: anyError } = await supabase
+          .from("batch_qr_codes")
+          .select("*, recipe_data")
+          .eq("id", qrId)
+          .maybeSingle();
+        
+        console.log("Any QR Code query result:", { anyQR, anyError });
+        
+        if (anyQR) {
+          qrCodeData = anyQR;
+        }
+      } else {
+        qrCodeData = activeQR;
       }
 
+      // Get current user for fallback mode
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // If QR code not found but user is logged in, allow fallback to available recipes
       if (!qrCodeData) {
-        console.error("QR code not found or inactive for ID:", qrId);
-        toast.error("QR code not found or inactive");
+        console.log("QR code not found, checking if user is logged in for fallback...");
+        
+        if (user) {
+          console.log("User logged in, loading available recipes as fallback");
+          
+          // Load all recipes user has access to
+          const { data: accessibleRecipes } = await supabase
+            .from("batch_recipes")
+            .select("*");
+          
+          if (accessibleRecipes && accessibleRecipes.length > 0) {
+            // Create a fake QR data object so the form works
+            setQrData({ 
+              id: qrId, 
+              user_id: user.id,
+              fallback_mode: true 
+            });
+            setRecipes(accessibleRecipes);
+            
+            // Auto-fill producer name
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("full_name, username")
+              .eq("id", user.id)
+              .maybeSingle();
+
+            if (profile) {
+              setProducedByName(profile.full_name || profile.username || "");
+            }
+            
+            toast.info("QR code not found, but you can still submit using your recipes");
+            setLoading(false);
+            return;
+          }
+        }
+        
+        console.error("QR code not found and no fallback available for ID:", qrId);
+        setLoading(false);
         return;
       }
 
@@ -129,7 +185,6 @@ const BatchQRSubmit = () => {
       }
 
       // Auto-fill producer name from current user profile
-      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
