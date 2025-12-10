@@ -64,6 +64,19 @@ export const FeedItem = memo(({
   const [doubleTapLike, setDoubleTapLike] = useState(false);
   const [lastTap, setLastTap] = useState(0);
   const [commentCount, setCommentCount] = useState(item.comment_count || 0);
+  const [localLikeCount, setLocalLikeCount] = useState(item.like_count || 0);
+
+  // Sync local like count with prop when item changes (e.g., on refresh)
+  useEffect(() => {
+    setLocalLikeCount(item.like_count || 0);
+  }, [item.like_count]);
+
+  // Handle like with local optimistic update
+  const handleLikeClick = useCallback(() => {
+    // Update local count optimistically
+    setLocalLikeCount(prev => isLiked ? Math.max(0, prev - 1) : prev + 1);
+    onLike();
+  }, [isLiked, onLike]);
 
   // Track views based on content type
   useViewTracking(item.type === 'reel' ? 'reel' : 'post', item.id, currentUserId, true);
@@ -132,13 +145,13 @@ export const FeedItem = memo(({
     const now = Date.now();
     if (now - lastTap < 300) {
       if (!isLiked) {
-        onLike();
+        handleLikeClick();
         setDoubleTapLike(true);
         setTimeout(() => setDoubleTapLike(false), 1000);
       }
     }
     setLastTap(now);
-  }, [lastTap, isLiked, onLike]);
+  }, [lastTap, isLiked, handleLikeClick]);
 
   // Handle repost
   const handleRepost = useCallback(async () => {
@@ -350,7 +363,7 @@ export const FeedItem = memo(({
           <div className="flex items-center gap-4">
             {/* Like */}
             <button
-              onClick={onLike}
+              onClick={handleLikeClick}
               className="active:scale-75 transition-transform duration-100"
             >
               <Heart 
@@ -415,7 +428,7 @@ export const FeedItem = memo(({
             onClick={() => setShowLikes(true)}
             className="font-semibold text-foreground hover:opacity-70 transition-opacity"
           >
-            {(item.like_count || 0).toLocaleString()} likes
+            {localLikeCount.toLocaleString()} likes
           </button>
           
           {(item.repost_count || 0) > 0 && (
