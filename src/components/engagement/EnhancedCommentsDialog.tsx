@@ -96,8 +96,38 @@ export const EnhancedCommentsDialog = ({
 
       if (!commentsData || commentsData.length === 0) {
         setComments([]);
+        setUserReactions({});
+        setReactionCounts({});
         return;
       }
+
+      const commentIds = commentsData.map((c: any) => c.id);
+
+      // Fetch all reactions for these comments
+      const { data: reactionsData } = await supabase
+        .from('post_comment_reactions')
+        .select('comment_id, user_id, reaction_type')
+        .in('comment_id', commentIds);
+
+      // Build user reactions map and counts
+      const newUserReactions: Record<string, string> = {};
+      const newReactionCounts: Record<string, Record<string, number>> = {};
+
+      (reactionsData || []).forEach((r: any) => {
+        // Track current user's reaction
+        if (user && r.user_id === user.id) {
+          newUserReactions[r.comment_id] = r.reaction_type;
+        }
+        // Count all reactions
+        if (!newReactionCounts[r.comment_id]) {
+          newReactionCounts[r.comment_id] = {};
+        }
+        newReactionCounts[r.comment_id][r.reaction_type] = 
+          (newReactionCounts[r.comment_id][r.reaction_type] || 0) + 1;
+      });
+
+      setUserReactions(newUserReactions);
+      setReactionCounts(newReactionCounts);
 
       // Get unique user IDs and fetch their profiles separately
       const userIds = [...new Set(commentsData.map((c: any) => c.user_id))];
