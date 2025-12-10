@@ -138,7 +138,7 @@ export const compressVideo = async (
 };
 
 // Quick check if compression is needed
-export const needsCompression = (file: File, maxSizeMB: number = 50): boolean => {
+export const needsCompression = (file: File, maxSizeMB: number = 200): boolean => {
   return file.size > maxSizeMB * 1024 * 1024;
 };
 

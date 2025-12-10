@@ -274,14 +274,14 @@ export const smartUpload = async (
     const fileExt = fileToUpload.name.split(".").pop();
     const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-    // Check file size - Supabase free tier limit is 50MB
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    // Check file size - 200MB limit for reels
+    const maxSize = 200 * 1024 * 1024; // 200MB limit
     if (fileToUpload.size > maxSize) {
-      onStageChange("File too large (max 50MB)");
+      onStageChange("File too large (max 200MB)");
       return {
         publicUrl: "",
         path: "",
-        error: new Error(`File size ${(fileToUpload.size / 1024 / 1024).toFixed(1)}MB exceeds 50MB limit. Please compress your video.`),
+        error: new Error(`File size ${(fileToUpload.size / 1024 / 1024).toFixed(1)}MB exceeds 200MB limit. Please compress your video.`),
       };
     }
 
