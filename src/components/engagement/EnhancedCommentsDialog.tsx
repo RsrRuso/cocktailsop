@@ -77,8 +77,15 @@ export const EnhancedCommentsDialog = ({
     }
   }, [open, contentId, contentType]);
 
+  // Count total comments correctly - root comments + all nested replies (avoiding double count)
+  const countAllComments = (commentsList: Comment[]): number => {
+    return commentsList.reduce((acc, c) => {
+      return acc + 1 + (c.replies ? countAllComments(c.replies) : 0);
+    }, 0);
+  };
+
   useEffect(() => {
-    setTotalComments(comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0));
+    setTotalComments(countAllComments(comments));
   }, [comments]);
 
   const loadComments = async () => {
