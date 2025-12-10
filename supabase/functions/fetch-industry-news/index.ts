@@ -5,15 +5,35 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// RSS feed sources for hospitality industry
-const RSS_FEEDS = [
+// Regional RSS feed sources for hospitality industry
+const GLOBAL_FEEDS = [
   { url: "https://punchdrink.com/feed/", category: "Cocktails", name: "Punch" },
   { url: "https://imbibemagazine.com/feed/", category: "Spirits", name: "Imbibe" },
   { url: "https://www.thedrinksbusiness.com/feed/", category: "Industry Trends", name: "Drinks Business" },
   { url: "https://www.thespiritsbusiness.com/feed/", category: "Spirits", name: "Spirits Business" },
-  { url: "https://www.foodandwine.com/feeds/all", category: "Restaurants", name: "Food & Wine" },
   { url: "https://vinepair.com/feed/", category: "Wine", name: "VinePair" },
+  { url: "https://guide.michelin.com/en/article/news", category: "Michelin", name: "Michelin Guide" },
+  { url: "https://www.theworlds50best.com/blog/feed", category: "Awards", name: "World's 50 Best" },
 ];
+
+const REGIONAL_FEEDS: Record<string, Array<{ url: string; category: string; name: string }>> = {
+  "middle-east": [
+    { url: "https://www.catererandhotelkeeper.com/feed/", category: "Hospitality", name: "Caterer ME" },
+    { url: "https://www.hoteliermiddleeast.com/feed/", category: "Hotels", name: "Hotelier ME" },
+  ],
+  "europe": [
+    { url: "https://www.bighospitality.co.uk/Info/RSS", category: "Hospitality", name: "Big Hospitality" },
+    { url: "https://www.thedrinksbusiness.com/feed/", category: "Wine & Spirits", name: "Drinks Business EU" },
+  ],
+  "north-america": [
+    { url: "https://www.eater.com/rss/index.xml", category: "Restaurants", name: "Eater" },
+    { url: "https://www.foodandwine.com/feeds/all", category: "Food & Wine", name: "Food & Wine" },
+  ],
+  "asia-pacific": [
+    { url: "https://www.foodnavigator-asia.com/rss/news", category: "F&B", name: "Food Navigator Asia" },
+  ],
+  "global": [],
+};
 
 interface Article {
   title: string;
@@ -87,7 +107,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Fetching real industry news from RSS feeds...");
+    const { region = "global" } = await req.json().catch(() => ({}));
+    
+    console.log(`Fetching real industry news for region: ${region}`);
 
     const today = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
@@ -96,8 +118,12 @@ serve(async (req) => {
       day: 'numeric' 
     });
 
+    // Combine global feeds with regional feeds
+    const regionalFeeds = REGIONAL_FEEDS[region] || [];
+    const allFeeds = [...GLOBAL_FEEDS, ...regionalFeeds];
+
     // Fetch all RSS feeds in parallel
-    const feedPromises = RSS_FEEDS.map(feed => 
+    const feedPromises = allFeeds.map(feed => 
       fetchRSSFeed(feed.url, feed.category, feed.name)
     );
     
@@ -147,14 +173,24 @@ serve(async (req) => {
       pubDate: article.pubDate,
     }));
 
+    // Find Michelin/Awards articles
+    const awardArticles = formattedArticles.filter(a => 
+      a.category === "Michelin" || a.category === "Awards" || 
+      a.title.toLowerCase().includes("michelin") ||
+      a.title.toLowerCase().includes("best bar") ||
+      a.title.toLowerCase().includes("award")
+    );
+
     const digest = {
       headline: topArticles[0]?.title || "Today's Hospitality Industry Update",
-      summary: `Fresh news from ${new Set(topArticles.map(a => a.source)).size} industry sources covering cocktails, spirits, wine, and hospitality trends.`,
+      summary: `Fresh news from ${new Set(topArticles.map(a => a.source)).size} industry sources covering cocktails, spirits, wine, Michelin, and hospitality trends.`,
       articles: formattedArticles,
-      trending_topics: trendingTopics.length > 0 ? trendingTopics : ["Cocktails", "Spirits", "Wine", "Hospitality"],
+      award_articles: awardArticles,
+      trending_topics: trendingTopics.length > 0 ? trendingTopics : ["Cocktails", "Spirits", "Wine", "Hospitality", "Michelin"],
       drink_of_the_day: null,
       industry_tip: null,
       date: today,
+      region: region,
       generated_at: new Date().toISOString(),
       is_real_news: true,
     };
