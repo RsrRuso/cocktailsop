@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 
 const BatchQRSubmit = () => {
-  const { qrId } = useParams();
+  const { qrId: paramQrId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -28,6 +28,10 @@ const BatchQRSubmit = () => {
   const [targetLiters, setTargetLiters] = useState("");
   const [targetServings, setTargetServings] = useState("");
   const [notes, setNotes] = useState("");
+
+  // Support both path param and query param for Android compatibility
+  const searchParams = new URLSearchParams(window.location.search);
+  const qrId = paramQrId || searchParams.get('id') || searchParams.get('qrId');
 
   useEffect(() => {
     loadQRData();
@@ -77,12 +81,12 @@ const BatchQRSubmit = () => {
       // Get current user for fallback mode
       const { data: { user } } = await supabase.auth.getUser();
       
-      // If QR code not found but user is logged in, allow fallback to available recipes
+      // If QR code not found, always try fallback for logged in users
       if (!qrCodeData) {
-        console.log("QR code not found, checking if user is logged in for fallback...");
+        console.log("QR code not found, attempting fallback for authenticated user...");
         
         if (user) {
-          console.log("User logged in, loading available recipes as fallback");
+          console.log("User authenticated, loading available recipes as fallback");
           
           // Load all recipes user has access to
           const { data: accessibleRecipes } = await supabase
@@ -90,9 +94,9 @@ const BatchQRSubmit = () => {
             .select("*");
           
           if (accessibleRecipes && accessibleRecipes.length > 0) {
-            // Create a fake QR data object so the form works
+            // Create fallback QR data so the form works
             setQrData({ 
-              id: qrId, 
+              id: qrId || 'fallback', 
               user_id: user.id,
               fallback_mode: true 
             });
@@ -109,13 +113,13 @@ const BatchQRSubmit = () => {
               setProducedByName(profile.full_name || profile.username || "");
             }
             
-            toast.info("QR code not found, but you can still submit using your recipes");
+            // Don't show error toast - just load normally
             setLoading(false);
             return;
           }
         }
         
-        console.error("QR code not found and no fallback available for ID:", qrId);
+        console.error("QR code not found and user not authenticated for ID:", qrId);
         setLoading(false);
         return;
       }
@@ -318,25 +322,27 @@ const BatchQRSubmit = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="glass p-6 max-w-md w-full text-center space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
-            <ArrowLeft className="w-8 h-8 text-destructive" />
+          <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+            <ArrowLeft className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold mb-2">QR Code Not Found</h2>
-            <p className="text-muted-foreground text-sm mb-1">
-              This QR code may have expired or been deleted.
+            <h2 className="text-lg font-semibold mb-2">Login Required</h2>
+            <p className="text-muted-foreground text-sm mb-3">
+              Please log in to submit batch productions.
             </p>
-            <p className="text-muted-foreground text-xs mb-2">
-              Please ask your team leader for a new QR code.
-            </p>
-            <p className="text-xs text-muted-foreground/50 font-mono break-all">
-              ID: {qrId}
+            <p className="text-xs text-muted-foreground/70">
+              Once logged in, you'll be able to select from your available recipes.
             </p>
           </div>
-          <Button onClick={() => navigate("/")} variant="outline" className="w-full">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Go Home
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button onClick={() => navigate("/auth")} className="w-full">
+              Log In
+            </Button>
+            <Button onClick={() => navigate("/")} variant="outline" className="w-full">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Go Home
+            </Button>
+          </div>
         </Card>
       </div>
     );
