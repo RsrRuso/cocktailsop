@@ -112,20 +112,10 @@ const CreateReel = () => {
 
       toast.success("Reel uploaded successfully!");
 
-      // Extract music from video if no music was manually selected
-      if (selectedVideo && previewUrl && !selectedMusic) {
-        toast.info("Extracting audio from video...", { duration: 3000 });
-        
-        // Run extraction in background (don't await - let user navigate)
-        extractAndAnalyzeAudio(previewUrl, selectedVideo)
-          .then((extractionResult) => {
-            if (extractionResult.isMusic && extractionResult.title) {
-              toast.success(`Audio extracted: "${extractionResult.title}" added to Music Box!`);
-            }
-          })
-          .catch((err) => {
-            console.error("Music extraction failed:", err);
-          });
+      // Save audio to Music Box instantly (no extraction needed - video URL works as audio)
+      if (!selectedMusic && selectedVideo) {
+        // Fire and forget - don't wait
+        extractAndAnalyzeAudio(result.publicUrl, selectedVideo.name);
       }
       
       // Reset form and navigate immediately
