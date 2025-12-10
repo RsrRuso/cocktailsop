@@ -5,11 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2 } from "lucide-react";
+import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
 import MusicSelector from "@/components/music-box/MusicSelector";
+import { useAutoMusicExtraction } from "@/hooks/useAutoMusicExtraction";
 
 const CreateReel = () => {
   const navigate = useNavigate();
@@ -19,7 +20,9 @@ const CreateReel = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showMusicSelector, setShowMusicSelector] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<{ id: string; title: string; artist: string; preview_url: string } | null>(null);
+  const [isExtractingMusic, setIsExtractingMusic] = useState(false);
   const { uploadState, uploadSingle } = usePowerfulUpload();
+  const { extractAndAnalyzeAudio, isExtracting, extractionProgress } = useAutoMusicExtraction();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -109,6 +112,17 @@ const CreateReel = () => {
       }
 
       toast.success("Reel uploaded successfully!");
+
+      // Auto-extract music in background (non-blocking)
+      if (selectedVideo && previewUrl && !selectedMusic) {
+        extractAndAnalyzeAudio(previewUrl, selectedVideo).then(result => {
+          if (result.isMusic) {
+            toast.success(`Music detected and added to Music Box: ${result.title}`, {
+              icon: <Wand2 className="w-4 h-4" />
+            });
+          }
+        }).catch(console.error);
+      }
       
       // Reset form and navigate
       setPreviewUrl("");
