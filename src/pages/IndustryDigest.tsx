@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Newspaper, TrendingUp, RefreshCw, Calendar, Sparkles, Clock, ExternalLink, Globe, Award } from "lucide-react";
+import { ArrowLeft, Newspaper, TrendingUp, RefreshCw, Calendar, Sparkles, Clock, ExternalLink, Globe, Award, Trophy, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,12 +35,19 @@ interface Article {
   pubDate?: string;
 }
 
+interface Organization {
+  name: string;
+  category: string;
+  region: string;
+}
+
 interface Digest {
   date: string;
   headline: string;
   summary: string;
   articles: Article[];
   award_articles?: Article[];
+  organizations?: Organization[];
   trending_topics: string[];
   region?: string;
   generated_at: string;
@@ -119,10 +126,12 @@ export default function IndustryDigest() {
   };
 
   useEffect(() => {
-    fetchDigest(false, selectedRegion);
+    // Always fetch fresh when region changes (force refresh)
+    fetchDigest(true, selectedRegion);
   }, [selectedRegion]);
 
   const handleRegionChange = (region: string) => {
+    setLoading(true);
     setDigest(null); // Clear current data to show loading
     setSelectedRegion(region);
   };
@@ -273,6 +282,38 @@ export default function IndustryDigest() {
                   </CardContent>
                 </Card>
               </motion.div>
+
+              {/* Hospitality Organizations */}
+              {digest.organizations && digest.organizations.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.22 }}
+                >
+                  <Card className="bg-gradient-to-br from-amber-500/10 via-card/50 to-card/50 backdrop-blur border-amber-500/20">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <Trophy className="w-4 h-4 text-amber-400" />
+                        Recognized Organizations
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="flex flex-wrap gap-2">
+                        {digest.organizations.map((org, i) => (
+                          <Badge 
+                            key={i} 
+                            variant="outline" 
+                            className="bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20 transition-colors"
+                          >
+                            <Star className="w-3 h-3 mr-1" />
+                            {org.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
 
               {/* Awards & Michelin Section */}
               {digest.award_articles && digest.award_articles.length > 0 && (

@@ -5,6 +5,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Famous hospitality award organizations and competitions
+const HOSPITALITY_ORGANIZATIONS = {
+  global: [
+    { name: "World's 50 Best Bars", category: "Awards", region: "Global" },
+    { name: "Tales of the Cocktail", category: "Awards", region: "Global" },
+    { name: "Diageo World Class", category: "Awards", region: "Global" },
+    { name: "Michelin Guide", category: "Awards", region: "Global" },
+    { name: "The World's 50 Best Restaurants", category: "Awards", region: "Global" },
+    { name: "Asia's 50 Best Bars", category: "Awards", region: "Asia" },
+    { name: "WSET", category: "Education", region: "Global" },
+  ],
+  "middle-east": [
+    { name: "MENA 50 Best Bars", category: "Awards", region: "Middle East" },
+    { name: "Time Out Dubai", category: "Awards", region: "Middle East" },
+    { name: "Dubai World Hospitality Championship", category: "Awards", region: "Middle East" },
+  ],
+  europe: [
+    { name: "Pinnacle Guide", category: "Awards", region: "Europe" },
+    { name: "The Class Bar Awards", category: "Awards", region: "UK" },
+    { name: "Spirited Awards", category: "Awards", region: "Europe" },
+  ],
+  "north-america": [
+    { name: "James Beard Awards", category: "Awards", region: "North America" },
+    { name: "Speed Rack", category: "Awards", region: "North America" },
+    { name: "Bartender's Advocacy", category: "Awards", region: "North America" },
+  ],
+  "asia-pacific": [
+    { name: "Asia's 50 Best Bars", category: "Awards", region: "Asia" },
+    { name: "DRiNK Magazine Awards", category: "Awards", region: "Asia" },
+    { name: "Singapore Bar Awards", category: "Awards", region: "Asia" },
+  ],
+};
+
 // Global RSS feed sources for hospitality industry
 const GLOBAL_FEEDS = [
   { url: "https://punchdrink.com/feed/", category: "Cocktails", name: "Punch" },
@@ -21,7 +54,7 @@ const REGIONAL_FEEDS: Record<string, Array<{ url: string; category: string; name
     { url: "https://gulfnews.com/rss/lifestyle/rss.xml", category: "Middle East", name: "Gulf News" },
     { url: "https://whatson.ae/feed/", category: "Middle East", name: "What's On Dubai" },
   ],
-  "europe": [
+  europe: [
     { url: "https://www.theguardian.com/lifeandstyle/food-and-drink/rss", category: "Europe", name: "The Guardian" },
     { url: "https://www.decanter.com/feed/", category: "Wine", name: "Decanter" },
     { url: "https://www.jancisrobinson.com/feed", category: "Wine", name: "Jancis Robinson" },
@@ -35,7 +68,7 @@ const REGIONAL_FEEDS: Record<string, Array<{ url: string; category: string; name
     { url: "https://www.scmp.com/rss/91/feed", category: "Asia", name: "SCMP Food" },
     { url: "https://asia.nikkei.com/rss/feed/nar", category: "Asia", name: "Nikkei Asia" },
   ],
-  "global": [],
+  global: [],
 };
 
 interface Article {
@@ -116,6 +149,14 @@ async function fetchRSSFeed(feedUrl: string, category: string, sourceName: strin
     return [];
   }
 }
+
+const REGIONS_DISPLAY: Record<string, string> = {
+  "global": "Global",
+  "middle-east": "Middle East",
+  "europe": "European",
+  "north-america": "North American",
+  "asia-pacific": "Asia Pacific",
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -201,14 +242,16 @@ serve(async (req) => {
     }));
 
     // Find Michelin/Awards articles
+    const awardKeywords = ["michelin", "best bar", "award", "world's best", "star", "50 best", "world class", "tales of the cocktail", "spirited", "pinnacle"];
     const awardArticles = formattedArticles.filter(a => 
       a.category === "Michelin" || a.category === "Awards" || 
-      a.title.toLowerCase().includes("michelin") ||
-      a.title.toLowerCase().includes("best bar") ||
-      a.title.toLowerCase().includes("award") ||
-      a.title.toLowerCase().includes("world's best") ||
-      a.title.toLowerCase().includes("star")
+      awardKeywords.some(keyword => a.title.toLowerCase().includes(keyword))
     );
+
+    // Get hospitality organizations for the selected region
+    const globalOrgs = HOSPITALITY_ORGANIZATIONS.global;
+    const regionalOrgs = HOSPITALITY_ORGANIZATIONS[region as keyof typeof HOSPITALITY_ORGANIZATIONS] || [];
+    const organizations = [...globalOrgs, ...regionalOrgs];
 
     const regionLabel = REGIONS_DISPLAY[region] || region;
 
@@ -219,6 +262,7 @@ serve(async (req) => {
         : `Loading the latest hospitality news for ${regionLabel}...`,
       articles: formattedArticles,
       award_articles: awardArticles,
+      organizations: organizations,
       trending_topics: trendingTopics.length > 0 ? trendingTopics : ["Cocktails", "Spirits", "Wine", "Hospitality", "Bars"],
       drink_of_the_day: null,
       industry_tip: null,
@@ -245,6 +289,7 @@ serve(async (req) => {
           summary: "Unable to fetch latest news. Please try again.",
           articles: [],
           award_articles: [],
+          organizations: HOSPITALITY_ORGANIZATIONS.global,
           trending_topics: ["Cocktails", "Spirits", "Wine", "Hospitality"],
           date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
           region: "global",
@@ -256,11 +301,3 @@ serve(async (req) => {
     );
   }
 });
-
-const REGIONS_DISPLAY: Record<string, string> = {
-  "global": "Global",
-  "middle-east": "Middle East",
-  "europe": "European",
-  "north-america": "North American",
-  "asia-pacific": "Asia Pacific",
-};
