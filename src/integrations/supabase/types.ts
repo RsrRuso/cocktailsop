@@ -8806,6 +8806,7 @@ export type Database = {
           id: string
           like_count: number | null
           music_track_id: string | null
+          music_url: string | null
           repost_count: number | null
           save_count: number | null
           thumbnail_url: string | null
@@ -8820,6 +8821,7 @@ export type Database = {
           id?: string
           like_count?: number | null
           music_track_id?: string | null
+          music_url?: string | null
           repost_count?: number | null
           save_count?: number | null
           thumbnail_url?: string | null
@@ -8834,6 +8836,7 @@ export type Database = {
           id?: string
           like_count?: number | null
           music_track_id?: string | null
+          music_url?: string | null
           repost_count?: number | null
           save_count?: number | null
           thumbnail_url?: string | null
