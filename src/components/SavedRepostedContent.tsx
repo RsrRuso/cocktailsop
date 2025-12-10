@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Bookmark, Repeat2 } from 'lucide-react';
+import { Loader2, Bookmark, Repeat2, MessageCircle } from 'lucide-react';
 import { FeedItem } from './FeedItem';
 import { getBadgeColor } from '@/lib/profileUtils';
 import { useOptimisticLike } from '@/hooks/useOptimisticLike';
@@ -23,6 +23,8 @@ interface ContentItem {
   created_at: string;
   saved_at?: string;
   reposted_at?: string;
+  commented_at?: string;
+  user_comment?: string;
   profiles: {
     id: string;
     username: string;
@@ -33,8 +35,10 @@ interface ContentItem {
   };
 }
 
+type ViewType = 'reposts' | 'saves' | 'comments';
+
 export const SavedRepostedContent = ({ userId }: SavedRepostedContentProps) => {
-  const [viewType, setViewType] = useState<'reposts' | 'saves'>('reposts');
+  const [viewType, setViewType] = useState<ViewType>('reposts');
   const [content, setContent] = useState<ContentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
@@ -107,6 +111,78 @@ export const SavedRepostedContent = ({ userId }: SavedRepostedContentProps) => {
 
         // Sort by saved date
         items.sort((a, b) => new Date(b.saved_at!).getTime() - new Date(a.saved_at!).getTime());
+
+      } else if (viewType === 'comments') {
+        // Fetch posts user commented on
+        const { data: commentedPosts } = await supabase
+          .from('post_comments')
+          .select(`
+            created_at,
+            content,
+            posts:post_id (
+              id, content, media_urls, like_count, comment_count, save_count, repost_count, created_at,
+              profiles:user_id (id, username, full_name, avatar_url, badge_level, professional_title)
+            )
+          `)
+          .eq('user_id', userId)
+          .is('parent_comment_id', null)
+          .order('created_at', { ascending: false });
+
+        // Fetch reels user commented on
+        const { data: commentedReels } = await supabase
+          .from('reel_comments')
+          .select(`
+            created_at,
+            content,
+            reels:reel_id (
+              id, caption, video_url, like_count, comment_count, save_count, repost_count, view_count, created_at,
+              profiles:user_id (id, username, full_name, avatar_url, badge_level, professional_title)
+            )
+          `)
+          .eq('user_id', userId)
+          .is('parent_comment_id', null)
+          .order('created_at', { ascending: false });
+
+        // Map posts - deduplicate by post id
+        const seenPostIds = new Set<string>();
+        if (commentedPosts) {
+          const postItems = commentedPosts
+            .filter((c: any) => c.posts && !seenPostIds.has(c.posts.id))
+            .map((c: any) => {
+              seenPostIds.add(c.posts.id);
+              return {
+                ...c.posts,
+                type: 'post' as const,
+                commented_at: c.created_at,
+                user_comment: c.content,
+                profiles: c.posts.profiles
+              };
+            });
+          items.push(...postItems);
+        }
+
+        // Map reels - deduplicate by reel id
+        const seenReelIds = new Set<string>();
+        if (commentedReels) {
+          const reelItems = commentedReels
+            .filter((c: any) => c.reels && !seenReelIds.has(c.reels.id))
+            .map((c: any) => {
+              seenReelIds.add(c.reels.id);
+              return {
+                ...c.reels,
+                type: 'reel' as const,
+                content: c.reels.caption,
+                media_urls: [c.reels.video_url],
+                commented_at: c.created_at,
+                user_comment: c.content,
+                profiles: c.reels.profiles
+              };
+            });
+          items.push(...reelItems);
+        }
+
+        // Sort by commented date
+        items.sort((a, b) => new Date(b.commented_at!).getTime() - new Date(a.commented_at!).getTime());
 
       } else {
         // Fetch reposted posts
@@ -191,11 +267,35 @@ export const SavedRepostedContent = ({ userId }: SavedRepostedContentProps) => {
     });
   }, []);
 
+  const getEmptyIcon = () => {
+    switch (viewType) {
+      case 'reposts': return <Repeat2 className="w-12 h-12 opacity-50" />;
+      case 'saves': return <Bookmark className="w-12 h-12 opacity-50" />;
+      case 'comments': return <MessageCircle className="w-12 h-12 opacity-50" />;
+    }
+  };
+
+  const getEmptyText = () => {
+    switch (viewType) {
+      case 'reposts': return 'No reposts yet';
+      case 'saves': return 'No saved items yet';
+      case 'comments': return 'No comments yet';
+    }
+  };
+
+  const getCountLabel = () => {
+    switch (viewType) {
+      case 'reposts': return `${content.length} repost${content.length !== 1 ? 's' : ''}`;
+      case 'saves': return `${content.length} save${content.length !== 1 ? 's' : ''}`;
+      case 'comments': return `${content.length} commented post${content.length !== 1 ? 's' : ''}`;
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Dropdown Selector */}
       <div className="flex items-center gap-3">
-        <Select value={viewType} onValueChange={(v) => setViewType(v as 'reposts' | 'saves')}>
+        <Select value={viewType} onValueChange={(v) => setViewType(v as ViewType)}>
           <SelectTrigger className="w-[180px] glass border-border/50">
             <SelectValue />
           </SelectTrigger>
@@ -212,10 +312,16 @@ export const SavedRepostedContent = ({ userId }: SavedRepostedContentProps) => {
                 <span>Saves</span>
               </div>
             </SelectItem>
+            <SelectItem value="comments">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                <span>Comments</span>
+              </div>
+            </SelectItem>
           </SelectContent>
         </Select>
         <span className="text-sm text-muted-foreground">
-          {content.length} {viewType === 'reposts' ? 'repost' : 'save'}{content.length !== 1 ? 's' : ''}
+          {getCountLabel()}
         </span>
       </div>
 
@@ -227,33 +333,37 @@ export const SavedRepostedContent = ({ userId }: SavedRepostedContentProps) => {
       ) : content.length === 0 ? (
         <div className="glass rounded-xl p-8 text-center text-muted-foreground border border-border/50">
           <div className="flex flex-col items-center gap-3">
-            {viewType === 'reposts' ? (
-              <Repeat2 className="w-12 h-12 opacity-50" />
-            ) : (
-              <Bookmark className="w-12 h-12 opacity-50" />
-            )}
-            <p>No {viewType === 'reposts' ? 'reposts' : 'saved items'} yet</p>
+            {getEmptyIcon()}
+            <p>{getEmptyText()}</p>
           </div>
         </div>
       ) : (
         <div className="space-y-4">
-          {content.map((item) => (
-            <FeedItem
-              key={`${item.type}-${item.id}`}
-              item={item}
-              currentUserId={userId}
-              isLiked={item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)}
-              mutedVideos={mutedVideos}
-              onLike={() => item.type === 'post' ? togglePostLike(item.id) : toggleReelLike(item.id)}
-              onDelete={() => {}}
-              onEdit={() => {}}
-              onComment={() => fetchContent()}
-              onShare={() => {}}
-              onToggleMute={handleToggleMute}
-              onFullscreen={() => {}}
-              onViewLikes={() => {}}
-              getBadgeColor={getBadgeColor}
-            />
+          {content.map((item, index) => (
+            <div key={`${item.type}-${item.id}-${index}`}>
+              {/* Show user's comment preview for comments view */}
+              {viewType === 'comments' && item.user_comment && (
+                <div className="mb-2 px-3 py-2 glass rounded-lg border border-border/50">
+                  <p className="text-xs text-muted-foreground mb-1">Your comment:</p>
+                  <p className="text-sm line-clamp-2">"{item.user_comment}"</p>
+                </div>
+              )}
+              <FeedItem
+                item={item}
+                currentUserId={userId}
+                isLiked={item.type === 'post' ? likedPosts.has(item.id) : likedReels.has(item.id)}
+                mutedVideos={mutedVideos}
+                onLike={() => item.type === 'post' ? togglePostLike(item.id) : toggleReelLike(item.id)}
+                onDelete={() => {}}
+                onEdit={() => {}}
+                onComment={() => fetchContent()}
+                onShare={() => {}}
+                onToggleMute={handleToggleMute}
+                onFullscreen={() => {}}
+                onViewLikes={() => {}}
+                getBadgeColor={getBadgeColor}
+              />
+            </div>
           ))}
         </div>
       )}
