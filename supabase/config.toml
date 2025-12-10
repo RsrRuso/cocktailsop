@@ -107,3 +107,6 @@ verify_jwt = true
 
 [functions.refresh-music-popularity]
 verify_jwt = false
+
+[functions.fetch-industry-news]
+verify_jwt = true

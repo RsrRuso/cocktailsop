@@ -1,4 +1,4 @@
-import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck, Music, Star, Medal, Diamond, RefreshCw, Zap, ChevronDown, Map, Film, Compass, Brain } from "lucide-react";
+import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck, Music, Star, Medal, Diamond, RefreshCw, Zap, ChevronDown, Map, Film, Compass, Brain, Newspaper } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -300,6 +300,17 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               >
                 <Music className="w-4 h-4 mr-2" />
                 Music Box
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem
+                onClick={() => { 
+                  lightTap(); 
+                  navigate("/industry-digest"); 
+                }}
+                className="cursor-pointer"
+              >
+                <Newspaper className="w-4 h-4 mr-2" />
+                Industry Digest
               </DropdownMenuItem>
               
               <DropdownMenuItem
