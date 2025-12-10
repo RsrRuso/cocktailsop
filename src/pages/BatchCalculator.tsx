@@ -2668,7 +2668,18 @@ const BatchCalculator = () => {
       if (error) throw error;
       if (!data) throw new Error("No QR code created");
 
-      const qrUrl = `${window.location.origin}/batch-qr/${data.id}`;
+      // Embed essential recipe data in URL as fallback for universal compatibility
+      const embeddedData = btoa(JSON.stringify({
+        id: data.id,
+        r: recipe.recipe_name,
+        d: recipe.description || '',
+        s: recipe.current_serves,
+        i: recipe.ingredients,
+        u: user?.id,
+        g: selectedGroupId
+      }));
+      
+      const qrUrl = `${window.location.origin}/batch-qr/${data.id}?d=${encodeURIComponent(embeddedData)}`;
       const qrDataUrl = await QRCode.toDataURL(qrUrl, {
         width: 512,
         margin: 2,

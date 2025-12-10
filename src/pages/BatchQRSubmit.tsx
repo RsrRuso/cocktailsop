@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -29,72 +29,128 @@ const BatchQRSubmit = () => {
   const [targetServings, setTargetServings] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Support both path param and query param for Android compatibility
+  // Support both path param, query param, and embedded data for universal compatibility
   const searchParams = new URLSearchParams(window.location.search);
   const qrId = paramQrId || searchParams.get('id') || searchParams.get('qrId');
+  const embeddedDataParam = searchParams.get('d');
+
+  // Parse embedded data from URL if available (universal fallback for all devices)
+  const parseEmbeddedData = () => {
+    if (!embeddedDataParam) return null;
+    try {
+      const decoded = atob(decodeURIComponent(embeddedDataParam));
+      const data = JSON.parse(decoded);
+      console.log("Parsed embedded data:", data);
+      return data;
+    } catch (e) {
+      console.error("Failed to parse embedded data:", e);
+      return null;
+    }
+  };
 
   useEffect(() => {
     loadQRData();
-  }, [qrId]);
+  }, [qrId, embeddedDataParam]);
 
   const loadQRData = async () => {
     try {
-      console.log("Loading QR data for ID:", qrId);
+      console.log("Loading QR data for ID:", qrId, "Embedded:", !!embeddedDataParam);
       
-      if (!qrId) {
-        console.error("No QR ID provided");
-        toast.error("No QR code ID in URL");
+      // First try embedded data (works universally without DB lookup)
+      const embeddedData = parseEmbeddedData();
+      
+      if (!qrId && !embeddedData) {
+        console.error("No QR ID or embedded data provided");
+        toast.error("Invalid QR code");
         setLoading(false);
         return;
       }
 
-      // First try to get QR code without requiring auth
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // PRIORITY 1: Use embedded data from QR URL (universal, works on all devices)
+      if (embeddedData) {
+        console.log("Using embedded data from QR URL (universal mode)");
+        
+        const recipeFromEmbed = {
+          id: embeddedData.id || qrId || 'embedded',
+          recipe_name: embeddedData.r,
+          description: embeddedData.d || '',
+          ingredients: embeddedData.i || [],
+          current_serves: embeddedData.s || 1,
+        };
+        
+        setQrData({ 
+          id: qrId || embeddedData.id || 'embedded', 
+          user_id: embeddedData.u || user?.id,
+          group_id: embeddedData.g,
+          embedded_mode: true 
+        });
+        setRecipes([recipeFromEmbed]);
+        setSelectedRecipeId(recipeFromEmbed.id);
+        
+        // Auto-fill producer name
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name, username")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (profile) {
+            setProducedByName(profile.full_name || profile.username || "");
+          }
+        }
+        
+        setLoading(false);
+        return;
+      }
+
+      // PRIORITY 2: Try to fetch from database by ID
       let qrCodeData: any = null;
       
-      // Try fetching with is_active filter
-      const { data: activeQR, error: qrError } = await supabase
-        .from("batch_qr_codes")
-        .select("*, recipe_data")
-        .eq("id", qrId)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      console.log("Active QR Code query result:", { activeQR, qrError });
-
-      if (!activeQR) {
-        // Try without is_active filter in case column has issues
-        const { data: anyQR, error: anyError } = await supabase
+      if (qrId) {
+        // Try fetching with is_active filter
+        const { data: activeQR, error: qrError } = await supabase
           .from("batch_qr_codes")
           .select("*, recipe_data")
           .eq("id", qrId)
+          .eq("is_active", true)
           .maybeSingle();
-        
-        console.log("Any QR Code query result:", { anyQR, anyError });
-        
-        if (anyQR) {
-          qrCodeData = anyQR;
-        }
-      } else {
-        qrCodeData = activeQR;
-      }
 
-      // Get current user for fallback mode
-      const { data: { user } } = await supabase.auth.getUser();
+        console.log("Active QR Code query result:", { activeQR, qrError });
+
+        if (!activeQR) {
+          // Try without is_active filter
+          const { data: anyQR, error: anyError } = await supabase
+            .from("batch_qr_codes")
+            .select("*, recipe_data")
+            .eq("id", qrId)
+            .maybeSingle();
+          
+          console.log("Any QR Code query result:", { anyQR, anyError });
+          
+          if (anyQR) {
+            qrCodeData = anyQR;
+          }
+        } else {
+          qrCodeData = activeQR;
+        }
+      }
       
-      // If QR code not found, always try fallback for logged in users
+      // PRIORITY 3: Fallback for logged in users if DB lookup failed
       if (!qrCodeData) {
-        console.log("QR code not found, attempting fallback for authenticated user...");
+        console.log("QR code not found in DB, checking fallback options...");
         
         if (user) {
           console.log("User authenticated, loading available recipes as fallback");
           
-          // Load all recipes user has access to
           const { data: accessibleRecipes } = await supabase
             .from("batch_recipes")
             .select("*");
           
           if (accessibleRecipes && accessibleRecipes.length > 0) {
-            // Create fallback QR data so the form works
             setQrData({ 
               id: qrId || 'fallback', 
               user_id: user.id,
@@ -102,7 +158,6 @@ const BatchQRSubmit = () => {
             });
             setRecipes(accessibleRecipes);
             
-            // Auto-fill producer name
             const { data: profile } = await supabase
               .from("profiles")
               .select("full_name, username")
@@ -113,13 +168,12 @@ const BatchQRSubmit = () => {
               setProducedByName(profile.full_name || profile.username || "");
             }
             
-            // Don't show error toast - just load normally
             setLoading(false);
             return;
           }
         }
         
-        console.error("QR code not found and user not authenticated for ID:", qrId);
+        console.error("QR code not found and no fallback available for ID:", qrId);
         setLoading(false);
         return;
       }
@@ -322,21 +376,24 @@ const BatchQRSubmit = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="glass p-6 max-w-md w-full text-center space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-            <ArrowLeft className="w-8 h-8 text-primary" />
+          <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center">
+            <QrCode className="w-8 h-8 text-amber-500" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold mb-2">Login Required</h2>
+            <h2 className="text-lg font-semibold mb-2">QR Code Outdated</h2>
             <p className="text-muted-foreground text-sm mb-3">
-              Please log in to submit batch productions.
+              This QR code needs to be regenerated for universal compatibility.
             </p>
-            <p className="text-xs text-muted-foreground/70">
-              Once logged in, you'll be able to select from your available recipes.
+            <p className="text-xs text-muted-foreground/70 mb-2">
+              Please ask your team leader to generate a new QR code from the Batch Calculator.
+            </p>
+            <p className="text-xs text-muted-foreground/50">
+              New QR codes work on all devices (iPhone & Android).
             </p>
           </div>
           <div className="flex flex-col gap-2">
             <Button onClick={() => navigate("/auth")} className="w-full">
-              Log In
+              Log In to Access Recipes
             </Button>
             <Button onClick={() => navigate("/")} variant="outline" className="w-full">
               <ArrowLeft className="w-4 h-4 mr-2" />
