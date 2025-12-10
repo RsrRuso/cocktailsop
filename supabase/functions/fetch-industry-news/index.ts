@@ -5,18 +5,89 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// RSS feed sources for hospitality industry
+const RSS_FEEDS = [
+  { url: "https://punchdrink.com/feed/", category: "Cocktails", name: "Punch" },
+  { url: "https://imbibemagazine.com/feed/", category: "Spirits", name: "Imbibe" },
+  { url: "https://www.thedrinksbusiness.com/feed/", category: "Industry Trends", name: "Drinks Business" },
+  { url: "https://www.thespiritsbusiness.com/feed/", category: "Spirits", name: "Spirits Business" },
+  { url: "https://www.foodandwine.com/feeds/all", category: "Restaurants", name: "Food & Wine" },
+  { url: "https://vinepair.com/feed/", category: "Wine", name: "VinePair" },
+];
+
+interface Article {
+  title: string;
+  link: string;
+  description: string;
+  pubDate: string;
+  category: string;
+  source: string;
+}
+
+async function fetchRSSFeed(feedUrl: string, category: string, sourceName: string): Promise<Article[]> {
+  try {
+    const response = await fetch(feedUrl, {
+      headers: { "User-Agent": "SpecVerse News Aggregator" }
+    });
+    
+    if (!response.ok) {
+      console.log(`Failed to fetch ${feedUrl}: ${response.status}`);
+      return [];
+    }
+    
+    const xml = await response.text();
+    const articles: Article[] = [];
+    
+    // Simple XML parsing for RSS items
+    const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
+    
+    for (const item of itemMatches.slice(0, 3)) {
+      const titleMatch = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>|<title>(.*?)<\/title>/);
+      const linkMatch = item.match(/<link>(.*?)<\/link>/);
+      const descMatch = item.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>|<description>(.*?)<\/description>/);
+      const dateMatch = item.match(/<pubDate>(.*?)<\/pubDate>/);
+      
+      const title = titleMatch ? (titleMatch[1] || titleMatch[2] || "").trim() : "";
+      const link = linkMatch ? linkMatch[1].trim() : "";
+      const rawDesc = descMatch ? (descMatch[1] || descMatch[2] || "").trim() : "";
+      const pubDate = dateMatch ? dateMatch[1].trim() : "";
+      
+      // Clean HTML from description
+      const description = rawDesc
+        .replace(/<[^>]*>/g, "")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .substring(0, 200);
+      
+      if (title && link) {
+        articles.push({
+          title,
+          link,
+          description: description || "Read more...",
+          pubDate,
+          category,
+          source: sourceName,
+        });
+      }
+    }
+    
+    return articles;
+  } catch (error) {
+    console.error(`Error fetching ${feedUrl}:`, error);
+    return [];
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
-    console.log("Fetching industry news digest...");
+    console.log("Fetching real industry news from RSS feeds...");
 
     const today = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
@@ -25,101 +96,70 @@ serve(async (req) => {
       day: 'numeric' 
     });
 
-    const systemPrompt = `You are a hospitality industry news curator. Create a daily digest of the most important news and trends in the hospitality industry.
-
-Format your response as a JSON object with this structure:
-{
-  "headline": "Brief catchy headline summarizing today's top story",
-  "summary": "A 2-3 sentence overview of today's key themes",
-  "articles": [
-    {
-      "title": "Article title",
-      "category": "Cocktails" | "Spirits" | "Wine" | "Restaurants" | "Hotels" | "Industry Trends" | "Awards" | "Openings",
-      "summary": "2-3 sentence summary",
-      "importance": "high" | "medium" | "low"
-    }
-  ],
-  "trending_topics": ["topic1", "topic2", "topic3"],
-  "drink_of_the_day": {
-    "name": "Cocktail name",
-    "description": "Brief description"
-  },
-  "industry_tip": "A useful tip for hospitality professionals"
-}
-
-Include 5-8 articles covering diverse topics: bar openings/closings, new spirit releases, cocktail trends, restaurant news, industry awards, sommelier/bartender achievements, and hospitality technology.`;
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { 
-            role: "user", 
-            content: `Generate today's hospitality industry news digest for ${today}. Include the latest trends, openings, spirit launches, bartender competitions, and industry news. Make it informative and engaging for hospitality professionals.` 
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      }),
+    // Fetch all RSS feeds in parallel
+    const feedPromises = RSS_FEEDS.map(feed => 
+      fetchRSSFeed(feed.url, feed.category, feed.name)
+    );
+    
+    const feedResults = await Promise.all(feedPromises);
+    const allArticles = feedResults.flat();
+    
+    // Sort by date (newest first) and dedupe
+    const seenTitles = new Set<string>();
+    const uniqueArticles = allArticles.filter(article => {
+      const normalizedTitle = article.title.toLowerCase();
+      if (seenTitles.has(normalizedTitle)) return false;
+      seenTitles.add(normalizedTitle);
+      return true;
     });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add credits." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error(`AI gateway error: ${response.status}`);
-    }
+    // Sort by publication date
+    uniqueArticles.sort((a, b) => {
+      const dateA = new Date(a.pubDate).getTime() || 0;
+      const dateB = new Date(b.pubDate).getTime() || 0;
+      return dateB - dateA;
+    });
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    // Take top 10 articles
+    const topArticles = uniqueArticles.slice(0, 10);
+
+    // Extract trending topics from article titles
+    const words = topArticles
+      .flatMap(a => a.title.toLowerCase().split(/\s+/))
+      .filter(w => w.length > 4 && !["about", "their", "which", "these", "where", "there", "would", "could", "should"].includes(w));
     
-    console.log("Raw AI response:", content);
+    const wordFreq: Record<string, number> = {};
+    words.forEach(w => { wordFreq[w] = (wordFreq[w] || 0) + 1; });
+    
+    const trendingTopics = Object.entries(wordFreq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([word]) => word.charAt(0).toUpperCase() + word.slice(1));
 
-    // Parse the JSON from the response
-    let digest;
-    try {
-      // Extract JSON from markdown code blocks if present
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content];
-      const jsonStr = jsonMatch[1]?.trim() || content.trim();
-      digest = JSON.parse(jsonStr);
-    } catch (parseError) {
-      console.error("Failed to parse AI response as JSON:", parseError);
-      // Return a fallback structure
-      digest = {
-        headline: "Today's Hospitality Industry Update",
-        summary: "Stay updated with the latest news from the hospitality world.",
-        articles: [],
-        trending_topics: ["Cocktails", "Sustainability", "Technology"],
-        drink_of_the_day: {
-          name: "Classic Negroni",
-          description: "A timeless Italian aperitivo"
-        },
-        industry_tip: "Focus on guest experience above all else."
-      };
-    }
+    // Format articles for frontend
+    const formattedArticles = topArticles.map(article => ({
+      title: article.title,
+      category: article.category,
+      summary: article.description,
+      importance: "medium" as const,
+      link: article.link,
+      source: article.source,
+      pubDate: article.pubDate,
+    }));
 
-    // Add metadata
-    digest.date = today;
-    digest.generated_at = new Date().toISOString();
+    const digest = {
+      headline: topArticles[0]?.title || "Today's Hospitality Industry Update",
+      summary: `Fresh news from ${new Set(topArticles.map(a => a.source)).size} industry sources covering cocktails, spirits, wine, and hospitality trends.`,
+      articles: formattedArticles,
+      trending_topics: trendingTopics.length > 0 ? trendingTopics : ["Cocktails", "Spirits", "Wine", "Hospitality"],
+      drink_of_the_day: null,
+      industry_tip: null,
+      date: today,
+      generated_at: new Date().toISOString(),
+      is_real_news: true,
+    };
 
-    console.log("Successfully generated digest");
+    console.log(`Successfully fetched ${formattedArticles.length} real news articles`);
 
     return new Response(
       JSON.stringify({ success: true, digest }),
