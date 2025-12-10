@@ -1,4 +1,4 @@
-// Cache bust: v2 - 2024-12-10
+// Cache bust: v3 - 2024-12-10
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -70,12 +70,14 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ['react', 'react-dom'],
   },
   build: {
     minify: 'esbuild',
     target: 'esnext',
   },
   optimizeDeps: {
+    include: ['react', 'react-dom'],
     force: true,
   },
 }));

@@ -1,10 +1,10 @@
-import React from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { initPerformanceBoost } from "./lib/performanceBoost";
 
-// Force rebuild v3
+// Force rebuild v4
 
 // Initialize performance optimizations
 initPerformanceBoost();
@@ -17,8 +17,8 @@ document.documentElement.classList.add(savedTheme);
 const container = document.getElementById("root");
 if (container) {
   createRoot(container).render(
-    <React.StrictMode>
+    <StrictMode>
       <App />
-    </React.StrictMode>
+    </StrictMode>
   );
 }
