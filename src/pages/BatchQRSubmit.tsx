@@ -238,9 +238,20 @@ const BatchQRSubmit = () => {
   if (!qrData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="glass p-6 max-w-md w-full text-center">
-          <p className="text-muted-foreground mb-4">Invalid QR code</p>
-          <Button onClick={() => navigate("/")} variant="outline">
+        <Card className="glass p-6 max-w-md w-full text-center space-y-4">
+          <div className="w-16 h-16 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+            <ArrowLeft className="w-8 h-8 text-destructive" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold mb-2">QR Code Not Found</h2>
+            <p className="text-muted-foreground text-sm mb-1">
+              This QR code may have expired or been deleted.
+            </p>
+            <p className="text-muted-foreground text-xs">
+              Please ask your team leader for a new QR code.
+            </p>
+          </div>
+          <Button onClick={() => navigate("/")} variant="outline" className="w-full">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Go Home
           </Button>
