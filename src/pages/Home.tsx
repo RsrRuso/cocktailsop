@@ -23,7 +23,6 @@ import {
 
 // Lazy load dialogs for faster initial render
 const ShareDialog = lazy(() => import("@/components/ShareDialog"));
-const CommentsDialog = lazy(() => import("@/components/CommentsDialog"));
 const LikesDialog = lazy(() => import("@/components/LikesDialog"));
 
 // Story skeleton for instant UI
@@ -136,9 +135,7 @@ const Home = () => {
   const [viewedStories, setViewedStories] = useState<Set<string>>(new Set());
   const [currentUser, setCurrentUser] = useState<any>(profile); // Initialize with cached profile
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string>("");
-  const [selectedPostContent, setSelectedPostContent] = useState<string>("");
   const [selectedPostType, setSelectedPostType] = useState<'post' | 'reel'>('post');
   const [selectedMediaUrls, setSelectedMediaUrls] = useState<string[]>([]);
   const [isReelDialogOpen, setIsReelDialogOpen] = useState(false);
@@ -590,13 +587,10 @@ const Home = () => {
               onDelete={() => item.type === 'post' ? handleDeletePost(item.id) : handleDeleteReel(item.id)}
               onEdit={() => item.type === 'post' ? navigate(`/edit-post/${item.id}`) : navigate(`/edit-reel/${item.id}`)}
               onComment={() => {
-                setSelectedPostId(item.id);
-                setSelectedPostType(item.type);
-                setCommentsDialogOpen(true);
+                // FeedItem handles comments internally via EnhancedCommentsDialog
               }}
               onShare={() => {
                 setSelectedPostId(item.id);
-                setSelectedPostContent(item.type === 'post' ? item.content : item.caption);
                 setSelectedPostType(item.type);
                 setSelectedMediaUrls(item.media_urls || []);
                 setShareDialogOpen(true);
@@ -652,21 +646,12 @@ const Home = () => {
           open={shareDialogOpen}
           onOpenChange={setShareDialogOpen}
           postId={selectedPostId}
-          postContent={selectedPostContent}
+          postContent=""
           postType={selectedPostType}
           mediaUrls={selectedMediaUrls}
         />
       </Suspense>
       
-      <Suspense fallback={null}>
-        <CommentsDialog
-          open={commentsDialogOpen}
-          onOpenChange={setCommentsDialogOpen}
-          postId={selectedPostId}
-          isReel={selectedPostType === 'reel'}
-          onCommentChange={refreshFeed}
-        />
-      </Suspense>
 
       <Suspense fallback={null}>
         <LikesDialog
