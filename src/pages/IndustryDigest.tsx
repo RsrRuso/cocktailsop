@@ -123,8 +123,8 @@ export default function IndustryDigest() {
   }, [selectedRegion]);
 
   const handleRegionChange = (region: string) => {
+    setDigest(null); // Clear current data to show loading
     setSelectedRegion(region);
-    setLoading(true);
   };
 
   const formatPubDate = (dateStr?: string) => {
