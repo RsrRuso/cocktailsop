@@ -115,8 +115,12 @@ const CreateStory = () => {
     try {
       toast.loading("Uploading story...", { id: "story-upload" });
       
+      console.log('[Story] Starting upload for', selectedMedia.length, 'files');
+      
       // Upload files using powerful upload system
       const results = await uploadMultiple('stories', user.id, selectedMedia);
+      
+      console.log('[Story] Upload results:', results);
       
       const uploadedUrls: string[] = [];
       const mediaTypes: string[] = [];
@@ -125,8 +129,12 @@ const CreateStory = () => {
         if (!result.error && result.publicUrl) {
           uploadedUrls.push(result.publicUrl);
           mediaTypes.push(selectedMedia[index]?.type?.startsWith('video') ? 'video' : 'image');
+        } else if (result.error) {
+          console.error('[Story] Upload error for file', index, ':', result.error);
         }
       });
+      
+      console.log('[Story] Successfully uploaded:', uploadedUrls.length, 'files');
       
       if (uploadedUrls.length === 0) {
         toast.dismiss("story-upload");
@@ -241,7 +249,9 @@ const CreateStory = () => {
         // Create new story
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         
-        await supabase
+        console.log('[Story] Creating new story with', uploadedUrls.length, 'media files, expires at:', expiresAt);
+        
+        const { data: newStory, error: insertError } = await supabase
           .from("stories")
           .insert({
             user_id: user.id,
@@ -253,7 +263,16 @@ const CreateStory = () => {
             trim_data: trimDataArray,
             expires_at: expiresAt,
             visibility: visibility,
-          });
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('[Story] Insert error:', insertError);
+          throw insertError;
+        }
+        
+        console.log('[Story] Story created successfully:', newStory?.id);
 
         toast.dismiss("story-upload");
         toast.success(visibility === 'close_friends' ? "Shared with Close Friends!" : "Story created!");
