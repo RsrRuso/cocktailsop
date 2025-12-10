@@ -139,6 +139,7 @@ export default function StoryViewer() {
   const [isLoading, setIsLoading] = useState(true);
   const [mediaLoaded, setMediaLoaded] = useState(true);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
   const [hasShownInitialHearts, setHasShownInitialHearts] = useState(false);
   
   // Refs
@@ -663,7 +664,7 @@ export default function StoryViewer() {
     }
     
     // Vertical swipe for viewers panel (up) / close (down)
-    if (deltaTime < 300 && absY > 80 && absY > absX * 1.5) {
+    if (deltaTime < 400 && absY > 60 && absY > absX * 1.2) {
       if (singleTapTimerRef.current) {
         clearTimeout(singleTapTimerRef.current);
         singleTapTimerRef.current = null;
@@ -673,13 +674,20 @@ export default function StoryViewer() {
       lastTapPosRef.current = null;
       
       if (deltaY < 0 && currentUserId === userId) {
+        // Swipe up - open viewers panel with animation
         setShowViewersPanel(true);
         if (currentStory) {
           fetchAllViewers(currentStory.id);
           fetchAllLikers(currentStory.id);
         }
       } else if (deltaY > 0) {
-        navigate("/home");
+        // Swipe down - close with smooth animation
+        setIsClosing(true);
+        if ('vibrate' in navigator) navigator.vibrate(5);
+        // Navigate after animation completes
+        setTimeout(() => {
+          navigate("/home");
+        }, 300);
       }
       if ('vibrate' in navigator) navigator.vibrate(5);
       touchStartRef.current = null;
@@ -824,7 +832,20 @@ export default function StoryViewer() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col safe-area-inset">
+    <motion.div 
+      className="fixed inset-0 bg-black z-50 flex flex-col safe-area-inset"
+      initial={{ y: 0, opacity: 1 }}
+      animate={{ 
+        y: isClosing ? '100%' : 0, 
+        opacity: isClosing ? 0.5 : 1,
+      }}
+      transition={{ 
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+        duration: 0.3,
+      }}
+    >
       {/* Story Container - Fullscreen, header is now part of overlay */}
       <div className="flex-1 relative overflow-hidden">
         <div className="w-full h-full relative overflow-hidden">
@@ -1328,6 +1349,6 @@ export default function StoryViewer() {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </motion.div>
   );
 }
