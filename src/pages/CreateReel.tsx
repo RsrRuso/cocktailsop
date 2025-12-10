@@ -5,12 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2, Wand2 } from "lucide-react";
+import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2 } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
 import MusicSelector from "@/components/music-box/MusicSelector";
-import { useAutoMusicExtraction } from "@/hooks/useAutoMusicExtraction";
 
 const CreateReel = () => {
   const navigate = useNavigate();
@@ -20,9 +19,7 @@ const CreateReel = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showMusicSelector, setShowMusicSelector] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<{ id: string; title: string; artist: string; preview_url: string } | null>(null);
-  const [isExtractingMusic, setIsExtractingMusic] = useState(false);
   const { uploadState, uploadSingle } = usePowerfulUpload();
-  const { extractAndAnalyzeAudio, isExtracting, extractionProgress } = useAutoMusicExtraction();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -113,32 +110,20 @@ const CreateReel = () => {
 
       toast.success("Reel uploaded successfully!");
 
-      // Auto-extract music BEFORE navigation (must complete before clearing state)
-      const videoForExtraction = selectedVideo;
-      const urlForExtraction = previewUrl;
-      
-      if (videoForExtraction && urlForExtraction && !selectedMusic) {
-        console.log("Starting music extraction...");
-        toast.info("Analyzing audio for music...", { duration: 3000 });
-        
-        try {
-          const result = await extractAndAnalyzeAudio(urlForExtraction, videoForExtraction);
-          console.log("Extraction result:", result);
-          
-          if (result.isMusic) {
-            toast.success(`Music detected and added to Music Box: ${result.title}`, {
-              icon: <Wand2 className="w-4 h-4" />,
-              duration: 5000
-            });
-          } else {
-            console.log("No music detected in video");
+      // Trigger background music extraction (non-blocking)
+      if (selectedVideo && result.publicUrl && !selectedMusic) {
+        supabase.functions.invoke('extract-music-background', {
+          body: {
+            videoUrl: result.publicUrl,
+            fileName: selectedVideo.name,
+            userId: user.id
           }
-        } catch (extractError) {
-          console.error("Music extraction failed:", extractError);
-        }
+        }).then(() => {
+          toast.info("Music extraction started in background", { duration: 2000 });
+        }).catch(console.error);
       }
       
-      // Reset form and navigate
+      // Reset form and navigate immediately
       setPreviewUrl("");
       setSelectedVideo(null);
       setCaption("");
