@@ -300,21 +300,11 @@ export const EnhancedCommentsDialog = ({
     return (
       <motion.div
         key={comment.id}
-        initial={{ opacity: 0, x: 50, scale: 0.95 }}
-        animate={{ 
-          opacity: 1, 
-          x: 0, 
-          scale: 1,
-          boxShadow: isNew ? '0 0 20px rgba(168, 85, 247, 0.4)' : 'none'
-        }}
-        exit={{ opacity: 0, x: -30, scale: 0.9 }}
-        transition={{ 
-          type: 'spring',
-          stiffness: 400,
-          damping: 25,
-          delay: index * 0.05 
-        }}
-        className={`${depth > 0 ? 'ml-6 sm:ml-8 mt-2 border-l-2 border-purple-500/30 pl-2 sm:pl-3' : 'mb-2'} ${isNew ? 'animate-pulse' : ''}`}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.2, delay: index * 0.03 }}
+        className={`${depth > 0 ? 'ml-8 mt-2 pl-3' : 'mb-3'}`}
       >
         <motion.div 
           drag="x"
@@ -326,29 +316,12 @@ export const EnhancedCommentsDialog = ({
           onMouseDown={() => handleLongPressStart(comment.id)}
           onMouseUp={handleLongPressEnd}
           onMouseLeave={handleLongPressEnd}
-          className={`group relative p-2.5 sm:p-3 rounded-xl transition-all duration-300 cursor-grab active:cursor-grabbing ${
-            isNew 
-              ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-2 border-purple-500/50' 
-              : 'bg-black/30 backdrop-blur-sm hover:bg-black/40 border border-white/10 hover:border-primary/30'
-          }`}
+          className="group relative py-1 cursor-grab active:cursor-grabbing"
         >
-          {/* Swipe hint */}
-          <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-50 transition-opacity">
-            <Reply className="w-4 h-4 text-primary" />
-          </div>
-
-          {isNew && (
-            <motion.div 
-              className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl"
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1.5, repeat: 2 }}
-            />
-          )}
-          
-          <div className="relative flex gap-2 sm:gap-3">
-            <Avatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
+          <div className="flex gap-3">
+            <Avatar className="w-8 h-8 flex-shrink-0">
               <AvatarImage src={comment.profiles.avatar_url || undefined} />
-              <AvatarFallback className="text-xs sm:text-sm bg-gradient-to-br from-purple-500/10 to-pink-500/10">
+              <AvatarFallback className="text-xs bg-white/10">
                 {comment.profiles.username[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
