@@ -723,26 +723,57 @@ export default function StoryViewer() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.15 }}
-                className="w-full h-full"
+                className="w-full h-full relative"
               >
                 {isVideo ? (
-                  <video
-                    ref={videoRef}
-                    src={mediaUrl}
-                    className="w-full h-full object-cover"
-                    autoPlay
-                    playsInline
-                    muted={isMuted}
-                    preload="auto"
-                    onLoadedData={() => setMediaLoaded(true)}
-                  />
+                  <div className="w-full h-full relative">
+                    <video
+                      ref={videoRef}
+                      className="w-full h-full object-cover"
+                      autoPlay
+                      playsInline
+                      muted={isMuted}
+                      preload="auto"
+                      onLoadedData={() => {
+                        console.log('[StoryViewer] Video loaded:', mediaUrl);
+                        setMediaLoaded(true);
+                      }}
+                      onError={(e) => {
+                        console.error('[StoryViewer] Video error:', mediaUrl, e);
+                        setMediaLoaded(true);
+                      }}
+                      onCanPlay={() => {
+                        console.log('[StoryViewer] Video can play');
+                        videoRef.current?.play().catch(console.error);
+                      }}
+                      onPlay={() => console.log('[StoryViewer] Video playing')}
+                      onStalled={() => console.log('[StoryViewer] Video stalled')}
+                    >
+                      <source src={mediaUrl} type="video/mp4" />
+                      <source src={mediaUrl} type="video/quicktime" />
+                      Your browser does not support the video tag.
+                    </video>
+                    {/* Loading overlay */}
+                    {!mediaLoaded && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white" />
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <img 
                     src={mediaUrl} 
                     alt="Story" 
                     className="w-full h-full object-cover"
                     loading="eager"
-                    onLoad={() => setMediaLoaded(true)}
+                    onLoad={() => {
+                      console.log('[StoryViewer] Image loaded:', mediaUrl);
+                      setMediaLoaded(true);
+                    }}
+                    onError={(e) => {
+                      console.error('[StoryViewer] Image error:', e, mediaUrl);
+                      setMediaLoaded(true);
+                    }}
                   />
                 )}
               </motion.div>
