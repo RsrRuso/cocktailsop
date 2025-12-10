@@ -92,7 +92,11 @@ export default function MusicBox() {
   };
 
   const fetchMyTracks = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log("No user, skipping fetchMyTracks");
+      return;
+    }
+    console.log("Fetching my tracks for user:", user.id);
     try {
       const { data, error } = await supabase
         .from("music_tracks")
@@ -104,6 +108,7 @@ export default function MusicBox() {
         .eq("uploaded_by", user.id)
         .order("created_at", { ascending: false });
 
+      console.log("My tracks result:", { data, error });
       if (error) throw error;
       setMyTracks(data || []);
     } catch (error) {
