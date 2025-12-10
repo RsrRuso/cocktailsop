@@ -49,26 +49,35 @@ const GLOBAL_FEEDS = [
   { url: "https://www.diffordsguide.com/feed", category: "Cocktails", name: "Difford's Guide" },
 ];
 
+// Region-specific feeds - each region gets ONLY these feeds, not mixed with global
 const REGIONAL_FEEDS: Record<string, Array<{ url: string; category: string; name: string }>> = {
   "middle-east": [
-    { url: "https://gulfnews.com/rss/lifestyle/rss.xml", category: "Middle East", name: "Gulf News" },
-    { url: "https://whatson.ae/feed/", category: "Middle East", name: "What's On Dubai" },
+    { url: "https://gulfnews.com/rss/lifestyle/rss.xml", category: "Middle East Lifestyle", name: "Gulf News" },
+    { url: "https://whatson.ae/feed/", category: "Dubai & UAE", name: "What's On Dubai" },
+    { url: "https://www.hotelnewsme.com/feed/", category: "Middle East Hotels", name: "Hotel News ME" },
+    { url: "https://www.arabianbusiness.com/industries/travel-hospitality.rss", category: "Arabian Hospitality", name: "Arabian Business" },
   ],
   europe: [
-    { url: "https://www.theguardian.com/lifeandstyle/food-and-drink/rss", category: "Europe", name: "The Guardian" },
-    { url: "https://www.decanter.com/feed/", category: "Wine", name: "Decanter" },
-    { url: "https://www.jancisrobinson.com/feed", category: "Wine", name: "Jancis Robinson" },
+    { url: "https://www.theguardian.com/lifeandstyle/food-and-drink/rss", category: "UK Food & Drink", name: "The Guardian" },
+    { url: "https://www.decanter.com/feed/", category: "European Wine", name: "Decanter" },
+    { url: "https://www.jancisrobinson.com/feed", category: "Wine Expert", name: "Jancis Robinson" },
+    { url: "https://www.bighospitality.co.uk/rss/news", category: "UK Hospitality", name: "Big Hospitality" },
+    { url: "https://www.thedrinksbusiness.com/feed/", category: "UK Drinks", name: "Drinks Business UK" },
   ],
   "north-america": [
-    { url: "https://www.bonappetit.com/feed/rss", category: "Food", name: "Bon Appetit" },
-    { url: "https://www.foodandwine.com/feeds/all", category: "Food & Wine", name: "Food & Wine" },
-    { url: "https://ny.eater.com/rss/index.xml", category: "Restaurants", name: "Eater NY" },
+    { url: "https://www.bonappetit.com/feed/rss", category: "US Food", name: "Bon Appetit" },
+    { url: "https://www.foodandwine.com/feeds/all", category: "US Food & Wine", name: "Food & Wine" },
+    { url: "https://ny.eater.com/rss/index.xml", category: "New York", name: "Eater NY" },
+    { url: "https://la.eater.com/rss/index.xml", category: "Los Angeles", name: "Eater LA" },
+    { url: "https://punchdrink.com/feed/", category: "US Cocktails", name: "Punch" },
   ],
   "asia-pacific": [
-    { url: "https://www.scmp.com/rss/91/feed", category: "Asia", name: "SCMP Food" },
-    { url: "https://asia.nikkei.com/rss/feed/nar", category: "Asia", name: "Nikkei Asia" },
+    { url: "https://www.scmp.com/rss/91/feed", category: "Asia Food", name: "SCMP Food" },
+    { url: "https://asia.nikkei.com/rss/feed/nar", category: "Asia Business", name: "Nikkei Asia" },
+    { url: "https://www.timeout.com/singapore/restaurants/feed", category: "Singapore", name: "Time Out Singapore" },
+    { url: "https://www.timeout.com/hong-kong/restaurants/feed", category: "Hong Kong", name: "Time Out HK" },
   ],
-  global: [],
+  global: [], // Empty - will use GLOBAL_FEEDS
 };
 
 interface Article {
@@ -175,9 +184,16 @@ serve(async (req) => {
       day: 'numeric' 
     });
 
-    // Combine global feeds with regional feeds
+    // Use ONLY regional feeds for specific regions, or global feeds for "global"
+    // This ensures different content for different regions
     const regionalFeeds = REGIONAL_FEEDS[region] || [];
-    const allFeeds = [...GLOBAL_FEEDS, ...regionalFeeds];
+    const allFeeds = region === "global" 
+      ? GLOBAL_FEEDS 
+      : regionalFeeds.length > 0 
+        ? regionalFeeds 
+        : GLOBAL_FEEDS; // Fallback to global if no regional feeds
+    
+    console.log(`Using ${allFeeds.length} feeds for region "${region}":`, allFeeds.map(f => f.name));
 
     // Fetch all RSS feeds in parallel with timeout
     const feedPromises = allFeeds.map(feed => 

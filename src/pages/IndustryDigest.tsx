@@ -87,19 +87,31 @@ export default function IndustryDigest() {
     else setLoading(true);
 
     try {
+      // Always fetch fresh data when region changes - no caching for region switches
       const cacheKey = `industry_digest_${region}`;
-      const cachedDigest = localStorage.getItem(cacheKey);
-      const cachedTime = localStorage.getItem(`${cacheKey}_time`);
       
-      if (!isRefresh && cachedDigest && cachedTime) {
-        const cacheAge = Date.now() - parseInt(cachedTime);
-        if (cacheAge < 2 * 60 * 60 * 1000) {
-          setDigest(JSON.parse(cachedDigest));
-          setLoading(false);
-          return;
+      // Only use cache on initial load of same region, not on region switch
+      if (!isRefresh) {
+        const cachedDigest = localStorage.getItem(cacheKey);
+        const cachedTime = localStorage.getItem(`${cacheKey}_time`);
+        
+        if (cachedDigest && cachedTime) {
+          const cacheAge = Date.now() - parseInt(cachedTime);
+          // Short cache (10 minutes) to ensure fresh regional content
+          if (cacheAge < 10 * 60 * 1000) {
+            const parsed = JSON.parse(cachedDigest);
+            // Verify cached data matches requested region
+            if (parsed.region === region) {
+              setDigest(parsed);
+              setLoading(false);
+              return;
+            }
+          }
         }
       }
 
+      console.log(`Fetching news for region: ${region}`);
+      
       const { data, error } = await supabase.functions.invoke("fetch-industry-news", {
         body: { region }
       });
@@ -111,7 +123,7 @@ export default function IndustryDigest() {
         localStorage.setItem(cacheKey, JSON.stringify(data.digest));
         localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
         if (isRefresh) {
-          toast.success("News refreshed with latest stories");
+          toast.success(`News refreshed for ${REGIONS.find(r => r.value === region)?.label || region}`);
         }
       } else if (data?.error) {
         throw new Error(data.error);
@@ -126,11 +138,15 @@ export default function IndustryDigest() {
   };
 
   useEffect(() => {
-    // Always fetch fresh when region changes (force refresh)
+    // Clear old cache and fetch fresh when region changes
+    const cacheKey = `industry_digest_${selectedRegion}`;
+    localStorage.removeItem(cacheKey);
+    localStorage.removeItem(`${cacheKey}_time`);
     fetchDigest(true, selectedRegion);
   }, [selectedRegion]);
 
   const handleRegionChange = (region: string) => {
+    if (region === selectedRegion) return; // No change needed
     setLoading(true);
     setDigest(null); // Clear current data to show loading
     setSelectedRegion(region);
