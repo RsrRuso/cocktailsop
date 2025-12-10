@@ -22,7 +22,8 @@ import {
   Search,
   Plus,
   Loader2,
-  Volume2
+  Volume2,
+  Wand2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdvancedMusicUploadDialog } from "@/components/music-box/AdvancedMusicUploadDialog";
@@ -422,6 +423,7 @@ export default function MusicBox() {
               <div className="text-center py-12 text-muted-foreground">
                 <Music className="w-12 h-12 mx-auto mb-4 opacity-30" />
                 <p>You haven't uploaded any tracks yet</p>
+                <p className="text-xs mt-2">Tip: Upload reels with music - audio is auto-extracted!</p>
                 <Button 
                   variant="outline" 
                   className="mt-4"
@@ -431,37 +433,94 @@ export default function MusicBox() {
                 </Button>
               </div>
             ) : (
-              myTracks.map(track => (
-                <motion.div
-                  key={track.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => handlePlayPause(track)}
-                        className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"
+              <>
+                {/* Extracted tracks section */}
+                {myTracks.filter(t => t.category === 'extracted').length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                      <Wand2 className="w-4 h-4" />
+                      Auto-Extracted from Your Reels
+                    </h3>
+                    {myTracks.filter(t => t.category === 'extracted').map(track => (
+                      <motion.div
+                        key={track.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-2"
                       >
-                        {playingTrackId === track.id ? (
-                          <Pause className="w-5 h-5 text-primary" />
-                        ) : (
-                          <Play className="w-5 h-5 text-primary" />
-                        )}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium truncate">{track.title}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          {getStatusBadge(track.status)}
-                          <Badge variant="secondary" className="text-xs capitalize">
-                            {track.category}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))
+                        <Card className="p-4 bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
+                          <div className="flex items-center gap-4">
+                            <button
+                              onClick={() => handlePlayPause(track)}
+                              className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"
+                            >
+                              {playingTrackId === track.id ? (
+                                <Pause className="w-5 h-5 text-primary" />
+                              ) : (
+                                <Play className="w-5 h-5 text-primary" />
+                              )}
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium truncate">{track.title}</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                {getStatusBadge(track.status)}
+                                <Badge variant="outline" className="text-xs bg-primary/10">
+                                  <Wand2 className="w-3 h-3 mr-1" />
+                                  Extracted
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Uploaded tracks section */}
+                {myTracks.filter(t => t.category !== 'extracted').length > 0 && (
+                  <div>
+                    {myTracks.filter(t => t.category === 'extracted').length > 0 && (
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                        <Upload className="w-4 h-4" />
+                        Your Uploads
+                      </h3>
+                    )}
+                    {myTracks.filter(t => t.category !== 'extracted').map(track => (
+                      <motion.div
+                        key={track.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-2"
+                      >
+                        <Card className="p-4 bg-card/50 backdrop-blur-sm border-border/50">
+                          <div className="flex items-center gap-4">
+                            <button
+                              onClick={() => handlePlayPause(track)}
+                              className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"
+                            >
+                              {playingTrackId === track.id ? (
+                                <Pause className="w-5 h-5 text-primary" />
+                              ) : (
+                                <Play className="w-5 h-5 text-primary" />
+                              )}
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium truncate">{track.title}</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                {getStatusBadge(track.status)}
+                                <Badge variant="secondary" className="text-xs capitalize">
+                                  {track.category}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
         </Tabs>
