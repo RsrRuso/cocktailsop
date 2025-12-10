@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Newspaper, TrendingUp, Lightbulb, Wine, RefreshCw, Calendar, Sparkles, Clock } from "lucide-react";
+import { ArrowLeft, Newspaper, TrendingUp, RefreshCw, Calendar, Sparkles, Clock, ExternalLink, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,11 +15,9 @@ interface Article {
   category: string;
   summary: string;
   importance: "high" | "medium" | "low";
-}
-
-interface DrinkOfTheDay {
-  name: string;
-  description: string;
+  link?: string;
+  source?: string;
+  pubDate?: string;
 }
 
 interface Digest {
@@ -28,9 +26,8 @@ interface Digest {
   summary: string;
   articles: Article[];
   trending_topics: string[];
-  drink_of_the_day: DrinkOfTheDay;
-  industry_tip: string;
   generated_at: string;
+  is_real_news?: boolean;
 }
 
 const categoryColors: Record<string, string> = {
@@ -67,8 +64,8 @@ export default function IndustryDigest() {
       
       if (!isRefresh && cachedDigest && cachedTime) {
         const cacheAge = Date.now() - parseInt(cachedTime);
-        // Use cache if less than 4 hours old
-        if (cacheAge < 4 * 60 * 60 * 1000) {
+        // Use cache if less than 2 hours old for real news
+        if (cacheAge < 2 * 60 * 60 * 1000) {
           setDigest(JSON.parse(cachedDigest));
           setLoading(false);
           return;
@@ -84,6 +81,9 @@ export default function IndustryDigest() {
         // Cache the result
         localStorage.setItem("industry_digest", JSON.stringify(data.digest));
         localStorage.setItem("industry_digest_time", Date.now().toString());
+        if (isRefresh) {
+          toast.success("News refreshed with latest stories");
+        }
       } else if (data?.error) {
         throw new Error(data.error);
       }
@@ -99,6 +99,22 @@ export default function IndustryDigest() {
   useEffect(() => {
     fetchDigest();
   }, []);
+
+  const formatPubDate = (dateStr?: string) => {
+    if (!dateStr) return "";
+    try {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+      
+      if (diffHours < 1) return "Just now";
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffHours < 48) return "Yesterday";
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return "";
+    }
+  };
 
   if (loading) {
     return (
@@ -157,10 +173,18 @@ export default function IndustryDigest() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 text-muted-foreground"
+                className="flex items-center justify-between"
               >
-                <Calendar className="w-4 h-4" />
-                <span className="text-sm">{digest.date}</span>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-sm">{digest.date}</span>
+                </div>
+                {digest.is_real_news && (
+                  <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                    <Globe className="w-3 h-3 mr-1" />
+                    Live News
+                  </Badge>
+                )}
               </motion.div>
 
               {/* Headline Card */}
@@ -209,88 +233,65 @@ export default function IndustryDigest() {
                 </Card>
               </motion.div>
 
-              {/* Drink of the Day */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <Card className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-amber-500/20 rounded-lg">
-                        <Wine className="w-5 h-5 text-amber-400" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-amber-400 uppercase tracking-wide">Drink of the Day</p>
-                        <p className="font-semibold">{digest.drink_of_the_day.name}</p>
-                        <p className="text-sm text-muted-foreground">{digest.drink_of_the_day.description}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
               {/* Articles */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
+                transition={{ delay: 0.3 }}
                 className="space-y-3"
               >
                 <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                  Today's Stories
+                  Latest Stories
                 </h3>
                 {digest.articles.map((article, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 + i * 0.1 }}
+                    transition={{ delay: 0.4 + i * 0.05 }}
                   >
-                    <Card className={`bg-card/50 backdrop-blur ${importanceStyles[article.importance]}`}>
+                    <Card 
+                      className={`bg-card/50 backdrop-blur ${importanceStyles[article.importance]} cursor-pointer hover:bg-card/70 transition-colors`}
+                      onClick={() => article.link && window.open(article.link, '_blank')}
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-3 mb-2">
-                          <h4 className="font-semibold text-sm leading-tight">{article.title}</h4>
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs shrink-0 ${categoryColors[article.category] || 'bg-muted/50'}`}
-                          >
-                            {article.category}
-                          </Badge>
+                          <h4 className="font-semibold text-sm leading-tight flex-1">{article.title}</h4>
+                          {article.link && (
+                            <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0" />
+                          )}
                         </div>
-                        <p className="text-sm text-muted-foreground">{article.summary}</p>
+                        <p className="text-sm text-muted-foreground mb-3">{article.summary}</p>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${categoryColors[article.category] || 'bg-muted/50'}`}
+                            >
+                              {article.category}
+                            </Badge>
+                            {article.source && (
+                              <span className="text-xs text-muted-foreground">
+                                {article.source}
+                              </span>
+                            )}
+                          </div>
+                          {article.pubDate && (
+                            <span className="text-xs text-muted-foreground">
+                              {formatPubDate(article.pubDate)}
+                            </span>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   </motion.div>
                 ))}
               </motion.div>
 
-              {/* Industry Tip */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-              >
-                <Card className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-emerald-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-emerald-500/20 rounded-lg">
-                        <Lightbulb className="w-5 h-5 text-emerald-400" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-emerald-400 uppercase tracking-wide mb-1">Pro Tip</p>
-                        <p className="text-sm">{digest.industry_tip}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
               {/* Footer */}
               <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-4">
                 <Clock className="w-3 h-3" />
-                <span>Generated {new Date(digest.generated_at).toLocaleTimeString()}</span>
+                <span>Updated {new Date(digest.generated_at).toLocaleTimeString()}</span>
               </div>
             </>
           )}
