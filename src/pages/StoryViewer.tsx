@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { X, Heart, Volume2, VolumeX, Send, AtSign, MoreHorizontal, BadgeCheck, Sparkles, Eye, ChevronUp, MessageCircle, Music, Edit3, Brain } from "lucide-react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { toast } from "sonner";
-import { useUnifiedEngagement } from "@/hooks/useUnifiedEngagement";
+import { useLike } from "@/hooks/useLike";
 import { LivestreamComments } from "@/components/story/LivestreamComments";
 import { StoryInsights } from "@/components/story/StoryInsights";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -180,7 +180,7 @@ export default function StoryViewer() {
   
   const musicData = getMusicData();
 
-  const { likedItems, toggleLike } = useUnifiedEngagement("story", currentUserId);
+  const { likedItems, toggleLike } = useLike("story", currentUserId);
   const isLiked = currentStory ? likedItems.has(currentStory.id) : false;
 
   // Cleanup timers on unmount

@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, Bookmark, Repeat2, MessageCircle } from 'lucide-react';
 import { FeedItem } from './FeedItem';
 import { getBadgeColor } from '@/lib/profileUtils';
-import { useOptimisticLike } from '@/hooks/useOptimisticLike';
+import { useLike } from '@/hooks/useLike';
 
 interface SavedRepostedContentProps {
   userId: string;
@@ -44,8 +44,8 @@ export const SavedRepostedContent = ({ userId }: SavedRepostedContentProps) => {
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
 
   // Optimistic like hooks
-  const { likedItems: likedPosts, toggleLike: togglePostLike } = useOptimisticLike('post', userId);
-  const { likedItems: likedReels, toggleLike: toggleReelLike } = useOptimisticLike('reel', userId);
+  const { likedItems: likedPosts, toggleLike: togglePostLike } = useLike('post', userId);
+  const { likedItems: likedReels, toggleLike: toggleReelLike } = useLike('reel', userId);
 
   const fetchContent = useCallback(async () => {
     if (!userId) return;
