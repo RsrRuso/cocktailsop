@@ -1,4 +1,4 @@
-// Cache bust: v3 - 2024-12-10
+// Force complete rebuild v5
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -55,13 +55,13 @@ export default defineConfig(({ mode }) => ({
               cacheName: 'supabase-cache',
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+                maxAgeSeconds: 60 * 60 * 24 * 7
               },
               cacheableResponse: {
                 statuses: [0, 200]
               }
             }
-      }
+          }
         ]
       }
     })
@@ -69,15 +69,23 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "react": path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
-    dedupe: ['react', 'react-dom'],
+    dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
   },
   build: {
     minify: 'esbuild',
     target: 'esnext',
+    commonjsOptions: {
+      include: [/node_modules/],
+    },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'],
+    include: ['react', 'react-dom', 'react/jsx-runtime', 'react-dom/client'],
     force: true,
+    esbuildOptions: {
+      jsx: 'automatic',
+    },
   },
 }));
