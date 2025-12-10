@@ -63,9 +63,44 @@ export const FeedItem = memo(({
   const [isReposted, setIsReposted] = useState(false);
   const [doubleTapLike, setDoubleTapLike] = useState(false);
   const [lastTap, setLastTap] = useState(0);
+  const [commentCount, setCommentCount] = useState(item.comment_count || 0);
 
   // Track views based on content type
   useViewTracking(item.type === 'reel' ? 'reel' : 'post', item.id, currentUserId, true);
+
+  // Real-time subscription for comment count updates
+  useEffect(() => {
+    const tableName = item.type === 'post' ? 'post_comments' : 'reel_comments';
+    const idColumn = item.type === 'post' ? 'post_id' : 'reel_id';
+    
+    const channel = supabase
+      .channel(`comments-${item.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: tableName,
+          filter: `${idColumn}=eq.${item.id}`
+        },
+        () => setCommentCount(prev => prev + 1)
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: tableName,
+          filter: `${idColumn}=eq.${item.id}`
+        },
+        () => setCommentCount(prev => Math.max(0, prev - 1))
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [item.id, item.type]);
 
   // Fetch initial repost/save state
   useEffect(() => {
@@ -416,12 +451,12 @@ export const FeedItem = memo(({
         )}
 
         {/* Comments Preview */}
-        {(item.comment_count || 0) > 0 && (
+        {commentCount > 0 && (
           <button 
             onClick={() => setShowComments(true)}
             className="text-sm text-muted-foreground mt-1 hover:text-foreground transition-colors"
           >
-            View all {item.comment_count} comments
+            View all {commentCount} comments
           </button>
         )}
 
@@ -470,7 +505,7 @@ export const FeedItem = memo(({
         content={item.content || item.caption || ''}
         engagement={{
           likes: item.like_count || 0,
-          comments: item.comment_count || 0,
+          comments: commentCount,
           shares: item.repost_count || 0,
           views: item.view_count || 0,
         }}
