@@ -9,6 +9,7 @@ import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2 } from "lucide-r
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
+import { useAutoMusicExtraction } from "@/hooks/useAutoMusicExtraction";
 import MusicSelector from "@/components/music-box/MusicSelector";
 
 const CreateReel = () => {
@@ -20,6 +21,7 @@ const CreateReel = () => {
   const [showMusicSelector, setShowMusicSelector] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<{ id: string; title: string; artist: string; preview_url: string } | null>(null);
   const { uploadState, uploadSingle } = usePowerfulUpload();
+  const { extractAndAnalyzeAudio, isExtracting, extractionProgress } = useAutoMusicExtraction();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -110,17 +112,20 @@ const CreateReel = () => {
 
       toast.success("Reel uploaded successfully!");
 
-      // Trigger background music extraction (non-blocking)
-      if (selectedVideo && result.publicUrl && !selectedMusic) {
-        supabase.functions.invoke('extract-music-background', {
-          body: {
-            videoUrl: result.publicUrl,
-            fileName: selectedVideo.name,
-            userId: user.id
-          }
-        }).then(() => {
-          toast.info("Music extraction started in background", { duration: 2000 });
-        }).catch(console.error);
+      // Extract music from video if no music was manually selected
+      if (selectedVideo && previewUrl && !selectedMusic) {
+        toast.info("Extracting audio from video...", { duration: 3000 });
+        
+        // Run extraction in background (don't await - let user navigate)
+        extractAndAnalyzeAudio(previewUrl, selectedVideo)
+          .then((extractionResult) => {
+            if (extractionResult.isMusic && extractionResult.title) {
+              toast.success(`Audio extracted: "${extractionResult.title}" added to Music Box!`);
+            }
+          })
+          .catch((err) => {
+            console.error("Music extraction failed:", err);
+          });
       }
       
       // Reset form and navigate immediately
