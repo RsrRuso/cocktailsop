@@ -389,13 +389,13 @@ export const EnhancedCommentsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg h-[80vh] sm:h-[75vh] w-[95vw] flex flex-col p-0 gap-0 bg-background/80 backdrop-blur-xl border border-border/30 shadow-2xl overflow-hidden">
-        <DialogHeader className="px-4 pt-4 pb-3 border-b border-border/30 shrink-0">
+      <DialogContent className="max-w-lg h-[80vh] sm:h-[75vh] w-[95vw] flex flex-col p-0 gap-0 !bg-black/60 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden rounded-2xl">
+        <DialogHeader className="px-4 pt-4 pb-3 border-b border-white/10 shrink-0 bg-transparent">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-primary" />
-              <DialogTitle className="text-lg font-semibold">Comments</DialogTitle>
-              <span className="text-xs text-muted-foreground">({totalComments})</span>
+              <DialogTitle className="text-lg font-semibold text-white">Comments</DialogTitle>
+              <span className="text-xs text-white/60">({totalComments})</span>
             </div>
           </div>
         </DialogHeader>
@@ -422,7 +422,7 @@ export const EnhancedCommentsDialog = ({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="border-t border-border/30 p-3 shrink-0 bg-background/50">
+        <form onSubmit={handleSubmit} className="border-t border-white/10 p-3 shrink-0 bg-black/30">
           {replyingTo && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg mb-2">
               <Reply className="w-4 h-4" />
