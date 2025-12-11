@@ -7454,6 +7454,7 @@ export type Database = {
       }
       music_tracks: {
         Row: {
+          artist: string | null
           bpm: number | null
           category: string | null
           created_at: string
@@ -7471,6 +7472,7 @@ export type Database = {
           waveform_data: Json | null
         }
         Insert: {
+          artist?: string | null
           bpm?: number | null
           category?: string | null
           created_at?: string
@@ -7488,6 +7490,7 @@ export type Database = {
           waveform_data?: Json | null
         }
         Update: {
+          artist?: string | null
           bpm?: number | null
           category?: string | null
           created_at?: string
