@@ -207,26 +207,35 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
   };
 
   const handleNativeShare = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'SpecVerse',
-          text: 'Check out SpecVerse - The Future of Hospitality! Professional tools for bartenders & hospitality pros.',
-          url: appUrl,
-        });
+    const shareData = {
+      title: 'SpecVerse',
+      text: 'Check out SpecVerse - The Future of Hospitality! Professional tools for bartenders & hospitality pros.',
+      url: appUrl,
+    };
+
+    // Check if native share is available
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
         toast.success('Shared successfully!');
         onOpenChange(false);
-      } else {
-        // Fallback for browsers without share API
-        handleCopyLink();
-      }
-    } catch (err: any) {
-      // Only show error if it wasn't a user cancellation
-      if (err?.name !== 'AbortError') {
-        console.error('Share failed:', err);
-        handleCopyLink();
+        return;
+      } catch (err: any) {
+        // Only fallback if it wasn't user cancellation
+        if (err?.name === 'AbortError') {
+          return;
+        }
       }
     }
+    
+    // Fallback: Open share options via URL schemes
+    const encodedText = encodeURIComponent(shareData.text);
+    const encodedUrl = encodeURIComponent(appUrl);
+    
+    // Try WhatsApp as primary share option
+    const whatsappUrl = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+    window.open(whatsappUrl, '_blank');
+    toast.success('Opening WhatsApp to share...');
   };
 
   return (
