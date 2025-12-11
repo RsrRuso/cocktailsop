@@ -1,11 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDropzone } from "react-dropzone";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2, Loader2, VolumeX, Volume2 } from "lucide-react";
+import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2, Loader2, VolumeX, Volume2, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
@@ -24,8 +24,82 @@ const CreateReel = () => {
   const [showMusicSelector, setShowMusicSelector] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<{ id: string; title: string; artist: string; preview_url: string } | null>(null);
   const [muteOriginalAudio, setMuteOriginalAudio] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const { uploadState, uploadSingle } = usePowerfulUpload();
   const { extractAndAnalyzeAudio, isExtracting, extractionProgress } = useAutoMusicExtraction();
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Sync audio with video playback
+  useEffect(() => {
+    const video = videoRef.current;
+    const audio = audioRef.current;
+    
+    if (!video || !selectedMusic) return;
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+      if (audio && selectedMusic) {
+        audio.currentTime = video.currentTime;
+        audio.play().catch(console.error);
+      }
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+      audio?.pause();
+    };
+
+    const handleSeeked = () => {
+      if (audio && selectedMusic) {
+        audio.currentTime = video.currentTime;
+      }
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      audio?.pause();
+      if (audio) audio.currentTime = 0;
+    };
+
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('seeked', handleSeeked);
+    video.addEventListener('ended', handleEnded);
+
+    return () => {
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('seeked', handleSeeked);
+      video.removeEventListener('ended', handleEnded);
+    };
+  }, [selectedMusic]);
+
+  // Update video muted state when muteOriginalAudio changes
+  useEffect(() => {
+    if (videoRef.current && selectedMusic) {
+      videoRef.current.muted = muteOriginalAudio;
+    }
+  }, [muteOriginalAudio, selectedMusic]);
+
+  // Cleanup audio on unmount or music change
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+    };
+  }, []);
+
+  const handlePlayPause = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      video.play();
+    } else {
+      video.pause();
+    }
+  };
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -209,14 +283,54 @@ const CreateReel = () => {
             <div className="space-y-4">
               <div className="relative aspect-[9/16] max-w-sm mx-auto rounded-2xl overflow-hidden bg-black">
                 <video
+                  ref={videoRef}
                   src={previewUrl}
-                  controls
                   className="w-full h-full object-cover"
+                  muted={selectedMusic ? muteOriginalAudio : false}
+                  playsInline
+                  loop
                 />
+                
+                {/* Synced Audio for selected music */}
+                {selectedMusic && (
+                  <audio
+                    ref={audioRef}
+                    src={selectedMusic.preview_url}
+                    loop
+                    preload="auto"
+                  />
+                )}
+
+                {/* Play/Pause overlay */}
+                <button
+                  onClick={handlePlayPause}
+                  className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity"
+                >
+                  <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    {isPlaying ? (
+                      <Pause className="w-8 h-8 text-white" />
+                    ) : (
+                      <Play className="w-8 h-8 text-white ml-1" />
+                    )}
+                  </div>
+                </button>
+
+                {/* Music indicator when playing */}
+                {selectedMusic && isPlaying && (
+                  <div className="absolute bottom-4 left-4 right-4 glass rounded-lg px-3 py-2 flex items-center gap-2 animate-pulse">
+                    <Music2 className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-medium truncate">{selectedMusic.title}</span>
+                    <span className="text-xs text-muted-foreground">- {selectedMusic.artist}</span>
+                  </div>
+                )}
+
                 <button
                   onClick={() => {
+                    audioRef.current?.pause();
                     setPreviewUrl("");
                     setSelectedVideo(null);
+                    setSelectedMusic(null);
+                    setIsPlaying(false);
                   }}
                   className="absolute top-4 right-4 w-10 h-10 bg-red-500 rounded-full flex items-center justify-center z-10 hover:bg-red-600 transition-colors"
                 >
