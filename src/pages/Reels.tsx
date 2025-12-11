@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX, ArrowLeft, Eye } from "lucide-react";
@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useViewTracking } from "@/hooks/useViewTracking";
 import { ReelItemWrapper } from "@/components/ReelItemWrapper";
 import { ReelsFullscreenViewer } from "@/components/ReelsFullscreenViewer";
+import { useLike } from "@/hooks/useLike";
 
 interface Reel {
   id: string;
@@ -56,7 +57,6 @@ const Reels = () => {
   const [selectedReelId, setSelectedReelId] = useState("");
   const [selectedReelCaption, setSelectedReelCaption] = useState("");
   const [selectedReelVideo, setSelectedReelVideo] = useState("");
-  const [likedReels, setLikedReels] = useState<Set<string>>(new Set());
   const [showComments, setShowComments] = useState(false);
   const [selectedReelForComments, setSelectedReelForComments] = useState("");
   const [mutedVideos, setMutedVideos] = useState<Set<string>>(new Set());
@@ -66,6 +66,16 @@ const Reels = () => {
   const [showFullscreenViewer, setShowFullscreenViewer] = useState(false);
   const [fullscreenStartIndex, setFullscreenStartIndex] = useState(0);
   const [showLivestreamComments, setShowLivestreamComments] = useState(false);
+
+  // Optimistic like count updater
+  const handleLikeCountChange = useCallback((reelId: string, delta: number) => {
+    setReels(prev => prev.map(r => 
+      r.id === reelId ? { ...r, like_count: Math.max(0, (r.like_count || 0) + delta) } : r
+    ));
+  }, []);
+
+  // Use centralized useLike hook for consistent like/unlike behavior
+  const { likedItems: likedReels, toggleLike: toggleReelLike, fetchLikedItems: fetchLikedReels } = useLike('reel', user?.id, handleLikeCountChange);
 
   // Auto-unmute current reel, mute others
   useEffect(() => {
@@ -164,71 +174,10 @@ const Reels = () => {
     setReels(reelsWithProfiles);
   };
 
-  const fetchLikedReels = async () => {
-    if (!user?.id) return;
-
-    const { data } = await supabase
-      .from("reel_likes")
-      .select("reel_id")
-      .eq("user_id", user.id);
-
-    if (data) {
-      setLikedReels(new Set(data.map(like => like.reel_id)));
-    }
-  };
-
-  const handleLikeReel = async (reelId: string) => {
-    if (!user?.id) {
-      toast.error("Please login to like reels");
-      return;
-    }
-
-    const isLiked = likedReels.has(reelId);
-
-    // Optimistic UI update only - database trigger handles the count
-    if (isLiked) {
-      setLikedReels(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(reelId);
-        return newSet;
-      });
-    } else {
-      setLikedReels(prev => new Set(prev).add(reelId));
-    }
-
-    // Database operation - trigger updates count automatically
-    try {
-      if (isLiked) {
-        const { error } = await supabase
-          .from("reel_likes")
-          .delete()
-          .eq("reel_id", reelId)
-          .eq("user_id", user.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("reel_likes")
-          .insert({ reel_id: reelId, user_id: user.id });
-
-        // Ignore duplicate key errors - already liked
-        if (error && error.code !== '23505') throw error;
-      }
-    } catch (error: any) {
-      console.error('Error toggling reel like:', error);
-      // Revert UI state only - database trigger handles counts
-      if (isLiked) {
-        setLikedReels(prev => new Set(prev).add(reelId));
-      } else {
-        setLikedReels(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(reelId);
-          return newSet;
-        });
-      }
-      toast.error('Failed to update like');
-    }
-  };
+  // Use toggleReelLike from useLike hook for like/unlike
+  const handleLikeReel = useCallback((reelId: string) => {
+    toggleReelLike(reelId);
+  }, [toggleReelLike]);
 
   const handleDeleteReel = async (reelId: string) => {
     if (!user?.id) {
