@@ -88,6 +88,11 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
     });
   };
 
+  // Check if reel has attached music
+  const hasAttachedMusic = Boolean(reel.music_url || reel.music_tracks?.preview_url);
+  // Video should be muted if: user manually muted OR (has music AND mute_original_audio is true)
+  const shouldMuteVideo = mutedVideos.has(reel.id) || (hasAttachedMusic && reel.mute_original_audio);
+
   return (
     <div className="h-screen snap-start relative">
       {/* Full Screen Video */}
@@ -97,7 +102,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
         className="absolute inset-0 w-full h-full object-cover"
         loop
         playsInline
-        muted={mutedVideos.has(reel.id)}
+        muted={shouldMuteVideo}
         preload={Math.abs(index - currentIndex) <= 2 ? "auto" : "metadata"}
       />
 
