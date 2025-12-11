@@ -59,6 +59,13 @@ export const useLike = (
     }
   }, [userId, config.table, config.idColumn, contentType]);
 
+  // Fetch liked items on mount when userId is available
+  useEffect(() => {
+    if (userId) {
+      fetchLikedItems();
+    }
+  }, [userId, fetchLikedItems]);
+
   // Toggle like state
   const toggleLike = useCallback(async (itemId: string) => {
     if (!userId) {
