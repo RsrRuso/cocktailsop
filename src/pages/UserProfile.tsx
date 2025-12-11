@@ -301,7 +301,10 @@ const UserProfile = () => {
 
     const { data } = await supabase
       .from("reels")
-      .select("*")
+      .select(`
+        *,
+        music_tracks:music_track_id(title, preview_url, profiles:uploaded_by(username))
+      `)
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(20);

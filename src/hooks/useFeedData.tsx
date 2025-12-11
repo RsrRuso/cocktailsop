@@ -81,10 +81,14 @@ export const useFeedData = (selectedRegion: string | null) => {
 
   const fetchReels = useCallback(async () => {
     try {
-      // Fetch reels WITHOUT expensive profile joins
+      // Fetch reels WITH music track info
       const { data: reelsData, error } = await supabase
         .from("reels")
-        .select("id, user_id, video_url, caption, like_count, comment_count, view_count, repost_count, save_count, created_at")
+        .select(`
+          id, user_id, video_url, caption, like_count, comment_count, view_count, repost_count, save_count, created_at,
+          music_url, music_track_id, mute_original_audio,
+          music_tracks:music_track_id(title, preview_url, profiles:uploaded_by(username))
+        `)
         .order("created_at", { ascending: false })
         .limit(10);
 

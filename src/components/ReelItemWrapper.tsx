@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useRef } from 'react';
+import { FC, useState, useEffect, useRef, useCallback } from 'react';
 import { Heart, MessageCircle, Send, MoreVertical, Music, Trash2, Edit, Volume2, VolumeX, Bookmark } from 'lucide-react';
 import OptimizedAvatar from '@/components/OptimizedAvatar';
 import {
@@ -52,43 +52,73 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [audioReady, setAudioReady] = useState(false);
 
   // Track view when this reel is visible
   useViewTracking('reel', reel.id, user?.id, index === currentIndex);
 
-  // Check if reel has attached music
-  const hasAttachedMusic = Boolean(reel.music_url || reel.music_tracks?.preview_url);
-  const musicUrl = reel.music_url || reel.music_tracks?.preview_url;
-  // Video should be muted if: has music AND mute_original_audio is true (user toggle doesn't affect video when music is attached)
-  const shouldMuteVideo = hasAttachedMusic && reel.mute_original_audio;
+  // Check if reel has attached music - prioritize music_tracks.preview_url over music_url
+  const hasAttachedMusic = Boolean(reel.music_track_id && (reel.music_tracks?.preview_url || reel.music_url));
+  const musicUrl = reel.music_tracks?.preview_url || reel.music_url;
+  
+  // Video should be muted if: has music AND mute_original_audio is true
+  const shouldMuteVideo = hasAttachedMusic && reel.mute_original_audio === true;
   // Audio should be muted only if user manually muted
   const isUserMuted = mutedVideos.has(reel.id);
 
   // Preload adjacent videos aggressively
   useEffect(() => {
     if (videoRef.current && Math.abs(index - currentIndex) <= 2) {
-      // Preload videos within 2 positions
       videoRef.current.load();
     }
   }, [index, currentIndex]);
 
-  // Play/pause video and audio based on visibility
+  // Handle audio ready state
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !hasAttachedMusic) return;
+
+    const handleCanPlay = () => setAudioReady(true);
+    audio.addEventListener('canplay', handleCanPlay);
+    
+    // Try to load the audio
+    audio.load();
+    
+    return () => {
+      audio.removeEventListener('canplay', handleCanPlay);
+    };
+  }, [hasAttachedMusic, musicUrl]);
+
+  // Play/pause video and audio based on visibility - CRITICAL sync logic
   useEffect(() => {
     const video = videoRef.current;
     const audio = audioRef.current;
     
     if (index === currentIndex) {
+      // Play video
       video?.play().catch(() => {});
-      // Play music if available and this is the current reel
-      if (hasAttachedMusic && audio) {
+      
+      // Play attached music if available
+      if (hasAttachedMusic && audio && musicUrl) {
+        // Sync audio to video start
         audio.currentTime = 0;
-        audio.play().catch(() => {});
+        audio.muted = isUserMuted;
+        audio.play().catch((err) => {
+          console.log('Audio play failed, retrying:', err);
+          // Retry after short delay
+          setTimeout(() => {
+            audio.play().catch(() => {});
+          }, 100);
+        });
       }
     } else {
       video?.pause();
-      audio?.pause();
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
     }
-  }, [index, currentIndex, hasAttachedMusic]);
+  }, [index, currentIndex, hasAttachedMusic, musicUrl, isUserMuted]);
 
   // Sync audio mute state with user preference
   useEffect(() => {
@@ -97,12 +127,12 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
     }
   }, [isUserMuted]);
 
-  // Sync video mute when user toggles (only if no attached music)
+  // Sync video mute - mute if has attached music with mute flag OR user manually muted
   useEffect(() => {
-    if (videoRef.current && !hasAttachedMusic) {
-      videoRef.current.muted = isUserMuted;
+    if (videoRef.current) {
+      videoRef.current.muted = shouldMuteVideo || isUserMuted;
     }
-  }, [isUserMuted, hasAttachedMusic]);
+  }, [shouldMuteVideo, isUserMuted]);
 
   // Parse caption for hashtags and mentions
   const renderCaption = (text: string) => {
@@ -131,7 +161,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
         preload={Math.abs(index - currentIndex) <= 2 ? "auto" : "metadata"}
       />
       
-      {/* Audio element for attached music */}
+      {/* Audio element for attached music - always render if music exists */}
       {hasAttachedMusic && musicUrl && (
         <audio
           ref={audioRef}
@@ -139,6 +169,7 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
           loop
           muted={isUserMuted}
           preload="auto"
+          autoPlay={index === currentIndex}
         />
       )}
 
