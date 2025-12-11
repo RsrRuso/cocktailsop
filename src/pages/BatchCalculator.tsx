@@ -2648,29 +2648,56 @@ const BatchCalculator = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      // Check if a permanent QR code already exists for this recipe
+      const { data: existingQR, error: fetchError } = await supabase
         .from("batch_qr_codes")
-        .insert({
-          user_id: user?.id,
-          recipe_id: selectedRecipeId,
-          recipe_data: {
-            recipe_name: recipe.recipe_name,
-            description: recipe.description,
-            current_serves: recipe.current_serves,
-            ingredients: recipe.ingredients,
-          },
-          group_id: selectedGroupId,
-          is_active: true,
-        } as any)
-        .select()
+        .select("*")
+        .eq("recipe_id", selectedRecipeId)
+        .eq("is_active", true)
         .maybeSingle();
 
-      if (error) throw error;
-      if (!data) throw new Error("No QR code created");
+      let qrCodeRecord = existingQR;
+
+      // If no existing QR, create one (this becomes the permanent QR for this recipe)
+      if (!qrCodeRecord) {
+        const { data: newQR, error: insertError } = await supabase
+          .from("batch_qr_codes")
+          .insert({
+            user_id: user?.id,
+            recipe_id: selectedRecipeId,
+            recipe_data: {
+              recipe_name: recipe.recipe_name,
+              description: recipe.description,
+              current_serves: recipe.current_serves,
+              ingredients: recipe.ingredients,
+            },
+            group_id: selectedGroupId,
+            is_active: true,
+          } as any)
+          .select()
+          .maybeSingle();
+
+        if (insertError) throw insertError;
+        if (!newQR) throw new Error("No QR code created");
+        qrCodeRecord = newQR;
+      } else {
+        // Update recipe data in existing QR to keep it current
+        await supabase
+          .from("batch_qr_codes")
+          .update({
+            recipe_data: {
+              recipe_name: recipe.recipe_name,
+              description: recipe.description,
+              current_serves: recipe.current_serves,
+              ingredients: recipe.ingredients,
+            },
+          } as any)
+          .eq("id", qrCodeRecord.id);
+      }
 
       // Embed essential recipe data in URL as fallback for universal compatibility
       const embeddedData = btoa(JSON.stringify({
-        id: data.id,
+        id: qrCodeRecord.id,
         r: recipe.recipe_name,
         d: recipe.description || '',
         s: recipe.current_serves,
@@ -2679,7 +2706,7 @@ const BatchCalculator = () => {
         g: selectedGroupId
       }));
       
-      const qrUrl = `${window.location.origin}/batch-qr/${data.id}?d=${encodeURIComponent(embeddedData)}`;
+      const qrUrl = `${window.location.origin}/batch-qr/${qrCodeRecord.id}?d=${encodeURIComponent(embeddedData)}`;
       const qrDataUrl = await QRCode.toDataURL(qrUrl, {
         width: 512,
         margin: 2,
@@ -2687,7 +2714,7 @@ const BatchCalculator = () => {
 
       setQrCodeUrl(qrDataUrl);
       setShowQRCode(true);
-      toast.success("QR code generated! Share it with your team.");
+      toast.success(existingQR ? "Permanent QR code loaded!" : "Permanent QR code created for this recipe!");
     } catch (error) {
       console.error("Error generating QR:", error);
       toast.error("Failed to generate QR code");
