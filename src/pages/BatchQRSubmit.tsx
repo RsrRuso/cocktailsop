@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Check, QrCode } from "lucide-react";
+import { ArrowLeft, Check, QrCode, Calendar, User, Beaker, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+interface ProductionRecord {
+  id: string;
+  batch_name: string;
+  target_liters: number;
+  target_serves: number;
+  produced_by_name: string | null;
+  production_date: string;
+  created_at: string;
+}
 
 const BatchQRSubmit = () => {
   const { qrId: paramQrId } = useParams();
@@ -28,6 +39,7 @@ const BatchQRSubmit = () => {
   const [targetLiters, setTargetLiters] = useState("");
   const [targetServings, setTargetServings] = useState("");
   const [notes, setNotes] = useState("");
+  const [productionHistory, setProductionHistory] = useState<ProductionRecord[]>([]);
 
   // Support both path param, query param, and embedded data for universal compatibility
   const searchParams = new URLSearchParams(window.location.search);
@@ -51,6 +63,42 @@ const BatchQRSubmit = () => {
   useEffect(() => {
     loadQRData();
   }, [qrId, embeddedDataParam]);
+
+  // Load production history when recipe is selected
+  useEffect(() => {
+    if (selectedRecipeId && recipes.length > 0) {
+      loadProductionHistory();
+    }
+  }, [selectedRecipeId, recipes]);
+
+  const loadProductionHistory = async () => {
+    try {
+      const recipe = recipes.find(r => r.id === selectedRecipeId);
+      if (!recipe) return;
+
+      const recipeName = recipe.recipe_name.toLowerCase().trim();
+
+      // Fetch all productions with matching batch_name (case-insensitive)
+      const { data: productions, error } = await supabase
+        .from("batch_productions")
+        .select("id, batch_name, target_liters, target_serves, produced_by_name, production_date, created_at")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error loading production history:", error);
+        return;
+      }
+
+      // Filter by recipe name (case-insensitive)
+      const filtered = (productions || []).filter(
+        (p: any) => p.batch_name?.toLowerCase().trim() === recipeName
+      );
+
+      setProductionHistory(filtered.slice(0, 5)); // Keep last 5 records
+    } catch (error) {
+      console.error("Error loading production history:", error);
+    }
+  };
 
   const loadQRData = async () => {
     try {
@@ -349,7 +397,10 @@ const BatchQRSubmit = () => {
       if (ingError) throw ingError;
 
       toast.success("Batch production submitted successfully!");
-      setSelectedRecipeId("");
+      
+      // Refresh production history to show new record
+      await loadProductionHistory();
+      
       setTargetLiters("");
       setTargetServings("");
       setNotes("");
@@ -444,6 +495,77 @@ const BatchQRSubmit = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Production History Section */}
+            {productionHistory.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-primary">Production History</p>
+                
+                {/* Current (Most Recent) Production */}
+                <div className="relative">
+                  <div className="absolute -left-2 top-0 bottom-0 w-1 bg-gradient-to-b from-green-500 to-green-500/30 rounded-full" />
+                  <div className="glass p-4 rounded-lg border border-green-500/30 bg-green-500/5 ml-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      <span className="text-xs font-semibold text-green-500 uppercase tracking-wide">Current Batch</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-foreground">
+                        <Beaker className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-semibold">{productionHistory[0].target_liters.toFixed(2)} Liters</span>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="font-semibold">{productionHistory[0].target_serves} Serves</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <User className="w-4 h-4" />
+                        <span>{productionHistory[0].produced_by_name || "Unknown"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="w-4 h-4" />
+                        <span>{format(new Date(productionHistory[0].production_date), "MMMM d, yyyy")}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
+                        <Clock className="w-3 h-3" />
+                        <span>Submitted {format(new Date(productionHistory[0].created_at), "MMM d, yyyy 'at' h:mm a")}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Previous Productions */}
+                {productionHistory.length > 1 && (
+                  <div className="relative">
+                    <div className="absolute -left-2 top-0 bottom-0 w-1 bg-gradient-to-b from-muted-foreground/50 to-muted-foreground/10 rounded-full" />
+                    <div className="glass p-4 rounded-lg border border-border/50 ml-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 rounded-full bg-muted-foreground/50" />
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Previous Batch</span>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-foreground">
+                          <Beaker className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-semibold">{productionHistory[1].target_liters.toFixed(2)} Liters</span>
+                          <span className="text-muted-foreground">•</span>
+                          <span className="font-semibold">{productionHistory[1].target_serves} Serves</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <User className="w-4 h-4" />
+                          <span>{productionHistory[1].produced_by_name || "Unknown"}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="w-4 h-4" />
+                          <span>{format(new Date(productionHistory[1].production_date), "MMMM d, yyyy")}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
+                          <Clock className="w-3 h-3" />
+                          <span>Submitted {format(new Date(productionHistory[1].created_at), "MMM d, yyyy 'at' h:mm a")}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {selectedRecipe && (
               <div className="glass p-4 rounded-lg space-y-2">
