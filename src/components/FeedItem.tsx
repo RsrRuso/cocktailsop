@@ -66,22 +66,32 @@ export const FeedItem = memo(({
   const [lastTap, setLastTap] = useState(0);
   const [commentCount, setCommentCount] = useState(item.comment_count || 0);
   const [localLikeCount, setLocalLikeCount] = useState(item.like_count || 0);
+  const [isVisible, setIsVisible] = useState(false);
 
   // Check if reel has attached music
   const hasAttachedMusic = item.type === 'reel' && Boolean(item.music_track_id && (item.music_tracks?.preview_url || item.music_url));
   const musicUrl = item.music_tracks?.preview_url || item.music_url;
   const shouldMuteVideo = hasAttachedMusic && item.mute_original_audio === true;
-  const isUserMuted = !mutedVideos.has(item.id + (item.video_url || item.media_urls?.[0] || ''));
+  const videoKey = item.id + (item.video_url || item.media_urls?.[0] || '');
+  const isUserMuted = !mutedVideos.has(videoKey);
+  
+  // Handle visibility change from LazyVideo - controls audio muting
+  const handleVisibilityChange = useCallback((visible: boolean) => {
+    setIsVisible(visible);
+  }, []);
 
-  // Play/pause music based on user mute toggle
+  // Play/pause attached music based on visibility and user mute toggle
   useEffect(() => {
     if (audioRef.current && hasAttachedMusic) {
-      audioRef.current.muted = isUserMuted;
-      if (!isUserMuted) {
+      if (isVisible && !isUserMuted) {
+        audioRef.current.muted = false;
         audioRef.current.play().catch(() => {});
+      } else {
+        audioRef.current.muted = true;
+        audioRef.current.pause();
       }
     }
-  }, [isUserMuted, hasAttachedMusic]);
+  }, [isVisible, isUserMuted, hasAttachedMusic]);
 
   // Sync local like count with prop when item changes (e.g., on refresh)
   useEffect(() => {
@@ -334,8 +344,9 @@ export const FeedItem = memo(({
                 >
                   <LazyVideo
                     src={url}
-                    muted={shouldMuteVideo || isUserMuted}
+                    muted={!isVisible || shouldMuteVideo || isUserMuted}
                     className="absolute inset-0 w-full h-full object-cover"
+                    onVisibilityChange={handleVisibilityChange}
                   />
                   
                   {/* Audio element for attached music */}

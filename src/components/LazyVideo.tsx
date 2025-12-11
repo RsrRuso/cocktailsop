@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Skeleton } from './ui/skeleton';
 
 interface LazyVideoProps {
@@ -6,12 +6,12 @@ interface LazyVideoProps {
   className?: string;
   muted?: boolean;
   onClick?: () => void;
+  onVisibilityChange?: (isVisible: boolean) => void;
 }
 
-export const LazyVideo = ({ src, className, muted = true, onClick }: LazyVideoProps) => {
+export const LazyVideo = ({ src, className, muted = true, onClick, onVisibilityChange }: LazyVideoProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
-  const [shouldPlay, setShouldPlay] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -20,42 +20,40 @@ export const LazyVideo = ({ src, className, muted = true, onClick }: LazyVideoPr
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          setIsInView(entry.isIntersecting);
-          // Play when any part is visible
-          if (entry.isIntersecting) {
-            setShouldPlay(true);
-          } else {
-            setShouldPlay(false);
-          }
+          const visible = entry.isIntersecting && entry.intersectionRatio > 0.5;
+          setIsInView(visible);
+          onVisibilityChange?.(visible);
         });
       },
       { 
         rootMargin: '0px',
-        threshold: 0.1
+        threshold: [0, 0.5, 1]
       }
     );
 
     observer.observe(videoRef.current);
 
     return () => observer.disconnect();
-  }, []);
+  }, [onVisibilityChange]);
 
+  // Handle play/pause based on visibility
   useEffect(() => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !isLoaded) return;
     
-    if (shouldPlay && isLoaded) {
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((error) => {
-          console.log('Autoplay prevented:', error);
-          // Autoplay was prevented, video will play when user interacts
-        });
-      }
+    if (isInView) {
+      videoRef.current.play().catch(() => {});
     } else {
       videoRef.current.pause();
-      videoRef.current.currentTime = 0; // Reset to start when out of view
+      videoRef.current.currentTime = 0;
     }
-  }, [shouldPlay, isLoaded]);
+  }, [isInView, isLoaded]);
+
+  // Handle muted prop changes
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = muted;
+    }
+  }, [muted]);
 
   return (
     <>
