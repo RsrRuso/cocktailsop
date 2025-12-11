@@ -110,3 +110,6 @@ verify_jwt = false
 
 [functions.fetch-industry-news]
 verify_jwt = false
+
+[functions.recognize-music]
+verify_jwt = true
