@@ -54,7 +54,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
   const BadgeIcon = professionalBadge.icon;
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-  const [theme, setTheme] = useState<'light' | 'grey' | 'dark' | 'black' | 'ocean' | 'sunset' | 'forest' | 'purple' | 'neon' | 'midnight' | 'sakura' | 'arctic' | 'lava' | 'mint' | 'rosegold' | 'cyber' | 'mocha' | 'lavender' | 'emerald' | 'crimson' | 'amber' | 'sapphire' | 'coral' | 'jade' | 'ruby' | 'onyx' | 'pearl' | 'copper' | 'silver' | 'bronze' | 'champagne' | 'espresso' | 'teal' | 'plum' | 'honey' | 'charcoal'>(() => {
+  const [theme, setTheme] = useState<'light' | 'dark' | 'black' | 'mocha' | 'espresso' | 'champagne' | 'pearl' | 'silver' | 'sunset' | 'ruby' | 'bronze'>(() => {
     const saved = localStorage.getItem('theme');
     return (saved as any) || 'dark';
   });
@@ -239,7 +239,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
 
   const changeTheme = (newTheme: string) => {
     const html = document.documentElement;
-    html.classList.remove('light', 'grey', 'dark', 'black', 'ocean', 'sunset', 'forest', 'purple', 'neon', 'midnight', 'sakura', 'arctic', 'lava', 'mint', 'rosegold', 'cyber', 'mocha', 'lavender', 'emerald', 'crimson', 'amber', 'sapphire', 'coral', 'jade', 'ruby', 'onyx', 'pearl', 'copper', 'silver', 'bronze', 'champagne', 'espresso', 'teal', 'plum', 'honey', 'charcoal');
+    html.classList.remove('light', 'dark', 'black', 'mocha', 'espresso', 'champagne', 'pearl', 'silver', 'sunset', 'ruby', 'bronze');
     html.classList.add(newTheme);
     setTheme(newTheme as any);
     localStorage.setItem('theme', newTheme);
@@ -472,10 +472,6 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                     <Sun className="w-4 h-4 mr-2" />
                     Light
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('grey'); }} className="cursor-pointer ml-4">
-                    <Palette className="w-4 h-4 mr-2" />
-                    Grey
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { lightTap(); changeTheme('dark'); }} className="cursor-pointer ml-4">
                     <Moon className="w-4 h-4 mr-2" />
                     Dark
@@ -484,133 +480,37 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                     <Moon className="w-4 h-4 mr-2 fill-current" />
                     Black
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('ocean'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-blue-400 to-cyan-600" />
-                    Ocean
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('sunset'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-orange-400 to-pink-600" />
-                    Sunset
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('forest'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-green-400 to-emerald-700" />
-                    Forest
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('purple'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-purple-400 to-indigo-700" />
-                    Purple Dream
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('neon'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-pink-500 to-cyan-500" />
-                    Neon
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('midnight'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-blue-900 to-slate-950" />
-                    Midnight
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('sakura'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-pink-300 to-rose-500" />
-                    Sakura
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('arctic'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-cyan-200 to-blue-400" />
-                    Arctic
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('lava'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-red-600 to-orange-500" />
-                    Lava
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('mint'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-green-300 to-teal-400" />
-                    Mint
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('rosegold'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-rose-300 to-amber-400" />
-                    Rose Gold
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('cyber'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600" />
-                    Cyber
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('mocha'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-amber-700 to-stone-800" />
-                    Mocha
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('lavender'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-purple-300 to-violet-400" />
-                    Lavender
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('emerald'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-emerald-500 to-green-700" />
-                    Emerald
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('crimson'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-red-700 to-rose-900" />
-                    Crimson
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('amber'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-amber-400 to-orange-600" />
-                    Amber
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('sapphire'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-blue-600 to-indigo-800" />
-                    Sapphire
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('coral'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-coral-400 to-pink-500" />
-                    Coral
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('jade'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-green-500 to-teal-600" />
-                    Jade
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('ruby'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-red-500 to-pink-700" />
-                    Ruby
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('onyx'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-slate-900 to-zinc-950" />
-                    Onyx
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { lightTap(); changeTheme('pearl'); }} className="cursor-pointer ml-4">
                     <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-slate-100 to-zinc-300" />
                     Pearl
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('copper'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-orange-600 to-amber-800" />
-                    Copper
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { lightTap(); changeTheme('silver'); }} className="cursor-pointer ml-4">
                     <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-gray-400 to-slate-600" />
                     Silver
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('bronze'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-amber-600 to-stone-700" />
-                    Bronze
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { lightTap(); changeTheme('champagne'); }} className="cursor-pointer ml-4">
                     <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-amber-200 to-yellow-400" />
                     Champagne
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('sunset'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-orange-400 to-pink-600" />
+                    Sunset
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('ruby'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-red-500 to-pink-700" />
+                    Ruby
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('mocha'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-amber-700 to-stone-800" />
+                    Mocha
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => { lightTap(); changeTheme('espresso'); }} className="cursor-pointer ml-4">
                     <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-stone-800 to-zinc-950" />
                     Espresso
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('teal'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600" />
-                    Teal
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('plum'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-purple-600 to-fuchsia-800" />
-                    Plum
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('honey'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-yellow-500 to-amber-600" />
-                    Honey
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('charcoal'); }} className="cursor-pointer ml-4">
-                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-gray-700 to-slate-900" />
-                    Charcoal
+                  <DropdownMenuItem onClick={() => { lightTap(); changeTheme('bronze'); }} className="cursor-pointer ml-4">
+                    <div className="w-4 h-4 mr-2 rounded-full bg-gradient-to-br from-amber-600 to-stone-700" />
+                    Bronze
                   </DropdownMenuItem>
                 </CollapsibleContent>
               </Collapsible>
