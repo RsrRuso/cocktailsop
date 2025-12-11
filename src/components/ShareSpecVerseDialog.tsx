@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Instagram, Download, Loader2, Share2, Copy, Link } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import QRCode from "qrcode";
 
 interface ShareSpecVerseDialogProps {
   open: boolean;
@@ -121,40 +122,50 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       ctx.fillText(feature, 540, 1000 + (i * 70));
     });
 
-    // Swipe up CTA section
-    // Draw rounded rectangle background
-    ctx.fillStyle = 'rgba(139, 92, 246, 0.3)';
-    const ctaY = 1550;
-    const ctaHeight = 180;
-    const ctaWidth = 600;
-    const ctaX = (1080 - ctaWidth) / 2;
-    const radius = 30;
-    
-    ctx.beginPath();
-    ctx.moveTo(ctaX + radius, ctaY);
-    ctx.lineTo(ctaX + ctaWidth - radius, ctaY);
-    ctx.quadraticCurveTo(ctaX + ctaWidth, ctaY, ctaX + ctaWidth, ctaY + radius);
-    ctx.lineTo(ctaX + ctaWidth, ctaY + ctaHeight - radius);
-    ctx.quadraticCurveTo(ctaX + ctaWidth, ctaY + ctaHeight, ctaX + ctaWidth - radius, ctaY + ctaHeight);
-    ctx.lineTo(ctaX + radius, ctaY + ctaHeight);
-    ctx.quadraticCurveTo(ctaX, ctaY + ctaHeight, ctaX, ctaY + ctaHeight - radius);
-    ctx.lineTo(ctaX, ctaY + radius);
-    ctx.quadraticCurveTo(ctaX, ctaY, ctaX + radius, ctaY);
-    ctx.closePath();
-    ctx.fill();
-
-    // CTA text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 40px system-ui, -apple-system, sans-serif';
-    ctx.fillText('Join SpecVerse', 540, 1620);
-    
-    ctx.font = '32px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.fillText('Tap link in bio ↗', 540, 1680);
+    // Generate QR code
+    try {
+      const qrDataUrl = await QRCode.toDataURL(appUrl, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#ffffff',
+          light: 'transparent'
+        }
+      });
+      
+      const qrImg = new Image();
+      await new Promise<void>((resolve, reject) => {
+        qrImg.onload = () => resolve();
+        qrImg.onerror = reject;
+        qrImg.src = qrDataUrl;
+      });
+      
+      // Draw QR code with background
+      const qrSize = 180;
+      const qrX = (1080 - qrSize) / 2;
+      const qrY = 1480;
+      
+      // QR background
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.roundRect(qrX - 20, qrY - 20, qrSize + 40, qrSize + 40, 20);
+      ctx.fill();
+      
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+      
+      // Scan to visit text
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.font = 'bold 32px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Scan to Visit', 540, qrY + qrSize + 50);
+    } catch (err) {
+      console.log('QR generation failed:', err);
+    }
 
     // App URL at bottom
     ctx.font = '28px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.textAlign = 'center';
     ctx.fillText(appUrl.replace('https://', ''), 540, 1850);
 
     return new Promise((resolve) => {
