@@ -207,18 +207,25 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
   };
 
   const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
+    try {
+      if (navigator.share) {
         await navigator.share({
           title: 'SpecVerse',
           text: 'Check out SpecVerse - The Future of Hospitality! Professional tools for bartenders & hospitality pros.',
           url: appUrl,
         });
-      } catch (err) {
-        // User cancelled
+        toast.success('Shared successfully!');
+        onOpenChange(false);
+      } else {
+        // Fallback for browsers without share API
+        handleCopyLink();
       }
-    } else {
-      handleCopyLink();
+    } catch (err: any) {
+      // Only show error if it wasn't a user cancellation
+      if (err?.name !== 'AbortError') {
+        console.error('Share failed:', err);
+        handleCopyLink();
+      }
     }
   };
 
