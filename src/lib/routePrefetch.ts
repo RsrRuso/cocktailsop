@@ -66,27 +66,52 @@ export const prefetchProfile = async (userId: string) => {
   ]);
 };
 
-// Prefetch home feed
+// Prefetch home feed - prewarms the feed cache
 export const prefetchHomeFeed = async (region: string | null) => {
-  await queryClient.prefetchQuery({
-    queryKey: ['feed', region],
-    queryFn: () => deduplicateRequest(`feed-${region}`, async () => {
-      let query = supabase
+  // Also prewarm the useFeedData cache by fetching directly
+  try {
+    const [postsRes, reelsRes] = await Promise.all([
+      supabase
         .from('posts')
-        .select(`
-          *,
-          profiles:user_id (username, full_name, avatar_url, professional_title, badge_level, region)
-        `)
+        .select('id, user_id, content, media_urls, like_count, comment_count, view_count, repost_count, save_count, created_at')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(10),
+      supabase
+        .from('reels')
+        .select('id, user_id, video_url, caption, like_count, comment_count, view_count, repost_count, save_count, created_at, music_url, music_track_id, mute_original_audio')
+        .order('created_at', { ascending: false })
+        .limit(10)
+    ]);
 
-      if (region && region !== 'All') {
-        query = query.eq('profiles.region', region);
-      }
+    if (postsRes.data && reelsRes.data) {
+      // Get unique user IDs
+      const userIds = [...new Set([...postsRes.data.map(p => p.user_id), ...reelsRes.data.map(r => r.user_id)])];
+      
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url, professional_title, badge_level, region')
+        .in('id', userIds);
 
-      const { data } = await query;
-      return data || [];
-    }),
-    staleTime: 2 * 60 * 1000,
-  });
+      // Warm the module-level cache that useFeedData uses
+      const postsWithProfiles = postsRes.data.map(post => ({
+        ...post,
+        profiles: profiles?.find(p => p.id === post.user_id) || null
+      }));
+      
+      const reelsWithProfiles = reelsRes.data.map(reel => ({
+        ...reel,
+        profiles: profiles?.find(p => p.id === reel.user_id) || null
+      }));
+
+      // Store in window for useFeedData to pick up
+      (window as any).__feedPrefetch = {
+        posts: postsWithProfiles,
+        reels: reelsWithProfiles,
+        timestamp: Date.now(),
+        region
+      };
+    }
+  } catch (e) {
+    console.error('Feed prefetch failed');
+  }
 };

@@ -18,14 +18,14 @@ import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAutomationProcessor } from "@/hooks/useAutomationProcessor";
 
-// Eager load ONLY index/landing/auth (no user data)
+// Eager load critical routes for instant display
 import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import PasswordReset from "./pages/PasswordReset";
+import Home from "./pages/Home"; // Eager load Home for instant navigation
 
-// Lazy load ALL other routes including Home for code splitting
-const Home = lazy(() => import("./pages/Home"));
+// Lazy load other routes for code splitting
 const Profile = lazy(() => import("./pages/Profile"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
 const EditProfile = lazy(() => import("./pages/EditProfile"));
