@@ -140,6 +140,10 @@ export default function MusicSelector({
         return filtered.sort((a, b) => 
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
+      case "extracted":
+        return filtered.filter(t => t.tags.includes('extracted')).sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
       default:
         return filtered;
     }
@@ -228,10 +232,14 @@ export default function MusicSelector({
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-2">
+        <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="trending" className="gap-1 text-sm">
             <TrendingUp className="w-3 h-3" />
             Trending
+          </TabsTrigger>
+          <TabsTrigger value="extracted" className="gap-1 text-sm">
+            <Music className="w-3 h-3" />
+            Extracted
           </TabsTrigger>
           <TabsTrigger value="new" className="gap-1 text-sm">
             <Clock className="w-3 h-3" />

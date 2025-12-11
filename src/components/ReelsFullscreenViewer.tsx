@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Trash2, X, Volume2, VolumeX } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Trash2, X, Volume2, VolumeX, Music } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import {
@@ -19,12 +19,22 @@ interface Reel {
   view_count: number;
   user_id: string;
   created_at: string;
+  music_url?: string | null;
+  music_track_id?: string | null;
+  mute_original_audio?: boolean | null;
   profiles?: {
     username: string;
     full_name: string;
     avatar_url: string;
     badge_level: string;
   };
+  music_tracks?: {
+    title: string;
+    preview_url: string | null;
+    profiles?: {
+      username: string;
+    } | null;
+  } | null;
 }
 
 interface ReelsFullscreenViewerProps {
@@ -59,6 +69,44 @@ export const ReelsFullscreenViewer = ({
   const y = useMotionValue(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
+  const musicAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Handle music playback synchronized with video
+  useEffect(() => {
+    const currentReel = reels[currentIndex];
+    const musicUrl = currentReel?.music_url || currentReel?.music_tracks?.preview_url;
+    
+    // Stop any current music
+    if (musicAudioRef.current) {
+      musicAudioRef.current.pause();
+      musicAudioRef.current = null;
+    }
+    
+    // Start music if reel has music
+    if (musicUrl && isOpen) {
+      const audio = new Audio(musicUrl);
+      audio.loop = true;
+      audio.volume = isMuted ? 0 : 1;
+      musicAudioRef.current = audio;
+      
+      // Play music when video starts
+      audio.play().catch(console.error);
+    }
+    
+    return () => {
+      if (musicAudioRef.current) {
+        musicAudioRef.current.pause();
+        musicAudioRef.current = null;
+      }
+    };
+  }, [currentIndex, isOpen, reels]);
+
+  // Sync music volume with mute state
+  useEffect(() => {
+    if (musicAudioRef.current) {
+      musicAudioRef.current.volume = isMuted ? 0 : 1;
+    }
+  }, [isMuted]);
 
   // Preload adjacent videos
   const preloadVideos = useCallback(() => {
@@ -254,7 +302,7 @@ export const ReelsFullscreenViewer = ({
             loop
             playsInline
             autoPlay
-            muted={isMuted}
+            muted={isMuted || Boolean(currentReel.mute_original_audio && currentReel.music_url)}
             preload="auto"
           />
         </motion.div>
@@ -326,7 +374,7 @@ export const ReelsFullscreenViewer = ({
         </div>
       </motion.div>
 
-      {/* Caption - Bottom with Smooth Slide Up */}
+      {/* Caption and Music - Bottom with Smooth Slide Up */}
       <motion.div 
         className="absolute bottom-24 left-4 right-20 z-30 space-y-2"
         initial={{ opacity: 0, y: 20 }}
@@ -349,6 +397,21 @@ export const ReelsFullscreenViewer = ({
             return <span key={i}>{part}</span>;
           })}
         </p>
+        
+        {/* Music indicator */}
+        {(currentReel.music_url || currentReel.music_tracks) && (
+          <div className="flex items-center gap-2 bg-black/30 backdrop-blur-sm rounded-full px-3 py-1.5 w-fit">
+            <Music className="w-3 h-3 text-white animate-pulse" />
+            <span className="text-white text-xs font-medium truncate max-w-[180px]">
+              {currentReel.music_tracks?.title || 'Added Music'}
+            </span>
+            {currentReel.music_tracks?.profiles?.username && (
+              <span className="text-white/70 text-xs">
+                • @{currentReel.music_tracks.profiles.username}
+              </span>
+            )}
+          </div>
+        )}
       </motion.div>
 
       {/* Action Buttons - Right Side with Smooth Slide In */}

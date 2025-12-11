@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, Video, X, CheckCircle2, Zap, Music2, Loader2, VolumeX, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import TopNav from "@/components/TopNav";
 import { usePowerfulUpload } from "@/hooks/usePowerfulUpload";
@@ -23,6 +23,7 @@ const CreateReel = () => {
   const [compressionProgress, setCompressionProgress] = useState<CompressionProgress | null>(null);
   const [showMusicSelector, setShowMusicSelector] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<{ id: string; title: string; artist: string; preview_url: string } | null>(null);
+  const [muteOriginalAudio, setMuteOriginalAudio] = useState(false);
   const { uploadState, uploadSingle } = usePowerfulUpload();
   const { extractAndAnalyzeAudio, isExtracting, extractionProgress } = useAutoMusicExtraction();
 
@@ -133,6 +134,7 @@ const CreateReel = () => {
         thumbnail_url: result.publicUrl,
         music_track_id: selectedMusic?.id || null,
         music_url: selectedMusic?.preview_url || null,
+        mute_original_audio: muteOriginalAudio,
       });
 
       // Ignore duplicate key errors (already uploaded)
@@ -235,6 +237,36 @@ const CreateReel = () => {
                   <span className="text-muted-foreground">Add music from Music Box</span>
                 )}
               </Button>
+
+              {/* Mute Original Audio Toggle - Only show when music is selected */}
+              {selectedMusic && (
+                <button
+                  onClick={() => setMuteOriginalAudio(!muteOriginalAudio)}
+                  className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                    muteOriginalAudio 
+                      ? 'bg-primary/10 border-primary' 
+                      : 'bg-card/50 border-border/50 hover:border-primary/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {muteOriginalAudio ? (
+                      <VolumeX className="w-5 h-5 text-primary" />
+                    ) : (
+                      <Volume2 className="w-5 h-5 text-muted-foreground" />
+                    )}
+                    <span className="text-sm font-medium">
+                      {muteOriginalAudio ? 'Original audio muted' : 'Mute original video audio'}
+                    </span>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full transition-colors ${
+                    muteOriginalAudio ? 'bg-primary' : 'bg-muted'
+                  }`}>
+                    <div className={`w-4 h-4 mt-1 rounded-full bg-white transition-transform ${
+                      muteOriginalAudio ? 'translate-x-5' : 'translate-x-1'
+                    }`} />
+                  </div>
+                </button>
+              )}
 
               <Textarea
                 placeholder="Write a caption..."

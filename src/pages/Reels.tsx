@@ -28,12 +28,22 @@ interface Reel {
   view_count: number;
   user_id: string;
   created_at: string;
+  music_url: string | null;
+  music_track_id: string | null;
+  mute_original_audio: boolean | null;
   profiles?: {
     username: string;
     full_name: string;
     avatar_url: string;
     badge_level: string;
   };
+  music_tracks?: {
+    title: string;
+    preview_url: string | null;
+    profiles?: {
+      username: string;
+    } | null;
+  } | null;
 }
 
 const Reels = () => {
@@ -125,10 +135,14 @@ const Reels = () => {
   }, [reels, targetReelId, showLivestreamComments]);
 
   const fetchReels = async () => {
-    // Fetch reels WITHOUT expensive profile joins
+    // Fetch reels with music track info
     const { data, error } = await supabase
       .from("reels")
-      .select("id, user_id, video_url, caption, like_count, comment_count, view_count, created_at")
+      .select(`
+        id, user_id, video_url, caption, like_count, comment_count, view_count, created_at,
+        music_url, music_track_id, mute_original_audio,
+        music_tracks:music_track_id(title, preview_url, profiles:uploaded_by(username))
+      `)
       .order("created_at", { ascending: false })
       .limit(10);
 
