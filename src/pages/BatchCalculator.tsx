@@ -2648,17 +2648,22 @@ const BatchCalculator = () => {
         return;
       }
 
-      // Check if a permanent QR code already exists for this recipe
-      const { data: existingQR, error: fetchError } = await supabase
+      const recipeName = recipe.recipe_name.toLowerCase().trim();
+
+      // Check if a permanent QR code already exists for this recipe NAME (not ID)
+      // This ensures all "Negroni" batches use the same QR regardless of recipe entry
+      const { data: allQRs } = await supabase
         .from("batch_qr_codes")
-        .select("*")
-        .eq("recipe_id", selectedRecipeId)
-        .eq("is_active", true)
-        .maybeSingle();
+        .select("*, recipe_data")
+        .eq("is_active", true);
 
-      let qrCodeRecord = existingQR;
+      // Find existing QR by matching recipe name
+      let qrCodeRecord = allQRs?.find((qr: any) => {
+        const qrRecipeName = (qr.recipe_data?.recipe_name || '').toLowerCase().trim();
+        return qrRecipeName === recipeName;
+      });
 
-      // If no existing QR, create one (this becomes the permanent QR for this recipe)
+      // If no existing QR for this recipe name, create one (permanent QR for this cocktail type)
       if (!qrCodeRecord) {
         const { data: newQR, error: insertError } = await supabase
           .from("batch_qr_codes")
@@ -2680,6 +2685,7 @@ const BatchCalculator = () => {
         if (insertError) throw insertError;
         if (!newQR) throw new Error("No QR code created");
         qrCodeRecord = newQR;
+        toast.success(`Permanent QR code created for "${recipe.recipe_name}"!`);
       } else {
         // Update recipe data in existing QR to keep it current
         await supabase
@@ -2693,6 +2699,7 @@ const BatchCalculator = () => {
             },
           } as any)
           .eq("id", qrCodeRecord.id);
+        toast.success(`Permanent QR code loaded for "${recipe.recipe_name}"!`);
       }
 
       // Embed essential recipe data in URL as fallback for universal compatibility
@@ -2714,7 +2721,6 @@ const BatchCalculator = () => {
 
       setQrCodeUrl(qrDataUrl);
       setShowQRCode(true);
-      toast.success(existingQR ? "Permanent QR code loaded!" : "Permanent QR code created for this recipe!");
     } catch (error) {
       console.error("Error generating QR:", error);
       toast.error("Failed to generate QR code");
