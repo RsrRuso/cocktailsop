@@ -511,38 +511,41 @@ export default function StoryViewer() {
     '#E040FB', // Purple pink
   ], []);
 
-  // Like with animation - many multi-colored hearts
+  // Like/Unlike with animation - many 3D multi-colored hearts
   const handleLike = useCallback(async (x: number, y: number) => {
     if (!currentStory || !currentUserId) return;
 
     const wasLiked = isLiked;
     await toggleLike(currentStory.id);
 
-    if (!wasLiked) {
-      // Create many hearts with different colors - Instagram style burst
-      const heartsCount = 15;
-      const newHearts: FlyingHeart[] = [];
+    // Create heart burst animation for both like AND unlike
+    // More hearts (25) for extra impact, with 3D-style appearance
+    const heartsCount = 25;
+    const newHearts: FlyingHeart[] = [];
+    
+    for (let i = 0; i < heartsCount; i++) {
+      const id = heartCounterRef.current++;
+      // Wider spread for more dramatic effect
+      const angle = (i / heartsCount) * Math.PI * 2;
+      const radius = 40 + Math.random() * 100;
+      const offsetX = Math.cos(angle) * radius + (Math.random() - 0.5) * 60;
+      const offsetY = Math.sin(angle) * radius * 0.6 + (Math.random() - 0.5) * 40;
+      const color = heartColors[Math.floor(Math.random() * heartColors.length)];
+      // Larger hearts for 3D effect
+      const size = 24 + Math.random() * 36; // 24-60px
+      const delay = i * 25; // Faster stagger for burst effect
       
-      for (let i = 0; i < heartsCount; i++) {
-        const id = heartCounterRef.current++;
-        const offsetX = (Math.random() - 0.5) * 120;
-        const offsetY = (Math.random() - 0.5) * 80;
-        const color = heartColors[Math.floor(Math.random() * heartColors.length)];
-        const size = 20 + Math.random() * 24; // 20-44px
-        const delay = i * 40; // Staggered
-        
-        newHearts.push({ id, x: x + offsetX, y: y + offsetY, color, size, delay });
-      }
-      
-      setFlyingHearts(prev => [...prev, ...newHearts]);
-      
-      // Remove hearts after animation
-      setTimeout(() => {
-        setFlyingHearts(prev => prev.filter(h => !newHearts.find(nh => nh.id === h.id)));
-      }, 1800);
-      
-      if ('vibrate' in navigator) navigator.vibrate([15, 30, 15]);
+      newHearts.push({ id, x: x + offsetX, y: y + offsetY, color, size, delay });
     }
+    
+    setFlyingHearts(prev => [...prev, ...newHearts]);
+    
+    // Remove hearts after animation
+    setTimeout(() => {
+      setFlyingHearts(prev => prev.filter(h => !newHearts.find(nh => nh.id === h.id)));
+    }, 2200);
+    
+    if ('vibrate' in navigator) navigator.vibrate(wasLiked ? [10] : [15, 30, 15]);
   }, [currentStory, currentUserId, isLiked, toggleLike, heartColors]);
 
   // Show hearts burst when story has likes from other users
@@ -1029,31 +1032,40 @@ export default function StoryViewer() {
               )}
             </AnimatePresence>
 
-            {/* Floating hearts animation - multi-colored Instagram style */}
+            {/* Floating 3D hearts animation - enhanced Instagram style */}
             <AnimatePresence>
               {flyingHearts.map((heart) => (
                 <motion.div
                   key={heart.id}
                   className="absolute pointer-events-none z-50"
+                  style={{
+                    left: heart.x - heart.size / 2,
+                    top: heart.y - heart.size / 2,
+                    perspective: '500px',
+                    transformStyle: 'preserve-3d',
+                  }}
                   initial={{ 
-                    left: heart.x - heart.size / 2, 
-                    top: heart.y - heart.size / 2, 
                     scale: 0, 
                     opacity: 1,
-                    rotate: Math.random() * 40 - 20,
+                    rotateX: 0,
+                    rotateY: 0,
+                    rotateZ: Math.random() * 30 - 15,
                   }}
                   animate={{ 
-                    top: heart.y - 200 - Math.random() * 100,
-                    scale: [0, 1.4, 1, 0.8],
-                    opacity: [1, 1, 0.9, 0],
-                    x: [0, (Math.random() - 0.5) * 80],
-                    rotate: Math.random() * 60 - 30,
+                    y: [-20, -250 - Math.random() * 150],
+                    x: [(Math.random() - 0.5) * 40, (Math.random() - 0.5) * 120],
+                    scale: [0, 1.6, 1.2, 0.9, 0.6],
+                    opacity: [0, 1, 1, 0.8, 0],
+                    rotateX: [0, 15, -10, 20, 0],
+                    rotateY: [0, 25, -20, 15, 0],
+                    rotateZ: [Math.random() * 30 - 15, Math.random() * 60 - 30],
                   }}
                   exit={{ opacity: 0, scale: 0 }}
                   transition={{ 
-                    duration: 1.2, 
-                    ease: "easeOut",
+                    duration: 1.8, 
+                    ease: [0.25, 0.46, 0.45, 0.94],
                     delay: heart.delay / 1000,
+                    times: [0, 0.2, 0.5, 0.8, 1],
                   }}
                 >
                   <Heart 
@@ -1062,7 +1074,8 @@ export default function StoryViewer() {
                       height: heart.size, 
                       color: heart.color,
                       fill: heart.color,
-                      filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))',
+                      filter: `drop-shadow(0 4px 12px ${heart.color}80) drop-shadow(0 2px 4px rgba(0,0,0,0.4))`,
+                      transform: 'translateZ(20px)',
                     }} 
                   />
                 </motion.div>
