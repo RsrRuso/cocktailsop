@@ -294,9 +294,9 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        {/* Pure transparent backdrop - no frame */}
+        {/* Fully transparent backdrop - see through to background */}
         <DialogPrimitive.Overlay 
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
           onClick={() => onOpenChange(false)}
         />
         <DialogPrimitive.Content 
@@ -528,7 +528,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
           </div>
         </div>
 
-        {/* Comments Section - slides up from bottom */}
+        {/* Comments Section - transparent slide up */}
         <AnimatePresence>
           {showComments && (
             <motion.div
@@ -536,7 +536,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="absolute bottom-0 left-0 right-0 max-h-[75vh] bg-background/95 backdrop-blur-xl border-t border-border/30 rounded-t-3xl z-30"
+              className="absolute bottom-0 left-0 right-0 max-h-[75vh] bg-black/40 backdrop-blur-md rounded-t-3xl z-30"
             >
               <div className="w-12 h-1 bg-white/30 rounded-full mx-auto mt-3" />
               <ScrollArea className="max-h-[60vh]">
