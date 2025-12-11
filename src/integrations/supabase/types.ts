@@ -9287,6 +9287,20 @@ export type Database = {
             referencedRelation: "status_comments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "status_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "status_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_secure"
+            referencedColumns: ["id"]
+          },
         ]
       }
       status_likes: {
