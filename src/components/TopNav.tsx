@@ -711,13 +711,13 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               </form>
             </DialogContent>
           </Dialog>
-          
-          <ShareSpecVerseDialog 
-            open={shareSpecVerseOpen} 
-            onOpenChange={setShareSpecVerseOpen} 
-          />
         </>
       )}
+      
+      <ShareSpecVerseDialog 
+        open={shareSpecVerseOpen} 
+        onOpenChange={setShareSpecVerseOpen} 
+      />
     </>
   );
 };
