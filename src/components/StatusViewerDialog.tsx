@@ -235,21 +235,23 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="w-full h-full max-w-full max-h-full sm:max-w-full sm:max-h-full p-0 overflow-hidden flex flex-col border-none shadow-none bg-black/95 backdrop-blur-xl rounded-none data-[state=open]:animate-fade-in"
+        className="w-screen h-screen max-w-none max-h-none p-0 overflow-hidden flex flex-col border-none shadow-none bg-transparent rounded-none data-[state=open]:animate-fade-in [&>button]:hidden"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Transparent overlay with blur */}
+        <div className="absolute inset-0 bg-black/85 backdrop-blur-xl" onClick={() => onOpenChange(false)} />
 
-        {/* Frameless Header - minimal */}
-        <div className="absolute top-0 left-0 right-0 flex items-center gap-3 p-4 z-10 bg-gradient-to-b from-black/80 to-transparent">
-          <Avatar className="w-10 h-10 ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/20">
+        {/* Frameless Header - floating */}
+        <div className="relative flex items-center gap-3 p-4 z-10">
+          <Avatar className="w-11 h-11 ring-2 ring-emerald-500/60 shadow-lg shadow-emerald-500/30">
             <AvatarImage src={userProfile?.avatar_url || undefined} />
             <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-bold">
               {userProfile?.username?.[0]?.toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <p className="font-bold text-white text-sm">{userProfile?.username || "User"}</p>
-            <p className="text-xs text-emerald-400/80 font-medium">
+            <p className="font-bold text-white text-base">{userProfile?.username || "User"}</p>
+            <p className="text-xs text-emerald-400 font-medium">
               {isMusicStatus ? "🎵 Listening now" : "Status"}
             </p>
           </div>
@@ -260,14 +262,14 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
               e.stopPropagation();
               onOpenChange(false);
             }} 
-            className="text-white/70 hover:text-white hover:bg-white/10 rounded-full w-10 h-10"
+            className="text-white/80 hover:text-white hover:bg-white/10 rounded-full w-11 h-11"
           >
             <X className="w-6 h-6" />
           </Button>
         </div>
 
         {/* Main Content - Full screen centered */}
-        <div className="flex-1 overflow-y-auto flex items-center justify-center pt-16 pb-20">
+        <div className="relative flex-1 overflow-y-auto flex flex-col items-center justify-center pt-4 pb-24 z-10">
           {/* Music Status Content */}
           {isMusicStatus ? (
             <div className="p-6 flex flex-col items-center">
@@ -390,7 +392,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
         </div>
 
         {/* Actions Bar - Fixed at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 pb-6">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pb-8 z-20">
           <div className="flex items-center justify-center gap-3">
             {/* Like Button - larger touch target */}
             <Button
@@ -471,7 +473,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="absolute bottom-0 left-0 right-0 max-h-[70vh] bg-black/95 backdrop-blur-xl border-t border-white/10 rounded-t-3xl"
+              className="absolute bottom-0 left-0 right-0 max-h-[75vh] bg-background/95 backdrop-blur-xl border-t border-border/30 rounded-t-3xl z-30"
             >
               <div className="w-12 h-1 bg-white/30 rounded-full mx-auto mt-3" />
               <ScrollArea className="max-h-[60vh]">
