@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { ContentType, getEngagementConfig, Like } from '@/types/engagement';
+import { getAbbreviatedName } from '@/lib/profileUtils';
 
 interface EnhancedLikesDialogProps {
   open: boolean;
@@ -252,7 +253,7 @@ export const EnhancedLikesDialog = ({
                       
                       <div className="relative flex-1 min-w-0">
                         <p className="font-semibold truncate group-hover:text-primary transition-colors">
-                          {like.profiles.full_name}
+                          {getAbbreviatedName(like.profiles.full_name)}
                         </p>
                         <p className="text-sm text-muted-foreground truncate">
                           @{like.profiles.username}

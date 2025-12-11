@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { getAbbreviatedName } from "@/lib/profileUtils";
 
 interface Profile {
   id: string;
@@ -107,7 +108,7 @@ const FollowersDialog = ({ open, onOpenChange, userId }: FollowersDialogProps) =
                       <AvatarFallback>{follower.username?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-normal text-sm">{follower.full_name}</p>
+                      <p className="font-normal text-sm">{getAbbreviatedName(follower.full_name)}</p>
                       <p className="text-sm text-muted-foreground">@{follower.username}</p>
                       {follower.professional_title && (
                         <p className="text-xs text-primary capitalize">

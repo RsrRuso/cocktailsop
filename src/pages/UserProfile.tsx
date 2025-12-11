@@ -15,7 +15,7 @@ import { VenueVerification } from "@/components/VenueVerification";
 import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CareerMetricsDialog from "@/components/CareerMetricsDialog";
 import AvatarClickMenu from "@/components/AvatarClickMenu";
-import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore } from "@/lib/profileUtils";
+import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore, getAbbreviatedName } from "@/lib/profileUtils";
 import { ExperienceTimeline } from "@/components/ExperienceTimeline";
 import { useCareerMetrics } from "@/hooks/useCareerMetrics";
 import BirthdayConfetti from "@/components/BirthdayConfetti";
@@ -474,7 +474,7 @@ const UserProfile = () => {
                 />
               </AvatarClickMenu>
               <div>
-                <h2 className="text-2xl font-bold">{profile.full_name}</h2>
+                <h2 className="text-2xl font-bold">{getAbbreviatedName(profile.full_name)}</h2>
                 <p className="text-muted-foreground flex items-center gap-1.5">
                   @{profile.username}
                   <BirthdayBadge userId={userId} />

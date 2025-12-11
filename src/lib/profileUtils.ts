@@ -99,3 +99,24 @@ export const calculateProfessionalScore = (
   
   return Math.min(Math.round(baseScore + statusBonus + badgeBonus + engagementScore + activityBonus), 100);
 };
+
+// Abbreviate full name to first 2 letters of first and last name
+// e.g., "Patrick Seif" → "Pa Se"
+export const getAbbreviatedName = (fullName: string | null | undefined): string => {
+  if (!fullName || fullName.trim() === '') return '';
+  
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  
+  if (parts.length === 0) return '';
+  if (parts.length === 1) {
+    return parts[0].substring(0, 2);
+  }
+  
+  const firstName = parts[0];
+  const lastName = parts[parts.length - 1];
+  
+  const firstPart = firstName.substring(0, 2);
+  const lastPart = lastName.substring(0, 2);
+  
+  return `${firstPart} ${lastPart}`;
+};
