@@ -235,20 +235,20 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="sm:max-w-lg max-h-[95vh] p-0 overflow-hidden flex flex-col border-none shadow-2xl bg-gradient-to-b from-black/95 via-black/90 to-black/95 backdrop-blur-2xl"
+        className="w-full h-full max-w-full max-h-full sm:max-w-full sm:max-h-full p-0 overflow-hidden flex flex-col border-none shadow-none bg-black/95 backdrop-blur-xl rounded-none data-[state=open]:animate-fade-in"
         onClick={(e) => e.stopPropagation()}
       >
 
-        {/* Header with glassmorphism */}
-        <div className="flex items-center gap-3 p-4 bg-white/5 border-b border-white/10">
-          <Avatar className="w-11 h-11 ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/20">
+        {/* Frameless Header - minimal */}
+        <div className="absolute top-0 left-0 right-0 flex items-center gap-3 p-4 z-10 bg-gradient-to-b from-black/80 to-transparent">
+          <Avatar className="w-10 h-10 ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/20">
             <AvatarImage src={userProfile?.avatar_url || undefined} />
             <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-bold">
               {userProfile?.username?.[0]?.toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <p className="font-bold text-white text-base">{userProfile?.username || "User"}</p>
+            <p className="font-bold text-white text-sm">{userProfile?.username || "User"}</p>
             <p className="text-xs text-emerald-400/80 font-medium">
               {isMusicStatus ? "🎵 Listening now" : "Status"}
             </p>
@@ -260,14 +260,14 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
               e.stopPropagation();
               onOpenChange(false);
             }} 
-            className="text-white/70 hover:text-white hover:bg-white/10 rounded-full"
+            className="text-white/70 hover:text-white hover:bg-white/10 rounded-full w-10 h-10"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </Button>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Main Content - Full screen centered */}
+        <div className="flex-1 overflow-y-auto flex items-center justify-center pt-16 pb-20">
           {/* Music Status Content */}
           {isMusicStatus ? (
             <div className="p-6 flex flex-col items-center">
@@ -389,48 +389,48 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
           )}
         </div>
 
-        {/* Actions Bar */}
-        <div className="border-t border-white/10 bg-white/5 p-3">
-          <div className="flex items-center justify-center gap-2">
-            {/* Like Button */}
+        {/* Actions Bar - Fixed at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 pb-6">
+          <div className="flex items-center justify-center gap-3">
+            {/* Like Button - larger touch target */}
             <Button
               variant="ghost"
-              size="sm"
+              size="lg"
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
                 likeMutation.mutate();
               }}
-              className={`flex items-center gap-2 rounded-full px-4 ${isLiked ? 'bg-red-500/20 text-red-400' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+              className={`flex items-center gap-2 rounded-full px-6 py-3 h-auto ${isLiked ? 'bg-red-500/20 text-red-400' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
             >
-              <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500' : ''}`} />
-              <span className="font-medium">{status.like_count || 0}</span>
+              <Heart className={`w-6 h-6 ${isLiked ? 'fill-red-500' : ''}`} />
+              <span className="font-semibold text-base">{status.like_count || 0}</span>
             </Button>
 
-            {/* Comment Button */}
+            {/* Comment Button - larger */}
             <Button 
               variant="ghost" 
-              size="sm" 
+              size="lg" 
               onClick={handleCommentsClick}
-              className={`flex items-center gap-2 rounded-full px-4 ${showComments ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+              className={`flex items-center gap-2 rounded-full px-6 py-3 h-auto ${showComments ? 'bg-white/15 text-white' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
             >
-              <MessageCircle className={`w-5 h-5 ${showComments ? 'fill-white/30' : ''}`} />
-              <span className="font-medium">{comments.length}</span>
+              <MessageCircle className={`w-6 h-6 ${showComments ? 'fill-white/30' : ''}`} />
+              <span className="font-semibold text-base">{comments.length}</span>
             </Button>
 
-            {/* Emoji Picker */}
+            {/* Emoji Picker - larger */}
             <div className="relative">
               <Button
                 variant="ghost"
-                size="sm"
+                size="lg"
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
                   setShowEmojiPicker(!showEmojiPicker);
                 }}
-                className={`rounded-full px-4 ${showEmojiPicker ? 'bg-white/15 text-white' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                className={`rounded-full px-5 py-3 h-auto ${showEmojiPicker ? 'bg-white/15 text-white' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
               >
-                <Smile className="w-5 h-5" />
+                <Smile className="w-6 h-6" />
               </Button>
               
               <AnimatePresence>
@@ -439,9 +439,9 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                     initial={{ opacity: 0, scale: 0.9, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                    className="absolute bottom-full right-0 mb-2 bg-black/90 backdrop-blur-xl border border-white/20 rounded-2xl p-3 shadow-2xl"
+                    className="absolute bottom-full right-0 mb-3 bg-black/95 backdrop-blur-xl border border-white/20 rounded-2xl p-3 shadow-2xl"
                   >
-                    <div className="flex gap-1">
+                    <div className="flex gap-2">
                       {quickEmojis.map((emoji) => (
                         <button
                           key={emoji}
@@ -450,7 +450,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                             e.preventDefault();
                             addReactionMutation.mutate(emoji);
                           }}
-                          className="text-2xl hover:scale-125 active:scale-95 transition-transform p-1.5 hover:bg-white/10 rounded-lg"
+                          className="text-2xl hover:scale-125 active:scale-95 transition-transform p-2 hover:bg-white/10 rounded-xl"
                         >
                           {emoji}
                         </button>
@@ -463,17 +463,18 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
           </div>
         </div>
 
-        {/* Comments Section */}
+        {/* Comments Section - slides up from bottom */}
         <AnimatePresence>
           {showComments && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="border-t border-white/10"
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="absolute bottom-0 left-0 right-0 max-h-[70vh] bg-black/95 backdrop-blur-xl border-t border-white/10 rounded-t-3xl"
             >
-              <ScrollArea className="max-h-[300px]">
+              <div className="w-12 h-1 bg-white/30 rounded-full mx-auto mt-3" />
+              <ScrollArea className="max-h-[60vh]">
                 <div className="p-4 space-y-4">
                   {comments.length === 0 ? (
                     <p className="text-center text-white/40 text-sm py-6">
