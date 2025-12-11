@@ -227,7 +227,9 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
         </p>
         <div className="flex items-center gap-2">
           <Music className="w-3 h-3 text-white" />
-          <span className="text-white text-xs drop-shadow-lg">Original Audio</span>
+          <span className="text-white text-xs drop-shadow-lg">
+            {reel.music_tracks?.title || (reel.music_url ? 'Added Music' : 'Original Audio')}
+          </span>
         </div>
       </div>
     </div>
