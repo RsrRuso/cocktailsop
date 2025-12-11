@@ -1032,54 +1032,77 @@ export default function StoryViewer() {
               )}
             </AnimatePresence>
 
-            {/* Floating 3D hearts animation - enhanced Instagram style */}
+            {/* Floating hearts animation - space-like inertia physics */}
             <AnimatePresence>
-              {flyingHearts.map((heart) => (
-                <motion.div
-                  key={heart.id}
-                  className="absolute pointer-events-none z-50"
-                  style={{
-                    left: heart.x - heart.size / 2,
-                    top: heart.y - heart.size / 2,
-                    perspective: '500px',
-                    transformStyle: 'preserve-3d',
-                  }}
-                  initial={{ 
-                    scale: 0, 
-                    opacity: 1,
-                    rotateX: 0,
-                    rotateY: 0,
-                    rotateZ: Math.random() * 30 - 15,
-                  }}
-                  animate={{ 
-                    y: [-20, -250 - Math.random() * 150],
-                    x: [(Math.random() - 0.5) * 40, (Math.random() - 0.5) * 120],
-                    scale: [0, 1.6, 1.2, 0.9, 0.6],
-                    opacity: [0, 1, 1, 0.8, 0],
-                    rotateX: [0, 15, -10, 20, 0],
-                    rotateY: [0, 25, -20, 15, 0],
-                    rotateZ: [Math.random() * 30 - 15, Math.random() * 60 - 30],
-                  }}
-                  exit={{ opacity: 0, scale: 0 }}
-                  transition={{ 
-                    duration: 1.8, 
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                    delay: heart.delay / 1000,
-                    times: [0, 0.2, 0.5, 0.8, 1],
-                  }}
-                >
-                  <Heart 
-                    style={{ 
-                      width: heart.size, 
-                      height: heart.size, 
-                      color: heart.color,
-                      fill: heart.color,
-                      filter: `drop-shadow(0 4px 12px ${heart.color}80) drop-shadow(0 2px 4px rgba(0,0,0,0.4))`,
-                      transform: 'translateZ(20px)',
-                    }} 
-                  />
-                </motion.div>
-              ))}
+              {flyingHearts.map((heart) => {
+                // Pre-calculate drift values for smooth space-like floating
+                const driftX = (Math.random() - 0.5) * 180;
+                const driftY = -280 - Math.random() * 180;
+                const rotateZ = Math.random() * 40 - 20;
+                
+                return (
+                  <motion.div
+                    key={heart.id}
+                    className="absolute pointer-events-none z-50"
+                    style={{
+                      left: heart.x - heart.size / 2,
+                      top: heart.y - heart.size / 2,
+                    }}
+                    initial={{ 
+                      scale: 0, 
+                      opacity: 0,
+                      y: 0,
+                      x: 0,
+                      rotate: 0,
+                    }}
+                    animate={{ 
+                      y: driftY,
+                      x: driftX,
+                      scale: [0, 1.3, 1.1, 0.95, 0.75, 0.5, 0.2],
+                      opacity: [0, 1, 1, 0.95, 0.8, 0.5, 0],
+                      rotate: rotateZ,
+                    }}
+                    exit={{ opacity: 0 }}
+                    transition={{ 
+                      duration: 3.2,
+                      delay: heart.delay / 1000,
+                      // Space-like inertia: fast start, very slow deceleration (like zero gravity)
+                      y: { 
+                        duration: 3.5, 
+                        ease: [0.05, 0.7, 0.15, 1] // Aggressive ease-out for floating effect
+                      },
+                      x: { 
+                        duration: 3.5, 
+                        ease: [0.1, 0.75, 0.2, 1] // Gentle horizontal drift
+                      },
+                      scale: { 
+                        duration: 3.2, 
+                        times: [0, 0.08, 0.2, 0.4, 0.65, 0.85, 1],
+                        ease: "easeOut"
+                      },
+                      opacity: { 
+                        duration: 3.2, 
+                        times: [0, 0.08, 0.3, 0.5, 0.7, 0.88, 1],
+                        ease: "easeOut"
+                      },
+                      rotate: { 
+                        duration: 3.5, 
+                        ease: [0.1, 0.6, 0.2, 1] // Very slow rotation deceleration
+                      },
+                    }}
+                  >
+                    <Heart 
+                      style={{ 
+                        width: heart.size, 
+                        height: heart.size, 
+                        color: heart.color,
+                        fill: heart.color,
+                        filter: `drop-shadow(0 8px 24px ${heart.color}70) drop-shadow(0 2px 6px rgba(0,0,0,0.25))`,
+                      }} 
+                    />
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
 
 
