@@ -54,7 +54,7 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
     return (
       <>
         <div 
-          className={`absolute -top-9 left-1/2 -translate-x-1/2 z-20 pointer-events-auto cursor-pointer ${className}`}
+          className={`absolute -top-9 left-0 z-20 pointer-events-auto cursor-pointer ${className}`}
           onClick={handleStatusClick}
         >
           <div className="relative">
@@ -112,7 +112,7 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
             </div>
             
             {/* Connector */}
-            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-black/90 rounded-full" />
+            <div className="absolute -bottom-0.5 left-4 w-1 h-1 bg-black/90 rounded-full" />
           </div>
         </div>
         <StatusViewerDialog
