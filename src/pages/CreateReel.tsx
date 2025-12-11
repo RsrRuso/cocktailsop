@@ -76,12 +76,24 @@ const CreateReel = () => {
     };
   }, [selectedMusic]);
 
-  // Update video muted state when muteOriginalAudio changes
+  // Update video muted state when muteOriginalAudio or selectedMusic changes
   useEffect(() => {
-    if (videoRef.current && selectedMusic) {
-      videoRef.current.muted = muteOriginalAudio;
+    if (videoRef.current) {
+      // When music is selected, always mute original by default
+      if (selectedMusic) {
+        videoRef.current.muted = muteOriginalAudio;
+      } else {
+        videoRef.current.muted = false;
+      }
     }
   }, [muteOriginalAudio, selectedMusic]);
+
+  // Auto-mute original audio when music is selected
+  useEffect(() => {
+    if (selectedMusic) {
+      setMuteOriginalAudio(true);
+    }
+  }, [selectedMusic]);
 
   // Cleanup audio on unmount or music change
   useEffect(() => {
