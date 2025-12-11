@@ -37,36 +37,37 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
 
   if (!status) return null;
 
-  // Music status - smaller dark background with bright text
+  // Music status - bigger with text status below
   if (status.music_track_name) {
     const sizeClasses = {
-      sm: 'min-w-[70px] max-w-[100px] py-0.5 px-1',
-      md: 'min-w-[80px] max-w-[120px] py-1 px-1.5',
-      lg: 'min-w-[100px] max-w-[140px] py-1.5 px-2'
+      sm: 'min-w-[100px] max-w-[140px] py-1 px-2',
+      md: 'min-w-[120px] max-w-[160px] py-1.5 px-2.5',
+      lg: 'min-w-[140px] max-w-[180px] py-2 px-3'
     };
     
     const textClasses = {
-      sm: 'text-[7px]',
-      md: 'text-[8px]',
-      lg: 'text-[9px]'
+      sm: 'text-[9px]',
+      md: 'text-[10px]',
+      lg: 'text-[11px]'
     };
 
     return (
       <>
         <div 
-          className={`absolute -top-5 left-1/2 -translate-x-1/2 z-20 pointer-events-auto cursor-pointer ${className}`}
+          className={`absolute -top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-auto cursor-pointer ${className}`}
           onClick={handleStatusClick}
         >
           <div className="relative">
-            <div className={`bg-black/85 backdrop-blur-sm text-white rounded-xl shadow-md ${sizeClasses[size]} overflow-hidden`}>
-              <div className="flex items-center gap-1">
+            <div className={`bg-black/90 backdrop-blur-md text-white rounded-2xl shadow-lg ${sizeClasses[size]} overflow-hidden`}>
+              {/* Music Row */}
+              <div className="flex items-center gap-1.5">
                 {/* Album Art */}
-                <div className="relative w-4 h-4 rounded flex-shrink-0 overflow-hidden">
+                <div className="relative w-6 h-6 rounded-md flex-shrink-0 overflow-hidden">
                   {status.music_album_art ? (
                     <img src={status.music_album_art} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-emerald-500/40 flex items-center justify-center">
-                      <Music2 className="w-2 h-2" />
+                      <Music2 className="w-3 h-3" />
                     </div>
                   )}
                 </div>
@@ -76,25 +77,42 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
                   <div className={`whitespace-nowrap font-semibold text-white ${textClasses[size]}`}>
                     <div className="animate-marquee inline-block">
                       {status.music_track_name}
-                      {status.music_track_name && status.music_track_name.length > 8 && (
+                      {status.music_track_name && status.music_track_name.length > 10 && (
                         <span className="ml-6">{status.music_track_name}</span>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Play Button - opens dialog with auto-play */}
+                {/* Play Button */}
                 <button
                   onClick={handleStatusClick}
-                  className="w-3 h-3 rounded-full bg-emerald-500/60 hover:bg-emerald-500 flex items-center justify-center flex-shrink-0"
+                  className="w-5 h-5 rounded-full bg-emerald-500/70 hover:bg-emerald-500 flex items-center justify-center flex-shrink-0 transition-colors"
                 >
-                  <Play className="w-1.5 h-1.5 ml-px" />
+                  <Play className="w-2.5 h-2.5 ml-0.5" />
                 </button>
               </div>
+
+              {/* Text Status Below Music */}
+              {status.status_text && (
+                <div className="mt-1 pt-1 border-t border-white/20 overflow-hidden">
+                  <div className="flex items-center gap-1 justify-center">
+                    {status.emoji && <span className="text-[10px]">{status.emoji}</span>}
+                    <div className={`whitespace-nowrap font-medium text-white/90 ${textClasses[size]}`}>
+                      <div className="animate-marquee inline-block">
+                        {status.status_text}
+                        {status.status_text.length > 12 && (
+                          <span className="ml-6">{status.status_text}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Connector */}
-            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-black/85 rounded-full" />
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-black/90 rounded-full" />
           </div>
         </div>
         <StatusViewerDialog
