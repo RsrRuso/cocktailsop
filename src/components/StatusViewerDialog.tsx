@@ -45,18 +45,28 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   const [editText, setEditText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [optimisticLiked, setOptimisticLiked] = useState<boolean | null>(null);
+  const [optimisticLikeCount, setOptimisticLikeCount] = useState<number | null>(null);
   const commentInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
-  // Reset states when dialog closes
+  // Reset states when dialog closes or status changes
   useEffect(() => {
     if (!open) {
       setShowComments(false);
       setShowEmojiPicker(false);
       setReplyingTo(null);
       setEditingComment(null);
+      setOptimisticLiked(null);
+      setOptimisticLikeCount(null);
     }
   }, [open]);
+
+  // Reset optimistic state when status changes
+  useEffect(() => {
+    setOptimisticLiked(null);
+    setOptimisticLikeCount(null);
+  }, [status?.id]);
 
 
   const handleCommentsClick = (e: React.MouseEvent) => {
@@ -69,7 +79,7 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   };
 
   // Check if current user liked the status
-  const { data: isLiked } = useQuery({
+  const { data: isLikedFromDb } = useQuery({
     queryKey: ['status-liked', status?.id],
     queryFn: async () => {
       if (!status?.id) return false;
@@ -85,6 +95,10 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
     },
     enabled: !!status?.id && open,
   });
+
+  // Use optimistic state if available, otherwise use DB state
+  const isLiked = optimisticLiked !== null ? optimisticLiked : isLikedFromDb;
+  const displayLikeCount = optimisticLikeCount !== null ? optimisticLikeCount : (status?.like_count || 0);
 
   // Fetch comments
   const { data: comments = [] } = useQuery({
@@ -115,13 +129,15 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
     enabled: !!status?.id && open,
   });
 
-  // Like mutation
+  // Like mutation with instant optimistic update
   const likeMutation = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !status?.id) throw new Error('Not authenticated');
       
-      if (isLiked) {
+      const currentlyLiked = optimisticLiked !== null ? optimisticLiked : isLikedFromDb;
+      
+      if (currentlyLiked) {
         await (supabase
           .from('status_likes' as any)
           .delete()
@@ -133,35 +149,78 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
           .insert({ status_id: status.id, user_id: user.id }) as any);
       }
     },
+    onMutate: async () => {
+      // Instant optimistic update
+      const currentlyLiked = optimisticLiked !== null ? optimisticLiked : isLikedFromDb;
+      const currentCount = optimisticLikeCount !== null ? optimisticLikeCount : (status?.like_count || 0);
+      
+      setOptimisticLiked(!currentlyLiked);
+      setOptimisticLikeCount(currentlyLiked ? Math.max(0, currentCount - 1) : currentCount + 1);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['status-liked', status?.id] });
       queryClient.invalidateQueries({ queryKey: ['user-status'] });
     },
-    onError: () => toast.error("Failed to update like"),
+    onError: () => {
+      // Revert on error
+      setOptimisticLiked(null);
+      setOptimisticLikeCount(null);
+      toast.error("Failed to update like");
+    },
   });
 
-  // Add comment mutation
+  // Add comment mutation with optimistic update
   const addCommentMutation = useMutation({
     mutationFn: async (content: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !status?.id) throw new Error('Not authenticated');
       
-      await (supabase
+      const { data, error } = await (supabase
         .from('status_comments' as any)
         .insert({
           status_id: status.id,
           user_id: user.id,
           content,
           parent_comment_id: replyingTo,
-        }) as any);
+        })
+        .select(`*, profiles:user_id (username, avatar_url)`)
+        .single() as any);
+      
+      if (error) throw error;
+      return data;
+    },
+    onMutate: async (content) => {
+      // Optimistic update - add comment immediately
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const optimisticComment = {
+        id: `temp-${Date.now()}`,
+        content,
+        user_id: user.id,
+        status_id: status?.id,
+        parent_comment_id: replyingTo,
+        created_at: new Date().toISOString(),
+        profiles: {
+          username: 'You',
+          avatar_url: null,
+        }
+      };
+      
+      queryClient.setQueryData(['status-comments', status?.id], (old: any[]) => 
+        [...(old || []), optimisticComment]
+      );
+      
+      setComment("");
+      setReplyingTo(null);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['status-comments', status?.id] });
-      setComment("");
-      setReplyingTo(null);
-      toast.success("Comment added");
     },
-    onError: () => toast.error("Failed to add comment"),
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['status-comments', status?.id] });
+      toast.error("Failed to add comment");
+    },
   });
 
   // Add reaction mutation
@@ -403,10 +462,10 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
                 e.preventDefault();
                 likeMutation.mutate();
               }}
-              className={`flex items-center gap-2 rounded-full px-6 py-3 h-auto ${isLiked ? 'bg-red-500/20 text-red-400' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
+              className={`flex items-center gap-2 rounded-full px-6 py-3 h-auto transition-all duration-150 ${isLiked ? 'bg-red-500/20 text-red-400 scale-105' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
             >
-              <Heart className={`w-6 h-6 ${isLiked ? 'fill-red-500' : ''}`} />
-              <span className="font-semibold text-base">{status.like_count || 0}</span>
+              <Heart className={`w-6 h-6 transition-all duration-150 ${isLiked ? 'fill-red-500 scale-110' : ''}`} />
+              <span className="font-semibold text-base">{displayLikeCount}</span>
             </Button>
 
             {/* Comment Button - larger */}
