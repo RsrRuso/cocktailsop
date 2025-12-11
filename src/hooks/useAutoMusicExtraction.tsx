@@ -31,8 +31,8 @@ export function useAutoMusicExtraction() {
         title: title,
         original_url: videoUrl,
         preview_url: videoUrl,
-        duration_sec: 30, // Default - can be updated later
-        category: 'extracted',
+        duration_sec: 30,
+        category: 'other', // Valid category from check constraint
         tags: ['extracted', 'from-reel'],
         status: 'approved'
       });
