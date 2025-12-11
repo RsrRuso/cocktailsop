@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-
 interface Post {
   id: string;
   user_id: string;
@@ -29,17 +28,34 @@ interface Reel {
   profiles: any;
 }
 
-// Cache for feed data - persisted across navigations
+// Cache for feed data - persisted across navigations (module-level singleton)
 let feedCache: { posts: Post[]; reels: Reel[]; timestamp: number; region: string | null } | null = null;
-const CACHE_TIME = 120000; // 2 minutes for faster perceived loads
+const CACHE_TIME = 300000; // 5 minutes for instant loads
+
+// Initialize from prefetch if available
+const initFromPrefetch = () => {
+  const prefetch = (window as any).__feedPrefetch;
+  if (prefetch && !feedCache) {
+    feedCache = prefetch;
+    delete (window as any).__feedPrefetch;
+  }
+};
+
+// Check cache validity helper
+const isCacheValid = (region: string | null) => {
+  initFromPrefetch(); // Check for prefetched data first
+  return feedCache && 
+    Date.now() - feedCache.timestamp < CACHE_TIME && 
+    feedCache.region === region;
+};
 
 export const useFeedData = (selectedRegion: string | null) => {
-  // Initialize from cache immediately for instant display
-  const cachedData = feedCache && Date.now() - feedCache.timestamp < CACHE_TIME && feedCache.region === selectedRegion;
+  // Initialize from cache immediately for instant display - compute once
+  const hasValidCache = useMemo(() => isCacheValid(selectedRegion), [selectedRegion]);
   
-  const [posts, setPosts] = useState<Post[]>(() => cachedData ? feedCache!.posts : []);
-  const [reels, setReels] = useState<Reel[]>(() => cachedData ? feedCache!.reels : []);
-  const [isLoading, setIsLoading] = useState(!cachedData); // Not loading if we have cache
+  const [posts, setPosts] = useState<Post[]>(() => hasValidCache ? feedCache!.posts : []);
+  const [reels, setReels] = useState<Reel[]>(() => hasValidCache ? feedCache!.reels : []);
+  const [isLoading, setIsLoading] = useState(!hasValidCache); // Instant if cached
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -122,15 +138,16 @@ export const useFeedData = (selectedRegion: string | null) => {
   }, [selectedRegion]);
 
   const refreshFeed = useCallback(async (forceRefresh: boolean = false) => {
-    // Check cache first - BUT skip cache if force refresh (e.g. after like/comment)
-    if (!forceRefresh && feedCache && Date.now() - feedCache.timestamp < CACHE_TIME && feedCache.region === selectedRegion) {
-      setPosts(feedCache.posts);
-      setReels(feedCache.reels);
+    // Instant display from cache - skip network completely if valid
+    if (!forceRefresh && isCacheValid(selectedRegion)) {
+      if (posts.length === 0) setPosts(feedCache!.posts);
+      if (reels.length === 0) setReels(feedCache!.reels);
       setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
+    // Only show loading if no cached data to display
+    if (!feedCache) setIsLoading(true);
     const [fetchedPosts, fetchedReels] = await Promise.all([fetchPosts(), fetchReels()]);
     
     // Update cache

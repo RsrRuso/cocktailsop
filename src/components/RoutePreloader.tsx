@@ -7,29 +7,38 @@ export const RoutePreloader = () => {
   const location = useLocation();
   const { user } = useAuth();
   const prefetchedRoutes = useRef(new Set<string>());
+  const hasPrefetchedHome = useRef(false);
+
+  // Prefetch home feed immediately on mount for instant navigation
+  useEffect(() => {
+    if (!hasPrefetchedHome.current) {
+      hasPrefetchedHome.current = true;
+      const region = localStorage.getItem('selectedRegion');
+      // Start prefetching home feed immediately
+      prefetchHomeFeed(region);
+    }
+  }, []);
 
   const prefetchRoute = useCallback(async (path: string) => {
-    if (!user?.id || prefetchedRoutes.current.has(path)) return;
+    if (prefetchedRoutes.current.has(path)) return;
     
     prefetchedRoutes.current.add(path);
     const region = localStorage.getItem('selectedRegion');
     
-    if (path === '/home') {
+    if (path === '/home' || path === '/') {
       await prefetchHomeFeed(region);
-    } else if (path === '/profile') {
+    } else if (path === '/profile' && user?.id) {
       await prefetchProfile(user.id);
     }
   }, [user?.id]);
 
   useEffect(() => {
-    // Defer prefetching until after initial render for faster perceived load
-    const timer = setTimeout(() => prefetchRoute(location.pathname), 500);
-    return () => clearTimeout(timer);
+    // Prefetch current route immediately
+    prefetchRoute(location.pathname);
   }, [location.pathname, prefetchRoute]);
 
   useEffect(() => {
     const handleMouseEnter = (e: MouseEvent) => {
-      // Check if target is an Element that has the closest method
       if (!(e.target instanceof Element)) return;
       
       const link = e.target.closest('a[href]') as HTMLAnchorElement;
