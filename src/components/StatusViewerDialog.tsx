@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -292,13 +292,17 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
   const isMusicStatus = !!status.music_track_name;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="w-screen h-screen max-w-none max-h-none p-0 overflow-hidden flex flex-col border-none shadow-none bg-transparent rounded-none data-[state=open]:animate-fade-in [&>button]:hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Transparent overlay with blur */}
-        <div className="absolute inset-0 bg-black/85 backdrop-blur-xl" onClick={() => onOpenChange(false)} />
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        {/* Pure transparent backdrop - no frame */}
+        <DialogPrimitive.Overlay 
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+          onClick={() => onOpenChange(false)}
+        />
+        <DialogPrimitive.Content 
+          className="fixed inset-0 z-50 flex flex-col outline-none"
+          onClick={(e) => e.stopPropagation()}
+        >
 
         {/* Frameless Header - floating */}
         <div className="relative flex items-center gap-3 p-4 z-10">
@@ -664,8 +668,9 @@ const StatusViewerDialog = ({ open, onOpenChange, status, userProfile }: StatusV
             </motion.div>
           )}
         </AnimatePresence>
-      </DialogContent>
-    </Dialog>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 };
 
