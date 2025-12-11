@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { getAbbreviatedName } from "@/lib/profileUtils";
 
 interface Profile {
   id: string;
@@ -106,7 +107,7 @@ const FollowingDialog = ({ open, onOpenChange, userId }: FollowingDialogProps) =
                       <AvatarFallback>{user.username?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-normal text-sm">{user.full_name}</p>
+                      <p className="font-normal text-sm">{getAbbreviatedName(user.full_name)}</p>
                       <p className="text-sm text-muted-foreground">@{user.username}</p>
                       {user.professional_title && (
                         <p className="text-xs text-primary capitalize">

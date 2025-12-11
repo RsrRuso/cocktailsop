@@ -13,6 +13,7 @@ import { Heart } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { ContentType, Like, getEngagementConfig } from "@/types/engagement";
+import { getAbbreviatedName } from "@/lib/profileUtils";
 
 interface UnifiedLikesDialogProps {
   open: boolean;
@@ -112,7 +113,7 @@ const UnifiedLikesDialog = ({ open, onOpenChange, contentType, contentId }: Unif
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="font-normal text-xs sm:text-sm truncate">{like.profiles.full_name}</p>
+                    <p className="font-normal text-xs sm:text-sm truncate">{getAbbreviatedName(like.profiles.full_name)}</p>
                     <p className="text-xs sm:text-sm text-muted-foreground truncate">
                       @{like.profiles.username}
                     </p>

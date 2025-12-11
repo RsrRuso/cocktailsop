@@ -12,6 +12,7 @@ import { Search, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { getAbbreviatedName } from "@/lib/profileUtils";
 
 interface Profile {
   id: string;
@@ -181,7 +182,7 @@ const UserSelectionDialog = ({ open, onOpenChange, postContent, postId, postType
                       <AvatarFallback>{user.username?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-normal text-sm">{user.full_name}</p>
+                      <p className="font-normal text-sm">{getAbbreviatedName(user.full_name)}</p>
                       <p className="text-sm text-muted-foreground">@{user.username}</p>
                     </div>
                   </div>

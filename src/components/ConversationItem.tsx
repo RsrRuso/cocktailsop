@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import OptimizedAvatar from '@/components/OptimizedAvatar';
 import { Badge } from '@/components/ui/badge';
 import { Pin, Users } from 'lucide-react';
+import { getAbbreviatedName } from '@/lib/profileUtils';
 
 interface ConversationItemProps {
   conversation: {
@@ -31,7 +32,7 @@ export const ConversationItem = memo(({ conversation }: ConversationItemProps) =
 
   const displayName = conversation.is_group
     ? conversation.group_name
-    : conversation.otherUser?.full_name || conversation.otherUser?.username;
+    : getAbbreviatedName(conversation.otherUser?.full_name) || conversation.otherUser?.username;
 
   const avatarUrl = conversation.is_group
     ? conversation.group_avatar_url

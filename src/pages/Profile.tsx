@@ -26,7 +26,7 @@ import BadgeInfoDialog from "@/components/BadgeInfoDialog";
 import CareerMetricsDialog from "@/components/CareerMetricsDialog";
 import CreateStatusDialog from "@/components/CreateStatusDialog";
 import { useUserStatus } from "@/hooks/useUserStatus";
-import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore } from "@/lib/profileUtils";
+import { getBadgeColor, getProfessionalBadge, calculateNetworkReach, calculateProfessionalScore, getAbbreviatedName } from "@/lib/profileUtils";
 import { AddExperienceDialog } from "@/components/AddExperienceDialog";
 import { AddCertificationDialog } from "@/components/AddCertificationDialog";
 import { AddRecognitionDialog } from "@/components/AddRecognitionDialog";
@@ -400,7 +400,7 @@ const Profile = () => {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h2 className="text-2xl font-bold">{safeProfile.full_name || safeProfile.username}</h2>
+                  <h2 className="text-2xl font-bold">{getAbbreviatedName(safeProfile.full_name) || safeProfile.username}</h2>
                   {/* Verification badge */}
                   {(userRoles.isFounder || userRoles.isVerified) && (
                     <div 
