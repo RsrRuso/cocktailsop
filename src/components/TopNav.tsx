@@ -1,4 +1,4 @@
-import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck, Music, Star, Medal, Diamond, RefreshCw, Zap, ChevronDown, Map, Film, Compass, Brain, Newspaper } from "lucide-react";
+import { Bell, MessageCircle, Send, Sun, Moon, Menu, Palette, Calculator, BookOpen, FileText, Package, DollarSign, ClipboardCheck, Shield, Users, ShoppingCart, Megaphone, Wrench, Phone, Calendar, Apple, Trash2, GraduationCap, Receipt, PartyPopper, BadgeCheck, Music, Star, Medal, Diamond, RefreshCw, Zap, ChevronDown, Map, Film, Compass, Brain, Newspaper, Share2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
@@ -36,6 +36,7 @@ import { useManagerRole } from "@/hooks/useManagerRole";
 import { useToast } from "@/hooks/use-toast";
 import { MatrixBrainLogo } from "@/components/MatrixBrainLogo";
 import { MatrixAIButton } from "@/components/MatrixAIButton";
+import ShareSpecVerseDialog from "@/components/ShareSpecVerseDialog";
 
 interface TopNavProps {
   isVisible?: boolean;
@@ -66,6 +67,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
   });
   const [eventsDialogOpen, setEventsDialogOpen] = useState(false);
   const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
+  const [shareSpecVerseOpen, setShareSpecVerseOpen] = useState(false);
   const { isManager } = useManagerRole();
   
   const [eventFormData, setEventFormData] = useState({
@@ -520,6 +522,17 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               <DropdownMenuItem 
                 onClick={() => { 
                   lightTap(); 
+                  setShareSpecVerseOpen(true);
+                }}
+                className="cursor-pointer text-primary hover:text-primary hover:bg-primary/10"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share SpecVerse
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem 
+                onClick={() => { 
+                  lightTap(); 
                   clearAppCache();
                 }}
                 className="cursor-pointer text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
@@ -698,6 +711,11 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               </form>
             </DialogContent>
           </Dialog>
+          
+          <ShareSpecVerseDialog 
+            open={shareSpecVerseOpen} 
+            onOpenChange={setShareSpecVerseOpen} 
+          />
         </>
       )}
     </>
