@@ -51,9 +51,18 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
   handleDeleteReel,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   // Track view when this reel is visible
   useViewTracking('reel', reel.id, user?.id, index === currentIndex);
+
+  // Check if reel has attached music
+  const hasAttachedMusic = Boolean(reel.music_url || reel.music_tracks?.preview_url);
+  const musicUrl = reel.music_url || reel.music_tracks?.preview_url;
+  // Video should be muted if: has music AND mute_original_audio is true (user toggle doesn't affect video when music is attached)
+  const shouldMuteVideo = hasAttachedMusic && reel.mute_original_audio;
+  // Audio should be muted only if user manually muted
+  const isUserMuted = mutedVideos.has(reel.id);
 
   // Preload adjacent videos aggressively
   useEffect(() => {
@@ -63,16 +72,37 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
     }
   }, [index, currentIndex]);
 
-  // Play/pause based on visibility
+  // Play/pause video and audio based on visibility
   useEffect(() => {
-    if (videoRef.current) {
-      if (index === currentIndex) {
-        videoRef.current.play().catch(() => {});
-      } else {
-        videoRef.current.pause();
+    const video = videoRef.current;
+    const audio = audioRef.current;
+    
+    if (index === currentIndex) {
+      video?.play().catch(() => {});
+      // Play music if available and this is the current reel
+      if (hasAttachedMusic && audio) {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
       }
+    } else {
+      video?.pause();
+      audio?.pause();
     }
-  }, [index, currentIndex]);
+  }, [index, currentIndex, hasAttachedMusic]);
+
+  // Sync audio mute state with user preference
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.muted = isUserMuted;
+    }
+  }, [isUserMuted]);
+
+  // Sync video mute when user toggles (only if no attached music)
+  useEffect(() => {
+    if (videoRef.current && !hasAttachedMusic) {
+      videoRef.current.muted = isUserMuted;
+    }
+  }, [isUserMuted, hasAttachedMusic]);
 
   // Parse caption for hashtags and mentions
   const renderCaption = (text: string) => {
@@ -88,23 +118,29 @@ export const ReelItemWrapper: FC<ReelItemWrapperProps> = ({
     });
   };
 
-  // Check if reel has attached music
-  const hasAttachedMusic = Boolean(reel.music_url || reel.music_tracks?.preview_url);
-  // Video should be muted if: user manually muted OR (has music AND mute_original_audio is true)
-  const shouldMuteVideo = mutedVideos.has(reel.id) || (hasAttachedMusic && reel.mute_original_audio);
-
   return (
     <div className="h-screen snap-start relative">
-      {/* Full Screen Video */}
+      {/* Full Screen Video - muted when music is attached */}
       <video
         ref={videoRef}
         src={reel.video_url}
         className="absolute inset-0 w-full h-full object-cover"
         loop
         playsInline
-        muted={shouldMuteVideo}
+        muted={shouldMuteVideo || isUserMuted}
         preload={Math.abs(index - currentIndex) <= 2 ? "auto" : "metadata"}
       />
+      
+      {/* Audio element for attached music */}
+      {hasAttachedMusic && musicUrl && (
+        <audio
+          ref={audioRef}
+          src={musicUrl}
+          loop
+          muted={isUserMuted}
+          preload="auto"
+        />
+      )}
 
       {/* Mute/Unmute Button - Top Right */}
       <button
