@@ -176,7 +176,7 @@ export const uploadLargeFile = async (
   }
 };
 
-// Fallback upload using standard Supabase SDK (no progress but reliable)
+// Fallback upload using standard Supabase SDK (simulates progress for better UX)
 export const uploadFallback = async (
   bucket: string,
   path: string,
@@ -186,7 +186,17 @@ export const uploadFallback = async (
   const { onProgress = () => {}, onStageChange = () => {} } = options;
   
   onStageChange("Uploading...");
-  onProgress(50); // Show indeterminate progress
+  
+  // Simulate progress for better UX (SDK doesn't provide real progress)
+  let fakeProgress = 10;
+  const progressInterval = setInterval(() => {
+    if (fakeProgress < 90) {
+      fakeProgress += Math.random() * 15;
+      if (fakeProgress > 90) fakeProgress = 90;
+      onProgress(Math.round(fakeProgress));
+      onStageChange(`Uploading ${Math.round(fakeProgress)}%`);
+    }
+  }, 500);
   
   try {
     const { error: uploadError } = await supabase.storage
@@ -196,6 +206,8 @@ export const uploadFallback = async (
         upsert: false,
       });
 
+    clearInterval(progressInterval);
+
     if (uploadError) throw uploadError;
 
     const { data: { publicUrl } } = supabase.storage
@@ -203,15 +215,16 @@ export const uploadFallback = async (
       .getPublicUrl(path);
 
     onProgress(100);
-    onStageChange("Complete!");
+    onStageChange("Uploading 100%");
 
     return { publicUrl, path };
   } catch (error) {
+    clearInterval(progressInterval);
     return { publicUrl: "", path: "", error: error as Error };
   }
 };
 
-// Upload with automatic retry and fallback
+// Upload with automatic retry and fallback - NO retry to avoid confusing progress
 export const uploadWithRetry = async (
   bucket: string,
   path: string,
@@ -220,18 +233,23 @@ export const uploadWithRetry = async (
 ): Promise<UploadResult> => {
   const { onProgress = () => {}, onStageChange = () => {} } = options;
 
-  // Try XHR upload with progress first
-  try {
-    onStageChange("Uploading");
-    const result = await uploadWithProgress(bucket, path, file, options);
-    if (!result.error) return result;
-    console.warn('XHR upload failed, trying fallback:', result.error);
-  } catch (error) {
-    console.warn('XHR upload error, trying fallback:', error);
+  // For large files (>30MB), use SDK directly (more reliable for large uploads)
+  if (file.size > 30 * 1024 * 1024) {
+    return uploadFallback(bucket, path, file, options);
   }
 
-  // Fallback to standard Supabase upload
-  return uploadFallback(bucket, path, file, options);
+  // Try XHR upload with progress for smaller files
+  try {
+    onStageChange("Uploading 0%");
+    const result = await uploadWithProgress(bucket, path, file, options);
+    if (!result.error) return result;
+    console.warn('XHR upload failed:', result.error);
+    // Don't retry - return the error
+    return result;
+  } catch (error) {
+    console.error('Upload error:', error);
+    return { publicUrl: "", path: "", error: error as Error };
+  }
 };
 
 // Compress video to reduce size
