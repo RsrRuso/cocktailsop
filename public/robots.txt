@@ -1,8 +1,23 @@
+# SpecVerse Robots.txt
+# https://specverse.app
+
 User-agent: Googlebot
 Allow: /
+Disallow: /api/
+Disallow: /auth
+Disallow: /messages
+Disallow: /notifications
+Disallow: /profile
+Disallow: /edit-profile
 
 User-agent: Bingbot
 Allow: /
+Disallow: /api/
+Disallow: /auth
+Disallow: /messages
+Disallow: /notifications
+Disallow: /profile
+Disallow: /edit-profile
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +25,21 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: LinkedInBot
+Allow: /
+
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /auth
+Disallow: /messages
+Disallow: /notifications
+Disallow: /profile
+Disallow: /edit-profile
+Disallow: /password-reset
+Disallow: /staff-pos
+Disallow: /staff-install
+Disallow: /staff-qr-access
+
+# Sitemap location
+Sitemap: https://specverse.app/sitemap.xml
