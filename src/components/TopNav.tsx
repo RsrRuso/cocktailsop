@@ -272,7 +272,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                 onClick={lightTap}
                 className="flex items-center gap-1 hover:opacity-80 transition-opacity"
               >
-              <span className="text-xl sm:text-2xl font-bold text-foreground italic">
+              <span className="text-2xl sm:text-3xl font-instagram text-foreground">
                 SpecVerse
               </span>
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
