@@ -1,6 +1,6 @@
-import { memo, useState, useCallback, useEffect } from "react";
+import { memo, useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Trash2, Edit, Volume2, VolumeX, Eye, Sparkles, Repeat2 } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark, MoreVertical, Trash2, Edit, Volume2, VolumeX, Eye, Sparkles, Repeat2, Music } from "lucide-react";
 import OptimizedAvatar from "@/components/OptimizedAvatar";
 import { LazyImage } from "@/components/LazyImage";
 import { LazyVideo } from "@/components/LazyVideo";
@@ -54,6 +54,7 @@ export const FeedItem = memo(({
   onRepostChange
 }: FeedItemProps) => {
   const navigate = useNavigate();
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [showInsights, setShowInsights] = useState(false);
   const [showLikes, setShowLikes] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -65,6 +66,22 @@ export const FeedItem = memo(({
   const [lastTap, setLastTap] = useState(0);
   const [commentCount, setCommentCount] = useState(item.comment_count || 0);
   const [localLikeCount, setLocalLikeCount] = useState(item.like_count || 0);
+
+  // Check if reel has attached music
+  const hasAttachedMusic = item.type === 'reel' && Boolean(item.music_track_id && (item.music_tracks?.preview_url || item.music_url));
+  const musicUrl = item.music_tracks?.preview_url || item.music_url;
+  const shouldMuteVideo = hasAttachedMusic && item.mute_original_audio === true;
+  const isUserMuted = !mutedVideos.has(item.id + (item.video_url || item.media_urls?.[0] || ''));
+
+  // Play/pause music based on user mute toggle
+  useEffect(() => {
+    if (audioRef.current && hasAttachedMusic) {
+      audioRef.current.muted = isUserMuted;
+      if (!isUserMuted) {
+        audioRef.current.play().catch(() => {});
+      }
+    }
+  }, [isUserMuted, hasAttachedMusic]);
 
   // Sync local like count with prop when item changes (e.g., on refresh)
   useEffect(() => {
@@ -317,9 +334,31 @@ export const FeedItem = memo(({
                 >
                   <LazyVideo
                     src={url}
-                    muted={!mutedVideos.has(item.id + url)}
+                    muted={shouldMuteVideo || isUserMuted}
                     className="absolute inset-0 w-full h-full object-cover"
                   />
+                  
+                  {/* Audio element for attached music */}
+                  {hasAttachedMusic && musicUrl && (
+                    <audio
+                      ref={audioRef}
+                      src={musicUrl}
+                      loop
+                      autoPlay
+                      muted={isUserMuted}
+                      preload="auto"
+                    />
+                  )}
+                  
+                  {/* Music indicator */}
+                  {hasAttachedMusic && (
+                    <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1 z-10">
+                      <Music className="w-3 h-3 text-white" />
+                      <span className="text-[10px] text-white font-medium truncate max-w-[100px]">
+                        {item.music_tracks?.title || 'Added Music'}
+                      </span>
+                    </div>
+                  )}
                   
                   <button
                     onClick={(e) => {
