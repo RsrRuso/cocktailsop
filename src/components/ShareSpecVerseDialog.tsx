@@ -225,14 +225,13 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       const storyBlob = await generateStoryImage();
       const storyFile = new File([storyBlob], 'specverse-story.png', { type: 'image/png' });
 
-      // Try native share with image + link
+      // Try native share with image + clickable link in text
       if (navigator.canShare && navigator.canShare({ files: [storyFile] })) {
         try {
           await navigator.share({
             files: [storyFile],
             title: 'SpecVerse',
-            text: 'Check out SpecVerse - The Future of Hospitality! Professional tools for bartenders & hospitality pros.',
-            url: appUrl,
+            text: `Check out SpecVerse - The Future of Hospitality! 🍸\n\n👉 ${appUrl}`,
           });
           toast.success('Shared successfully!');
           onOpenChange(false);
@@ -244,13 +243,12 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
         }
       }
 
-      // Fallback: Try share without file
+      // Fallback: Try share without file but with clickable link
       if (navigator.share) {
         try {
           await navigator.share({
             title: 'SpecVerse',
-            text: 'Check out SpecVerse - The Future of Hospitality!',
-            url: appUrl,
+            text: `Check out SpecVerse - The Future of Hospitality! 🍸\n\n👉 ${appUrl}`,
           });
           toast.success('Shared successfully!');
           onOpenChange(false);
