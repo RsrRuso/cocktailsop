@@ -279,72 +279,83 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="glass z-[60] bg-background/95 backdrop-blur-xl border border-border/50 w-56">
-              {/* Navigation Items */}
-              <DropdownMenuItem
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/matrix-ai"); 
-                }}
-                className="cursor-pointer"
-              >
-                <Brain className="w-4 h-4 mr-2 text-primary" />
-                Matrix AI
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/music-box"); 
-                }}
-                className="cursor-pointer"
-              >
-                <Music className="w-4 h-4 mr-2" />
-                Music Box
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/industry-digest"); 
-                }}
-                className="cursor-pointer"
-              >
-                <Newspaper className="w-4 h-4 mr-2" />
-                Industry Digest
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/business-hub"); 
-                }}
-                className="cursor-pointer"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Business Hub
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/shop"); 
-                }}
-                className="cursor-pointer"
-              >
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                Shop
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/email"); 
-                }}
-                className="cursor-pointer"
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Internal Email
-              </DropdownMenuItem>
+              {/* Features Submenu - Matrix AI to Internal Email */}
+              <Collapsible defaultOpen>
+                <CollapsibleTrigger className="w-full px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Brain className="w-4 h-4 text-primary" />
+                    <span>Features</span>
+                  </span>
+                  <span className="text-xs">▼</span>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <DropdownMenuItem
+                    onClick={() => { 
+                      lightTap(); 
+                      navigate("/matrix-ai"); 
+                    }}
+                    className="cursor-pointer ml-4"
+                  >
+                    <Brain className="w-4 h-4 mr-2 text-primary" />
+                    Matrix AI
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem
+                    onClick={() => { 
+                      lightTap(); 
+                      navigate("/music-box"); 
+                    }}
+                    className="cursor-pointer ml-4"
+                  >
+                    <Music className="w-4 h-4 mr-2" />
+                    Music Box
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem
+                    onClick={() => { 
+                      lightTap(); 
+                      navigate("/industry-digest"); 
+                    }}
+                    className="cursor-pointer ml-4"
+                  >
+                    <Newspaper className="w-4 h-4 mr-2" />
+                    Industry Digest
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem
+                    onClick={() => { 
+                      lightTap(); 
+                      navigate("/business-hub"); 
+                    }}
+                    className="cursor-pointer ml-4"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Business Hub
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem
+                    onClick={() => { 
+                      lightTap(); 
+                      navigate("/shop"); 
+                    }}
+                    className="cursor-pointer ml-4"
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Shop
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem
+                    onClick={() => { 
+                      lightTap(); 
+                      navigate("/email"); 
+                    }}
+                    className="cursor-pointer ml-4"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Internal Email
+                  </DropdownMenuItem>
+                </CollapsibleContent>
+              </Collapsible>
               
               <DropdownMenuSeparator />
               
