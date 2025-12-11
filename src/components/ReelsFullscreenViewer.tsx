@@ -302,7 +302,7 @@ export const ReelsFullscreenViewer = ({
             loop
             playsInline
             autoPlay
-            muted={isMuted || Boolean(currentReel.mute_original_audio && currentReel.music_url)}
+            muted={isMuted || Boolean(currentReel.mute_original_audio && (currentReel.music_url || currentReel.music_tracks?.preview_url))}
             preload="auto"
           />
         </motion.div>
