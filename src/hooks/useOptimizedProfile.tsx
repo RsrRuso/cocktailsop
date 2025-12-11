@@ -83,7 +83,11 @@ export const useOptimizedProfileData = (userId: string | null) => {
       
       const { data } = await supabase
         .from('reels')
-        .select('id, video_url, caption, like_count, comment_count, view_count, save_count, repost_count, created_at')
+        .select(`
+          id, video_url, caption, like_count, comment_count, view_count, save_count, repost_count, created_at,
+          music_url, music_track_id, mute_original_audio,
+          music_tracks:music_track_id(title, preview_url, profiles:uploaded_by(username))
+        `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(12);

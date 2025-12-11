@@ -74,37 +74,50 @@ export const ReelsFullscreenViewer = ({
   // Handle music playback synchronized with video
   useEffect(() => {
     const currentReel = reels[currentIndex];
-    const musicUrl = currentReel?.music_url || currentReel?.music_tracks?.preview_url;
+    if (!currentReel) return;
+    
+    // Check if reel has attached music (must have music_track_id)
+    const hasAttachedMusic = Boolean(currentReel.music_track_id && (currentReel.music_tracks?.preview_url || currentReel.music_url));
+    const musicUrl = currentReel.music_tracks?.preview_url || currentReel.music_url;
     
     // Stop any current music
     if (musicAudioRef.current) {
       musicAudioRef.current.pause();
+      musicAudioRef.current.src = '';
       musicAudioRef.current = null;
     }
     
-    // Start music if reel has music
-    if (musicUrl && isOpen) {
+    // Start music if reel has attached music and we're open
+    if (hasAttachedMusic && musicUrl && isOpen) {
       const audio = new Audio(musicUrl);
       audio.loop = true;
-      audio.volume = isMuted ? 0 : 1;
+      audio.muted = isMuted;
+      audio.preload = 'auto';
       musicAudioRef.current = audio;
       
-      // Play music when video starts
-      audio.play().catch(console.error);
+      // Play music immediately
+      audio.play().catch((err) => {
+        console.log('Music play failed, retrying:', err);
+        // Retry after short delay (user interaction might be needed)
+        setTimeout(() => {
+          audio.play().catch(() => {});
+        }, 100);
+      });
     }
     
     return () => {
       if (musicAudioRef.current) {
         musicAudioRef.current.pause();
+        musicAudioRef.current.src = '';
         musicAudioRef.current = null;
       }
     };
-  }, [currentIndex, isOpen, reels]);
+  }, [currentIndex, isOpen, reels, isMuted]);
 
-  // Sync music volume with mute state
+  // Sync music mute state
   useEffect(() => {
     if (musicAudioRef.current) {
-      musicAudioRef.current.volume = isMuted ? 0 : 1;
+      musicAudioRef.current.muted = isMuted;
     }
   }, [isMuted]);
 
@@ -291,20 +304,28 @@ export const ReelsFullscreenViewer = ({
             overflow: 'hidden'
           }}
         >
-          <video
-            key={currentReel.id}
-            ref={(el) => {
-              if (el) videoRefs.current.set(currentIndex, el);
-            }}
-            src={currentReel.video_url}
-            className="w-full h-full object-cover"
-            style={{ aspectRatio: '9/16', maxHeight: '100vh' }}
-            loop
-            playsInline
-            autoPlay
-            muted={isMuted || Boolean(currentReel.mute_original_audio && (currentReel.music_url || currentReel.music_tracks?.preview_url))}
-            preload="auto"
-          />
+          {(() => {
+            // Determine if video should be muted
+            const hasMusic = Boolean(currentReel.music_track_id && (currentReel.music_tracks?.preview_url || currentReel.music_url));
+            const shouldMuteVideo = isMuted || (hasMusic && currentReel.mute_original_audio === true);
+            
+            return (
+              <video
+                key={currentReel.id}
+                ref={(el) => {
+                  if (el) videoRefs.current.set(currentIndex, el);
+                }}
+                src={currentReel.video_url}
+                className="w-full h-full object-cover"
+                style={{ aspectRatio: '9/16', maxHeight: '100vh' }}
+                loop
+                playsInline
+                autoPlay
+                muted={shouldMuteVideo}
+                preload="auto"
+              />
+            );
+          })()}
         </motion.div>
       </AnimatePresence>
 
