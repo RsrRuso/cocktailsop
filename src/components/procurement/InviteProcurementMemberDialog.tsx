@@ -57,30 +57,43 @@ export const InviteProcurementMemberDialog = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch all data in parallel for speed
-      const [followersResult, followingResult, membersResult] = await Promise.all([
-        supabase
-          .from("follows")
-          .select(`follower_id, profiles!follows_follower_id_fkey(id, username, full_name, avatar_url)`)
-          .eq("following_id", user.id),
-        supabase
-          .from("follows")
-          .select(`following_id, profiles!follows_following_id_fkey(id, username, full_name, avatar_url)`)
-          .eq("follower_id", user.id),
-        supabase
-          .from("procurement_workspace_members")
-          .select("user_id")
-          .eq("workspace_id", workspaceId)
-      ]);
+      // Fetch followers
+      const { data: followersData } = await supabase
+        .from("follows")
+        .select(`
+          follower_id,
+          profiles!follows_follower_id_fkey(id, username, full_name, avatar_url)
+        `)
+        .eq("following_id", user.id);
 
-      const existingMemberIds = new Set(membersResult.data?.map(m => m.user_id) || []);
+      // Fetch following
+      const { data: followingData } = await supabase
+        .from("follows")
+        .select(`
+          following_id,
+          profiles!follows_following_id_fkey(id, username, full_name, avatar_url)
+        `)
+        .eq("follower_id", user.id);
 
-      setFollowers(
-        followersResult.data?.map((f: any) => f.profiles).filter((p: Profile) => p && !existingMemberIds.has(p.id)) || []
-      );
-      setFollowing(
-        followingResult.data?.map((f: any) => f.profiles).filter((p: Profile) => p && !existingMemberIds.has(p.id)) || []
-      );
+      // Get existing workspace members to filter them out
+      const { data: existingMembers } = await supabase
+        .from("procurement_workspace_members")
+        .select("user_id")
+        .eq("workspace_id", workspaceId);
+
+      const existingMemberIds = new Set(existingMembers?.map(m => m.user_id) || []);
+
+      // Filter out existing members
+      const followersList = followersData
+        ?.map((f: any) => f.profiles)
+        .filter((p: Profile) => p && !existingMemberIds.has(p.id)) || [];
+
+      const followingList = followingData
+        ?.map((f: any) => f.profiles)
+        .filter((p: Profile) => p && !existingMemberIds.has(p.id)) || [];
+
+      setFollowers(followersList);
+      setFollowing(followingList);
     } catch (error) {
       console.error("Error fetching connections:", error);
       toast.error("Failed to load connections");
