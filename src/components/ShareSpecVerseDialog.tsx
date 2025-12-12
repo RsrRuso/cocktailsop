@@ -20,7 +20,9 @@ interface ShareSpecVerseDialogProps {
 interface ShareableTool {
   id: string;
   name: string;
-  description: string;
+  tagline: string;
+  problem: string;
+  benefits: string[];
   icon: React.ReactNode;
   path: string;
   gradient: string;
@@ -31,7 +33,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   {
     id: 'landing',
     name: 'SpecVerse',
-    description: 'The Future of Hospitality',
+    tagline: 'The Future of Hospitality',
+    problem: 'Scattered tools & no industry community',
+    benefits: ['All-in-one platform', 'Connect with pros globally', 'Free professional tools'],
     icon: <Sparkles className="w-6 h-6" />,
     path: '/',
     gradient: 'from-purple-500 via-pink-500 to-orange-500',
@@ -40,7 +44,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   {
     id: 'matrix-ai',
     name: 'Matrix AI',
-    description: 'AI-powered hospitality intelligence',
+    tagline: 'Your AI Hospitality Mentor',
+    problem: 'Need expert advice instantly?',
+    benefits: ['24/7 industry expertise', 'Recipe suggestions', 'Career guidance', 'Voice assistant'],
     icon: <Brain className="w-6 h-6" />,
     path: '/matrix-ai',
     gradient: 'from-violet-600 to-purple-600',
@@ -49,7 +55,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   {
     id: 'music-box',
     name: 'Music Box',
-    description: 'Curate & share music for your venue',
+    tagline: 'Curate Your Venue Sound',
+    problem: 'Struggling with venue playlists?',
+    benefits: ['Upload & share tracks', 'Auto-extract from reels', 'Trending music library'],
     icon: <Music className="w-6 h-6" />,
     path: '/music-box',
     gradient: 'from-pink-500 to-rose-500',
@@ -58,7 +66,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   {
     id: 'batch-calculator',
     name: 'Batch Calculator',
-    description: 'Scale cocktail recipes with precision',
+    tagline: 'Scale Recipes Perfectly',
+    problem: 'Scaling cocktails is time-consuming?',
+    benefits: ['Instant batch scaling', 'QR code sharing', 'Team collaboration', 'Production tracking'],
     icon: <Calculator className="w-6 h-6" />,
     path: '/batch-calculator',
     gradient: 'from-amber-500 to-orange-500',
@@ -66,8 +76,10 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   },
   {
     id: 'menu-engineering',
-    name: 'Menu Engineering Pro',
-    description: 'Optimize your menu profitability',
+    name: 'Menu Engineering',
+    tagline: 'Maximize Menu Profits',
+    problem: 'Which menu items are losing money?',
+    benefits: ['BCG matrix analysis', 'Cost optimization', 'AI pricing suggestions', 'Ingredient tracking'],
     icon: <ChefHat className="w-6 h-6" />,
     path: '/menu-engineering-pro',
     gradient: 'from-emerald-500 to-teal-500',
@@ -76,7 +88,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   {
     id: 'cocktail-sop',
     name: 'Cocktail SOP',
-    description: 'Professional recipe documentation',
+    tagline: 'Professional Recipe Specs',
+    problem: 'Inconsistent drink quality?',
+    benefits: ['Standardized recipes', 'Cost per drink', 'Taste profiles', 'PDF export'],
     icon: <FlaskConical className="w-6 h-6" />,
     path: '/cocktail-sop',
     gradient: 'from-blue-500 to-cyan-500',
@@ -85,7 +99,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   {
     id: 'lab-ops',
     name: 'LAB Ops',
-    description: 'Restaurant & bar management suite',
+    tagline: 'Complete Venue Management',
+    problem: 'Need a full POS & management system?',
+    benefits: ['Mobile ordering', 'Kitchen display', 'Staff scheduling', 'Analytics dashboard'],
     icon: <BarChart3 className="w-6 h-6" />,
     path: '/lab-ops',
     gradient: 'from-indigo-500 to-blue-500',
@@ -94,7 +110,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   {
     id: 'live-map',
     name: 'Live Map',
-    description: 'Discover venues & connect with pros',
+    tagline: 'Discover & Connect',
+    problem: 'Finding award-winning venues?',
+    benefits: ['Nearby venues map', 'Michelin & awards filter', 'Connect with bartenders', 'Industry events'],
     icon: <Map className="w-6 h-6" />,
     path: '/live-map',
     gradient: 'from-green-500 to-emerald-500',
@@ -103,7 +121,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   {
     id: 'shop',
     name: 'Shop',
-    description: 'Premium hospitality products',
+    tagline: 'Premium Bar Products',
+    problem: 'Need quality bar equipment?',
+    benefits: ['Curated products', 'Industry discounts', 'Digital & physical items'],
     icon: <ShoppingBag className="w-6 h-6" />,
     path: '/shop',
     gradient: 'from-rose-500 to-pink-500',
@@ -112,7 +132,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   {
     id: 'exam-center',
     name: 'Exam Center',
-    description: 'Professional certifications',
+    tagline: 'Get Certified',
+    problem: 'Want to prove your skills?',
+    benefits: ['Industry certifications', 'AI-generated exams', 'Digital badges', 'Career advancement'],
     icon: <GraduationCap className="w-6 h-6" />,
     path: '/exam-center',
     gradient: 'from-yellow-500 to-amber-500',
@@ -121,7 +143,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   {
     id: 'industry-digest',
     name: 'Industry Digest',
-    description: 'Daily hospitality news & insights',
+    tagline: 'Stay Informed Daily',
+    problem: 'Missing industry news?',
+    benefits: ['Global hospitality news', 'Regional filtering', 'Award announcements', 'Trend insights'],
     icon: <Newspaper className="w-6 h-6" />,
     path: '/industry-digest',
     gradient: 'from-slate-500 to-zinc-500',
@@ -130,7 +154,9 @@ const SHAREABLE_TOOLS: ShareableTool[] = [
   {
     id: 'team',
     name: 'Team Dashboard',
-    description: 'Manage your hospitality team',
+    tagline: 'Manage Your Crew',
+    problem: 'Team coordination chaos?',
+    benefits: ['Staff scheduling', 'Task management', 'Performance tracking', 'Time-off requests'],
     icon: <Users className="w-6 h-6" />,
     path: '/team-dashboard',
     gradient: 'from-cyan-500 to-blue-500',
@@ -221,37 +247,55 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
     ctx.translate(stickerCenterX, stickerCenterY);
     ctx.rotate(-0.02);
 
-    // Large emoji
-    ctx.font = '180px system-ui';
+    // Large emoji at top
+    ctx.font = '140px system-ui';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(tool.emoji, 0, -280);
+    ctx.fillText(tool.emoji, 0, -380);
 
     // Tool name - bold badge style
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 100px system-ui, -apple-system, sans-serif';
+    ctx.font = 'bold 80px system-ui, -apple-system, sans-serif';
     ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
     ctx.shadowBlur = 10;
-    ctx.fillText(tool.name, 0, -80);
+    ctx.fillText(tool.name, 0, -250);
 
-    // Divider line
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-200, 0);
-    ctx.lineTo(200, 0);
-    ctx.stroke();
-
-    // Description
-    ctx.font = '42px system-ui, -apple-system, sans-serif';
+    // Tagline
+    ctx.font = '38px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
     ctx.shadowBlur = 5;
-    ctx.fillText(tool.description, 0, 70);
+    ctx.fillText(tool.tagline, 0, -180);
+
+    // Problem statement box
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.beginPath();
+    ctx.roundRect(-380, -130, 760, 70, 15);
+    ctx.fill();
+    
+    ctx.font = 'bold 32px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`❓ ${tool.problem}`, 0, -85);
+
+    // Benefits section
+    ctx.font = 'bold 30px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fillText('✨ BENEFITS', 0, -20);
+
+    // Benefits list
+    ctx.font = '32px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    
+    tool.benefits.forEach((benefit, i) => {
+      ctx.fillText(`✓  ${benefit}`, -340, 40 + (i * 55));
+    });
+
+    ctx.textAlign = 'center';
 
     // "SpecVerse" branding
-    ctx.font = 'italic 32px Georgia, serif';
+    ctx.font = 'italic 28px Georgia, serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.fillText('by SpecVerse', 0, 140);
+    ctx.fillText('Part of SpecVerse Platform', 0, 280);
 
     // QR Code section
     ctx.restore();
@@ -436,7 +480,7 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold truncate">{tool.name}</p>
-                    <p className="text-sm text-white/80 truncate">{tool.description}</p>
+                    <p className="text-sm text-white/80 truncate">{tool.tagline}</p>
                   </div>
                   <span className="text-2xl">{tool.emoji}</span>
                 </button>
@@ -446,10 +490,20 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
         ) : selectedTool && (
           <div className="space-y-4">
             {/* Preview card */}
-            <div className={`p-6 rounded-2xl bg-gradient-to-br ${selectedTool.gradient} text-white text-center`}>
-              <span className="text-5xl">{selectedTool.emoji}</span>
-              <h3 className="font-bold text-xl mt-3">{selectedTool.name}</h3>
-              <p className="text-sm text-white/80 mt-1">{selectedTool.description}</p>
+            <div className={`p-4 rounded-2xl bg-gradient-to-br ${selectedTool.gradient} text-white`}>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-4xl">{selectedTool.emoji}</span>
+                <div>
+                  <h3 className="font-bold text-lg">{selectedTool.name}</h3>
+                  <p className="text-xs text-white/80">{selectedTool.tagline}</p>
+                </div>
+              </div>
+              <p className="text-sm font-medium mb-2">❓ {selectedTool.problem}</p>
+              <div className="space-y-1">
+                {selectedTool.benefits.map((b, i) => (
+                  <p key={i} className="text-xs text-white/90">✓ {b}</p>
+                ))}
+              </div>
             </div>
 
             {/* Share to Instagram Story */}
