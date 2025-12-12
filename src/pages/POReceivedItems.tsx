@@ -648,7 +648,7 @@ const POReceivedItems = () => {
     }
     
     try {
-      // Save to received items
+      // Save to received items (record already saved on upload)
       for (const item of varianceReport.items) {
         if (item.received_qty > 0) {
           await addReceivedItem({
@@ -663,26 +663,8 @@ const POReceivedItems = () => {
         }
       }
       
-      // Save the received record
-      const totalQty = varianceReport.items.reduce((sum, i) => sum + i.received_qty, 0);
-      const totalValue = varianceReport.items.reduce((sum, i) => sum + (i.received_qty * (i.received_price || 0)), 0);
-      
-      await (supabase as any)
-        .from('po_received_records')
-        .insert({
-          user_id: user?.id,
-          supplier_name: varianceReport.supplier,
-          document_number: varianceReport.order_number,
-          received_date: new Date().toISOString().split('T')[0],
-          total_items: varianceReport.items.length,
-          total_quantity: totalQty,
-          total_value: totalValue,
-          status: 'completed',
-          variance_data: varianceReport
-        });
-      
-      queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
-      toast.success("Received items saved");
+      queryClient.invalidateQueries({ queryKey: ['received-items'] });
+      toast.success("Items saved to inventory");
       setShowVarianceDialog(false);
     } catch (error: any) {
       toast.error("Failed to save: " + error.message);
