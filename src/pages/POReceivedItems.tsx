@@ -90,7 +90,7 @@ const POReceivedItems = () => {
   const { data: recentReceived, isLoading: isLoadingRecent } = useQuery({
     queryKey: ['po-recent-received', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('po_received_records')
         .select('*')
         .eq('user_id', user?.id)
@@ -98,7 +98,7 @@ const POReceivedItems = () => {
         .limit(50);
       
       if (error) throw error;
-      return data as RecentReceived[];
+      return (data || []) as RecentReceived[];
     },
     enabled: !!user?.id
   });
@@ -107,7 +107,7 @@ const POReceivedItems = () => {
   const { data: priceHistory } = useQuery({
     queryKey: ['po-price-history', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('po_price_history')
         .select('*')
         .eq('user_id', user?.id)
@@ -115,7 +115,7 @@ const POReceivedItems = () => {
         .limit(100);
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as PriceChange[];
     },
     enabled: !!user?.id
   });
@@ -449,17 +449,189 @@ const POReceivedItems = () => {
     toast.success("Report downloaded");
   };
 
+  // Download variance-only report (discrepancies only)
+  const downloadDiscrepancyReport = () => {
+    if (!varianceReport) return;
+    
+    const discrepancies = varianceReport.items.filter(item => item.status !== 'match');
+    if (discrepancies.length === 0) {
+      toast.info("No discrepancies found - all items matched!");
+      return;
+    }
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Discrepancy Report', pageWidth / 2, 20, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth / 2, 28, { align: 'center' });
+    doc.text(`Only showing items with missing/extra/short/over quantities`, pageWidth / 2, 35, { align: 'center' });
+    
+    let yPos = 45;
+    if (varianceReport.supplier) {
+      doc.text(`Supplier: ${varianceReport.supplier}`, 14, yPos);
+      yPos += 7;
+    }
+    
+    autoTable(doc, {
+      startY: yPos + 5,
+      head: [['Item', 'Ordered', 'Received', 'Variance', 'Status']],
+      body: discrepancies.map(item => [
+        item.item_name,
+        item.ordered_qty.toString(),
+        item.received_qty.toString(),
+        `${item.variance > 0 ? '+' : ''}${item.variance}`,
+        item.status.toUpperCase()
+      ]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [239, 68, 68] },
+    });
+    
+    doc.save(`discrepancy-report-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`);
+    toast.success("Discrepancy report downloaded");
+  };
+
+  // Download price change report
+  const downloadPriceChangeReport = () => {
+    if (!priceHistory || priceHistory.length === 0) {
+      toast.info("No price changes recorded yet");
+      return;
+    }
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Price Change Report', pageWidth / 2, 20, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth / 2, 28, { align: 'center' });
+    
+    autoTable(doc, {
+      startY: 40,
+      head: [['Item', 'Previous Price', 'Current Price', 'Change', 'Change %', 'Date']],
+      body: priceHistory.map((item: any) => [
+        item.item_name,
+        `$${(item.previous_price || 0).toFixed(2)}`,
+        `$${(item.current_price || 0).toFixed(2)}`,
+        `${item.change_amount > 0 ? '+' : ''}$${(item.change_amount || 0).toFixed(2)}`,
+        `${item.change_pct > 0 ? '+' : ''}${(item.change_pct || 0).toFixed(1)}%`,
+        format(new Date(item.changed_at || item.date), 'PP')
+      ]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [168, 85, 247] },
+    });
+    
+    doc.save(`price-change-report-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`);
+    toast.success("Price change report downloaded");
+  };
+
+  // Download par stock forecast report
+  const downloadParStockReport = () => {
+    if (!receivedItems || receivedItems.length === 0) {
+      toast.info("No received data for forecasting");
+      return;
+    }
+    
+    // Calculate weekly and monthly averages
+    const now = new Date();
+    const weekStart = startOfWeek(now);
+    const weekEnd = endOfWeek(now);
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    
+    const weeklyItems = receivedItems.filter(item => {
+      const date = new Date(item.received_date);
+      return date >= weekStart && date <= weekEnd;
+    });
+    
+    const monthlyItems = receivedItems.filter(item => {
+      const date = new Date(item.received_date);
+      return date >= monthStart && date <= monthEnd;
+    });
+    
+    // Group by item name for forecasting
+    const itemForecast = receivedSummary.map((item: any) => {
+      const weeklyQty = weeklyItems
+        .filter(wi => wi.item_name.toLowerCase() === item.item_name.toLowerCase())
+        .reduce((sum, wi) => sum + (wi.quantity || 0), 0);
+      
+      const monthlyQty = monthlyItems
+        .filter(mi => mi.item_name.toLowerCase() === item.item_name.toLowerCase())
+        .reduce((sum, mi) => sum + (mi.quantity || 0), 0);
+      
+      return {
+        item_name: item.item_name,
+        total_qty: item.total_qty,
+        weekly_qty: weeklyQty,
+        monthly_qty: monthlyQty,
+        weekly_par: Math.ceil(weeklyQty * 1.2), // 20% buffer
+        monthly_par: Math.ceil(monthlyQty * 1.2),
+        avg_price: item.avg_price,
+        weekly_cost: weeklyQty * item.avg_price,
+        monthly_cost: monthlyQty * item.avg_price
+      };
+    });
+    
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Par Stock Forecast Report', pageWidth / 2, 20, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth / 2, 28, { align: 'center' });
+    
+    // Summary
+    const totalWeeklyQty = itemForecast.reduce((sum, i) => sum + i.weekly_qty, 0);
+    const totalMonthlyQty = itemForecast.reduce((sum, i) => sum + i.monthly_qty, 0);
+    const totalWeeklyCost = itemForecast.reduce((sum, i) => sum + i.weekly_cost, 0);
+    const totalMonthlyCost = itemForecast.reduce((sum, i) => sum + i.monthly_cost, 0);
+    
+    doc.setFillColor(240, 240, 240);
+    doc.roundedRect(14, 35, pageWidth - 28, 20, 3, 3, 'F');
+    doc.text(`Weekly: ${totalWeeklyQty.toFixed(0)} units | $${totalWeeklyCost.toFixed(2)}`, 20, 47);
+    doc.text(`Monthly: ${totalMonthlyQty.toFixed(0)} units | $${totalMonthlyCost.toFixed(2)}`, 120, 47);
+    doc.text(`Weekly Par (20% buffer): ${Math.ceil(totalWeeklyQty * 1.2)} units`, 220, 47);
+    
+    autoTable(doc, {
+      startY: 60,
+      head: [['Item', 'Total Qty', 'Weekly Qty', 'Weekly Par', 'Weekly Cost', 'Monthly Qty', 'Monthly Par', 'Monthly Cost']],
+      body: itemForecast.map(item => [
+        item.item_name,
+        item.total_qty.toFixed(0),
+        item.weekly_qty.toFixed(0),
+        item.weekly_par.toString(),
+        `$${item.weekly_cost.toFixed(2)}`,
+        item.monthly_qty.toFixed(0),
+        item.monthly_par.toString(),
+        `$${item.monthly_cost.toFixed(2)}`
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [34, 197, 94] },
+    });
+    
+    doc.save(`par-stock-forecast-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`);
+    toast.success("Par stock forecast report downloaded");
+  };
+
   const saveReceivedItems = async () => {
-    if (!varianceReport || !selectedOrderId) {
-      toast.error("No order matched to save items against");
+    if (!varianceReport) {
+      toast.error("No variance data to save");
       return;
     }
     
     try {
+      // Save to received items
       for (const item of varianceReport.items) {
         if (item.received_qty > 0) {
           await addReceivedItem({
-            purchase_order_id: selectedOrderId,
+            purchase_order_id: selectedOrderId || undefined,
             item_name: item.item_name,
             quantity: item.received_qty,
             unit: item.unit,
@@ -469,10 +641,67 @@ const POReceivedItems = () => {
           });
         }
       }
+      
+      // Save the received record
+      const totalQty = varianceReport.items.reduce((sum, i) => sum + i.received_qty, 0);
+      const totalValue = varianceReport.items.reduce((sum, i) => sum + (i.received_qty * (i.received_price || 0)), 0);
+      
+      await (supabase as any)
+        .from('po_received_records')
+        .insert({
+          user_id: user?.id,
+          supplier_name: varianceReport.supplier,
+          document_number: varianceReport.order_number,
+          received_date: new Date().toISOString().split('T')[0],
+          total_items: varianceReport.items.length,
+          total_quantity: totalQty,
+          total_value: totalValue,
+          status: 'completed',
+          variance_data: varianceReport
+        });
+      
+      queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
       toast.success("Received items saved");
       setShowVarianceDialog(false);
     } catch (error: any) {
       toast.error("Failed to save: " + error.message);
+    }
+  };
+
+  // Calculate forecast data
+  const calculateForecast = () => {
+    if (!receivedItems || receivedItems.length === 0) return null;
+    
+    const now = new Date();
+    const weekStart = startOfWeek(now);
+    const monthStart = startOfMonth(now);
+    
+    const weeklyItems = receivedItems.filter(item => new Date(item.received_date) >= weekStart);
+    const monthlyItems = receivedItems.filter(item => new Date(item.received_date) >= monthStart);
+    
+    return {
+      weeklyQty: weeklyItems.reduce((sum, i) => sum + (i.quantity || 0), 0),
+      weeklyValue: weeklyItems.reduce((sum, i) => sum + (i.total_price || 0), 0),
+      monthlyQty: monthlyItems.reduce((sum, i) => sum + (i.quantity || 0), 0),
+      monthlyValue: monthlyItems.reduce((sum, i) => sum + (i.total_price || 0), 0),
+      weeklyPar: Math.ceil(weeklyItems.reduce((sum, i) => sum + (i.quantity || 0), 0) * 1.2),
+      monthlyPar: Math.ceil(monthlyItems.reduce((sum, i) => sum + (i.quantity || 0), 0) * 1.2)
+    };
+  };
+  
+  const forecast = calculateForecast();
+
+  const deleteReceivedRecord = async (id: string) => {
+    try {
+      await (supabase as any)
+        .from('po_received_records')
+        .delete()
+        .eq('id', id);
+      
+      queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
+      toast.success("Record deleted");
+    } catch (error: any) {
+      toast.error("Failed to delete: " + error.message);
     }
   };
 
@@ -508,7 +737,7 @@ const POReceivedItems = () => {
             </Button>
             <div>
               <h1 className="text-xl font-bold">Received Items</h1>
-              <p className="text-sm text-muted-foreground">Overall received inventory</p>
+              <p className="text-sm text-muted-foreground">Track receiving & forecasting</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -533,134 +762,315 @@ const POReceivedItems = () => {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Totals Cards */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="p-3">
+            <div className="flex items-center gap-2">
               <div className="p-2 bg-primary/10 rounded-lg">
-                <Package className="h-5 w-5 text-primary" />
+                <Package className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Quantity</p>
-                <p className="text-2xl font-bold">{receivedTotals.totalQty.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Total Qty</p>
+                <p className="text-lg font-bold">{receivedTotals.totalQty.toFixed(0)}</p>
               </div>
             </div>
           </Card>
           
-          <Card className="p-4">
-            <div className="flex items-center gap-3">
+          <Card className="p-3">
+            <div className="flex items-center gap-2">
               <div className="p-2 bg-green-500/10 rounded-lg">
-                <DollarSign className="h-5 w-5 text-green-500" />
+                <DollarSign className="h-4 w-4 text-green-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Value</p>
-                <p className="text-2xl font-bold">${receivedTotals.totalPrice.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Total Value</p>
+                <p className="text-lg font-bold">${receivedTotals.totalPrice.toFixed(2)}</p>
               </div>
             </div>
           </Card>
         </div>
 
-        {/* View Toggle */}
-        <div className="flex gap-2">
-          <Button 
-            variant={viewMode === 'summary' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('summary')}
-          >
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Summary
-          </Button>
-          <Button 
-            variant={viewMode === 'all' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('all')}
-          >
-            <Package className="h-4 w-4 mr-2" />
-            All Items
-          </Button>
-        </div>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="recent" className="text-xs">
+              <History className="h-3 w-3 mr-1" />
+              Recent
+            </TabsTrigger>
+            <TabsTrigger value="summary" className="text-xs">
+              <TrendingUp className="h-3 w-3 mr-1" />
+              Summary
+            </TabsTrigger>
+            <TabsTrigger value="forecast" className="text-xs">
+              <BarChart3 className="h-3 w-3 mr-1" />
+              Forecast
+            </TabsTrigger>
+            <TabsTrigger value="prices" className="text-xs">
+              <TrendingDown className="h-3 w-3 mr-1" />
+              Prices
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search items..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+          {/* Recent Received Tab */}
+          <TabsContent value="recent" className="mt-4 space-y-3">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold">Recent Received</h3>
+            </div>
+            
+            {isLoadingRecent ? (
+              <Card className="p-8 text-center text-muted-foreground">Loading...</Card>
+            ) : recentReceived && recentReceived.length > 0 ? (
+              <div className="space-y-2">
+                {recentReceived.map((record) => (
+                  <Card key={record.id} className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">{record.supplier_name || 'Unknown Supplier'}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            {format(new Date(record.received_date), 'PP')}
+                            <span>•</span>
+                            <span>{record.total_items} items</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="font-bold text-green-500">${record.total_value?.toFixed(2) || '0.00'}</p>
+                          <p className="text-xs text-muted-foreground">{record.total_quantity?.toFixed(0)} units</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-500">
+                          {record.status}
+                        </Badge>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-destructive"
+                          onClick={() => deleteReceivedRecord(record.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="p-8 text-center text-muted-foreground">
+                <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No received records yet</p>
+                <p className="text-xs mt-1">Upload a receiving document to get started</p>
+              </Card>
+            )}
+          </TabsContent>
 
-        {/* Items Table */}
-        <Card>
-          {isLoadingReceived ? (
-            <div className="p-8 text-center text-muted-foreground">Loading...</div>
-          ) : viewMode === 'summary' ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Item Name</TableHead>
-                  <TableHead className="text-right">Total Qty</TableHead>
-                  <TableHead className="text-right">Avg Price</TableHead>
-                  <TableHead className="text-right">Total Value</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredItems?.map((item: any, index: number) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">
-                      {item.item_name}
-                      {item.unit && <Badge variant="outline" className="ml-2 text-xs">{item.unit}</Badge>}
-                    </TableCell>
-                    <TableCell className="text-right">{item.total_qty.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">${item.avg_price.toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-semibold">${item.total_price.toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
-                {(!filteredItems || filteredItems.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                      No received items yet. Upload a receiving document to compare.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Item Name</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Qty</TableHead>
-                  <TableHead className="text-right">Unit Price</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredItems?.map((item: any) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">
-                      {item.item_name}
-                      {item.unit && <Badge variant="outline" className="ml-2 text-xs">{item.unit}</Badge>}
-                    </TableCell>
-                    <TableCell>{new Date(item.received_date).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">{item.quantity}</TableCell>
-                    <TableCell className="text-right">${item.unit_price?.toFixed(2) || '0.00'}</TableCell>
-                    <TableCell className="text-right font-semibold">${item.total_price?.toFixed(2) || '0.00'}</TableCell>
-                  </TableRow>
-                ))}
-                {(!filteredItems || filteredItems.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                      No received items yet
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </Card>
+          {/* Summary Tab */}
+          <TabsContent value="summary" className="mt-4 space-y-3">
+            <div className="flex gap-2 mb-3">
+              <Button 
+                variant={viewMode === 'summary' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('summary')}
+              >
+                Grouped
+              </Button>
+              <Button 
+                variant={viewMode === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('all')}
+              >
+                All Items
+              </Button>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <Card>
+              {isLoadingReceived ? (
+                <div className="p-8 text-center text-muted-foreground">Loading...</div>
+              ) : viewMode === 'summary' ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item Name</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Avg $</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredItems?.map((item: any, index: number) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium text-sm">
+                          {item.item_name}
+                        </TableCell>
+                        <TableCell className="text-right">{item.total_qty?.toFixed(0)}</TableCell>
+                        <TableCell className="text-right">${item.avg_price?.toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-semibold">${item.total_price?.toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                    {(!filteredItems || filteredItems.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                          No received items yet
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredItems?.map((item: any) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium text-sm">{item.item_name}</TableCell>
+                        <TableCell className="text-xs">{format(new Date(item.received_date), 'PP')}</TableCell>
+                        <TableCell className="text-right">{item.quantity}</TableCell>
+                        <TableCell className="text-right font-semibold">${item.total_price?.toFixed(2) || '0.00'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Card>
+          </TabsContent>
+
+          {/* Forecast Tab */}
+          <TabsContent value="forecast" className="mt-4 space-y-3">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold">Par Stock Forecast</h3>
+              <Button size="sm" variant="outline" onClick={downloadParStockReport}>
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+            </div>
+
+            {forecast ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <Card className="p-4 border-blue-500/20 bg-blue-500/5">
+                    <h4 className="text-sm font-medium text-blue-500 mb-2">Weekly</h4>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Quantity:</span>
+                        <span className="font-bold">{forecast.weeklyQty.toFixed(0)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Value:</span>
+                        <span className="font-bold">${forecast.weeklyValue.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm border-t pt-1 mt-1">
+                        <span className="text-muted-foreground">Par Stock:</span>
+                        <span className="font-bold text-blue-500">{forecast.weeklyPar}</span>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-4 border-green-500/20 bg-green-500/5">
+                    <h4 className="text-sm font-medium text-green-500 mb-2">Monthly</h4>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Quantity:</span>
+                        <span className="font-bold">{forecast.monthlyQty.toFixed(0)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Value:</span>
+                        <span className="font-bold">${forecast.monthlyValue.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm border-t pt-1 mt-1">
+                        <span className="text-muted-foreground">Par Stock:</span>
+                        <span className="font-bold text-green-500">{forecast.monthlyPar}</span>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+
+                <Card className="p-4">
+                  <p className="text-sm text-muted-foreground">
+                    Par stock includes a 20% safety buffer based on your receiving patterns.
+                    Download the full report for detailed item-by-item forecasting.
+                  </p>
+                </Card>
+              </>
+            ) : (
+              <Card className="p-8 text-center text-muted-foreground">
+                <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No data for forecasting</p>
+                <p className="text-xs mt-1">Start receiving items to generate forecasts</p>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Price Changes Tab */}
+          <TabsContent value="prices" className="mt-4 space-y-3">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold">Price Changes</h3>
+              <Button size="sm" variant="outline" onClick={downloadPriceChangeReport}>
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+            </div>
+
+            {priceHistory && priceHistory.length > 0 ? (
+              <Card>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead className="text-right">Previous</TableHead>
+                      <TableHead className="text-right">Current</TableHead>
+                      <TableHead className="text-right">Change</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {priceHistory.map((item: any, idx: number) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-medium text-sm">{item.item_name}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          ${(item.previous_price || 0).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          ${(item.current_price || 0).toFixed(2)}
+                        </TableCell>
+                        <TableCell className={`text-right font-semibold ${
+                          (item.change_amount || 0) > 0 ? 'text-red-500' : 'text-green-500'
+                        }`}>
+                          {(item.change_amount || 0) > 0 ? '+' : ''}${(item.change_amount || 0).toFixed(2)}
+                          <span className="text-xs ml-1">
+                            ({(item.change_pct || 0) > 0 ? '+' : ''}{(item.change_pct || 0).toFixed(1)}%)
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
+            ) : (
+              <Card className="p-8 text-center text-muted-foreground">
+                <TrendingDown className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No price changes recorded</p>
+                <p className="text-xs mt-1">Price changes are tracked automatically when updating master items</p>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Variance Analysis Dialog */}
@@ -774,17 +1184,19 @@ const POReceivedItems = () => {
               </Card>
 
               {/* Actions */}
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={downloadVarianceReport}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Report
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={downloadDiscrepancyReport}>
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Discrepancies Only
                 </Button>
-                {selectedOrderId && (
-                  <Button onClick={saveReceivedItems}>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Save Received Items
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" onClick={downloadVarianceReport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Full Report
+                </Button>
+                <Button size="sm" onClick={saveReceivedItems}>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Save Items
+                </Button>
               </div>
             </div>
           )}

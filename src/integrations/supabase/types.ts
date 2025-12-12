@@ -7925,6 +7925,81 @@ export type Database = {
         }
         Relationships: []
       }
+      po_price_history: {
+        Row: {
+          change_amount: number | null
+          change_pct: number | null
+          changed_at: string
+          current_price: number
+          id: string
+          item_name: string
+          previous_price: number | null
+          user_id: string
+        }
+        Insert: {
+          change_amount?: number | null
+          change_pct?: number | null
+          changed_at?: string
+          current_price: number
+          id?: string
+          item_name: string
+          previous_price?: number | null
+          user_id: string
+        }
+        Update: {
+          change_amount?: number | null
+          change_pct?: number | null
+          changed_at?: string
+          current_price?: number
+          id?: string
+          item_name?: string
+          previous_price?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      po_received_records: {
+        Row: {
+          created_at: string
+          document_number: string | null
+          id: string
+          received_date: string
+          status: string | null
+          supplier_name: string | null
+          total_items: number | null
+          total_quantity: number | null
+          total_value: number | null
+          user_id: string
+          variance_data: Json | null
+        }
+        Insert: {
+          created_at?: string
+          document_number?: string | null
+          id?: string
+          received_date?: string
+          status?: string | null
+          supplier_name?: string | null
+          total_items?: number | null
+          total_quantity?: number | null
+          total_value?: number | null
+          user_id: string
+          variance_data?: Json | null
+        }
+        Update: {
+          created_at?: string
+          document_number?: string | null
+          id?: string
+          received_date?: string
+          status?: string | null
+          supplier_name?: string | null
+          total_items?: number | null
+          total_quantity?: number | null
+          total_value?: number | null
+          user_id?: string
+          variance_data?: Json | null
+        }
+        Relationships: []
+      }
       popular_music: {
         Row: {
           artist: string
