@@ -234,23 +234,55 @@ const PurchaseOrders = () => {
           let textContent = '';
           
           if (file.type === 'application/pdf') {
-            // For PDF, we need to use the edge function for parsing
-            // Upload to storage first, then parse
-            const fileName = `po-docs/${user?.id}/${Date.now()}-${file.name}`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('purchase-orders')
-              .upload(fileName, file);
+            // For PDF, read as base64 and send to AI parser
+            const arrayBuffer = e.target?.result as ArrayBuffer;
+            const bytes = new Uint8Array(arrayBuffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            const pdfBase64 = btoa(binary);
             
-            if (uploadError) {
-              console.error('Upload error:', uploadError);
-              toast.error("Failed to upload document");
+            toast.info("Parsing PDF with AI...");
+            
+            const { data, error } = await supabase.functions.invoke('parse-purchase-order', {
+              body: { pdfBase64 }
+            });
+            
+            if (error || !data?.success) {
+              console.error('Parse error:', error || data?.error);
+              toast.error(error?.message || data?.error || "Failed to parse PDF");
               setIsUploading(false);
               return;
             }
-
-            // For now, use the text content directly if available
-            // The document parser edge function will handle complex PDFs
-            toast.info("PDF uploaded. Please use the manual entry or provide parsed content.");
+            
+            const parsed = data.data as ParsedOrderData;
+            
+            if (parsed) {
+              setNewOrder({
+                supplier_name: parsed.location || '',
+                order_number: parsed.doc_no || '',
+                order_date: parsed.doc_date 
+                  ? format(new Date(parsed.doc_date.split('/').reverse().join('-')), 'yyyy-MM-dd')
+                  : format(new Date(), 'yyyy-MM-dd'),
+                notes: ''
+              });
+              
+              if (parsed.items && parsed.items.length > 0) {
+                setNewItems(parsed.items.map(item => ({
+                  item_code: item.item_code,
+                  item_name: item.item_name,
+                  unit: item.unit,
+                  delivery_date: item.delivery_date,
+                  quantity: item.quantity,
+                  price_per_unit: item.price_per_unit,
+                  price_total: item.price_total
+                })));
+              }
+              
+              setShowCreateDialog(true);
+              toast.success(`Parsed ${parsed.items?.length || 0} items (Total: AED ${parsed.total_amount.toFixed(2)})`);
+            }
             setIsUploading(false);
             return;
           } else if (file.type.includes('text') || file.name.endsWith('.csv')) {
@@ -310,7 +342,12 @@ const PurchaseOrders = () => {
         setIsUploading(false);
       };
       
-      reader.readAsText(file);
+      // Read as ArrayBuffer for PDFs, as text for others
+      if (file.type === 'application/pdf') {
+        reader.readAsArrayBuffer(file);
+      } else {
+        reader.readAsText(file);
+      }
     } catch (err) {
       console.error('Error:', err);
       toast.error("Failed to process document");

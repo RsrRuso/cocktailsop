@@ -30,8 +30,108 @@ serve(async (req) => {
   }
 
   try {
-    const { content } = await req.json();
+    const { content, pdfBase64 } = await req.json();
     
+    // If PDF base64 is provided, use AI to parse it
+    if (pdfBase64) {
+      console.log('Parsing PDF with AI...');
+      
+      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+      if (!LOVABLE_API_KEY) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'AI service not configured' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const systemPrompt = `You are a purchase order parser. Extract structured data from the document.
+Return ONLY a valid JSON object with this exact structure:
+{
+  "doc_no": "document number or null",
+  "doc_date": "date in DD/MM/YYYY format or null",
+  "location": "location/restaurant name or null",
+  "items": [
+    {
+      "item_code": "item code",
+      "item_name": "item name",
+      "unit": "unit like BTL, PCS, KG",
+      "quantity": number,
+      "price_per_unit": number,
+      "price_total": number
+    }
+  ]
+}
+
+Extract ALL items from the table. Each row with an item code, name, quantity, and price should be an item.
+For the document number, look for patterns like "ML-XXXXX" or similar.
+For the date, look for dates in the header area.`;
+
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { 
+              role: 'user', 
+              content: [
+                { type: 'text', text: 'Parse this purchase order/market list document and extract all items:' },
+                { type: 'image_url', image_url: { url: `data:application/pdf;base64,${pdfBase64}` } }
+              ]
+            }
+          ],
+          max_tokens: 4000,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('AI API error:', response.status, errorText);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to parse document with AI' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const aiData = await response.json();
+      const aiContent = aiData.choices?.[0]?.message?.content || '';
+      
+      console.log('AI response:', aiContent);
+      
+      // Extract JSON from the response
+      let parsed: ParsedOrder;
+      try {
+        // Try to find JSON in the response
+        const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('No JSON found in AI response');
+        }
+      } catch (parseError) {
+        console.error('Failed to parse AI response:', parseError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to parse AI response' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const totalAmount = parsed.items?.reduce((sum, item) => sum + (item.price_total || 0), 0) || 0;
+      parsed.total_amount = totalAmount;
+
+      console.log(`AI parsed ${parsed.items?.length || 0} items, total: ${totalAmount}`);
+
+      return new Response(
+        JSON.stringify({ success: true, data: parsed }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Text content parsing (for CSV/pasted content)
     if (!content) {
       return new Response(
         JSON.stringify({ success: false, error: 'No content provided' }),
@@ -39,7 +139,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('Parsing purchase order content...');
+    console.log('Parsing text content...');
 
     // Parse the Market List format
     const lines = content.split('\n').map((l: string) => l.trim()).filter((l: string) => l);
@@ -49,7 +149,7 @@ serve(async (req) => {
     let location: string | null = null;
     const items: ParsedItem[] = [];
 
-    // Extract header info - look for DocNo, DocDt, LocnCode
+    // Extract header info
     for (const line of lines) {
       if (line.includes('ML-') || line.match(/DocNo.*ML-/i)) {
         const match = line.match(/(ML-[A-Z0-9]+)/);
@@ -64,28 +164,21 @@ serve(async (req) => {
       }
     }
 
-    // Parse table rows - look for item data patterns
-    // Format: Item Code | Item Name | Delivery | Unit | Qty | Price | Value
-    const itemPattern = /^([A-Z0-9]+)\s+(.+?)\s+(\d{2}\/\d{2}\/\d{4})\s+([A-Z]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)$/i;
-    
-    // Also try parsing table format from markdown
+    // Parse table rows
     for (const line of lines) {
-      // Skip header rows and separators
       if (line.includes('Item Code') || line.includes('---') || line.includes('| -')) continue;
       
-      // Try to parse markdown table format: | code | name | date | unit | qty | price | value |
       const tableParts = line.split('|').map((p: string) => p.trim()).filter((p: string) => p);
       
       if (tableParts.length >= 6) {
         const code = tableParts[0];
         const name = tableParts[1];
         const delivery = tableParts[2];
-        const unit = tableParts[3] || tableParts[2]; // Sometimes unit comes before delivery
+        const unit = tableParts[3] || tableParts[2];
         const qty = parseFloat(tableParts[tableParts.length - 3]) || parseFloat(tableParts[4]) || 0;
         const price = parseFloat(tableParts[tableParts.length - 2]) || parseFloat(tableParts[5]) || 0;
         const value = parseFloat(tableParts[tableParts.length - 1]) || parseFloat(tableParts[6]) || 0;
 
-        // Validate this looks like an item row (code should be alphanumeric)
         if (code && /^[A-Z0-9]+$/i.test(code) && name && value > 0) {
           items.push({
             item_code: code,
