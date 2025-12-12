@@ -824,31 +824,17 @@ const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | '
           </Select>
         </div>
         
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="p-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Package className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total Qty Received</p>
-                <p className="text-lg font-bold">{receivedTotals.totalQty.toFixed(0)}</p>
-              </div>
+        <Card className="p-3">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-green-500/10 rounded-lg">
+              <DollarSign className="h-4 w-4 text-green-500" />
             </div>
-          </Card>
-          
-          <Card className="p-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <DollarSign className="h-4 w-4 text-green-500" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total Value</p>
-                <p className="text-lg font-bold">{formatCurrency(receivedTotals.totalPrice)}</p>
-              </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Total Value</p>
+              <p className="text-lg font-bold">{formatCurrency(receivedTotals.totalPrice)}</p>
             </div>
-          </Card>
-        </div>
+          </div>
+        </Card>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
