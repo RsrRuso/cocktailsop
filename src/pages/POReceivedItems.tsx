@@ -83,9 +83,10 @@ const POReceivedItems = () => {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | 'prices'>('recent');
+const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | 'prices'>('recent');
   const [showPriceChangeDialog, setShowPriceChangeDialog] = useState(false);
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD'>('USD');
+  const [showRecordContent, setShowRecordContent] = useState<RecentReceived | null>(null);
   const queryClient = useQueryClient();
 
   // Currency symbols only - no conversion
@@ -906,7 +907,11 @@ const POReceivedItems = () => {
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => setShowRecordContent(record)}
+                        >
                           <Eye className="w-4 h-4" />
                         </Button>
                         <Button 
@@ -928,22 +933,56 @@ const POReceivedItems = () => {
             )}
           </TabsContent>
 
-          {/* Summary Tab */}
+          {/* Summary Tab - Overall Aggregated Report */}
           <TabsContent value="summary" className="mt-4 space-y-3">
-            <div className="flex gap-2 mb-3">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold">Overall Received Report</h3>
               <Button 
-                variant={viewMode === 'summary' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('summary')}
+                size="sm" 
+                variant="outline" 
+                onClick={() => {
+                  if (!receivedSummary || receivedSummary.length === 0) {
+                    toast.info("No received data to export");
+                    return;
+                  }
+                  const doc = new jsPDF();
+                  const pageWidth = doc.internal.pageSize.getWidth();
+                  
+                  doc.setFontSize(20);
+                  doc.setFont('helvetica', 'bold');
+                  doc.text('Overall Received Items Report', pageWidth / 2, 20, { align: 'center' });
+                  doc.setFontSize(10);
+                  doc.setFont('helvetica', 'normal');
+                  doc.text(`Generated: ${format(new Date(), 'PPpp')}`, pageWidth / 2, 28, { align: 'center' });
+                  
+                  // Summary totals
+                  const totalQty = receivedSummary.reduce((sum, i) => sum + (i.total_qty || 0), 0);
+                  const totalValue = receivedSummary.reduce((sum, i) => sum + (i.total_price || 0), 0);
+                  
+                  doc.setFillColor(240, 240, 240);
+                  doc.roundedRect(14, 35, pageWidth - 28, 15, 3, 3, 'F');
+                  doc.text(`Total Items: ${receivedSummary.length} | Total Qty: ${totalQty.toFixed(0)} | Total Value: ${currencySymbols[currency]}${totalValue.toFixed(2)}`, 20, 45);
+                  
+                  autoTable(doc, {
+                    startY: 55,
+                    head: [['Item Name', 'Times Received', 'Total Qty', 'Avg Price', 'Total Value']],
+                    body: receivedSummary.map((item: any) => [
+                      item.item_name,
+                      item.count?.toString() || '1',
+                      item.total_qty?.toFixed(0) || '0',
+                      `${currencySymbols[currency]}${(item.avg_price || 0).toFixed(2)}`,
+                      `${currencySymbols[currency]}${(item.total_price || 0).toFixed(2)}`
+                    ]),
+                    styles: { fontSize: 9 },
+                    headStyles: { fillColor: [59, 130, 246] },
+                  });
+                  
+                  doc.save(`overall-received-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+                  toast.success("Report downloaded");
+                }}
               >
-                Grouped
-              </Button>
-              <Button 
-                variant={viewMode === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('all')}
-              >
-                All Items
+                <Download className="h-4 w-4 mr-2" />
+                Download Report
               </Button>
             </div>
 
@@ -957,60 +996,65 @@ const POReceivedItems = () => {
               />
             </div>
 
+            {/* Aggregated Summary Table */}
             <Card>
               {isLoadingReceived ? (
                 <div className="p-8 text-center text-muted-foreground">Loading...</div>
-              ) : viewMode === 'summary' ? (
+              ) : receivedSummary && receivedSummary.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Item Name</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Avg $</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Times</TableHead>
+                      <TableHead className="text-right">Total Qty</TableHead>
+                      <TableHead className="text-right">Avg Price</TableHead>
+                      <TableHead className="text-right">Total Value</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredItems?.map((item: any, index: number) => (
+                    {receivedSummary
+                      .filter((item: any) => item.item_name.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map((item: any, index: number) => (
                       <TableRow key={index}>
                         <TableCell className="font-medium text-sm">
                           {item.item_name}
                         </TableCell>
-                        <TableCell className="text-right">{item.total_qty?.toFixed(0)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.avg_price || 0)}</TableCell>
-                        <TableCell className="text-right font-semibold">{formatCurrency(item.total_price || 0)}</TableCell>
-                      </TableRow>
-                    ))}
-                    {(!filteredItems || filteredItems.length === 0) && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                          No received items yet
+                        <TableCell className="text-right text-muted-foreground">
+                          {item.count || 1}x
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-primary">
+                          {item.total_qty?.toFixed(0)}
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {formatCurrency(item.avg_price || 0)}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-green-600">
+                          {formatCurrency(item.total_price || 0)}
                         </TableCell>
                       </TableRow>
-                    )}
+                    ))}
+                    {/* Totals Row */}
+                    <TableRow className="bg-muted/50 font-bold">
+                      <TableCell>TOTAL</TableCell>
+                      <TableCell className="text-right">
+                        {receivedSummary.reduce((sum: number, i: any) => sum + (i.count || 1), 0)}x
+                      </TableCell>
+                      <TableCell className="text-right text-primary">
+                        {receivedSummary.reduce((sum: number, i: any) => sum + (i.total_qty || 0), 0).toFixed(0)}
+                      </TableCell>
+                      <TableCell className="text-right">-</TableCell>
+                      <TableCell className="text-right text-green-600">
+                        {formatCurrency(receivedSummary.reduce((sum: number, i: any) => sum + (i.total_price || 0), 0))}
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredItems?.map((item: any) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium text-sm">{item.item_name}</TableCell>
-                        <TableCell className="text-xs">{format(new Date(item.received_date), 'PP')}</TableCell>
-                        <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right font-semibold">{formatCurrency(item.total_price || 0)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="p-8 text-center text-muted-foreground">
+                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No received items yet</p>
+                  <p className="text-xs mt-1">Upload receiving documents to see aggregated totals</p>
+                </div>
               )}
             </Card>
           </TabsContent>
@@ -1259,6 +1303,76 @@ const POReceivedItems = () => {
                   Done
                 </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Record Content Dialog - Shows items from the file */}
+      <Dialog open={!!showRecordContent} onOpenChange={() => setShowRecordContent(null)}>
+        <DialogContent className="w-[95vw] max-w-lg max-h-[80vh] overflow-y-auto p-4">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Received Items
+            </DialogTitle>
+          </DialogHeader>
+
+          {showRecordContent && (
+            <div className="space-y-3">
+              {/* Record Info */}
+              <Card className="p-3 bg-muted/30">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Supplier</p>
+                    <p className="font-medium">{showRecordContent.supplier_name || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Date</p>
+                    <p className="font-medium">{format(new Date(showRecordContent.received_date), 'MMM d, yyyy')}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Document #</p>
+                    <p className="font-medium">{showRecordContent.document_number || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Value</p>
+                    <p className="font-medium text-green-600">{formatCurrency(Number(showRecordContent.total_value || 0))}</p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Items from variance_data */}
+              {showRecordContent.variance_data?.items && showRecordContent.variance_data.items.length > 0 ? (
+                <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                  <p className="text-sm font-semibold text-muted-foreground">Items ({showRecordContent.variance_data.items.length})</p>
+                  {showRecordContent.variance_data.items.map((item: any, idx: number) => (
+                    <Card key={idx} className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{item.item_name}</p>
+                          {item.item_code && (
+                            <p className="text-xs text-muted-foreground">{item.item_code}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-primary">{item.received_qty || item.quantity || 0}</p>
+                          <p className="text-xs text-muted-foreground">qty</p>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No item details available</p>
+                </div>
+              )}
+
+              <Button className="w-full" onClick={() => setShowRecordContent(null)}>
+                Close
+              </Button>
             </div>
           )}
         </DialogContent>
