@@ -737,7 +737,7 @@ const POReceivedItems = () => {
             </Button>
             <div>
               <h1 className="text-xl font-bold">Received Items</h1>
-              <p className="text-sm text-muted-foreground">Track receiving & forecasting</p>
+              <p className="text-sm text-muted-foreground">Compare received goods with purchase orders</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -762,6 +762,34 @@ const POReceivedItems = () => {
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Field Guidelines */}
+        <Card className="p-3 bg-muted/30 border-dashed">
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              Receiving Guidelines
+            </h3>
+            <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground">
+              <div className="flex items-start gap-2">
+                <Badge variant="outline" className="text-[10px] shrink-0">ML Code</Badge>
+                <span>Unique item identifier used to match received items with purchase orders</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Badge variant="outline" className="text-[10px] shrink-0">Qty</Badge>
+                <span>Quantity received - compared against ordered quantity to detect variances</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Badge variant="outline" className="text-[10px] shrink-0">Price</Badge>
+                <span>Unit price at receiving - tracked for price change analysis</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Badge variant="outline" className="text-[10px] shrink-0">Status</Badge>
+                <span>Match (exact), Short (less), Over (more), Missing (not received), Extra (not ordered)</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="p-3">
@@ -770,7 +798,7 @@ const POReceivedItems = () => {
                 <Package className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Total Qty</p>
+                <p className="text-xs text-muted-foreground">Total Qty Received</p>
                 <p className="text-lg font-bold">{receivedTotals.totalQty.toFixed(0)}</p>
               </div>
             </div>
@@ -812,44 +840,49 @@ const POReceivedItems = () => {
 
           {/* Recent Received Tab */}
           <TabsContent value="recent" className="mt-4 space-y-3">
-            <div className="flex justify-between items-center">
-              <h3 className="font-semibold">Recent Received</h3>
-            </div>
+            <h2 className="text-sm font-semibold text-foreground">Recent Received</h2>
             
             {isLoadingRecent ? (
-              <Card className="p-8 text-center text-muted-foreground">Loading...</Card>
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
             ) : recentReceived && recentReceived.length > 0 ? (
               <div className="space-y-2">
                 {recentReceived.map((record) => (
-                  <Card key={record.id} className="p-3">
+                  <Card key={record.id} className="p-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{record.supplier_name || 'Unknown Supplier'}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
-                            {format(new Date(record.received_date), 'PP')}
-                            <span>•</span>
-                            <span>{record.total_items} items</span>
-                          </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-primary" />
+                          <span className="font-medium text-foreground">
+                            {record.supplier_name || record.document_number || 'Unnamed Delivery'}
+                          </span>
+                          <Badge 
+                            variant={record.status === 'received' ? 'default' : 'secondary'}
+                            className={record.status === 'received' ? 'bg-green-500/20 text-green-500 border-green-500/30' : ''}
+                          >
+                            {record.status}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {format(new Date(record.received_date), 'MMM d, yyyy')}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <DollarSign className="w-3 h-3" />
+                            ${Number(record.total_value || 0).toFixed(2)}
+                          </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-right">
-                          <p className="font-bold text-green-500">${record.total_value?.toFixed(2) || '0.00'}</p>
-                          <p className="text-xs text-muted-foreground">{record.total_quantity?.toFixed(0)} units</p>
-                        </div>
-                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-500">
-                          {record.status}
-                        </Badge>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon">
+                          <Eye className="w-4 h-4" />
+                        </Button>
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 text-destructive"
                           onClick={() => deleteReceivedRecord(record.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>
                     </div>
@@ -857,11 +890,9 @@ const POReceivedItems = () => {
                 ))}
               </div>
             ) : (
-              <Card className="p-8 text-center text-muted-foreground">
-                <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No received records yet</p>
-                <p className="text-xs mt-1">Upload a receiving document to get started</p>
-              </Card>
+              <div className="text-center py-8 text-muted-foreground">
+                No received records yet. Upload a receiving document to get started!
+              </div>
             )}
           </TabsContent>
 
