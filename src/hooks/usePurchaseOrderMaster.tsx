@@ -191,6 +191,82 @@ export const usePurchaseOrderMaster = () => {
     }
   };
 
+  // Sync all items from existing purchase orders
+  const syncFromExistingOrders = async () => {
+    try {
+      // Get all purchase orders for user
+      const { data: orders, error: ordersError } = await supabase
+        .from('purchase_orders')
+        .select('id')
+        .eq('user_id', user?.id);
+      
+      if (ordersError) throw ordersError;
+      if (!orders || orders.length === 0) {
+        toast.info("No purchase orders found to sync");
+        return;
+      }
+
+      // Get all items from all orders
+      const { data: items, error: itemsError } = await supabase
+        .from('purchase_order_items')
+        .select('*')
+        .in('purchase_order_id', orders.map(o => o.id));
+      
+      if (itemsError) throw itemsError;
+      if (!items || items.length === 0) {
+        toast.info("No items found in purchase orders");
+        return;
+      }
+
+      // Add each unique item to master list
+      const uniqueItems = new Map<string, any>();
+      for (const item of items) {
+        const key = item.item_name.trim().toLowerCase();
+        if (!uniqueItems.has(key)) {
+          uniqueItems.set(key, item);
+        } else {
+          // Update with latest price if newer
+          const existing = uniqueItems.get(key);
+          if (item.price_per_unit > existing.price_per_unit) {
+            uniqueItems.set(key, item);
+          }
+        }
+      }
+
+      let addedCount = 0;
+      for (const item of uniqueItems.values()) {
+        try {
+          // Check if already exists
+          const { data: existing } = await supabase
+            .from('purchase_order_master_items')
+            .select('id')
+            .eq('user_id', user?.id)
+            .ilike('item_name', item.item_name.trim())
+            .maybeSingle();
+          
+          if (!existing) {
+            await supabase
+              .from('purchase_order_master_items')
+              .insert({
+                user_id: user?.id,
+                item_name: item.item_name.trim(),
+                unit: item.unit,
+                last_price: item.price_per_unit
+              });
+            addedCount++;
+          }
+        } catch (e) {
+          console.error('Failed to add item:', item.item_name, e);
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['po-master-items'] });
+      toast.success(`Synced ${addedCount} new items from ${orders.length} orders`);
+    } catch (error: any) {
+      toast.error("Failed to sync: " + error.message);
+    }
+  };
+
   // Calculate totals
   const receivedTotals = receivedItems?.reduce((acc, item) => ({
     totalQty: acc.totalQty + (item.quantity || 0),
@@ -225,6 +301,7 @@ export const usePurchaseOrderMaster = () => {
     addMasterItem: addMasterItem.mutate,
     addReceivedItem: addReceivedItem.mutate,
     addItemsFromPurchaseOrder,
+    syncFromExistingOrders,
     receivedTotals,
     receivedSummary: receivedSummary ? Object.values(receivedSummary) : []
   };

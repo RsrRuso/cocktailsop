@@ -6,15 +6,16 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, Search, List } from "lucide-react";
+import { ArrowLeft, Package, Search, List, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 
 const POMasterItems = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { masterItems, isLoadingMaster } = usePurchaseOrderMaster();
+  const { masterItems, isLoadingMaster, syncFromExistingOrders } = usePurchaseOrderMaster();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
 
   if (!user) {
     navigate('/auth');
@@ -25,6 +26,15 @@ const POMasterItems = () => {
     item.item_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.category?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await syncFromExistingOrders();
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -40,6 +50,15 @@ const POMasterItems = () => {
               <p className="text-sm text-muted-foreground">Unique ingredients from purchase orders</p>
             </div>
           </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSync}
+            disabled={isSyncing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+            Sync
+          </Button>
         </div>
       </div>
 
