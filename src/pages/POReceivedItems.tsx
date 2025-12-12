@@ -714,13 +714,31 @@ const POReceivedItems = () => {
 
   const deleteReceivedRecord = async (id: string) => {
     try {
+      // First get the record to find associated items
+      const { data: record } = await (supabase as any)
+        .from('po_received_records')
+        .select('variance_data, document_number, received_date')
+        .eq('id', id)
+        .single();
+      
+      // Delete associated received_items if they exist
+      if (record?.received_date) {
+        await (supabase as any)
+          .from('received_items')
+          .delete()
+          .eq('user_id', user?.id)
+          .eq('received_date', record.received_date);
+      }
+      
+      // Delete the received record
       await (supabase as any)
         .from('po_received_records')
         .delete()
         .eq('id', id);
       
       queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
-      toast.success("Record deleted");
+      queryClient.invalidateQueries({ queryKey: ['received-items'] });
+      toast.success("Record and items deleted");
     } catch (error: any) {
       toast.error("Failed to delete: " + error.message);
     }
