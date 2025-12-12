@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Package, DollarSign, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown } from "lucide-react";
+import { ArrowLeft, Package, DollarSign, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown, Settings2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,7 @@ import autoTable from "jspdf-autotable";
 import { format, subDays, startOfWeek, startOfMonth, endOfWeek, endOfMonth } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ProcurementWorkspaceSelector } from "@/components/procurement/ProcurementWorkspaceSelector";
+import { FormatTemplateDialog } from "@/components/procurement/FormatTemplateDialog";
 
 interface VarianceItem {
   item_code?: string;
@@ -93,6 +94,7 @@ const POReceivedItems = () => {
     return (saved as 'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD') || 'USD';
   });
   const [showRecordContent, setShowRecordContent] = useState<RecentReceived | null>(null);
+  const [showFormatTemplateDialog, setShowFormatTemplateDialog] = useState(false);
 
   // Workspace state - declare before hook usage
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(() => {
@@ -799,6 +801,14 @@ const POReceivedItems = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowFormatTemplateDialog(true)}
+            >
+              <Settings2 className="h-4 w-4 mr-2" />
+              Formats
+            </Button>
             <input
               ref={fileInputRef}
               type="file"
@@ -1421,6 +1431,14 @@ const POReceivedItems = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Format Template Dialog */}
+      <FormatTemplateDialog
+        open={showFormatTemplateDialog}
+        onOpenChange={setShowFormatTemplateDialog}
+        workspaceId={selectedWorkspaceId || undefined}
+        formatType="receiving"
+      />
     </div>
   );
 };
