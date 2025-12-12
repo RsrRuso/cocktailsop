@@ -7,13 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Package, DollarSign, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Package, DollarSign, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown } from "lucide-react";
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { format } from "date-fns";
+import { format, subDays, startOfWeek, startOfMonth, endOfWeek, endOfMonth } from "date-fns";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface VarianceItem {
   item_code?: string;
@@ -45,6 +47,29 @@ interface VarianceReport {
   };
 }
 
+interface RecentReceived {
+  id: string;
+  user_id: string;
+  supplier_name: string | null;
+  document_number: string | null;
+  received_date: string;
+  total_items: number;
+  total_quantity: number;
+  total_value: number;
+  status: string;
+  variance_data: any;
+  created_at: string;
+}
+
+interface PriceChange {
+  item_name: string;
+  previous_price: number;
+  current_price: number;
+  change_amount: number;
+  change_pct: number;
+  date: string;
+}
+
 const POReceivedItems = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -56,6 +81,44 @@ const POReceivedItems = () => {
   const [showVarianceDialog, setShowVarianceDialog] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | 'prices'>('recent');
+  const [showPriceChangeDialog, setShowPriceChangeDialog] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Fetch recent received records
+  const { data: recentReceived, isLoading: isLoadingRecent } = useQuery({
+    queryKey: ['po-recent-received', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('po_received_records')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('received_date', { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      return data as RecentReceived[];
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch price history for change tracking
+  const { data: priceHistory } = useQuery({
+    queryKey: ['po-price-history', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('po_price_history')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('changed_at', { ascending: false })
+        .limit(100);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id
+  });
 
   if (!user) {
     navigate('/auth');
