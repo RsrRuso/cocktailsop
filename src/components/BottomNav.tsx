@@ -28,7 +28,14 @@ const BottomNav = () => {
       <div>
         <div className="flex items-center justify-around px-2 py-2 max-w-2xl mx-auto">
           <button
-            onClick={() => navigate("/home")}
+            onClick={() => {
+              if (isActive("/home")) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.location.reload();
+              } else {
+                navigate("/home");
+              }
+            }}
             className={`flex items-center justify-center w-12 h-12 transition-all ${
               isActive("/home") 
                 ? "text-foreground scale-110" 
