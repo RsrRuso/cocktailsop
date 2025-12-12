@@ -528,64 +528,84 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       const fileName = `specverse-${selectedTool.id}-promo.png`;
       const storyFile = new File([storyBlob], fileName, { type: 'image/png' });
 
-      // Copy URL to clipboard first
+      // Copy URL to clipboard
       try {
         await navigator.clipboard.writeText(toolUrl);
       } catch {
-        // Clipboard may fail, continue anyway
+        // Continue anyway
       }
 
-      // If not forcing download, try native share
-      if (!download) {
-        // Check if Web Share API with files is supported
-        if (navigator.share && navigator.canShare?.({ files: [storyFile] })) {
-          try {
-            await navigator.share({
-              files: [storyFile],
-              title: `${selectedTool.name} - SpecVerse`,
-            });
-            toast.success('Shared! Paste link as sticker in Instagram', {
-              duration: 5000,
-              description: toolUrl
-            });
-            onOpenChange(false);
+      if (download) {
+        // Download the image
+        const url = URL.createObjectURL(storyBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success('Image downloaded!', { duration: 3000 });
+        setIsGenerating(false);
+        return;
+      }
+
+      // Try Web Share API with files first (best mobile experience)
+      if (navigator.share && navigator.canShare?.({ files: [storyFile] })) {
+        try {
+          await navigator.share({
+            files: [storyFile],
+            title: `${selectedTool.name} - SpecVerse`,
+          });
+          toast.success('Shared! Add link sticker in Instagram', {
+            duration: 5000,
+            description: toolUrl
+          });
+          onOpenChange(false);
+          return;
+        } catch (err: any) {
+          if (err?.name === 'AbortError') {
+            setIsGenerating(false);
             return;
-          } catch (err: any) {
-            if (err?.name === 'AbortError') {
-              setIsGenerating(false);
-              return;
-            }
-            // Continue to fallback
           }
         }
+      }
+
+      // Try copying image to clipboard for paste in Instagram
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'image/png': storyBlob
+          })
+        ]);
         
-        // Fallback: Try share without files (just URL)
-        if (navigator.share) {
-          try {
-            await navigator.share({
-              title: `${selectedTool.name} - SpecVerse`,
-              text: selectedTool.tagline,
-              url: toolUrl,
-            });
-            toast.success('Link shared!', { duration: 3000 });
-            onOpenChange(false);
-            return;
-          } catch (err: any) {
-            if (err?.name === 'AbortError') {
-              setIsGenerating(false);
-              return;
-            }
-          }
-        }
+        // Open Instagram Stories directly
+        const instagramUrl = 'instagram://story-camera';
+        window.location.href = instagramUrl;
         
-        // Final fallback: Show instructions for manual share
-        toast.info('Open Instagram and paste the copied link', {
+        toast.success('Image copied! Paste in Instagram Stories', {
           duration: 5000,
-          description: 'Image will download - upload to your story'
+          description: 'Long-press to paste the image'
         });
+        
+        // Fallback: if Instagram doesn't open, try web
+        setTimeout(() => {
+          window.open('https://instagram.com/stories/create', '_blank');
+        }, 2000);
+        
+        onOpenChange(false);
+        return;
+      } catch {
+        // Clipboard image write not supported
       }
 
-      // Download the image
+      // Final fallback: Open Instagram web
+      window.open('https://instagram.com', '_blank');
+      toast.info('Open Instagram Stories and upload the image', {
+        duration: 5000,
+      });
+      
+      // Also download as backup
       const url = URL.createObjectURL(storyBlob);
       const a = document.createElement('a');
       a.href = url;
@@ -595,9 +615,6 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      if (download) {
-        toast.success('Image downloaded!', { duration: 3000 });
-      }
     } catch (err) {
       console.error('Share failed:', err);
       toast.error('Failed to generate story');
