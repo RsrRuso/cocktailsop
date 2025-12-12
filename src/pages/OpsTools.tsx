@@ -289,6 +289,15 @@ const OpsTools = () => {
     ],
     inventory: [
       {
+        name: "Purchase Orders",
+        description: "Scan & track purchase order documents",
+        details: "Upload or scan invoices to auto-parse item data. Track spending totals, individual item costs, and maintain complete purchase history.",
+        icon: FileText,
+        gradient: "from-emerald-600 to-teal-500",
+        premium: false,
+        path: "/purchase-orders",
+      },
+      {
         name: "Store Management",
         description: "Comprehensive store operations & transfers",
         details: "Complete store management system with live transactions, transfers, spot checks, variance reports, receivings, colleague management, and real-time notifications.",

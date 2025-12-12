@@ -8423,6 +8423,92 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_code: string | null
+          item_name: string
+          price_per_unit: number
+          price_total: number
+          purchase_order_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_code?: string | null
+          item_name: string
+          price_per_unit?: number
+          price_total?: number
+          purchase_order_id: string
+          quantity?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_code?: string | null
+          item_name?: string
+          price_per_unit?: number
+          price_total?: number
+          purchase_order_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          created_at: string
+          document_url: string | null
+          id: string
+          notes: string | null
+          order_date: string | null
+          order_number: string | null
+          parsed_data: Json | null
+          status: string | null
+          supplier_name: string | null
+          total_amount: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_url?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string | null
+          order_number?: string | null
+          parsed_data?: Json | null
+          status?: string | null
+          supplier_name?: string | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_url?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string | null
+          order_number?: string | null
+          parsed_data?: Json | null
+          status?: string | null
+          supplier_name?: string | null
+          total_amount?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       qr_codes: {
         Row: {
           created_at: string | null
