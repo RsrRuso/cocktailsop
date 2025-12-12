@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { usePurchaseOrderMaster } from "@/hooks/usePurchaseOrderMaster";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
-  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste
+  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste, List, TrendingUp
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -63,6 +64,7 @@ const PurchaseOrders = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { addItemsFromPurchaseOrder } = usePurchaseOrderMaster();
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
@@ -157,11 +159,21 @@ const PurchaseOrders = () => {
         if (itemsError) throw itemsError;
       }
       
-      return orderData;
+      return { orderData, items: itemsToInsert };
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       toast.success("Purchase order created");
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      
+      // Auto-add items to master list
+      if (result.items && result.items.length > 0) {
+        try {
+          await addItemsFromPurchaseOrder(result.orderData.id, result.items);
+        } catch (e) {
+          console.error('Failed to add to master list:', e);
+        }
+      }
+      
       setShowCreateDialog(false);
       resetForm();
     },
@@ -460,6 +472,26 @@ const PurchaseOrders = () => {
               </div>
             </div>
           </Card>
+        </div>
+
+        {/* Quick Links */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button 
+            variant="outline" 
+            className="h-auto py-3 flex flex-col items-center gap-1"
+            onClick={() => navigate('/po-master-items')}
+          >
+            <List className="w-5 h-5 text-primary" />
+            <span className="text-sm">Master Items</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            className="h-auto py-3 flex flex-col items-center gap-1"
+            onClick={() => navigate('/po-received-items')}
+          >
+            <TrendingUp className="w-5 h-5 text-green-500" />
+            <span className="text-sm">Received Items</span>
+          </Button>
         </div>
 
         {/* Search & Actions */}
