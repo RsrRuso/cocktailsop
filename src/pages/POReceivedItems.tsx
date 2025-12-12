@@ -88,13 +88,11 @@ const POReceivedItems = () => {
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD'>('USD');
   const queryClient = useQueryClient();
 
-  // Currency conversion rates (approximate)
-  const currencyRates: Record<string, number> = { USD: 1, EUR: 0.92, GBP: 0.79, AED: 3.67, AUD: 1.53 };
+  // Currency symbols only - no conversion
   const currencySymbols: Record<string, string> = { USD: '$', EUR: '€', GBP: '£', AED: 'د.إ', AUD: 'A$' };
   
   const formatCurrency = (amount: number) => {
-    const converted = amount * currencyRates[currency];
-    return `${currencySymbols[currency]}${converted.toFixed(2)}`;
+    return `${currencySymbols[currency]}${amount.toFixed(2)}`;
   };
 
   // Fetch recent received records
