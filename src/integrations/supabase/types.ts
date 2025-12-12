@@ -8588,6 +8588,7 @@ export type Database = {
           purchase_order_id: string | null
           quantity: number
           received_date: string
+          record_id: string | null
           total_price: number | null
           unit: string | null
           unit_price: number | null
@@ -8602,6 +8603,7 @@ export type Database = {
           purchase_order_id?: string | null
           quantity?: number
           received_date?: string
+          record_id?: string | null
           total_price?: number | null
           unit?: string | null
           unit_price?: number | null
@@ -8616,6 +8618,7 @@ export type Database = {
           purchase_order_id?: string | null
           quantity?: number
           received_date?: string
+          record_id?: string | null
           total_price?: number | null
           unit?: string | null
           unit_price?: number | null
@@ -8634,6 +8637,13 @@ export type Database = {
             columns: ["purchase_order_id"]
             isOneToOne: false
             referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_received_items_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "po_received_records"
             referencedColumns: ["id"]
           },
         ]
