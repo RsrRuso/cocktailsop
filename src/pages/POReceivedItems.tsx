@@ -703,10 +703,10 @@ const POReceivedItems = () => {
         .eq('id', id)
         .single();
       
-      // Delete associated received_items if they exist
+      // Delete associated items from purchase_order_received_items
       if (record?.received_date) {
         await (supabase as any)
-          .from('received_items')
+          .from('purchase_order_received_items')
           .delete()
           .eq('user_id', user?.id)
           .eq('received_date', record.received_date);
