@@ -52,13 +52,9 @@ const OptimizedAvatar = memo(({
   return (
     <StatusRing 
       hasStatus={!!status}
-      statusText={status?.status_text}
-      emoji={status?.emoji}
-      musicTrackName={status?.music_track_name}
-      musicAlbumArt={status?.music_album_art}
+      status={status}
       showAddButton={showAddButton}
       onAddClick={onAddStatusClick}
-      userId={userId || undefined}
       username={alt}
       avatarUrl={src || undefined}
     >
