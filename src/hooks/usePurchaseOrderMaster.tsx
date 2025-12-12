@@ -118,7 +118,7 @@ export const usePurchaseOrderMaster = () => {
     }
   });
 
-  // Add received item - upsert by item_name + received_date
+  // Add received item - upsert by item_name + document_number (or date if no doc)
   const addReceivedItem = useMutation({
     mutationFn: async (item: {
       purchase_order_id?: string;
@@ -129,18 +129,26 @@ export const usePurchaseOrderMaster = () => {
       unit_price?: number;
       total_price?: number;
       received_date?: string;
+      document_number?: string;
     }) => {
       const receivedDate = item.received_date || new Date().toISOString().split('T')[0];
       const normalizedName = item.item_name.trim().toLowerCase();
       
-      // Check if item already exists for this user, name, and date
-      const { data: existing } = await supabase
+      // Check if item already exists for this user, name, and document
+      let query = supabase
         .from('purchase_order_received_items')
         .select('id, quantity, total_price')
         .eq('user_id', user?.id)
-        .eq('received_date', receivedDate)
-        .ilike('item_name', normalizedName)
-        .maybeSingle();
+        .ilike('item_name', normalizedName);
+      
+      // Match by document_number if available, otherwise by date
+      if (item.document_number) {
+        query = query.eq('document_number', item.document_number);
+      } else {
+        query = query.eq('received_date', receivedDate);
+      }
+      
+      const { data: existing } = await query.maybeSingle();
       
       if (existing) {
         // Update existing - add to quantity and total
@@ -152,7 +160,7 @@ export const usePurchaseOrderMaster = () => {
           .update({
             quantity: newQty,
             total_price: newTotal,
-            unit_price: item.unit_price // Keep latest unit price
+            unit_price: item.unit_price
           })
           .eq('id', existing.id)
           .select()

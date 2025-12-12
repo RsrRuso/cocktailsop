@@ -8581,6 +8581,7 @@ export type Database = {
       purchase_order_received_items: {
         Row: {
           created_at: string
+          document_number: string | null
           id: string
           item_name: string
           master_item_id: string | null
@@ -8594,6 +8595,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          document_number?: string | null
           id?: string
           item_name: string
           master_item_id?: string | null
@@ -8607,6 +8609,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          document_number?: string | null
           id?: string
           item_name?: string
           master_item_id?: string | null
