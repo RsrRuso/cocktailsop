@@ -7,8 +7,8 @@ import { initPerformanceBoost } from "./lib/performanceBoost";
 // Initialize performance optimizations
 initPerformanceBoost();
 
-// Set initial theme from localStorage or default to dark
-const savedTheme = localStorage.getItem('theme') || 'dark';
+// Set initial theme from localStorage or default to black
+const savedTheme = localStorage.getItem('theme') || 'black';
 document.documentElement.classList.add(savedTheme);
 
 // Mount the app
