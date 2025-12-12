@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Package, DollarSign, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown } from "lucide-react";
+import { ArrowLeft, Package, DollarSign, Search, TrendingUp, Upload, FileText, Download, CheckCircle, XCircle, AlertTriangle, Calendar, Eye, Trash2, BarChart3, History, TrendingDown, ChevronDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -84,7 +85,17 @@ const POReceivedItems = () => {
 
   const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | 'prices'>('recent');
   const [showPriceChangeDialog, setShowPriceChangeDialog] = useState(false);
+  const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD'>('USD');
   const queryClient = useQueryClient();
+
+  // Currency conversion rates (approximate)
+  const currencyRates: Record<string, number> = { USD: 1, EUR: 0.92, GBP: 0.79, AED: 3.67, AUD: 1.53 };
+  const currencySymbols: Record<string, string> = { USD: '$', EUR: '€', GBP: '£', AED: 'د.إ', AUD: 'A$' };
+  
+  const formatCurrency = (amount: number) => {
+    const converted = amount * currencyRates[currency];
+    return `${currencySymbols[currency]}${converted.toFixed(2)}`;
+  };
 
   // Fetch recent received records
   const { data: recentReceived, isLoading: isLoadingRecent } = useQuery({
@@ -798,7 +809,22 @@ const POReceivedItems = () => {
           </div>
         </Card>
 
-        {/* Summary Cards */}
+        {/* Currency Selector + Summary Cards */}
+        <div className="flex items-center justify-end mb-2">
+          <Select value={currency} onValueChange={(v) => setCurrency(v as any)}>
+            <SelectTrigger className="w-24 h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="USD">$ USD</SelectItem>
+              <SelectItem value="EUR">€ EUR</SelectItem>
+              <SelectItem value="GBP">£ GBP</SelectItem>
+              <SelectItem value="AED">د.إ AED</SelectItem>
+              <SelectItem value="AUD">A$ AUD</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
         <div className="grid grid-cols-2 gap-3">
           <Card className="p-3">
             <div className="flex items-center gap-2">
@@ -819,7 +845,7 @@ const POReceivedItems = () => {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Total Value</p>
-                <p className="text-lg font-bold">${receivedTotals.totalPrice.toFixed(2)}</p>
+                <p className="text-lg font-bold">{formatCurrency(receivedTotals.totalPrice)}</p>
               </div>
             </div>
           </Card>
@@ -877,7 +903,7 @@ const POReceivedItems = () => {
                           </span>
                           <span className="flex items-center gap-1">
                             <DollarSign className="w-3 h-3" />
-                            ${Number(record.total_value || 0).toFixed(2)}
+                            {formatCurrency(Number(record.total_value || 0))}
                           </span>
                         </div>
                       </div>
@@ -953,8 +979,8 @@ const POReceivedItems = () => {
                           {item.item_name}
                         </TableCell>
                         <TableCell className="text-right">{item.total_qty?.toFixed(0)}</TableCell>
-                        <TableCell className="text-right">${item.avg_price?.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-semibold">${item.total_price?.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(item.avg_price || 0)}</TableCell>
+                        <TableCell className="text-right font-semibold">{formatCurrency(item.total_price || 0)}</TableCell>
                       </TableRow>
                     ))}
                     {(!filteredItems || filteredItems.length === 0) && (
@@ -982,7 +1008,7 @@ const POReceivedItems = () => {
                         <TableCell className="font-medium text-sm">{item.item_name}</TableCell>
                         <TableCell className="text-xs">{format(new Date(item.received_date), 'PP')}</TableCell>
                         <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right font-semibold">${item.total_price?.toFixed(2) || '0.00'}</TableCell>
+                        <TableCell className="text-right font-semibold">{formatCurrency(item.total_price || 0)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1013,7 +1039,7 @@ const POReceivedItems = () => {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Value:</span>
-                        <span className="font-bold">${forecast.weeklyValue.toFixed(2)}</span>
+                        <span className="font-bold">{formatCurrency(forecast.weeklyValue)}</span>
                       </div>
                       <div className="flex justify-between text-sm border-t pt-1 mt-1">
                         <span className="text-muted-foreground">Par Stock:</span>
@@ -1031,7 +1057,7 @@ const POReceivedItems = () => {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Value:</span>
-                        <span className="font-bold">${forecast.monthlyValue.toFixed(2)}</span>
+                        <span className="font-bold">{formatCurrency(forecast.monthlyValue)}</span>
                       </div>
                       <div className="flex justify-between text-sm border-t pt-1 mt-1">
                         <span className="text-muted-foreground">Par Stock:</span>
@@ -1083,15 +1109,15 @@ const POReceivedItems = () => {
                       <TableRow key={idx}>
                         <TableCell className="font-medium text-sm">{item.item_name}</TableCell>
                         <TableCell className="text-right text-muted-foreground">
-                          ${(item.previous_price || 0).toFixed(2)}
+                          {formatCurrency(item.previous_price || 0)}
                         </TableCell>
                         <TableCell className="text-right font-semibold">
-                          ${(item.current_price || 0).toFixed(2)}
+                          {formatCurrency(item.current_price || 0)}
                         </TableCell>
                         <TableCell className={`text-right font-semibold ${
                           (item.change_amount || 0) > 0 ? 'text-red-500' : 'text-green-500'
                         }`}>
-                          {(item.change_amount || 0) > 0 ? '+' : ''}${(item.change_amount || 0).toFixed(2)}
+                          {(item.change_amount || 0) > 0 ? '+' : ''}{formatCurrency(item.change_amount || 0)}
                           <span className="text-xs ml-1">
                             ({(item.change_pct || 0) > 0 ? '+' : ''}{(item.change_pct || 0).toFixed(1)}%)
                           </span>
@@ -1112,128 +1138,126 @@ const POReceivedItems = () => {
         </Tabs>
       </div>
 
-      {/* Variance Analysis Dialog */}
+      {/* Variance Analysis Dialog - Mobile Friendly */}
       <Dialog open={showVarianceDialog} onOpenChange={setShowVarianceDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Receiving Variance Analysis
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+              Variance Analysis
             </DialogTitle>
           </DialogHeader>
 
           {varianceReport && (
-            <div className="space-y-4">
-              {/* Order Info */}
-              <Card className="p-4">
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Supplier</p>
-                    <p className="font-medium">{varianceReport.supplier || 'Unknown'}</p>
+            <div className="space-y-3 sm:space-y-4">
+              {/* Order Info - Mobile Stacked */}
+              <Card className="p-3 sm:p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-sm">
+                  <div className="flex justify-between sm:block">
+                    <p className="text-muted-foreground text-xs">Supplier</p>
+                    <p className="font-medium text-sm">{varianceReport.supplier || 'Unknown'}</p>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Order #</p>
-                    <p className="font-medium">{varianceReport.order_number || 'Not matched'}</p>
+                  <div className="flex justify-between sm:block">
+                    <p className="text-muted-foreground text-xs">Order #</p>
+                    <p className="font-medium text-sm">{varianceReport.order_number || 'Not matched'}</p>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Order Date</p>
-                    <p className="font-medium">{varianceReport.order_date || '-'}</p>
+                  <div className="flex justify-between sm:block">
+                    <p className="text-muted-foreground text-xs">Order Date</p>
+                    <p className="font-medium text-sm">{varianceReport.order_date || '-'}</p>
                   </div>
                 </div>
               </Card>
 
-              {/* Summary Stats */}
-              <div className="grid grid-cols-5 gap-2">
-                <Card className="p-3 text-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mx-auto mb-1" />
-                  <p className="text-2xl font-bold text-green-500">{varianceReport.summary.matched}</p>
-                  <p className="text-xs text-muted-foreground">Match</p>
+              {/* Summary Stats - Scrollable on Mobile */}
+              <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-5 sm:overflow-visible">
+                <Card className="p-2 sm:p-3 text-center flex-shrink-0 w-16 sm:w-auto">
+                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mx-auto mb-1" />
+                  <p className="text-lg sm:text-2xl font-bold text-green-500">{varianceReport.summary.matched}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Match</p>
                 </Card>
-                <Card className="p-3 text-center">
-                  <AlertTriangle className="h-5 w-5 text-red-500 mx-auto mb-1" />
-                  <p className="text-2xl font-bold text-red-500">{varianceReport.summary.short}</p>
-                  <p className="text-xs text-muted-foreground">Short</p>
+                <Card className="p-2 sm:p-3 text-center flex-shrink-0 w-16 sm:w-auto">
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mx-auto mb-1" />
+                  <p className="text-lg sm:text-2xl font-bold text-red-500">{varianceReport.summary.short}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Short</p>
                 </Card>
-                <Card className="p-3 text-center">
-                  <AlertTriangle className="h-5 w-5 text-orange-500 mx-auto mb-1" />
-                  <p className="text-2xl font-bold text-orange-500">{varianceReport.summary.over}</p>
-                  <p className="text-xs text-muted-foreground">Over</p>
+                <Card className="p-2 sm:p-3 text-center flex-shrink-0 w-16 sm:w-auto">
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500 mx-auto mb-1" />
+                  <p className="text-lg sm:text-2xl font-bold text-orange-500">{varianceReport.summary.over}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Over</p>
                 </Card>
-                <Card className="p-3 text-center">
-                  <XCircle className="h-5 w-5 text-red-500 mx-auto mb-1" />
-                  <p className="text-2xl font-bold text-red-500">{varianceReport.summary.missing}</p>
-                  <p className="text-xs text-muted-foreground">Missing</p>
+                <Card className="p-2 sm:p-3 text-center flex-shrink-0 w-16 sm:w-auto">
+                  <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mx-auto mb-1" />
+                  <p className="text-lg sm:text-2xl font-bold text-red-500">{varianceReport.summary.missing}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Missing</p>
                 </Card>
-                <Card className="p-3 text-center">
-                  <Package className="h-5 w-5 text-purple-500 mx-auto mb-1" />
-                  <p className="text-2xl font-bold text-purple-500">{varianceReport.summary.extra}</p>
-                  <p className="text-xs text-muted-foreground">Extra</p>
+                <Card className="p-2 sm:p-3 text-center flex-shrink-0 w-16 sm:w-auto">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500 mx-auto mb-1" />
+                  <p className="text-lg sm:text-2xl font-bold text-purple-500">{varianceReport.summary.extra}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Extra</p>
                 </Card>
               </div>
 
-              {/* Variance Items Table */}
-              <Card>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Item</TableHead>
-                      <TableHead className="text-right">Ordered</TableHead>
-                      <TableHead className="text-right">Received</TableHead>
-                      <TableHead className="text-right">Variance</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {varianceReport.items.map((item, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(item.status)}
-                            <Badge className={getStatusBadge(item.status)}>
-                              {item.status}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
+              {/* Variance Items - Card Layout for Mobile */}
+              <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                {varianceReport.items.map((item, idx) => (
+                  <Card key={idx} className={`p-3 border-l-4 ${
+                    item.status === 'match' ? 'border-l-green-500' :
+                    item.status === 'short' || item.status === 'missing' ? 'border-l-red-500' :
+                    item.status === 'over' ? 'border-l-orange-500' :
+                    'border-l-purple-500'
+                  }`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          {getStatusIcon(item.status)}
+                          <Badge className={`${getStatusBadge(item.status)} text-[10px] px-1.5`}>
+                            {item.status}
+                          </Badge>
+                        </div>
+                        <p className="font-medium text-sm truncate">{item.item_name}</p>
+                        {item.item_code && (
+                          <p className="text-xs text-muted-foreground">{item.item_code}</p>
+                        )}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="grid grid-cols-3 gap-2 text-xs">
                           <div>
-                            <p className="font-medium">{item.item_name}</p>
-                            {item.item_code && (
-                              <p className="text-xs text-muted-foreground">{item.item_code}</p>
-                            )}
+                            <p className="text-muted-foreground">Ord</p>
+                            <p className="font-medium">{item.ordered_qty}</p>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {item.ordered_qty} {item.unit || ''}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {item.received_qty} {item.unit || ''}
-                        </TableCell>
-                        <TableCell className={`text-right font-semibold ${
-                          item.variance > 0 ? 'text-orange-500' : 
-                          item.variance < 0 ? 'text-red-500' : 
-                          'text-green-500'
-                        }`}>
-                          {item.variance > 0 ? '+' : ''}{item.variance}
-                          <span className="text-xs ml-1">({item.variance_pct.toFixed(1)}%)</span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
+                          <div>
+                            <p className="text-muted-foreground">Rcv</p>
+                            <p className="font-medium">{item.received_qty}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Var</p>
+                            <p className={`font-bold ${
+                              item.variance > 0 ? 'text-orange-500' : 
+                              item.variance < 0 ? 'text-red-500' : 
+                              'text-green-500'
+                            }`}>
+                              {item.variance > 0 ? '+' : ''}{item.variance}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
 
-              {/* Actions */}
-              <div className="flex flex-wrap justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={downloadDiscrepancyReport}>
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Discrepancies Only
+              {/* Actions - Mobile Optimized */}
+              <div className="flex flex-col sm:flex-row justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={downloadDiscrepancyReport} className="text-xs">
+                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Discrepancies
                 </Button>
-                <Button variant="outline" size="sm" onClick={downloadVarianceReport}>
-                  <Download className="h-4 w-4 mr-2" />
+                <Button variant="outline" size="sm" onClick={downloadVarianceReport} className="text-xs">
+                  <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Full Report
                 </Button>
-                <Button size="sm" onClick={() => setShowVarianceDialog(false)}>
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                <Button size="sm" onClick={() => setShowVarianceDialog(false)} className="text-xs">
+                  <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Done
                 </Button>
               </div>
