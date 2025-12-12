@@ -239,25 +239,30 @@ const POReceivedItems = () => {
           const totalQty = parsed.items.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0);
           const totalValue = parsed.items.reduce((sum: number, i: any) => sum + ((i.quantity || 0) * (i.price_per_unit || 0)), 0);
           
-          // Auto-save the receiving record immediately
-          await (supabase as any)
+          // Auto-save the receiving record immediately and get its ID
+          const receivedDate = new Date().toISOString().split('T')[0];
+          const docNumber = parsed.doc_no || matchedOrder?.order_number || `RCV-${Date.now()}`;
+          
+          const { data: savedRecord, error: recordError } = await (supabase as any)
             .from('po_received_records')
             .insert({
               user_id: user?.id,
               supplier_name: matchedOrder?.supplier_name || parsed.location || 'Unknown Supplier',
-              document_number: parsed.doc_no || matchedOrder?.order_number,
-              received_date: new Date().toISOString().split('T')[0],
+              document_number: docNumber,
+              received_date: receivedDate,
               total_items: parsed.items.length,
               total_quantity: totalQty,
               total_value: totalValue,
               status: 'received',
               variance_data: report
-            });
+            })
+            .select('id')
+            .single();
           
-          // Auto-save items to purchase_order_received_items for totals tracking
-          const receivedDate = new Date().toISOString().split('T')[0];
-          const docNumber = parsed.doc_no || matchedOrder?.order_number || `RCV-${Date.now()}`;
+          if (recordError) throw recordError;
+          const recordId = savedRecord?.id;
           
+          // Auto-save items to purchase_order_received_items linked to record_id
           for (const item of parsed.items) {
             if (item.quantity > 0) {
               const unitPrice = item.price_per_unit || 0;
@@ -269,7 +274,8 @@ const POReceivedItems = () => {
                 unit_price: unitPrice,
                 total_price: item.quantity * unitPrice,
                 received_date: receivedDate,
-                document_number: docNumber
+                document_number: docNumber,
+                record_id: recordId
               });
             }
           }
@@ -687,23 +693,13 @@ const POReceivedItems = () => {
 
   const deleteReceivedRecord = async (id: string) => {
     try {
-      // First get the record to find document_number for linking
-      const { data: record } = await (supabase as any)
-        .from('po_received_records')
-        .select('document_number')
-        .eq('id', id)
-        .single();
+      // Delete items linked to this record by record_id first
+      await (supabase as any)
+        .from('purchase_order_received_items')
+        .delete()
+        .eq('record_id', id);
       
-      if (record?.document_number) {
-        // Delete associated items by document_number (specific to this record)
-        await (supabase as any)
-          .from('purchase_order_received_items')
-          .delete()
-          .eq('user_id', user?.id)
-          .eq('document_number', record.document_number);
-      }
-      
-      // Delete the received record
+      // Delete the received record (CASCADE will also handle items with record_id)
       await (supabase as any)
         .from('po_received_records')
         .delete()

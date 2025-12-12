@@ -118,7 +118,7 @@ export const usePurchaseOrderMaster = () => {
     }
   });
 
-  // Add received item - upsert by item_name + document_number (or date if no doc)
+  // Add received item - linked by record_id for proper isolation
   const addReceivedItem = useMutation({
     mutationFn: async (item: {
       purchase_order_id?: string;
@@ -130,59 +130,30 @@ export const usePurchaseOrderMaster = () => {
       total_price?: number;
       received_date?: string;
       document_number?: string;
+      record_id?: string;
     }) => {
       const receivedDate = item.received_date || new Date().toISOString().split('T')[0];
-      const normalizedName = item.item_name.trim().toLowerCase();
       
-      // Check if item already exists for this user, name, and document
-      let query = supabase
+      // Always insert new item linked to its specific record
+      const { data, error } = await supabase
         .from('purchase_order_received_items')
-        .select('id, quantity, total_price')
-        .eq('user_id', user?.id)
-        .ilike('item_name', normalizedName);
+        .insert({
+          user_id: user?.id,
+          item_name: item.item_name.trim(),
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+          purchase_order_id: item.purchase_order_id,
+          document_number: item.document_number,
+          record_id: item.record_id,
+          received_date: receivedDate
+        })
+        .select()
+        .single();
       
-      // Match by document_number if available, otherwise by date
-      if (item.document_number) {
-        query = query.eq('document_number', item.document_number);
-      } else {
-        query = query.eq('received_date', receivedDate);
-      }
-      
-      const { data: existing } = await query.maybeSingle();
-      
-      if (existing) {
-        // Update existing - add to quantity and total
-        const newQty = (existing.quantity || 0) + item.quantity;
-        const newTotal = (existing.total_price || 0) + (item.total_price || 0);
-        
-        const { data, error } = await supabase
-          .from('purchase_order_received_items')
-          .update({
-            quantity: newQty,
-            total_price: newTotal,
-            unit_price: item.unit_price
-          })
-          .eq('id', existing.id)
-          .select()
-          .single();
-        
-        if (error) throw error;
-        return data;
-      } else {
-        // Insert new item
-        const { data, error } = await supabase
-          .from('purchase_order_received_items')
-          .insert({
-            user_id: user?.id,
-            ...item,
-            received_date: receivedDate
-          })
-          .select()
-          .single();
-        
-        if (error) throw error;
-        return data;
-      }
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
