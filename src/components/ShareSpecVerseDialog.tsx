@@ -440,7 +440,7 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
         margin: 1,
         color: {
           dark: '#ffffff',
-          light: 'transparent'
+          light: '#00000000'
         }
       });
       
@@ -528,8 +528,15 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       const fileName = `specverse-${selectedTool.id}-promo.png`;
       const storyFile = new File([storyBlob], fileName, { type: 'image/png' });
 
-      // Copy URL to clipboard first so it's ready for link sticker
-      await navigator.clipboard.writeText(toolUrl);
+      // Try to copy URL to clipboard (may fail silently if not in user gesture)
+      const copyToClipboard = async () => {
+        try {
+          await navigator.clipboard.writeText(toolUrl);
+          return true;
+        } catch {
+          return false;
+        }
+      };
 
       if (!download && navigator.canShare && navigator.canShare({ files: [storyFile] })) {
         try {
@@ -537,7 +544,8 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
             files: [storyFile],
             title: `${selectedTool.name} - SpecVerse`,
           });
-          toast.success('Link copied! Paste it as a link sticker in Instagram Stories', {
+          const copied = await copyToClipboard();
+          toast.success(copied ? 'Shared! Link copied - paste as link sticker' : 'Shared to Instagram!', {
             duration: 5000,
             description: toolUrl
           });
@@ -562,9 +570,10 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      toast.success('Image downloaded & link copied!', {
+      const copied = await copyToClipboard();
+      toast.success(copied ? 'Image downloaded & link copied!' : 'Image downloaded!', {
         duration: 5000,
-        description: `Paste ${toolUrl} as link sticker`
+        description: `Add link sticker: ${toolUrl}`
       });
     } catch (err) {
       console.error('Share failed:', err);
