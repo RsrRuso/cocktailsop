@@ -51,7 +51,7 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
       >
         <div className="relative group">
           {/* Compact black bubble with shimmer */}
-          <div className="relative bg-black text-white rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.25)] px-2.5 py-1.5 overflow-hidden min-w-[70px] max-w-[140px]">
+          <div className="relative bg-gray-700 text-white rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.25)] px-2.5 py-1.5 overflow-hidden min-w-[70px] max-w-[140px]">
             {/* Shimmer effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
             
@@ -111,8 +111,8 @@ const UserStatusIndicator = ({ userId, size = 'sm', className = '' }: UserStatus
           </div>
           
           {/* Connector dots */}
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black rounded-full shadow-md" />
-          <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 translate-x-0.5 w-1.5 h-1.5 bg-black rounded-full shadow-sm" />
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-700 rounded-full shadow-md" />
+          <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 translate-x-0.5 w-1.5 h-1.5 bg-gray-700 rounded-full shadow-sm" />
         </div>
       </div>
       <StatusViewerDialog
