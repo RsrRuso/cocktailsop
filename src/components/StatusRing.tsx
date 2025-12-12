@@ -2,18 +2,28 @@ import { ReactNode, useState } from "react";
 import { Play } from "lucide-react";
 import StatusViewerDialog from "./StatusViewerDialog";
 
+interface StatusData {
+  id: string;
+  user_id: string;
+  status_text?: string | null;
+  emoji?: string | null;
+  music_track_name?: string | null;
+  music_artist?: string | null;
+  music_album_art?: string | null;
+  music_preview_url?: string | null;
+  music_spotify_url?: string | null;
+  like_count?: number;
+  comment_count?: number;
+}
+
 interface StatusRingProps {
   children: ReactNode;
   hasStatus: boolean;
-  statusText?: string;
-  emoji?: string;
-  musicTrackName?: string;
-  musicAlbumArt?: string;
+  status?: StatusData | null;
   onAddClick?: () => void;
   showAddButton?: boolean;
   isNew?: boolean;
   className?: string;
-  userId?: string;
   username?: string;
   avatarUrl?: string;
 }
@@ -21,34 +31,26 @@ interface StatusRingProps {
 const StatusRing = ({ 
   children, 
   hasStatus, 
-  statusText,
-  emoji,
-  musicTrackName,
-  musicAlbumArt,
+  status,
   onAddClick,
   showAddButton = false,
   isNew = false,
   className = "",
-  userId,
   username,
   avatarUrl
 }: StatusRingProps) => {
   const [showViewer, setShowViewer] = useState(false);
+  
+  const statusText = status?.status_text;
+  const emoji = status?.emoji;
+  const musicTrackName = status?.music_track_name;
+  const musicAlbumArt = status?.music_album_art;
+  
   const hasContent = hasStatus && (statusText || musicTrackName);
   
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowViewer(true);
-  };
-
-  // Build status object for dialog
-  const statusData = {
-    id: '',
-    user_id: userId || '',
-    status_text: statusText,
-    emoji: emoji,
-    music_track_name: musicTrackName,
-    music_album_art: musicAlbumArt,
   };
   
   return (
@@ -147,7 +149,7 @@ const StatusRing = ({
       <StatusViewerDialog
         open={showViewer}
         onOpenChange={setShowViewer}
-        status={statusData}
+        status={status || null}
         userProfile={{ username: username || '', avatar_url: avatarUrl || null }}
       />
     </div>
