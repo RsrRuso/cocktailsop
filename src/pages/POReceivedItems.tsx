@@ -881,7 +881,13 @@ const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | '
                             {record.status}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
+                          {record.document_number && (
+                            <span className="flex items-center gap-1 font-mono text-primary/80">
+                              <FileText className="w-3 h-3" />
+                              {record.document_number}
+                            </span>
+                          )}
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {format(new Date(record.received_date), 'MMM d, yyyy')}
