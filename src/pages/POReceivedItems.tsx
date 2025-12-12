@@ -254,7 +254,25 @@ const POReceivedItems = () => {
               variance_data: report
             });
           
+          // Auto-save items to purchase_order_received_items for totals tracking
+          const receivedDate = new Date().toISOString().split('T')[0];
+          for (const item of parsed.items) {
+            if (item.quantity > 0) {
+              const unitPrice = item.price_per_unit || 0;
+              await addReceivedItem({
+                purchase_order_id: matchedOrder?.id || undefined,
+                item_name: item.item_name || item.name,
+                quantity: item.quantity,
+                unit: item.unit,
+                unit_price: unitPrice,
+                total_price: item.quantity * unitPrice,
+                received_date: receivedDate
+              });
+            }
+          }
+          
           queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
+          queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
           
           setVarianceReport(report);
           setShowVarianceDialog(true);
@@ -641,36 +659,6 @@ const POReceivedItems = () => {
     toast.success("Par stock forecast report downloaded");
   };
 
-  const saveReceivedItems = async () => {
-    if (!varianceReport) {
-      toast.error("No variance data to save");
-      return;
-    }
-    
-    try {
-      // Save to received items (record already saved on upload)
-      for (const item of varianceReport.items) {
-        if (item.received_qty > 0) {
-          await addReceivedItem({
-            purchase_order_id: selectedOrderId || undefined,
-            item_name: item.item_name,
-            quantity: item.received_qty,
-            unit: item.unit,
-            unit_price: item.received_price,
-            total_price: (item.received_qty * (item.received_price || 0)),
-            received_date: new Date().toISOString().split('T')[0]
-          });
-        }
-      }
-      
-      queryClient.invalidateQueries({ queryKey: ['received-items'] });
-      toast.success("Items saved to inventory");
-      setShowVarianceDialog(false);
-    } catch (error: any) {
-      toast.error("Failed to save: " + error.message);
-    }
-  };
-
   // Calculate forecast data
   const calculateForecast = () => {
     if (!receivedItems || receivedItems.length === 0) return null;
@@ -724,7 +712,7 @@ const POReceivedItems = () => {
         .eq('id', id);
       
       queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
-      queryClient.invalidateQueries({ queryKey: ['received-items'] });
+      queryClient.invalidateQueries({ queryKey: ['po-received-items'] });
       toast.success("Record and items deleted");
     } catch (error: any) {
       toast.error("Failed to delete: " + error.message);
@@ -1250,9 +1238,9 @@ const POReceivedItems = () => {
                   <Download className="h-4 w-4 mr-2" />
                   Full Report
                 </Button>
-                <Button size="sm" onClick={saveReceivedItems}>
+                <Button size="sm" onClick={() => setShowVarianceDialog(false)}>
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Save Items
+                  Done
                 </Button>
               </div>
             </div>
