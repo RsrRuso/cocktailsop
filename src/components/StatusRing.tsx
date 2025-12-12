@@ -5,6 +5,8 @@ interface StatusRingProps {
   hasStatus: boolean;
   statusText?: string;
   emoji?: string;
+  musicTrackName?: string;
+  musicAlbumArt?: string;
   onAddClick?: () => void;
   showAddButton?: boolean;
   isNew?: boolean;
@@ -16,11 +18,15 @@ const StatusRing = ({
   hasStatus, 
   statusText,
   emoji,
+  musicTrackName,
+  musicAlbumArt,
   onAddClick,
   showAddButton = false,
   isNew = false,
   className = "" 
 }: StatusRingProps) => {
+  const hasContent = hasStatus && (statusText || musicTrackName);
+  
   return (
     <div className={`relative inline-block ${className}`}>
       {/* New story white glow effect */}
@@ -28,20 +34,49 @@ const StatusRing = ({
         <div className="absolute -inset-1 rounded-full bg-white/40 animate-pulse blur-sm" />
       )}
       
-      {hasStatus && statusText && (
+      {hasContent && (
         <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 pointer-events-none animate-fade-in">
           <div className="relative group">
             {/* Compact black & white status bubble with shimmer */}
-            <div className="relative bg-black text-white px-3 py-1.5 rounded-full text-[10px] overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.25)] min-w-[60px] max-w-[110px]">
+            <div className="relative bg-black text-white px-3 py-1.5 rounded-full text-[10px] overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.25)] min-w-[60px] max-w-[130px]">
               {/* Shimmer effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
               
               <div className="relative flex items-center gap-1.5 justify-center">
-                {emoji && <span className="shrink-0 text-sm">{emoji}</span>}
+                {/* Music album art if available */}
+                {musicTrackName && (
+                  <div className="w-4 h-4 rounded-sm overflow-hidden flex-shrink-0 ring-1 ring-white/20">
+                    {musicAlbumArt ? (
+                      <img src={musicAlbumArt} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-white/20 flex items-center justify-center">
+                        <span className="text-[8px]">🎵</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {emoji && !musicTrackName && <span className="shrink-0 text-sm">{emoji}</span>}
+                
                 <div className="overflow-hidden flex-1 text-center">
                   <div className="animate-marquee whitespace-nowrap inline-block font-medium tracking-wide">
-                    {statusText}
-                    {statusText.length > 10 && <span className="ml-6">{statusText}</span>}
+                    {/* Show both music and status text */}
+                    {musicTrackName && statusText ? (
+                      <>
+                        {musicTrackName} {emoji && <span>{emoji}</span>} {statusText}
+                        <span className="ml-6">{musicTrackName} {emoji && <span>{emoji}</span>} {statusText}</span>
+                      </>
+                    ) : musicTrackName ? (
+                      <>
+                        {musicTrackName}
+                        {musicTrackName.length > 10 && <span className="ml-6">{musicTrackName}</span>}
+                      </>
+                    ) : statusText ? (
+                      <>
+                        {statusText}
+                        {statusText.length > 10 && <span className="ml-6">{statusText}</span>}
+                      </>
+                    ) : null}
                   </div>
                 </div>
               </div>

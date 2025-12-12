@@ -54,6 +54,8 @@ const OptimizedAvatar = memo(({
       hasStatus={!!status}
       statusText={status?.status_text}
       emoji={status?.emoji}
+      musicTrackName={status?.music_track_name}
+      musicAlbumArt={status?.music_album_art}
       showAddButton={showAddButton}
       onAddClick={onAddStatusClick}
     >
