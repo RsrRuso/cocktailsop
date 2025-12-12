@@ -601,11 +601,11 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
         setSelectedTool(null);
       }
     }}>
-      <DialogContent className="p-0 max-w-sm max-h-[75vh] overflow-hidden border-0 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400">
+      <DialogContent className="p-0 max-w-sm max-h-[80vh] overflow-hidden border border-border/50 bg-background">
         <DialogHeader className="p-3 pb-0">
-          <DialogTitle className="flex items-center gap-2 text-white text-sm">
+          <DialogTitle className="flex items-center gap-2 text-foreground text-sm">
             {view === 'share' && (
-              <Button variant="ghost" size="icon" className="h-6 w-6 mr-1 text-white hover:bg-white/20" onClick={handleBack}>
+              <Button variant="ghost" size="icon" className="h-6 w-6 mr-1" onClick={handleBack}>
                 <ChevronLeft className="w-4 h-4" />
               </Button>
             )}
@@ -615,13 +615,13 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
         </DialogHeader>
 
         {view === 'select' ? (
-          <ScrollArea className="h-[55vh] px-3 pb-3">
+          <ScrollArea className="h-[60vh] px-3 pb-3">
             <div className="space-y-1.5">
               {SHAREABLE_TOOLS.map((tool) => (
                 <button
                   key={tool.id}
                   onClick={() => handleSelectTool(tool)}
-                  className="w-full flex items-center gap-2 p-2 rounded-lg bg-black/20 backdrop-blur-sm text-white hover:bg-black/30 transition-colors text-left"
+                  className={`w-full flex items-center gap-2 p-2 rounded-lg bg-gradient-to-r ${tool.gradient} text-white hover:opacity-90 transition-opacity text-left`}
                 >
                   <div className="p-1.5 bg-white/20 rounded-md">
                     {tool.icon}
@@ -636,9 +636,9 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
             </div>
           </ScrollArea>
         ) : selectedTool && (
-          <div className="px-3 pb-3 space-y-2">
-            {/* Compact preview card */}
-            <div className="p-3 rounded-xl bg-black/25 backdrop-blur-sm text-white">
+          <ScrollArea className="h-[65vh] px-3 pb-3">
+            {/* Preview card with gradient */}
+            <div className={`p-3 rounded-xl bg-gradient-to-br ${selectedTool.gradient} text-white`}>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xl">{selectedTool.emoji}</span>
                 <div>
@@ -647,17 +647,17 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
                 </div>
               </div>
               
-              <div className="bg-red-900/40 rounded-md p-1.5 mb-1.5">
-                <p className="text-[10px] leading-tight line-clamp-3">❌ {selectedTool.problem}</p>
+              <div className="bg-black/30 rounded-md p-2 mb-2">
+                <p className="text-[11px] leading-relaxed">❌ {selectedTool.problem}</p>
               </div>
               
-              <div className="bg-green-900/40 rounded-md p-1.5 mb-1.5">
-                <p className="text-[10px] leading-tight line-clamp-3">✅ {selectedTool.solution}</p>
+              <div className="bg-black/30 rounded-md p-2 mb-2">
+                <p className="text-[11px] leading-relaxed">✅ {selectedTool.solution}</p>
               </div>
               
               <div className="space-y-0.5">
-                {selectedTool.benefits.slice(0, 3).map((b, i) => (
-                  <p key={i} className="text-[10px] text-white/85">✓ {b}</p>
+                {selectedTool.benefits.map((b, i) => (
+                  <p key={i} className="text-[10px] text-white/90">✓ {b}</p>
                 ))}
               </div>
             </div>
@@ -666,7 +666,7 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
             <Button
               onClick={() => handleShareTool(false)}
               disabled={isGenerating}
-              className="w-full h-10 bg-black/30 hover:bg-black/40 text-white font-medium border border-white/20"
+              className={`w-full h-10 mt-3 bg-gradient-to-r ${selectedTool.gradient} hover:opacity-90 text-white font-medium`}
             >
               {isGenerating ? (
                 <>
@@ -684,8 +684,8 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
             <Button
               onClick={() => handleShareTool(true)}
               disabled={isGenerating}
-              variant="ghost"
-              className="w-full h-9 text-white/80 hover:text-white hover:bg-white/10"
+              variant="outline"
+              className="w-full h-9"
             >
               <Download className="w-3.5 h-3.5 mr-2" />
               Download Story Image
@@ -696,17 +696,17 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
               <Input 
                 value={`${appUrl}${selectedTool.path}`} 
                 readOnly 
-                className="flex-1 h-8 text-xs bg-black/20 border-white/20 text-white placeholder:text-white/50" 
+                className="flex-1 h-8 text-xs" 
               />
-              <Button onClick={handleCopyLink} variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20">
+              <Button onClick={handleCopyLink} variant="outline" size="icon" className="h-8 w-8">
                 {copied ? <Link className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               </Button>
             </div>
 
-            <p className="text-[10px] text-white/60 text-center">
+            <p className="text-[10px] text-muted-foreground text-center">
               Story includes QR code linking to {selectedTool.name}
             </p>
-          </div>
+          </ScrollArea>
         )}
       </DialogContent>
     </Dialog>
