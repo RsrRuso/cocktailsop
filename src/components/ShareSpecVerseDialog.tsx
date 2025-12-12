@@ -186,123 +186,147 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
     const ctx = canvas.getContext('2d')!;
     const toolUrl = `${appUrl}${tool.path}`;
 
-    // Transparent background for sticker effect
-    ctx.clearRect(0, 0, 1080, 1920);
+    // Dark elegant background matching Introduction page
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, 1920);
+    bgGrad.addColorStop(0, '#0f0f23');
+    bgGrad.addColorStop(0.5, '#1a1a2e');
+    bgGrad.addColorStop(1, '#0f0f23');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, 1080, 1920);
 
-    // STICKER DESIGN - Centered sticker shape
-    const stickerCenterX = 540;
-    const stickerCenterY = 960;
-    const stickerWidth = 900;
-    const stickerHeight = 1100;
-
-    // Sticker shadow
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-    ctx.shadowBlur = 40;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 15;
-
-    // Sticker background - rounded rectangle with slight rotation for dynamic feel
-    ctx.translate(stickerCenterX, stickerCenterY);
-    ctx.rotate(-0.02); // Slight tilt
-    
+    // Decorative glow orbs
     const gradientColors = getGradientColors(tool.gradient);
-    const stickerGrad = ctx.createLinearGradient(-stickerWidth/2, -stickerHeight/2, stickerWidth/2, stickerHeight/2);
-    stickerGrad.addColorStop(0, gradientColors.start);
-    stickerGrad.addColorStop(0.5, gradientColors.mid);
-    stickerGrad.addColorStop(1, gradientColors.end);
     
-    ctx.fillStyle = stickerGrad;
-    ctx.beginPath();
-    ctx.roundRect(-stickerWidth/2, -stickerHeight/2, stickerWidth, stickerHeight, 60);
-    ctx.fill();
-    ctx.restore();
+    const glow1 = ctx.createRadialGradient(200, 300, 0, 200, 300, 400);
+    glow1.addColorStop(0, gradientColors.start + '40');
+    glow1.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow1;
+    ctx.fillRect(0, 0, 600, 700);
 
-    // Inner white border for sticker effect
-    ctx.save();
-    ctx.translate(stickerCenterX, stickerCenterY);
-    ctx.rotate(-0.02);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.lineWidth = 6;
+    const glow2 = ctx.createRadialGradient(880, 1600, 0, 880, 1600, 400);
+    glow2.addColorStop(0, gradientColors.end + '30');
+    glow2.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow2;
+    ctx.fillRect(480, 1200, 600, 720);
+
+    // Glass card container
+    const cardX = 90;
+    const cardY = 280;
+    const cardW = 900;
+    const cardH = 1300;
+    
+    // Card shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 60;
+    ctx.shadowOffsetY = 20;
+    
+    // Glass background
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.beginPath();
-    ctx.roundRect(-stickerWidth/2 + 20, -stickerHeight/2 + 20, stickerWidth - 40, stickerHeight - 40, 50);
+    ctx.roundRect(cardX, cardY, cardW, cardH, 40);
+    ctx.fill();
+    
+    // Reset shadow
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    
+    // Card border
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(cardX, cardY, cardW, cardH, 40);
     ctx.stroke();
-    ctx.restore();
 
-    // Shine effect on top
-    ctx.save();
-    ctx.translate(stickerCenterX, stickerCenterY);
-    ctx.rotate(-0.02);
-    const shineGrad = ctx.createLinearGradient(0, -stickerHeight/2, 0, -stickerHeight/4);
-    shineGrad.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
-    shineGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    ctx.fillStyle = shineGrad;
+    // Tool icon gradient badge at top
+    const badgeY = cardY + 100;
+    const badgeGrad = ctx.createLinearGradient(440, badgeY - 60, 640, badgeY + 60);
+    badgeGrad.addColorStop(0, gradientColors.start);
+    badgeGrad.addColorStop(1, gradientColors.end);
+    ctx.fillStyle = badgeGrad;
     ctx.beginPath();
-    ctx.roundRect(-stickerWidth/2, -stickerHeight/2, stickerWidth, stickerHeight/3, [60, 60, 0, 0]);
+    ctx.arc(540, badgeY, 70, 0, Math.PI * 2);
     ctx.fill();
-    ctx.restore();
-
-    // Content on sticker
-    ctx.save();
-    ctx.translate(stickerCenterX, stickerCenterY);
-    ctx.rotate(-0.02);
-
-    // Large emoji at top
-    ctx.font = '140px system-ui';
+    
+    // Emoji in badge
+    ctx.font = '70px system-ui';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(tool.emoji, 0, -380);
+    ctx.fillText(tool.emoji, 540, badgeY);
 
-    // Tool name - bold badge style
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 80px system-ui, -apple-system, sans-serif';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 10;
-    ctx.fillText(tool.name, 0, -250);
+    // Tool name with gradient text effect
+    ctx.font = 'bold 72px system-ui, -apple-system, sans-serif';
+    const titleGrad = ctx.createLinearGradient(300, badgeY + 100, 780, badgeY + 100);
+    titleGrad.addColorStop(0, gradientColors.start);
+    titleGrad.addColorStop(0.5, '#a855f7');
+    titleGrad.addColorStop(1, '#ec4899');
+    ctx.fillStyle = titleGrad;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(tool.name, 540, badgeY + 100);
 
     // Tagline
-    ctx.font = '38px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-    ctx.shadowBlur = 5;
-    ctx.fillText(tool.tagline, 0, -180);
+    ctx.font = '36px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.fillText(tool.tagline, 540, badgeY + 190);
 
-    // Problem statement box
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    // Divider line
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(-380, -130, 760, 70, 15);
+    ctx.moveTo(cardX + 60, badgeY + 260);
+    ctx.lineTo(cardX + cardW - 60, badgeY + 260);
+    ctx.stroke();
+
+    // Problem section with icon
+    const problemY = badgeY + 310;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.beginPath();
+    ctx.roundRect(cardX + 40, problemY - 30, cardW - 80, 80, 16);
     ctx.fill();
     
-    ctx.font = 'bold 32px system-ui, -apple-system, sans-serif';
+    ctx.font = 'bold 34px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(`❓ ${tool.problem}`, 0, -85);
+    ctx.textAlign = 'center';
+    ctx.fillText(`❓ ${tool.problem}`, 540, problemY + 15);
 
     // Benefits section
-    ctx.font = 'bold 30px system-ui, -apple-system, sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.fillText('✨ BENEFITS', 0, -20);
+    const benefitsY = problemY + 100;
+    ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = gradientColors.start;
+    ctx.fillText('✨ KEY BENEFITS', 540, benefitsY);
 
-    // Benefits list
-    ctx.font = '32px system-ui, -apple-system, sans-serif';
+    // Benefits list with check icons
+    ctx.font = '34px system-ui, -apple-system, sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'left';
     
     tool.benefits.forEach((benefit, i) => {
-      ctx.fillText(`✓  ${benefit}`, -340, 40 + (i * 55));
+      const yPos = benefitsY + 60 + (i * 65);
+      
+      // Benefit background
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.beginPath();
+      ctx.roundRect(cardX + 50, yPos - 25, cardW - 100, 55, 12);
+      ctx.fill();
+      
+      // Check icon
+      ctx.fillStyle = gradientColors.start;
+      ctx.font = '30px system-ui';
+      ctx.fillText('✓', cardX + 75, yPos + 8);
+      
+      // Benefit text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '32px system-ui, -apple-system, sans-serif';
+      ctx.fillText(benefit, cardX + 120, yPos + 8);
     });
 
-    ctx.textAlign = 'center';
-
-    // "SpecVerse" branding
-    ctx.font = 'italic 28px Georgia, serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.fillText('Part of SpecVerse Platform', 0, 280);
-
     // QR Code section
-    ctx.restore();
+    const qrY = cardY + cardH - 280;
     
     try {
       const qrDataUrl = await QRCode.toDataURL(toolUrl, {
-        width: 200,
+        width: 180,
         margin: 1,
         color: {
           dark: '#ffffff',
@@ -317,50 +341,53 @@ const ShareSpecVerseDialog = ({ open, onOpenChange }: ShareSpecVerseDialogProps)
         qrImg.src = qrDataUrl;
       });
       
-      // QR positioned inside sticker
-      ctx.save();
-      ctx.translate(stickerCenterX, stickerCenterY);
-      ctx.rotate(-0.02);
+      const qrSize = 140;
       
-      const qrSize = 160;
-      
-      // QR background circle
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      // QR background
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
       ctx.beginPath();
-      ctx.arc(0, 320, qrSize/2 + 20, 0, Math.PI * 2);
+      ctx.roundRect(540 - qrSize/2 - 20, qrY - 20, qrSize + 40, qrSize + 40, 16);
       ctx.fill();
       
-      ctx.drawImage(qrImg, -qrSize/2, 320 - qrSize/2, qrSize, qrSize);
+      ctx.drawImage(qrImg, 540 - qrSize/2, qrY, qrSize, qrSize);
       
-      // "SCAN ME" text
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
-      ctx.fillText('SCAN ME', 0, 440);
-      
-      ctx.restore();
+      // Scan text
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.font = 'bold 26px system-ui, -apple-system, sans-serif';
+      ctx.fillText('SCAN TO EXPLORE', 540, qrY + qrSize + 50);
     } catch (err) {
       console.log('QR generation failed:', err);
     }
 
-    // URL badge at bottom of sticker
-    ctx.save();
-    ctx.translate(stickerCenterX, stickerCenterY + 480);
-    ctx.rotate(-0.02);
+    // SpecVerse branding at bottom
+    ctx.font = 'italic 28px Georgia, serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText('Part of SpecVerse', 540, cardY + cardH - 50);
+
+    // URL prominently displayed outside card for link sticker
+    const urlBoxY = cardY + cardH + 60;
     
-    // URL pill background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-    const urlText = toolUrl.replace('https://', '');
-    ctx.font = '26px system-ui, -apple-system, sans-serif';
-    const urlWidth = ctx.measureText(urlText).width + 40;
+    // URL background pill
+    const urlGrad = ctx.createLinearGradient(200, urlBoxY, 880, urlBoxY);
+    urlGrad.addColorStop(0, gradientColors.start);
+    urlGrad.addColorStop(1, gradientColors.end);
+    ctx.fillStyle = urlGrad;
     ctx.beginPath();
-    ctx.roundRect(-urlWidth/2, -20, urlWidth, 40, 20);
+    ctx.roundRect(140, urlBoxY - 35, 800, 70, 35);
     ctx.fill();
     
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    // URL text - large and prominent for clickable link
+    ctx.font = 'bold 36px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(urlText, 0, 0);
-    ctx.restore();
+    ctx.fillText(`👆 ${toolUrl.replace('https://', '')}`, 540, urlBoxY + 8);
+
+    // Swipe up indicator
+    ctx.font = '24px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fillText('Tap link above to visit', 540, urlBoxY + 70);
 
     return new Promise((resolve) => {
       canvas.toBlob((blob) => resolve(blob!), 'image/png', 1.0);
