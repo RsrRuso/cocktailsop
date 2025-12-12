@@ -218,14 +218,27 @@ export const usePurchaseOrderMaster = () => {
         return;
       }
 
-      // Add each unique item to master list
+      // Get existing master items to avoid duplicates
+      const { data: existingMaster } = await supabase
+        .from('purchase_order_master_items')
+        .select('item_name')
+        .eq('user_id', user?.id);
+      
+      const existingNames = new Set(
+        (existingMaster || []).map(i => i.item_name.trim().toLowerCase())
+      );
+
+      // Build unique items map from PO items
       const uniqueItems = new Map<string, any>();
       for (const item of items) {
         const key = item.item_name.trim().toLowerCase();
+        // Skip if already in master list
+        if (existingNames.has(key)) continue;
+        
         if (!uniqueItems.has(key)) {
           uniqueItems.set(key, item);
         } else {
-          // Update with latest price if newer
+          // Keep highest price
           const existing = uniqueItems.get(key);
           if (item.price_per_unit > existing.price_per_unit) {
             uniqueItems.set(key, item);
@@ -233,35 +246,27 @@ export const usePurchaseOrderMaster = () => {
         }
       }
 
-      let addedCount = 0;
-      for (const item of uniqueItems.values()) {
-        try {
-          // Check if already exists
-          const { data: existing } = await supabase
-            .from('purchase_order_master_items')
-            .select('id')
-            .eq('user_id', user?.id)
-            .ilike('item_name', item.item_name.trim())
-            .maybeSingle();
-          
-          if (!existing) {
-            await supabase
-              .from('purchase_order_master_items')
-              .insert({
-                user_id: user?.id,
-                item_name: item.item_name.trim(),
-                unit: item.unit,
-                last_price: item.price_per_unit
-              });
-            addedCount++;
-          }
-        } catch (e) {
-          console.error('Failed to add item:', item.item_name, e);
-        }
+      if (uniqueItems.size === 0) {
+        toast.info("All items already synced");
+        return;
       }
 
+      // Bulk insert unique new items
+      const newItems = Array.from(uniqueItems.values()).map(item => ({
+        user_id: user?.id,
+        item_name: item.item_name.trim(),
+        unit: item.unit,
+        last_price: item.price_per_unit
+      }));
+
+      const { error: insertError } = await supabase
+        .from('purchase_order_master_items')
+        .insert(newItems);
+
+      if (insertError) throw insertError;
+
       queryClient.invalidateQueries({ queryKey: ['po-master-items'] });
-      toast.success(`Synced ${addedCount} new items from ${orders.length} orders`);
+      toast.success(`Added ${newItems.length} unique items`);
     } catch (error: any) {
       toast.error("Failed to sync: " + error.message);
     }
