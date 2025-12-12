@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   ArrowLeft, Upload, Camera, Plus, Trash2, FileText, 
-  DollarSign, Package, Calendar, Search, Eye, Edit
+  DollarSign, Package, Calendar, Search, Eye, Edit, ClipboardPaste
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -66,9 +66,11 @@ const PurchaseOrders = () => {
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
+  const [showPasteDialog, setShowPasteDialog] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [pasteContent, setPasteContent] = useState("");
   
   // New order form state
   const [newOrder, setNewOrder] = useState({
@@ -442,17 +444,27 @@ const PurchaseOrders = () => {
 
         {/* Upload Section */}
         <Card className="p-4 border-dashed border-2 border-muted">
-          <div className="text-center space-y-2">
-            <div className="flex justify-center gap-4">
+          <div className="text-center space-y-3">
+            <div className="flex justify-center gap-2 flex-wrap">
               <Button 
                 variant="outline" 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
+                className="flex-1 min-w-[120px]"
               >
                 <Upload className="w-4 h-4 mr-2" />
-                Upload Document
+                Upload
               </Button>
-              <Button variant="outline" disabled>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowPasteDialog(true)}
+                disabled={isUploading}
+                className="flex-1 min-w-[120px]"
+              >
+                <ClipboardPaste className="w-4 h-4 mr-2" />
+                Paste
+              </Button>
+              <Button variant="outline" disabled className="flex-1 min-w-[120px]">
                 <Camera className="w-4 h-4 mr-2" />
                 Scan
               </Button>
@@ -747,6 +759,60 @@ const PurchaseOrders = () => {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Paste Content Dialog */}
+      <Dialog open={showPasteDialog} onOpenChange={setShowPasteDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Paste Market List Content</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Paste your Market List table content (Item Code, Item Name, Delivery, Unit, Qty, Price, Value)
+            </p>
+            
+            <Textarea
+              value={pasteContent}
+              onChange={(e) => setPasteContent(e.target.value)}
+              placeholder="Paste your Market List content here...
+
+Example format:
+| 15100042 | Puree Yuzu Ponthier 1Kg | 09/12/2025 | KGS | 5.00 | 122.30 | 611.50 |"
+              rows={10}
+              className="font-mono text-xs"
+            />
+            
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setPasteContent("");
+                  setShowPasteDialog(false);
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (pasteContent.trim()) {
+                    parseMarketListContent(pasteContent);
+                    setShowPasteDialog(false);
+                    setPasteContent("");
+                  } else {
+                    toast.error("Please paste content to parse");
+                  }
+                }}
+                disabled={isUploading || !pasteContent.trim()}
+                className="flex-1"
+              >
+                {isUploading ? "Parsing..." : "Parse Content"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

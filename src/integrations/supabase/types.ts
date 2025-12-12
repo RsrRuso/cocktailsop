@@ -8426,6 +8426,7 @@ export type Database = {
       purchase_order_items: {
         Row: {
           created_at: string
+          delivery_date: string | null
           id: string
           item_code: string | null
           item_name: string
@@ -8433,9 +8434,11 @@ export type Database = {
           price_total: number
           purchase_order_id: string
           quantity: number
+          unit: string | null
         }
         Insert: {
           created_at?: string
+          delivery_date?: string | null
           id?: string
           item_code?: string | null
           item_name: string
@@ -8443,9 +8446,11 @@ export type Database = {
           price_total?: number
           purchase_order_id: string
           quantity?: number
+          unit?: string | null
         }
         Update: {
           created_at?: string
+          delivery_date?: string | null
           id?: string
           item_code?: string | null
           item_name?: string
@@ -8453,6 +8458,7 @@ export type Database = {
           price_total?: number
           purchase_order_id?: string
           quantity?: number
+          unit?: string | null
         }
         Relationships: [
           {
