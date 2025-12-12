@@ -235,10 +235,31 @@ const POReceivedItems = () => {
             matchedOrder?.supplier_name || parsed.location
           );
           
+          // Calculate totals for the received record
+          const totalQty = parsed.items.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0);
+          const totalValue = parsed.items.reduce((sum: number, i: any) => sum + ((i.quantity || 0) * (i.price_per_unit || 0)), 0);
+          
+          // Auto-save the receiving record immediately
+          await (supabase as any)
+            .from('po_received_records')
+            .insert({
+              user_id: user?.id,
+              supplier_name: matchedOrder?.supplier_name || parsed.location || 'Unknown Supplier',
+              document_number: parsed.doc_no || matchedOrder?.order_number,
+              received_date: new Date().toISOString().split('T')[0],
+              total_items: parsed.items.length,
+              total_quantity: totalQty,
+              total_value: totalValue,
+              status: 'received',
+              variance_data: report
+            });
+          
+          queryClient.invalidateQueries({ queryKey: ['po-recent-received'] });
+          
           setVarianceReport(report);
           setShowVarianceDialog(true);
           
-          toast.success(`Analyzed ${parsed.items.length} received items`);
+          toast.success(`Received ${parsed.items.length} items saved`);
         } catch (err: any) {
           toast.error("Failed to process: " + err.message);
         } finally {
