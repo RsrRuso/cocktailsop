@@ -13,11 +13,17 @@ import { format } from "date-fns";
 const POMasterItems = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { masterItems, isLoadingMaster, syncFromExistingOrders, importFromFile } = usePurchaseOrderMaster();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Workspace state
+  const [selectedWorkspaceId] = useState<string | null>(() => {
+    return localStorage.getItem('po-workspace-id') || null;
+  });
+  
+  const { masterItems, isLoadingMaster, syncFromExistingOrders, importFromFile } = usePurchaseOrderMaster(selectedWorkspaceId);
 
   if (!user) {
     navigate('/auth');

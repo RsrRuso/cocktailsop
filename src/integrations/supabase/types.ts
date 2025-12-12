@@ -8628,6 +8628,7 @@ export type Database = {
           unit: string | null
           updated_at: string
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           category?: string | null
@@ -8638,6 +8639,7 @@ export type Database = {
           unit?: string | null
           updated_at?: string
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           category?: string | null
@@ -8648,8 +8650,17 @@ export type Database = {
           unit?: string | null
           updated_at?: string
           user_id?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_master_items_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       purchase_order_received_items: {
         Row: {
@@ -8666,6 +8677,7 @@ export type Database = {
           unit: string | null
           unit_price: number | null
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -8681,6 +8693,7 @@ export type Database = {
           unit?: string | null
           unit_price?: number | null
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -8696,6 +8709,7 @@ export type Database = {
           unit?: string | null
           unit_price?: number | null
           user_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -8717,6 +8731,13 @@ export type Database = {
             columns: ["record_id"]
             isOneToOne: false
             referencedRelation: "po_received_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_received_items_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_workspaces"
             referencedColumns: ["id"]
           },
         ]

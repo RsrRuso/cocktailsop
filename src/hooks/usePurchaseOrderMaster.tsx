@@ -28,36 +28,48 @@ export interface ReceivedItem {
   created_at: string;
 }
 
-export const usePurchaseOrderMaster = () => {
+export const usePurchaseOrderMaster = (workspaceId?: string | null) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch master items
+  // Fetch master items (personal + workspace)
   const { data: masterItems, isLoading: isLoadingMaster } = useQuery({
-    queryKey: ['po-master-items', user?.id],
+    queryKey: ['po-master-items', user?.id, workspaceId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('purchase_order_master_items')
         .select('*')
-        .eq('user_id', user?.id)
         .order('item_name', { ascending: true });
       
+      if (workspaceId) {
+        query = query.eq('workspace_id', workspaceId);
+      } else {
+        query = query.eq('user_id', user?.id).is('workspace_id', null);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data as MasterItem[];
     },
     enabled: !!user?.id
   });
 
-  // Fetch received items
+  // Fetch received items (personal + workspace)
   const { data: receivedItems, isLoading: isLoadingReceived } = useQuery({
-    queryKey: ['po-received-items', user?.id],
+    queryKey: ['po-received-items', user?.id, workspaceId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('purchase_order_received_items')
         .select('*')
-        .eq('user_id', user?.id)
         .order('received_date', { ascending: false });
       
+      if (workspaceId) {
+        query = query.eq('workspace_id', workspaceId);
+      } else {
+        query = query.eq('user_id', user?.id).is('workspace_id', null);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data as ReceivedItem[];
     },
@@ -102,6 +114,7 @@ export const usePurchaseOrderMaster = () => {
         .from('purchase_order_master_items')
         .insert({
           user_id: user?.id,
+          workspace_id: workspaceId || null,
           item_name: normalizedName,
           unit: item.unit,
           category: item.category,
@@ -139,6 +152,7 @@ export const usePurchaseOrderMaster = () => {
         .from('purchase_order_received_items')
         .insert({
           user_id: user?.id,
+          workspace_id: workspaceId || null,
           item_name: item.item_name.trim(),
           quantity: item.quantity,
           unit: item.unit,
@@ -266,6 +280,7 @@ export const usePurchaseOrderMaster = () => {
       // Bulk insert unique new items
       const newItems = Array.from(uniqueItems.values()).map(item => ({
         user_id: user?.id,
+        workspace_id: workspaceId || null,
         item_name: item.item_name.trim(),
         unit: item.unit,
         last_price: item.price_per_unit
@@ -363,6 +378,7 @@ export const usePurchaseOrderMaster = () => {
             // Insert new items
             const newItems = Array.from(uniqueItems.values()).map(item => ({
               user_id: user?.id,
+              workspace_id: workspaceId || null,
               item_name: item.item_name.trim(),
               unit: item.unit,
               last_price: item.price_per_unit
