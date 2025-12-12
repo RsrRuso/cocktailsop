@@ -8470,6 +8470,96 @@ export type Database = {
           },
         ]
       }
+      purchase_order_master_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          item_name: string
+          last_price: number | null
+          unit: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          item_name: string
+          last_price?: number | null
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          item_name?: string
+          last_price?: number | null
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      purchase_order_received_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          master_item_id: string | null
+          purchase_order_id: string | null
+          quantity: number
+          received_date: string
+          total_price: number | null
+          unit: string | null
+          unit_price: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          master_item_id?: string | null
+          purchase_order_id?: string | null
+          quantity?: number
+          received_date?: string
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          master_item_id?: string | null
+          purchase_order_id?: string | null
+          quantity?: number
+          received_date?: string
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_received_items_master_item_id_fkey"
+            columns: ["master_item_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_order_master_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_received_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_orders: {
         Row: {
           created_at: string
