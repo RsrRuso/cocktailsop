@@ -67,7 +67,7 @@ const StatusRing = ({
         >
           <div className="relative group">
             {/* Compact black & white status bubble with shimmer */}
-            <div className="relative bg-gray-700 text-white px-3 py-1.5 rounded-full text-[10px] overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.25)] min-w-[60px] max-w-[130px]">
+            <div className="relative bg-gray-800 text-white px-3 py-1.5 rounded-full text-[10px] overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.25)] min-w-[60px] max-w-[130px]">
               {/* Shimmer effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
               
@@ -120,10 +120,10 @@ const StatusRing = ({
             
             {/* Speech bubble connector dots */}
             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
-              <div className="w-2 h-2 bg-gray-700 rounded-full shadow-md" />
+              <div className="w-2 h-2 bg-gray-800 rounded-full shadow-md" />
             </div>
             <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 translate-x-0.5">
-              <div className="w-1.5 h-1.5 bg-gray-700 rounded-full shadow-sm" />
+              <div className="w-1.5 h-1.5 bg-gray-800 rounded-full shadow-sm" />
             </div>
           </div>
         </div>
