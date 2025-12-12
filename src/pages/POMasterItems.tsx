@@ -6,16 +6,18 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, Search, List, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Package, Search, List, RefreshCw, Upload } from "lucide-react";
+import { useState, useRef } from "react";
 import { format } from "date-fns";
 
 const POMasterItems = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { masterItems, isLoadingMaster, syncFromExistingOrders } = usePurchaseOrderMaster();
+  const { masterItems, isLoadingMaster, syncFromExistingOrders, importFromFile } = usePurchaseOrderMaster();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user) {
     navigate('/auth');
@@ -36,6 +38,21 @@ const POMasterItems = () => {
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setIsUploading(true);
+    try {
+      await importFromFile(file);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
@@ -50,15 +67,33 @@ const POMasterItems = () => {
               <p className="text-sm text-muted-foreground">Unique ingredients from purchase orders</p>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSync}
-            disabled={isSyncing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-            Sync
-          </Button>
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.csv,.txt,.xlsx,.xls"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+            >
+              <Upload className={`h-4 w-4 mr-2 ${isUploading ? 'animate-pulse' : ''}`} />
+              {isUploading ? 'Parsing...' : 'Upload'}
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSync}
+              disabled={isSyncing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+              Sync
+            </Button>
+          </div>
         </div>
       </div>
 

@@ -272,6 +272,121 @@ export const usePurchaseOrderMaster = () => {
     }
   };
 
+  // Import items from uploaded file (PDF, CSV, Excel)
+  const importFromFile = async (file: File) => {
+    try {
+      toast.info("Processing file...");
+      
+      const reader = new FileReader();
+      
+      return new Promise<void>((resolve, reject) => {
+        reader.onload = async (e) => {
+          try {
+            let parsePayload: any = {};
+            
+            if (file.type === 'application/pdf') {
+              // Convert PDF to base64
+              const arrayBuffer = e.target?.result as ArrayBuffer;
+              const bytes = new Uint8Array(arrayBuffer);
+              let binary = '';
+              for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+              }
+              parsePayload.pdfBase64 = btoa(binary);
+            } else {
+              // Text/CSV content
+              parsePayload.content = e.target?.result as string;
+            }
+            
+            // Call the parse function
+            const { data, error } = await supabase.functions.invoke('parse-purchase-order', {
+              body: parsePayload
+            });
+            
+            if (error || !data?.success) {
+              toast.error(error?.message || data?.error || "Failed to parse file");
+              reject(new Error("Parse failed"));
+              return;
+            }
+            
+            const parsed = data.data;
+            if (!parsed?.items || parsed.items.length === 0) {
+              toast.error("No items found in file");
+              reject(new Error("No items"));
+              return;
+            }
+            
+            // Get existing master items to avoid duplicates
+            const { data: existingMaster } = await supabase
+              .from('purchase_order_master_items')
+              .select('item_name')
+              .eq('user_id', user?.id);
+            
+            const existingNames = new Set(
+              (existingMaster || []).map(i => i.item_name.trim().toLowerCase())
+            );
+            
+            // Build unique items from parsed data
+            const uniqueItems = new Map<string, any>();
+            for (const item of parsed.items) {
+              const key = item.item_name.trim().toLowerCase();
+              if (existingNames.has(key)) continue;
+              
+              if (!uniqueItems.has(key)) {
+                uniqueItems.set(key, item);
+              } else {
+                const existing = uniqueItems.get(key);
+                if ((item.price_per_unit || 0) > (existing.price_per_unit || 0)) {
+                  uniqueItems.set(key, item);
+                }
+              }
+            }
+            
+            if (uniqueItems.size === 0) {
+              toast.info("All items already exist in master list");
+              resolve();
+              return;
+            }
+            
+            // Insert new items
+            const newItems = Array.from(uniqueItems.values()).map(item => ({
+              user_id: user?.id,
+              item_name: item.item_name.trim(),
+              unit: item.unit,
+              last_price: item.price_per_unit
+            }));
+            
+            const { error: insertError } = await supabase
+              .from('purchase_order_master_items')
+              .insert(newItems);
+            
+            if (insertError) throw insertError;
+            
+            queryClient.invalidateQueries({ queryKey: ['po-master-items'] });
+            toast.success(`Added ${newItems.length} unique items from file`);
+            resolve();
+          } catch (err: any) {
+            toast.error("Failed to import: " + err.message);
+            reject(err);
+          }
+        };
+        
+        reader.onerror = () => {
+          toast.error("Failed to read file");
+          reject(new Error("File read error"));
+        };
+        
+        if (file.type === 'application/pdf') {
+          reader.readAsArrayBuffer(file);
+        } else {
+          reader.readAsText(file);
+        }
+      });
+    } catch (error: any) {
+      toast.error("Failed to import: " + error.message);
+    }
+  };
+
   // Calculate totals
   const receivedTotals = receivedItems?.reduce((acc, item) => ({
     totalQty: acc.totalQty + (item.quantity || 0),
@@ -307,6 +422,7 @@ export const usePurchaseOrderMaster = () => {
     addReceivedItem: addReceivedItem.mutate,
     addItemsFromPurchaseOrder,
     syncFromExistingOrders,
+    importFromFile,
     receivedTotals,
     receivedSummary: receivedSummary ? Object.values(receivedSummary) : []
   };
