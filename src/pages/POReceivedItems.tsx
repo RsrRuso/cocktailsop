@@ -85,9 +85,18 @@ const POReceivedItems = () => {
 
 const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | 'prices'>('recent');
   const [showPriceChangeDialog, setShowPriceChangeDialog] = useState(false);
-  const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD'>('USD');
+  const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD'>(() => {
+    const saved = localStorage.getItem('po-currency');
+    return (saved as 'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD') || 'USD';
+  });
   const [showRecordContent, setShowRecordContent] = useState<RecentReceived | null>(null);
   const queryClient = useQueryClient();
+
+  // Save currency preference when changed
+  const handleCurrencyChange = (newCurrency: 'USD' | 'EUR' | 'GBP' | 'AED' | 'AUD') => {
+    setCurrency(newCurrency);
+    localStorage.setItem('po-currency', newCurrency);
+  };
 
   // Currency symbols only - no conversion
   const currencySymbols: Record<string, string> = { USD: '$', EUR: '€', GBP: '£', AED: 'د.إ', AUD: 'A$' };
@@ -810,7 +819,7 @@ const [activeTab, setActiveTab] = useState<'recent' | 'summary' | 'forecast' | '
 
         {/* Currency Selector + Summary Cards */}
         <div className="flex items-center justify-end mb-2">
-          <Select value={currency} onValueChange={(v) => setCurrency(v as any)}>
+          <Select value={currency} onValueChange={(v) => handleCurrencyChange(v as any)}>
             <SelectTrigger className="w-24 h-8">
               <SelectValue />
             </SelectTrigger>
