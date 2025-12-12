@@ -281,14 +281,14 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="glass z-[60] bg-background/95 backdrop-blur-xl border border-border/50 w-56">
-              {/* Features Submenu - Matrix AI to Internal Email */}
-              <Collapsible defaultOpen>
+              {/* Features Submenu - Matrix AI to Internal Email - closed by default */}
+              <Collapsible>
                 <CollapsibleTrigger className="w-full px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Brain className="w-4 h-4 text-primary" />
                     <span>Features</span>
                   </span>
-                  <span className="text-xs">▼</span>
+                  <ChevronDown className="w-3 h-3" />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <DropdownMenuItem
@@ -368,7 +368,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                     <span>{regions.find(r => r.name === (selectedRegion || 'All'))?.flag}</span>
                     <span>{selectedRegion || 'All'} Region</span>
                   </span>
-                  <span className="text-xs">▼</span>
+                  <ChevronDown className="w-3 h-3" />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   {regions.map((region) => (
@@ -417,46 +417,58 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
               
               <DropdownMenuSeparator />
               
-              <DropdownMenuItem 
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/automations"); 
-                }}
-                className="cursor-pointer"
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                Automation Hub
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/ops-tools"); 
-                }}
-                className="cursor-pointer"
-              >
-                <Wrench className="w-4 h-4 mr-2" />
-                Operations Tools
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/exam-center"); 
-                }}
-                className="cursor-pointer"
-              >
-                <GraduationCap className="w-4 h-4 mr-2" />
-                Exam Center
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => { 
-                  lightTap(); 
-                  navigate("/introduction"); 
-                }}
-                className="cursor-pointer"
-              >
-                <BookOpen className="w-4 h-4 mr-2" />
-                Introduction
-              </DropdownMenuItem>
+              {/* Tools Submenu - Automation Hub to Introduction - closed by default */}
+              <Collapsible>
+                <CollapsibleTrigger className="w-full px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Wrench className="w-4 h-4" />
+                    <span>Tools & Resources</span>
+                  </span>
+                  <ChevronDown className="w-3 h-3" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <DropdownMenuItem 
+                    onClick={() => { 
+                      lightTap(); 
+                      navigate("/automations"); 
+                    }}
+                    className="cursor-pointer ml-4"
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    Automation Hub
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => { 
+                      lightTap(); 
+                      navigate("/ops-tools"); 
+                    }}
+                    className="cursor-pointer ml-4"
+                  >
+                    <Wrench className="w-4 h-4 mr-2" />
+                    Operations Tools
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => { 
+                      lightTap(); 
+                      navigate("/exam-center"); 
+                    }}
+                    className="cursor-pointer ml-4"
+                  >
+                    <GraduationCap className="w-4 h-4 mr-2" />
+                    Exam Center
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => { 
+                      lightTap(); 
+                      navigate("/introduction"); 
+                    }}
+                    className="cursor-pointer ml-4"
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Introduction
+                  </DropdownMenuItem>
+                </CollapsibleContent>
+              </Collapsible>
               
               <DropdownMenuSeparator />
               
@@ -467,7 +479,7 @@ const TopNav = ({ isVisible = true }: TopNavProps) => {
                     <Palette className="w-4 h-4" />
                     <span>Theme Modes</span>
                   </span>
-                  <span className="text-xs">▼</span>
+                  <ChevronDown className="w-3 h-3" />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="max-h-[300px] overflow-y-auto scrollbar-thin">
                   <DropdownMenuItem onClick={() => { lightTap(); changeTheme('light'); }} className="cursor-pointer ml-4">
